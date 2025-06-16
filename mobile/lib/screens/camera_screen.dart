@@ -78,12 +78,28 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
+    return ChangeNotifierProvider<CameraService?>.value(
       value: _cameraService,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Consumer<CameraService>(
+        body: Consumer<CameraService?>(
           builder: (context, cameraService, _) {
+            // Handle null camera service
+            if (cameraService == null) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Initializing camera...',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              );
+            }
             return Stack(
               children: [
                 // Camera preview or error state
