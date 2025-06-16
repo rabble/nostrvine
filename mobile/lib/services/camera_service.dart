@@ -70,10 +70,14 @@ class CameraService extends ChangeNotifier {
   
   /// Start vine recording using hybrid approach
   Future<void> startRecording() async {
-    if (!isInitialized || _isRecording) return;
+    if (!isInitialized || _isRecording) {
+      debugPrint('⚠️ Cannot start recording: initialized=${isInitialized}, recording=${_isRecording}');
+      return;
+    }
     
     try {
       _setState(RecordingState.recording);
+      _isRecording = true; // Set this immediately to prevent double calls
       _realtimeFrames.clear();
       _recordingStartTime = DateTime.now();
       
@@ -83,6 +87,7 @@ class CameraService extends ChangeNotifier {
       debugPrint('🎬 Started vine recording (hybrid approach)');
     } catch (e) {
       _setState(RecordingState.error);
+      _isRecording = false; // Reset on error
       debugPrint('❌ Failed to start recording: $e');
       rethrow;
     }
@@ -90,7 +95,10 @@ class CameraService extends ChangeNotifier {
   
   /// Stop recording and process frames
   Future<VineRecordingResult> stopRecording() async {
-    if (!_isRecording) throw Exception('Not currently recording');
+    if (!_isRecording) {
+      debugPrint('⚠️ Not currently recording, cannot stop');
+      throw Exception('Not currently recording');
+    }
     
     try {
       _setState(RecordingState.processing);
@@ -190,7 +198,6 @@ class CameraService extends ChangeNotifier {
     
     // Start video recording
     await _controller!.startVideoRecording();
-    _isRecording = true;
     
     // Start real-time frame streaming
     await _controller!.startImageStream((CameraImage image) {
@@ -223,7 +230,6 @@ class CameraService extends ChangeNotifier {
     await _controller!.stopImageStream();
     
     final videoFile = await _controller!.stopVideoRecording();
-    _isRecording = false;
     
     if (canceled) {
       // Clean up video file

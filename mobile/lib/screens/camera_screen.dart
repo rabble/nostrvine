@@ -504,10 +504,10 @@ class _CameraScreenState extends State<CameraScreen> {
             content: Text(
               'GIF created! ${gifResult.frameCount} frames, ${gifResult.fileSizeMB.toStringAsFixed(2)}MB',
             ),
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             action: SnackBarAction(
-              label: 'Details',
-              onPressed: () => _showGifDetails(gifResult),
+              label: 'Preview',
+              onPressed: () => _showGifPreview(gifResult),
             ),
           ),
         );
@@ -522,6 +522,133 @@ class _CameraScreenState extends State<CameraScreen> {
         );
       }
     }
+  }
+
+  void _showGifPreview(GifResult gifResult) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // GIF Preview (showing first frame for now)
+              Container(
+                width: double.infinity,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.gif_box,
+                        size: 64,
+                        color: Colors.white54,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'GIF Preview',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '(Static preview - animation coming soon)',
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // GIF Stats
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Frames:', style: TextStyle(color: Colors.white70)),
+                        Text('${gifResult.frameCount}', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Size:', style: TextStyle(color: Colors.white70)),
+                        Text('${gifResult.fileSizeMB.toStringAsFixed(2)} MB', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Quality:', style: TextStyle(color: Colors.white70)),
+                        Text('${gifResult.quality.name}', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Compression:', style: TextStyle(color: Colors.white70)),
+                        Text('${(gifResult.compressionRatio * 100).toStringAsFixed(1)}%', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _proceedToEdit();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                      ),
+                      child: const Text('Share'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showGifDetails(GifResult gifResult) {
