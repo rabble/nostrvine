@@ -20,6 +20,7 @@ class MacosCameraProvider implements CameraProvider {
   StreamSubscription<Uint8List>? _frameSubscription;
   final List<Uint8List> _realtimeFrames = [];
   Function(Uint8List)? _frameCallback;
+  Timer? _autoStopTimer;
   
   // Recording parameters
   static const Duration maxVineDuration = Duration(seconds: 6);
@@ -188,8 +189,8 @@ class MacosCameraProvider implements CameraProvider {
       
       debugPrint('✅ [MacosCameraProvider] Native macOS camera recording started successfully');
       
-      // Auto-stop after max duration
-      Future.delayed(maxVineDuration, () {
+      // Auto-stop after max duration using Timer for proper cancellation
+      _autoStopTimer = Timer(maxVineDuration, () {
         if (_isRecording) {
           debugPrint('⏱️ [MacosCameraProvider] Auto-stopping recording after ${maxVineDuration.inSeconds}s');
           stopRecording();
@@ -211,6 +212,10 @@ class MacosCameraProvider implements CameraProvider {
     }
     
     debugPrint('🔵 [MacosCameraProvider] stopRecording called, _isRecording: $_isRecording');
+    
+    // Cancel auto-stop timer to prevent race condition
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
     
     // Immediately set recording to false to prevent duplicate calls
     _isRecording = false;
@@ -261,6 +266,8 @@ class MacosCameraProvider implements CameraProvider {
       _frameCallback = null;
       await _frameSubscription?.cancel();
       _frameSubscription = null;
+      _autoStopTimer?.cancel();
+      _autoStopTimer = null;
     }
   }
   
@@ -294,6 +301,10 @@ class MacosCameraProvider implements CameraProvider {
     
     await _frameSubscription?.cancel();
     _frameSubscription = null;
+    
+    // Cancel any pending timer
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
     
     // Dispose native camera resources
     try {

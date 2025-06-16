@@ -4,6 +4,7 @@
 import FlutterMacOS
 import AVFoundation
 import Foundation
+import CoreMedia
 
 public class NativeCameraPlugin: NSObject, FlutterPlugin {
     private var methodChannel: FlutterMethodChannel?
@@ -162,8 +163,19 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             // Add movie output for recording
             movieOutput = AVCaptureMovieFileOutput()
             if let movieOutput = movieOutput, captureSession.canAddOutput(movieOutput) {
+                // Configure movie output for optimal vine recording
+                movieOutput.maxRecordedDuration = CMTimeMakeWithSeconds(8.0, preferredTimescale: 1) // Slightly more than 6s for safety
+                movieOutput.maxRecordedFileSize = Int64(50 * 1024 * 1024) // 50MB max file size
+                
+                // Set up video settings for good quality/size balance
+                let availableVideoCodecs = movieOutput.availableVideoCodecTypes
+                if availableVideoCodecs.contains(.h264) {
+                    print("🎥 [NativeCamera] Using H.264 codec for recording")
+                }
+                
                 captureSession.addOutput(movieOutput)
-                print("✅ [NativeCamera] Movie output added to capture session")
+                print("✅ [NativeCamera] Movie output added to capture session with optimal settings")
+                print("🎥 [NativeCamera] Max duration: 8s, Max file size: 50MB")
             } else {
                 print("❌ [NativeCamera] Failed to add movie output to capture session")
             }
@@ -215,9 +227,21 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     private func startRecording(result: @escaping FlutterResult) {
         NSLog("🔵 [NativeCamera] Starting recording...")
         
+        guard let captureSession = captureSession, captureSession.isRunning else {
+            NSLog("❌ [NativeCamera] Capture session not running")
+            result(FlutterError(code: "SESSION_NOT_RUNNING", message: "Capture session not running", details: nil))
+            return
+        }
+        
         guard let movieOutput = movieOutput else {
             NSLog("❌ [NativeCamera] Movie output not available")
             result(FlutterError(code: "OUTPUT_NOT_AVAILABLE", message: "Movie output not available", details: nil))
+            return
+        }
+        
+        guard let videoInput = videoInput, captureSession.inputs.contains(videoInput) else {
+            NSLog("❌ [NativeCamera] Video input not properly configured")
+            result(FlutterError(code: "INPUT_NOT_CONFIGURED", message: "Video input not properly configured", details: nil))
             return
         }
         
@@ -227,10 +251,19 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         
-        // Create output file URL
+        // Create output file URL with proper directory structure
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let vineRecordingsDir = documentsPath.appendingPathComponent("VineRecordings")
+        
+        // Ensure recordings directory exists
+        do {
+            try FileManager.default.createDirectory(at: vineRecordingsDir, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            print("⚠️ [NativeCamera] Failed to create recordings directory: \(error)")
+        }
+        
         let timestamp = Int(Date().timeIntervalSince1970)
-        outputURL = documentsPath.appendingPathComponent("vine_\(timestamp).mov")
+        outputURL = vineRecordingsDir.appendingPathComponent("vine_\(timestamp).mov")
         
         print("🔵 [NativeCamera] Documents path: \(documentsPath)")
         print("🔵 [NativeCamera] Output file: vine_\(timestamp).mov")
