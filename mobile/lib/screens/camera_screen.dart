@@ -18,7 +18,7 @@ class _CameraScreenState extends State<CameraScreen> {
   CameraService? _cameraService;
   final GifService _gifService = GifService();
   late final NostrService _nostrService;
-  late final VinePublishingService _publishingService;
+  VinePublishingService? _publishingService;
   String? _errorMessage;
   GifResult? _lastGifResult;
   VineRecordingResult? _lastRecordingResult;
@@ -33,7 +33,7 @@ class _CameraScreenState extends State<CameraScreen> {
   void dispose() {
     _cameraService?.dispose();
     _nostrService.dispose();
-    _publishingService.dispose();
+    _publishingService?.dispose();
     super.dispose();
   }
 
@@ -106,7 +106,7 @@ class _CameraScreenState extends State<CameraScreen> {
                       Row(
                         children: [
                           // Offline queue indicator
-                          if (_publishingService.hasOfflineContent)
+                          if (_publishingService?.hasOfflineContent == true)
                             GestureDetector(
                               onTap: _showOfflineQueueDialog,
                               child: Container(
@@ -122,7 +122,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                     const Icon(Icons.cloud_off, color: Colors.white, size: 16),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${_publishingService.offlineQueueCount}',
+                                      '${_publishingService?.offlineQueueCount ?? 0}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -860,7 +860,11 @@ class _CameraScreenState extends State<CameraScreen> {
     _showPublishingProgress();
 
     try {
-      final result = await _publishingService.publishVineLocal(
+      if (_publishingService == null) {
+        throw Exception('Publishing service not initialized');
+      }
+      
+      final result = await _publishingService!.publishVineLocal(
         recordingResult: _lastRecordingResult!,
         caption: publishCaption,
         hashtags: publishHashtags,
@@ -939,29 +943,38 @@ class _CameraScreenState extends State<CameraScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListenableBuilder(
-                listenable: _publishingService,
-                builder: (context, _) {
-                  return Column(
-                    children: [
-                      CircularProgressIndicator(
-                        value: _publishingService.progress,
-                        color: Colors.purple,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _publishingService.statusMessage ?? 'Publishing...',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${(_publishingService.progress * 100).toInt()}%',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  );
-                },
-              ),
+              if (_publishingService != null)
+                ListenableBuilder(
+                  listenable: _publishingService!,
+                  builder: (context, _) {
+                    return Column(
+                      children: [
+                        CircularProgressIndicator(
+                          value: _publishingService!.progress,
+                          color: Colors.purple,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _publishingService!.statusMessage ?? 'Publishing...',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${(_publishingService!.progress * 100).toInt()}%',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    );
+                  },
+                )
+              else
+                const Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Initializing...'),
+                  ],
+                ),
             ],
           ),
         ),
@@ -992,9 +1005,9 @@ class _CameraScreenState extends State<CameraScreen> {
             const SizedBox(width: 8),
             const Text('Offline Queue'),
             const Spacer(),
-            if (_publishingService.offlineQueueCount > 0)
+            if ((_publishingService?.offlineQueueCount ?? 0) > 0)
               Chip(
-                label: Text('${_publishingService.offlineQueueCount}'),
+                label: Text('${_publishingService?.offlineQueueCount ?? 0}'),
                 backgroundColor: Colors.orange.withOpacity(0.2),
               ),
           ],
@@ -1005,11 +1018,11 @@ class _CameraScreenState extends State<CameraScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_publishingService.offlineQueueCount == 0)
+              if ((_publishingService?.offlineQueueCount ?? 0) == 0)
                 const Text('No content waiting to be published.')
               else ...[
                 Text(
-                  'You have ${_publishingService.offlineQueueCount} vine(s) waiting to be published when your connection is restored.',
+                  'You have ${_publishingService?.offlineQueueCount ?? 0} vine(s) waiting to be published when your connection is restored.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
@@ -1053,7 +1066,7 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
         actions: [
-          if (_publishingService.offlineQueueCount > 0) ...[
+          if ((_publishingService?.offlineQueueCount ?? 0) > 0) ...[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
@@ -1093,7 +1106,7 @@ class _CameraScreenState extends State<CameraScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Clear Offline Queue'),
         content: Text(
-          'Are you sure you want to clear all ${_publishingService.offlineQueueCount} queued vine(s)? This action cannot be undone.',
+          'Are you sure you want to clear all ${_publishingService?.offlineQueueCount ?? 0} queued vine(s)? This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -1114,7 +1127,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
   
   Future<void> _clearOfflineQueue() async {
-    await _publishingService.clearOfflineQueue();
+    await _publishingService?.clearOfflineQueue();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1134,7 +1147,7 @@ class _CameraScreenState extends State<CameraScreen> {
     );
     
     try {
-      await _publishingService.retryOfflineQueue();
+      await _publishingService?.retryOfflineQueue();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

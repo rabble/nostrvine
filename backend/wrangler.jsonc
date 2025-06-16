@@ -7,46 +7,116 @@
 	"name": "nostrvine-backend",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-14",
+	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true
 	},
+	
+	/**
+	 * R2 Object Storage Buckets
+	 */
 	"r2_buckets": [
 		{ "binding": "FRAMES_BUCKET", "bucket_name": "nostrvine-frames" },
 		{ "binding": "MEDIA_BUCKET", "bucket_name": "nostrvine-media" },
 		{ "binding": "CACHE_BUCKET", "bucket_name": "nostrvine-cache" }
-	]
+	],
+
 	/**
-	 * Smart Placement
-	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 * Durable Objects for upload job state management
+	 */
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "UPLOAD_JOBS",
+				"class_name": "UploadJobManager"
+			}
+		]
+	},
+
+	/**
+	 * Durable Object Migrations
+	 */
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": [
+				"UploadJobManager"
+			]
+		}
+	],
+
+	/**
+	 * Environment Variables
+	 * Note: Sensitive values should be set using `wrangler secret put`
+	 */
+	"vars": {
+		"ENVIRONMENT": "development",
+		"BASE_URL": "https://nostrvine-backend.your-subdomain.workers.dev",
+		"MAX_FILE_SIZE_FREE": "104857600",
+		"MAX_FILE_SIZE_PRO": "1073741824",
+		"WEBHOOK_SECRET": "nostrvine-webhook-development"
+	},
+
+	/**
+	 * KV Namespaces for caching and metadata
+	 */
+	"kv_namespaces": [
+		{
+			"binding": "METADATA_CACHE",
+			"id": "your-kv-namespace-id",
+			"preview_id": "your-preview-kv-namespace-id"
+		}
+	],
+
+	/**
+	 * Analytics Engine for usage tracking
+	 */
+	"analytics_engine_datasets": [
+		{
+			"binding": "UPLOAD_ANALYTICS",
+			"dataset": "nostrvine_uploads"
+		}
+	],
+
+	/**
+	 * Development Environment
+	 */
+	"env": {
+		"development": {
+			"vars": {
+				"ENVIRONMENT": "development",
+				"BASE_URL": "http://localhost:8787"
+			}
+		},
+		"staging": {
+			"vars": {
+				"ENVIRONMENT": "staging",
+				"BASE_URL": "https://nostrvine-backend-staging.your-subdomain.workers.dev"
+			}
+		},
+		"production": {
+			"vars": {
+				"ENVIRONMENT": "production",
+				"BASE_URL": "https://api.nostrvine.com"
+			}
+		}
+	}
+
+	/**
+	 * Secrets to set with `wrangler secret put`:
+	 * - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID
+	 * - CLOUDFLARE_STREAM_TOKEN: Stream API token
+	 * - WEBHOOK_VERIFY_SECRET: Webhook signature verification secret
+	 * - NIP98_VERIFICATION_KEY: Key for NIP-98 auth verification
+	 */
+
+	/**
+	 * Smart Placement for edge optimization
 	 */
 	// "placement": { "mode": "smart" },
 
 	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
-	/**
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
-
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 * Static Assets for serving web content
 	 */
 	// "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
 }
