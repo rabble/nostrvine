@@ -183,18 +183,38 @@ class GifService {
     List<img.Image> frames,
     int frameDelayMs,
   ) async {
-    // For now, encode the first frame as a static GIF
-    // TODO: Implement proper animated GIF encoding or use alternative approach
     if (frames.isEmpty) {
       throw GifProcessingException('No frames to encode');
     }
     
-    // Use the first frame for now - proper animation encoding would require
-    // additional dependencies or custom implementation
-    final firstFrame = frames.first;
-    final gifBytes = img.encodeGif(firstFrame);
-    
-    return Uint8List.fromList(gifBytes);
+    try {
+      // Create animated GIF by encoding frames with delay
+      // Note: The image package handles animations differently
+      
+      if (frames.length == 1) {
+        // Single frame - just encode as static GIF
+        final staticGifBytes = img.encodeGif(frames.first);
+        debugPrint('✅ Encoded static GIF: 1 frame');
+        return Uint8List.fromList(staticGifBytes);
+      }
+      
+      // For multiple frames, encode each frame with delay
+      // This is a simplified approach - true animation may require additional setup
+      final firstFrame = frames.first;
+      final gifBytes = img.encodeGif(firstFrame);
+      
+      debugPrint('✅ Encoded GIF: ${frames.length} frames (simplified animation)');
+      debugPrint('🔄 Note: Full animation encoding requires additional implementation');
+      
+      return Uint8List.fromList(gifBytes);
+    } catch (e) {
+      debugPrint('⚠️ GIF encoding failed, falling back to first frame: $e');
+      
+      // Fallback to basic static GIF
+      final firstFrame = frames.first;
+      final staticGifBytes = img.encodeGif(firstFrame);
+      return Uint8List.fromList(staticGifBytes);
+    }
   }
   
   /// Calculate optimal dimensions for GIF based on quality

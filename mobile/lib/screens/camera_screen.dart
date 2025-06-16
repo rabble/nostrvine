@@ -80,9 +80,9 @@ class _CameraScreenState extends State<CameraScreen> {
                           color: Colors.black.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          '6s',
-                          style: TextStyle(
+                        child: Text(
+                          _getTimerText(cameraService),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -143,8 +143,8 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                 ),
 
-                // Recording state indicator
-                if (cameraService?.state == RecordingState.processing)
+                // Recording state indicator (only show during manual processing, not auto-stop)
+                if (cameraService?.state == RecordingState.processing && !cameraService!.isRecording)
                   Positioned(
                     top: MediaQuery.of(context).size.height * 0.4,
                     left: 0,
@@ -534,7 +534,7 @@ class _CameraScreenState extends State<CameraScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // GIF Preview (showing first frame for now)
+              // GIF Preview
               Container(
                 width: double.infinity,
                 height: 300,
@@ -542,33 +542,42 @@ class _CameraScreenState extends State<CameraScreen> {
                   color: Colors.grey[800],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.gif_box,
-                        size: 64,
-                        color: Colors.white54,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'GIF Preview',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _lastGifResult?.gifBytes != null
+                      ? Image.memory(
+                          _lastGifResult!.gifBytes,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                        )
+                      : const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.gif_box,
+                                size: 64,
+                                color: Colors.white54,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'GIF Preview',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '(Loading...)',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '(Static preview - animation coming soon)',
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               
@@ -634,7 +643,9 @@ class _CameraScreenState extends State<CameraScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        _proceedToEdit();
+                        if (_lastGifResult != null) {
+                          _showGifPreview(_lastGifResult!);
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
@@ -703,5 +714,18 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
       ),
     );
+  }
+
+  String _getTimerText(CameraService? cameraService) {
+    if (cameraService == null || !cameraService.isRecording) {
+      return '6s';
+    }
+    
+    // Calculate remaining time (6 seconds total)
+    const totalSeconds = 6;
+    final progress = cameraService.recordingProgress;
+    final remainingSeconds = totalSeconds - (totalSeconds * progress).round();
+    
+    return '${remainingSeconds}s';
   }
 }

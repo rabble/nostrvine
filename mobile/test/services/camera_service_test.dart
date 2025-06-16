@@ -64,16 +64,28 @@ void main() {
     });
 
     group('Recording Duration and Limits', () {
-      test('should enforce max vine duration of 6 seconds', () {
-        expect(CameraService.maxVineDuration, equals(const Duration(seconds: 6)));
+      test('should enforce max vine duration of 6 seconds by default', () {
+        expect(cameraService.maxVineDuration, equals(const Duration(seconds: 6)));
       });
 
-      test('should target 5 FPS for vine recording', () {
-        expect(CameraService.targetFPS, equals(5.0));
+      test('should target 5 FPS for vine recording by default', () {
+        expect(cameraService.targetFPS, equals(5.0));
       });
 
-      test('should target 30 frames for complete vine', () {
-        expect(CameraService.targetFrameCount, equals(30));
+      test('should target 30 frames for complete vine by default', () {
+        expect(cameraService.targetFrameCount, equals(30));
+      });
+      
+      test('should allow configuring recording parameters', () {
+        // Test configuration changes
+        cameraService.configureRecording(
+          duration: const Duration(seconds: 10),
+          frameRate: 10.0,
+        );
+        
+        expect(cameraService.maxVineDuration, equals(const Duration(seconds: 10)));
+        expect(cameraService.targetFPS, equals(10.0));
+        expect(cameraService.targetFrameCount, equals(100)); // 10 seconds * 10 FPS
       });
     });
 
@@ -151,14 +163,14 @@ void main() {
         // Test that the service can handle various camera image formats
         // This would require more complex mocking of CameraImage
         
-        // For now, verify that the constants are correct
-        expect(CameraService.maxVineDuration.inSeconds, equals(6));
-        expect(CameraService.targetFPS, equals(5.0));
-        expect(CameraService.targetFrameCount, equals(30));
+        // For now, verify that the default parameters are correct
+        expect(cameraService.maxVineDuration.inSeconds, equals(6));
+        expect(cameraService.targetFPS, equals(5.0));
+        expect(cameraService.targetFrameCount, equals(30));
         
         // 6 seconds * 5 FPS = 30 frames (math checks out)
-        expect(CameraService.maxVineDuration.inSeconds * CameraService.targetFPS, 
-               equals(CameraService.targetFrameCount.toDouble()));
+        expect(cameraService.maxVineDuration.inSeconds * cameraService.targetFPS, 
+               equals(cameraService.targetFrameCount.toDouble()));
       });
     });
 

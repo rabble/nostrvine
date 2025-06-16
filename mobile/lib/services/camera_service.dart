@@ -1,10 +1,13 @@
 // ABOUTME: Camera service implementing hybrid frame capture for vine creation
 // ABOUTME: Manages recording, frame extraction, and GIF generation pipeline
 
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 enum RecordingState {
   idle,
@@ -18,17 +21,19 @@ enum RecordingState {
 class CameraService extends ChangeNotifier {
   CameraController? _controller;
   RecordingState _state = RecordingState.idle;
+  bool _disposed = false;
   
   // Hybrid capture data
   final List<Uint8List> _realtimeFrames = [];
   bool _isRecording = false;
   bool _isStreaming = false;
   DateTime? _recordingStartTime;
+  Timer? _progressTimer;
   
-  // Recording parameters
-  static const Duration maxVineDuration = Duration(seconds: 6);
-  static const double targetFPS = 5.0;
-  static const int targetFrameCount = 30;
+  // Recording parameters - configurable
+  Duration maxVineDuration = const Duration(seconds: 6);
+  double targetFPS = 5.0;
+  int get targetFrameCount => (maxVineDuration.inSeconds * targetFPS).round();
   
   // Getters
   RecordingState get state => _state;
@@ -84,6 +89,9 @@ class CameraService extends ChangeNotifier {
       // Start hybrid capture: video recording + real-time frame streaming
       await _startHybridCapture();
       
+      // Start progress timer to update UI regularly
+      _startProgressTimer();
+      
       debugPrint('🎬 Started vine recording (hybrid approach)');
     } catch (e) {
       _setState(RecordingState.error);
@@ -103,6 +111,9 @@ class CameraService extends ChangeNotifier {
     try {
       _setState(RecordingState.processing);
       
+      // Stop progress timer immediately
+      _stopProgressTimer();
+      
       // Stop hybrid capture
       final result = await _stopHybridCapture();
       
@@ -117,6 +128,7 @@ class CameraService extends ChangeNotifier {
     } finally {
       _isRecording = false;
       _recordingStartTime = null;
+      _stopProgressTimer();
     }
   }
   
@@ -130,6 +142,7 @@ class CameraService extends ChangeNotifier {
       _isRecording = false;
       _recordingStartTime = null;
       _realtimeFrames.clear();
+      _stopProgressTimer();
       
       debugPrint('🚫 Recording canceled');
     } catch (e) {
@@ -173,9 +186,26 @@ class CameraService extends ChangeNotifier {
   /// Get camera controller for preview
   CameraController? get controller => _controller;
   
+  /// Configure recording parameters
+  void configureRecording({
+    Duration? duration,
+    double? frameRate,
+  }) {
+    if (duration != null) {
+      maxVineDuration = duration;
+      debugPrint('📹 Updated max recording duration to ${duration.inSeconds}s');
+    }
+    if (frameRate != null) {
+      targetFPS = frameRate;
+      debugPrint('📹 Updated target FPS to ${frameRate}');
+    }
+  }
+  
   /// Dispose resources
   @override
   void dispose() {
+    _disposed = true;
+    _stopProgressTimer();
     _controller?.dispose();
     _controller = null;
     super.dispose();
@@ -185,7 +215,18 @@ class CameraService extends ChangeNotifier {
   
   void _setState(RecordingState newState) {
     _state = newState;
-    notifyListeners();
+    
+    // Use post-frame callback to safely notify listeners
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_disposed && hasListeners) {
+        try {
+          notifyListeners();
+        } catch (e) {
+          // Ignore errors during disposal
+          debugPrint('⚠️ State notification error: $e');
+        }
+      }
+    });
   }
   
   /// Start hybrid capture (video + real-time frames)
@@ -199,17 +240,23 @@ class CameraService extends ChangeNotifier {
     // Start video recording
     await _controller!.startVideoRecording();
     
-    // Start real-time frame streaming
-    await _controller!.startImageStream((CameraImage image) {
-      if (!_isStreaming) return;
-      
-      final now = DateTime.now();
-      if (now.difference(lastFrameTime).inMilliseconds >= frameIntervalMs) {
-        _captureRealtimeFrame(image);
-        lastFrameTime = now;
-      }
-    });
-    _isStreaming = true;
+    // Start real-time frame streaming, only if supported (not on web)
+    if (!kIsWeb) {
+      debugPrint('✅ Image streaming is supported. Starting stream.');
+      await _controller!.startImageStream((CameraImage image) {
+        if (!_isStreaming) return;
+        
+        final now = DateTime.now();
+        if (now.difference(lastFrameTime).inMilliseconds >= frameIntervalMs) {
+          _captureRealtimeFrame(image);
+          lastFrameTime = now;
+        }
+      });
+      _isStreaming = true;
+    } else {
+      debugPrint('⚠️ Image streaming not supported on web platform. Will rely on video extraction fallback.');
+      _isStreaming = false;
+    }
     
     // Auto-stop after max duration
     Future.delayed(maxVineDuration, () {
@@ -227,13 +274,23 @@ class CameraService extends ChangeNotifier {
     
     // Stop both recording and streaming
     _isStreaming = false;
-    await _controller!.stopImageStream();
+    
+    // Only stop image stream if it was started (not on web)
+    if (!kIsWeb) {
+      await _controller!.stopImageStream();
+    }
     
     final videoFile = await _controller!.stopVideoRecording();
     
     if (canceled) {
-      // Clean up video file
-      await File(videoFile.path).delete();
+      // Clean up video file (only on non-web platforms)
+      if (!kIsWeb) {
+        try {
+          await File(videoFile.path).delete();
+        } catch (e) {
+          debugPrint('⚠️ Failed to delete video file: $e');
+        }
+      }
       return VineRecordingResult.canceled();
     }
     
@@ -259,8 +316,14 @@ class CameraService extends ChangeNotifier {
     
     final processingTime = stopwatch.elapsed;
     
-    // Clean up video file (we have the frames we need)
-    await File(videoFile.path).delete();
+    // Clean up video file (we have the frames we need, only on non-web platforms)
+    if (!kIsWeb) {
+      try {
+        await File(videoFile.path).delete();
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete video file: $e');
+      }
+    }
     
     return VineRecordingResult(
       frames: finalFrames,
@@ -280,7 +343,7 @@ class CameraService extends ChangeNotifier {
       _realtimeFrames.add(frameData);
       
       // Update progress
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     } catch (e) {
       debugPrint('⚠️ Frame capture error: $e');
     }
@@ -369,23 +432,82 @@ class CameraService extends ChangeNotifier {
     }
     return rgbData;
   }
+
+  /// Create varied placeholder frame for animation preview
+  Uint8List _createVariedPlaceholderFrame(int width, int height, int frameIndex) {
+    final rgbData = Uint8List(width * height * 3);
+    
+    // Create a simple animation effect - color shifting gradient
+    final phase = (frameIndex * 0.2) % (2 * 3.14159); // Cycling through phases
+    
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final pixelIndex = (y * width + x) * 3;
+        
+        // Create a moving gradient pattern
+        final normalizedX = x / width;
+        final normalizedY = y / height;
+        final distance = (normalizedX * normalizedX + normalizedY * normalizedY);
+        
+        // Animated color based on distance and frame
+        final colorValue = ((math.sin(distance * 10 + phase) + 1) * 127.5).round();
+        final complementColor = 255 - colorValue;
+        
+        rgbData[pixelIndex] = colorValue;     // R
+        rgbData[pixelIndex + 1] = complementColor; // G  
+        rgbData[pixelIndex + 2] = ((colorValue + complementColor) / 2).round(); // B
+      }
+    }
+    
+    return rgbData;
+  }
   
   /// Extract frames from video file as fallback
   Future<List<Uint8List>> _extractFramesFromVideo(XFile videoFile) async {
-    // TODO: Implement video frame extraction using video processing library
-    // For now, return placeholder frames
-    final frames = <Uint8List>[];
-    
-    for (int i = 0; i < targetFrameCount; i++) {
-      // Simulate processing delay
-      await Future.delayed(const Duration(milliseconds: 10));
+    try {
+      // TODO: Implement video frame extraction using video processing library
+      // For now, return placeholder frames since web doesn't support video processing
+      final frames = <Uint8List>[];
       
-      // Create placeholder frame (640x480 RGB)
-      final frameData = _createPlaceholderFrame(640, 480);
-      frames.add(frameData);
+      debugPrint('🔄 Extracting frames from video (web fallback mode)');
+      
+      for (int i = 0; i < targetFrameCount; i++) {
+        // Simulate processing delay
+        await Future.delayed(const Duration(milliseconds: 10));
+        
+        // Create varied placeholder frame (640x480 RGB) for animation
+        final frameData = _createVariedPlaceholderFrame(640, 480, i);
+        frames.add(frameData);
+      }
+      
+      debugPrint('✅ Generated ${frames.length} placeholder frames');
+      return frames;
+    } catch (e) {
+      debugPrint('⚠️ Video extraction error: $e');
+      // Return minimal frames to prevent complete failure
+      return [_createPlaceholderFrame(640, 480)];
     }
-    
-    return frames;
+  }
+
+  /// Start progress timer to update UI during recording
+  void _startProgressTimer() {
+    _stopProgressTimer(); // Clean up any existing timer
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (_isRecording && !_disposed && hasListeners) {
+        try {
+          notifyListeners(); // Update UI with current progress
+        } catch (e) {
+          // Ignore errors during disposal
+          debugPrint('⚠️ Progress timer notification error: $e');
+        }
+      }
+    });
+  }
+
+  /// Stop progress timer
+  void _stopProgressTimer() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
   }
 }
 
