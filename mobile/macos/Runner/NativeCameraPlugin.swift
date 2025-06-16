@@ -34,6 +34,8 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         print("🔵 [NativeCamera] Method called: \(call.method)")
+        print("🔵 [NativeCamera] Current thread: \(Thread.current)")
+        print("🔵 [NativeCamera] Is main thread: \(Thread.isMainThread)")
         
         switch call.method {
         case "initialize":
@@ -49,6 +51,7 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             print("🔵 [NativeCamera] Handling startRecording request")
             startRecording(result: result)
         case "stopRecording":
+            print("🟡 [NativeCamera] *** STOP RECORDING REQUEST RECEIVED ***")
             print("🔵 [NativeCamera] Handling stopRecording request")
             stopRecording(result: result)
         case "requestPermission":

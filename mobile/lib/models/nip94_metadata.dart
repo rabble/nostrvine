@@ -16,6 +16,11 @@ class NIP94Metadata {
   final int? durationMs;      // Video duration in milliseconds
   final double? fps;          // Frames per second
   final DateTime? createdAt;  // Creation timestamp
+  final String? thumbnailUrl; // Thumbnail image URL
+  final String? magnetLink;   // Magnet link for torrent sharing
+  final String? torrentHash;  // InfoHash for torrent
+  final String? originalHash; // Hash of original file before processing
+  final Map<String, String> additionalTags; // Custom additional tags
   
   const NIP94Metadata({
     required this.url,
@@ -29,6 +34,11 @@ class NIP94Metadata {
     this.durationMs,
     this.fps,
     this.createdAt,
+    this.thumbnailUrl,
+    this.magnetLink,
+    this.torrentHash,
+    this.originalHash,
+    this.additionalTags = const {},
   });
   
   /// Create NIP-94 metadata from GIF result and upload response
@@ -43,6 +53,9 @@ class NIP94Metadata {
     String? blurhash,
     int? durationMs,
     double? fps,
+    String? thumbnailUrl,
+    String? originalHash,
+    Map<String, String> additionalTags = const {},
   }) {
     return NIP94Metadata(
       url: url,
@@ -56,6 +69,9 @@ class NIP94Metadata {
       durationMs: durationMs,
       fps: fps,
       createdAt: DateTime.now(),
+      thumbnailUrl: thumbnailUrl,
+      originalHash: originalHash,
+      additionalTags: additionalTags,
     );
   }
   
@@ -75,6 +91,12 @@ class NIP94Metadata {
       createdAt: json['created_at'] != null 
         ? DateTime.parse(json['created_at'] as String)
         : null,
+      thumbnailUrl: json['thumbnail_url'] as String?,
+      magnetLink: json['magnet_link'] as String?,
+      torrentHash: json['torrent_hash'] as String?,
+      originalHash: json['original_hash'] as String?,
+      additionalTags: (json['additional_tags'] as Map<String, dynamic>?)
+        ?.map((key, value) => MapEntry(key, value.toString())) ?? {},
     );
   }
   
@@ -92,6 +114,11 @@ class NIP94Metadata {
       if (durationMs != null) 'duration_ms': durationMs,
       if (fps != null) 'fps': fps,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+      if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
+      if (magnetLink != null) 'magnet_link': magnetLink,
+      if (torrentHash != null) 'torrent_hash': torrentHash,
+      if (originalHash != null) 'original_hash': originalHash,
+      if (additionalTags.isNotEmpty) 'additional_tags': additionalTags,
     };
   }
   
@@ -100,7 +127,7 @@ class NIP94Metadata {
     required NostrKeyPairs keyPairs,
     required String content,
     List<String> hashtags = const [],
-    List<String> additionalTags = const [],
+    List<String> customTags = const [],
   }) {
     final tags = <List<String>>[
       ['url', url],
@@ -116,14 +143,23 @@ class NIP94Metadata {
     if (summary != null) tags.add(['summary', summary!]);
     if (durationMs != null) tags.add(['duration', (durationMs! / 1000).toString()]);
     if (fps != null) tags.add(['fps', fps!.toString()]);
+    if (thumbnailUrl != null) tags.add(['thumb', thumbnailUrl!]);
+    if (magnetLink != null) tags.add(['magnet', magnetLink!]);
+    if (torrentHash != null) tags.add(['torrent', torrentHash!]);
+    if (originalHash != null) tags.add(['ox', originalHash!]); // original file hash
     
     // Add hashtags as 't' tags
     for (final hashtag in hashtags) {
       tags.add(['t', hashtag]);
     }
     
-    // Add any additional custom tags
-    for (final tag in additionalTags) {
+    // Add additional tags from the additionalTags map
+    for (final entry in additionalTags.entries) {
+      tags.add([entry.key, entry.value]);
+    }
+    
+    // Add any additional custom tags (legacy support)
+    for (final tag in customTags) {
       final parts = tag.split(':');
       if (parts.length >= 2) {
         tags.add([parts[0], parts.sublist(1).join(':')]);
@@ -188,6 +224,11 @@ class NIP94Metadata {
     int? durationMs,
     double? fps,
     DateTime? createdAt,
+    String? thumbnailUrl,
+    String? magnetLink,
+    String? torrentHash,
+    String? originalHash,
+    Map<String, String>? additionalTags,
   }) {
     return NIP94Metadata(
       url: url ?? this.url,
@@ -201,6 +242,11 @@ class NIP94Metadata {
       durationMs: durationMs ?? this.durationMs,
       fps: fps ?? this.fps,
       createdAt: createdAt ?? this.createdAt,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      magnetLink: magnetLink ?? this.magnetLink,
+      torrentHash: torrentHash ?? this.torrentHash,
+      originalHash: originalHash ?? this.originalHash,
+      additionalTags: additionalTags ?? this.additionalTags,
     );
   }
   

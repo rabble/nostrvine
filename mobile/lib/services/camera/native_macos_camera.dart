@@ -67,8 +67,17 @@ class NativeMacOSCamera {
   /// Stop video recording and return file path
   static Future<String?> stopRecording() async {
     try {
-      debugPrint('🔵 [NativeMacOSCamera] Calling stopRecording method');
-      final result = await _channel.invokeMethod<String>('stopRecording');
+      debugPrint('🔵 [NativeMacOSCamera] Calling stopRecording method with timeout');
+      
+      // Add timeout to prevent hanging forever
+      final result = await _channel.invokeMethod<String>('stopRecording').timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('⏰ [NativeMacOSCamera] stopRecording timed out after 3 seconds');
+          return null;
+        },
+      );
+      
       debugPrint('🔵 [NativeMacOSCamera] StopRecording result: $result');
       if (result != null) {
         debugPrint('📁 [NativeMacOSCamera] Video saved to: $result');

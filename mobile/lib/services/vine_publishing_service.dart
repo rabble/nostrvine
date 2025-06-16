@@ -14,6 +14,7 @@ import '../models/nip94_metadata.dart';
 import '../services/gif_service.dart';
 import '../services/nostr_service.dart';
 import '../services/camera_service.dart';
+import '../services/processing_monitor.dart';
 
 /// Publishing state for vine content
 enum PublishingState {
@@ -149,6 +150,7 @@ class OfflineVineData {
 class VinePublishingService extends ChangeNotifier {
   final GifService _gifService;
   final NostrService _nostrService;
+  final ProcessingStatusMonitor _processingMonitor;
   
   PublishingState _state = PublishingState.idle;
   double _progress = 0.0;
@@ -166,8 +168,10 @@ class VinePublishingService extends ChangeNotifier {
   VinePublishingService({
     required GifService gifService,
     required NostrService nostrService,
+    ProcessingStatusMonitor? processingMonitor,
   }) : _gifService = gifService,
-       _nostrService = nostrService {
+       _nostrService = nostrService,
+       _processingMonitor = processingMonitor ?? ProcessingStatusMonitor() {
     _loadOfflineQueue();
     _startPeriodicOfflineCheck();
   }
@@ -226,31 +230,37 @@ class VinePublishingService extends ChangeNotifier {
       // Step 2: Calculate file hash
       final sha256Hash = _calculateSHA256(gifResult.gifBytes);
       
-      String fileUrl;
+      NIP94Metadata metadata;
       if (uploadToBackend) {
-        // Step 3a: Upload to backend (future implementation)
-        _updateState(PublishingState.uploadingToBackend, 0.5, 'Uploading to backend...');
-        fileUrl = await _uploadToBackend(gifResult.gifBytes, caption);
+        // Step 3a: Upload to backend with processing monitoring
+        metadata = await _uploadToBackendWithProcessing(
+          gifResult.gifBytes, 
+          caption,
+          altText: altText,
+          hashtags: hashtags,
+        );
+        
+        _updateState(PublishingState.broadcastingToNostr, 0.8, 'Creating Nostr event...');
       } else {
         // Step 3b: Use local data URL for testing
-        fileUrl = _createDataUrl(gifResult.gifBytes);
+        final fileUrl = _createDataUrl(gifResult.gifBytes);
+        
+        _updateState(PublishingState.broadcastingToNostr, 0.7, 'Creating Nostr event...');
+        
+        // Create metadata locally for testing
+        metadata = NIP94Metadata.fromGifResult(
+          url: fileUrl,
+          sha256Hash: sha256Hash,
+          width: gifResult.width,
+          height: gifResult.height,
+          sizeBytes: gifResult.gifBytes.length,
+          summary: caption,
+          altText: altText,
+          durationMs: recordingResult.frameCount > 1 ? 
+            (recordingResult.frameCount * 200) : null, // 200ms per frame
+          fps: recordingResult.frameCount > 1 ? 5.0 : null,
+        );
       }
-      
-      _updateState(PublishingState.broadcastingToNostr, 0.7, 'Creating Nostr event...');
-      
-      // Step 4: Create NIP-94 metadata
-      final metadata = NIP94Metadata.fromGifResult(
-        url: fileUrl,
-        sha256Hash: sha256Hash,
-        width: gifResult.width,
-        height: gifResult.height,
-        sizeBytes: gifResult.gifBytes.length,
-        summary: caption,
-        altText: altText,
-        durationMs: recordingResult.frameCount > 1 ? 
-          (recordingResult.frameCount * 200) : null, // 200ms per frame
-        fps: recordingResult.frameCount > 1 ? 5.0 : null,
-      );
       
       _updateState(PublishingState.broadcastingToNostr, 0.8, 'Broadcasting to Nostr...');
       
@@ -371,26 +381,126 @@ class VinePublishingService extends ChangeNotifier {
     return 'data:image/gif;base64,$base64Data';
   }
   
-  /// Upload to backend (placeholder implementation with retry support)
-  Future<String> _uploadToBackend(Uint8List data, String caption) async {
-    // TODO: Implement actual backend upload using NIP-96
-    // For now, simulate upload with delay and potential failure
-    
+  /// Upload to backend using NIP-96 with processing monitoring
+  Future<NIP94Metadata> _uploadToBackendWithProcessing(
+    Uint8List data, 
+    String caption, {
+    String? altText,
+    List<String> hashtags = const [],
+  }) async {
     // Check connectivity before upload
     if (!await _isConnected()) {
       throw SocketException('No internet connection available for backend upload');
     }
     
-    await Future.delayed(const Duration(seconds: 2));
+    _updateState(PublishingState.uploadingToBackend, 0.3, 'Uploading to backend...');
     
-    // Simulate occasional failures for testing retry logic
-    if (DateTime.now().millisecond % 10 < 2) { // 20% failure rate
-      throw Exception('Backend temporarily unavailable');
+    try {
+      // Step 1: Upload file to backend
+      final uploadResponse = await _performNIP96Upload(data, caption);
+      
+      if (uploadResponse.isError) {
+        throw Exception(uploadResponse.message ?? 'Upload failed');
+      }
+      
+      // Step 2: Handle immediate success or async processing
+      if (uploadResponse.isSuccess && uploadResponse.nip94Event != null) {
+        // Upload completed immediately
+        return uploadResponse.nip94Event!;
+      }
+      
+      if (uploadResponse.isProcessing && uploadResponse.hasProcessingUrl) {
+        // Upload successful, but processing required
+        _updateState(PublishingState.waitingForProcessing, 0.5, 'Processing your vine...');
+        
+        return await _monitorProcessing(
+          uploadResponse.processingUrl!,
+          jobId: uploadResponse.jobId,
+        );
+      }
+      
+      throw Exception('Unexpected upload response: ${uploadResponse.status}');
+      
+    } catch (e) {
+      debugPrint('❌ Backend upload failed: $e');
+      rethrow;
     }
+  }
+  
+  /// Perform NIP-96 compliant file upload
+  Future<BackendUploadResponse> _performNIP96Upload(Uint8List data, String caption) async {
+    const backendUrl = 'https://nostrvine-backend.workers.dev'; // TODO: Make configurable
     
-    // Return mock URL
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'https://nostrvine-backend.workers.dev/files/vine_$timestamp.gif';
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$backendUrl/upload'),
+      );
+      
+      // Add file
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        data,
+        filename: 'vine_${DateTime.now().millisecondsSinceEpoch}.gif',
+      ));
+      
+      // Add metadata
+      request.fields['caption'] = caption;
+      request.fields['content_type'] = 'image/gif';
+      
+      // Send request
+      final response = await request.send().timeout(const Duration(seconds: 30));
+      final responseBody = await response.stream.bytesToString();
+      
+      if (response.statusCode == 200 || response.statusCode == 202) {
+        final jsonData = jsonDecode(responseBody) as Map<String, dynamic>;
+        return BackendUploadResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Upload failed: HTTP ${response.statusCode} - $responseBody');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ NIP-96 upload error: $e');
+      rethrow;
+    }
+  }
+  
+  /// Monitor backend processing with real-time updates
+  Future<NIP94Metadata> _monitorProcessing(String processingUrl, {String? jobId}) async {
+    try {
+      // Set up progress updates
+      final progressSubscription = _processingMonitor.monitorProcessing(
+        processingUrl: processingUrl,
+        jobId: jobId,
+      ).listen((status) {
+        final progressValue = 0.5 + (status.progress ?? 0.0) * 0.3; // 50-80% range
+        _updateState(
+          PublishingState.waitingForProcessing,
+          progressValue,
+          status.displayMessage,
+        );
+      });
+      
+      // Wait for completion
+      final metadata = await _processingMonitor.waitForProcessing(
+        processingUrl,
+        jobId: jobId,
+        timeout: const Duration(minutes: 5),
+      );
+      
+      await progressSubscription.cancel();
+      return metadata;
+      
+    } catch (e) {
+      debugPrint('❌ Processing monitoring failed: $e');
+      rethrow;
+    }
+  }
+  
+  /// Upload to backend (legacy method for compatibility)
+  Future<String> _uploadToBackend(Uint8List data, String caption) async {
+    final metadata = await _uploadToBackendWithProcessing(data, caption);
+    return metadata.url;
   }
   
   /// Update publishing state and notify listeners
@@ -664,6 +774,7 @@ class VinePublishingService extends ChangeNotifier {
   @override
   void dispose() {
     _retryTimer?.cancel();
+    _processingMonitor.dispose();
     super.dispose();
   }
 }
