@@ -2,10 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/camera_service.dart';
 import '../services/gif_service.dart';
 import '../services/nostr_service.dart';
 import '../services/vine_publishing_service.dart';
+import '../services/content_moderation_service.dart';
+import '../services/content_reporting_service.dart';
+import '../widgets/content_warning.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -19,6 +23,8 @@ class _CameraScreenState extends State<CameraScreen> {
   final GifService _gifService = GifService();
   late final NostrService _nostrService;
   VinePublishingService? _publishingService;
+  ContentModerationService? _moderationService;
+  ContentReportingService? _reportingService;
   String? _errorMessage;
   GifResult? _lastGifResult;
   VineRecordingResult? _lastRecordingResult;
@@ -34,6 +40,8 @@ class _CameraScreenState extends State<CameraScreen> {
     _cameraService?.dispose();
     _nostrService.dispose();
     _publishingService?.dispose();
+    _moderationService?.dispose();
+    _reportingService?.dispose();
     super.dispose();
   }
 
@@ -44,6 +52,26 @@ class _CameraScreenState extends State<CameraScreen> {
       gifService: _gifService,
       nostrService: _nostrService,
     );
+    
+    // Initialize content moderation services
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _moderationService = ContentModerationService(
+        nostrService: _nostrService,
+        prefs: prefs,
+      );
+      _reportingService = ContentReportingService(
+        nostrService: _nostrService,
+        prefs: prefs,
+      );
+      
+      await _moderationService!.initialize();
+      await _reportingService!.initialize();
+      debugPrint('✅ Content moderation services initialized');
+    } catch (e) {
+      debugPrint('⚠️ Content moderation initialization failed: $e');
+      // Continue anyway - moderation is optional
+    }
     
     // Initialize Nostr service
     try {

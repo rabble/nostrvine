@@ -94,7 +94,8 @@ export enum NIP96ErrorCode {
   INSUFFICIENT_PAYMENT = 'insufficient_payment',
   SERVER_ERROR = 'server_error',
   CONTENT_BLOCKED = 'content_blocked',
-  QUOTA_EXCEEDED = 'quota_exceeded'
+  QUOTA_EXCEEDED = 'quota_exceeded',
+  CONTENT_POLICY_VIOLATION = 'content_policy_violation'
 }
 
 /**

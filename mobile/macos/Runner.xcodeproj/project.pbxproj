@@ -23,6 +23,8 @@
 /* Begin PBXBuildFile section */
 		043D5643D45B22F542707F33 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E135999D0225C44C64BD2ABE /* Pods_RunnerTests.framework */; };
 		0F7521ED84CA628072AB0F54 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1195E9EBB29E1054E64B0844 /* Pods_Runner.framework */; };
+		2DD63C4A2E00A62100B40DED /* NativeCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD63C492E00A62100B40DED /* NativeCameraPlugin.swift */; };
+		2DD63C4B2E00A62100B40DED /* NativeCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD63C492E00A62100B40DED /* NativeCameraPlugin.swift */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
@@ -64,6 +66,8 @@
 /* Begin PBXFileReference section */
 		062E69100F11E99B019C8B2B /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		1195E9EBB29E1054E64B0844 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		2DD63C492E00A62100B40DED /* NativeCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCameraPlugin.swift; sourceTree = "<group>"; };
+		2DD63C4C2E00A62500B40DED /* Flutter Assemble-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Flutter Assemble-Bridging-Header.h"; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
@@ -132,12 +136,14 @@
 		33CC10E42044A3C60003C045 = {
 			isa = PBXGroup;
 			children = (
+				2DD63C492E00A62100B40DED /* NativeCameraPlugin.swift */,
 				33FAB671232836740065AC1E /* Runner */,
 				33CEB47122A05771004F2AC0 /* Flutter */,
 				331C80D6294CF71000263BE5 /* RunnerTests */,
 				33CC10EE2044A3C60003C045 /* Products */,
 				D73912EC22F37F3D000D13A0 /* Frameworks */,
 				D0E297CFAD01AB3A73086A8C /* Pods */,
+				2DD63C4C2E00A62500B40DED /* Flutter Assemble-Bridging-Header.h */,
 			);
 			sourceTree = "<group>";
 		};
@@ -195,7 +201,6 @@
 				A18AB93A66C10B85E5997693 /* Pods-RunnerTests.release.xcconfig */,
 				062E69100F11E99B019C8B2B /* Pods-RunnerTests.profile.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -279,6 +284,7 @@
 					};
 					33CC111A2044C6BA0003C045 = {
 						CreatedOnToolsVersion = 9.2;
+						LastSwiftMigration = 1640;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -429,6 +435,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2DD63C4B2E00A62100B40DED /* NativeCameraPlugin.swift in Sources */,
 				331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -439,6 +446,7 @@
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
+				2DD63C4A2E00A62100B40DED /* NativeCameraPlugin.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -587,8 +595,11 @@
 		338D0CEB231458BD00FA5F75 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Manual;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Flutter Assemble-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Profile;
 		};
@@ -739,16 +750,23 @@
 		33CC111C2044C6BA0003C045 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Manual;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Flutter Assemble-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
 		33CC111D2044C6BA0003C045 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Flutter Assemble-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};

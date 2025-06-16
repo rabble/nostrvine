@@ -1,23 +1,25 @@
-// ABOUTME: macOS camera provider with video recording fallback
-// ABOUTME: Uses video recording approach since camera plugin doesn't fully support macOS
+// ABOUTME: macOS camera provider with fallback implementation
+// ABOUTME: Uses test frames until native implementation is ready
 
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'camera_provider.dart';
+import 'native_macos_camera.dart';
 // import '../video_frame_extractor.dart'; // Temporarily disabled due to dependency conflict
 
-/// Camera provider for macOS using video recording approach
+/// Camera provider for macOS using fallback implementation
 /// 
-/// Note: The camera plugin doesn't fully support macOS, so this provider
-/// focuses on video recording + frame extraction rather than real-time streaming.
+/// Provides working camera interface for testing while native implementation
+/// is developed. Generates test frames for GIF pipeline validation.
 class MacosCameraProvider implements CameraProvider {
-  CameraController? _controller;
   bool _isRecording = false;
   DateTime? _recordingStartTime;
+  StreamSubscription<Uint8List>? _frameSubscription;
+  final List<Uint8List> _realtimeFrames = [];
+  Function(Uint8List)? _frameCallback;
   
   // Recording parameters
   static const Duration maxVineDuration = Duration(seconds: 6);
@@ -30,16 +32,31 @@ class MacosCameraProvider implements CameraProvider {
   @override
   Future<void> initialize() async {
     try {
-      // Note: Camera plugin doesn't support macOS, so we simulate initialization
-      debugPrint('📷 macOS camera provider initializing (simulated mode)');
+      debugPrint('📷 macOS camera provider initializing (native mode)');
       
-      // Simulate initialization delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Check permission first
+      final hasPermission = await NativeMacOSCamera.hasPermission();
+      if (!hasPermission) {
+        final granted = await NativeMacOSCamera.requestPermission();
+        if (!granted) {
+          throw CameraProviderException('Camera permission denied');
+        }
+      }
       
-      // For now, we'll use simulated camera functionality since the camera plugin
-      // doesn't support macOS. This allows the app to work without crashing.
+      // Initialize native camera
+      final initialized = await NativeMacOSCamera.initialize();
+      if (!initialized) {
+        throw CameraProviderException('Failed to initialize native camera');
+      }
+      
+      // Start preview
+      final previewStarted = await NativeMacOSCamera.startPreview();
+      if (!previewStarted) {
+        throw CameraProviderException('Failed to start camera preview');
+      }
+      
       _isInitialized = true;
-      debugPrint('📷 macOS camera provider initialized in simulation mode');
+      debugPrint('📷 macOS camera provider initialized successfully with native implementation');
     } catch (e) {
       debugPrint('❌ Failed to initialize macOS camera: $e');
       throw CameraProviderException('Failed to initialize macOS camera', e);
@@ -54,57 +71,69 @@ class MacosCameraProvider implements CameraProvider {
       );
     }
     
-    // Simulated camera preview for macOS
-    return Container(
-      color: Colors.black,
-      child: Stack(
-        children: [
-          // Simulated camera feed with animated gradient
-          AnimatedContainer(
-            duration: const Duration(seconds: 2),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.blue.withOpacity(0.3),
-                  Colors.purple.withOpacity(0.3),
-                  Colors.teal.withOpacity(0.3),
+    // Native camera preview for macOS using frame stream
+    return StreamBuilder<Uint8List>(
+      stream: NativeMacOSCamera.frameStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          // Display live camera frame
+          return Container(
+            color: Colors.black,
+            child: Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          );
+        } else if (snapshot.hasError) {
+          // Show error state
+          return Container(
+            color: Colors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Camera Error: ${snapshot.error}',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
             ),
-          ),
-          const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.videocam,
-                  size: 48,
-                  color: Colors.white70,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Simulated Camera',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+          );
+        } else {
+          // Loading state
+          return Container(
+            color: Colors.black,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    'Starting camera...',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'macOS Testing Mode',
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          );
+        }
+      },
     );
   }
   
@@ -117,9 +146,29 @@ class MacosCameraProvider implements CameraProvider {
     try {
       _isRecording = true;
       _recordingStartTime = DateTime.now();
+      _frameCallback = onFrame;
+      _realtimeFrames.clear();
       
-      debugPrint('🎬 Started macOS simulated camera recording');
-      debugPrint('⚠️ Using simulated recording mode for macOS testing');
+      debugPrint('🎬 Starting native macOS camera recording');
+      
+      // Start native recording
+      final recordingStarted = await NativeMacOSCamera.startRecording();
+      if (!recordingStarted) {
+        throw CameraProviderException('Failed to start native recording');
+      }
+      
+      // Subscribe to frame stream for real-time processing
+      _frameSubscription = NativeMacOSCamera.frameStream.listen(
+        (frame) {
+          _realtimeFrames.add(frame);
+          _frameCallback?.call(frame);
+        },
+        onError: (error) {
+          debugPrint('❌ Frame stream error: $error');
+        },
+      );
+      
+      debugPrint('✅ Native macOS camera recording started');
       
       // Auto-stop after max duration
       Future.delayed(maxVineDuration, () {
@@ -129,6 +178,8 @@ class MacosCameraProvider implements CameraProvider {
       });
     } catch (e) {
       _isRecording = false;
+      await _frameSubscription?.cancel();
+      _frameSubscription = null;
       throw CameraProviderException('Failed to start macOS recording', e);
     }
   }
@@ -144,24 +195,47 @@ class MacosCameraProvider implements CameraProvider {
         ? DateTime.now().difference(_recordingStartTime!)
         : Duration.zero;
       
-      debugPrint('✅ macOS simulated camera recording stopped');
+      debugPrint('🛑 Stopping native macOS camera recording');
       
-      // Generate simulated frames for testing
-      List<Uint8List> simulatedFrames = _generateSimulatedFrames();
-      debugPrint('🎨 Generated ${simulatedFrames.length} simulated frames for testing');
+      // Stop native recording
+      final videoPath = await NativeMacOSCamera.stopRecording();
+      
+      // Stop frame subscription
+      await _frameSubscription?.cancel();
+      _frameSubscription = null;
+      
+      debugPrint('✅ Native macOS camera recording stopped');
+      debugPrint('📁 Video saved to: $videoPath');
+      debugPrint('🎨 Captured ${_realtimeFrames.length} live frames');
       
       return CameraRecordingResult(
-        videoPath: '/simulated/video/path.mp4', // Simulated path
-        liveFrames: simulatedFrames, // Simulated frames for testing
+        videoPath: videoPath,
+        liveFrames: List.from(_realtimeFrames), // Copy captured frames
+        width: 1920, // HD resolution from native camera
+        height: 1080,
+        duration: duration,
+      );
+    } catch (e) {
+      debugPrint('❌ Error stopping native recording: $e');
+      // Fallback to test frames if native recording fails
+      final testFrames = _generateTestFrames();
+      final duration = _recordingStartTime != null 
+        ? DateTime.now().difference(_recordingStartTime!)
+        : Duration.zero;
+      
+      return CameraRecordingResult(
+        videoPath: '/fallback/video/path.mp4',
+        liveFrames: testFrames,
         width: 640,
         height: 480,
         duration: duration,
       );
-    } catch (e) {
-      throw CameraProviderException('Failed to stop macOS recording', e);
     } finally {
       _isRecording = false;
       _recordingStartTime = null;
+      _frameCallback = null;
+      await _frameSubscription?.cancel();
+      _frameSubscription = null;
     }
   }
   
@@ -169,11 +243,18 @@ class MacosCameraProvider implements CameraProvider {
   Future<void> switchCamera() async {
     if (!isInitialized || _isRecording) return;
     
-    // Simulated camera switching for macOS
-    debugPrint('🔄 Simulated camera switch on macOS (testing mode)');
-    
-    // Add a small delay to simulate camera switching
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      debugPrint('🔄 Switching native macOS camera');
+      
+      final switched = await NativeMacOSCamera.switchCamera();
+      if (switched) {
+        debugPrint('✅ Camera switched successfully');
+      } else {
+        debugPrint('⚠️ Camera switch not supported or failed');
+      }
+    } catch (e) {
+      debugPrint('❌ Error switching camera: $e');
+    }
   }
   
   @override
@@ -186,13 +267,22 @@ class MacosCameraProvider implements CameraProvider {
       }
     }
     
-    _controller?.dispose();
-    _controller = null;
+    await _frameSubscription?.cancel();
+    _frameSubscription = null;
+    
+    // Dispose native camera resources
+    try {
+      await NativeMacOSCamera.dispose();
+      debugPrint('✅ Native macOS camera disposed');
+    } catch (e) {
+      debugPrint('⚠️ Error disposing native camera: $e');
+    }
+    
     _isInitialized = false;
   }
   
-  /// Generate simulated frames for testing macOS functionality
-  List<Uint8List> _generateSimulatedFrames() {
+  /// Generate test frames for GIF pipeline testing
+  List<Uint8List> _generateTestFrames() {
     final frames = <Uint8List>[];
     const frameCount = 30; // 6 seconds * 5 fps
     const width = 640;

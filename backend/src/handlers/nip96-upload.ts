@@ -19,6 +19,11 @@ import {
   extractDimensions,
   extractDuration 
 } from '../utils/nip94-generator';
+import { 
+  createContentSafetyScanner, 
+  reportCSAMToAuthorities,
+  ContentSafetyResult 
+} from './csam-detection';
 
 /**
  * Handle NIP-96 file upload requests
@@ -84,6 +89,55 @@ export async function handleNIP96Upload(
     const fileData = await file.arrayBuffer();
     const sha256Hash = await calculateSHA256(fileData);
     const fileId = `${Date.now()}-${sha256Hash.substring(0, 8)}`;
+
+    // Create initial metadata for content safety scanning
+    const tempMetadata: FileMetadata = {
+      id: fileId,
+      filename: file.name,
+      content_type: file.type,
+      size: file.size,
+      sha256: sha256Hash,
+      uploaded_at: Date.now(),
+      url: '', // Will be set after processing
+    };
+
+    // Perform content safety scan (CSAM detection and other safety checks)
+    const safetyScanner = createContentSafetyScanner();
+    const safetyResult = await safetyScanner.scanContent(fileData, tempMetadata);
+
+    // Handle CSAM detection
+    if (safetyResult.violations.csam?.isCSAM) {
+      // Report to authorities if CSAM is detected
+      await reportCSAMToAuthorities(tempMetadata, safetyResult.violations.csam, env);
+      
+      return createErrorResponse(
+        NIP96ErrorCode.CONTENT_POLICY_VIOLATION,
+        'Content violates platform policies and cannot be uploaded',
+        403
+      );
+    }
+
+    // Handle other safety violations
+    if (!safetyResult.isSafe) {
+      const violationTypes = [];
+      if (safetyResult.violations.violence) violationTypes.push('violence');
+      if (safetyResult.violations.adult) violationTypes.push('adult content');
+      if (safetyResult.violations.spam) violationTypes.push('spam');
+
+      return createErrorResponse(
+        NIP96ErrorCode.CONTENT_POLICY_VIOLATION,
+        `Content flagged for: ${violationTypes.join(', ')}. Please review community guidelines.`,
+        403
+      );
+    }
+
+    // Additional file validation
+    if (!validateFileContent(fileData, file.type)) {
+      return createErrorResponse(
+        NIP96ErrorCode.INVALID_FILE_TYPE,
+        'File content validation failed'
+      );
+    }
 
     // Check if file requires Stream processing (videos)
     if (requiresStreamProcessing(file.type)) {
