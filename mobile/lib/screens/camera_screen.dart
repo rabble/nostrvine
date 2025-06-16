@@ -635,30 +635,30 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _convertFramesToGif(VineRecordingResult recordingResult) async {
     try {
-      // Show the new publishing progress dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => PublishingProgressDialog(
-          publishingService: _publishingService!,
-        ),
+      // First create GIF locally so we can show it even if publishing fails
+      final gifService = GifService();
+      final gifResult = await gifService.createGifFromFrames(
+        frames: recordingResult.frames,
+        originalWidth: 640, // Default camera resolution - frames are JPEG so size will be detected
+        originalHeight: 480,
+        quality: GifQuality.medium,
       );
-
-      // Start publishing workflow (will create GIF internally)
-      final result = await _publishingService!.publishVine(
-        recordingResult: recordingResult,
-        caption: 'Test vine created from camera', // TODO: Allow user to enter caption
-        hashtags: ['nostrvine', 'test'],
-        uploadToBackend: false, // Use local testing for now
-      );
-
-      // Close progress dialog
+      
+      // Show GIF preview first
       if (mounted) {
-        Navigator.of(context).pop();
+        _showGifPreview(gifResult);
       }
+      
+      // Then try to publish in background
+      try {
+        final result = await _publishingService!.publishVine(
+          recordingResult: recordingResult,
+          caption: 'Test vine created from camera',
+          hashtags: ['nostrvine', 'test'],
+          uploadToBackend: false,
+        );
 
-      if (result.success && result.metadata != null) {
-        if (mounted) {
+        if (result.success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Vine published successfully to Nostr!'),
@@ -667,26 +667,24 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
           );
         }
-      } else {
+      } catch (publishError) {
+        debugPrint('❌ Publishing failed: $publishError');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Publishing failed: ${result.error ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
+              content: Text('GIF created but publishing failed'),
+              backgroundColor: Colors.orange,
             ),
           );
         }
       }
-    } catch (e) {
-      // Close progress dialog if still open
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
       
+    } catch (e) {
+      debugPrint('❌ Failed to create GIF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to publish vine: $e'),
+            content: Text('Failed to create GIF: $e'),
             backgroundColor: Colors.red,
           ),
         );

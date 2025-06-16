@@ -28,13 +28,13 @@ class NostrVineApp extends StatelessWidget {
         // Core Nostr service
         ChangeNotifierProxyProvider<NostrKeyManager, NostrService>(
           create: (context) => NostrService(context.read<NostrKeyManager>()),
-          update: (_, keyManager, __) => NostrService(keyManager),
+          update: (_, keyManager, previous) => previous ?? NostrService(keyManager),
         ),
         
         // Video event service depends on Nostr service
         ChangeNotifierProxyProvider<NostrService, VideoEventService>(
           create: (context) => VideoEventService(context.read<NostrService>()),
-          update: (_, nostrService, __) => VideoEventService(nostrService),
+          update: (_, nostrService, previous) => previous ?? VideoEventService(nostrService),
         ),
         
         // Video feed provider depends on both services
@@ -43,7 +43,7 @@ class NostrVineApp extends StatelessWidget {
             videoEventService: context.read<VideoEventService>(),
             nostrService: context.read<NostrService>(),
           ),
-          update: (_, videoEventService, nostrService, __) => VideoFeedProvider(
+          update: (_, videoEventService, nostrService, previous) => previous ?? VideoFeedProvider(
             videoEventService: videoEventService,
             nostrService: nostrService,
           ),
@@ -55,7 +55,7 @@ class NostrVineApp extends StatelessWidget {
             gifService: GifService(),
             nostrService: context.read<NostrService>(),
           ),
-          update: (_, nostrService, __) => VinePublishingService(
+          update: (_, nostrService, previous) => previous ?? VinePublishingService(
             gifService: GifService(),
             nostrService: nostrService,
           ),
