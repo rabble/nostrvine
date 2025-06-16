@@ -208,10 +208,9 @@ class ProcessingStatusMonitor extends ChangeNotifier {
     String? jobId,
   }) async {
     final completer = Completer<NIP94Metadata>();
-    final streamKey = jobId ?? processingUrl;
     
     late StreamSubscription subscription;
-    Timer? timeoutTimer;
+    late Timer timeoutTimer;
     
     // Set up timeout
     timeoutTimer = Timer(timeout, () {
@@ -233,7 +232,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
       ).listen(
         (status) {
           if (status.isCompleted && status.metadata != null) {
-            timeoutTimer?.cancel();
+            timeoutTimer.cancel();
             subscription.cancel();
             if (!completer.isCompleted) {
               completer.complete(status.metadata!);
@@ -260,7 +259,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
       
       return await completer.future;
     } catch (e) {
-      timeoutTimer?.cancel();
+      timeoutTimer.cancel();
       subscription.cancel();
       rethrow;
     }

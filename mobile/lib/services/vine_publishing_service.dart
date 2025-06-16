@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -357,8 +356,6 @@ class VinePublishingService extends ChangeNotifier {
     bool uploadToBackend = false,
     int maxRetryOverride = -1,
   }) async {
-    final originalMaxRetries = maxRetries;
-    
     return publishVine(
       recordingResult: recordingResult,
       caption: caption,
@@ -497,11 +494,6 @@ class VinePublishingService extends ChangeNotifier {
     }
   }
   
-  /// Upload to backend (legacy method for compatibility)
-  Future<String> _uploadToBackend(Uint8List data, String caption) async {
-    final metadata = await _uploadToBackendWithProcessing(data, caption);
-    return metadata.url;
-  }
   
   /// Update publishing state and notify listeners
   void _updateState(PublishingState newState, double newProgress, String message) {
