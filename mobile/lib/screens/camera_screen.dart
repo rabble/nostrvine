@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../services/camera_service.dart';
 import '../services/gif_service.dart';
+import '../services/nostr_service.dart';
+import '../services/vine_publishing_service.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -14,19 +17,45 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   CameraService? _cameraService;
   final GifService _gifService = GifService();
+  late final NostrService _nostrService;
+  late final VinePublishingService _publishingService;
   String? _errorMessage;
   GifResult? _lastGifResult;
+  VineRecordingResult? _lastRecordingResult;
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    _initializeServices();
   }
 
   @override
   void dispose() {
     _cameraService?.dispose();
+    _nostrService.dispose();
+    _publishingService.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeServices() async {
+    // Initialize Nostr and publishing services
+    _nostrService = NostrService();
+    _publishingService = VinePublishingService(
+      gifService: _gifService,
+      nostrService: _nostrService,
+    );
+    
+    // Initialize Nostr service
+    try {
+      await _nostrService.initialize();
+      debugPrint('✅ Nostr service initialized');
+    } catch (e) {
+      debugPrint('⚠️ Nostr service initialization failed: $e');
+      // Continue anyway - we can publish locally without Nostr
+    }
+    
+    // Initialize camera
+    await _initializeCamera();
   }
 
   Future<void> _initializeCamera() async {
@@ -74,20 +103,53 @@ class _CameraScreenState extends State<CameraScreen> {
                         icon: const Icon(Icons.close, color: Colors.white, size: 28),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _getTimerText(cameraService),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      Row(
+                        children: [
+                          // Offline queue indicator
+                          if (_publishingService.hasOfflineContent)
+                            GestureDetector(
+                              onTap: _showOfflineQueueDialog,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.cloud_off, color: Colors.white, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_publishingService.offlineQueueCount}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          // Timer
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _getTimerText(cameraService),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                       IconButton(
                         icon: const Icon(
@@ -257,12 +319,17 @@ class _CameraScreenState extends State<CameraScreen> {
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: (_lastGifResult != null) 
+                                  ? Colors.purple 
+                                  : Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(25),
+                              border: (_lastGifResult != null) 
+                                  ? Border.all(color: Colors.white, width: 2)
+                                  : null,
                             ),
                             child: IconButton(
-                              icon: const Icon(
-                                Icons.arrow_forward,
+                              icon: Icon(
+                                (_lastGifResult != null) ? Icons.publish : Icons.arrow_forward,
                                 color: Colors.white,
                                 size: 24,
                               ),
@@ -295,7 +362,7 @@ class _CameraScreenState extends State<CameraScreen> {
       child: Transform.scale(
         scale: 1.0,
         child: Center(
-          child: CameraPreview(cameraService.controller!),
+          child: cameraService.cameraPreview,
         ),
       ),
     );
@@ -444,6 +511,9 @@ class _CameraScreenState extends State<CameraScreen> {
       final result = await cameraService.stopRecording();
       
       if (mounted && result.hasFrames) {
+        // Store recording result for publishing
+        _lastRecordingResult = result;
+        
         // Convert frames to GIF
         await _convertFramesToGif(result);
         
@@ -643,14 +713,12 @@ class _CameraScreenState extends State<CameraScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        if (_lastGifResult != null) {
-                          _showGifPreview(_lastGifResult!);
-                        }
+                        _publishToNostr();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
                       ),
-                      child: const Text('Share'),
+                      child: const Text('Share to Nostr'),
                     ),
                   ),
                 ],
@@ -706,11 +774,196 @@ class _CameraScreenState extends State<CameraScreen> {
   void _proceedToEdit() {
     if (_lastGifResult == null) return;
     
-    // TODO: Navigate to editing/posting screen with GIF data
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Ready to share: ${_lastGifResult!.frameCount} frame GIF (${_lastGifResult!.fileSizeMB.toStringAsFixed(2)}MB)',
+    // Show dialog to get caption and publish to Nostr
+    _showPublishDialog();
+  }
+
+  void _showPublishDialog() {
+    final TextEditingController captionController = TextEditingController();
+    final TextEditingController hashtagsController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Publish to Nostr'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: captionController,
+              decoration: const InputDecoration(
+                labelText: 'Caption',
+                hintText: 'What\'s happening?',
+              ),
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: hashtagsController,
+              decoration: const InputDecoration(
+                labelText: 'Hashtags',
+                hintText: 'vine,nostr,gif (comma separated)',
+              ),
+              textCapitalization: TextCapitalization.none,
+            ),
+            const SizedBox(height: 16),
+            if (_lastGifResult != null)
+              Text(
+                'GIF: ${_lastGifResult!.frameCount} frames, ${_lastGifResult!.fileSizeMB.toStringAsFixed(2)}MB',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              final caption = captionController.text.trim();
+              final hashtagsText = hashtagsController.text.trim();
+              final hashtags = hashtagsText.isNotEmpty 
+                  ? hashtagsText.split(',').map((h) => h.trim()).where((h) => h.isNotEmpty).toList()
+                  : <String>[];
+              
+              _publishToNostr(caption: caption, hashtags: hashtags);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+            ),
+            child: const Text('Publish'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _publishToNostr({String? caption, List<String>? hashtags}) async {
+    if (_lastRecordingResult == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No recording to publish'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Use provided values or defaults
+    final publishCaption = caption ?? 'Check out my NostrVine!';
+    final publishHashtags = hashtags ?? ['nostrvine', 'vine', 'nostr'];
+
+    // Show publishing progress
+    _showPublishingProgress();
+
+    try {
+      final result = await _publishingService.publishVineLocal(
+        recordingResult: _lastRecordingResult!,
+        caption: publishCaption,
+        hashtags: publishHashtags,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close progress dialog
+
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.retryCount > 0 
+                  ? '🎉 Vine published successfully after ${result.retryCount} retries!'
+                  : '🎉 Vine published to Nostr successfully!'
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else if (result.isOfflineQueued) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('📱 Vine queued for publishing when connection is restored'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'View Queue',
+                textColor: Colors.white,
+                onPressed: _showOfflineQueueDialog,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.retryCount > 0
+                  ? 'Failed to publish after ${result.retryCount} retries: ${result.error}'
+                  : 'Failed to publish: ${result.error}'
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+              action: result.retryCount < 3
+                ? SnackBarAction(
+                    label: 'Retry',
+                    textColor: Colors.white,
+                    onPressed: () => _publishToNostr(caption: publishCaption, hashtags: publishHashtags),
+                  )
+                : null,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close progress dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Publishing failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showPublishingProgress() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListenableBuilder(
+                listenable: _publishingService,
+                builder: (context, _) {
+                  return Column(
+                    children: [
+                      CircularProgressIndicator(
+                        value: _publishingService.progress,
+                        color: Colors.purple,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _publishingService.statusMessage ?? 'Publishing...',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${(_publishingService.progress * 100).toInt()}%',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -727,5 +980,180 @@ class _CameraScreenState extends State<CameraScreen> {
     final remainingSeconds = totalSeconds - (totalSeconds * progress).round();
     
     return '${remainingSeconds}s';
+  }
+  
+  void _showOfflineQueueDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.cloud_off, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('Offline Queue'),
+            const Spacer(),
+            if (_publishingService.offlineQueueCount > 0)
+              Chip(
+                label: Text('${_publishingService.offlineQueueCount}'),
+                backgroundColor: Colors.orange.withOpacity(0.2),
+              ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_publishingService.offlineQueueCount == 0)
+                const Text('No content waiting to be published.')
+              else ...[
+                Text(
+                  'You have ${_publishingService.offlineQueueCount} vine(s) waiting to be published when your connection is restored.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                // Connection status
+                FutureBuilder<bool>(
+                  future: _checkConnectionStatus(),
+                  builder: (context, snapshot) {
+                    final isConnected = snapshot.data ?? false;
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isConnected ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isConnected ? Colors.green : Colors.red,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isConnected ? Icons.wifi : Icons.wifi_off,
+                            color: isConnected ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isConnected ? 'Connected' : 'No connection',
+                            style: TextStyle(
+                              color: isConnected ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          if (_publishingService.offlineQueueCount > 0) ...[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showClearQueueConfirmation();
+              },
+              child: const Text('Clear Queue'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _retryOfflineQueue();
+              },
+              child: const Text('Retry Now'),
+            ),
+          ],
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<bool> _checkConnectionStatus() async {
+    try {
+      final result = await InternetAddress.lookup('relay.damus.io');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  void _showClearQueueConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Offline Queue'),
+        content: Text(
+          'Are you sure you want to clear all ${_publishingService.offlineQueueCount} queued vine(s)? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _clearOfflineQueue();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _clearOfflineQueue() async {
+    await _publishingService.clearOfflineQueue();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🗑️ Offline queue cleared'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+  
+  Future<void> _retryOfflineQueue() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔄 Retrying offline queue...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    try {
+      await _publishingService.retryOfflineQueue();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Offline queue processing completed'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to process offline queue: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 }
