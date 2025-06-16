@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'widgets/main_navigation.dart';
+import 'package:provider/provider.dart';
+import 'screens/camera_screen.dart';
+import 'screens/feed_screen.dart';
+import 'screens/profile_screen.dart';
+import 'services/nostr_service.dart';
+import 'services/video_event_service.dart';
+import 'providers/video_feed_provider.dart';
 
 void main() {
   runApp(const NostrVineApp());
@@ -11,26 +17,92 @@ class NostrVineApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'NostrVine',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.purple,
-        scaffoldBackgroundColor: Colors.black,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
+    return MultiProvider(
+      providers: [
+        // Core Nostr service
+        ChangeNotifierProvider(create: (_) => NostrService()),
+        
+        // Video event service depends on Nostr service
+        ChangeNotifierProxyProvider<NostrService, VideoEventService>(
+          create: (context) => VideoEventService(context.read<NostrService>()),
+          update: (_, nostrService, __) => VideoEventService(nostrService),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Colors.black,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
+        
+        // Video feed provider depends on both services
+        ChangeNotifierProxyProvider2<VideoEventService, NostrService, VideoFeedProvider>(
+          create: (context) => VideoFeedProvider(
+            videoEventService: context.read<VideoEventService>(),
+            nostrService: context.read<NostrService>(),
+          ),
+          update: (_, videoEventService, nostrService, __) => VideoFeedProvider(
+            videoEventService: videoEventService,
+            nostrService: nostrService,
+          ),
         ),
+      ],
+      child: MaterialApp(
+        title: 'NostrVine',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          primarySwatch: Colors.purple,
+          scaffoldBackgroundColor: Colors.black,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Colors.black,
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+          ),
+        ),
+        home: const MainNavigationScreen(),
       ),
-      home: const MainNavigation(),
+    );
+  }
+}
+
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+  
+  final List<Widget> _screens = [
+    const FeedScreen(),
+    const CameraScreen(),
+    const ProfileScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Feed',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt),
+            label: 'Camera',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 }

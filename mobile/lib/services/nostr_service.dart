@@ -121,18 +121,17 @@ class NostrService extends ChangeNotifier {
     return await broadcastEvent(event);
   }
   
-  /// Subscribe to events (for future feed implementation)
-  Future<void> subscribeToEvents({
+  /// Subscribe to events
+  NostrEventsStream subscribeToEvents({
     required List<NostrFilter> filters,
-    required Function(NostrEvent) onEvent,
-  }) async {
+  }) {
     if (!_isInitialized) {
       throw NostrServiceException('Nostr service not initialized');
     }
     
-    // Implementation for event subscription would go here
-    // This would use Nostr.instance.relaysService.startEventsSubscription
-    debugPrint('🔔 Event subscription not yet implemented');
+    // Create stream for events
+    final request = NostrRequest(filters: filters);
+    return Nostr.instance.relaysService.startEventsSubscription(request: request);
   }
   
   /// Add a new relay

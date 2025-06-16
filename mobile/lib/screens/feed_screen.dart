@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/video_feed_provider.dart';
+import '../models/video_event.dart';
+import '../widgets/video_feed_item.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -9,6 +13,32 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final ScrollController _scrollController = ScrollController();
+  
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    
+    // Initialize video feed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeFeed();
+    });
+  }
+  
+  void _initializeFeed() async {
+    final provider = context.read<VideoFeedProvider>();
+    if (!provider.isInitialized) {
+      await provider.initialize();
+    }
+  }
+  
+  void _onScroll() {
+    if (_scrollController.position.pixels >= 
+        _scrollController.position.maxScrollExtent - 200) {
+      // Load more when near bottom
+      context.read<VideoFeedProvider>().loadMoreEvents();
+    }
+  }
 
   @override
   void dispose() {
@@ -46,216 +76,130 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshFeed,
-        child: ListView.builder(
-          controller: _scrollController,
-          itemCount: 10, // Placeholder count
-          itemBuilder: (context, index) {
-            return _buildVineItem(index);
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVineItem(int index) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      margin: const EdgeInsets.only(bottom: 1),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Stack(
-        children: [
-          // Video/GIF placeholder
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.grey[800]!,
-                    Colors.grey[900]!,
-                  ],
-                ),
+      body: Consumer<VideoFeedProvider>(
+        builder: (context, provider, child) {
+          if (!provider.isInitialized && provider.isLoading) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text(
+                    'Connecting to Nostr relays...',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ],
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.play_circle_outline,
-                  size: 80,
-                  color: Colors.white54,
-                ),
+            );
+          }
+          
+          if (provider.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${provider.error}',
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => provider.retry(),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            ),
-          ),
+            );
+          }
           
-          // Right side interaction panel
-          Positioned(
-            right: 12,
-            bottom: 100,
-            child: Column(
-              children: [
-                _buildInteractionButton(
-                  Icons.favorite_border,
-                  '${42 + index}',
-                  () => _toggleLike(index),
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.chat_bubble_outline,
-                  '${8 + index}',
-                  () => _openComments(index),
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.share_outlined,
-                  'Share',
-                  () => _shareVine(index),
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.more_horiz,
-                  '',
-                  () => _showMoreOptions(index),
-                ),
-              ],
-            ),
-          ),
-          
-          // Bottom user info and caption
-          Positioned(
-            left: 12,
-            bottom: 20,
-            right: 80,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.person, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '@nostrviner${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Follow',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+          if (!provider.hasEvents) {
+            return RefreshIndicator(
+              onRefresh: () => provider.refreshFeed(),
+              child: ListView(
+                children: const [
+                  SizedBox(height: 200),
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.video_library_outlined, 
+                             color: Colors.white54, size: 64),
+                        SizedBox(height: 16),
+                        Text(
+                          'No video content found',
+                          style: TextStyle(color: Colors.white54, fontSize: 16),
                         ),
-                      ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Pull to refresh or wait for new content',
+                          style: TextStyle(color: Colors.white38, fontSize: 14),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This is a sample vine caption for item $index! #nostr #vine #decentralized',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '2 hours ago',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInteractionButton(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          if (label.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                ],
               ),
+            );
+          }
+          
+          return RefreshIndicator(
+            onRefresh: () => provider.refreshFeed(),
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: provider.videoEvents.length + (provider.isLoadingMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= provider.videoEvents.length) {
+                  // Loading indicator at bottom
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  );
+                }
+                
+                final videoEvent = provider.videoEvents[index];
+                return VideoFeedItem(
+                  videoEvent: videoEvent,
+                  onLike: () => _toggleLike(videoEvent),
+                  onComment: () => _openComments(videoEvent),
+                  onShare: () => _shareVine(videoEvent),
+                  onMoreOptions: () => _showMoreOptions(videoEvent),
+                  onUserTap: () => _openUserProfile(videoEvent.pubkey),
+                );
+              },
             ),
-          ],
-        ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _refreshFeed() async {
-    // TODO: Implement feed refresh logic
-    await Future.delayed(const Duration(seconds: 1));
-  }
-
-  void _toggleLike(int index) {
-    // TODO: Implement like functionality
+  void _toggleLike(VideoEvent videoEvent) {
+    // TODO: Implement NIP-25 reaction events for likes
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Liked vine $index')),
+      SnackBar(content: Text('Liked video by ${videoEvent.displayPubkey}')),
     );
   }
 
-  void _openComments(int index) {
-    // TODO: Implement comments functionality
+  void _openComments(VideoEvent videoEvent) {
+    // TODO: Implement comments functionality with threaded replies
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening comments for vine $index')),
+      SnackBar(content: Text('Opening comments for ${videoEvent.id.substring(0, 8)}...')),
     );
   }
 
-  void _shareVine(int index) {
-    // TODO: Implement share functionality
+  void _shareVine(VideoEvent videoEvent) {
+    // TODO: Implement share functionality with Nostr event links
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Sharing vine $index')),
+      SnackBar(content: Text('Sharing video: ${videoEvent.title ?? "Video"}')),
     );
   }
 
-  void _showMoreOptions(int index) {
-    // TODO: Implement more options (report, block, etc.)
+  void _showMoreOptions(VideoEvent videoEvent) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -266,22 +210,46 @@ class _FeedScreenState extends State<FeedScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.flag, color: Colors.white),
-              title: const Text('Report', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
+              title: const Text('Report Content', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement content reporting
+              },
             ),
             ListTile(
               leading: const Icon(Icons.block, color: Colors.white),
               title: const Text('Block User', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement user blocking
+              },
             ),
             ListTile(
               leading: const Icon(Icons.copy, color: Colors.white),
-              title: const Text('Copy Link', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
+              title: const Text('Copy Event ID', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Copy Nostr event ID to clipboard
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.white),
+              title: const Text('View Profile', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _openUserProfile(videoEvent.pubkey);
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+  
+  void _openUserProfile(String pubkey) {
+    // TODO: Navigate to user profile screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Opening profile for user: ${pubkey.substring(0, 8)}...')),
     );
   }
 }
