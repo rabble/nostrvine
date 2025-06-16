@@ -32,33 +32,42 @@ class MacosCameraProvider implements CameraProvider {
   @override
   Future<void> initialize() async {
     try {
-      debugPrint('📷 macOS camera provider initializing (native mode)');
+      debugPrint('🔵 [MacosCameraProvider] Starting initialization (native mode)');
       
       // Check permission first
+      debugPrint('🔵 [MacosCameraProvider] Checking camera permission...');
       final hasPermission = await NativeMacOSCamera.hasPermission();
+      debugPrint('🔵 [MacosCameraProvider] Has permission: $hasPermission');
+      
       if (!hasPermission) {
+        debugPrint('🔵 [MacosCameraProvider] Requesting camera permission...');
         final granted = await NativeMacOSCamera.requestPermission();
+        debugPrint('🔵 [MacosCameraProvider] Permission granted: $granted');
         if (!granted) {
           throw CameraProviderException('Camera permission denied');
         }
       }
       
       // Initialize native camera
+      debugPrint('🔵 [MacosCameraProvider] Initializing native camera...');
       final initialized = await NativeMacOSCamera.initialize();
+      debugPrint('🔵 [MacosCameraProvider] Native camera initialized: $initialized');
       if (!initialized) {
         throw CameraProviderException('Failed to initialize native camera');
       }
       
       // Start preview
+      debugPrint('🔵 [MacosCameraProvider] Starting camera preview...');
       final previewStarted = await NativeMacOSCamera.startPreview();
+      debugPrint('🔵 [MacosCameraProvider] Preview started: $previewStarted');
       if (!previewStarted) {
         throw CameraProviderException('Failed to start camera preview');
       }
       
       _isInitialized = true;
-      debugPrint('📷 macOS camera provider initialized successfully with native implementation');
+      debugPrint('✅ [MacosCameraProvider] Successfully initialized with native implementation');
     } catch (e) {
-      debugPrint('❌ Failed to initialize macOS camera: $e');
+      debugPrint('❌ [MacosCameraProvider] Failed to initialize: $e');
       throw CameraProviderException('Failed to initialize macOS camera', e);
     }
   }
@@ -139,6 +148,9 @@ class MacosCameraProvider implements CameraProvider {
   
   @override
   Future<void> startRecording({Function(Uint8List)? onFrame}) async {
+    debugPrint('🔵 [MacosCameraProvider] startRecording called');
+    debugPrint('🔵 [MacosCameraProvider] initialized: $isInitialized, recording: $_isRecording');
+    
     if (!isInitialized || _isRecording) {
       throw CameraProviderException('Cannot start recording: camera not ready or already recording');
     }
@@ -149,34 +161,42 @@ class MacosCameraProvider implements CameraProvider {
       _frameCallback = onFrame;
       _realtimeFrames.clear();
       
-      debugPrint('🎬 Starting native macOS camera recording');
+      debugPrint('🔵 [MacosCameraProvider] Starting native macOS camera recording');
       
       // Start native recording
       final recordingStarted = await NativeMacOSCamera.startRecording();
+      debugPrint('🔵 [MacosCameraProvider] Native recording started: $recordingStarted');
       if (!recordingStarted) {
         throw CameraProviderException('Failed to start native recording');
       }
       
       // Subscribe to frame stream for real-time processing
+      debugPrint('🔵 [MacosCameraProvider] Setting up frame stream subscription');
       _frameSubscription = NativeMacOSCamera.frameStream.listen(
         (frame) {
           _realtimeFrames.add(frame);
           _frameCallback?.call(frame);
+          // Log every 30th frame to avoid spam but show activity
+          if (_realtimeFrames.length % 30 == 0) {
+            debugPrint('🖼️ [MacosCameraProvider] Captured ${_realtimeFrames.length} frames');
+          }
         },
         onError: (error) {
-          debugPrint('❌ Frame stream error: $error');
+          debugPrint('❌ [MacosCameraProvider] Frame stream error: $error');
         },
       );
       
-      debugPrint('✅ Native macOS camera recording started');
+      debugPrint('✅ [MacosCameraProvider] Native macOS camera recording started successfully');
       
       // Auto-stop after max duration
       Future.delayed(maxVineDuration, () {
         if (_isRecording) {
+          debugPrint('⏱️ [MacosCameraProvider] Auto-stopping recording after ${maxVineDuration.inSeconds}s');
           stopRecording();
         }
       });
     } catch (e) {
+      debugPrint('❌ [MacosCameraProvider] Failed to start recording: $e');
       _isRecording = false;
       await _frameSubscription?.cancel();
       _frameSubscription = null;
@@ -189,6 +209,9 @@ class MacosCameraProvider implements CameraProvider {
     if (!_isRecording) {
       throw CameraProviderException('Not currently recording');
     }
+    
+    // Immediately set recording to false to prevent duplicate calls
+    _isRecording = false;
     
     try {
       final duration = _recordingStartTime != null 
@@ -209,7 +232,7 @@ class MacosCameraProvider implements CameraProvider {
       debugPrint('🎨 Captured ${_realtimeFrames.length} live frames');
       
       return CameraRecordingResult(
-        videoPath: videoPath,
+        videoPath: videoPath ?? '/tmp/nostrvine_recording.mp4', // Provide fallback if null
         liveFrames: List.from(_realtimeFrames), // Copy captured frames
         width: 1920, // HD resolution from native camera
         height: 1080,
@@ -231,7 +254,6 @@ class MacosCameraProvider implements CameraProvider {
         duration: duration,
       );
     } finally {
-      _isRecording = false;
       _recordingStartTime = null;
       _frameCallback = null;
       await _frameSubscription?.cancel();
@@ -246,7 +268,7 @@ class MacosCameraProvider implements CameraProvider {
     try {
       debugPrint('🔄 Switching native macOS camera');
       
-      final switched = await NativeMacOSCamera.switchCamera();
+      final switched = await NativeMacOSCamera.switchCamera(1);
       if (switched) {
         debugPrint('✅ Camera switched successfully');
       } else {

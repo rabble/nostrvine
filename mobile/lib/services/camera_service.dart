@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'camera/camera_provider.dart';
@@ -12,6 +11,50 @@ import 'camera/mobile_camera_provider.dart';
 import 'camera/web_camera_provider.dart';
 import 'camera/macos_camera_provider.dart';
 import 'camera/unsupported_camera_provider.dart';
+
+/// Camera recording configuration
+class CameraConfiguration {
+  final Duration recordingDuration;
+  final double targetFPS;
+  final bool enableAutoStop;
+  
+  const CameraConfiguration({
+    this.recordingDuration = const Duration(seconds: 6),
+    this.targetFPS = 5.0,
+    this.enableAutoStop = true,
+  });
+  
+  /// Create configuration for vine-style recording (3-15 seconds)
+  static CameraConfiguration vine({
+    Duration? duration,
+    double? fps,
+    bool? autoStop,
+  }) {
+    Duration clampedDuration;
+    if (duration != null) {
+      final seconds = duration.inSeconds;
+      final clampedSeconds = seconds.clamp(3, 15);
+      clampedDuration = Duration(seconds: clampedSeconds);
+    } else {
+      clampedDuration = const Duration(seconds: 6);
+    }
+    
+    final clampedFPS = fps?.clamp(3.0, 10.0) ?? 5.0;
+    
+    return CameraConfiguration(
+      recordingDuration: clampedDuration,
+      targetFPS: clampedFPS,
+      enableAutoStop: autoStop ?? true,
+    );
+  }
+  
+  int get targetFrameCount => (recordingDuration.inSeconds * targetFPS).round();
+  
+  @override
+  String toString() {
+    return 'CameraConfiguration(duration: ${recordingDuration.inSeconds}s, fps: $targetFPS, frames: $targetFrameCount)';
+  }
+}
 
 enum RecordingState {
   idle,
@@ -33,10 +76,15 @@ class CameraService extends ChangeNotifier {
   DateTime? _recordingStartTime;
   Timer? _progressTimer;
   
-  // Recording parameters - configurable
-  Duration maxVineDuration = const Duration(seconds: 6);
-  double targetFPS = 5.0;
-  int get targetFrameCount => (maxVineDuration.inSeconds * targetFPS).round();
+  // Recording configuration
+  CameraConfiguration _configuration = const CameraConfiguration();
+  
+  // Convenience getters for current configuration
+  Duration get maxVineDuration => _configuration.recordingDuration;
+  double get targetFPS => _configuration.targetFPS;
+  bool get enableAutoStop => _configuration.enableAutoStop;
+  int get targetFrameCount => _configuration.targetFrameCount;
+  CameraConfiguration get configuration => _configuration;
   
   /// Constructor with platform-specific provider selection
   CameraService() {
@@ -95,7 +143,7 @@ class CameraService extends ChangeNotifier {
   /// Start vine recording using hybrid approach
   Future<void> startRecording() async {
     if (!isInitialized || _isRecording) {
-      debugPrint('⚠️ Cannot start recording: initialized=${isInitialized}, recording=${_isRecording}');
+      debugPrint('⚠️ Cannot start recording: initialized=$isInitialized, recording=$_isRecording');
       return;
     }
     
@@ -117,7 +165,18 @@ class CameraService extends ChangeNotifier {
       // Start progress timer to update UI regularly
       _startProgressTimer();
       
+      // Set up auto-stop timer if enabled
+      if (enableAutoStop) {
+        Timer(maxVineDuration, () {
+          if (_isRecording) {
+            debugPrint('⏰ Auto-stopping recording after ${maxVineDuration.inSeconds}s');
+            stopRecording();
+          }
+        });
+      }
+      
       debugPrint('🎬 Started vine recording (provider-based approach)');
+      debugPrint('🕰️ Recording duration: ${maxVineDuration.inSeconds}s, Auto-stop: $enableAutoStop');
     } catch (e) {
       _setState(RecordingState.error);
       _isRecording = false; // Reset on error
@@ -195,19 +254,52 @@ class CameraService extends ChangeNotifier {
   /// Get camera preview widget
   Widget get cameraPreview => _provider.buildPreview();
   
-  /// Configure recording parameters
-  void configureRecording({
+  /// Update camera configuration
+  void updateConfiguration(CameraConfiguration newConfiguration) {
+    _configuration = newConfiguration;
+    debugPrint('📹 Updated camera configuration: $newConfiguration');
+    notifyListeners();
+  }
+  
+  /// Set recording duration (clamped to 3-15 seconds)
+  void setRecordingDuration(Duration duration) {
+    final seconds = duration.inSeconds.clamp(3, 15);
+    final clampedDuration = Duration(seconds: seconds);
+    
+    _configuration = CameraConfiguration(
+      recordingDuration: clampedDuration,
+      targetFPS: _configuration.targetFPS,
+      enableAutoStop: _configuration.enableAutoStop,
+    );
+    debugPrint('📹 Updated recording duration to ${clampedDuration.inSeconds}s');
+    notifyListeners();
+  }
+  
+  /// Set target frame rate (clamped to 3-10 FPS)
+  void setTargetFPS(double fps) {
+    final clampedFPS = fps.clamp(3.0, 10.0);
+    _configuration = CameraConfiguration(
+      recordingDuration: _configuration.recordingDuration,
+      targetFPS: clampedFPS,
+      enableAutoStop: _configuration.enableAutoStop,
+    );
+    debugPrint('📹 Updated target FPS to $clampedFPS');
+    notifyListeners();
+  }
+  
+  /// Configure recording using vine-style presets
+  void useVineConfiguration({
     Duration? duration,
-    double? frameRate,
+    double? fps,
+    bool? autoStop,
   }) {
-    if (duration != null) {
-      maxVineDuration = duration;
-      debugPrint('📹 Updated max recording duration to ${duration.inSeconds}s');
-    }
-    if (frameRate != null) {
-      targetFPS = frameRate;
-      debugPrint('📹 Updated target FPS to ${frameRate}');
-    }
+    _configuration = CameraConfiguration.vine(
+      duration: duration,
+      fps: fps,
+      autoStop: autoStop,
+    );
+    debugPrint('📹 Applied vine configuration: $_configuration');
+    notifyListeners();
   }
   
   /// Dispose resources

@@ -22,7 +22,7 @@ class ReportResult {
     required this.timestamp,
   });
 
-  static ReportResult success(String reportId) => ReportResult(
+  static ReportResult createSuccess(String reportId) => ReportResult(
     success: true,
     reportId: reportId,
     timestamp: DateTime.now(),
@@ -184,7 +184,7 @@ class ContentReportingService extends ChangeNotifier {
       notifyListeners();
 
       debugPrint('📢 Content report submitted: $reportId');
-      return ReportResult.success(reportId);
+      return ReportResult.createSuccess(reportId);
 
     } catch (e) {
       debugPrint('❌ Failed to submit content report: $e');

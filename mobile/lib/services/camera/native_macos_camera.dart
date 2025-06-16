@@ -16,11 +16,12 @@ class NativeMacOSCamera {
   /// Initialize the native camera
   static Future<bool> initialize() async {
     try {
+      debugPrint('🔵 [NativeMacOSCamera] Calling native initialize method');
       final result = await _channel.invokeMethod<bool>('initialize');
-      debugPrint('📷 Native macOS camera initialized: $result');
+      debugPrint('🔵 [NativeMacOSCamera] Initialize result: $result');
       return result ?? false;
     } catch (e) {
-      debugPrint('❌ Failed to initialize native macOS camera: $e');
+      debugPrint('❌ [NativeMacOSCamera] Failed to initialize native camera: $e');
       return false;
     }
   }
@@ -28,11 +29,12 @@ class NativeMacOSCamera {
   /// Start camera preview
   static Future<bool> startPreview() async {
     try {
+      debugPrint('🔵 [NativeMacOSCamera] Calling startPreview method');
       final result = await _channel.invokeMethod<bool>('startPreview');
-      debugPrint('📸 Native macOS camera preview started: $result');
+      debugPrint('🔵 [NativeMacOSCamera] StartPreview result: $result');
       return result ?? false;
     } catch (e) {
-      debugPrint('❌ Failed to start native camera preview: $e');
+      debugPrint('❌ [NativeMacOSCamera] Failed to start native camera preview: $e');
       return false;
     }
   }
@@ -52,11 +54,12 @@ class NativeMacOSCamera {
   /// Start video recording
   static Future<bool> startRecording() async {
     try {
+      debugPrint('🔵 [NativeMacOSCamera] Calling startRecording method');
       final result = await _channel.invokeMethod<bool>('startRecording');
-      debugPrint('🎬 Native macOS camera recording started: $result');
+      debugPrint('🔵 [NativeMacOSCamera] StartRecording result: $result');
       return result ?? false;
     } catch (e) {
-      debugPrint('❌ Failed to start native camera recording: $e');
+      debugPrint('❌ [NativeMacOSCamera] Failed to start native camera recording: $e');
       return false;
     }
   }
@@ -64,11 +67,17 @@ class NativeMacOSCamera {
   /// Stop video recording and return file path
   static Future<String?> stopRecording() async {
     try {
+      debugPrint('🔵 [NativeMacOSCamera] Calling stopRecording method');
       final result = await _channel.invokeMethod<String>('stopRecording');
-      debugPrint('✅ Native macOS camera recording stopped: $result');
+      debugPrint('🔵 [NativeMacOSCamera] StopRecording result: $result');
+      if (result != null) {
+        debugPrint('📁 [NativeMacOSCamera] Video saved to: $result');
+      } else {
+        debugPrint('⚠️ [NativeMacOSCamera] No video path returned');
+      }
       return result;
     } catch (e) {
-      debugPrint('❌ Failed to stop native camera recording: $e');
+      debugPrint('❌ [NativeMacOSCamera] Failed to stop native camera recording: $e');
       return null;
     }
   }
@@ -83,6 +92,8 @@ class NativeMacOSCamera {
       _channel.setMethodCallHandler((call) async {
         if (call.method == 'onFrameAvailable') {
           final frameData = call.arguments as Uint8List;
+          // Uncomment for very verbose frame logging (will spam logs)
+          // debugPrint('🖼️ [NativeMacOSCamera] Frame received: ${frameData.length} bytes');
           _frameStreamController?.add(frameData);
         }
       });

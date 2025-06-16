@@ -10,6 +10,7 @@ import '../services/vine_publishing_service.dart';
 import '../services/content_moderation_service.dart';
 import '../services/content_reporting_service.dart';
 import '../widgets/content_warning.dart';
+import 'camera_settings_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -238,6 +239,8 @@ class _CameraScreenState extends State<CameraScreen> {
                   top: MediaQuery.of(context).size.height * 0.3,
                   child: Column(
                     children: [
+                      _buildSettingsButton(),
+                      const SizedBox(height: 20),
                       _buildEffectButton(Icons.face_retouching_natural, 'Beauty'),
                       const SizedBox(height: 20),
                       _buildEffectButton(Icons.filter_vintage, 'Filters'),
@@ -529,30 +532,82 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  Widget _buildSettingsButton() {
+    return GestureDetector(
+      onTap: () => _openSettings(),
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.pink.withOpacity(0.5), width: 1),
+            ),
+            child: const Icon(
+              Icons.settings,
+              color: Colors.pink,
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Settings',
+            style: TextStyle(
+              color: Colors.pink,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDuration(double progress) {
     final seconds = (progress * 6).round(); // 6 second max
     return '00:${seconds.toString().padLeft(2, '0')}';
   }
 
+  bool _isStartingRecording = false;
+  
   Future<void> _startRecording(CameraService? cameraService) async {
-    if (cameraService == null || !cameraService.isInitialized) return;
+    if (cameraService == null || !cameraService.isInitialized || _isStartingRecording || cameraService.isRecording) {
+      debugPrint('⚠️ Ignoring start recording request - isStarting: $_isStartingRecording, isRecording: ${cameraService?.isRecording}');
+      return;
+    }
 
+    _isStartingRecording = true;
     try {
+      debugPrint('🎬 UI: Starting recording...');
       await cameraService.startRecording();
+      debugPrint('✅ UI: Recording started successfully');
     } catch (e) {
+      debugPrint('❌ UI: Failed to start recording: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to start recording: $e')),
         );
       }
+    } finally {
+      _isStartingRecording = false;
     }
   }
 
+  bool _isStoppingRecording = false;
+  
   Future<void> _stopRecording(CameraService? cameraService) async {
-    if (cameraService == null || !cameraService.isRecording) return;
+    if (cameraService == null || !cameraService.isRecording || _isStoppingRecording) {
+      debugPrint('⚠️ Ignoring stop recording request - isRecording: ${cameraService?.isRecording}, isStopping: $_isStoppingRecording');
+      return;
+    }
 
+    _isStoppingRecording = true;
     try {
+      debugPrint('🛑 UI: Stopping recording...');
       final result = await cameraService.stopRecording();
+      debugPrint('✅ UI: Recording stopped successfully');
       
       if (mounted && result.hasFrames) {
         // Store recording result for publishing
@@ -569,11 +624,14 @@ class _CameraScreenState extends State<CameraScreen> {
         );
       }
     } catch (e) {
+      debugPrint('❌ UI: Failed to stop recording: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to stop recording: $e')),
         );
       }
+    } finally {
+      _isStoppingRecording = false;
     }
   }
 
@@ -805,6 +863,17 @@ class _CameraScreenState extends State<CameraScreen> {
     // TODO: Implement gallery/library functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Opening gallery...')),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider.value(
+          value: _cameraService,
+          child: const CameraSettingsScreen(),
+        ),
+      ),
     );
   }
 
