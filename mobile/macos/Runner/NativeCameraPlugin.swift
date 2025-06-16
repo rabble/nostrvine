@@ -284,47 +284,51 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     }
     
     private func stopRecording(result: @escaping FlutterResult) {
-        NSLog("🔵 [NativeCamera] Stopping recording...")
+        print("🔵 [NativeCamera] Stopping recording...")
         
         guard let movieOutput = movieOutput else {
-            NSLog("❌ [NativeCamera] Movie output not available for stopping")
+            print("❌ [NativeCamera] Movie output not available for stopping")
             result(nil)
             return
         }
         
         if !isRecording {
-            NSLog("⚠️ [NativeCamera] Not currently recording, cannot stop")
+            print("⚠️ [NativeCamera] Not currently recording, cannot stop")
             result(nil)
             return
         }
         
-        NSLog("🔵 [NativeCamera] Current movie output recording state: \(movieOutput.isRecording)")
+        print("🔵 [NativeCamera] Current movie output recording state: \(movieOutput.isRecording)")
         
         // If movie output says it's not recording, just return immediately
         if !movieOutput.isRecording {
-            NSLog("⚠️ [NativeCamera] Movie output not recording, returning fake path")
+            print("⚠️ [NativeCamera] Movie output not recording, returning fake path")
             isRecording = false
             result("/tmp/fake_video.mov")
             return
         }
         
-        NSLog("🔵 [NativeCamera] Storing result callback and stopping recording")
+        print("🔵 [NativeCamera] Storing result callback and stopping recording")
         // Store the result callback for when recording finishes
         stopRecordingResult = result
         
-        // Add a timeout in case the delegate never gets called
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        // Add a shorter timeout since macOS seems to have issues
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             if let strongSelf = self, strongSelf.stopRecordingResult != nil {
-                NSLog("⚠️ [NativeCamera] Stop recording timeout, forcing completion")
+                print("⚠️ [NativeCamera] Stop recording timeout (1s), forcing completion")
                 strongSelf.isRecording = false
-                strongSelf.stopRecordingResult?("/tmp/timeout_video.mov")
+                
+                // Try to get the expected output path for timeout case
+                let fallbackPath = strongSelf.outputURL?.path ?? "/tmp/timeout_video.mov"
+                strongSelf.stopRecordingResult?(fallbackPath)
                 strongSelf.stopRecordingResult = nil
             }
         }
         
+        print("🔵 [NativeCamera] Calling movieOutput.stopRecording()")
         movieOutput.stopRecording()
-        NSLog("🔵 [NativeCamera] Stop recording called on movieOutput")
-        NSLog("🔵 [NativeCamera] Movie output recording state after stop: \(movieOutput.isRecording)")
+        print("🔵 [NativeCamera] Stop recording called on movieOutput")
+        print("🔵 [NativeCamera] Movie output recording state after stop: \(movieOutput.isRecording)")
         // Result will be called in recording delegate method or timeout
     }
     
@@ -455,14 +459,22 @@ extension NativeCameraPlugin: AVCaptureVideoDataOutputSampleBufferDelegate {
 // MARK: - AVCaptureFileOutputRecordingDelegate
 extension NativeCameraPlugin: AVCaptureFileOutputRecordingDelegate {
     public func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        print("🔵 [NativeCamera] Recording finished delegate called")
+        print("🎬 [NativeCamera] === RECORDING DELEGATE CALLED ===")
         print("🔵 [NativeCamera] Output file URL: \(outputFileURL.path)")
+        print("🔵 [NativeCamera] Has stopRecordingResult callback: \(stopRecordingResult != nil)")
         
         isRecording = false
         
         if let error = error {
             print("❌ [NativeCamera] Recording finished with error: \(error.localizedDescription)")
-            stopRecordingResult?(FlutterError(code: "RECORDING_ERROR", message: error.localizedDescription, details: nil))
+            print("❌ [NativeCamera] Error code: \((error as NSError).code)")
+            print("❌ [NativeCamera] Error domain: \((error as NSError).domain)")
+            
+            if let stopResult = stopRecordingResult {
+                stopResult(FlutterError(code: "RECORDING_ERROR", message: error.localizedDescription, details: nil))
+            } else {
+                print("⚠️ [NativeCamera] No result callback to call for error")
+            }
         } else {
             print("✅ [NativeCamera] Recording finished successfully")
             print("📁 [NativeCamera] Final video path: \(outputFileURL.path)")
@@ -471,14 +483,21 @@ extension NativeCameraPlugin: AVCaptureFileOutputRecordingDelegate {
             if FileManager.default.fileExists(atPath: outputFileURL.path) {
                 let fileSize = try? FileManager.default.attributesOfItem(atPath: outputFileURL.path)[.size] as? Int64
                 print("📊 [NativeCamera] File exists, size: \(fileSize ?? 0) bytes")
+                
+                if let stopResult = stopRecordingResult {
+                    stopResult(outputFileURL.path)
+                } else {
+                    print("⚠️ [NativeCamera] No result callback to call for success")
+                }
             } else {
                 print("⚠️ [NativeCamera] Warning: File doesn't exist at path")
+                if let stopResult = stopRecordingResult {
+                    stopResult(nil) // Return nil if file doesn't exist
+                }
             }
-            
-            stopRecordingResult?(outputFileURL.path)
         }
         
         stopRecordingResult = nil
-        print("🔵 [NativeCamera] Recording delegate completed")
+        print("🔵 [NativeCamera] Recording delegate completed, callback cleared")
     }
 }
