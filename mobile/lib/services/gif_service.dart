@@ -137,18 +137,36 @@ class GifService {
     return processedFrames;
   }
   
-  /// Convert raw frame bytes to Image object
+  /// Convert frame bytes to Image object (supports both JPEG and RGB)
   Future<img.Image?> _convertRawBytesToImage(
-    Uint8List rawBytes,
+    Uint8List frameBytes,
     int width,
     int height,
   ) async {
     try {
-      // Assume RGB format from camera service
-      if (rawBytes.length != width * height * 3) {
-        debugPrint('⚠️ Unexpected frame size: expected ${width * height * 3}, got ${rawBytes.length}');
+      // Check if this looks like JPEG data (starts with FFD8)
+      if (frameBytes.length >= 2 && frameBytes[0] == 0xFF && frameBytes[1] == 0xD8) {
+        debugPrint('🖼️ Processing JPEG frame (${frameBytes.length} bytes)');
+        
+        // Decode JPEG directly
+        final image = img.decodeJpg(frameBytes);
+        if (image != null) {
+          debugPrint('✅ JPEG decoded: ${image.width}x${image.height}');
+          return image;
+        } else {
+          debugPrint('❌ Failed to decode JPEG frame');
+          return null;
+        }
+      }
+      
+      // Fallback: assume RGB format from camera service
+      final expectedSize = width * height * 3;
+      if (frameBytes.length != expectedSize) {
+        debugPrint('⚠️ Unexpected raw frame size: expected $expectedSize, got ${frameBytes.length}');
         return null;
       }
+      
+      debugPrint('🖼️ Processing raw RGB frame (${frameBytes.length} bytes)');
       
       // Create image from RGB bytes
       final image = img.Image(
@@ -160,9 +178,9 @@ class GifService {
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
           final index = (y * width + x) * 3;
-          final r = rawBytes[index];
-          final g = rawBytes[index + 1];
-          final b = rawBytes[index + 2];
+          final r = frameBytes[index];
+          final g = frameBytes[index + 1];
+          final b = frameBytes[index + 2];
           
           image.setPixelRgb(x, y, r, g, b);
         }
@@ -170,7 +188,7 @@ class GifService {
       
       return image;
     } catch (e) {
-      debugPrint('❌ Error converting raw bytes to image: $e');
+      debugPrint('❌ Error converting frame bytes to image: $e');
       return null;
     }
   }

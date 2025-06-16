@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:dart_nostr/dart_nostr.dart';
 import 'package:flutter/foundation.dart';
 import '../models/nip94_metadata.dart';
+import 'nostr_key_manager.dart';
 
 /// Core service for Nostr protocol integration
 class NostrService extends ChangeNotifier {
@@ -15,26 +16,37 @@ class NostrService extends ChangeNotifier {
     'wss://relay.current.fyi',
   ];
   
-  NostrKeyPairs? _keyPair;
+  final NostrKeyManager _keyManager;
   bool _isInitialized = false;
   List<String> _connectedRelays = [];
+  
+  /// Create NostrService with a key manager
+  NostrService(this._keyManager);
   
   // Getters
   bool get isInitialized => _isInitialized;
   List<String> get connectedRelays => List.unmodifiable(_connectedRelays);
-  String? get publicKey => _keyPair?.public;
-  bool get hasKeys => _keyPair != null;
+  String? get publicKey => _keyManager.publicKey;
+  bool get hasKeys => _keyManager.hasKeys;
+  NostrKeyManager get keyManager => _keyManager;
   int get relayCount => _connectedRelays.length;
   int get connectedRelayCount => _connectedRelays.length;
   
   /// Initialize Nostr service with user keys
   Future<void> initialize({
-    NostrKeyPairs? keyPair,
     List<String>? customRelays,
   }) async {
     try {
-      // Generate or use provided keys
-      _keyPair = keyPair ?? NostrKeyPairs.generate();
+      // Initialize key manager if not already done
+      if (!_keyManager.isInitialized) {
+        await _keyManager.initialize();
+      }
+      
+      // Ensure we have keys (generate if needed)
+      if (!_keyManager.hasKeys) {
+        debugPrint('🔑 No keys found, generating new identity...');
+        await _keyManager.generateKeys();
+      }
       
       // Connect to relays using Nostr instance
       final relaysToConnect = customRelays ?? defaultRelays;
@@ -73,8 +85,8 @@ class NostrService extends ChangeNotifier {
   
   /// Broadcast event to all connected relays
   Future<NostrBroadcastResult> broadcastEvent(NostrEvent event) async {
-    if (!_isInitialized || _keyPair == null) {
-      throw NostrServiceException('Nostr service not initialized');
+    if (!_isInitialized || !_keyManager.hasKeys) {
+      throw NostrServiceException('Nostr service not initialized or no keys available');
     }
     
     if (_connectedRelays.isEmpty) {
@@ -113,7 +125,7 @@ class NostrService extends ChangeNotifier {
     }
     
     final event = metadata.toNostrEvent(
-      keyPairs: _keyPair!,
+      keyPairs: _keyManager.keyPair!,
       content: content,
       hashtags: hashtags,
     );

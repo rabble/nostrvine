@@ -5,7 +5,10 @@ import 'screens/camera_screen.dart';
 import 'screens/feed_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/nostr_service.dart';
+import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
+import 'services/vine_publishing_service.dart';
+import 'services/gif_service.dart';
 import 'providers/video_feed_provider.dart';
 
 void main() {
@@ -19,8 +22,14 @@ class NostrVineApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Nostr key manager
+        ChangeNotifierProvider(create: (_) => NostrKeyManager()),
+        
         // Core Nostr service
-        ChangeNotifierProvider(create: (_) => NostrService()),
+        ChangeNotifierProxyProvider<NostrKeyManager, NostrService>(
+          create: (context) => NostrService(context.read<NostrKeyManager>()),
+          update: (_, keyManager, __) => NostrService(keyManager),
+        ),
         
         // Video event service depends on Nostr service
         ChangeNotifierProxyProvider<NostrService, VideoEventService>(
@@ -36,6 +45,18 @@ class NostrVineApp extends StatelessWidget {
           ),
           update: (_, videoEventService, nostrService, __) => VideoFeedProvider(
             videoEventService: videoEventService,
+            nostrService: nostrService,
+          ),
+        ),
+        
+        // Vine publishing service depends on Nostr service
+        ChangeNotifierProxyProvider<NostrService, VinePublishingService>(
+          create: (context) => VinePublishingService(
+            gifService: GifService(),
+            nostrService: context.read<NostrService>(),
+          ),
+          update: (_, nostrService, __) => VinePublishingService(
+            gifService: GifService(),
             nostrService: nostrService,
           ),
         ),

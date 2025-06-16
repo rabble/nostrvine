@@ -6,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/camera_service.dart';
 import '../services/gif_service.dart';
 import '../services/nostr_service.dart';
+import '../services/nostr_key_manager.dart';
 import '../services/vine_publishing_service.dart';
 import '../services/content_moderation_service.dart';
 import '../services/content_reporting_service.dart';
 import '../widgets/content_warning.dart';
+import '../widgets/publishing_progress.dart';
 import 'camera_settings_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -21,7 +23,6 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   CameraService? _cameraService;
-  final GifService _gifService = GifService();
   late final NostrService _nostrService;
   VinePublishingService? _publishingService;
   ContentModerationService? _moderationService;
@@ -47,12 +48,9 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _initializeServices() async {
-    // Initialize Nostr and publishing services
-    _nostrService = NostrService();
-    _publishingService = VinePublishingService(
-      gifService: _gifService,
-      nostrService: _nostrService,
-    );
+    // Get services from providers
+    _nostrService = context.read<NostrService>();
+    _publishingService = context.read<VinePublishingService>();
     
     // Initialize content moderation services
     try {
@@ -637,58 +635,58 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _convertFramesToGif(VineRecordingResult recordingResult) async {
     try {
-      // Show processing state
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                ),
-                SizedBox(width: 16),
-                Text('Creating GIF...'),
-              ],
-            ),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-
-      // Convert frames to GIF
-      final gifResult = await _gifService.createGifFromFrames(
-        frames: recordingResult.frames,
-        originalWidth: 640, // Assuming camera resolution - could be dynamic
-        originalHeight: 480,
-        quality: GifQuality.medium,
+      // Show the new publishing progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PublishingProgressDialog(
+          publishingService: _publishingService!,
+        ),
       );
 
-      if (mounted) {
-        setState(() {
-          _lastGifResult = gifResult;
-        });
+      // Start publishing workflow (will create GIF internally)
+      final result = await _publishingService!.publishVine(
+        recordingResult: recordingResult,
+        caption: 'Test vine created from camera', // TODO: Allow user to enter caption
+        hashtags: ['nostrvine', 'test'],
+        uploadToBackend: false, // Use local testing for now
+      );
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'GIF created! ${gifResult.frameCount} frames, ${gifResult.fileSizeMB.toStringAsFixed(2)}MB',
+      // Close progress dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (result.success && result.metadata != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Vine published successfully to Nostr!'),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.green,
             ),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Preview',
-              onPressed: () => _showGifPreview(gifResult),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Publishing failed: ${result.error ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
+      // Close progress dialog if still open
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create GIF: $e'),
+            content: Text('Failed to publish vine: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1047,50 +1045,17 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   void _showPublishingProgress() {
+    if (_publishingService == null) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_publishingService != null)
-                ListenableBuilder(
-                  listenable: _publishingService!,
-                  builder: (context, _) {
-                    return Column(
-                      children: [
-                        CircularProgressIndicator(
-                          value: _publishingService!.progress,
-                          color: Colors.purple,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _publishingService!.statusMessage ?? 'Publishing...',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${(_publishingService!.progress * 100).toInt()}%',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    );
-                  },
-                )
-              else
-                const Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Initializing...'),
-                  ],
-                ),
-            ],
-          ),
-        ),
+      builder: (context) => PublishingProgressDialog(
+        publishingService: _publishingService!,
+        onCancel: () {
+          _publishingService!.cancelPublishing();
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

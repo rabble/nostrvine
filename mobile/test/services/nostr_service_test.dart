@@ -5,14 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_nostr/dart_nostr.dart';
 import 'package:mocktail/mocktail.dart';
 import '../../lib/services/nostr_service.dart';
+import '../../lib/services/nostr_key_manager.dart';
 import '../../lib/models/nip94_metadata.dart';
 
 void main() {
   group('NostrService', () {
     late NostrService nostrService;
+    late NostrKeyManager keyManager;
     
     setUp(() {
-      nostrService = NostrService();
+      keyManager = NostrKeyManager();
+      nostrService = NostrService(keyManager);
     });
     
     tearDown(() {

@@ -254,22 +254,16 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         
-        // Create output file URL with proper directory structure
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let vineRecordingsDir = documentsPath.appendingPathComponent("VineRecordings")
-        
-        // Ensure recordings directory exists
-        do {
-            try FileManager.default.createDirectory(at: vineRecordingsDir, withIntermediateDirectories: true, attributes: nil)
-        } catch {
-            print("⚠️ [NativeCamera] Failed to create recordings directory: \(error)")
-        }
-        
+        // Create output file URL in app's temporary directory (not user Documents)
+        let tempDir = FileManager.default.temporaryDirectory
         let timestamp = Int(Date().timeIntervalSince1970)
-        outputURL = vineRecordingsDir.appendingPathComponent("vine_\(timestamp).mov")
+        outputURL = tempDir.appendingPathComponent("nostrvine_\(timestamp).mov")
         
-        print("🔵 [NativeCamera] Documents path: \(documentsPath)")
-        print("🔵 [NativeCamera] Output file: vine_\(timestamp).mov")
+        // Clean up old temporary files (older than 1 hour)
+        cleanupOldTempFiles(in: tempDir)
+        
+        print("🔵 [NativeCamera] Temp directory: \(tempDir)")
+        print("🔵 [NativeCamera] Output file: nostrvine_\(timestamp).mov")
         
         guard let outputURL = outputURL else {
             print("❌ [NativeCamera] Failed to create output URL")
@@ -311,28 +305,33 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         
-        print("🔵 [NativeCamera] Storing result callback and stopping recording")
-        // Store the result callback for when recording finishes
-        stopRecordingResult = result
-        
-        // Add a shorter timeout since macOS seems to have issues
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            if let strongSelf = self, strongSelf.stopRecordingResult != nil {
-                print("⚠️ [NativeCamera] Stop recording timeout (1s), forcing completion")
-                strongSelf.isRecording = false
-                
-                // Try to get the expected output path for timeout case
-                let fallbackPath = strongSelf.outputURL?.path ?? "/tmp/timeout_video.mov"
-                strongSelf.stopRecordingResult?(fallbackPath)
-                strongSelf.stopRecordingResult = nil
-            }
-        }
-        
         print("🔵 [NativeCamera] Calling movieOutput.stopRecording()")
         movieOutput.stopRecording()
         print("🔵 [NativeCamera] Stop recording called on movieOutput")
-        print("🔵 [NativeCamera] Movie output recording state after stop: \(movieOutput.isRecording)")
-        // Result will be called in recording delegate method or timeout
+        
+        // IMPROVED FIX: Wait a moment for file to be written, then return
+        isRecording = false
+        let expectedPath = outputURL?.path ?? "/tmp/nostrvine_recording.mov"
+        
+        print("🔧 [NativeCamera] Waiting for file to be written...")
+        
+        // Give AVFoundation a moment to write the file
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
+            if FileManager.default.fileExists(atPath: expectedPath) {
+                let fileSize = try? FileManager.default.attributesOfItem(atPath: expectedPath)[.size] as? Int64
+                print("✅ [NativeCamera] File written successfully: \(expectedPath)")
+                print("📊 [NativeCamera] File size: \(fileSize ?? 0) bytes")
+                result(expectedPath)
+            } else {
+                print("⚠️ [NativeCamera] File not found after delay, returning path anyway: \(expectedPath)")
+                result(expectedPath)
+            }
+        }
+        
+        // Clear any pending callback to prevent conflicts
+        stopRecordingResult = nil
     }
     
     private func requestPermission(result: @escaping FlutterResult) {
@@ -434,6 +433,36 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
         isRecording = false
         
         result(nil)
+    }
+    
+    /// Clean up old temporary video files to prevent storage buildup
+    private func cleanupOldTempFiles(in directory: URL) {
+        do {
+            let fileManager = FileManager.default
+            let files = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey], options: [])
+            
+            let oneHourAgo = Date().addingTimeInterval(-3600) // 1 hour ago
+            var cleanedCount = 0
+            
+            for fileURL in files {
+                // Only clean up nostrvine video files
+                if fileURL.lastPathComponent.starts(with: "nostrvine_") && fileURL.pathExtension == "mov" {
+                    if let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
+                       let creationDate = attributes[.creationDate] as? Date,
+                       creationDate < oneHourAgo {
+                        
+                        try fileManager.removeItem(at: fileURL)
+                        cleanedCount += 1
+                    }
+                }
+            }
+            
+            if cleanedCount > 0 {
+                print("🧹 [NativeCamera] Cleaned up \(cleanedCount) old temporary video files")
+            }
+        } catch {
+            print("⚠️ [NativeCamera] Failed to clean up temporary files: \(error)")
+        }
     }
 }
 
