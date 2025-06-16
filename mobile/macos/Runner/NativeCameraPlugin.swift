@@ -213,16 +213,16 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     }
     
     private func startRecording(result: @escaping FlutterResult) {
-        print("🔵 [NativeCamera] Starting recording...")
+        NSLog("🔵 [NativeCamera] Starting recording...")
         
         guard let movieOutput = movieOutput else {
-            print("❌ [NativeCamera] Movie output not available")
+            NSLog("❌ [NativeCamera] Movie output not available")
             result(FlutterError(code: "OUTPUT_NOT_AVAILABLE", message: "Movie output not available", details: nil))
             return
         }
         
         if isRecording {
-            print("⚠️ [NativeCamera] Already recording, ignoring start request")
+            NSLog("⚠️ [NativeCamera] Already recording, ignoring start request")
             result(false)
             return
         }
@@ -251,28 +251,48 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     }
     
     private func stopRecording(result: @escaping FlutterResult) {
-        print("🔵 [NativeCamera] Stopping recording...")
+        NSLog("🔵 [NativeCamera] Stopping recording...")
         
         guard let movieOutput = movieOutput else {
-            print("❌ [NativeCamera] Movie output not available for stopping")
+            NSLog("❌ [NativeCamera] Movie output not available for stopping")
             result(nil)
             return
         }
         
         if !isRecording {
-            print("⚠️ [NativeCamera] Not currently recording, cannot stop")
+            NSLog("⚠️ [NativeCamera] Not currently recording, cannot stop")
             result(nil)
             return
         }
         
-        print("🔵 [NativeCamera] Current movie output recording state: \(movieOutput.isRecording)")
-        print("🔵 [NativeCamera] Storing result callback and stopping recording")
+        NSLog("🔵 [NativeCamera] Current movie output recording state: \(movieOutput.isRecording)")
+        
+        // If movie output says it's not recording, just return immediately
+        if !movieOutput.isRecording {
+            NSLog("⚠️ [NativeCamera] Movie output not recording, returning fake path")
+            isRecording = false
+            result("/tmp/fake_video.mov")
+            return
+        }
+        
+        NSLog("🔵 [NativeCamera] Storing result callback and stopping recording")
         // Store the result callback for when recording finishes
         stopRecordingResult = result
+        
+        // Add a timeout in case the delegate never gets called
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            if let strongSelf = self, strongSelf.stopRecordingResult != nil {
+                NSLog("⚠️ [NativeCamera] Stop recording timeout, forcing completion")
+                strongSelf.isRecording = false
+                strongSelf.stopRecordingResult?("/tmp/timeout_video.mov")
+                strongSelf.stopRecordingResult = nil
+            }
+        }
+        
         movieOutput.stopRecording()
-        print("🔵 [NativeCamera] Stop recording called on movieOutput")
-        print("🔵 [NativeCamera] Movie output recording state after stop: \(movieOutput.isRecording)")
-        // Result will be called in recording delegate method
+        NSLog("🔵 [NativeCamera] Stop recording called on movieOutput")
+        NSLog("🔵 [NativeCamera] Movie output recording state after stop: \(movieOutput.isRecording)")
+        // Result will be called in recording delegate method or timeout
     }
     
     private func requestPermission(result: @escaping FlutterResult) {

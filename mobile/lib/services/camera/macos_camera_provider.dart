@@ -210,6 +210,8 @@ class MacosCameraProvider implements CameraProvider {
       throw CameraProviderException('Not currently recording');
     }
     
+    debugPrint('🔵 [MacosCameraProvider] stopRecording called, _isRecording: $_isRecording');
+    
     // Immediately set recording to false to prevent duplicate calls
     _isRecording = false;
     
@@ -222,6 +224,7 @@ class MacosCameraProvider implements CameraProvider {
       
       // Stop native recording
       final videoPath = await NativeMacOSCamera.stopRecording();
+      debugPrint('🔵 [MacosCameraProvider] Native stopRecording completed with path: $videoPath');
       
       // Stop frame subscription
       await _frameSubscription?.cancel();

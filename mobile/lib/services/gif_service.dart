@@ -1,8 +1,6 @@
 // ABOUTME: Service for converting captured frames into GIF animations
 // ABOUTME: Handles frame processing, optimization, and GIF encoding for vine content
 
-import 'dart:typed_data';
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
@@ -10,6 +8,32 @@ enum GifQuality {
   low,
   medium,
   high,
+}
+
+// Helper function for isolate-based GIF encoding to prevent UI blocking
+Uint8List _encodeGifInIsolate(Map<String, dynamic> params) {
+  final frames = params['frames'] as List<img.Image>;
+  final frameDelayMs = params['frameDelayMs'] as int;
+  
+  // Create GIF encoder for animation
+  final encoder = img.GifEncoder();
+  
+  // Start encoding with first frame
+  encoder.encode(frames.first);
+  
+  // Add subsequent frames
+  for (int i = 1; i < frames.length; i++) {
+    encoder.addFrame(frames[i], duration: frameDelayMs);
+  }
+  
+  // Finish encoding
+  final finalData = encoder.finish();
+  
+  if (finalData == null || finalData.isEmpty) {
+    throw Exception('Failed to encode GIF animation - encoder returned null/empty');
+  }
+  
+  return Uint8List.fromList(finalData);
 }
 
 class GifService {
@@ -127,7 +151,11 @@ class GifService {
       }
       
       // Create image from RGB bytes
-      final image = img.Image(width: width, height: height);
+      final image = img.Image(
+        width: width, 
+        height: height,
+        numChannels: 3,
+      );
       
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -178,40 +206,6 @@ class GifService {
     }
   }
   
-  /// Create a composite frame that visually represents motion (prototype solution)
-  img.Image _createCompositeFrame(List<img.Image> frames) {
-    if (frames.isEmpty) {
-      throw GifProcessingException('No frames to create composite');
-    }
-    
-    if (frames.length == 1) {
-      return frames.first;
-    }
-    
-    // Create a base frame from the middle frame
-    final baseFrame = frames[frames.length ~/ 2];
-    final compositeFrame = img.Image.from(baseFrame);
-    
-    // Blend frames to show motion trails
-    final numSamples = (frames.length / 4).ceil().clamp(2, 8); // Sample up to 8 frames
-    final step = frames.length / numSamples;
-    
-    for (int i = 0; i < numSamples; i++) {
-      final frameIndex = (i * step).round().clamp(0, frames.length - 1);
-      final frame = frames[frameIndex];
-      
-      // Blend frames with simple overlay to create motion effect
-      if (i < 4) { // Only blend first few frames to avoid over-processing
-        img.compositeImage(compositeFrame, frame, 
-          blend: img.BlendMode.multiply
-        );
-      }
-    }
-    
-    debugPrint('🎨 Created composite frame from ${frames.length} frames (${numSamples} samples)');
-    return compositeFrame;
-  }
-  
   /// Encode frames into GIF animation
   Future<Uint8List> _encodeGifAnimation(
     List<img.Image> frames,
@@ -229,23 +223,21 @@ class GifService {
         return Uint8List.fromList(staticGifBytes);
       }
       
-      // TODO: PROTOTYPE SOLUTION - Replace with proper animation once API is found
+      // Create proper animated GIF using isolate for performance
       debugPrint('🎬 Creating animated GIF with ${frames.length} frames');
-      debugPrint('⚠️ PROTOTYPE: Using composite frame approach until proper animation API is implemented');
+      debugPrint('⚡ Running GIF encoding in isolate to prevent UI blocking');
       
-      // Create a composite frame that shows motion by blending frames
-      // This is a prototype solution that creates visual variation
-      final compositeFrame = _createCompositeFrame(frames);
-      final gifData = img.encodeGif(compositeFrame);
-      final animatedGifBytes = Uint8List.fromList(gifData);
-      
-      debugPrint('✅ Created composite frame GIF (prototype): ${frames.length} frames blended');
-      debugPrint('📊 Composite GIF size: ${animatedGifBytes.length} bytes');
+      // Use compute() to run encoding in a separate isolate for better performance
+      final animatedGifBytes = await compute(_encodeGifInIsolate, {
+        'frames': frames,
+        'frameDelayMs': frameDelayMs,
+      });
       
       debugPrint('✅ Encoded animated GIF: ${frames.length} frames, ${frameDelayMs}ms delay');
       debugPrint('📊 Animation size: ${animatedGifBytes.length} bytes');
+      debugPrint('⚡ Encoding completed in isolate without blocking UI');
       
-      return Uint8List.fromList(animatedGifBytes);
+      return animatedGifBytes;
     } catch (e) {
       debugPrint('⚠️ GIF encoding failed, falling back to first frame: $e');
       
