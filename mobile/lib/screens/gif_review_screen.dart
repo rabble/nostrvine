@@ -27,29 +27,85 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
   Timer? _animationTimer;
   int _rebuildKey = 0;
   bool _isAppInForeground = true;
+  
+  // Intelligent backoff for animation timer
+  static const Duration _initialAnimationInterval = Duration(milliseconds: 200);
+  static const Duration _maxAnimationInterval = Duration(seconds: 5);
+  static const double _backoffMultiplier = 1.3;
+  Duration _currentAnimationInterval = _initialAnimationInterval;
+  DateTime? _lastUserInteraction;
+  int _consecutiveIdleCycles = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Only start animation timer when GIF is actually displayed and screen is active
-    // Use a much more reasonable interval to avoid excessive CPU usage
-    _startAnimationTimerIfNeeded();
+    _lastUserInteraction = DateTime.now();
+    // Start with fast animation, will backoff if no user interaction
+    _startAnimationTimerWithBackoff();
+    
+    // Listen for user interactions to reset backoff
+    _captionController.addListener(_onUserInteraction);
+    _hashtagsController.addListener(_onUserInteraction);
   }
   
-  void _startAnimationTimerIfNeeded() {
+  void _startAnimationTimerWithBackoff() {
     // Only animate if we have valid GIF data, screen is mounted, and app is in foreground
     if (widget.gifResult.gifBytes.isNotEmpty && mounted && _isAppInForeground) {
       _animationTimer?.cancel(); // Cancel any existing timer
-      _animationTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      
+      _animationTimer = Timer.periodic(_currentAnimationInterval, (timer) {
         if (mounted && _isAppInForeground) {
           setState(() {
             _rebuildKey++;
           });
+          
+          // Implement intelligent backoff
+          _updateAnimationBackoff();
         } else {
           timer.cancel();
         }
       });
+    }
+  }
+  
+  void _updateAnimationBackoff() {
+    final now = DateTime.now();
+    final timeSinceLastInteraction = now.difference(_lastUserInteraction ?? now);
+    
+    // If user hasn't interacted for 5 seconds, start backing off
+    if (timeSinceLastInteraction.inSeconds > 5) {
+      _consecutiveIdleCycles++;
+      
+      // Exponential backoff after idle period
+      if (_consecutiveIdleCycles > 10) { // Wait 10 cycles before backing off
+        final newInterval = Duration(
+          milliseconds: (_currentAnimationInterval.inMilliseconds * _backoffMultiplier).round()
+        );
+        
+        if (newInterval <= _maxAnimationInterval) {
+          _currentAnimationInterval = newInterval;
+          // Restart timer with new interval
+          _stopAnimationTimer();
+          _startAnimationTimerWithBackoff();
+          
+          debugPrint('🐌 GIF animation backing off to ${_currentAnimationInterval.inMilliseconds}ms (idle: ${timeSinceLastInteraction.inSeconds}s)');
+        }
+      }
+    }
+  }
+  
+  void _onUserInteraction() {
+    _lastUserInteraction = DateTime.now();
+    _consecutiveIdleCycles = 0;
+    
+    // Reset to fast animation on user interaction
+    if (_currentAnimationInterval != _initialAnimationInterval) {
+      _currentAnimationInterval = _initialAnimationInterval;
+      _stopAnimationTimer();
+      _startAnimationTimerWithBackoff();
+      
+      debugPrint('⚡ GIF animation reset to fast mode on user interaction');
     }
   }
   
@@ -64,7 +120,8 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
     switch (state) {
       case AppLifecycleState.resumed:
         _isAppInForeground = true;
-        _startAnimationTimerIfNeeded();
+        _onUserInteraction(); // Reset backoff when app resumes
+        _startAnimationTimerWithBackoff();
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
@@ -80,6 +137,8 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _stopAnimationTimer();
+    _captionController.removeListener(_onUserInteraction);
+    _hashtagsController.removeListener(_onUserInteraction);
     _captionController.dispose();
     _hashtagsController.dispose();
     super.dispose();
@@ -89,7 +148,9 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
+      body: GestureDetector(
+        onTap: _onUserInteraction, // Reset backoff on screen taps
+        child: SafeArea(
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -317,6 +378,8 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
               ),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

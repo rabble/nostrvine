@@ -160,18 +160,20 @@ class ProcessingStatusMonitor extends ChangeNotifier {
   final Map<String, StreamController<ProcessingStatusResponse>> _statusStreams = {};
   final Map<String, Timer> _pollTimers = {};
   
-  // Configuration - More conservative polling to reduce CPU usage
-  static const Duration defaultPollInterval = Duration(seconds: 5); // Reduced from 2s to 5s
-  static const Duration defaultTimeout = Duration(minutes: 5);
-  static const int maxRetries = 60; // Adjusted for longer interval
+  // Intelligent backoff configuration
+  static const Duration initialPollInterval = Duration(seconds: 1); // Start fast
+  static const Duration maxPollInterval = Duration(seconds: 30);    // Max backoff
+  static const Duration defaultTimeout = Duration(minutes: 10);     // Longer timeout
+  static const double backoffMultiplier = 1.5;                     // Moderate backoff
+  static const int maxRetries = 120;                               // More retries with longer intervals
   
   ProcessingStatusMonitor({http.Client? httpClient}) 
     : _httpClient = httpClient ?? http.Client();
   
-  /// Monitor processing status with real-time updates
+  /// Monitor processing status with intelligent backoff
   Stream<ProcessingStatusResponse> monitorProcessing({
     required String processingUrl,
-    Duration pollInterval = defaultPollInterval,
+    Duration pollInterval = initialPollInterval,
     Duration timeout = defaultTimeout,
     String? jobId,
   }) {
@@ -204,7 +206,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
   Future<NIP94Metadata> waitForProcessing(
     String processingUrl, {
     Duration timeout = defaultTimeout,
-    Duration pollInterval = defaultPollInterval,
+    Duration pollInterval = initialPollInterval,
     String? jobId,
   }) async {
     final completer = Completer<NIP94Metadata>();
@@ -298,7 +300,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
     }
   }
   
-  /// Start polling for status updates
+  /// Start polling for status updates with intelligent backoff
   void _startPolling({
     required String streamKey,
     required String processingUrl,
@@ -308,28 +310,69 @@ class ProcessingStatusMonitor extends ChangeNotifier {
   }) {
     int attemptCount = 0;
     final startTime = DateTime.now();
+    Duration currentInterval = pollInterval;
+    ProcessingStatus? lastStatus;
     
-    final timer = Timer.periodic(pollInterval, (timer) async {
-      // Check timeout
-      if (DateTime.now().difference(startTime) > timeout) {
-        timer.cancel();
-        _pollTimers.remove(streamKey);
-        
-        if (!controller.isClosed) {
-          final timeoutResponse = ProcessingStatusResponse(
-            status: ProcessingStatus.timeout,
-            message: 'Processing timed out after ${timeout.inSeconds} seconds',
-            timestamp: DateTime.now(),
-          );
-          controller.add(timeoutResponse);
-          controller.close();
-        }
-        return;
-      }
+    // Start with immediate first poll, then schedule subsequent polls
+    _scheduleNextPoll(
+      streamKey: streamKey,
+      processingUrl: processingUrl,
+      controller: controller,
+      currentInterval: currentInterval,
+      attemptCount: attemptCount,
+      startTime: startTime,
+      timeout: timeout,
+      lastStatus: lastStatus,
+    );
+  }
+  
+  /// Schedule next poll with intelligent backoff
+  void _scheduleNextPoll({
+    required String streamKey,
+    required String processingUrl,
+    required StreamController<ProcessingStatusResponse> controller,
+    required Duration currentInterval,
+    required int attemptCount,
+    required DateTime startTime,
+    required Duration timeout,
+    required ProcessingStatus? lastStatus,
+  }) {
+    // Check timeout
+    if (DateTime.now().difference(startTime) > timeout) {
+      _pollTimers.remove(streamKey);
       
+      if (!controller.isClosed) {
+        final timeoutResponse = ProcessingStatusResponse(
+          status: ProcessingStatus.timeout,
+          message: 'Processing timed out after ${timeout.inSeconds} seconds',
+          timestamp: DateTime.now(),
+        );
+        controller.add(timeoutResponse);
+        controller.close();
+      }
+      return;
+    }
+    
+    // Check max attempts
+    if (attemptCount >= maxRetries) {
+      _pollTimers.remove(streamKey);
+      
+      if (!controller.isClosed) {
+        final timeoutResponse = ProcessingStatusResponse(
+          status: ProcessingStatus.timeout,
+          message: 'Maximum polling attempts reached',
+          timestamp: DateTime.now(),
+        );
+        controller.add(timeoutResponse);
+        controller.close();
+      }
+      return;
+    }
+    
+    final timer = Timer(currentInterval, () async {
       try {
         final status = await getProcessingStatus(processingUrl);
-        attemptCount++;
+        final newAttemptCount = attemptCount + 1;
         
         if (!controller.isClosed) {
           controller.add(status);
@@ -337,32 +380,36 @@ class ProcessingStatusMonitor extends ChangeNotifier {
         
         // Stop polling if completed or failed
         if (status.isCompleted || status.isFailed) {
-          timer.cancel();
           _pollTimers.remove(streamKey);
           
           if (!controller.isClosed) {
             controller.close();
           }
+          return;
         }
         
-        // Stop polling if too many attempts
-        if (attemptCount >= maxRetries) {
-          timer.cancel();
-          _pollTimers.remove(streamKey);
-          
-          if (!controller.isClosed) {
-            final timeoutResponse = ProcessingStatusResponse(
-              status: ProcessingStatus.timeout,
-              message: 'Maximum polling attempts reached',
-              timestamp: DateTime.now(),
-            );
-            controller.add(timeoutResponse);
-            controller.close();
-          }
-        }
+        // Calculate next interval with intelligent backoff
+        Duration nextInterval = _calculateNextInterval(
+          currentInterval: currentInterval,
+          currentStatus: status.status,
+          lastStatus: lastStatus,
+          attemptCount: newAttemptCount,
+        );
+        
+        // Schedule next poll
+        _scheduleNextPoll(
+          streamKey: streamKey,
+          processingUrl: processingUrl,
+          controller: controller,
+          currentInterval: nextInterval,
+          attemptCount: newAttemptCount,
+          startTime: startTime,
+          timeout: timeout,
+          lastStatus: status.status,
+        );
         
       } catch (e) {
-        debugPrint('⚠️ Status polling error (attempt $attemptCount): $e');
+        debugPrint('⚠️ Status polling error (attempt ${attemptCount + 1}): $e');
         
         if (!controller.isClosed) {
           controller.addError(e);
@@ -370,17 +417,78 @@ class ProcessingStatusMonitor extends ChangeNotifier {
         
         // Stop polling on non-retryable errors
         if (e is ProcessingMonitorException && !e.isRetryable) {
-          timer.cancel();
           _pollTimers.remove(streamKey);
           
           if (!controller.isClosed) {
             controller.close();
           }
+          return;
         }
+        
+        // Backoff more aggressively on errors
+        Duration nextInterval = Duration(
+          milliseconds: (currentInterval.inMilliseconds * (backoffMultiplier * 1.5)).round()
+        );
+        if (nextInterval > maxPollInterval) {
+          nextInterval = maxPollInterval;
+        }
+        
+        // Schedule retry
+        _scheduleNextPoll(
+          streamKey: streamKey,
+          processingUrl: processingUrl,
+          controller: controller,
+          currentInterval: nextInterval,
+          attemptCount: attemptCount + 1,
+          startTime: startTime,
+          timeout: timeout,
+          lastStatus: lastStatus,
+        );
       }
     });
     
     _pollTimers[streamKey] = timer;
+  }
+  
+  /// Calculate next polling interval with intelligent backoff
+  Duration _calculateNextInterval({
+    required Duration currentInterval,
+    required ProcessingStatus currentStatus,
+    required ProcessingStatus? lastStatus,
+    required int attemptCount,
+  }) {
+    // Fast polling for first few attempts
+    if (attemptCount <= 3) {
+      return initialPollInterval;
+    }
+    
+    // If status changed (progress detected), reset to faster polling
+    if (lastStatus != null && currentStatus != lastStatus) {
+      debugPrint('⚡ Processing status changed from $lastStatus to $currentStatus - resetting polling interval');
+      return initialPollInterval;
+    }
+    
+    // If actively processing, moderate backoff
+    if (currentStatus == ProcessingStatus.processing) {
+      final nextInterval = Duration(
+        milliseconds: (currentInterval.inMilliseconds * backoffMultiplier).round()
+      );
+      return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
+    }
+    
+    // For pending status, more aggressive backoff
+    if (currentStatus == ProcessingStatus.pending) {
+      final nextInterval = Duration(
+        milliseconds: (currentInterval.inMilliseconds * (backoffMultiplier * 1.3)).round()
+      );
+      return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
+    }
+    
+    // Default backoff
+    final nextInterval = Duration(
+      milliseconds: (currentInterval.inMilliseconds * backoffMultiplier).round()
+    );
+    return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
   }
   
   /// Stop monitoring a specific processing job
