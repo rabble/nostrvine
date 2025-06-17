@@ -160,10 +160,10 @@ class ProcessingStatusMonitor extends ChangeNotifier {
   final Map<String, StreamController<ProcessingStatusResponse>> _statusStreams = {};
   final Map<String, Timer> _pollTimers = {};
   
-  // Configuration
-  static const Duration defaultPollInterval = Duration(seconds: 2);
+  // Configuration - More conservative polling to reduce CPU usage
+  static const Duration defaultPollInterval = Duration(seconds: 5); // Reduced from 2s to 5s
   static const Duration defaultTimeout = Duration(minutes: 5);
-  static const int maxRetries = 30;
+  static const int maxRetries = 60; // Adjusted for longer interval
   
   ProcessingStatusMonitor({http.Client? httpClient}) 
     : _httpClient = httpClient ?? http.Client();
@@ -421,7 +421,23 @@ class ProcessingStatusMonitor extends ChangeNotifier {
   
   @override
   void dispose() {
+    debugPrint('🧹 ProcessingStatusMonitor disposing - cleaning up ${_pollTimers.length} timers');
     cancelAllMonitoring();
+    
+    // Force cleanup any remaining timers
+    for (final timer in _pollTimers.values) {
+      timer.cancel();
+    }
+    _pollTimers.clear();
+    
+    // Force cleanup any remaining streams
+    for (final controller in _statusStreams.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+    _statusStreams.clear();
+    
     _httpClient.close();
     super.dispose();
   }

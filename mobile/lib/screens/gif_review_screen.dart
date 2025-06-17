@@ -20,29 +20,66 @@ class GifReviewScreen extends StatefulWidget {
   State<GifReviewScreen> createState() => _GifReviewScreenState();
 }
 
-class _GifReviewScreenState extends State<GifReviewScreen> {
+class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingObserver {
   final TextEditingController _captionController = TextEditingController();
   final TextEditingController _hashtagsController = TextEditingController(text: 'nostrvine,vine');
   bool _isPublishing = false;
   Timer? _animationTimer;
   int _rebuildKey = 0;
+  bool _isAppInForeground = true;
 
   @override
   void initState() {
     super.initState();
-    // Start timer to force GIF animation by rebuilding the widget
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted) {
-        setState(() {
-          _rebuildKey++;
-        });
-      }
-    });
+    WidgetsBinding.instance.addObserver(this);
+    // Only start animation timer when GIF is actually displayed and screen is active
+    // Use a much more reasonable interval to avoid excessive CPU usage
+    _startAnimationTimerIfNeeded();
+  }
+  
+  void _startAnimationTimerIfNeeded() {
+    // Only animate if we have valid GIF data, screen is mounted, and app is in foreground
+    if (widget.gifResult.gifBytes.isNotEmpty && mounted && _isAppInForeground) {
+      _animationTimer?.cancel(); // Cancel any existing timer
+      _animationTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+        if (mounted && _isAppInForeground) {
+          setState(() {
+            _rebuildKey++;
+          });
+        } else {
+          timer.cancel();
+        }
+      });
+    }
+  }
+  
+  void _stopAnimationTimer() {
+    _animationTimer?.cancel();
+    _animationTimer = null;
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _isAppInForeground = true;
+        _startAnimationTimerIfNeeded();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        _isAppInForeground = false;
+        _stopAnimationTimer();
+        break;
+    }
   }
 
   @override
   void dispose() {
-    _animationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _stopAnimationTimer();
     _captionController.dispose();
     _hashtagsController.dispose();
     super.dispose();
