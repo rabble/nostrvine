@@ -11,6 +11,7 @@ import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
 import 'services/vine_publishing_service.dart';
 import 'services/gif_service.dart';
+import 'services/video_cache_service.dart';
 import 'providers/video_feed_provider.dart';
 
 void main() {
@@ -49,15 +50,20 @@ class NostrVineApp extends StatelessWidget {
           update: (_, nostrService, previous) => previous ?? VideoEventService(nostrService),
         ),
         
-        // Video feed provider depends on both services
-        ChangeNotifierProxyProvider2<VideoEventService, INostrService, VideoFeedProvider>(
+        // Video cache service for managing video player controllers
+        ChangeNotifierProvider(create: (_) => VideoCacheService()),
+        
+        // Video feed provider depends on multiple services
+        ChangeNotifierProxyProvider3<VideoEventService, INostrService, VideoCacheService, VideoFeedProvider>(
           create: (context) => VideoFeedProvider(
             videoEventService: context.read<VideoEventService>(),
             nostrService: context.read<INostrService>(),
+            videoCacheService: context.read<VideoCacheService>(),
           ),
-          update: (_, videoEventService, nostrService, previous) => previous ?? VideoFeedProvider(
+          update: (_, videoEventService, nostrService, videoCacheService, previous) => previous ?? VideoFeedProvider(
             videoEventService: videoEventService,
             nostrService: nostrService,
+            videoCacheService: videoCacheService,
           ),
         ),
         

@@ -304,7 +304,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.grey[800],
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.grey[800],
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
             width: 2,
@@ -399,7 +399,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
         decoration: BoxDecoration(
           color: Colors.grey[800],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

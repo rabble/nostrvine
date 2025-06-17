@@ -12,12 +12,12 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
   
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     
     // Initialize video feed
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -29,20 +29,16 @@ class _FeedScreenState extends State<FeedScreen> {
     final provider = context.read<VideoFeedProvider>();
     if (!provider.isInitialized) {
       await provider.initialize();
+      // Preload initial videos once feed is loaded
+      if (provider.hasEvents) {
+        await provider.preloadVideosAroundIndex(0);
+      }
     }
   }
   
-  void _onScroll() {
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent - 200) {
-      // Load more when near bottom
-      context.read<VideoFeedProvider>().loadMoreEvents();
-    }
-  }
-
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -145,33 +141,37 @@ class _FeedScreenState extends State<FeedScreen> {
             );
           }
           
-          return RefreshIndicator(
-            onRefresh: () => provider.refreshFeed(),
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: provider.videoEvents.length + (provider.isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= provider.videoEvents.length) {
-                  // Loading indicator at bottom
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  );
-                }
-                
-                final videoEvent = provider.videoEvents[index];
-                return VideoFeedItem(
+          return PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            itemCount: provider.videoEvents.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+              // Load more when getting close to the end
+              if (index >= provider.videoEvents.length - 3) {
+                provider.loadMoreEvents();
+              }
+              // Preload videos around current index
+              provider.preloadVideosAroundIndex(index);
+            },
+            itemBuilder: (context, index) {
+              final videoEvent = provider.videoEvents[index];
+              return SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: VideoFeedItem(
                   videoEvent: videoEvent,
+                  isActive: index == _currentPage,
+                  videoCacheService: provider.videoCacheService,
                   onLike: () => _toggleLike(videoEvent),
                   onComment: () => _openComments(videoEvent),
                   onShare: () => _shareVine(videoEvent),
                   onMoreOptions: () => _showMoreOptions(videoEvent),
                   onUserTap: () => _openUserProfile(videoEvent.pubkey),
-                );
-              },
-            ),
+                ),
+              );
+            },
           );
         },
       ),

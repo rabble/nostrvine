@@ -78,10 +78,8 @@ void main() {
       
       test('should allow configuring recording parameters', () {
         // Test configuration changes
-        cameraService.configureRecording(
-          duration: const Duration(seconds: 10),
-          frameRate: 10.0,
-        );
+        cameraService.setRecordingDuration(const Duration(seconds: 10));
+        cameraService.setTargetFPS(10.0);
         
         expect(cameraService.maxVineDuration, equals(const Duration(seconds: 10)));
         expect(cameraService.targetFPS, equals(10.0));

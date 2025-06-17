@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
+import '../services/video_cache_service.dart';
 
 /// Provider for managing video feed state and operations
 class VideoFeedProvider extends ChangeNotifier {
   final VideoEventService _videoEventService;
   final INostrService _nostrService;
+  final VideoCacheService _videoCacheService;
   
   bool _isInitialized = false;
   bool _isRefreshing = false;
@@ -19,8 +21,10 @@ class VideoFeedProvider extends ChangeNotifier {
   VideoFeedProvider({
     required VideoEventService videoEventService,
     required INostrService nostrService,
+    required VideoCacheService videoCacheService,
   }) : _videoEventService = videoEventService,
-       _nostrService = nostrService {
+       _nostrService = nostrService,
+       _videoCacheService = videoCacheService {
     
     // Listen to video event service changes
     _videoEventService.addListener(_onVideoEventServiceChanged);
@@ -37,6 +41,7 @@ class VideoFeedProvider extends ChangeNotifier {
   int get eventCount => _videoEventService.eventCount;
   bool get isSubscribed => _videoEventService.isSubscribed;
   bool get canLoadMore => hasEvents && !isLoadingMore;
+  VideoCacheService get videoCacheService => _videoCacheService;
   
   /// Initialize the video feed provider
   Future<void> initialize() async {
@@ -195,6 +200,11 @@ class VideoFeedProvider extends ChangeNotifier {
     return _videoEventService.getVideoCountByAuthor();
   }
   
+  /// Preload videos around current index for smooth playback
+  Future<void> preloadVideosAroundIndex(int currentIndex) async {
+    await _videoCacheService.preloadVideos(videoEvents, currentIndex);
+  }
+  
   /// Clear error state
   void clearError() {
     _error = null;
@@ -216,6 +226,7 @@ class VideoFeedProvider extends ChangeNotifier {
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
+    _videoCacheService.dispose();
     super.dispose();
   }
 }

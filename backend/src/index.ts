@@ -8,6 +8,8 @@
 import { handleNIP96Info } from './handlers/nip96-info';
 import { handleNIP96Upload, handleUploadOptions, handleJobStatus, handleMediaServing } from './handlers/nip96-upload';
 import { handleCloudinarySignedUpload, handleCloudinaryUploadOptions } from './handlers/cloudinary-upload';
+import { handleCloudinaryWebhook, handleCloudinaryWebhookOptions } from './handlers/cloudinary-webhook';
+import { handleVideoMetadata, handleVideoList, handleVideoMetadataOptions } from './handlers/video-metadata';
 
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
@@ -45,6 +47,34 @@ export default {
 				if (method === 'OPTIONS') {
 					return handleCloudinaryUploadOptions();
 				}
+			}
+
+			// Cloudinary webhook endpoint
+			if (pathname === '/v1/media/webhook') {
+				if (method === 'POST') {
+					return handleCloudinaryWebhook(request, env);
+				}
+				if (method === 'OPTIONS') {
+					return handleCloudinaryWebhookOptions();
+				}
+			}
+
+			// Video metadata endpoints
+			if (pathname === '/v1/media/list' && method === 'GET') {
+				return handleVideoList(request, env);
+			}
+
+			if (pathname.startsWith('/v1/media/metadata/') && method === 'GET') {
+				const publicId = pathname.split('/v1/media/metadata/')[1];
+				return handleVideoMetadata(publicId, request, env);
+			}
+
+			if (pathname === '/v1/media/list' && method === 'OPTIONS') {
+				return handleVideoMetadataOptions();
+			}
+
+			if (pathname.startsWith('/v1/media/metadata/') && method === 'OPTIONS') {
+				return handleVideoMetadataOptions();
 			}
 
 			// NIP-96 upload endpoint (compatibility)
@@ -95,6 +125,9 @@ export default {
 				available_endpoints: [
 					'/.well-known/nostr/nip96.json',
 					'/v1/media/request-upload',
+					'/v1/media/webhook',
+					'/v1/media/list',
+					'/v1/media/metadata/{publicId}',
 					'/api/upload',
 					'/api/status/{jobId}',
 					'/health',

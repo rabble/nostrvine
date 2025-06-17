@@ -40,6 +40,24 @@ npm run deploy                     # Deploy to Cloudflare
 npm test                           # Run backend tests
 ```
 
+## Development Workflow Requirements
+
+### Code Quality Checks
+**MANDATORY**: Always run `flutter analyze` after completing any task that modifies Dart code. This catches:
+- Syntax errors
+- Linting issues  
+- Type errors
+- Import problems
+- Dead code warnings
+
+**Process**:
+1. Complete code changes
+2. Run `flutter analyze` 
+3. Fix any issues found
+4. Confirm clean analysis before considering task complete
+
+**Never** mark a Flutter task as complete without running analysis and addressing all issues.
+
 ## Key Files
 - `mobile/lib/services/camera_service.dart` - Hybrid frame capture implementation
 - `mobile/lib/screens/camera_screen.dart` - Camera UI with real preview

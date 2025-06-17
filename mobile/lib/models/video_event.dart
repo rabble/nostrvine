@@ -70,6 +70,34 @@ class VideoEvent {
         case 'url':
           videoUrl = tagValue;
           break;
+        case 'imeta':
+          // Parse imeta tag which contains comma-separated metadata
+          _parseImetaTag(tag, (key, value) {
+            switch (key) {
+              case 'url':
+                videoUrl ??= value; // Only set if not already set
+                break;
+              case 'm':
+                mimeType ??= value;
+                break;
+              case 'x':
+                sha256 ??= value;
+                break;
+              case 'size':
+                fileSize ??= int.tryParse(value);
+                break;
+              case 'dim':
+                dimensions ??= value;
+                break;
+              case 'thumb':
+                thumbnailUrl ??= value;
+                break;
+              case 'duration':
+                duration ??= double.tryParse(value)?.round();
+                break;
+            }
+          });
+          break;
         case 'title':
           title = tagValue;
           break;
@@ -105,11 +133,9 @@ class VideoEvent {
       tags[tagName] = tagValue;
     }
     
-    final createdAtTimestamp = event.createdAt is int 
-      ? event.createdAt as int
-      : (event.createdAt is DateTime 
+    final createdAtTimestamp = event.createdAt is DateTime 
           ? (event.createdAt as DateTime).millisecondsSinceEpoch ~/ 1000
-          : int.tryParse(event.createdAt.toString()) ?? 0);
+          : int.tryParse(event.createdAt.toString()) ?? 0;
     
     return VideoEvent(
       id: event.id,
@@ -129,6 +155,22 @@ class VideoEvent {
       publishedAt: publishedAt,
       rawTags: tags,
     );
+  }
+  
+  /// Parse imeta tag which contains space-separated key-value pairs
+  static void _parseImetaTag(List<String> tag, void Function(String key, String value) onKeyValue) {
+    // Skip the first element which is "imeta"
+    for (int i = 1; i < tag.length; i++) {
+      final item = tag[i];
+      
+      // Split on first space to separate key from value
+      final spaceIndex = item.indexOf(' ');
+      if (spaceIndex > 0) {
+        final key = item.substring(0, spaceIndex);
+        final value = item.substring(spaceIndex + 1);
+        onKeyValue(key, value);
+      }
+    }
   }
   
   /// Extract width from dimensions string

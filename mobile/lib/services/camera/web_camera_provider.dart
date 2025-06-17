@@ -2,7 +2,6 @@
 // ABOUTME: Uses camera plugin for video recording, generates placeholder frames for now
 
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
