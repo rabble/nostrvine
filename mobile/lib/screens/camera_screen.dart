@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/camera_service.dart';
 import '../services/gif_service.dart';
-import '../services/nostr_service.dart';
+import '../services/nostr_service_interface.dart';
 import '../services/nostr_key_manager.dart';
 import '../services/vine_publishing_service.dart';
 import '../services/content_moderation_service.dart';
@@ -23,7 +23,7 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   CameraService? _cameraService;
-  late final NostrService _nostrService;
+  late final INostrService _nostrService;
   VinePublishingService? _publishingService;
   ContentModerationService? _moderationService;
   ContentReportingService? _reportingService;
@@ -49,7 +49,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _initializeServices() async {
     // Get services from providers
-    _nostrService = context.read<NostrService>();
+    _nostrService = context.read<INostrService>();
     _publishingService = context.read<VinePublishingService>();
     
     // Initialize content moderation services
@@ -105,12 +105,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<CameraService?>.value(
-      value: _cameraService,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Consumer<CameraService?>(
-          builder: (context, cameraService, _) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: AnimatedBuilder(
+        animation: _cameraService ?? ChangeNotifier(),
+        builder: (context, _) {
+          final cameraService = _cameraService;
             // Handle null camera service
             if (cameraService == null) {
               return const Center(
@@ -206,48 +206,55 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                 ),
 
-                // Recording progress bar
-                if (cameraService?.isRecording == true)
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 60,
-                    left: 20,
-                    right: 20,
-                    child: Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: cameraService?.recordingProgress ?? 0.0,
-                        child: Container(
+                // Recording progress bar or instruction
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 60,
+                  left: 20,
+                  right: 20,
+                  child: () {
+                    final isRecording = cameraService?.isRecording == true;
+                    debugPrint('🔍 UI Update: isRecording=$isRecording, progress=${cameraService?.recordingProgress}');
+                    return isRecording
+                      ? Container(
+                          height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: Colors.white.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(2),
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: cameraService?.recordingProgress ?? 0.0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Tap to start recording • Tap again to stop',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                  }(),
+                ),
 
-                // Side effects/filters panel
+                // Settings button only
                 Positioned(
                   right: 20,
                   top: MediaQuery.of(context).size.height * 0.3,
-                  child: Column(
-                    children: [
-                      _buildSettingsButton(),
-                      const SizedBox(height: 20),
-                      _buildEffectButton(Icons.face_retouching_natural, 'Beauty'),
-                      const SizedBox(height: 20),
-                      _buildEffectButton(Icons.filter_vintage, 'Filters'),
-                      const SizedBox(height: 20),
-                      _buildEffectButton(Icons.speed, 'Speed'),
-                      const SizedBox(height: 20),
-                      _buildEffectButton(Icons.timer, 'Timer'),
-                    ],
-                  ),
+                  child: _buildSettingsButton(),
                 ),
 
                 // Recording state indicator (only show during manual processing, not auto-stop)
@@ -333,11 +340,15 @@ class _CameraScreenState extends State<CameraScreen> {
                             ),
                           ),
 
-                          // Record button
+                          // Record button - tap to start/stop
                           GestureDetector(
-                            onTapDown: (_) => _startRecording(cameraService),
-                            onTapUp: (_) => _stopRecording(cameraService),
-                            onTapCancel: () => _stopRecording(cameraService),
+                            onTap: () {
+                              if (cameraService?.isRecording == true) {
+                                _stopRecording(cameraService);
+                              } else {
+                                _startRecording(cameraService);
+                              }
+                            },
                             child: Container(
                               width: 80,
                               height: 80,
@@ -388,8 +399,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ],
             );
-          },
-        ),
+        },
       ),
     );
   }
@@ -644,8 +654,10 @@ class _CameraScreenState extends State<CameraScreen> {
         quality: GifQuality.medium,
       );
       
-      // Show GIF preview first
+      // Store GIF result and show preview
+      _lastGifResult = gifResult;
       if (mounted) {
+        setState(() {}); // Trigger UI update to enable next button
         _showGifPreview(gifResult);
       }
       
@@ -712,9 +724,9 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: _lastGifResult?.gifBytes != null
+                  child: gifResult.gifBytes.isNotEmpty
                       ? Image.memory(
-                          _lastGifResult!.gifBytes,
+                          gifResult.gifBytes,
                           fit: BoxFit.contain,
                           gaplessPlayback: true,
                         )
@@ -737,7 +749,7 @@ class _CameraScreenState extends State<CameraScreen> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                '(Loading...)',
+                                '(No GIF data)',
                                 style: TextStyle(
                                   color: Colors.white38,
                                   fontSize: 12,
@@ -1067,6 +1079,11 @@ class _CameraScreenState extends State<CameraScreen> {
     const totalSeconds = 6;
     final progress = cameraService.recordingProgress;
     final remainingSeconds = totalSeconds - (totalSeconds * progress).round();
+    
+    // Debug log every few frames to avoid spam
+    if (remainingSeconds % 2 == 0) {
+      debugPrint('🕐 Timer update: progress=${(progress * 100).toStringAsFixed(1)}%, remaining=${remainingSeconds}s');
+    }
     
     return '${remainingSeconds}s';
   }
