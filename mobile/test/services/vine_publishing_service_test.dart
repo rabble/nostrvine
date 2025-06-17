@@ -4,10 +4,11 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 import '../../lib/services/vine_publishing_service.dart';
 import '../../lib/services/gif_service.dart';
 import '../../lib/services/nostr_service.dart';
+import '../../lib/services/nostr_service_interface.dart';
 import '../../lib/services/camera_service.dart';
 import '../../lib/models/nip94_metadata.dart';
 
@@ -79,13 +80,13 @@ void main() {
       )).thenAnswer((_) async => mockGifResult);
       
       // Setup mock Nostr broadcast result
-      final testKeyPairs = NostrKeyPairs.generate();
+      final testKeyPairs = Keychain.generate();
       final mockBroadcastResult = NostrBroadcastResult(
-        event: NostrEvent.fromPartialData(
+        event: Event.from(
           kind: 1063,
           content: 'Test vine',
           tags: [],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         ),
         successCount: 2,
         totalRelays: 3,
@@ -327,13 +328,13 @@ void main() {
       });
       
       test('should handle partial Nostr broadcast success', () async {
-        final testKeyPairs = NostrKeyPairs.generate();
+        final testKeyPairs = Keychain.generate();
         final partialFailureResult = NostrBroadcastResult(
-          event: NostrEvent.fromPartialData(
+          event: Event.from(
             kind: 1063,
             content: 'Test',
             tags: [],
-            keyPairs: testKeyPairs,
+            privkey: testKeyPairs.private,
           ),
           successCount: 0, // No successful broadcasts
           totalRelays: 3,
@@ -409,13 +410,13 @@ void main() {
           dimensions: '320x240',
         );
         
-        final testKeyPairs = NostrKeyPairs.generate();
+        final testKeyPairs = Keychain.generate();
         final broadcastResult = NostrBroadcastResult(
-          event: NostrEvent.fromPartialData(
+          event: Event.from(
             kind: 1063,
             content: 'Test',
             tags: [],
-            keyPairs: testKeyPairs,
+            privkey: testKeyPairs.private,
           ),
           successCount: 2,
           totalRelays: 3,

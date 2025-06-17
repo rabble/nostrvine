@@ -2,9 +2,10 @@
 // ABOUTME: Tests relay management, event broadcasting, and service lifecycle
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 import 'package:mocktail/mocktail.dart';
 import '../../lib/services/nostr_service.dart';
+import '../../lib/services/nostr_service_interface.dart';
 import '../../lib/services/nostr_key_manager.dart';
 import '../../lib/models/nip94_metadata.dart';
 
@@ -59,12 +60,12 @@ void main() {
     
     group('Event Broadcasting', () {
       test('should require initialization before broadcasting', () async {
-        final testKeyPairs = NostrKeyPairs.generate();
-        final event = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final event = Event.from(
           kind: 1063,
           content: 'Test content',
           tags: [['url', 'test.com']],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         expect(
@@ -75,8 +76,8 @@ void main() {
       
       test('should validate event structure', () {
         // Test that events have required fields
-        final testKeyPairs = NostrKeyPairs.generate();
-        final event = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final event = Event.from(
           kind: 1063,
           content: 'Test NIP-94 event',
           tags: [
@@ -86,7 +87,7 @@ void main() {
             ['size', '1024'],
             ['dim', '320x240'],
           ],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         expect(event.kind, equals(1063));
@@ -183,12 +184,12 @@ void main() {
     
     group('Broadcasting Results', () {
       test('should create valid broadcast result', () {
-        final testKeyPairs = NostrKeyPairs.generate();
-        final mockEvent = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final mockEvent = Event.from(
           kind: 1063,
           content: 'Test',
           tags: [],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         final result = NostrBroadcastResult(
@@ -217,12 +218,12 @@ void main() {
       });
       
       test('should handle complete success', () {
-        final testKeyPairs = NostrKeyPairs.generate();
-        final mockEvent = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final mockEvent = Event.from(
           kind: 1063,
           content: 'Test',
           tags: [],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         final result = NostrBroadcastResult(
@@ -240,12 +241,12 @@ void main() {
       });
       
       test('should handle complete failure', () {
-        final testKeyPairs = NostrKeyPairs.generate();
-        final mockEvent = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final mockEvent = Event.from(
           kind: 1063,
           content: 'Test',
           tags: [],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         final result = NostrBroadcastResult(
@@ -264,12 +265,12 @@ void main() {
       });
       
       test('should provide meaningful string representation', () {
-        final testKeyPairs = NostrKeyPairs.generate();
-        final mockEvent = NostrEvent.fromPartialData(
+        final testKeyPairs = Keychain.generate();
+        final mockEvent = Event.from(
           kind: 1063,
           content: 'Test',
           tags: [],
-          keyPairs: testKeyPairs,
+          privkey: testKeyPairs.private,
         );
         
         final result = NostrBroadcastResult(

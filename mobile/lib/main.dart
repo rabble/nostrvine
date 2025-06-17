@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'screens/camera_screen.dart';
 import 'screens/feed_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/nostr_service.dart';
+import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
 import 'services/vine_publishing_service.dart';
@@ -25,23 +27,33 @@ class NostrVineApp extends StatelessWidget {
         // Nostr key manager
         ChangeNotifierProvider(create: (_) => NostrKeyManager()),
         
-        // Core Nostr service
-        ChangeNotifierProxyProvider<NostrKeyManager, NostrService>(
-          create: (context) => NostrService(context.read<NostrKeyManager>()),
-          update: (_, keyManager, previous) => previous ?? NostrService(keyManager),
+        // Core Nostr service - platform-specific implementation
+        ChangeNotifierProxyProvider<NostrKeyManager, INostrService>(
+          create: (context) {
+            final keyManager = context.read<NostrKeyManager>();
+            // Always use regular NostrService for now
+            debugPrint('📱 Creating NostrService for platform');
+            return NostrService(keyManager);
+          },
+          update: (_, keyManager, previous) {
+            if (previous != null) return previous;
+            // Always use regular NostrService for now
+            debugPrint('📱 Creating NostrService for platform');
+            return NostrService(keyManager);
+          },
         ),
         
         // Video event service depends on Nostr service
-        ChangeNotifierProxyProvider<NostrService, VideoEventService>(
-          create: (context) => VideoEventService(context.read<NostrService>()),
+        ChangeNotifierProxyProvider<INostrService, VideoEventService>(
+          create: (context) => VideoEventService(context.read<INostrService>()),
           update: (_, nostrService, previous) => previous ?? VideoEventService(nostrService),
         ),
         
         // Video feed provider depends on both services
-        ChangeNotifierProxyProvider2<VideoEventService, NostrService, VideoFeedProvider>(
+        ChangeNotifierProxyProvider2<VideoEventService, INostrService, VideoFeedProvider>(
           create: (context) => VideoFeedProvider(
             videoEventService: context.read<VideoEventService>(),
-            nostrService: context.read<NostrService>(),
+            nostrService: context.read<INostrService>(),
           ),
           update: (_, videoEventService, nostrService, previous) => previous ?? VideoFeedProvider(
             videoEventService: videoEventService,
@@ -50,10 +62,10 @@ class NostrVineApp extends StatelessWidget {
         ),
         
         // Vine publishing service depends on Nostr service
-        ChangeNotifierProxyProvider<NostrService, VinePublishingService>(
+        ChangeNotifierProxyProvider<INostrService, VinePublishingService>(
           create: (context) => VinePublishingService(
             gifService: GifService(),
-            nostrService: context.read<NostrService>(),
+            nostrService: context.read<INostrService>(),
           ),
           update: (_, nostrService, previous) => previous ?? VinePublishingService(
             gifService: GifService(),

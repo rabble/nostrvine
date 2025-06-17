@@ -1,7 +1,7 @@
 // ABOUTME: NIP-71 Video Event model for handling kind 22 short video events
 // ABOUTME: Parses and structures video content data from Nostr relays
 
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 
 /// Represents a NIP-71 video event (kind 22 for short videos)
 class VideoEvent {
@@ -42,7 +42,7 @@ class VideoEvent {
   });
   
   /// Create VideoEvent from Nostr event
-  factory VideoEvent.fromNostrEvent(NostrEvent event) {
+  factory VideoEvent.fromNostrEvent(Event event) {
     if (event.kind != 22) {
       throw ArgumentError('Event must be kind 22 (short video)');
     }

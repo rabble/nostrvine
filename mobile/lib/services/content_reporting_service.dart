@@ -4,8 +4,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dart_nostr/dart_nostr.dart';
-import 'nostr_service.dart';
+import 'package:nostr/nostr.dart';
+import 'nostr_service_interface.dart';
 import 'content_moderation_service.dart';
 
 /// Report submission result
@@ -89,7 +89,7 @@ class ContentReport {
 
 /// Service for reporting inappropriate content
 class ContentReportingService extends ChangeNotifier {
-  final NostrService _nostrService;
+  final INostrService _nostrService;
   final SharedPreferences _prefs;
   
   // NostrVine moderation relay for reports
@@ -100,7 +100,7 @@ class ContentReportingService extends ChangeNotifier {
   bool _isInitialized = false;
 
   ContentReportingService({
-    required NostrService nostrService,
+    required INostrService nostrService,
     required SharedPreferences prefs,
   }) : _nostrService = nostrService,
        _prefs = prefs {
@@ -287,7 +287,7 @@ class ContentReportingService extends ChangeNotifier {
   }
 
   /// Create NIP-56 reporting event
-  Future<NostrEvent> _createReportingEvent({
+  Future<Event> _createReportingEvent({
     required String reportId,
     required String eventId,
     required String authorPubkey,

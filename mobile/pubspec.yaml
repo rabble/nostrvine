@@ -40,7 +40,7 @@ dependencies:
   
   # Networking
   http: ^1.2.1
-  web_socket_channel: ^3.0.1
+  web_socket_channel: ^2.4.0
   
   # Camera and media
   camera: ^0.11.0+2
@@ -60,7 +60,7 @@ dependencies:
   # UI/UX
   animations: ^2.0.11
   cached_network_image: ^3.3.1
-  dart_nostr: ^8.0.3
+  nostr: ^1.5.0  # Web-compatible nostr package by ethicnology
 
 dev_dependencies:
   flutter_test:

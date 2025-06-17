@@ -1,18 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/camera_service.dart';
 import '../services/gif_service.dart';
 import '../services/nostr_service_interface.dart';
-import '../services/nostr_key_manager.dart';
 import '../services/vine_publishing_service.dart';
 import '../services/content_moderation_service.dart';
 import '../services/content_reporting_service.dart';
-import '../widgets/content_warning.dart';
 import '../widgets/publishing_progress.dart';
 import 'camera_settings_screen.dart';
+import 'gif_review_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -142,10 +140,8 @@ class _CameraScreenState extends State<CameraScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                        onPressed: () => Navigator.pop(context),
-                      ),
+                      // Remove the X button that was causing navigation issues
+                      const SizedBox(width: 48), // Maintain spacing
                       Row(
                         children: [
                           // Offline queue indicator
@@ -654,41 +650,19 @@ class _CameraScreenState extends State<CameraScreen> {
         quality: GifQuality.medium,
       );
       
-      // Store GIF result and show preview
+      // Store GIF result for review
       _lastGifResult = gifResult;
       if (mounted) {
         setState(() {}); // Trigger UI update to enable next button
-        _showGifPreview(gifResult);
-      }
-      
-      // Then try to publish in background
-      try {
-        final result = await _publishingService!.publishVine(
-          recordingResult: recordingResult,
-          caption: 'Test vine created from camera',
-          hashtags: ['nostrvine', 'test'],
-          uploadToBackend: false,
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Vine recorded! Tap the arrow to review and publish.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
         );
-
-        if (result.success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Vine published successfully to Nostr!'),
-              duration: const Duration(seconds: 3),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (publishError) {
-        debugPrint('❌ Publishing failed: $publishError');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('GIF created but publishing failed'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
       
     } catch (e) {
@@ -893,10 +867,25 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   void _proceedToEdit() {
-    if (_lastGifResult == null) return;
+    if (_lastGifResult == null || _lastRecordingResult == null) return;
     
-    // Show dialog to get caption and publish to Nostr
-    _showPublishDialog();
+    // Navigate to review screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GifReviewScreen(
+          gifResult: _lastGifResult!,
+          recordingResult: _lastRecordingResult!,
+          publishingService: _publishingService!,
+        ),
+      ),
+    ).then((_) {
+      // Reset after returning from review screen
+      setState(() {
+        _lastGifResult = null;
+        _lastRecordingResult = null;
+      });
+    });
   }
 
   void _showPublishDialog() {

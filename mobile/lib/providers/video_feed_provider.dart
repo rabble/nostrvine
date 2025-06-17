@@ -4,12 +4,12 @@
 import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import '../services/video_event_service.dart';
-import '../services/nostr_service.dart';
+import '../services/nostr_service_interface.dart';
 
 /// Provider for managing video feed state and operations
 class VideoFeedProvider extends ChangeNotifier {
   final VideoEventService _videoEventService;
-  final NostrService _nostrService;
+  final INostrService _nostrService;
   
   bool _isInitialized = false;
   bool _isRefreshing = false;
@@ -18,7 +18,7 @@ class VideoFeedProvider extends ChangeNotifier {
   
   VideoFeedProvider({
     required VideoEventService videoEventService,
-    required NostrService nostrService,
+    required INostrService nostrService,
   }) : _videoEventService = videoEventService,
        _nostrService = nostrService {
     
@@ -43,21 +43,46 @@ class VideoFeedProvider extends ChangeNotifier {
     if (_isInitialized) return;
     
     try {
+      debugPrint('🎬 Starting VideoFeedProvider initialization...');
+      _error = null;
+      notifyListeners();
+      
+      // Check if Nostr service is disposed
+      if (_nostrService.isDisposed) {
+        debugPrint('❌ NostrService is disposed - cannot initialize video feed');
+        throw Exception('Failed to initialize video feed: A NostrService was used after being disposed. Once you have called dispose() on a NostrService, it can no longer be used.');
+      }
+      
+      debugPrint('🔍 Checking Nostr service status...');
+      debugPrint('  - Initialized: ${_nostrService.isInitialized}');
+      debugPrint('  - Has keys: ${_nostrService.hasKeys}');
+      debugPrint('  - Connected relays: ${_nostrService.connectedRelayCount}');
+      
       // Ensure Nostr service is initialized
       if (!_nostrService.isInitialized) {
+        debugPrint('📡 Nostr service not initialized, initializing now...');
         await _nostrService.initialize();
+        debugPrint('📡 Nostr service initialization completed');
+      } else {
+        debugPrint('📡 Nostr service already initialized');
       }
       
       // Subscribe to video events
+      debugPrint('🎥 Subscribing to video event feed...');
       await _videoEventService.subscribeToVideoFeed();
+      debugPrint('🎥 Video event subscription completed');
       
       _isInitialized = true;
       _error = null;
       
-      debugPrint('✅ Video feed provider initialized');
+      debugPrint('✅ VideoFeedProvider initialization completed successfully!');
+      debugPrint('📊 Final feed status:');
+      debugPrint('  - Events loaded: ${_videoEventService.eventCount}');
+      debugPrint('  - Subscribed: ${_videoEventService.isSubscribed}');
     } catch (e) {
       _error = 'Failed to initialize video feed: $e';
-      debugPrint('❌ Failed to initialize video feed provider: $e');
+      debugPrint('❌ VideoFeedProvider initialization failed: $e');
+      debugPrint('📊 Error occurred during video feed setup');
     }
     
     notifyListeners();

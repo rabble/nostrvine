@@ -431,6 +431,11 @@ class CameraService extends ChangeNotifier {
     _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (_isRecording && !_disposed && hasListeners) {
         try {
+          // Add debug logging every second
+          final elapsed = DateTime.now().difference(_recordingStartTime!);
+          if (elapsed.inMilliseconds % 1000 < 100) {
+            debugPrint('⏱️ Recording progress: ${(recordingProgress * 100).toStringAsFixed(1)}% (${elapsed.inSeconds}s)');
+          }
           notifyListeners(); // Update UI with current progress
         } catch (e) {
           // Ignore errors during disposal

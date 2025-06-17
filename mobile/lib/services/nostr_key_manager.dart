@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 import 'package:crypto/crypto.dart';
 
 /// Secure management of Nostr private keys with persistence
@@ -14,7 +14,7 @@ class NostrKeyManager extends ChangeNotifier {
   static const String _backupHashKey = 'nostr_backup_hash';
   static const int _currentKeyVersion = 1;
   
-  NostrKeyPairs? _keyPair;
+  Keychain? _keyPair;
   bool _isInitialized = false;
   String? _backupHash;
   
@@ -23,7 +23,7 @@ class NostrKeyManager extends ChangeNotifier {
   bool get hasKeys => _keyPair != null;
   String? get publicKey => _keyPair?.public;
   String? get privateKey => _keyPair?.private;
-  NostrKeyPairs? get keyPair => _keyPair;
+  Keychain? get keyPair => _keyPair;
   bool get hasBackup => _backupHash != null;
   
   /// Initialize key manager and load existing keys
@@ -63,7 +63,7 @@ class NostrKeyManager extends ChangeNotifier {
   }
   
   /// Generate new Nostr key pair
-  Future<NostrKeyPairs> generateKeys() async {
+  Future<Keychain> generateKeys() async {
     if (!_isInitialized) {
       throw NostrKeyException('Key manager not initialized');
     }
@@ -72,7 +72,7 @@ class NostrKeyManager extends ChangeNotifier {
       debugPrint('🔑 Generating new Nostr key pair...');
       
       // Generate new key pair
-      _keyPair = NostrKeyPairs.generate();
+      _keyPair = Keychain.generate();
       
       // Save to persistent storage
       await _saveKeysToStorage();
@@ -90,7 +90,7 @@ class NostrKeyManager extends ChangeNotifier {
   }
   
   /// Import key pair from private key
-  Future<NostrKeyPairs> importPrivateKey(String privateKey) async {
+  Future<Keychain> importPrivateKey(String privateKey) async {
     if (!_isInitialized) {
       throw NostrKeyException('Key manager not initialized');
     }
@@ -104,7 +104,7 @@ class NostrKeyManager extends ChangeNotifier {
       }
       
       // Create key pair from private key
-      _keyPair = NostrKeyPairs(private: privateKey);
+      _keyPair = Keychain(privateKey);
       
       // Save to persistent storage
       await _saveKeysToStorage();
@@ -174,7 +174,7 @@ class NostrKeyManager extends ChangeNotifier {
   }
   
   /// Restore from mnemonic backup
-  Future<NostrKeyPairs> restoreFromMnemonic(List<String> mnemonic) async {
+  Future<Keychain> restoreFromMnemonic(List<String> mnemonic) async {
     if (!_isInitialized) {
       throw NostrKeyException('Key manager not initialized');
     }
@@ -285,7 +285,7 @@ class NostrKeyManager extends ChangeNotifier {
         throw NostrKeyException('Invalid key format in storage');
       }
       
-      _keyPair = NostrKeyPairs(private: privateKey);
+      _keyPair = Keychain(privateKey);
       
       // Verify public key matches
       if (_keyPair!.public != publicKey) {

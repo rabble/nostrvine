@@ -2,13 +2,16 @@
 // ABOUTME: Handles connection, authentication, and event publishing for NostrVine
 
 import 'dart:async';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'dart:convert';
+import 'package:nostr/nostr.dart';
 import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/nip94_metadata.dart';
 import 'nostr_key_manager.dart';
+import 'nostr_service_interface.dart';
 
 /// Core service for Nostr protocol integration
-class NostrService extends ChangeNotifier {
+class NostrService extends ChangeNotifier implements INostrService {
   static const List<String> defaultRelays = [
     'wss://relay.damus.io',
     'wss://nos.lol',
@@ -18,18 +21,30 @@ class NostrService extends ChangeNotifier {
   
   final NostrKeyManager _keyManager;
   bool _isInitialized = false;
+  bool _isDisposed = false;
   List<String> _connectedRelays = [];
+  final Map<String, WebSocketChannel> _webSockets = {};
+  final Map<String, StreamController<Event>> _eventControllers = {};
   
   /// Create NostrService with a key manager
   NostrService(this._keyManager);
   
   // Getters
-  bool get isInitialized => _isInitialized;
+  @override
+  bool get isInitialized => _isInitialized && !_isDisposed;
+  @override
+  bool get isDisposed => _isDisposed;
+  @override
   List<String> get connectedRelays => List.unmodifiable(_connectedRelays);
-  String? get publicKey => _keyManager.publicKey;
-  bool get hasKeys => _keyManager.hasKeys;
+  @override
+  String? get publicKey => _isDisposed ? null : _keyManager.publicKey;
+  @override
+  bool get hasKeys => _isDisposed ? false : _keyManager.hasKeys;
+  @override
   NostrKeyManager get keyManager => _keyManager;
+  @override
   int get relayCount => _connectedRelays.length;
+  @override
   int get connectedRelayCount => _connectedRelays.length;
   
   /// Initialize Nostr service with user keys
@@ -48,30 +63,48 @@ class NostrService extends ChangeNotifier {
         await _keyManager.generateKeys();
       }
       
-      // Connect to relays using Nostr instance
+      // Connect to relays using web-compatible nostr package
       final relaysToConnect = customRelays ?? defaultRelays;
-      await Nostr.instance.relaysService.init(
-        relaysUrl: relaysToConnect,
-        onRelayListening: (relayUrl, data, socket) {
+      debugPrint('📡 Attempting to connect to ${relaysToConnect.length} relays using web-compatible nostr package...');
+      
+      // Connect to each relay
+      for (final relayUrl in relaysToConnect) {
+        try {
+          debugPrint('🔌 Connecting to $relayUrl...');
+          final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+          _webSockets[relayUrl] = webSocket;
+          
           if (!_connectedRelays.contains(relayUrl)) {
             _connectedRelays.add(relayUrl);
             notifyListeners();
           }
-          debugPrint('✅ Connected to relay: $relayUrl');
-        },
-        onRelayConnectionError: (relayUrl, error, socket) {
-          debugPrint('⚠️ Failed to connect to relay $relayUrl: $error');
-          _connectedRelays.remove(relayUrl);
-          notifyListeners();
-        },
-        onRelayConnectionDone: (relayUrl, socket) {
-          debugPrint('🔌 Disconnected from relay: $relayUrl');
-          _connectedRelays.remove(relayUrl);
-          notifyListeners();
-        },
-        ignoreConnectionException: true,
-        retryOnError: true,
-      );
+          debugPrint('✅ Connected to relay: $relayUrl (${_connectedRelays.length}/${relaysToConnect.length})');
+          
+          // Listen for incoming messages
+          webSocket.stream.listen(
+            (data) => _handleRelayMessage(relayUrl, data),
+            onError: (error) {
+              debugPrint('❌ WebSocket error for $relayUrl: $error');
+              _connectedRelays.remove(relayUrl);
+              _webSockets.remove(relayUrl);
+              notifyListeners();
+            },
+            onDone: () {
+              debugPrint('🔌 Disconnected from relay: $relayUrl');
+              _connectedRelays.remove(relayUrl);
+              _webSockets.remove(relayUrl);
+              notifyListeners();
+            },
+          );
+          
+        } catch (e) {
+          debugPrint('❌ Failed to connect to $relayUrl: $e');
+        }
+      }
+      
+      // Give connections time to establish
+      await Future.delayed(const Duration(seconds: 2));
+      debugPrint('📡 Relay initialization completed: ${_connectedRelays.length}/${relaysToConnect.length} connected');
       
       _isInitialized = true;
       notifyListeners();
@@ -83,8 +116,55 @@ class NostrService extends ChangeNotifier {
     }
   }
   
+  /// Handle incoming messages from relays
+  void _handleRelayMessage(String relayUrl, dynamic data) {
+    try {
+      if (data is String) {
+        final message = jsonDecode(data);
+        if (message is List && message.isNotEmpty) {
+          final messageType = message[0];
+          switch (messageType) {
+            case 'EVENT':
+              if (message.length >= 3) {
+                _handleEventMessage(message);
+              }
+              break;
+            case 'EOSE':
+              debugPrint('📄 End of stored events from $relayUrl');
+              break;
+            case 'OK':
+              debugPrint('✅ Event published successfully to $relayUrl');
+              break;
+            case 'NOTICE':
+              debugPrint('📢 Notice from $relayUrl: ${message.length > 1 ? message[1] : 'No message'}');
+              break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error parsing message from $relayUrl: $e');
+    }
+  }
+  
+  /// Handle incoming event message
+  void _handleEventMessage(List<dynamic> eventMessage) {
+    try {
+      final event = Event.deserialize(eventMessage);
+      debugPrint('🎬 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      
+      // Forward to all active event controllers
+      for (final controller in _eventControllers.values) {
+        if (!controller.isClosed) {
+          controller.add(event);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error handling event: $e');
+    }
+  }
+  
   /// Broadcast event to all connected relays
-  Future<NostrBroadcastResult> broadcastEvent(NostrEvent event) async {
+  Future<NostrBroadcastResult> broadcastEvent(Event event) async {
     if (!_isInitialized || !_keyManager.hasKeys) {
       throw NostrServiceException('Nostr service not initialized or no keys available');
     }
@@ -94,19 +174,38 @@ class NostrService extends ChangeNotifier {
     }
     
     try {
-      // Send event using Nostr instance
-      Nostr.instance.relaysService.sendEventToRelays(event);
+      final results = <String, bool>{};
+      final errors = <String, String>{};
+      int successCount = 0;
       
-      // Create broadcast result (simplified since dart_nostr handles the details)
+      // Send event to each connected relay
+      for (final relayUrl in _connectedRelays) {
+        try {
+          final webSocket = _webSockets[relayUrl];
+          if (webSocket != null) {
+            final eventMessage = ['EVENT', event.toJson()];
+            webSocket.sink.add(jsonEncode(eventMessage));
+            results[relayUrl] = true;
+            successCount++;
+          } else {
+            results[relayUrl] = false;
+            errors[relayUrl] = 'WebSocket not available';
+          }
+        } catch (e) {
+          results[relayUrl] = false;
+          errors[relayUrl] = e.toString();
+        }
+      }
+      
       final broadcastResult = NostrBroadcastResult(
         event: event,
-        successCount: _connectedRelays.length, // Assume success for all
+        successCount: successCount,
         totalRelays: _connectedRelays.length,
-        results: Map.fromIterable(_connectedRelays, value: (_) => true),
-        errors: {},
+        results: results,
+        errors: errors,
       );
       
-      debugPrint('✅ Event broadcasted to ${_connectedRelays.length} relays');
+      debugPrint('✅ Event broadcasted to $successCount/${_connectedRelays.length} relays');
       return broadcastResult;
     } catch (e) {
       debugPrint('❌ Event broadcasting failed: $e');
@@ -134,16 +233,35 @@ class NostrService extends ChangeNotifier {
   }
   
   /// Subscribe to events
-  NostrEventsStream subscribeToEvents({
-    required List<NostrFilter> filters,
+  Stream<Event> subscribeToEvents({
+    required List<Filter> filters,
   }) {
     if (!_isInitialized) {
       throw NostrServiceException('Nostr service not initialized');
     }
     
-    // Create stream for events
-    final request = NostrRequest(filters: filters);
-    return Nostr.instance.relaysService.startEventsSubscription(request: request);
+    // Create a subscription ID
+    final subscriptionId = DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Create stream controller for this subscription
+    final controller = StreamController<Event>.broadcast();
+    _eventControllers[subscriptionId] = controller;
+    
+    // Send REQ message to all connected relays
+    for (final relayUrl in _connectedRelays) {
+      try {
+        final webSocket = _webSockets[relayUrl];
+        if (webSocket != null) {
+          final reqMessage = ['REQ', subscriptionId, ...filters.map((f) => f.toJson())];
+          webSocket.sink.add(jsonEncode(reqMessage));
+          debugPrint('📡 Sent subscription request to $relayUrl');
+        }
+      } catch (e) {
+        debugPrint('❌ Failed to send subscription to $relayUrl: $e');
+      }
+    }
+    
+    return controller.stream;
   }
   
   /// Add a new relay
@@ -153,10 +271,30 @@ class NostrService extends ChangeNotifier {
     }
     
     try {
-      // Re-initialize with additional relay
-      final newRelayList = [..._connectedRelays, relayUrl];
-      await Nostr.instance.relaysService.init(relaysUrl: newRelayList);
+      debugPrint('🔌 Adding new relay: $relayUrl');
+      final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+      _webSockets[relayUrl] = webSocket;
+      
+      _connectedRelays.add(relayUrl);
       notifyListeners();
+      
+      // Listen for incoming messages
+      webSocket.stream.listen(
+        (data) => _handleRelayMessage(relayUrl, data),
+        onError: (error) {
+          debugPrint('❌ WebSocket error for $relayUrl: $error');
+          _connectedRelays.remove(relayUrl);
+          _webSockets.remove(relayUrl);
+          notifyListeners();
+        },
+        onDone: () {
+          debugPrint('🔌 Disconnected from relay: $relayUrl');
+          _connectedRelays.remove(relayUrl);
+          _webSockets.remove(relayUrl);
+          notifyListeners();
+        },
+      );
+      
       return true;
     } catch (e) {
       debugPrint('⚠️ Failed to add relay $relayUrl: $e');
@@ -167,11 +305,12 @@ class NostrService extends ChangeNotifier {
   /// Remove a relay
   Future<void> removeRelay(String relayUrl) async {
     try {
-      _connectedRelays.remove(relayUrl);
-      // Re-initialize without the relay
-      if (_connectedRelays.isNotEmpty) {
-        await Nostr.instance.relaysService.init(relaysUrl: _connectedRelays);
+      final webSocket = _webSockets[relayUrl];
+      if (webSocket != null) {
+        await webSocket.sink.close();
+        _webSockets.remove(relayUrl);
       }
+      _connectedRelays.remove(relayUrl);
       notifyListeners();
       debugPrint('🔌 Disconnected from relay: $relayUrl');
     } catch (e) {
@@ -192,10 +331,21 @@ class NostrService extends ChangeNotifier {
   Future<void> reconnectAll() async {
     try {
       final relaysToReconnect = _connectedRelays.toList();
-      _connectedRelays.clear();
       
-      await Nostr.instance.relaysService.init(relaysUrl: relaysToReconnect);
-      notifyListeners();
+      // Close existing connections
+      for (final webSocket in _webSockets.values) {
+        try {
+          await webSocket.sink.close();
+        } catch (e) {
+          debugPrint('⚠️ Error closing websocket: $e');
+        }
+      }
+      
+      _connectedRelays.clear();
+      _webSockets.clear();
+      
+      // Reconnect to all relays
+      await initialize(customRelays: relaysToReconnect);
     } catch (e) {
       debugPrint('⚠️ Error during reconnection: $e');
     }
@@ -204,49 +354,38 @@ class NostrService extends ChangeNotifier {
   /// Dispose service and close all connections
   @override
   void dispose() {
+    if (_isDisposed) return;
+    
     try {
-      Nostr.instance.relaysService.freeAllResources();
+      _isDisposed = true;
+      
+      // Close all websocket connections
+      for (final webSocket in _webSockets.values) {
+        try {
+          webSocket.sink.close();
+        } catch (e) {
+          debugPrint('⚠️ Error closing websocket: $e');
+        }
+      }
+      
+      // Close all event controllers
+      for (final controller in _eventControllers.values) {
+        try {
+          controller.close();
+        } catch (e) {
+          debugPrint('⚠️ Error closing event controller: $e');
+        }
+      }
+      
+      _webSockets.clear();
+      _eventControllers.clear();
       _connectedRelays.clear();
       _isInitialized = false;
       super.dispose();
+      debugPrint('🗑️ NostrService disposed');
     } catch (e) {
       debugPrint('⚠️ Error disposing Nostr service: $e');
     }
-  }
-}
-
-/// Result of broadcasting an event to relays
-class NostrBroadcastResult {
-  final NostrEvent event;
-  final int successCount;
-  final int totalRelays;
-  final Map<String, bool> results;
-  final Map<String, String> errors;
-  
-  const NostrBroadcastResult({
-    required this.event,
-    required this.successCount,
-    required this.totalRelays,
-    required this.results,
-    required this.errors,
-  });
-  
-  bool get isSuccessful => successCount > 0;
-  bool get isCompleteSuccess => successCount == totalRelays;
-  double get successRate => totalRelays > 0 ? successCount / totalRelays : 0.0;
-  
-  List<String> get successfulRelays => 
-    results.entries.where((e) => e.value).map((e) => e.key).toList();
-  
-  List<String> get failedRelays =>
-    results.entries.where((e) => !e.value).map((e) => e.key).toList();
-  
-  @override
-  String toString() {
-    return 'NostrBroadcastResult('
-           'success: $successCount/$totalRelays, '
-           'rate: ${(successRate * 100).toStringAsFixed(1)}%'
-           ')';
   }
 }
 

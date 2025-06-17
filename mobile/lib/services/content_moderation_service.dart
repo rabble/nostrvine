@@ -4,8 +4,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dart_nostr/dart_nostr.dart';
-import 'nostr_service.dart';
+import 'package:nostr/nostr.dart';
+import 'nostr_service_interface.dart';
 
 /// Reasons for content filtering/reporting
 enum ContentFilterReason {
@@ -110,7 +110,7 @@ class ModerationResult {
 
 /// Content moderation service managing mute lists and filtering
 class ContentModerationService extends ChangeNotifier {
-  final NostrService _nostrService;
+  final INostrService _nostrService;
   final SharedPreferences _prefs;
   
   // Default NostrVine moderation list
@@ -133,7 +133,7 @@ class ContentModerationService extends ChangeNotifier {
   ContentSeverity _autoHideLevel = ContentSeverity.hide;
   
   ContentModerationService({
-    required NostrService nostrService,
+    required INostrService nostrService,
     required SharedPreferences prefs,
   }) : _nostrService = nostrService,
        _prefs = prefs {
@@ -171,7 +171,7 @@ class ContentModerationService extends ChangeNotifier {
   }
 
   /// Check if content should be filtered
-  ModerationResult checkContent(NostrEvent event) {
+  ModerationResult checkContent(Event event) {
     if (!_enableDefaultModeration && !_enableCustomMuteLists) {
       return ModerationResult.clean;
     }
@@ -381,7 +381,7 @@ class ContentModerationService extends ChangeNotifier {
   }
 
   /// Check if mute list entry matches event
-  bool _doesEntryMatch(MuteListEntry entry, NostrEvent event) {
+  bool _doesEntryMatch(MuteListEntry entry, Event event) {
     switch (entry.type) {
       case 'pubkey':
         return event.pubkey == entry.value;

@@ -2,7 +2,7 @@
 // ABOUTME: Tests metadata validation, Nostr event generation, and JSON serialization
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 import '../../lib/models/nip94_metadata.dart';
 
 void main() {
@@ -176,7 +176,7 @@ void main() {
     group('Nostr Event Generation', () {
       test('should generate valid NIP-94 event', () {
         // Create a test key pair
-        final testKeyPairs = NostrKeyPairs.generate();
+        final testKeyPairs = Keychain.generate();
         const testContent = 'Check out my vine!';
         const testHashtags = ['nostr', 'vine', 'gif'];
         
@@ -190,7 +190,7 @@ void main() {
         expect(event.pubkey, isA<String>());
         expect(event.pubkey.length, equals(64)); // Public key should be 64 hex chars
         expect(event.content, equals(testContent));
-        expect(event.createdAt, isA<DateTime>());
+        expect(event.createdAt, isA<int>());
         
         // Check required tags
         final tags = event.tags;
@@ -222,7 +222,7 @@ void main() {
           dimensions: testDimensions,
         );
         
-        final testKeyPairs = NostrKeyPairs.generate();
+        final testKeyPairs = Keychain.generate();
         
         final event = minimalMetadata.toNostrEvent(
           keyPairs: testKeyPairs,
@@ -249,13 +249,13 @@ void main() {
       });
       
       test('should handle additional custom tags', () {
-        final testKeyPairs = NostrKeyPairs.generate();
+        final testKeyPairs = Keychain.generate();
         const additionalTags = ['custom:value', 'type:vine'];
         
         final event = validMetadata.toNostrEvent(
           keyPairs: testKeyPairs,
           content: 'Custom tags test',
-          additionalTags: additionalTags,
+          customTags: additionalTags,
         );
         
         final tags = event.tags;

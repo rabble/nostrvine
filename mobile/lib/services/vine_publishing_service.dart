@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/nip94_metadata.dart';
 import '../services/gif_service.dart';
+import '../services/nostr_service_interface.dart';
 import '../services/nostr_service.dart';
 import '../services/camera_service.dart';
 import '../services/processing_monitor.dart';
@@ -148,7 +149,7 @@ class OfflineVineData {
 /// Service for publishing vines to Nostr network
 class VinePublishingService extends ChangeNotifier {
   final GifService _gifService;
-  final NostrService _nostrService;
+  final INostrService _nostrService;
   final ProcessingStatusMonitor _processingMonitor;
   
   PublishingState _state = PublishingState.idle;
@@ -166,7 +167,7 @@ class VinePublishingService extends ChangeNotifier {
   
   VinePublishingService({
     required GifService gifService,
-    required NostrService nostrService,
+    required INostrService nostrService,
     ProcessingStatusMonitor? processingMonitor,
   }) : _gifService = gifService,
        _nostrService = nostrService,

@@ -95,7 +95,7 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             setupCaptureSession(result: result)
         case .notDetermined:
             print("⚠️ [NativeCamera] Camera permission not determined, requesting...")
-            requestPermission { [weak self] granted in
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 print("🔵 [NativeCamera] Permission request result: \(granted)")
                 if granted {
                     print("✅ [NativeCamera] Permission granted, setting up session")

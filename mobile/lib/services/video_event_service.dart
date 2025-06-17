@@ -2,14 +2,14 @@
 // ABOUTME: Handles real-time feed updates and local caching of video content
 
 import 'dart:async';
-import 'package:dart_nostr/dart_nostr.dart';
+import 'package:nostr/nostr.dart';
 import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
-import 'nostr_service.dart';
+import 'nostr_service_interface.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
-  final NostrService _nostrService;
+  final INostrService _nostrService;
   final List<VideoEvent> _videoEvents = [];
   final Map<String, StreamSubscription> _subscriptions = {};
   bool _isSubscribed = false;
@@ -34,8 +34,20 @@ class VideoEventService extends ChangeNotifier {
     int? until,
     int limit = 100,
   }) async {
+    debugPrint('🎥 Starting video event subscription...');
+    debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
+    
     if (!_nostrService.isInitialized) {
+      debugPrint('❌ Cannot subscribe - Nostr service not initialized');
       throw VideoEventServiceException('Nostr service not initialized');
+    }
+    
+    debugPrint('🔍 Nostr service status for video subscription:');
+    debugPrint('  - Connected relays: ${_nostrService.connectedRelayCount}');
+    debugPrint('  - Relay list: ${_nostrService.connectedRelays}');
+    
+    if (_nostrService.connectedRelayCount == 0) {
+      debugPrint('⚠️ WARNING: No relays connected - subscription will likely fail');
     }
     
     _isLoading = true;
@@ -43,19 +55,25 @@ class VideoEventService extends ChangeNotifier {
     notifyListeners();
     
     try {
+      debugPrint('🔍 Creating filter for kind 22 video events...');
+      debugPrint('  - Authors: ${authors?.length ?? 'all'}');
+      debugPrint('  - Hashtags: ${hashtags?.join(', ') ?? 'none'}');
+      debugPrint('  - Limit: $limit');
       // Create filter for kind 22 events
-      final filter = NostrFilter(
+      final filter = Filter(
         kinds: [22], // NIP-71 short video events
         authors: authors,
-        since: since != null ? DateTime.fromMillisecondsSinceEpoch(since * 1000) : null,
-        until: until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : null,
+        since: since,
+        until: until,
         limit: limit,
       );
       
       // Subscribe to events using Nostr service
+      debugPrint('📡 Requesting event subscription from Nostr service...');
       final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      debugPrint('📡 Event stream created, setting up listeners...');
       
-      final subscription = eventStream.stream.listen(
+      final subscription = eventStream.listen(
         (event) => _handleNewVideoEvent(event),
         onError: (error) => _handleSubscriptionError(error),
         onDone: () => _handleSubscriptionComplete(),
@@ -64,7 +82,8 @@ class VideoEventService extends ChangeNotifier {
       _subscriptions['video_feed'] = subscription;
       _isSubscribed = true;
       
-      debugPrint('✅ Subscribed to kind 22 video events');
+      debugPrint('✅ Video event subscription established successfully!');
+      debugPrint('📊 Subscription status: active=${_subscriptions.length} subscriptions');
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to subscribe to video events: $e');
@@ -75,15 +94,22 @@ class VideoEventService extends ChangeNotifier {
   }
   
   /// Handle new video event from subscription
-  void _handleNewVideoEvent(NostrEvent event) {
+  void _handleNewVideoEvent(Event event) {
     try {
-      if (event.kind != 22) return;
+      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
       
-      // Check if we already have this event
-      if (_videoEvents.any((e) => e.id == event.id)) {
+      if (event.kind != 22) {
+        debugPrint('⏩ Skipping non-video event (kind ${event.kind})');
         return;
       }
       
+      // Check if we already have this event
+      if (_videoEvents.any((e) => e.id == event.id)) {
+        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        return;
+      }
+      
+      debugPrint('🎬 Processing new video event ${event.id.substring(0, 8)}...');
       final videoEvent = VideoEvent.fromNostrEvent(event);
       
       // Only add events with video URLs
@@ -95,8 +121,10 @@ class VideoEventService extends ChangeNotifier {
           _videoEvents.removeRange(500, _videoEvents.length);
         }
         
+        debugPrint('✅ Added video event! Total: ${_videoEvents.length} events');
         notifyListeners();
-        debugPrint('📹 Added new video event: ${videoEvent.id.substring(0, 8)}...');
+      } else {
+        debugPrint('⏩ Skipping video event without video URL');
       }
     } catch (e) {
       debugPrint('⚠️ Error processing video event: $e');
@@ -107,12 +135,14 @@ class VideoEventService extends ChangeNotifier {
   void _handleSubscriptionError(dynamic error) {
     _error = error.toString();
     debugPrint('❌ Video subscription error: $error');
+    debugPrint('📊 Current state: events=${_videoEvents.length}, subscriptions=${_subscriptions.length}');
     notifyListeners();
   }
   
   /// Handle subscription completion
   void _handleSubscriptionComplete() {
-    debugPrint('✅ Video subscription completed');
+    debugPrint('🏁 Video subscription completed');
+    debugPrint('📊 Final state: events=${_videoEvents.length}, subscriptions=${_subscriptions.length}');
   }
   
   /// Subscribe to specific user's video events
