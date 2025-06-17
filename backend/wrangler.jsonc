@@ -54,7 +54,8 @@
 		"BASE_URL": "https://nostrvine-backend.your-subdomain.workers.dev",
 		"MAX_FILE_SIZE_FREE": "104857600",
 		"MAX_FILE_SIZE_PRO": "1073741824",
-		"WEBHOOK_SECRET": "nostrvine-webhook-development"
+		"WEBHOOK_SECRET": "nostrvine-webhook-development",
+		"CLOUDINARY_CLOUD_NAME": "dswu0ugmo"
 	},
 
 	/**
@@ -108,6 +109,8 @@
 	 * - CLOUDFLARE_STREAM_TOKEN: Stream API token
 	 * - WEBHOOK_VERIFY_SECRET: Webhook signature verification secret
 	 * - NIP98_VERIFICATION_KEY: Key for NIP-98 auth verification
+	 * - CLOUDINARY_API_KEY: Cloudinary API key (public, but secure)
+	 * - CLOUDINARY_API_SECRET: Cloudinary API secret (CRITICAL - must be secret)
 	 */
 
 	/**

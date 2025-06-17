@@ -6,7 +6,8 @@
  */
 
 import { handleNIP96Info } from './handlers/nip96-info';
-import { handleNIP96Upload, handleUploadOptions, handleJobStatus } from './handlers/nip96-upload';
+import { handleNIP96Upload, handleUploadOptions, handleJobStatus, handleMediaServing } from './handlers/nip96-upload';
+import { handleCloudinarySignedUpload, handleCloudinaryUploadOptions } from './handlers/cloudinary-upload';
 
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
@@ -36,7 +37,17 @@ export default {
 				return handleNIP96Info(request, env);
 			}
 
-			// NIP-96 upload endpoint  
+			// Cloudinary signed upload endpoint (new flow)
+			if (pathname === '/v1/media/request-upload') {
+				if (method === 'POST') {
+					return handleCloudinarySignedUpload(request, env);
+				}
+				if (method === 'OPTIONS') {
+					return handleCloudinaryUploadOptions();
+				}
+			}
+
+			// NIP-96 upload endpoint (compatibility)
 			if (pathname === '/api/upload') {
 				if (method === 'POST') {
 					return handleNIP96Upload(request, env, ctx);
@@ -71,15 +82,10 @@ export default {
 				});
 			}
 
-			// Media serving endpoint (placeholder)
+			// Media serving endpoint
 			if (pathname.startsWith('/media/') && method === 'GET') {
-				// TODO: Implement media serving from R2
-				return new Response('Media serving not yet implemented', {
-					status: 501,
-					headers: {
-						'Access-Control-Allow-Origin': '*'
-					}
-				});
+				const fileId = pathname.split('/media/')[1];
+				return handleMediaServing(fileId, request, env);
 			}
 
 			// Default 404 response
@@ -88,6 +94,7 @@ export default {
 				message: `Endpoint ${pathname} not found`,
 				available_endpoints: [
 					'/.well-known/nostr/nip96.json',
+					'/v1/media/request-upload',
 					'/api/upload',
 					'/api/status/{jobId}',
 					'/health',
