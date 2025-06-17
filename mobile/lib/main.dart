@@ -92,7 +92,7 @@ class NostrVineApp extends StatelessWidget {
             type: BottomNavigationBarType.fixed,
           ),
         ),
-        home: const MainNavigationScreen(),
+        home: const ResponsiveWrapper(child: MainNavigationScreen()),
       ),
     );
   }
@@ -137,5 +137,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
     );
+  }
+}
+
+/// ResponsiveWrapper limits the app width to iPad size on web platforms
+class ResponsiveWrapper extends StatelessWidget {
+  final Widget child;
+  
+  // iPad Pro dimensions: 1024x1366 (we'll use 1024 as max width)
+  static const double maxWidth = 1024.0;
+  
+  const ResponsiveWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: maxWidth),
+            child: child,
+          ),
+        ),
+      );
+    }
+    
+    // On mobile, return child as-is (no constraints)
+    return child;
   }
 }
