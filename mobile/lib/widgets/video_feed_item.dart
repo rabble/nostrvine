@@ -171,7 +171,15 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   void _playVideo() {
     if (_controller != null && _controller!.value.isInitialized) {
-      _controller!.play();
+      debugPrint('▶️ Playing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+      
+      // Use cache service to coordinate playback if available
+      if (widget.videoCacheService != null) {
+        widget.videoCacheService!.playVideo(widget.videoEvent);
+      } else {
+        _controller!.play();
+      }
+      
       setState(() {
         _isPlaying = true;
       });
@@ -180,7 +188,15 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   void _pauseVideo() {
     if (_controller != null && _controller!.value.isInitialized) {
-      _controller!.pause();
+      debugPrint('⏸️ Pausing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+      
+      // Use cache service to coordinate playback if available
+      if (widget.videoCacheService != null) {
+        widget.videoCacheService!.pauseVideo(widget.videoEvent);
+      } else {
+        _controller!.pause();
+      }
+      
       setState(() {
         _isPlaying = false;
       });

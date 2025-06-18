@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/video_event.dart';
 
 /// Service for managing video cache and preloading
@@ -14,9 +15,18 @@ class VideoCacheService extends ChangeNotifier {
   final List<VideoEvent> _readyToPlayQueue = []; // Queue of videos ready for immediate playback
   final Set<String> _addedToQueue = {}; // Track which videos are already in ready queue
   
+  // Track which video is currently playing to avoid multiple videos playing simultaneously
+  String? _currentlyPlayingVideoId;
+  
   static const int _maxCachedVideos = 100; // Maximum number of videos to keep in cache
   static const int _preloadCount = 3; // Number of videos to preload ahead  
   static const int _maxReadyQueue = 100; // Maximum videos in ready-to-play queue
+  
+  // Network-aware preloading constants for TikTok-like experience
+  static const int _preloadBehind = 1;
+  static const int _preloadAheadWifi = 5;
+  static const int _preloadAheadCellular = 2; 
+  static const int _preloadAheadDataSaver = 1;
   
   // Progressive caching: start small and grow using prime numbers
   static const List<int> _cachingPrimes = [1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
@@ -33,6 +43,58 @@ class VideoCacheService extends ChangeNotifier {
   bool isInitialized(VideoEvent videoEvent) {
     if (videoEvent.videoUrl == null || videoEvent.isGif) return true; // GIFs don't need initialization
     return _initializationStatus[videoEvent.id] == true;
+  }
+  
+  /// Play a specific video and pause any other currently playing video
+  void playVideo(VideoEvent videoEvent) {
+    if (videoEvent.videoUrl == null || videoEvent.isGif) return;
+    
+    final controller = _controllers[videoEvent.id];
+    if (controller == null || !controller.value.isInitialized) {
+      debugPrint('⚠️ Cannot play video ${videoEvent.id.substring(0, 8)}... - controller not ready');
+      return;
+    }
+    
+    // Pause currently playing video if it's different
+    if (_currentlyPlayingVideoId != null && _currentlyPlayingVideoId != videoEvent.id) {
+      final currentController = _controllers[_currentlyPlayingVideoId!];
+      if (currentController != null && currentController.value.isInitialized) {
+        debugPrint('⏸️ Auto-pausing previous video ${_currentlyPlayingVideoId!.substring(0, 8)}...');
+        currentController.pause();
+      }
+    }
+    
+    // Play the new video
+    debugPrint('▶️ Playing video ${videoEvent.id.substring(0, 8)}... via cache service');
+    controller.play();
+    _currentlyPlayingVideoId = videoEvent.id;
+  }
+  
+  /// Pause a specific video
+  void pauseVideo(VideoEvent videoEvent) {
+    if (videoEvent.videoUrl == null || videoEvent.isGif) return;
+    
+    final controller = _controllers[videoEvent.id];
+    if (controller == null || !controller.value.isInitialized) return;
+    
+    debugPrint('⏸️ Pausing video ${videoEvent.id.substring(0, 8)}... via cache service');
+    controller.pause();
+    
+    // Clear currently playing if this was the playing video
+    if (_currentlyPlayingVideoId == videoEvent.id) {
+      _currentlyPlayingVideoId = null;
+    }
+  }
+  
+  /// Pause all videos
+  void pauseAllVideos() {
+    debugPrint('⏸️ Pausing all videos via cache service');
+    for (final controller in _controllers.values) {
+      if (controller.value.isInitialized) {
+        controller.pause();
+      }
+    }
+    _currentlyPlayingVideoId = null;
   }
   
   /// Get the ready-to-play video queue (only videos that are downloaded and ready)
