@@ -145,7 +145,7 @@ class ContentReportingService extends ChangeNotifier {
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
       // Create NIP-56 reporting event
-      final reportEvent = await _createReportingEvent(
+      await _createReportingEvent(
         reportId: reportId,
         eventId: eventId,
         authorPubkey: authorPubkey,
@@ -314,19 +314,6 @@ class ContentReportingService extends ChangeNotifier {
     if (additionalContext != null) {
       tags.add(['context', additionalContext]);
     }
-
-    // Create event content
-    final content = [
-      'Report: ${reason.description}',
-      '',
-      'Details: $details',
-      if (additionalContext != null) ...[
-        '',
-        'Additional Context: $additionalContext',
-      ],
-      '',
-      'Reported via NostrVine',
-    ].join('\n');
 
     // This would create the actual Nostr event
     // For now, return a placeholder structure

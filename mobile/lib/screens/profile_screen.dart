@@ -9,7 +9,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  bool _isOwnProfile = true; // TODO: Determine if viewing own profile
+  final bool _isOwnProfile = true; // TODO: Determine if viewing own profile
 
   @override
   void initState() {
@@ -384,8 +384,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       borderRadius: BorderRadius.circular(4),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.purple.withOpacity(0.3),
-                          Colors.blue.withOpacity(0.3),
+                          Colors.purple.withValues(alpha: 0.3),
+                          Colors.blue.withValues(alpha: 0.3),
                         ],
                       ),
                     ),
@@ -406,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(

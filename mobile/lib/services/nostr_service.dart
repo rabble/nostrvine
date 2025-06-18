@@ -48,6 +48,7 @@ class NostrService extends ChangeNotifier implements INostrService {
   int get connectedRelayCount => _connectedRelays.length;
   
   /// Initialize Nostr service with user keys
+  @override
   Future<void> initialize({
     List<String>? customRelays,
   }) async {
@@ -164,6 +165,7 @@ class NostrService extends ChangeNotifier implements INostrService {
   }
   
   /// Broadcast event to all connected relays
+  @override
   Future<NostrBroadcastResult> broadcastEvent(Event event) async {
     if (!_isInitialized || !_keyManager.hasKeys) {
       throw NostrServiceException('Nostr service not initialized or no keys available');
@@ -214,6 +216,7 @@ class NostrService extends ChangeNotifier implements INostrService {
   }
   
   /// Publish NIP-94 file metadata event
+  @override
   Future<NostrBroadcastResult> publishFileMetadata({
     required NIP94Metadata metadata,
     required String content,
@@ -233,6 +236,7 @@ class NostrService extends ChangeNotifier implements INostrService {
   }
   
   /// Subscribe to events
+  @override
   Stream<Event> subscribeToEvents({
     required List<Filter> filters,
   }) {

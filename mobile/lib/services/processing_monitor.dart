@@ -240,7 +240,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
               completer.complete(status.metadata!);
             }
           } else if (status.isFailed) {
-            timeoutTimer?.cancel();
+            timeoutTimer.cancel();
             subscription.cancel();
             if (!completer.isCompleted) {
               completer.completeError(ProcessingMonitorException(
@@ -252,7 +252,7 @@ class ProcessingStatusMonitor extends ChangeNotifier {
           }
         },
         onError: (error) {
-          timeoutTimer?.cancel();
+          timeoutTimer.cancel();
           if (!completer.isCompleted) {
             completer.completeError(error);
           }

@@ -1,10 +1,8 @@
 // ABOUTME: Blurhash service for generating image placeholders and smooth loading transitions
 // ABOUTME: Creates compact representations of images for better UX during vine loading
 
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 /// Service for generating and decoding Blurhash placeholders
 class BlurhashService {
@@ -226,7 +224,7 @@ class BlurhashData {
       return ui.Gradient.linear(
         const ui.Offset(0, 0),
         const ui.Offset(1, 1),
-        [primaryColor, primaryColor.withOpacity(0.7)],
+        [primaryColor, primaryColor.withValues(alpha: 0.7)],
       );
     }
     

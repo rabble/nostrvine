@@ -2,7 +2,6 @@
 // ABOUTME: Communicates with Swift AVFoundation implementation for real camera access
 
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 

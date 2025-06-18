@@ -110,7 +110,6 @@ class ModerationResult {
 
 /// Content moderation service managing mute lists and filtering
 class ContentModerationService extends ChangeNotifier {
-  final INostrService _nostrService;
   final SharedPreferences _prefs;
   
   // Default NostrVine moderation list
@@ -133,10 +132,8 @@ class ContentModerationService extends ChangeNotifier {
   ContentSeverity _autoHideLevel = ContentSeverity.hide;
   
   ContentModerationService({
-    required INostrService nostrService,
     required SharedPreferences prefs,
-  }) : _nostrService = nostrService,
-       _prefs = prefs {
+  }) : _prefs = prefs {
     _loadSettings();
     _loadLocalMuteList();
     _loadSubscribedLists();
