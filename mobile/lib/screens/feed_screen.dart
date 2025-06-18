@@ -42,6 +42,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔄 FeedScreen.build() called - rebuilding UI');
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -72,6 +73,8 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Consumer<VideoFeedProvider>(
         builder: (context, provider, child) {
+          debugPrint('📺 FeedScreen Consumer rebuilding: initialized=${provider.isInitialized}, loading=${provider.isLoading}, hasEvents=${provider.hasEvents}, readyVideos=${provider.videoEvents.length}');
+          
           if (!provider.isInitialized && provider.isLoading) {
             return const Center(
               child: Column(
@@ -172,34 +175,41 @@ class _FeedScreenState extends State<FeedScreen> {
             );
           }
           
+          debugPrint('🎬 Building PageView with ${provider.videoEvents.length} ready videos');
+          
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            itemCount: provider.allVideoEvents.isNotEmpty ? provider.allVideoEvents.length : 0, // Use all video events, not just cached ready queue
+            itemCount: provider.videoEvents.length, // ✅ FIXED: Use ready-to-play videos, not raw events
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
               
-              final totalVideoCount = provider.allVideoEvents.length;
-              if (totalVideoCount > 0) {
-                // Load more when getting close to the end of all videos
-                if (index >= totalVideoCount - 5) {
-                  debugPrint('📱 Near end of videos (${index}/${totalVideoCount}), loading more...');
+              final readyVideoCount = provider.videoEvents.length;
+              debugPrint('📱 Changed to video $index/$readyVideoCount');
+              
+              if (readyVideoCount > 0) {
+                // Load more when getting close to the end of ready videos
+                if (index >= readyVideoCount - 3) {
+                  debugPrint('📱 Near end of ready videos (${index}/${readyVideoCount}), loading more...');
                   provider.loadMoreEvents();
                 }
-                // Preload videos around current index in the full video list
+                // Preload videos around current index using the ready video list
                 provider.preloadVideosAroundIndex(index);
               }
             },
             itemBuilder: (context, index) {
-              final totalVideoCount = provider.allVideoEvents.length;
-              if (totalVideoCount == 0 || index >= totalVideoCount) {
+              final readyVideoCount = provider.videoEvents.length;
+              if (readyVideoCount == 0 || index >= readyVideoCount) {
+                debugPrint('⚠️ Invalid video index: $index/$readyVideoCount');
                 return const SizedBox.shrink();
               }
               
-              // Use the actual index - no modulo cycling!
-              final videoEvent = provider.allVideoEvents[index];
+              // ✅ FIXED: Use ready-to-play videos that have passed compatibility testing
+              final videoEvent = provider.videoEvents[index];
+              debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: ${index == _currentPage})');
+              
               
               return SizedBox(
                 height: MediaQuery.of(context).size.height,

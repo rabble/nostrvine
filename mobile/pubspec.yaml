@@ -47,7 +47,6 @@ dependencies:
   camera: ^0.11.0+2
   video_player: ^2.9.1
   image: ^4.1.7
-  # ffmpeg_kit_flutter_new: ^1.6.1  # Temporarily disabled due to macOS version conflict
   
   # Storage
   shared_preferences: ^2.2.3

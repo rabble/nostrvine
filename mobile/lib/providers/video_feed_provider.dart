@@ -1,6 +1,7 @@
 // ABOUTME: State management provider for NIP-71 video feed functionality
 // ABOUTME: Manages video events, subscriptions, and UI state for the feed screen
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import '../services/video_event_service.dart';
@@ -22,6 +23,10 @@ class VideoFeedProvider extends ChangeNotifier {
   
   // Track events we've already processed for profile fetching to avoid loops
   final Set<String> _processedEventIds = <String>{};
+  
+  // Profile batching optimization
+  final Set<String> _pendingProfileFetches = <String>{};
+  Timer? _profileFetchDebounceTimer;
   
   VideoFeedProvider({
     required VideoEventService videoEventService,
@@ -277,15 +282,23 @@ class VideoFeedProvider extends ChangeNotifier {
       return; // No new events to process
     }
     
+    // Collect authors that need profiles
     final authorsToFetch = newEvents
         .map((event) => event.pubkey)
         .where((pubkey) => !_userProfileService.hasProfile(pubkey))
-        .toSet()
-        .toList();
+        .toSet();
     
     if (authorsToFetch.isNotEmpty) {
-      debugPrint('👥 Fetching profiles for ${authorsToFetch.length} new video authors...');
-      _userProfileService.fetchMultipleProfiles(authorsToFetch);
+      debugPrint('👥 Adding ${authorsToFetch.length} authors to batched profile fetch queue...');
+      
+      // Add to pending batch
+      _pendingProfileFetches.addAll(authorsToFetch);
+      
+      // Cancel existing timer and start new debounce timer
+      _profileFetchDebounceTimer?.cancel();
+      _profileFetchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+        _executeBatchedProfileFetch();
+      });
     }
     
     // Mark these events as processed
@@ -294,9 +307,21 @@ class VideoFeedProvider extends ChangeNotifier {
     }
   }
   
+  /// Execute batched profile fetch with collected authors
+  void _executeBatchedProfileFetch() {
+    if (_pendingProfileFetches.isEmpty) return;
+    
+    final authorsToFetch = _pendingProfileFetches.toList();
+    _pendingProfileFetches.clear();
+    
+    debugPrint('👥 Executing batched profile fetch for ${authorsToFetch.length} authors (debounced)');
+    _userProfileService.fetchMultipleProfiles(authorsToFetch);
+  }
+  
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
+    _profileFetchDebounceTimer?.cancel();
     // DO NOT dispose _videoCacheService - it's managed by Provider and shared across screens
     super.dispose();
   }

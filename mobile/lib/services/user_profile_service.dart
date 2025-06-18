@@ -65,9 +65,15 @@ class UserProfileService extends ChangeNotifier {
       return _profileCache[pubkey];
     }
     
-    // Check if already requesting this profile
+    // Check if already requesting this profile - STOP HERE, don't create duplicate subscriptions
     if (_pendingRequests.contains(pubkey)) {
-      debugPrint('⏳ Profile request already pending for ${pubkey.substring(0, 8)}...');
+      debugPrint('⏳ Profile request already pending for ${pubkey.substring(0, 8)}... (skipping duplicate)');
+      return null;
+    }
+    
+    // Check if we already have an active subscription for this pubkey
+    if (_profileSubscriptions.containsKey(pubkey)) {
+      debugPrint('🔄 Active subscription already exists for ${pubkey.substring(0, 8)}... (skipping duplicate)');
       return null;
     }
     

@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# CocoaPods - iOS/macOS dependency management
+/ios/Pods/
+/macos/Pods/
+/ios/Podfile.lock
+/macos/Podfile.lock
+
+# Flutter build artifacts
+/ios/Flutter/flutter_export_environment.sh
+/macos/Flutter/ephemeral/
+
+# User-specific files
+*.xcuserstate
+.xcuserdata/
+
+# Temporary files
+flutter_*.log

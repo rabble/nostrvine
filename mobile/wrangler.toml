@@ -1,7 +1,0 @@
-name = "nostrvine-app"
-compatibility_date = "2025-06-17"
-pages_build_output_dir = "build/web"
-
-# Static site configuration for Flutter web app
-[env.production]
-name = "nostrvine-app"

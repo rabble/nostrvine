@@ -16,8 +16,8 @@ class NostrService extends ChangeNotifier implements INostrService {
   static const List<String> defaultRelays = [
     'wss://relay.damus.io',
     'wss://nos.lol',
-    'wss://relay.snort.social', 
-    'wss://relay.current.fyi',
+    'wss://relay.snort.social',
+    // Removed 'wss://relay.current.fyi' - permanently offline causing SocketException flood
   ];
   
   final NostrKeyManager _keyManager;
@@ -122,7 +122,8 @@ class NostrService extends ChangeNotifier implements INostrService {
           
           // Check if it's a connection issue
           if (_isConnectionError(e)) {
-            debugPrint('🌐 Connection error detected for $relayUrl, will retry when online');
+            debugPrint('🌐 Connection error detected for $relayUrl, will retry with backoff');
+            _handleRelayConnectionFailure(relayUrl, e);
           }
         }
       }
@@ -430,7 +431,9 @@ class NostrService extends ChangeNotifier implements INostrService {
            errorString.contains('socket') ||
            errorString.contains('timeout') ||
            errorString.contains('unreachable') ||
-           errorString.contains('offline');
+           errorString.contains('offline') ||
+           errorString.contains('host lookup') ||
+           errorString.contains('name resolution');
   }
   
   /// Schedule reconnection for a specific relay with exponential backoff

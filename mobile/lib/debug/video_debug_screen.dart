@@ -36,6 +36,26 @@ class _VideoDebugScreenState extends State<VideoDebugScreen> {
     super.dispose();
   }
 
+  /// Wait for controller to be fully ready with polling mechanism
+  Future<void> _waitForControllerReady() async {
+    const maxWaitTime = Duration(seconds: 3);
+    const pollInterval = Duration(milliseconds: 10);
+    final startTime = DateTime.now();
+    
+    while (_controller != null && !_controller!.value.isInitialized) {
+      if (DateTime.now().difference(startTime) > maxWaitTime) {
+        debugPrint('⚠️ DEBUG TIMEOUT: Controller never became ready after ${maxWaitTime.inSeconds}s');
+        break;
+      }
+      
+      await Future.delayed(pollInterval);
+    }
+    
+    if (_controller?.value.isInitialized == true) {
+      debugPrint('✅ Debug controller state fully synchronized');
+    }
+  }
+
   Future<void> _testVideoUrl() async {
     if (_urlController.text.isEmpty) {
       setState(() {
@@ -72,6 +92,14 @@ class _VideoDebugScreenState extends State<VideoDebugScreen> {
       _endTime = DateTime.now();
       final duration = _endTime!.difference(_startTime!);
 
+      // CRITICAL: Wait for controller state to be fully synchronized
+      await _waitForControllerReady();
+      
+      // Double-check controller is ready before using
+      if (!_controller!.value.isInitialized) {
+        throw Exception('CRITICAL RACE CONDITION: Debug controller never became ready after initialization');
+      }
+      
       setState(() {
         _isLoading = false;
         _successMessage = 'Video loaded successfully in ${duration.inMilliseconds}ms\n'
@@ -80,7 +108,13 @@ class _VideoDebugScreenState extends State<VideoDebugScreen> {
       });
 
       _controller!.setLooping(true);
-      _controller!.play();
+      
+      // Final safety check before play
+      if (_controller!.value.isInitialized) {
+        _controller!.play();
+      } else {
+        debugPrint('⚠️ Debug controller not ready for play after initialization');
+      }
 
     } catch (error) {
       _endTime = DateTime.now();

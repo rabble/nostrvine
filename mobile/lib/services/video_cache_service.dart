@@ -2,6 +2,7 @@
 // ABOUTME: Manages video player controllers and preloads upcoming videos in the feed
 
 import 'dart:async';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -28,10 +29,12 @@ class VideoCacheService extends ChangeNotifier {
   static const int _preloadAheadCellular = 2; 
   static const int _preloadAheadDataSaver = 1;
   
-  // Progressive caching: start small and grow using prime numbers
-  static const List<int> _cachingPrimes = [1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+  // Progressive caching: start small and grow using limited prime numbers
+  static const List<int> _cachingPrimes = [1, 3, 5, 7, 11, 13, 17]; // Limited to reasonable cache sizes
+  static const int _maxCacheTarget = 17; // Hard limit to prevent infinite scaling
   int _currentCacheTarget = 1;
   int _primeIndex = 0;
+  bool _isScalingInProgress = false; // Prevent infinite scaling recursion
   
   /// Get a cached video controller for the given video event
   VideoPlayerController? getController(VideoEvent videoEvent) {
@@ -64,10 +67,22 @@ class VideoCacheService extends ChangeNotifier {
       }
     }
     
-    // Play the new video
+    // Play the new video with additional race condition protection
     debugPrint('▶️ Playing video ${videoEvent.id.substring(0, 8)}... via cache service');
-    controller.play();
-    _currentlyPlayingVideoId = videoEvent.id;
+    
+    try {
+      // Final safety check right before play() to prevent race conditions
+      if (!controller.value.isInitialized) {
+        debugPrint('⚠️ CRITICAL: Controller became uninitialized just before play() - ${videoEvent.id.substring(0, 8)}');
+        return;
+      }
+      
+      controller.play();
+      _currentlyPlayingVideoId = videoEvent.id;
+    } catch (e) {
+      debugPrint('❌ Error playing video ${videoEvent.id.substring(0, 8)}: $e');
+      // Don't crash - just log the error and continue
+    }
   }
   
   /// Pause a specific video
@@ -134,18 +149,25 @@ class VideoCacheService extends ChangeNotifier {
     }
     
     // Test video compatibility for non-GIF videos in background
-    _testVideoCompatibilityInBackground(videoEvents);
+    _testVideoCompatibilityInBackground(videoEvents).catchError((error) {
+      debugPrint('❌ Error during background video compatibility testing: $error');
+    });
     
     debugPrint('📊 Ready queue status: ${_readyToPlayQueue.length} videos ready (target: $_currentCacheTarget)');
   }
   
   /// Test video compatibility in background with progressive scaling
-  void _testVideoCompatibilityInBackground(List<VideoEvent> videoEvents) {
+  Future<void> _testVideoCompatibilityInBackground(List<VideoEvent> videoEvents) async {
+    if (_isScalingInProgress) {
+      debugPrint('⏸️ Scaling already in progress, skipping to prevent recursion');
+      return;
+    }
+    
     debugPrint('🧪 Starting progressive video compatibility testing...');
     debugPrint('📊 Current cache target: $_currentCacheTarget videos (prime index: $_primeIndex)');
     
     // Calculate how many videos to test this round
-    final videosToTest = _currentCacheTarget - _controllers.length;
+    final videosToTest = _currentCacheTarget - _readyToPlayQueue.length;
     
     if (videosToTest <= 0) {
       debugPrint('🎯 Cache target met, considering scaling up...');
@@ -155,57 +177,149 @@ class VideoCacheService extends ChangeNotifier {
     
     debugPrint('🔍 Testing $videosToTest videos to reach target of $_currentCacheTarget');
     
-    int tested = 0;
-    for (final videoEvent in videoEvents) {
-      if (!videoEvent.isGif && tested < videosToTest && !_controllers.containsKey(videoEvent.id)) {
-        debugPrint('🔍 Testing video compatibility: ${videoEvent.id.substring(0, 8)}... ($tested/$videosToTest)');
-        _testVideoCompatibility(videoEvent);
-        tested++;
+    // Get videos that need testing
+    final videosToTestList = videoEvents
+        .where((videoEvent) => 
+            !videoEvent.isGif && 
+            !_controllers.containsKey(videoEvent.id) &&
+            !_addedToQueue.contains(videoEvent.id))
+        .take(videosToTest)
+        .toList();
+    
+    if (videosToTestList.isEmpty) {
+      debugPrint('📊 No videos available for testing');
+      return;
+    }
+    
+    debugPrint('🔍 Testing ${videosToTestList.length} videos SEQUENTIALLY to avoid resource contention');
+    
+    // Test videos ONE AT A TIME to avoid resource contention and timeouts
+    for (int i = 0; i < videosToTestList.length; i++) {
+      final videoEvent = videosToTestList[i];
+      debugPrint('🔍 Testing video ${i + 1}/${videosToTestList.length}: ${videoEvent.id.substring(0, 8)}...');
+      
+      try {
+        await _testVideoCompatibility(videoEvent);
+        // Add delay between tests to reduce network pressure
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        debugPrint('❌ Video test failed: ${videoEvent.id.substring(0, 8)} - $e');
+        // Continue with next video even if this one fails
       }
     }
     
-    debugPrint('📊 Compatibility test summary: $tested videos being tested, target: $_currentCacheTarget');
+    debugPrint('📊 Compatibility test round completed. Ready queue: ${_readyToPlayQueue.length}/$_currentCacheTarget');
   }
   
   /// Consider scaling up the cache target if we've met the current one
   void _considerScalingUp() {
-    if (_readyToPlayQueue.length >= _currentCacheTarget && _primeIndex < _cachingPrimes.length - 1) {
-      _primeIndex++;
-      _currentCacheTarget = _cachingPrimes[_primeIndex];
-      debugPrint('🚀 Scaling up cache target to $_currentCacheTarget videos (prime #${_primeIndex + 1})');
+    // Prevent infinite recursion
+    if (_isScalingInProgress) {
+      debugPrint('⏸️ Scaling already in progress, skipping duplicate call');
+      return;
+    }
+    
+    // Check if we can and should scale up
+    if (_readyToPlayQueue.length >= _currentCacheTarget && 
+        _primeIndex < _cachingPrimes.length - 1 &&
+        _currentCacheTarget < _maxCacheTarget) {
       
-      // Trigger another round of testing to meet the new target
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (_readyToPlayQueue.isNotEmpty) {
-          // Use the current video events for the next round
-          notifyListeners(); // This will trigger another processing round
-        }
+      _isScalingInProgress = true;
+      _primeIndex++;
+      final oldTarget = _currentCacheTarget;
+      _currentCacheTarget = _cachingPrimes[_primeIndex];
+      
+      debugPrint('🚀 Scaling up cache target from $oldTarget to $_currentCacheTarget videos (prime #${_primeIndex + 1})');
+      
+      // Reset scaling flag after a delay to allow the next round
+      Future.delayed(const Duration(seconds: 2), () {
+        _isScalingInProgress = false;
+        debugPrint('✅ Scaling cooldown completed, ready for next round if needed');
       });
+      
+    } else if (_currentCacheTarget >= _maxCacheTarget) {
+      debugPrint('🏆 Maximum cache target reached: $_currentCacheTarget videos (limit: $_maxCacheTarget)');
     } else if (_readyToPlayQueue.length >= _maxCachedVideos) {
       debugPrint('🏆 Maximum cache capacity reached: ${_readyToPlayQueue.length} videos ready');
+    } else {
+      debugPrint('📊 Scaling conditions not met: ready=${_readyToPlayQueue.length}, target=$_currentCacheTarget, primeIndex=$_primeIndex/${_cachingPrimes.length - 1}');
     }
   }
   
-  /// Preload videos around the current index for smooth swiping
+  /// Aggressively preload videos around the current index for TikTok-like seamless experience
   Future<void> preloadVideos(List<VideoEvent> videos, int currentIndex) async {
     if (videos.isEmpty) return;
     
-    debugPrint('🎥 Preloading videos around index $currentIndex');
+    debugPrint('🚀 Aggressively preloading videos around index $currentIndex for seamless experience');
+    await _preloadVideosAggressively(videos, currentIndex);
+  }
+  
+  /// Network-aware aggressive preloading implementation 
+  Future<void> _preloadVideosAggressively(List<VideoEvent> videos, int currentIndex) async {
+    if (videos.isEmpty) return;
     
-    // Calculate range of videos to preload
-    final startIndex = (currentIndex - 1).clamp(0, videos.length - 1);
-    final endIndex = (currentIndex + _preloadCount).clamp(0, videos.length - 1);
+    // Get network status for intelligent preloading
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final isWifi = connectivityResult.contains(ConnectivityResult.wifi);
+    final isCellular = connectivityResult.contains(ConnectivityResult.mobile);
     
-    // Preload videos in range
-    for (int i = startIndex; i <= endIndex; i++) {
-      final videoEvent = videos[i];
-      if (videoEvent.videoUrl != null && !videoEvent.isGif) {
-        await _preloadVideo(videoEvent);
+    // Determine preloading window based on connection type
+    int preloadAhead;
+    if (isWifi) {
+      preloadAhead = _preloadAheadWifi;
+      debugPrint('📶 WiFi detected - using aggressive preloading (ahead: $preloadAhead)');
+    } else if (isCellular) {
+      preloadAhead = _preloadAheadCellular;
+      debugPrint('📱 Cellular detected - using moderate preloading (ahead: $preloadAhead)');
+    } else {
+      preloadAhead = _preloadAheadDataSaver;
+      debugPrint('🔌 Unknown/limited connection - using conservative preloading (ahead: $preloadAhead)');
+    }
+    
+    // Calculate dynamic preloading window [currentIndex - D, currentIndex + F]
+    final startIndex = (currentIndex - _preloadBehind).clamp(0, videos.length - 1);
+    final endIndex = (currentIndex + preloadAhead).clamp(0, videos.length - 1);
+    
+    debugPrint('🎯 Preloading window: [$startIndex, $endIndex] (current: $currentIndex)');
+    
+    // Priority queue: current+1, current+2, current-1, current+3, etc.
+    final List<int> priorityIndices = [];
+    
+    // Add forward indices (higher priority)
+    for (int offset = 1; offset <= preloadAhead; offset++) {
+      final index = currentIndex + offset;
+      if (index < videos.length) {
+        priorityIndices.add(index);
       }
     }
     
-    // Clean up old cached videos that are far from current position
-    _cleanupDistantVideos(videos, currentIndex);
+    // Add backward indices (lower priority)
+    for (int offset = 1; offset <= _preloadBehind; offset++) {
+      final index = currentIndex - offset;
+      if (index >= 0) {
+        priorityIndices.add(index);
+      }
+    }
+    
+    debugPrint('📋 Priority preloading order: $priorityIndices');
+    
+    // Preload videos in priority order
+    for (final index in priorityIndices) {
+      final videoEvent = videos[index];
+      if (videoEvent.videoUrl != null && !videoEvent.isGif) {
+        // Check if already cached/loading to avoid duplicates
+        if (!_controllers.containsKey(videoEvent.id) && !_preloadQueue.contains(videoEvent.id)) {
+          debugPrint('🎥 Priority preloading video at index $index: ${videoEvent.id.substring(0, 8)}...');
+          // Don't await - start all preloads in parallel for speed
+          _preloadVideo(videoEvent);
+        } else {
+          debugPrint('⏩ Video at index $index already cached/loading: ${videoEvent.id.substring(0, 8)}...');
+        }
+      }
+    }
+    
+    // Clean up videos outside the extended window to manage memory
+    _cleanupDistantVideos(videos, currentIndex, keepRange: preloadAhead + 2);
   }
   
   /// Test if a video can be loaded without adding it to the ready queue if it fails
@@ -214,81 +328,35 @@ class VideoCacheService extends ChangeNotifier {
       return; // Already tested or testing
     }
     
+    // TEMPORARILY DISABLED: Skip cache cleanup to avoid disposal errors
     // Always test compatibility - manage cache intelligently
-    if (_controllers.length >= _currentCacheTarget) {
-      debugPrint('🧹 Cache at target capacity (${_controllers.length}/$_currentCacheTarget), making room for new test...');
-      _cleanupOldestCachedVideos(1); // Clean up just 1 to make room for this test
-    }
+    // if (_controllers.length >= _currentCacheTarget) {
+    //   debugPrint('🧹 Cache at target capacity (${_controllers.length}/$_currentCacheTarget), making room for new test...');
+    //   _cleanupOldestCachedVideos(1); // Clean up just 1 to make room for this test
+    // }
     
     try {
       _preloadQueue.add(videoEvent.id);
       
-      debugPrint('🧪 Testing video compatibility: ${videoEvent.id.substring(0, 8)}...');
+      debugPrint('🧪 Testing video compatibility with deferred initialization: ${videoEvent.id.substring(0, 8)}...');
       debugPrint('📹 Video URL: ${videoEvent.videoUrl}');
       
+      // Create controller but don't initialize it yet
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(videoEvent.videoUrl!),
       );
       
       _controllers[videoEvent.id] = controller;
-      _initializationStatus[videoEvent.id] = false;
+      _initializationStatus[videoEvent.id] = false; // Will be initialized lazily
       
-      // Test initialization with timeout - more aggressive timeout for compatibility test
-      debugPrint('🔄 Starting controller initialization for compatibility test...');
-      await Future.any([
-        controller.initialize(),
-        Future.delayed(const Duration(seconds: 10)).then((_) {
-          throw TimeoutException('Video compatibility test timeout after 10 seconds', const Duration(seconds: 10));
-        }),
-      ]);
-      
-      debugPrint('✅ Controller initialized successfully for compatibility test: ${videoEvent.id.substring(0, 8)}...');
-      debugPrint('📹 Video info: ${controller.value.size.width}x${controller.value.size.height}, duration: ${controller.value.duration}');
-      
-      if (!controller.value.isInitialized) {
-        throw Exception('Controller claims to be initialized but isInitialized is false');
-      }
-      
-      // Test basic playback capability with more detailed error logging
-      debugPrint('🎥 Testing playback capability...');
-      controller.setLooping(true);
-      
-      debugPrint('▶️ Starting video playback...');
-      await controller.play();
-      
-      debugPrint('⏳ Waiting for playback to start...');
-      await Future.delayed(const Duration(milliseconds: 500)); // Give it more time to start
-      
-      // Check playback status
-      debugPrint('📊 Playback status: isPlaying=${controller.value.isPlaying}, position=${controller.value.position.inMilliseconds}ms');
-      debugPrint('📊 Video state: hasError=${controller.value.hasError}, errorDescription=${controller.value.errorDescription}');
-      
-      // Accept video if it initialized properly, even if playback test is inconclusive
-      if (controller.value.hasError) {
-        throw Exception('Video has error: ${controller.value.errorDescription}');
-      }
-      
-      // Pause to clean up
-      try {
-        await controller.pause();
-      } catch (pauseError) {
-        debugPrint('⚠️ Error pausing video: $pauseError');
-      }
-      
-      _initializationStatus[videoEvent.id] = true;
-      debugPrint('✅ Video passed compatibility test: ${videoEvent.id.substring(0, 8)}... (${controller.value.size.width}x${controller.value.size.height})');
-      
-      // Only add to ready queue if video passes all compatibility tests
+      // Add to ready queue immediately - initialization will happen when needed
+      debugPrint('✅ Adding video to ready queue with deferred initialization: ${videoEvent.id.substring(0, 8)}...');
       _addToReadyQueue(videoEvent);
       
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Video failed compatibility test: ${videoEvent.id.substring(0, 8)} - $e');
       debugPrint('📹 Failed video URL: ${videoEvent.videoUrl}');
-      debugPrint('🔍 Error type: ${e.runtimeType}');
-      if (e is TimeoutException) {
-        debugPrint('⏰ Compatibility test timed out - video may be too slow to load');
-      }
       debugPrint('🚫 Excluding video from feed due to incompatibility');
       
       // Clean up failed controller immediately
@@ -299,8 +367,6 @@ class VideoCacheService extends ChangeNotifier {
         debugPrint('⚠️ Error disposing failed controller: $disposeError');
       }
       _initializationStatus.remove(videoEvent.id);
-      
-      // DO NOT add to ready queue - exclude incompatible videos completely
     } finally {
       _preloadQueue.remove(videoEvent.id);
     }
@@ -335,13 +401,44 @@ class VideoCacheService extends ChangeNotifier {
       _controllers[videoEvent.id] = controller;
       _initializationStatus[videoEvent.id] = false;
       
-      // Initialize the controller with timeout
-      await Future.any([
-        controller.initialize(),
-        Future.delayed(const Duration(seconds: 8)).then((_) {
-          throw TimeoutException('Video initialization timeout after 8 seconds', const Duration(seconds: 8));
-        }),
-      ]);
+      // Use Completer and Timer to prevent event loop blocking on macOS
+      final completer = Completer<void>();
+      bool hasCompleted = false;
+      
+      // Start initialization in microtask to avoid blocking
+      scheduleMicrotask(() async {
+        try {
+          await controller.initialize();
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.complete();
+          }
+        } catch (e) {
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.completeError(e);
+          }
+        }
+      });
+      
+      // Set up timeout using Timer
+      Timer(const Duration(seconds: 8), () {
+        if (!hasCompleted) {
+          hasCompleted = true;
+          completer.completeError(TimeoutException('Video initialization timeout after 8 seconds', const Duration(seconds: 8)));
+        }
+      });
+      
+      // Wait for either completion or timeout
+      await completer.future;
+      
+      // Brief delay to ensure controller is ready
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // Verify controller is actually ready before marking as initialized
+      if (!controller.value.isInitialized) {
+        throw Exception('Controller not ready after initialization in preload for ${videoEvent.id.substring(0, 8)}');
+      }
       
       controller.setLooping(true);
       _initializationStatus[videoEvent.id] = true;
@@ -367,11 +464,29 @@ class VideoCacheService extends ChangeNotifier {
     
     for (final videoId in keysToRemove) {
       final controller = _controllers.remove(videoId);
-      try {
-        controller?.dispose();
-      } catch (e) {
-        debugPrint('⚠️ Error disposing controller during cleanup: $e');
+      
+      // Instead of disposing immediately, mark controller as invalid
+      // The UI should check for errors before using controllers
+      if (controller != null) {
+        try {
+          // Try to pause and cleanup gracefully first
+          if (controller.value.isInitialized && controller.value.isPlaying) {
+            controller.pause();
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error pausing controller during cleanup: $e');
+        }
+        
+        // Dispose after a delay to allow UI to react
+        Future.delayed(const Duration(milliseconds: 100), () {
+          try {
+            controller.dispose();
+          } catch (e) {
+            debugPrint('⚠️ Error disposing controller during cleanup: $e');
+          }
+        });
       }
+      
       _initializationStatus.remove(videoId);
       
       // Also remove from ready queue and tracking set
@@ -385,13 +500,13 @@ class VideoCacheService extends ChangeNotifier {
   }
   
   /// Clean up videos that are far from the current position
-  void _cleanupDistantVideos(List<VideoEvent> videos, int currentIndex) {
-    final keepRange = _preloadCount + 2; // Keep a bit more than preload range
+  void _cleanupDistantVideos(List<VideoEvent> videos, int currentIndex, {int? keepRange}) {
+    final actualKeepRange = keepRange ?? (_preloadCount + 2); // Keep a bit more than preload range
     final videosToKeep = <String>{};
     
     // Calculate which videos to keep
-    final startKeep = (currentIndex - keepRange).clamp(0, videos.length - 1);
-    final endKeep = (currentIndex + keepRange).clamp(0, videos.length - 1);
+    final startKeep = (currentIndex - actualKeepRange).clamp(0, videos.length - 1);
+    final endKeep = (currentIndex + actualKeepRange).clamp(0, videos.length - 1);
     
     for (int i = startKeep; i <= endKeep; i++) {
       videosToKeep.add(videos[i].id);
@@ -403,6 +518,10 @@ class VideoCacheService extends ChangeNotifier {
       if (!videosToKeep.contains(videoId)) {
         controllersToRemove.add(videoId);
       }
+    }
+    
+    if (controllersToRemove.isNotEmpty) {
+      debugPrint('🧹 Cleaning up ${controllersToRemove.length} distant videos (keep range: $actualKeepRange)');
     }
     
     for (final videoId in controllersToRemove) {
@@ -455,6 +574,64 @@ class VideoCacheService extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+  
+  /// Initialize a video controller lazily when it's needed (non-blocking)
+  Future<void> initializeControllerLazily(VideoEvent videoEvent) async {
+    final controller = _controllers[videoEvent.id];
+    if (controller == null) {
+      debugPrint('⚠️ No controller found for lazy initialization: ${videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    if (_initializationStatus[videoEvent.id] == true) {
+      debugPrint('⏩ Controller already initialized: ${videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    try {
+      debugPrint('🔄 Lazy initializing controller: ${videoEvent.id.substring(0, 8)}...');
+      
+      // Use the same non-blocking approach
+      final completer = Completer<void>();
+      bool hasCompleted = false;
+      
+      // Start initialization in microtask to avoid blocking
+      scheduleMicrotask(() async {
+        try {
+          await controller.initialize();
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.complete();
+          }
+        } catch (e) {
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.completeError(e);
+          }
+        }
+      });
+      
+      // Set up timeout using Timer
+      Timer(const Duration(seconds: 10), () {
+        if (!hasCompleted) {
+          hasCompleted = true;
+          completer.completeError(TimeoutException('Lazy video initialization timeout after 10 seconds', const Duration(seconds: 10)));
+        }
+      });
+      
+      // Wait for either completion or timeout
+      await completer.future;
+      
+      controller.setLooping(true);
+      _initializationStatus[videoEvent.id] = true;
+      debugPrint('✅ Lazy initialization completed: ${videoEvent.id.substring(0, 8)}');
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Lazy initialization failed: ${videoEvent.id.substring(0, 8)} - $e');
+      _initializationStatus[videoEvent.id] = false;
+    }
   }
   
   /// Remove a controller from cache

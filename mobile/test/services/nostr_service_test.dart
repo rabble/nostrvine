@@ -3,7 +3,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr/nostr.dart';
-import 'package:mocktail/mocktail.dart';
 import '../../lib/services/nostr_service.dart';
 import '../../lib/services/nostr_service_interface.dart';
 import '../../lib/services/nostr_key_manager.dart';
@@ -133,7 +132,6 @@ void main() {
       
       test('should handle hashtag extraction', () {
         const hashtags = ['nostr', 'vine', 'gif'];
-        const content = 'Check out my #nostr #vine #gif!';
         
         // Test that hashtags are properly processed
         expect(hashtags, contains('nostr'));
@@ -144,16 +142,12 @@ void main() {
     
     group('Relay Management', () {
       test('should handle relay addition', () async {
-        const testRelay = 'wss://test.relay.com';
-        
         // This would normally connect to a real relay
         // For testing, we just verify the method exists
         expect(nostrService.addRelay, isA<Function>());
       });
       
       test('should handle relay removal', () async {
-        const testRelay = 'wss://test.relay.com';
-        
         // Test relay removal method exists
         expect(nostrService.removeRelay, isA<Function>());
       });

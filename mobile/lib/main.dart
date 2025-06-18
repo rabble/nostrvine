@@ -17,6 +17,19 @@ import 'services/user_profile_service.dart';
 import 'providers/video_feed_provider.dart';
 
 void main() {
+  // Handle Flutter framework errors more gracefully
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // Log the error but don't crash the app for known framework issues
+    if (details.exception.toString().contains('KeyDownEvent') ||
+        details.exception.toString().contains('HardwareKeyboard')) {
+      debugPrint('⚠️ Known Flutter framework keyboard issue (ignoring): ${details.exception}');
+      return;
+    }
+    
+    // For other errors, use default handling
+    FlutterError.presentError(details);
+  };
+  
   runApp(const NostrVineApp());
 }
 

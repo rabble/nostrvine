@@ -2,7 +2,6 @@
 // ABOUTME: Converts video files to individual frame images for GIF creation
 
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -69,13 +68,8 @@ class VideoFrameExtractor {
       debugPrint('📊 Getting video info for: $videoPath');
       
       // FFprobe command to get video information in JSON format
-      final command = [
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_format',
-        '-show_streams',
-        videoPath,
-      ].join(' ');
+      // Note: Command construction for future FFmpeg integration
+      debugPrint('📊 Would execute FFprobe with: -v quiet -print_format json -show_format -show_streams $videoPath');
       
       // FFmpeg is temporarily disabled due to macOS compatibility issues
       throw UnsupportedError('FFprobe video info extraction is currently disabled due to dependency conflicts.');
