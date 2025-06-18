@@ -175,32 +175,31 @@ class _FeedScreenState extends State<FeedScreen> {
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            itemCount: provider.videoEvents.isNotEmpty ? null : 0, // Infinite scroll if we have videos
+            itemCount: provider.allVideoEvents.isNotEmpty ? provider.allVideoEvents.length : 0, // Use all video events, not just cached ready queue
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
               
-              final readyVideoCount = provider.videoEvents.length;
-              if (readyVideoCount > 0) {
-                // Use modulo to wrap around if we reach the end
-                final actualIndex = index % readyVideoCount;
-                
-                // Load more when getting close to the end of ready videos
-                if (actualIndex >= readyVideoCount - 3) {
+              final totalVideoCount = provider.allVideoEvents.length;
+              if (totalVideoCount > 0) {
+                // Load more when getting close to the end of all videos
+                if (index >= totalVideoCount - 5) {
+                  debugPrint('📱 Near end of videos (${index}/${totalVideoCount}), loading more...');
                   provider.loadMoreEvents();
                 }
                 // Preload videos around current index in the full video list
-                provider.preloadVideosAroundIndex(actualIndex);
+                provider.preloadVideosAroundIndex(index);
               }
             },
             itemBuilder: (context, index) {
-              final readyVideoCount = provider.videoEvents.length;
-              if (readyVideoCount == 0) return const SizedBox.shrink();
+              final totalVideoCount = provider.allVideoEvents.length;
+              if (totalVideoCount == 0 || index >= totalVideoCount) {
+                return const SizedBox.shrink();
+              }
               
-              // Use modulo to repeat videos if we reach the end
-              final actualIndex = index % readyVideoCount;
-              final videoEvent = provider.videoEvents[actualIndex];
+              // Use the actual index - no modulo cycling!
+              final videoEvent = provider.allVideoEvents[index];
               
               return SizedBox(
                 height: MediaQuery.of(context).size.height,

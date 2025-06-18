@@ -39,7 +39,7 @@ class VideoEventService extends ChangeNotifier {
     List<String>? hashtags,
     int? since,
     int? until,
-    int limit = 100,
+    int limit = 500, // Increased limit for more diverse content
   }) async {
     debugPrint('🎥 Starting video event subscription...');
     debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
@@ -221,7 +221,7 @@ class VideoEventService extends ChangeNotifier {
   }
   
   /// Load more historical events
-  Future<void> loadMoreEvents({int limit = 50}) async {
+  Future<void> loadMoreEvents({int limit = 200}) async { // Increased limit for bulk loading
     if (_videoEvents.isEmpty) return;
     
     _isLoading = true;

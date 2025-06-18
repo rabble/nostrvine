@@ -20,6 +20,9 @@ class VideoFeedProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   String? _error;
   
+  // Track events we've already processed for profile fetching to avoid loops
+  final Set<String> _processedEventIds = <String>{};
+  
   VideoFeedProvider({
     required VideoEventService videoEventService,
     required INostrService nostrService,
@@ -263,17 +266,31 @@ class VideoFeedProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// Fetch user profiles for video authors
+  /// Fetch user profiles for video authors (only for new events)
   void _fetchProfilesForVideos(List<VideoEvent> videoEvents) {
-    final authorsToFetch = videoEvents
+    // Filter to only new events we haven't processed for profile fetching
+    final newEvents = videoEvents
+        .where((event) => !_processedEventIds.contains(event.id))
+        .toList();
+    
+    if (newEvents.isEmpty) {
+      return; // No new events to process
+    }
+    
+    final authorsToFetch = newEvents
         .map((event) => event.pubkey)
         .where((pubkey) => !_userProfileService.hasProfile(pubkey))
         .toSet()
         .toList();
     
     if (authorsToFetch.isNotEmpty) {
-      debugPrint('👥 Fetching profiles for ${authorsToFetch.length} video authors...');
+      debugPrint('👥 Fetching profiles for ${authorsToFetch.length} new video authors...');
       _userProfileService.fetchMultipleProfiles(authorsToFetch);
+    }
+    
+    // Mark these events as processed
+    for (final event in newEvents) {
+      _processedEventIds.add(event.id);
     }
   }
   
