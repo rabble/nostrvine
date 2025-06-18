@@ -46,6 +46,7 @@ dependencies:
   # Camera and media
   camera: ^0.11.0+2
   video_player: ^2.9.1
+  chewie: ^1.8.3  # Better video player with format support
   image: ^4.1.7
   
   # Storage

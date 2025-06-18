@@ -29,10 +29,10 @@ class VideoCacheService extends ChangeNotifier {
   static const int _preloadAheadCellular = 2; 
   static const int _preloadAheadDataSaver = 1;
   
-  // Progressive caching: start small and grow using limited prime numbers
-  static const List<int> _cachingPrimes = [1, 3, 5, 7, 11, 13, 17]; // Limited to reasonable cache sizes
-  static const int _maxCacheTarget = 17; // Hard limit to prevent infinite scaling
-  int _currentCacheTarget = 1;
+  // Progressive caching: start with reasonable size and grow using prime numbers
+  static const List<int> _cachingPrimes = [10, 20, 30, 50, 75, 100]; // Start higher for better discovery
+  static const int _maxCacheTarget = 100; // Higher limit for better video variety
+  int _currentCacheTarget = 10; // Start with 10 videos instead of 1
   int _primeIndex = 0;
   bool _isScalingInProgress = false; // Prevent infinite scaling recursion
   
@@ -115,6 +115,14 @@ class VideoCacheService extends ChangeNotifier {
   /// Get the ready-to-play video queue (only videos that are downloaded and ready)
   List<VideoEvent> get readyToPlayQueue => List.unmodifiable(_readyToPlayQueue);
   
+  /// Remove a video from the ready queue if it fails to load
+  void removeVideoFromReadyQueue(String videoId) {
+    _readyToPlayQueue.removeWhere((event) => event.id == videoId);
+    _addedToQueue.remove(videoId);
+    debugPrint('🗑️ Removed failed video from ready queue: ${videoId.substring(0, 8)}...');
+    notifyListeners();
+  }
+  
   /// Add video to ready queue when it's successfully loaded
   void _addToReadyQueue(VideoEvent videoEvent) {
     if (!_addedToQueue.contains(videoEvent.id) && _readyToPlayQueue.length < _maxReadyQueue) {
@@ -162,87 +170,102 @@ class VideoCacheService extends ChangeNotifier {
       debugPrint('⏸️ Scaling already in progress, skipping to prevent recursion');
       return;
     }
-    
-    debugPrint('🧪 Starting progressive video compatibility testing...');
-    debugPrint('📊 Current cache target: $_currentCacheTarget videos (prime index: $_primeIndex)');
-    
-    // Calculate how many videos to test this round
-    final videosToTest = _currentCacheTarget - _readyToPlayQueue.length;
-    
-    if (videosToTest <= 0) {
-      debugPrint('🎯 Cache target met, considering scaling up...');
-      _considerScalingUp();
-      return;
-    }
-    
-    debugPrint('🔍 Testing $videosToTest videos to reach target of $_currentCacheTarget');
-    
-    // Get videos that need testing
-    final videosToTestList = videoEvents
-        .where((videoEvent) => 
-            !videoEvent.isGif && 
-            !_controllers.containsKey(videoEvent.id) &&
-            !_addedToQueue.contains(videoEvent.id))
-        .take(videosToTest)
-        .toList();
-    
-    if (videosToTestList.isEmpty) {
-      debugPrint('📊 No videos available for testing');
-      return;
-    }
-    
-    debugPrint('🔍 Testing ${videosToTestList.length} videos SEQUENTIALLY to avoid resource contention');
-    
-    // Test videos ONE AT A TIME to avoid resource contention and timeouts
-    for (int i = 0; i < videosToTestList.length; i++) {
-      final videoEvent = videosToTestList[i];
-      debugPrint('🔍 Testing video ${i + 1}/${videosToTestList.length}: ${videoEvent.id.substring(0, 8)}...');
-      
-      try {
-        await _testVideoCompatibility(videoEvent);
-        // Add delay between tests to reduce network pressure
-        await Future.delayed(const Duration(milliseconds: 500));
-      } catch (e) {
-        debugPrint('❌ Video test failed: ${videoEvent.id.substring(0, 8)} - $e');
-        // Continue with next video even if this one fails
+    _isScalingInProgress = true;
+    try {
+      debugPrint('🧪 Starting progressive video compatibility testing...');
+      debugPrint(
+          '📊 Current cache target: $_currentCacheTarget videos (prime index: $_primeIndex)');
+
+      // Calculate how many videos to test this round
+      final videosToTest = _currentCacheTarget - _readyToPlayQueue.length;
+
+      if (videosToTest <= 0) {
+        debugPrint('🎯 Cache target met, considering scaling up...');
+        _considerScalingUp();
+        // Don't return immediately - continue processing at least a few more videos
+        // to ensure we have variety even when target is met
+        final extraVideosToTest = 5; // Always try to test a few extra videos
+        final remainingVideos = videoEvents.where((event) => 
+          !event.isGif && 
+          !_addedToQueue.contains(event.id) && 
+          !_controllers.containsKey(event.id)
+        ).take(extraVideosToTest).toList();
+        
+        if (remainingVideos.isEmpty) {
+          return; // No more videos to test
+        }
+        
+        debugPrint('🔄 Testing ${remainingVideos.length} extra videos for variety...');
+        for (final videoEvent in remainingVideos) {
+          await _testVideoCompatibility(videoEvent);
+        }
+        return;
       }
+
+      debugPrint(
+          '🔍 Testing $videosToTest videos to reach target of $_currentCacheTarget');
+
+      // Get videos that need testing
+      final videosToTestList = videoEvents
+          .where((videoEvent) =>
+              !videoEvent.isGif &&
+              !_controllers.containsKey(videoEvent.id) &&
+              !_addedToQueue.contains(videoEvent.id))
+          .take(videosToTest)
+          .toList();
+
+      if (videosToTestList.isEmpty) {
+        debugPrint('📊 No videos available for testing');
+        return;
+      }
+
+      debugPrint(
+          '🔍 Testing ${videosToTestList.length} videos SEQUENTIALLY to avoid resource contention');
+
+      // Test videos ONE AT A TIME to avoid resource contention and timeouts
+      for (int i = 0; i < videosToTestList.length; i++) {
+        final videoEvent = videosToTestList[i];
+        debugPrint(
+            '🔍 Testing video ${i + 1}/${videosToTestList.length}: ${videoEvent.id.substring(0, 8)}...');
+
+        try {
+          await _testVideoCompatibility(videoEvent);
+          // Add delay between tests to reduce network pressure
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          debugPrint('❌ Video test failed: ${videoEvent.id.substring(0, 8)} - $e');
+          // Continue with next video even if this one fails
+        }
+      }
+
+      debugPrint(
+          '📊 Compatibility test round completed. Ready queue: ${_readyToPlayQueue.length}/$_currentCacheTarget');
+    } finally {
+      _isScalingInProgress = false;
     }
-    
-    debugPrint('📊 Compatibility test round completed. Ready queue: ${_readyToPlayQueue.length}/$_currentCacheTarget');
   }
   
   /// Consider scaling up the cache target if we've met the current one
   void _considerScalingUp() {
-    // Prevent infinite recursion
-    if (_isScalingInProgress) {
-      debugPrint('⏸️ Scaling already in progress, skipping duplicate call');
-      return;
-    }
-    
     // Check if we can and should scale up
-    if (_readyToPlayQueue.length >= _currentCacheTarget && 
+    if (_readyToPlayQueue.length >= _currentCacheTarget &&
         _primeIndex < _cachingPrimes.length - 1 &&
         _currentCacheTarget < _maxCacheTarget) {
-      
-      _isScalingInProgress = true;
       _primeIndex++;
       final oldTarget = _currentCacheTarget;
       _currentCacheTarget = _cachingPrimes[_primeIndex];
-      
-      debugPrint('🚀 Scaling up cache target from $oldTarget to $_currentCacheTarget videos (prime #${_primeIndex + 1})');
-      
-      // Reset scaling flag after a delay to allow the next round
-      Future.delayed(const Duration(seconds: 2), () {
-        _isScalingInProgress = false;
-        debugPrint('✅ Scaling cooldown completed, ready for next round if needed');
-      });
-      
+
+      debugPrint(
+          '🚀 Scaling up cache target from $oldTarget to $_currentCacheTarget videos (prime #${_primeIndex + 1})');
     } else if (_currentCacheTarget >= _maxCacheTarget) {
-      debugPrint('🏆 Maximum cache target reached: $_currentCacheTarget videos (limit: $_maxCacheTarget)');
+      debugPrint(
+          '🏆 Maximum cache target reached: $_currentCacheTarget videos (limit: $_maxCacheTarget)');
     } else if (_readyToPlayQueue.length >= _maxCachedVideos) {
-      debugPrint('🏆 Maximum cache capacity reached: ${_readyToPlayQueue.length} videos ready');
+      debugPrint(
+          '🏆 Maximum cache capacity reached: ${_readyToPlayQueue.length} videos ready');
     } else {
-      debugPrint('📊 Scaling conditions not met: ready=${_readyToPlayQueue.length}, target=$_currentCacheTarget, primeIndex=$_primeIndex/${_cachingPrimes.length - 1}');
+      debugPrint(
+          '📊 Scaling conditions not met: ready=${_readyToPlayQueue.length}, target=$_currentCacheTarget, primeIndex=$_primeIndex/${_cachingPrimes.length - 1}');
     }
   }
   
@@ -331,23 +354,43 @@ class VideoCacheService extends ChangeNotifier {
     try {
       _preloadQueue.add(videoEvent.id);
       
-      debugPrint('🧪 SIMPLIFIED: Adding video to ready queue without controller: ${videoEvent.id.substring(0, 8)}...');
+      debugPrint('🚀 PRELOADING: Testing and preloading video for instant playback: ${videoEvent.id.substring(0, 8)}...');
       debugPrint('📹 Video URL: ${videoEvent.videoUrl}');
+      debugPrint('📊 Format: ${videoEvent.mimeType ?? "unknown"}');
       
-      // SIMPLIFIED APPROACH: Don't create controllers here at all
-      // Let the UI create them when needed to avoid disposal issues
+      // Create and initialize controller immediately for TikTok-style preloading
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(videoEvent.videoUrl!),
+      );
       
-      // Just mark as ready for the UI to handle
-      _initializationStatus[videoEvent.id] = false; // Not initialized yet
+      _controllers[videoEvent.id] = controller;
       
-      // Add to ready queue immediately - UI will handle controller creation
-      debugPrint('✅ Adding video to ready queue for UI handling: ${videoEvent.id.substring(0, 8)}...');
+      // Preload the video by initializing it
+      await controller.initialize();
+      controller.setLooping(true);
+      
+      // Briefly start playing to buffer the video, then pause for instant playback
+      await controller.play();
+      await Future.delayed(const Duration(milliseconds: 100)); // Buffer a bit
+      await controller.pause();
+      
+      _initializationStatus[videoEvent.id] = true; // Mark as preloaded and ready
+      
+      debugPrint('✅ PRELOADED: Video ready for instant playback: ${videoEvent.id.substring(0, 8)}...');
       _addToReadyQueue(videoEvent);
       
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Video failed to add to queue: ${videoEvent.id.substring(0, 8)} - $e');
+      debugPrint('❌ PRELOAD FAILED: ${videoEvent.id.substring(0, 8)} - $e');
       debugPrint('📹 Failed video URL: ${videoEvent.videoUrl}');
+      
+      // Clean up failed controller
+      final controller = _controllers.remove(videoEvent.id);
+      try {
+        controller?.dispose();
+      } catch (disposeError) {
+        debugPrint('⚠️ Error disposing failed controller: $disposeError');
+      }
       _initializationStatus.remove(videoEvent.id);
     } finally {
       _preloadQueue.remove(videoEvent.id);

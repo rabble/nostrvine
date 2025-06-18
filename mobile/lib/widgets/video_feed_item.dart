@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import '../models/video_event.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
@@ -40,6 +41,7 @@ class VideoFeedItem extends StatefulWidget {
 
 class _VideoFeedItemState extends State<VideoFeedItem> {
   VideoPlayerController? _controller;
+  ChewieController? _chewieController;
   bool _isPlaying = false;
   final bool _showControls = false;
   bool _hasError = false;
@@ -71,12 +73,20 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   @override
   void dispose() {
-    // Always dispose our controller since we're managing it directly now
+    // Dispose Chewie controller but NOT the video controller if it's managed by cache service
     try {
-      _controller?.dispose();
-      debugPrint('🗑️ SIMPLIFIED: Disposed controller for: ${widget.videoEvent.id.substring(0, 8)}');
+      _chewieController?.dispose();
+      
+      // Only dispose video controller if it's not from the cache service
+      final isCachedController = widget.videoCacheService?.getController(widget.videoEvent) == _controller;
+      if (!isCachedController && _controller != null) {
+        _controller!.dispose();
+        debugPrint('🗑️ DISPOSED: Own controller for: ${widget.videoEvent.id.substring(0, 8)}');
+      } else {
+        debugPrint('🔗 KEPT: Cache-managed controller for: ${widget.videoEvent.id.substring(0, 8)}');
+      }
     } catch (e) {
-      debugPrint('⚠️ Error disposing controller: $e');
+      debugPrint('⚠️ Error disposing controllers: $e');
     }
     super.dispose();
   }
@@ -87,26 +97,82 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         widget.videoEvent.videoUrl!.isNotEmpty && 
         !widget.videoEvent.isGif) {
       
-      debugPrint('🎥 SIMPLIFIED: Creating controller directly in UI: ${widget.videoEvent.id.substring(0, 8)}...');
+      // First check if we have a preloaded controller from the cache service
+      final preloadedController = widget.videoCacheService?.getController(widget.videoEvent);
+      if (preloadedController != null) {
+        debugPrint('⚡ INSTANT: Using preloaded controller for ${widget.videoEvent.id.substring(0, 8)} (${widget.videoEvent.mimeType})');
+        _controller = preloadedController;
+        
+        // Create Chewie controller immediately since video is preloaded
+        if (_controller!.value.isInitialized) {
+          _createChewieController();
+        }
+        return;
+      }
       
-      // Create controller directly in UI to avoid cache disposal issues
+      // Fallback: create our own controller if not preloaded
+      debugPrint('🔄 FALLBACK: Creating controller for ${widget.videoEvent.id.substring(0, 8)} (${widget.videoEvent.mimeType})');
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoEvent.videoUrl!),
       );
-      
-      // Don't initialize immediately - wait until video becomes active
-      debugPrint('⏳ Controller created, will initialize when video becomes active: ${widget.videoEvent.id.substring(0, 8)}');
     }
   }
   
+  void _createChewieController() {
+    if (_controller != null && _controller!.value.isInitialized) {
+      _chewieController = ChewieController(
+        videoPlayerController: _controller!,
+        autoPlay: false,
+        looping: true,
+        showControls: false,
+        allowFullScreen: false,
+        allowMuting: false,
+        allowPlaybackSpeedChanging: false,
+        showControlsOnInitialize: false,
+        aspectRatio: _controller!.value.aspectRatio,
+        placeholder: Container(
+          color: Colors.grey[900],
+          child: const Center(
+            child: CircularProgressIndicator(color: Colors.white54),
+          ),
+        ),
+        errorBuilder: (context, errorMessage) {
+          return Container(
+            color: Colors.red[900],
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Format not supported\n${widget.videoEvent.mimeType ?? "Unknown format"}',
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      
+      debugPrint('✅ INSTANT: Chewie controller ready for ${widget.videoEvent.id.substring(0, 8)}');
+      
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
   void _initializeLazily() async {
     if (_controller == null) {
       debugPrint('⚠️ No controller to initialize: ${widget.videoEvent.id.substring(0, 8)}');
       return;
     }
     
-    if (_controller!.value.isInitialized) {
-      debugPrint('⏩ Controller already initialized: ${widget.videoEvent.id.substring(0, 8)}');
+    if (_controller!.value.isInitialized && _chewieController != null) {
+      debugPrint('⏩ Controllers already initialized: ${widget.videoEvent.id.substring(0, 8)}');
       if (widget.isActive) {
         _playVideo();
       }
@@ -114,56 +180,26 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     }
     
     try {
-      debugPrint('🔄 SIMPLIFIED: Initializing controller directly in UI: ${widget.videoEvent.id.substring(0, 8)}...');
+      debugPrint('🔄 FALLBACK: Initializing non-preloaded video ${widget.videoEvent.id.substring(0, 8)}...');
       
-      // Use the same non-blocking approach but directly in UI
-      final completer = Completer<void>();
-      bool hasCompleted = false;
+      // Initialize video player (fallback for non-preloaded videos)
+      await _controller!.initialize();
       
-      // Start initialization in microtask to avoid blocking
-      scheduleMicrotask(() async {
-        try {
-          await _controller!.initialize();
-          if (!hasCompleted) {
-            hasCompleted = true;
-            completer.complete();
-          }
-        } catch (e) {
-          if (!hasCompleted) {
-            hasCompleted = true;
-            completer.completeError(e);
-          }
-        }
-      });
+      // Create Chewie controller
+      _createChewieController();
       
-      // Set up timeout using Timer
-      Timer(const Duration(seconds: 10), () {
-        if (!hasCompleted) {
-          hasCompleted = true;
-          completer.completeError(TimeoutException('Video initialization timeout after 10 seconds', const Duration(seconds: 10)));
-        }
-      });
-      
-      // Wait for either completion or timeout
-      await completer.future;
-      
-      _controller!.setLooping(true);
-      debugPrint('✅ SIMPLIFIED: Controller initialized successfully: ${widget.videoEvent.id.substring(0, 8)}');
-      
-      if (mounted) {
-        setState(() {});
-        if (widget.isActive) {
-          _playVideo();
-        }
+      if (widget.isActive) {
+        _playVideo();
       }
     } catch (e) {
-      debugPrint('❌ SIMPLIFIED: Initialization failed: ${widget.videoEvent.id.substring(0, 8)} - $e');
+      debugPrint('❌ FALLBACK: Initialization failed for ${widget.videoEvent.mimeType}: ${widget.videoEvent.id.substring(0, 8)} - $e');
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = e.toString();
+          _errorMessage = 'Failed to load ${widget.videoEvent.mimeType ?? "video"}: $e';
         });
       }
+      widget.videoCacheService?.removeVideoFromReadyQueue(widget.videoEvent.id);
     }
   }
   
@@ -256,34 +292,34 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   }
 
   void _playVideo() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      debugPrint('▶️ SIMPLIFIED: Playing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+    if (_chewieController != null && _controller!.value.isInitialized) {
+      debugPrint('▶️ ROBUST: Playing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
       
       try {
-        _controller!.play();
+        _chewieController!.play();
         setState(() {
           _isPlaying = true;
         });
       } catch (e) {
-        debugPrint('❌ Error in _playVideo ${widget.videoEvent.id.substring(0, 8)}: $e');
+        debugPrint('❌ Error playing video ${widget.videoEvent.id.substring(0, 8)}: $e');
         if (mounted) {
           setState(() {
             _hasError = true;
-            _errorMessage = e.toString();
+            _errorMessage = 'Playback error: $e';
           });
         }
       }
     } else {
-      debugPrint('⚠️ Cannot play video - controller not ready: ${widget.videoEvent.id.substring(0, 8)}');
+      debugPrint('⚠️ Cannot play video - Chewie controller not ready: ${widget.videoEvent.id.substring(0, 8)}');
     }
   }
 
   void _pauseVideo() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      debugPrint('⏸️ SIMPLIFIED: Pausing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+    if (_chewieController != null && _controller!.value.isInitialized) {
+      debugPrint('⏸️ ROBUST: Pausing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
       
       try {
-        _controller!.pause();
+        _chewieController!.pause();
         setState(() {
           _isPlaying = false;
         });
@@ -484,18 +520,16 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
       return _buildErrorWidget();
     }
     
-    if (_controller != null && _controller!.value.isInitialized) {
+    // Show Chewie player if available and initialized
+    if (_chewieController != null && _controller!.value.isInitialized) {
       return Stack(
         children: [
-          // Center the video and fit it to screen while maintaining aspect ratio
+          // Use Chewie player which handles most video formats
           Center(
-            child: AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: VideoPlayer(_controller!),
-            ),
+            child: Chewie(controller: _chewieController!),
           ),
-          // Show play/pause overlay when not playing or when showing controls
-          if (!_isPlaying || _showControls)
+          // Show play/pause overlay when not playing
+          if (!_isPlaying)
             Center(
               child: Container(
                 padding: const EdgeInsets.all(12),
@@ -503,8 +537,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                   color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                child: const Icon(
+                  Icons.play_arrow,
                   size: 40,
                   color: Colors.white,
                 ),
@@ -536,9 +570,17 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
             )
           else
             _buildPlaceholder(),
-          const Center(
-            child: CircularProgressIndicator(
-              color: Colors.white,
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: Colors.white54),
+                const SizedBox(height: 8),
+                Text(
+                  'Loading ${widget.videoEvent.mimeType ?? "video"}...',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ],
