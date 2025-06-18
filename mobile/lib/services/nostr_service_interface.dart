@@ -1,5 +1,5 @@
-// ABOUTME: Interface for Nostr services to ensure compatibility between web and native implementations
-// ABOUTME: Provides common contract for both NostrService and WebNostrService
+// ABOUTME: Interface for Nostr services to ensure compatibility across platforms
+// ABOUTME: Provides common contract for NostrService implementations
 
 import 'dart:async';
 import 'package:nostr/nostr.dart';

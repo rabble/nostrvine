@@ -1,6 +1,7 @@
 // ABOUTME: Service for preloading and caching video content for smooth playback
 // ABOUTME: Manages video player controllers and preloads upcoming videos in the feed
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
@@ -37,20 +38,47 @@ class VideoCacheService extends ChangeNotifier {
     if (!_addedToQueue.contains(videoEvent.id) && _readyToPlayQueue.length < _maxReadyQueue) {
       _readyToPlayQueue.add(videoEvent);
       _addedToQueue.add(videoEvent.id);
-      debugPrint('✅ Added to ready queue: ${videoEvent.id.substring(0, 8)}... (queue size: ${_readyToPlayQueue.length})');
+      debugPrint('✅ Added to ready queue: ${videoEvent.id.substring(0, 8)}... (${videoEvent.isGif ? "GIF" : "VIDEO"}) - queue size: ${_readyToPlayQueue.length}');
       notifyListeners();
+    } else {
+      debugPrint('⚠️ Could not add to ready queue: ${videoEvent.id.substring(0, 8)}... - already added: ${_addedToQueue.contains(videoEvent.id)}, queue full: ${_readyToPlayQueue.length >= _maxReadyQueue}');
     }
   }
   
-  /// Process new video events and add ready ones to the queue
+  /// Process new video events and test video compatibility before adding to ready queue
   void processNewVideoEvents(List<VideoEvent> videoEvents) {
+    if (videoEvents.isEmpty) return;
+    
+    debugPrint('📋 Processing ${videoEvents.length} video events for compatibility testing...');
+    
+    // Process GIFs immediately (they always work)
     for (final videoEvent in videoEvents) {
-      // Add GIFs immediately as they don't need initialization
       if (videoEvent.isGif && !_addedToQueue.contains(videoEvent.id)) {
         _addToReadyQueue(videoEvent);
+        debugPrint('✅ Added GIF to ready queue: ${videoEvent.id.substring(0, 8)}...');
       }
-      // Videos will be added to queue when they finish loading in _preloadVideo
     }
+    
+    // Test video compatibility for non-GIF videos in background
+    _testVideoCompatibilityInBackground(videoEvents);
+    
+    debugPrint('📊 Ready queue status: ${_readyToPlayQueue.length} videos ready');
+  }
+  
+  /// Test video compatibility in background without blocking UI
+  void _testVideoCompatibilityInBackground(List<VideoEvent> videoEvents) {
+    debugPrint('🧪 Starting video compatibility testing...');
+    
+    int tested = 0;
+    for (final videoEvent in videoEvents) {
+      if (!videoEvent.isGif && tested < 5) {
+        debugPrint('🔍 Testing video compatibility: ${videoEvent.id.substring(0, 8)}...');
+        _testVideoCompatibility(videoEvent);
+        tested++;
+      }
+    }
+    
+    debugPrint('📊 Compatibility test summary: $tested videos being tested');
   }
   
   /// Preload videos around the current index for smooth swiping
@@ -75,17 +103,80 @@ class VideoCacheService extends ChangeNotifier {
     _cleanupDistantVideos(videos, currentIndex);
   }
   
-  /// Preload a specific video
+  /// Test if a video can be loaded without adding it to the ready queue if it fails
+  Future<void> _testVideoCompatibility(VideoEvent videoEvent) async {
+    if (_controllers.containsKey(videoEvent.id) || _preloadQueue.contains(videoEvent.id)) {
+      return; // Already tested or testing
+    }
+    
+    if (_controllers.length >= _maxCachedVideos) {
+      debugPrint('⚠️ Cache full, skipping compatibility test: ${videoEvent.id.substring(0, 8)}...');
+      return; // Cache is full
+    }
+    
+    try {
+      _preloadQueue.add(videoEvent.id);
+      
+      debugPrint('🧪 Testing video compatibility: ${videoEvent.id.substring(0, 8)}...');
+      debugPrint('📹 Video URL: ${videoEvent.videoUrl}');
+      
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(videoEvent.videoUrl!),
+      );
+      
+      _controllers[videoEvent.id] = controller;
+      _initializationStatus[videoEvent.id] = false;
+      
+      // Test initialization with timeout - more aggressive timeout for compatibility test
+      await Future.any([
+        controller.initialize(),
+        Future.delayed(const Duration(seconds: 5)).then((_) {
+          throw TimeoutException('Video compatibility test timeout after 5 seconds', const Duration(seconds: 5));
+        }),
+      ]);
+      
+      // Test basic playback capability
+      controller.setLooping(true);
+      await controller.play();
+      await Future.delayed(const Duration(milliseconds: 100)); // Brief test play
+      await controller.pause();
+      
+      _initializationStatus[videoEvent.id] = true;
+      debugPrint('✅ Video passed compatibility test: ${videoEvent.id.substring(0, 8)}...');
+      
+      // Only add to ready queue if video passes all compatibility tests
+      _addToReadyQueue(videoEvent);
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Video failed compatibility test: ${videoEvent.id.substring(0, 8)} - $e');
+      debugPrint('🚫 Excluding video from feed due to incompatibility');
+      
+      // Clean up failed controller
+      final controller = _controllers.remove(videoEvent.id);
+      controller?.dispose();
+      _initializationStatus.remove(videoEvent.id);
+      
+      // DO NOT add to ready queue - exclude incompatible videos completely
+    } finally {
+      _preloadQueue.remove(videoEvent.id);
+    }
+  }
+  
+  /// Preload a specific video (for videos that have already passed compatibility test)
   Future<void> _preloadVideo(VideoEvent videoEvent) async {
     if (_controllers.containsKey(videoEvent.id)) {
+      debugPrint('⏩ Video already cached: ${videoEvent.id.substring(0, 8)}...');
       return; // Already cached
     }
     
     if (_preloadQueue.contains(videoEvent.id)) {
+      debugPrint('⏩ Video already in preload queue: ${videoEvent.id.substring(0, 8)}...');
       return; // Already in preload queue
     }
     
     if (_controllers.length >= _maxCachedVideos) {
+      debugPrint('⚠️ Cache full, skipping preload: ${videoEvent.id.substring(0, 8)}... (${_controllers.length}/$_maxCachedVideos)');
       return; // Cache is full, skip preloading
     }
     
@@ -101,15 +192,17 @@ class VideoCacheService extends ChangeNotifier {
       _controllers[videoEvent.id] = controller;
       _initializationStatus[videoEvent.id] = false;
       
-      // Initialize the controller
-      await controller.initialize();
+      // Initialize the controller with timeout
+      await Future.any([
+        controller.initialize(),
+        Future.delayed(const Duration(seconds: 8)).then((_) {
+          throw TimeoutException('Video initialization timeout after 8 seconds', const Duration(seconds: 8));
+        }),
+      ]);
+      
       controller.setLooping(true);
-      
       _initializationStatus[videoEvent.id] = true;
-      debugPrint('✅ Video preloaded: ${videoEvent.id.substring(0, 8)}...');
-      
-      // Add to ready queue now that it's loaded
-      _addToReadyQueue(videoEvent);
+      debugPrint('✅ Video preloaded successfully: ${videoEvent.id.substring(0, 8)}...');
       
       notifyListeners();
     } catch (e) {
@@ -191,10 +284,16 @@ class VideoCacheService extends ChangeNotifier {
   }
   
   /// Remove a controller from cache
-  void removeController(String videoId) {
+  void removeController(dynamic videoEventOrId) {
+    final String videoId = videoEventOrId is VideoEvent ? videoEventOrId.id : videoEventOrId as String;
+    
     final controller = _controllers.remove(videoId);
     controller?.dispose();
     _initializationStatus.remove(videoId);
+    
+    // Also remove from ready queue
+    _readyToPlayQueue.removeWhere((video) => video.id == videoId);
+    _addedToQueue.remove(videoId);
   }
   
   /// Get cache statistics for debugging
@@ -203,7 +302,9 @@ class VideoCacheService extends ChangeNotifier {
       'cached_videos': _controllers.length,
       'initialized_videos': _initializationStatus.values.where((initialized) => initialized).length,
       'preload_queue_size': _preloadQueue.length,
+      'ready_to_play_queue': _readyToPlayQueue.length,
       'max_cache_size': _maxCachedVideos,
+      'max_ready_queue': _maxReadyQueue,
     };
   }
   
@@ -216,6 +317,8 @@ class VideoCacheService extends ChangeNotifier {
     _controllers.clear();
     _initializationStatus.clear();
     _preloadQueue.clear();
+    _readyToPlayQueue.clear();
+    _addedToQueue.clear();
     super.dispose();
   }
 }

@@ -37,8 +37,8 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void dispose() {
     _cameraService?.dispose();
-    _nostrService.dispose();
-    _publishingService?.dispose();
+    // DO NOT dispose _nostrService - it's managed by Provider and shared across screens
+    // DO NOT dispose _publishingService - it's managed by Provider and shared across screens
     _moderationService?.dispose();
     _reportingService?.dispose();
     super.dispose();
@@ -53,7 +53,6 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _moderationService = ContentModerationService(
-        nostrService: _nostrService,
         prefs: prefs,
       );
       _reportingService = ContentReportingService(

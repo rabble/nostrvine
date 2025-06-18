@@ -6,12 +6,14 @@ import '../models/video_event.dart';
 import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/video_cache_service.dart';
+import '../services/user_profile_service.dart';
 
 /// Provider for managing video feed state and operations
 class VideoFeedProvider extends ChangeNotifier {
   final VideoEventService _videoEventService;
   final INostrService _nostrService;
   final VideoCacheService _videoCacheService;
+  final UserProfileService _userProfileService;
   
   bool _isInitialized = false;
   bool _isRefreshing = false;
@@ -22,26 +24,30 @@ class VideoFeedProvider extends ChangeNotifier {
     required VideoEventService videoEventService,
     required INostrService nostrService,
     required VideoCacheService videoCacheService,
+    required UserProfileService userProfileService,
   }) : _videoEventService = videoEventService,
        _nostrService = nostrService,
-       _videoCacheService = videoCacheService {
+       _videoCacheService = videoCacheService,
+       _userProfileService = userProfileService {
     
     // Listen to video event service changes
     _videoEventService.addListener(_onVideoEventServiceChanged);
   }
   
   // Getters
-  List<VideoEvent> get videoEvents => _videoEventService.videoEvents;
+  List<VideoEvent> get videoEvents => _videoCacheService.readyToPlayQueue;
+  List<VideoEvent> get allVideoEvents => _videoEventService.videoEvents; // All events for background processing
   bool get isInitialized => _isInitialized;
   bool get isRefreshing => _isRefreshing;
   bool get isLoadingMore => _isLoadingMore;
-  bool get hasEvents => _videoEventService.hasEvents;
+  bool get hasEvents => _videoCacheService.readyToPlayQueue.isNotEmpty;
   bool get isLoading => _videoEventService.isLoading;
   String? get error => _error ?? _videoEventService.error;
-  int get eventCount => _videoEventService.eventCount;
+  int get eventCount => _videoCacheService.readyToPlayQueue.length;
   bool get isSubscribed => _videoEventService.isSubscribed;
-  bool get canLoadMore => hasEvents && !isLoadingMore;
+  bool get canLoadMore => _videoEventService.hasEvents && !isLoadingMore;
   VideoCacheService get videoCacheService => _videoCacheService;
+  UserProfileService get userProfileService => _userProfileService;
   
   /// Initialize the video feed provider
   Future<void> initialize() async {
@@ -72,10 +78,24 @@ class VideoFeedProvider extends ChangeNotifier {
         debugPrint('📡 Nostr service already initialized');
       }
       
+      // Initialize user profile service
+      debugPrint('👤 Initializing user profile service...');
+      await _userProfileService.initialize();
+      debugPrint('👤 User profile service initialized');
+      
       // Subscribe to video events
       debugPrint('🎥 Subscribing to video event feed...');
       await _videoEventService.subscribeToVideoFeed();
       debugPrint('🎥 Video event subscription completed');
+      
+      // Process initial events into ready queue (non-blocking)
+      if (_videoEventService.hasEvents) {
+        debugPrint('📋 Processing ${_videoEventService.eventCount} initial video events...');
+        _videoCacheService.processNewVideoEvents(_videoEventService.videoEvents);
+        
+        // Start preloading videos for ready queue in background
+        _preloadInitialVideosInBackground();
+      }
       
       _isInitialized = true;
       _error = null;
@@ -202,7 +222,8 @@ class VideoFeedProvider extends ChangeNotifier {
   
   /// Preload videos around current index for smooth playback
   Future<void> preloadVideosAroundIndex(int currentIndex) async {
-    await _videoCacheService.preloadVideos(videoEvents, currentIndex);
+    // Use all video events for preloading, not just ready queue
+    await _videoCacheService.preloadVideos(allVideoEvents, currentIndex);
   }
   
   /// Clear error state
@@ -218,15 +239,48 @@ class VideoFeedProvider extends ChangeNotifier {
     await initialize();
   }
   
+  /// Start preloading videos in background without blocking UI
+  void _preloadInitialVideosInBackground() {
+    // Run preloading in background without awaiting
+    _videoCacheService.preloadVideos(_videoEventService.videoEvents, 0).then((_) {
+      debugPrint('✅ Background preloading completed');
+    }).catchError((error) {
+      debugPrint('⚠️ Background preloading failed: $error');
+    });
+  }
+
   /// Handle changes from video event service
   void _onVideoEventServiceChanged() {
+    // Process new video events into ready queue
+    if (_videoEventService.hasEvents) {
+      debugPrint('📢 Video event service changed - processing ${_videoEventService.videoEvents.length} events into cache...');
+      _videoCacheService.processNewVideoEvents(_videoEventService.videoEvents);
+      debugPrint('🎯 Current ready queue size: ${_videoCacheService.readyToPlayQueue.length}');
+      
+      // Fetch profiles for video authors
+      _fetchProfilesForVideos(_videoEventService.videoEvents);
+    }
     notifyListeners();
+  }
+  
+  /// Fetch user profiles for video authors
+  void _fetchProfilesForVideos(List<VideoEvent> videoEvents) {
+    final authorsToFetch = videoEvents
+        .map((event) => event.pubkey)
+        .where((pubkey) => !_userProfileService.hasProfile(pubkey))
+        .toSet()
+        .toList();
+    
+    if (authorsToFetch.isNotEmpty) {
+      debugPrint('👥 Fetching profiles for ${authorsToFetch.length} video authors...');
+      _userProfileService.fetchMultipleProfiles(authorsToFetch);
+    }
   }
   
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
-    _videoCacheService.dispose();
+    // DO NOT dispose _videoCacheService - it's managed by Provider and shared across screens
     super.dispose();
   }
 }

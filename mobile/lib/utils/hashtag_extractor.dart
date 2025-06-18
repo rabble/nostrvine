@@ -1,7 +1,6 @@
 // ABOUTME: Utility for extracting and validating hashtags from vine captions
 // ABOUTME: Provides hashtag parsing and validation for Nostr event tagging
 
-import 'package:flutter/foundation.dart';
 
 /// Utility class for hashtag extraction and validation
 class HashtagExtractor {

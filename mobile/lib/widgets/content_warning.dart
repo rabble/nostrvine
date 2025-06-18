@@ -29,7 +29,6 @@ class _ContentWarningState extends State<ContentWarning>
     with SingleTickerProviderStateMixin {
   bool _isRevealed = false;
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -37,9 +36,6 @@ class _ContentWarningState extends State<ContentWarning>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -70,7 +66,7 @@ class _ContentWarningState extends State<ContentWarning>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getWarningColor(widget.moderationResult.severity).withOpacity(0.9),
+        color: _getWarningColor(widget.moderationResult.severity).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _getWarningColor(widget.moderationResult.severity),
@@ -127,7 +123,7 @@ class _ContentWarningState extends State<ContentWarning>
                     reason.description,
                     style: const TextStyle(fontSize: 12),
                   ),
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   labelStyle: const TextStyle(color: Colors.white),
                 ),
               ).toList(),
@@ -218,7 +214,7 @@ class _ContentWarningState extends State<ContentWarning>
           Text(
             'This content has been blocked due to policy violations.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -305,7 +301,7 @@ class QuickContentWarning extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.9),
+                color: color.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -370,7 +366,7 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
         // Blurred background
         ImageFiltered(
           imageFilter: widget.moderationResult.severity == ContentSeverity.block
-              ? ColorFilter.mode(Colors.black.withOpacity(0.8), BlendMode.srcOver)
+              ? ColorFilter.mode(Colors.black.withValues(alpha: 0.8), BlendMode.srcOver)
               : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
           child: widget.thumbnail,
         ),
@@ -379,7 +375,7 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(

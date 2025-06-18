@@ -5,8 +5,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+
+// Conditional imports for FFmpeg - disabled due to macOS compatibility issues
+// import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+// import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 
 /// Service for extracting frames from video files using FFmpeg
 class VideoFrameExtractor {
@@ -47,54 +49,9 @@ class VideoFrameExtractor {
       
       debugPrint('🔧 FFmpeg command: ffmpeg $command');
       
-      // Execute FFmpeg command
-      final session = await FFmpegKit.execute('ffmpeg $command');
-      final returnCode = await session.getReturnCode();
-      
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final failStackTrace = await session.getFailStackTrace();
-        final logs = await session.getAllLogsAsString();
-        debugPrint('❌ FFmpeg failed with return code: $returnCode');
-        debugPrint('📋 FFmpeg logs: $logs');
-        debugPrint('🔍 Stack trace: $failStackTrace');
-        throw Exception('FFmpeg frame extraction failed: $returnCode');
-      }
-      
-      debugPrint('✅ FFmpeg frame extraction completed successfully');
-      
-      // Read extracted frame files
-      final frameFiles = framesDir
-          .listSync()
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.png'))
-          .toList();
-      
-      // Sort files by name to maintain order
-      frameFiles.sort((a, b) => a.path.compareTo(b.path));
-      
-      debugPrint('📸 Found ${frameFiles.length} extracted frames');
-      
-      // Read frame data
-      final frames = <Uint8List>[];
-      for (final file in frameFiles) {
-        try {
-          final frameData = await file.readAsBytes();
-          frames.add(frameData);
-        } catch (e) {
-          debugPrint('⚠️ Failed to read frame file ${file.path}: $e');
-        }
-      }
-      
-      // Cleanup temporary files
-      try {
-        await framesDir.delete(recursive: true);
-        debugPrint('🧹 Cleaned up temporary frame files');
-      } catch (e) {
-        debugPrint('⚠️ Failed to cleanup frame files: $e');
-      }
-      
-      debugPrint('🎯 Successfully extracted ${frames.length} frames');
-      return frames;
+      // FFmpeg is temporarily disabled due to macOS compatibility issues
+      throw UnsupportedError('FFmpeg frame extraction is currently disabled due to dependency conflicts. '
+          'Use camera-based frame capture instead.');
       
     } catch (e) {
       debugPrint('❌ Video frame extraction failed: $e');
@@ -120,24 +77,8 @@ class VideoFrameExtractor {
         videoPath,
       ].join(' ');
       
-      final session = await FFmpegKit.execute('ffprobe $command');
-      final returnCode = await session.getReturnCode();
-      
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final logs = await session.getAllLogsAsString();
-        debugPrint('❌ FFprobe failed: $logs');
-        throw Exception('FFprobe failed to get video info: $returnCode');
-      }
-      
-      final output = await session.getOutput();
-      debugPrint('📋 Video info extracted successfully');
-      
-      // For now, return basic info - in a full implementation, 
-      // we'd parse the JSON output to extract specific metadata
-      return {
-        'success': true,
-        'raw_output': output,
-      };
+      // FFmpeg is temporarily disabled due to macOS compatibility issues
+      throw UnsupportedError('FFprobe video info extraction is currently disabled due to dependency conflicts.');
       
     } catch (e) {
       debugPrint('❌ Failed to get video info: $e');

@@ -6,15 +6,22 @@ import 'package:nostr/nostr.dart';
 import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
+import 'connection_status_service.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
   final INostrService _nostrService;
+  final ConnectionStatusService _connectionService = ConnectionStatusService();
   final List<VideoEvent> _videoEvents = [];
   final Map<String, StreamSubscription> _subscriptions = {};
   bool _isSubscribed = false;
   bool _isLoading = false;
   String? _error;
+  Timer? _retryTimer;
+  int _retryAttempts = 0;
+  
+  static const int _maxRetryAttempts = 3;
+  static const Duration _retryDelay = Duration(seconds: 10);
   
   VideoEventService(this._nostrService);
   
@@ -40,6 +47,13 @@ class VideoEventService extends ChangeNotifier {
     if (!_nostrService.isInitialized) {
       debugPrint('❌ Cannot subscribe - Nostr service not initialized');
       throw VideoEventServiceException('Nostr service not initialized');
+    }
+    
+    // Check connection status
+    if (!_connectionService.isOnline) {
+      debugPrint('⚠️ Device is offline, will retry when connection is restored');
+      _scheduleRetryWhenOnline();
+      throw VideoEventServiceException('Device is offline');
     }
     
     debugPrint('🔍 Nostr service status for video subscription:');
@@ -87,6 +101,12 @@ class VideoEventService extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to subscribe to video events: $e');
+      
+      // Check if it's a connection-related error
+      if (_isConnectionError(e)) {
+        debugPrint('🌐 Connection error detected, will retry when online');
+        _scheduleRetryWhenOnline();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -136,6 +156,13 @@ class VideoEventService extends ChangeNotifier {
     _error = error.toString();
     debugPrint('❌ Video subscription error: $error');
     debugPrint('📊 Current state: events=${_videoEvents.length}, subscriptions=${_subscriptions.length}');
+    
+    // Check if it's a connection error and schedule retry
+    if (_isConnectionError(error)) {
+      debugPrint('🌐 Subscription connection error, scheduling retry...');
+      _scheduleRetryWhenOnline();
+    }
+    
     notifyListeners();
   }
   
@@ -183,6 +210,10 @@ class VideoEventService extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to refresh video feed: $e');
+      
+      if (_isConnectionError(e)) {
+        debugPrint('🌐 Refresh failed due to connection error');
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -208,6 +239,10 @@ class VideoEventService extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to load more events: $e');
+      
+      if (_isConnectionError(e)) {
+        debugPrint('🌐 Load more failed due to connection error');
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -294,8 +329,78 @@ class VideoEventService extends ChangeNotifier {
     return counts;
   }
   
+  /// Check if an error is connection-related
+  bool _isConnectionError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    return errorString.contains('connection') ||
+           errorString.contains('network') ||
+           errorString.contains('socket') ||
+           errorString.contains('timeout') ||
+           errorString.contains('offline') ||
+           errorString.contains('unreachable');
+  }
+  
+  /// Schedule retry when device comes back online
+  void _scheduleRetryWhenOnline() {
+    _retryTimer?.cancel();
+    
+    _retryTimer = Timer.periodic(_retryDelay, (timer) {
+      if (_connectionService.isOnline && _retryAttempts < _maxRetryAttempts) {
+        _retryAttempts++;
+        debugPrint('🔄 Attempting to resubscribe to video feed (attempt $_retryAttempts/$_maxRetryAttempts)');
+        
+        subscribeToVideoFeed().then((_) {
+          // Success - cancel retry timer
+          timer.cancel();
+          _retryAttempts = 0;
+          debugPrint('✅ Successfully resubscribed to video feed');
+        }).catchError((e) {
+          debugPrint('❌ Retry attempt $_retryAttempts failed: $e');
+          
+          if (_retryAttempts >= _maxRetryAttempts) {
+            timer.cancel();
+            debugPrint('⚠️ Max retry attempts reached for video feed subscription');
+          }
+        });
+      } else if (!_connectionService.isOnline) {
+        debugPrint('⏳ Still offline, waiting for connection...');
+      } else {
+        // Max retries reached
+        timer.cancel();
+      }
+    });
+  }
+  
+  /// Get connection status for debugging
+  Map<String, dynamic> getConnectionStatus() {
+    return {
+      'isSubscribed': _isSubscribed,
+      'isLoading': _isLoading,
+      'eventCount': _videoEvents.length,
+      'retryAttempts': _retryAttempts,
+      'hasError': _error != null,
+      'lastError': _error,
+      'connectionInfo': _connectionService.getConnectionInfo(),
+    };
+  }
+  
+  /// Force retry subscription
+  Future<void> retrySubscription() async {
+    debugPrint('🔄 Forcing retry of video feed subscription...');
+    _retryAttempts = 0;
+    _error = null;
+    
+    try {
+      await subscribeToVideoFeed();
+    } catch (e) {
+      debugPrint('❌ Manual retry failed: $e');
+      rethrow;
+    }
+  }
+  
   @override
   void dispose() {
+    _retryTimer?.cancel();
     unsubscribeFromVideoFeed();
     super.dispose();
   }

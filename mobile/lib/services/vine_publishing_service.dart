@@ -9,7 +9,9 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_config.dart';
 import '../models/nip94_metadata.dart';
+import '../models/cloudinary_models.dart';
 import '../services/gif_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/nostr_service.dart';
@@ -232,8 +234,8 @@ class VinePublishingService extends ChangeNotifier {
       
       NIP94Metadata metadata;
       if (uploadToBackend) {
-        // Step 3a: Upload to backend with processing monitoring
-        metadata = await _uploadToBackendWithProcessing(
+        // Step 3a: Upload to Cloudinary and get public URL
+        metadata = await _uploadToCloudinary(
           gifResult.gifBytes, 
           caption,
           altText: altText,
@@ -332,6 +334,22 @@ class VinePublishingService extends ChangeNotifier {
     }
   }
   
+  /// Publish vine to Cloudinary and Nostr (production workflow)
+  Future<VinePublishResult> publishVineToCloudinary({
+    required VineRecordingResult recordingResult,
+    required String caption,
+    List<String> hashtags = const [],
+    String? altText,
+  }) async {
+    return publishVine(
+      recordingResult: recordingResult,
+      caption: caption,
+      hashtags: hashtags,
+      altText: altText,
+      uploadToBackend: true, // Use Cloudinary upload
+    );
+  }
+  
   /// Quick publish for local testing (no backend upload)
   Future<VinePublishResult> publishVineLocal({
     required VineRecordingResult recordingResult,
@@ -379,8 +397,8 @@ class VinePublishingService extends ChangeNotifier {
     return 'data:image/gif;base64,$base64Data';
   }
   
-  /// Upload to backend using NIP-96 with processing monitoring
-  Future<NIP94Metadata> _uploadToBackendWithProcessing(
+  /// Upload to Cloudinary using signed upload workflow
+  Future<NIP94Metadata> _uploadToCloudinary(
     Uint8List data, 
     String caption, {
     String? altText,
@@ -388,52 +406,87 @@ class VinePublishingService extends ChangeNotifier {
   }) async {
     // Check connectivity before upload
     if (!await _isConnected()) {
-      throw SocketException('No internet connection available for backend upload');
+      throw SocketException('No internet connection available for Cloudinary upload');
     }
     
-    _updateState(PublishingState.uploadingToBackend, 0.3, 'Uploading to backend...');
+    _updateState(PublishingState.uploadingToBackend, 0.3, 'Requesting upload signature...');
     
     try {
-      // Step 1: Upload file to backend
-      final uploadResponse = await _performNIP96Upload(data, caption);
+      // Step 1: Get signed upload URL from backend
+      final signedUpload = await _requestSignedUpload(data.length, 'image/gif');
       
-      if (uploadResponse.isError) {
-        throw Exception(uploadResponse.message ?? 'Upload failed');
-      }
+      _updateState(PublishingState.uploadingToBackend, 0.4, 'Uploading to Cloudinary...');
       
-      // Step 2: Handle immediate success or async processing
-      if (uploadResponse.isSuccess && uploadResponse.nip94Event != null) {
-        // Upload completed immediately
-        return uploadResponse.nip94Event!;
-      }
+      // Step 2: Upload directly to Cloudinary
+      final cloudinaryResponse = await _uploadToCloudinaryDirect(data, signedUpload);
       
-      if (uploadResponse.isProcessing && uploadResponse.hasProcessingUrl) {
-        // Upload successful, but processing required
-        _updateState(PublishingState.waitingForProcessing, 0.5, 'Processing your vine...');
-        
-        return await _monitorProcessing(
-          uploadResponse.processingUrl!,
-          jobId: uploadResponse.jobId,
-        );
-      }
+      _updateState(PublishingState.uploadingToBackend, 0.7, 'Creating metadata...');
       
-      throw Exception('Unexpected upload response: ${uploadResponse.status}');
+      // Step 3: Create NIP-94 metadata with Cloudinary URL
+      final sha256Hash = _calculateSHA256(data);
+      final metadata = NIP94Metadata.fromCloudinaryResponse(
+        cloudinaryResponse: cloudinaryResponse,
+        sha256Hash: sha256Hash,
+        summary: caption,
+        altText: altText,
+      );
+      
+      return metadata;
       
     } catch (e) {
-      debugPrint('❌ Backend upload failed: $e');
+      debugPrint('❌ Cloudinary upload failed: $e');
       rethrow;
     }
   }
   
-  /// Perform NIP-96 compliant file upload
-  Future<BackendUploadResponse> _performNIP96Upload(Uint8List data, String caption) async {
-    const backendUrl = 'https://nostrvine-backend.workers.dev'; // TODO: Make configurable
+  /// Request signed upload URL from backend
+  Future<CloudinarySignedUpload> _requestSignedUpload(int fileSize, String contentType) async {
     
+    try {
+      // Create NIP-98 auth header (simplified for now - would need proper signing)
+      final headers = {
+        'Content-Type': 'application/json',
+        // TODO: Add proper NIP-98 authentication
+      };
+      
+      final body = jsonEncode({
+        'fileSize': fileSize,
+        'contentType': contentType,
+        'filename': 'vine_${DateTime.now().millisecondsSinceEpoch}.gif',
+      });
+      
+      final response = await http.post(
+        Uri.parse(AppConfig.cloudinarySignedUploadUrl),
+        headers: headers,
+        body: body,
+      ).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return CloudinarySignedUpload.fromJson(jsonData);
+      } else {
+        throw Exception('Signed upload request failed: HTTP ${response.statusCode} - ${response.body}');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Signed upload request error: $e');
+      rethrow;
+    }
+  }
+  
+  /// Upload file directly to Cloudinary using signed parameters
+  Future<CloudinaryUploadResponse> _uploadToCloudinaryDirect(
+    Uint8List data, 
+    CloudinarySignedUpload signedUpload
+  ) async {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$backendUrl/upload'),
+        Uri.parse(signedUpload.uploadUrl),
       );
+      
+      // Add Cloudinary signed parameters
+      request.fields.addAll(signedUpload.uploadParams);
       
       // Add file
       request.files.add(http.MultipartFile.fromBytes(
@@ -442,55 +495,19 @@ class VinePublishingService extends ChangeNotifier {
         filename: 'vine_${DateTime.now().millisecondsSinceEpoch}.gif',
       ));
       
-      // Add metadata
-      request.fields['caption'] = caption;
-      request.fields['content_type'] = 'image/gif';
-      
-      // Send request
-      final response = await request.send().timeout(const Duration(seconds: 30));
+      // Send request to Cloudinary
+      final response = await request.send().timeout(const Duration(seconds: 60));
       final responseBody = await response.stream.bytesToString();
       
-      if (response.statusCode == 200 || response.statusCode == 202) {
+      if (response.statusCode == 200) {
         final jsonData = jsonDecode(responseBody) as Map<String, dynamic>;
-        return BackendUploadResponse.fromJson(jsonData);
+        return CloudinaryUploadResponse.fromJson(jsonData);
       } else {
-        throw Exception('Upload failed: HTTP ${response.statusCode} - $responseBody');
+        throw Exception('Cloudinary upload failed: HTTP ${response.statusCode} - $responseBody');
       }
       
     } catch (e) {
-      debugPrint('❌ NIP-96 upload error: $e');
-      rethrow;
-    }
-  }
-  
-  /// Monitor backend processing with real-time updates
-  Future<NIP94Metadata> _monitorProcessing(String processingUrl, {String? jobId}) async {
-    try {
-      // Set up progress updates
-      final progressSubscription = _processingMonitor.monitorProcessing(
-        processingUrl: processingUrl,
-        jobId: jobId,
-      ).listen((status) {
-        final progressValue = 0.5 + (status.progress ?? 0.0) * 0.3; // 50-80% range
-        _updateState(
-          PublishingState.waitingForProcessing,
-          progressValue,
-          status.displayMessage,
-        );
-      });
-      
-      // Wait for completion
-      final metadata = await _processingMonitor.waitForProcessing(
-        processingUrl,
-        jobId: jobId,
-        timeout: const Duration(minutes: 5),
-      );
-      
-      await progressSubscription.cancel();
-      return metadata;
-      
-    } catch (e) {
-      debugPrint('❌ Processing monitoring failed: $e');
+      debugPrint('❌ Cloudinary direct upload error: $e');
       rethrow;
     }
   }

@@ -9,6 +9,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/nip94_metadata.dart';
 import 'nostr_key_manager.dart';
 import 'nostr_service_interface.dart';
+import 'connection_status_service.dart';
 
 /// Core service for Nostr protocol integration
 class NostrService extends ChangeNotifier implements INostrService {
@@ -20,11 +21,17 @@ class NostrService extends ChangeNotifier implements INostrService {
   ];
   
   final NostrKeyManager _keyManager;
+  final ConnectionStatusService _connectionService = ConnectionStatusService();
   bool _isInitialized = false;
   bool _isDisposed = false;
   List<String> _connectedRelays = [];
   final Map<String, WebSocketChannel> _webSockets = {};
   final Map<String, StreamController<Event>> _eventControllers = {};
+  final Map<String, int> _relayRetryCount = {};
+  Timer? _reconnectTimer;
+  
+  static const int _maxRetryAttempts = 3;
+  static const Duration _retryDelay = Duration(seconds: 5);
   
   /// Create NostrService with a key manager
   NostrService(this._keyManager);
@@ -53,6 +60,16 @@ class NostrService extends ChangeNotifier implements INostrService {
     List<String>? customRelays,
   }) async {
     try {
+      // Initialize connection status service
+      await _connectionService.initialize();
+      
+      // Check if we're online before proceeding
+      if (!_connectionService.isOnline) {
+        debugPrint('⚠️ Device appears to be offline, will retry when connection is restored');
+        _scheduleReconnect();
+        throw NostrServiceException('Device is offline');
+      }
+      
       // Initialize key manager if not already done
       if (!_keyManager.isInitialized) {
         await _keyManager.initialize();
@@ -77,7 +94,9 @@ class NostrService extends ChangeNotifier implements INostrService {
           
           if (!_connectedRelays.contains(relayUrl)) {
             _connectedRelays.add(relayUrl);
-            notifyListeners();
+            if (!_isDisposed) {
+              notifyListeners();
+            }
           }
           debugPrint('✅ Connected to relay: $relayUrl (${_connectedRelays.length}/${relaysToConnect.length})');
           
@@ -86,20 +105,22 @@ class NostrService extends ChangeNotifier implements INostrService {
             (data) => _handleRelayMessage(relayUrl, data),
             onError: (error) {
               debugPrint('❌ WebSocket error for $relayUrl: $error');
-              _connectedRelays.remove(relayUrl);
-              _webSockets.remove(relayUrl);
-              notifyListeners();
+              _handleRelayDisconnection(relayUrl, error.toString());
             },
             onDone: () {
               debugPrint('🔌 Disconnected from relay: $relayUrl');
-              _connectedRelays.remove(relayUrl);
-              _webSockets.remove(relayUrl);
-              notifyListeners();
+              _handleRelayDisconnection(relayUrl, 'Connection closed');
             },
           );
           
         } catch (e) {
           debugPrint('❌ Failed to connect to $relayUrl: $e');
+          _relayRetryCount[relayUrl] = (_relayRetryCount[relayUrl] ?? 0) + 1;
+          
+          // Check if it's a connection issue
+          if (_isConnectionError(e)) {
+            debugPrint('🌐 Connection error detected for $relayUrl, will retry when online');
+          }
         }
       }
       
@@ -108,11 +129,22 @@ class NostrService extends ChangeNotifier implements INostrService {
       debugPrint('📡 Relay initialization completed: ${_connectedRelays.length}/${relaysToConnect.length} connected');
       
       _isInitialized = true;
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
       
       debugPrint('✅ Nostr service initialized with ${_connectedRelays.length} relays');
+      
+      // Start automatic reconnection monitoring
+      _startReconnectionMonitoring();
     } catch (e) {
       debugPrint('❌ Failed to initialize Nostr service: $e');
+      
+      // Schedule retry if it's a connection issue
+      if (_isConnectionError(e)) {
+        _scheduleReconnect();
+      }
+      
       rethrow;
     }
   }
@@ -280,7 +312,9 @@ class NostrService extends ChangeNotifier implements INostrService {
       _webSockets[relayUrl] = webSocket;
       
       _connectedRelays.add(relayUrl);
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
       
       // Listen for incoming messages
       webSocket.stream.listen(
@@ -289,13 +323,17 @@ class NostrService extends ChangeNotifier implements INostrService {
           debugPrint('❌ WebSocket error for $relayUrl: $error');
           _connectedRelays.remove(relayUrl);
           _webSockets.remove(relayUrl);
-          notifyListeners();
+          if (!_isDisposed) {
+            notifyListeners();
+          }
         },
         onDone: () {
           debugPrint('🔌 Disconnected from relay: $relayUrl');
           _connectedRelays.remove(relayUrl);
           _webSockets.remove(relayUrl);
-          notifyListeners();
+          if (!_isDisposed) {
+            notifyListeners();
+          }
         },
       );
       
@@ -315,7 +353,9 @@ class NostrService extends ChangeNotifier implements INostrService {
         _webSockets.remove(relayUrl);
       }
       _connectedRelays.remove(relayUrl);
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
       debugPrint('🔌 Disconnected from relay: $relayUrl');
     } catch (e) {
       debugPrint('⚠️ Error removing relay $relayUrl: $e');
@@ -356,12 +396,149 @@ class NostrService extends ChangeNotifier implements INostrService {
   }
   
   /// Dispose service and close all connections
+  /// Handle relay disconnection with retry logic
+  void _handleRelayDisconnection(String relayUrl, String reason) {
+    _connectedRelays.remove(relayUrl);
+    _webSockets.remove(relayUrl);
+    
+    final retryCount = _relayRetryCount[relayUrl] ?? 0;
+    debugPrint('📉 Relay disconnected: $relayUrl ($reason) - retry count: $retryCount');
+    
+    if (!_isDisposed) {
+      notifyListeners();
+      
+      // Schedule reconnection if we haven't exceeded max retries
+      if (retryCount < _maxRetryAttempts) {
+        _scheduleRelayReconnect(relayUrl);
+      } else {
+        debugPrint('⚠️ Max retry attempts reached for $relayUrl');
+      }
+    }
+  }
+  
+  /// Check if an error is connection-related
+  bool _isConnectionError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    return errorString.contains('connection') ||
+           errorString.contains('network') ||
+           errorString.contains('socket') ||
+           errorString.contains('timeout') ||
+           errorString.contains('unreachable') ||
+           errorString.contains('offline');
+  }
+  
+  /// Schedule reconnection for a specific relay
+  void _scheduleRelayReconnect(String relayUrl) {
+    final retryCount = _relayRetryCount[relayUrl] ?? 0;
+    final delay = Duration(seconds: _retryDelay.inSeconds * (retryCount + 1));
+    
+    debugPrint('⏰ Scheduling reconnect for $relayUrl in ${delay.inSeconds}s (attempt ${retryCount + 1})');
+    
+    Timer(delay, () async {
+      if (!_isDisposed && _connectionService.isOnline) {
+        try {
+          debugPrint('🔄 Attempting to reconnect to $relayUrl...');
+          await _connectToRelay(relayUrl);
+        } catch (e) {
+          debugPrint('❌ Reconnection failed for $relayUrl: $e');
+        }
+      }
+    });
+  }
+  
+  /// Connect to a single relay
+  Future<void> _connectToRelay(String relayUrl) async {
+    try {
+      debugPrint('🔌 Connecting to $relayUrl...');
+      final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+      _webSockets[relayUrl] = webSocket;
+      
+      if (!_connectedRelays.contains(relayUrl)) {
+        _connectedRelays.add(relayUrl);
+        _relayRetryCount[relayUrl] = 0; // Reset retry count on successful connection
+        if (!_isDisposed) {
+          notifyListeners();
+        }
+      }
+      
+      debugPrint('✅ Connected to relay: $relayUrl');
+      
+      // Listen for incoming messages
+      webSocket.stream.listen(
+        (data) => _handleRelayMessage(relayUrl, data),
+        onError: (error) {
+          debugPrint('❌ WebSocket error for $relayUrl: $error');
+          _handleRelayDisconnection(relayUrl, error.toString());
+        },
+        onDone: () {
+          debugPrint('🔌 Disconnected from relay: $relayUrl');
+          _handleRelayDisconnection(relayUrl, 'Connection closed');
+        },
+      );
+    } catch (e) {
+      _relayRetryCount[relayUrl] = (_relayRetryCount[relayUrl] ?? 0) + 1;
+      throw e;
+    }
+  }
+  
+  /// Schedule general reconnection
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (_connectionService.isOnline && !_isInitialized) {
+        debugPrint('🔄 Connection restored, attempting to reinitialize...');
+        timer.cancel();
+        initialize();
+      }
+    });
+  }
+  
+  /// Start monitoring connection and auto-reconnect
+  void _startReconnectionMonitoring() {
+    _connectionService.addListener(() {
+      if (_connectionService.isOnline && _connectedRelays.isEmpty) {
+        debugPrint('🌐 Connection restored, attempting to reconnect to relays...');
+        _reconnectToAllRelays();
+      }
+    });
+  }
+  
+  /// Reconnect to all relays
+  Future<void> _reconnectToAllRelays() async {
+    if (!_connectionService.isOnline) return;
+    
+    debugPrint('🔄 Reconnecting to all relays...');
+    final relaysToReconnect = [...defaultRelays];
+    
+    for (final relayUrl in relaysToReconnect) {
+      if (!_connectedRelays.contains(relayUrl)) {
+        try {
+          await _connectToRelay(relayUrl);
+        } catch (e) {
+          debugPrint('❌ Failed to reconnect to $relayUrl: $e');
+        }
+      }
+    }
+  }
+  
+  /// Get connection status for debugging
+  Map<String, dynamic> getConnectionStatus() {
+    return {
+      'isInitialized': _isInitialized,
+      'connectedRelays': _connectedRelays.length,
+      'totalRelays': defaultRelays.length,
+      'retryAttempts': Map.from(_relayRetryCount),
+      'connectionInfo': _connectionService.getConnectionInfo(),
+    };
+  }
+  
   @override
   void dispose() {
     if (_isDisposed) return;
     
     try {
       _isDisposed = true;
+      _reconnectTimer?.cancel();
       
       // Close all websocket connections
       for (final webSocket in _webSockets.values) {
@@ -384,6 +561,7 @@ class NostrService extends ChangeNotifier implements INostrService {
       _webSockets.clear();
       _eventControllers.clear();
       _connectedRelays.clear();
+      _relayRetryCount.clear();
       _isInitialized = false;
       super.dispose();
       debugPrint('🗑️ NostrService disposed');

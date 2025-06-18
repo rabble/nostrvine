@@ -399,11 +399,10 @@ class _GifReviewScreenState extends State<GifReviewScreen> with WidgetsBindingOb
           .where((tag) => tag.isNotEmpty)
           .toList();
 
-      final result = await widget.publishingService.publishVine(
+      final result = await widget.publishingService.publishVineToCloudinary(
         recordingResult: widget.recordingResult,
         caption: _captionController.text.trim(),
         hashtags: hashtags,
-        uploadToBackend: false,
       );
 
       if (mounted) {

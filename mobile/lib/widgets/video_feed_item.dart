@@ -1,11 +1,14 @@
 // ABOUTME: Individual video feed item widget for displaying NIP-71 video events
 // ABOUTME: Renders video content with user info, interactions, and metadata
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../services/video_cache_service.dart';
+import '../services/user_profile_service.dart';
+import '../models/user_profile.dart';
 
 /// Widget for displaying a single video event in the feed
 class VideoFeedItem extends StatefulWidget {
@@ -17,6 +20,7 @@ class VideoFeedItem extends StatefulWidget {
   final VoidCallback? onMoreOptions;
   final VoidCallback? onUserTap;
   final VideoCacheService? videoCacheService;
+  final UserProfileService? userProfileService;
   
   const VideoFeedItem({
     super.key,
@@ -28,6 +32,7 @@ class VideoFeedItem extends StatefulWidget {
     this.onMoreOptions,
     this.onUserTap,
     this.videoCacheService,
+    this.userProfileService,
   });
 
   @override
@@ -37,7 +42,9 @@ class VideoFeedItem extends StatefulWidget {
 class _VideoFeedItemState extends State<VideoFeedItem> {
   VideoPlayerController? _controller;
   bool _isPlaying = false;
-  bool _showControls = false;
+  final bool _showControls = false;
+  bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -97,22 +104,56 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         Uri.parse(widget.videoEvent.videoUrl!),
       );
       
-      _controller!.initialize().then((_) {
-        if (mounted) {
-          setState(() {});
-          if (widget.isActive) {
-            _playVideo();
-          }
-        }
-      }).catchError((error) {
-        debugPrint('Video initialization error: $error');
-      });
-
+      // Implement timeout for video initialization to prevent indefinite hanging
+      _initializeVideoWithTimeout();
+      
       _controller!.setLooping(true);
       
       // Add to cache service if available
       if (widget.videoCacheService != null) {
         widget.videoCacheService!.addController(widget.videoEvent, _controller!);
+      }
+    }
+  }
+  
+  void _initializeVideoWithTimeout() async {
+    const timeoutDuration = Duration(seconds: 15); // Increased to 15 second timeout
+    
+    try {
+      debugPrint('🎥 Initializing video with ${timeoutDuration.inSeconds}s timeout: ${widget.videoEvent.id.substring(0, 8)}...');
+      debugPrint('📹 Video URL: ${widget.videoEvent.videoUrl}');
+      
+      // Race between initialization and timeout
+      await Future.any([
+        _controller!.initialize(),
+        Future.delayed(timeoutDuration).then((_) => throw TimeoutException('Video initialization timeout after ${timeoutDuration.inSeconds} seconds', timeoutDuration)),
+      ]);
+      
+      debugPrint('✅ Video initialized successfully: ${widget.videoEvent.id.substring(0, 8)}');
+      if (mounted) {
+        setState(() {});
+        if (widget.isActive) {
+          _playVideo();
+        }
+      }
+    } catch (error) {
+      debugPrint('❌ Video initialization failed: ${widget.videoEvent.id.substring(0, 8)} - $error');
+      debugPrint('📱 Failed video URL: ${widget.videoEvent.videoUrl}');
+      
+      if (mounted) {
+        setState(() {
+          // Set controller to null to show error state
+          _controller?.dispose();
+          _controller = null;
+          _hasError = true;
+          _errorMessage = error.toString();
+        });
+      }
+      
+      // Remove from cache if it was added
+      if (widget.videoCacheService != null) {
+        debugPrint('🗑️ Removing failed video from cache: ${widget.videoEvent.id.substring(0, 8)}');
+        widget.videoCacheService!.removeController(widget.videoEvent);
       }
     }
   }
@@ -218,23 +259,19 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.grey,
+                    _buildUserAvatar(),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: GestureDetector(
                         onTap: widget.onUserTap,
-                        child: const Icon(Icons.person, color: Colors.white, size: 18),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: widget.onUserTap,
-                      child: Text(
-                        '@${widget.videoEvent.displayPubkey}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                        child: Text(
+                          _getUserDisplayName(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
@@ -337,6 +374,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   }
   
   Widget _buildVideoPlayer() {
+    // Show error state if video failed to load
+    if (_hasError) {
+      return _buildErrorWidget();
+    }
+    
     if (_controller != null && _controller!.value.isInitialized) {
       return Stack(
         children: [
@@ -444,24 +486,54 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         borderRadius: BorderRadius.circular(8),
         color: Colors.red[900],
       ),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 60,
-              color: Colors.white54,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Failed to load content',
-              style: TextStyle(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 60,
                 color: Colors.white54,
-                fontSize: 14,
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              const Text(
+                'Failed to load video',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_errorMessage != null) ...[
+                Text(
+                  _errorMessage!.contains('timeout') ? 'Connection timeout' : 'Loading error',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+              ],
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _hasError = false;
+                    _errorMessage = null;
+                  });
+                  _initializeVideo();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -513,5 +585,37 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     }
     
     return caption;
+  }
+  
+  /// Build user avatar with profile picture or fallback
+  Widget _buildUserAvatar() {
+    final profile = widget.userProfileService?.getCachedProfile(widget.videoEvent.pubkey);
+    final avatarUrl = profile?.picture;
+    
+    return GestureDetector(
+      onTap: widget.onUserTap,
+      child: CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey[700],
+        backgroundImage: (avatarUrl?.isNotEmpty == true) 
+            ? CachedNetworkImageProvider(avatarUrl!) 
+            : null,
+        child: (avatarUrl?.isEmpty != false) 
+            ? const Icon(Icons.person, color: Colors.white, size: 18)
+            : null,
+      ),
+    );
+  }
+  
+  /// Get user display name from profile or fallback
+  String _getUserDisplayName() {
+    final profile = widget.userProfileService?.getCachedProfile(widget.videoEvent.pubkey);
+    
+    if (profile != null) {
+      return '@${profile.bestDisplayName}';
+    }
+    
+    // Fallback to shortened pubkey
+    return '@${widget.videoEvent.displayPubkey}';
   }
 }

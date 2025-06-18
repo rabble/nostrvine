@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../models/video_event.dart';
 import '../widgets/video_feed_item.dart';
+import '../services/connection_status_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -29,10 +30,7 @@ class _FeedScreenState extends State<FeedScreen> {
     final provider = context.read<VideoFeedProvider>();
     if (!provider.isInitialized) {
       await provider.initialize();
-      // Preload initial videos once feed is loaded
-      if (provider.hasEvents) {
-        await provider.preloadVideosAroundIndex(0);
-      }
+      // Videos will start appearing automatically as they become ready
     }
   }
   
@@ -91,79 +89,126 @@ class _FeedScreenState extends State<FeedScreen> {
           }
           
           if (provider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${provider.error}',
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
+            return Consumer<ConnectionStatusService>(
+              builder: (context, connectionService, child) {
+                final isOffline = !connectionService.isOnline;
+                
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isOffline ? Icons.wifi_off : Icons.error_outline, 
+                        color: isOffline ? Colors.orange : Colors.red, 
+                        size: 48
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        isOffline ? 'No Internet Connection' : 'Error: ${provider.error}',
+                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isOffline 
+                          ? 'Check your internet connection and try again'
+                          : 'Unable to load video feed',
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: isOffline ? null : () => provider.retry(),
+                        child: Text(isOffline ? 'Waiting for connection...' : 'Retry'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => provider.retry(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           }
           
           if (!provider.hasEvents) {
-            return RefreshIndicator(
-              onRefresh: () => provider.refreshFeed(),
-              child: ListView(
-                children: const [
-                  SizedBox(height: 200),
-                  Center(
+            return Consumer<ConnectionStatusService>(
+              builder: (context, connectionService, child) {
+                final isOffline = !connectionService.isOnline;
+                
+                return RefreshIndicator(
+                  onRefresh: isOffline ? () async {} : () => provider.refreshFeed(),
+                  child: Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.video_library_outlined, 
-                             color: Colors.white54, size: 64),
-                        SizedBox(height: 16),
-                        Text(
-                          'No video content found',
-                          style: TextStyle(color: Colors.white54, fontSize: 16),
+                        Icon(
+                          isOffline ? Icons.wifi_off : Icons.video_library_outlined, 
+                          color: Colors.white54, 
+                          size: 64
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 16),
                         Text(
-                          'Pull to refresh or wait for new content',
-                          style: TextStyle(color: Colors.white38, fontSize: 14),
+                          isOffline ? 'Offline' : 'Finding videos...',
+                          style: const TextStyle(color: Colors.white54, fontSize: 16),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isOffline 
+                            ? 'Connect to the internet to load videos'
+                            : 'Searching Nostr relays for video content',
+                          style: const TextStyle(color: Colors.white38, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (!isOffline) ...[
+                          const SizedBox(height: 16),
+                          const CircularProgressIndicator(
+                            color: Colors.white54,
+                            strokeWidth: 2,
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             );
           }
           
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            itemCount: provider.videoEvents.length,
+            itemCount: provider.videoEvents.isNotEmpty ? null : 0, // Infinite scroll if we have videos
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
-              // Load more when getting close to the end
-              if (index >= provider.videoEvents.length - 3) {
-                provider.loadMoreEvents();
+              
+              final readyVideoCount = provider.videoEvents.length;
+              if (readyVideoCount > 0) {
+                // Use modulo to wrap around if we reach the end
+                final actualIndex = index % readyVideoCount;
+                
+                // Load more when getting close to the end of ready videos
+                if (actualIndex >= readyVideoCount - 3) {
+                  provider.loadMoreEvents();
+                }
+                // Preload videos around current index in the full video list
+                provider.preloadVideosAroundIndex(actualIndex);
               }
-              // Preload videos around current index
-              provider.preloadVideosAroundIndex(index);
             },
             itemBuilder: (context, index) {
-              final videoEvent = provider.videoEvents[index];
+              final readyVideoCount = provider.videoEvents.length;
+              if (readyVideoCount == 0) return const SizedBox.shrink();
+              
+              // Use modulo to repeat videos if we reach the end
+              final actualIndex = index % readyVideoCount;
+              final videoEvent = provider.videoEvents[actualIndex];
+              
               return SizedBox(
                 height: MediaQuery.of(context).size.height,
                 child: VideoFeedItem(
                   videoEvent: videoEvent,
                   isActive: index == _currentPage,
                   videoCacheService: provider.videoCacheService,
+                  userProfileService: provider.userProfileService,
                   onLike: () => _toggleLike(videoEvent),
                   onComment: () => _openComments(videoEvent),
                   onShare: () => _shareVine(videoEvent),

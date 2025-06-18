@@ -2,6 +2,7 @@
 // ABOUTME: Handles vine content metadata structure and Nostr event generation
 
 import 'package:nostr/nostr.dart';
+import 'cloudinary_models.dart';
 
 /// NIP-94 File Metadata for vine content sharing on Nostr
 class NIP94Metadata {
@@ -72,6 +73,37 @@ class NIP94Metadata {
       thumbnailUrl: thumbnailUrl,
       originalHash: originalHash,
       additionalTags: additionalTags,
+    );
+  }
+  
+  /// Create NIP-94 metadata from Cloudinary upload response
+  factory NIP94Metadata.fromCloudinaryResponse({
+    required CloudinaryUploadResponse cloudinaryResponse,
+    required String sha256Hash,
+    String? summary,
+    String? altText,
+    String? blurhash,
+    int? durationMs,
+    double? fps,
+    Map<String, String> additionalTags = const {},
+  }) {
+    return NIP94Metadata(
+      url: cloudinaryResponse.publicUrl,
+      mimeType: 'image/${cloudinaryResponse.format}',
+      sha256Hash: sha256Hash,
+      sizeBytes: cloudinaryResponse.bytes,
+      dimensions: '${cloudinaryResponse.width}x${cloudinaryResponse.height}',
+      blurhash: blurhash,
+      altText: altText,
+      summary: summary,
+      durationMs: durationMs,
+      fps: fps,
+      createdAt: cloudinaryResponse.createdAt,
+      additionalTags: {
+        'cloudinary_public_id': cloudinaryResponse.publicId,
+        'uploader': cloudinaryResponse.userPubkey ?? 'unknown',
+        ...additionalTags,
+      },
     );
   }
   

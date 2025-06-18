@@ -41,6 +41,7 @@ dependencies:
   # Networking
   http: ^1.2.1
   web_socket_channel: ^2.4.0
+  connectivity_plus: ^6.0.5
   
   # Camera and media
   camera: ^0.11.0+2

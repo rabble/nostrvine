@@ -12,6 +12,8 @@ import 'services/video_event_service.dart';
 import 'services/vine_publishing_service.dart';
 import 'services/gif_service.dart';
 import 'services/video_cache_service.dart';
+import 'services/connection_status_service.dart';
+import 'services/user_profile_service.dart';
 import 'providers/video_feed_provider.dart';
 
 void main() {
@@ -25,6 +27,9 @@ class NostrVineApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Connection status service
+        ChangeNotifierProvider(create: (_) => ConnectionStatusService()),
+        
         // Nostr key manager
         ChangeNotifierProvider(create: (_) => NostrKeyManager()),
         
@@ -53,17 +58,25 @@ class NostrVineApp extends StatelessWidget {
         // Video cache service for managing video player controllers
         ChangeNotifierProvider(create: (_) => VideoCacheService()),
         
+        // User profile service depends on Nostr service
+        ChangeNotifierProxyProvider<INostrService, UserProfileService>(
+          create: (context) => UserProfileService(context.read<INostrService>()),
+          update: (_, nostrService, previous) => previous ?? UserProfileService(nostrService),
+        ),
+        
         // Video feed provider depends on multiple services
-        ChangeNotifierProxyProvider3<VideoEventService, INostrService, VideoCacheService, VideoFeedProvider>(
+        ChangeNotifierProxyProvider4<VideoEventService, INostrService, VideoCacheService, UserProfileService, VideoFeedProvider>(
           create: (context) => VideoFeedProvider(
             videoEventService: context.read<VideoEventService>(),
             nostrService: context.read<INostrService>(),
             videoCacheService: context.read<VideoCacheService>(),
+            userProfileService: context.read<UserProfileService>(),
           ),
-          update: (_, videoEventService, nostrService, videoCacheService, previous) => previous ?? VideoFeedProvider(
+          update: (_, videoEventService, nostrService, videoCacheService, userProfileService, previous) => previous ?? VideoFeedProvider(
             videoEventService: videoEventService,
             nostrService: nostrService,
             videoCacheService: videoCacheService,
+            userProfileService: userProfileService,
           ),
         ),
         
