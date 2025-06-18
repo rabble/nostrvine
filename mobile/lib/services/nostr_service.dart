@@ -28,10 +28,13 @@ class NostrService extends ChangeNotifier implements INostrService {
   final Map<String, WebSocketChannel> _webSockets = {};
   final Map<String, StreamController<Event>> _eventControllers = {};
   final Map<String, int> _relayRetryCount = {};
+  final Map<String, DateTime> _relayLastFailureTime = {};
+  final Map<String, Duration> _relayBackoffDuration = {};
   Timer? _reconnectTimer;
   
-  static const int _maxRetryAttempts = 3;
-  static const Duration _retryDelay = Duration(seconds: 5);
+  static const int _maxRetryAttempts = 8; // Increased to allow for longer backoff
+  static const Duration _initialRetryDelay = Duration(seconds: 2);
+  static const Duration _maxBackoffDuration = Duration(minutes: 30);
   
   /// Create NostrService with a key manager
   NostrService(this._keyManager);
@@ -402,6 +405,8 @@ class NostrService extends ChangeNotifier implements INostrService {
     _webSockets.remove(relayUrl);
     
     final retryCount = _relayRetryCount[relayUrl] ?? 0;
+    _relayLastFailureTime[relayUrl] = DateTime.now();
+    
     debugPrint('📉 Relay disconnected: $relayUrl ($reason) - retry count: $retryCount');
     
     if (!_isDisposed) {
@@ -409,9 +414,10 @@ class NostrService extends ChangeNotifier implements INostrService {
       
       // Schedule reconnection if we haven't exceeded max retries
       if (retryCount < _maxRetryAttempts) {
-        _scheduleRelayReconnect(relayUrl);
+        _scheduleRelayReconnectWithBackoff(relayUrl);
       } else {
-        debugPrint('⚠️ Max retry attempts reached for $relayUrl');
+        debugPrint('⚠️ Max retry attempts reached for $relayUrl - backing off for ${_maxBackoffDuration.inMinutes} minutes');
+        _scheduleRelayBackoffReset(relayUrl);
       }
     }
   }
@@ -427,35 +433,97 @@ class NostrService extends ChangeNotifier implements INostrService {
            errorString.contains('offline');
   }
   
-  /// Schedule reconnection for a specific relay
-  void _scheduleRelayReconnect(String relayUrl) {
+  /// Schedule reconnection for a specific relay with exponential backoff
+  void _scheduleRelayReconnectWithBackoff(String relayUrl) {
     final retryCount = _relayRetryCount[relayUrl] ?? 0;
-    final delay = Duration(seconds: _retryDelay.inSeconds * (retryCount + 1));
     
-    debugPrint('⏰ Scheduling reconnect for $relayUrl in ${delay.inSeconds}s (attempt ${retryCount + 1})');
+    // Calculate exponential backoff delay
+    final baseDelay = _initialRetryDelay.inMilliseconds;
+    final backoffMs = (baseDelay * (1 << retryCount)).clamp(baseDelay, _maxBackoffDuration.inMilliseconds);
+    final delay = Duration(milliseconds: backoffMs);
+    
+    _relayBackoffDuration[relayUrl] = delay;
+    
+    debugPrint('⏰ Scheduling reconnect for $relayUrl in ${delay.inSeconds}s (attempt ${retryCount + 1}, backoff: ${delay.inSeconds}s)');
     
     Timer(delay, () async {
       if (!_isDisposed && _connectionService.isOnline) {
-        try {
-          debugPrint('🔄 Attempting to reconnect to $relayUrl...');
-          await _connectToRelay(relayUrl);
-        } catch (e) {
-          debugPrint('❌ Reconnection failed for $relayUrl: $e');
+        // Check if we should attempt reconnection (not in long backoff)
+        if (_shouldAttemptReconnection(relayUrl)) {
+          try {
+            debugPrint('🔄 Attempting to reconnect to $relayUrl...');
+            await _connectToRelay(relayUrl);
+          } catch (e) {
+            debugPrint('❌ Reconnection failed for $relayUrl: $e');
+            _handleRelayConnectionFailure(relayUrl, e);
+          }
+        } else {
+          debugPrint('⏸️ Skipping reconnection attempt for $relayUrl (in backoff period)');
         }
       }
     });
+  }
+  
+  /// Schedule reset of relay retry count after max backoff period  
+  void _scheduleRelayBackoffReset(String relayUrl) {
+    Timer(_maxBackoffDuration, () {
+      if (!_isDisposed) {
+        debugPrint('🔄 Resetting retry count for $relayUrl after backoff period');
+        _relayRetryCount[relayUrl] = 0;
+        _relayBackoffDuration.remove(relayUrl);
+        
+        // Try reconnecting once more
+        if (_connectionService.isOnline) {
+          _scheduleRelayReconnectWithBackoff(relayUrl);
+        }
+      }
+    });
+  }
+  
+  /// Check if we should attempt reconnection to a relay
+  bool _shouldAttemptReconnection(String relayUrl) {
+    final lastFailure = _relayLastFailureTime[relayUrl];
+    if (lastFailure == null) return true;
+    
+    final backoffDuration = _relayBackoffDuration[relayUrl] ?? _initialRetryDelay;
+    final timeSinceFailure = DateTime.now().difference(lastFailure);
+    
+    return timeSinceFailure >= backoffDuration;
+  }
+  
+  /// Handle relay connection failure and increment retry count
+  void _handleRelayConnectionFailure(String relayUrl, dynamic error) {
+    _relayRetryCount[relayUrl] = (_relayRetryCount[relayUrl] ?? 0) + 1;
+    _relayLastFailureTime[relayUrl] = DateTime.now();
+    
+    final retryCount = _relayRetryCount[relayUrl]!;
+    
+    debugPrint('❌ Relay connection failed: $relayUrl (attempt $retryCount/$_maxRetryAttempts) - $error');
+    
+    if (retryCount < _maxRetryAttempts) {
+      _scheduleRelayReconnectWithBackoff(relayUrl);
+    } else {
+      debugPrint('🚫 Relay $relayUrl marked as temporarily unavailable after $retryCount failures');
+      _scheduleRelayBackoffReset(relayUrl);
+    }
   }
   
   /// Connect to a single relay
   Future<void> _connectToRelay(String relayUrl) async {
     try {
       debugPrint('🔌 Connecting to $relayUrl...');
+      
+      // Simple connection - the WebSocket will handle its own timeout behavior
       final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+      
       _webSockets[relayUrl] = webSocket;
       
       if (!_connectedRelays.contains(relayUrl)) {
         _connectedRelays.add(relayUrl);
         _relayRetryCount[relayUrl] = 0; // Reset retry count on successful connection
+        _relayLastFailureTime.remove(relayUrl); // Clear failure time
+        _relayBackoffDuration.remove(relayUrl); // Clear backoff duration
+        
         if (!_isDisposed) {
           notifyListeners();
         }
@@ -476,8 +544,9 @@ class NostrService extends ChangeNotifier implements INostrService {
         },
       );
     } catch (e) {
-      _relayRetryCount[relayUrl] = (_relayRetryCount[relayUrl] ?? 0) + 1;
-      throw e;
+      debugPrint('❌ Failed to connect to $relayUrl: $e');
+      _handleRelayConnectionFailure(relayUrl, e);
+      rethrow;
     }
   }
   
@@ -532,6 +601,37 @@ class NostrService extends ChangeNotifier implements INostrService {
     };
   }
   
+  /// Get detailed relay status for debugging
+  Map<String, dynamic> getDetailedRelayStatus() {
+    final relayStatus = <String, Map<String, dynamic>>{};
+    
+    for (final relayUrl in defaultRelays) {
+      final retryCount = _relayRetryCount[relayUrl] ?? 0;
+      final lastFailure = _relayLastFailureTime[relayUrl];
+      final backoffDuration = _relayBackoffDuration[relayUrl];
+      final isConnected = _connectedRelays.contains(relayUrl);
+      
+      relayStatus[relayUrl] = {
+        'connected': isConnected,
+        'retryCount': retryCount,
+        'lastFailure': lastFailure?.toIso8601String(),
+        'backoffDurationSeconds': backoffDuration?.inSeconds,
+        'maxRetriesReached': retryCount >= _maxRetryAttempts,
+        'canRetry': retryCount < _maxRetryAttempts && _shouldAttemptReconnection(relayUrl),
+      };
+    }
+    
+    return {
+      'relays': relayStatus,
+      'summary': {
+        'connected': _connectedRelays.length,
+        'total': defaultRelays.length,
+        'failed': _relayRetryCount.length,
+        'inBackoff': _relayBackoffDuration.length,
+      }
+    };
+  }
+  
   @override
   void dispose() {
     if (_isDisposed) return;
@@ -562,6 +662,8 @@ class NostrService extends ChangeNotifier implements INostrService {
       _eventControllers.clear();
       _connectedRelays.clear();
       _relayRetryCount.clear();
+      _relayLastFailureTime.clear();
+      _relayBackoffDuration.clear();
       _isInitialized = false;
       super.dispose();
       debugPrint('🗑️ NostrService disposed');
