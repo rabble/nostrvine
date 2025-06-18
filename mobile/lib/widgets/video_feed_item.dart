@@ -8,7 +8,6 @@ import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
-import '../models/user_profile.dart';
 
 /// Widget for displaying a single video event in the feed
 class VideoFeedItem extends StatefulWidget {
@@ -363,13 +362,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   }
   
   Widget _buildGifContent() {
-    return CachedNetworkImage(
-      imageUrl: widget.videoEvent.videoUrl!,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      placeholder: (context, url) => _buildPlaceholder(),
-      errorWidget: (context, url, error) => _buildErrorWidget(),
+    return Center(
+      child: CachedNetworkImage(
+        imageUrl: widget.videoEvent.videoUrl!,
+        fit: BoxFit.contain,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildErrorWidget(),
+      ),
     );
   }
   
@@ -382,14 +381,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     if (_controller != null && _controller!.value.isInitialized) {
       return Stack(
         children: [
-          SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _controller!.value.size.width,
-                height: _controller!.value.size.height,
-                child: VideoPlayer(_controller!),
-              ),
+          // Center the video and fit it to screen while maintaining aspect ratio
+          Center(
+            child: AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: VideoPlayer(_controller!),
             ),
           ),
           // Show play/pause overlay when not playing or when showing controls
