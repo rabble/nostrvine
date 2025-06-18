@@ -71,9 +71,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   @override
   void dispose() {
-    // Only dispose controller if it's not managed by the cache service
-    if (_controller != null && widget.videoCacheService?.getController(widget.videoEvent) == null) {
+    // Always dispose our controller since we're managing it directly now
+    try {
       _controller?.dispose();
+      debugPrint('🗑️ SIMPLIFIED: Disposed controller for: ${widget.videoEvent.id.substring(0, 8)}');
+    } catch (e) {
+      debugPrint('⚠️ Error disposing controller: $e');
     }
     super.dispose();
   }
@@ -84,70 +87,82 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         widget.videoEvent.videoUrl!.isNotEmpty && 
         !widget.videoEvent.isGif) {
       
-      // First check if we have a cached controller
-      final cachedController = widget.videoCacheService?.getController(widget.videoEvent);
-      if (cachedController != null && !cachedController.value.hasError) {
-        debugPrint('🎥 Using cached controller for video: ${widget.videoEvent.id.substring(0, 8)}...');
-        _controller = cachedController;
-        
-        if (_controller!.value.isInitialized) {
-          if (mounted) {
-            setState(() {});
-            if (widget.isActive) {
-              _playVideo();
-            }
-          }
-        } else {
-          // Initialize lazily when needed
-          debugPrint('🔄 Controller not initialized, triggering lazy initialization...');
-          _initializeLazily();
-        }
-        return;
-      }
+      debugPrint('🎥 SIMPLIFIED: Creating controller directly in UI: ${widget.videoEvent.id.substring(0, 8)}...');
       
-      // If cached controller is invalid, show error state
-      if (cachedController != null && cachedController.value.hasError) {
-        debugPrint('❌ Cached controller has error, showing error state: ${widget.videoEvent.id.substring(0, 8)}');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-            _errorMessage = 'Video controller error';
-          });
-        }
-        return;
-      }
+      // Create controller directly in UI to avoid cache disposal issues
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoEvent.videoUrl!),
+      );
       
-      // For now, if no cached controller, show loading state instead of creating new one
-      debugPrint('⏳ No cached controller found, waiting for cache service: ${widget.videoEvent.id.substring(0, 8)}...');
+      // Don't initialize immediately - wait until video becomes active
+      debugPrint('⏳ Controller created, will initialize when video becomes active: ${widget.videoEvent.id.substring(0, 8)}');
     }
   }
   
   void _initializeLazily() async {
-    if (widget.videoCacheService != null) {
-      debugPrint('🔄 Starting lazy initialization via cache service...');
-      try {
-        await widget.videoCacheService!.initializeControllerLazily(widget.videoEvent);
-        
-        // Check if controller is now ready
-        if (_controller != null && _controller!.value.isInitialized) {
-          if (mounted) {
-            setState(() {});
-            if (widget.isActive) {
-              _playVideo();
-            }
+    if (_controller == null) {
+      debugPrint('⚠️ No controller to initialize: ${widget.videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    if (_controller!.value.isInitialized) {
+      debugPrint('⏩ Controller already initialized: ${widget.videoEvent.id.substring(0, 8)}');
+      if (widget.isActive) {
+        _playVideo();
+      }
+      return;
+    }
+    
+    try {
+      debugPrint('🔄 SIMPLIFIED: Initializing controller directly in UI: ${widget.videoEvent.id.substring(0, 8)}...');
+      
+      // Use the same non-blocking approach but directly in UI
+      final completer = Completer<void>();
+      bool hasCompleted = false;
+      
+      // Start initialization in microtask to avoid blocking
+      scheduleMicrotask(() async {
+        try {
+          await _controller!.initialize();
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.complete();
           }
-        } else {
-          // Listen for initialization changes
-          _controller?.addListener(_onControllerUpdate);
+        } catch (e) {
+          if (!hasCompleted) {
+            hasCompleted = true;
+            completer.completeError(e);
+          }
         }
-      } catch (e) {
-        debugPrint('❌ Lazy initialization failed: ${widget.videoEvent.id.substring(0, 8)} - $e');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-            _errorMessage = e.toString();
-          });
+      });
+      
+      // Set up timeout using Timer
+      Timer(const Duration(seconds: 10), () {
+        if (!hasCompleted) {
+          hasCompleted = true;
+          completer.completeError(TimeoutException('Video initialization timeout after 10 seconds', const Duration(seconds: 10)));
         }
+      });
+      
+      // Wait for either completion or timeout
+      await completer.future;
+      
+      _controller!.setLooping(true);
+      debugPrint('✅ SIMPLIFIED: Controller initialized successfully: ${widget.videoEvent.id.substring(0, 8)}');
+      
+      if (mounted) {
+        setState(() {});
+        if (widget.isActive) {
+          _playVideo();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ SIMPLIFIED: Initialization failed: ${widget.videoEvent.id.substring(0, 8)} - $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = e.toString();
+        });
       }
     }
   }
@@ -242,27 +257,21 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   void _playVideo() {
     if (_controller != null && _controller!.value.isInitialized) {
-      debugPrint('▶️ Playing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+      debugPrint('▶️ SIMPLIFIED: Playing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
       
       try {
-        // Use cache service to coordinate playback if available
-        if (widget.videoCacheService != null) {
-          widget.videoCacheService!.playVideo(widget.videoEvent);
-        } else {
-          // Final race condition check before direct play
-          if (!_controller!.value.isInitialized) {
-            debugPrint('⚠️ RACE CONDITION: Controller not ready in _playVideo - ${widget.videoEvent.id.substring(0, 8)}');
-            return;
-          }
-          _controller!.play();
-        }
-        
+        _controller!.play();
         setState(() {
           _isPlaying = true;
         });
       } catch (e) {
         debugPrint('❌ Error in _playVideo ${widget.videoEvent.id.substring(0, 8)}: $e');
-        // Don't crash - just log error and continue
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = e.toString();
+          });
+        }
       }
     } else {
       debugPrint('⚠️ Cannot play video - controller not ready: ${widget.videoEvent.id.substring(0, 8)}');
@@ -271,18 +280,16 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
 
   void _pauseVideo() {
     if (_controller != null && _controller!.value.isInitialized) {
-      debugPrint('⏸️ Pausing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
+      debugPrint('⏸️ SIMPLIFIED: Pausing video ${widget.videoEvent.id.substring(0, 8)}... (isActive: ${widget.isActive})');
       
-      // Use cache service to coordinate playback if available
-      if (widget.videoCacheService != null) {
-        widget.videoCacheService!.pauseVideo(widget.videoEvent);
-      } else {
+      try {
         _controller!.pause();
+        setState(() {
+          _isPlaying = false;
+        });
+      } catch (e) {
+        debugPrint('❌ Error pausing video: $e');
       }
-      
-      setState(() {
-        _isPlaying = false;
-      });
     }
   }
 

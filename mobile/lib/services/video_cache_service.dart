@@ -328,44 +328,26 @@ class VideoCacheService extends ChangeNotifier {
       return; // Already tested or testing
     }
     
-    // TEMPORARILY DISABLED: Skip cache cleanup to avoid disposal errors
-    // Always test compatibility - manage cache intelligently
-    // if (_controllers.length >= _currentCacheTarget) {
-    //   debugPrint('🧹 Cache at target capacity (${_controllers.length}/$_currentCacheTarget), making room for new test...');
-    //   _cleanupOldestCachedVideos(1); // Clean up just 1 to make room for this test
-    // }
-    
     try {
       _preloadQueue.add(videoEvent.id);
       
-      debugPrint('🧪 Testing video compatibility with deferred initialization: ${videoEvent.id.substring(0, 8)}...');
+      debugPrint('🧪 SIMPLIFIED: Adding video to ready queue without controller: ${videoEvent.id.substring(0, 8)}...');
       debugPrint('📹 Video URL: ${videoEvent.videoUrl}');
       
-      // Create controller but don't initialize it yet
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(videoEvent.videoUrl!),
-      );
+      // SIMPLIFIED APPROACH: Don't create controllers here at all
+      // Let the UI create them when needed to avoid disposal issues
       
-      _controllers[videoEvent.id] = controller;
-      _initializationStatus[videoEvent.id] = false; // Will be initialized lazily
+      // Just mark as ready for the UI to handle
+      _initializationStatus[videoEvent.id] = false; // Not initialized yet
       
-      // Add to ready queue immediately - initialization will happen when needed
-      debugPrint('✅ Adding video to ready queue with deferred initialization: ${videoEvent.id.substring(0, 8)}...');
+      // Add to ready queue immediately - UI will handle controller creation
+      debugPrint('✅ Adding video to ready queue for UI handling: ${videoEvent.id.substring(0, 8)}...');
       _addToReadyQueue(videoEvent);
       
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Video failed compatibility test: ${videoEvent.id.substring(0, 8)} - $e');
+      debugPrint('❌ Video failed to add to queue: ${videoEvent.id.substring(0, 8)} - $e');
       debugPrint('📹 Failed video URL: ${videoEvent.videoUrl}');
-      debugPrint('🚫 Excluding video from feed due to incompatibility');
-      
-      // Clean up failed controller immediately
-      final controller = _controllers.remove(videoEvent.id);
-      try {
-        controller?.dispose();
-      } catch (disposeError) {
-        debugPrint('⚠️ Error disposing failed controller: $disposeError');
-      }
       _initializationStatus.remove(videoEvent.id);
     } finally {
       _preloadQueue.remove(videoEvent.id);
