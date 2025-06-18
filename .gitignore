@@ -117,3 +117,32 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# User-specific development files
+**/devtools_options.yaml
+
+# General system files
+.DS_Store
+Thumbs.db
+
+# Node modules and backend dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Temporary and log files
+*.tmp
+*.temp
+*~
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
