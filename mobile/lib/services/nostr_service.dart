@@ -18,8 +18,11 @@ class NostrService extends ChangeNotifier implements INostrService {
     'wss://relay.damus.io',
     'wss://nos.lol',
     'wss://relay.nos.social',
-    'wss://relay.nostr.band',
+    'wss://relay.nostr1.com',
     'wss://cache2.primal.net/v1',
+    'wss://relay.snort.social',
+    'wss://relay.nostr.com.au',
+    'wss://nostr.wine',
   ];
   
   final NostrKeyManager _keyManager;
@@ -98,7 +101,15 @@ class NostrService extends ChangeNotifier implements INostrService {
       for (final relayUrl in relaysToConnect) {
         try {
           debugPrint('🔌 Connecting to $relayUrl...');
-          final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+          
+          // Validate that the URL is a proper wss:// WebSocket URL
+          final uri = Uri.parse(relayUrl);
+          if (uri.scheme != 'wss' && uri.scheme != 'ws') {
+            throw Exception('Invalid WebSocket URL scheme: ${uri.scheme}. Expected wss:// or ws://');
+          }
+          
+          debugPrint('✓ WebSocket URL validation passed for $relayUrl');
+          final webSocket = WebSocketChannel.connect(uri);
           _webSockets[relayUrl] = webSocket;
           
           if (!_connectedRelays.contains(relayUrl)) {
@@ -193,11 +204,10 @@ class NostrService extends ChangeNotifier implements INostrService {
   void _handleEventMessage(List<dynamic> eventMessage) {
     try {
       final event = Event.deserialize(eventMessage);
-      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
       
       // Check for duplicate events to prevent infinite rebuild loops
       if (_seenEventIds.contains(event.id)) {
-        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        // Silently skip duplicates - they're common in Nostr
         return;
       }
       
@@ -565,8 +575,15 @@ class NostrService extends ChangeNotifier implements INostrService {
     try {
       debugPrint('🔌 Connecting to $relayUrl...');
       
+      // Validate that the URL is a proper wss:// WebSocket URL
+      final uri = Uri.parse(relayUrl);
+      if (uri.scheme != 'wss' && uri.scheme != 'ws') {
+        throw Exception('Invalid WebSocket URL scheme: ${uri.scheme}. Expected wss:// or ws://');
+      }
+      
+      debugPrint('✓ WebSocket URL validation passed for $relayUrl');
       // Simple connection - the WebSocket will handle its own timeout behavior
-      final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+      final webSocket = WebSocketChannel.connect(uri);
       
       _webSockets[relayUrl] = webSocket;
       

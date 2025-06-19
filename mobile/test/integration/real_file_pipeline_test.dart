@@ -3,15 +3,12 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:nostrvine_app/services/upload_manager.dart';
 import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
-import 'package:nostrvine_app/services/video_event_publisher.dart';
-import 'package:nostrvine_app/services/api_service.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
 import 'package:nostrvine_app/models/ready_event_data.dart';
 

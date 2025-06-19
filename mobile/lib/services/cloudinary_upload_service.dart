@@ -95,7 +95,7 @@ class CloudinaryUploadService extends ChangeNotifier {
     
     try {
       // Step 1: Request signed upload parameters from our backend
-      final signedParams = await _requestSignedUpload(
+      final signedParams = await _fetchSignedUploadParameters(
         videoFile: videoFile,
         nostrPubkey: nostrPubkey,
         title: title,
@@ -157,14 +157,23 @@ class CloudinaryUploadService extends ChangeNotifier {
   }
   
   /// Request signed upload parameters from our backend
-  Future<SignedUploadParams> _requestSignedUpload({
+  /// Fetch signed upload parameters from backend for secure Cloudinary upload
+  /// 
+  /// Contacts the backend API to get pre-signed upload credentials including:
+  /// - Signed upload URL with authentication
+  /// - Cloudinary upload parameters (timestamp, signature, etc.)
+  /// - Security tokens for authorized upload
+  /// 
+  /// This follows the secure upload pattern where the backend generates
+  /// credentials to prevent exposing Cloudinary API secrets in the client.
+  Future<SignedUploadParams> _fetchSignedUploadParameters({
     required File videoFile,
     required String nostrPubkey,
     String? title,
     String? description,
     List<String>? hashtags,
   }) async {
-    debugPrint('🔐 Requesting signed upload parameters from backend');
+    debugPrint('🔐 Fetching signed upload parameters from backend');
     
     try {
       // Get file size and basic metadata

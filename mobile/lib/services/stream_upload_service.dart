@@ -136,8 +136,6 @@ class StreamVideoStatus {
 
 /// Service for uploading videos to Cloudflare Stream
 class StreamUploadService extends ChangeNotifier {
-  static String get _baseUrl => AppConfig.backendBaseUrl;
-  
   final Map<String, StreamController<double>> _progressControllers = {};
   final http.Client _client;
   

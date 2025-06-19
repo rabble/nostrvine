@@ -118,11 +118,18 @@ class MobileCameraProvider implements CameraProvider {
       
       debugPrint('✅ Mobile camera recording stopped: ${_realtimeFrames.length} real-time frames');
       
+      // Get actual resolution from camera controller
+      final cameraValue = _controller!.value;
+      final actualWidth = cameraValue.previewSize?.width ?? 640; // fallback to 640
+      final actualHeight = cameraValue.previewSize?.height ?? 480; // fallback to 480
+      
+      debugPrint('📷 Camera resolution: ${actualWidth}x$actualHeight');
+      
       return CameraRecordingResult(
         videoPath: videoFile.path,
         liveFrames: List.from(_realtimeFrames),
-        width: 640, // TODO: Get actual resolution from controller
-        height: 480,
+        width: actualWidth.toInt(),
+        height: actualHeight.toInt(),
         duration: duration,
       );
     } catch (e) {
@@ -134,6 +141,26 @@ class MobileCameraProvider implements CameraProvider {
     }
   }
   
+  @override
+  Size? getCurrentResolution() {
+    if (!isInitialized) return null;
+    
+    // Get actual resolution from camera controller
+    final cameraValue = _controller!.value;
+    final actualWidth = cameraValue.previewSize?.width ?? 640;
+    final actualHeight = cameraValue.previewSize?.height ?? 480;
+    
+    debugPrint('📷 Camera resolution: ${actualWidth}x$actualHeight');
+    return Size(actualWidth, actualHeight);
+  }
+  
+  @override
+  String getResolutionString() {
+    final resolution = getCurrentResolution();
+    if (resolution == null) return 'Unknown';
+    return '${resolution.width.toInt()}x${resolution.height.toInt()}';
+  }
+
   @override
   Future<void> switchCamera() async {
     if (!isInitialized || _isRecording) return;

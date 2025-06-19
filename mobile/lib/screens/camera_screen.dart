@@ -11,6 +11,7 @@ import '../services/upload_manager.dart';
 import '../models/pending_upload.dart';
 import '../widgets/upload_progress_indicator.dart';
 import 'camera_settings_screen.dart';
+import 'video_metadata_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -27,7 +28,6 @@ class _CameraScreenState extends State<CameraScreen> {
   ContentReportingService? _reportingService;
   UploadManager? _uploadManager;
   String? _errorMessage;
-  VineRecordingResult? _lastRecordingResult;
   PendingUpload? _currentUpload;
 
   @override
@@ -598,11 +598,8 @@ class _CameraScreenState extends State<CameraScreen> {
       debugPrint('✅ UI: Recording stopped successfully');
       
       if (mounted && result.hasFrames) {
-        // Store recording result for publishing
-        _lastRecordingResult = result;
-        
-        // Start Cloudinary upload
-        await _startCloudinaryUpload(result);
+        // Navigate to metadata screen for user to add details
+        await _showVideoMetadataScreen(result);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -625,65 +622,45 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _startCloudinaryUpload(VineRecordingResult recordingResult) async {
+  Future<void> _showVideoMetadataScreen(VineRecordingResult recordingResult) async {
     try {
-      if (_uploadManager == null) {
-        throw Exception('Upload manager not initialized');
-      }
-
-      // First, save the video frames to a temporary file
-      // TODO: For now, we'll create a placeholder file - this should be replaced with actual video creation from frames
+      // Create a temporary video file from frames
       final tempVideoFile = await _createVideoFromFrames(recordingResult);
       
-      // Get user's public key (for now using a placeholder)
-      final userPubkey = 'placeholder-pubkey'; // TODO: Get from user profile service
-      
-      // Start the upload
-      final upload = await _uploadManager!.startUpload(
-        videoFile: tempVideoFile,
-        nostrPubkey: userPubkey,
-        title: 'Vine Video', // TODO: Allow user to set title
-        description: 'Created with NostrVine', // TODO: Allow user to set description
-        hashtags: ['nostrvine', 'vine'], // TODO: Allow user to set hashtags
-      );
-      
-      setState(() {
-        _currentUpload = upload;
-        _errorMessage = null;
-      });
-
-      debugPrint('✅ Upload started successfully: ${upload.id}');
-      debugPrint('📄 Video file: ${tempVideoFile.path}');
-      debugPrint('🎬 Frame count: ${recordingResult.frames.length}');
-      debugPrint('⏱️ Processing time: ${recordingResult.processingTime.inMilliseconds}ms');
-      debugPrint('🎯 Selected approach: ${recordingResult.selectedApproach}');
-      
       if (mounted) {
-        setState(() {}); // Trigger UI update to show upload progress
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Vine recorded! Uploading to cloud for processing...'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+        // Navigate to metadata screen
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VideoMetadataScreen(
+              videoFile: tempVideoFile,
+              onCancel: () {
+                // Clean up temporary file if user cancels
+                tempVideoFile.deleteSync();
+              },
+              onPublish: () {
+                // Video metadata screen handles the upload process
+                // Reset current upload state since metadata screen manages it
+                setState(() {
+                  _currentUpload = null;
+                });
+              },
+            ),
           ),
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to start upload: $e');
-      setState(() {
-        _errorMessage = 'Failed to start upload: $e';
-      });
+      debugPrint('❌ Failed to show metadata screen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to start upload: $e'),
+            content: Text('Failed to prepare video: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
   }
+
 
   /// Create a temporary video file from frames (placeholder implementation)
   Future<File> _createVideoFromFrames(VineRecordingResult recordingResult) async {

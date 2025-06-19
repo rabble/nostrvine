@@ -26,6 +26,12 @@ abstract class CameraProvider {
   /// Switch between front/back cameras if available
   Future<void> switchCamera();
   
+  /// Get current camera resolution (returns null if not available)
+  Size? getCurrentResolution();
+  
+  /// Get current camera resolution as a readable string
+  String getResolutionString();
+  
   /// Clean up resources
   Future<void> dispose();
 }

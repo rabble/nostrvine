@@ -42,9 +42,11 @@ class VideoEventService extends ChangeNotifier {
     List<String>? hashtags,
     int? since,
     int? until,
-    int limit = 500, // Increased limit for more diverse content
+    int? limit, // Make limit optional so we can set defaults per platform
     bool replace = true, // Whether to replace existing subscription
   }) async {
+    // Set platform-appropriate defaults for limit
+    limit ??= kIsWeb ? 50 : 500; // Web: only 50 events, Mobile: 500 events
     debugPrint('🎥 Starting video event subscription...');
     debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
     
@@ -155,7 +157,7 @@ class VideoEventService extends ChangeNotifier {
       
       // Check if we already have this event
       if (_videoEvents.any((e) => e.id == event.id)) {
-        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        // Silently skip duplicates - they're common in Nostr
         return;
       }
       
@@ -246,7 +248,9 @@ class VideoEventService extends ChangeNotifier {
   }
   
   /// Load more historical events using one-shot query (not persistent subscription)
-  Future<void> loadMoreEvents({int limit = 200}) async {
+  Future<void> loadMoreEvents({int? limit}) async {
+    // Set platform-appropriate defaults for load more
+    limit ??= kIsWeb ? 25 : 200; // Web: much smaller batches
     if (_videoEvents.isEmpty) return;
     
     _isLoading = true;

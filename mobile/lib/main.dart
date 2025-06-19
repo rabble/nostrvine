@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'screens/camera_screen.dart';
-import 'screens/feed_screen.dart';
-import 'screens/profile_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'navigation/app_router.dart';
 import 'services/nostr_service.dart';
 import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
@@ -21,6 +20,7 @@ import 'services/api_service.dart';
 import 'services/video_event_publisher.dart';
 import 'services/notification_service.dart';
 import 'services/seen_videos_service.dart';
+import 'services/search_service.dart';
 import 'providers/video_feed_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -103,6 +103,12 @@ class NostrVineApp extends StatelessWidget {
         // Notification service
         ChangeNotifierProvider(create: (_) => NotificationService.instance),
         
+        // Search service depends on Nostr service
+        ChangeNotifierProxyProvider<INostrService, SearchService>(
+          create: (context) => SearchService(nostrService: context.read<INostrService>()),
+          update: (_, nostrService, previous) => previous ?? SearchService(nostrService: nostrService),
+        ),
+        
         // Cloudinary upload service
         ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
         
@@ -164,9 +170,10 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'NostrVine',
         debugShowCheckedModeBanner: false,
+        routerConfig: AppRouter.router,
         theme: ThemeData(
           brightness: Brightness.dark,
           primarySwatch: Colors.purple,
@@ -183,7 +190,9 @@ class NostrVineApp extends StatelessWidget {
             type: BottomNavigationBarType.fixed,
           ),
         ),
-        home: const ResponsiveWrapper(child: AppInitializer()),
+        builder: (context, child) => ResponsiveWrapper(
+          child: child ?? const AppInitializer(),
+        ),
       ),
     );
   }
@@ -232,6 +241,11 @@ class _AppInitializerState extends State<AppInitializer> {
       });
       
       debugPrint('✅ All services initialized successfully');
+      
+      // Navigate to the main feed after successful initialization
+      if (mounted) {
+        context.go(AppRouter.feedPath);
+      }
     } catch (e, stackTrace) {
       debugPrint('❌ Service initialization failed: $e');
       debugPrint('📍 Stack trace: $stackTrace');
@@ -241,6 +255,9 @@ class _AppInitializerState extends State<AppInitializer> {
           _isInitialized = true; // Continue anyway with basic functionality
           _initializationStatus = 'Initialization completed with errors';
         });
+        
+        // Still navigate to feed even with errors
+        context.go(AppRouter.feedPath);
       }
     }
   }
@@ -267,51 +284,11 @@ class _AppInitializerState extends State<AppInitializer> {
       );
     }
 
-    return const MainNavigationScreen();
+    // Navigation is now handled by the router
+    return const SizedBox.shrink();
   }
 }
 
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
-
-  @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-}
-
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-  
-  final List<Widget> _screens = [
-    const FeedScreen(),
-    const CameraScreen(),
-    const ProfileScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Feed',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: 'Camera',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// ResponsiveWrapper limits the app width to iPad size on web platforms
 class ResponsiveWrapper extends StatelessWidget {

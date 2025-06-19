@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
@@ -16,7 +15,6 @@ import 'package:nostrvine_app/services/api_service.dart';
 import 'package:nostrvine_app/services/notification_service.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostrvine_app/models/ready_event_data.dart';
 import 'package:nostr/nostr.dart';
 
 // Mock classes
@@ -213,7 +211,7 @@ void main() {
         await videoEventPublisher.initialize();
         
         // Force an immediate check instead of waiting for polling interval
-        await videoEventPublisher.forceCheck();
+        await videoEventPublisher.checkForReadyEventsNow();
         
         // Step 5: Verify the complete state transition
         await Future.delayed(const Duration(milliseconds: 200));
@@ -257,7 +255,7 @@ void main() {
         await videoEventPublisher.initialize();
         
         // Should not throw - should handle gracefully
-        expect(() => videoEventPublisher.forceCheck(), returnsNormally);
+        expect(() => videoEventPublisher.checkForReadyEventsNow(), returnsNormally);
         
         // Wait for error handling
         await Future.delayed(const Duration(milliseconds: 100));
@@ -292,7 +290,7 @@ void main() {
 
         // ACT: Force check with Nostr failure
         await videoEventPublisher.initialize();
-        await videoEventPublisher.forceCheck();
+        await videoEventPublisher.checkForReadyEventsNow();
         
         await Future.delayed(const Duration(milliseconds: 100));
 
@@ -453,7 +451,7 @@ void main() {
         await videoEventPublisher.initialize();
         
         // Should handle malformed response gracefully
-        expect(() => videoEventPublisher.forceCheck(), returnsNormally);
+        expect(() => videoEventPublisher.checkForReadyEventsNow(), returnsNormally);
         
         await Future.delayed(const Duration(milliseconds: 100));
         
@@ -472,7 +470,7 @@ void main() {
         await videoEventPublisher.initialize();
         
         // Should handle timeout gracefully
-        expect(() => videoEventPublisher.forceCheck(), returnsNormally);
+        expect(() => videoEventPublisher.checkForReadyEventsNow(), returnsNormally);
         
         await Future.delayed(const Duration(milliseconds: 100));
         

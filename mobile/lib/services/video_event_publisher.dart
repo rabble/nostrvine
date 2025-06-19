@@ -34,7 +34,6 @@ class VideoEventPublisher extends ChangeNotifier {
   
   // Retry configuration
   final List<ReadyEventData> _failedEvents = [];
-  static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(minutes: 1);
   
   // Statistics
@@ -138,7 +137,16 @@ class VideoEventPublisher extends ChangeNotifier {
     }
   }
 
-  /// Process a single ready event
+  /// Process a single ready event and publish to Nostr network
+  /// 
+  /// Takes a processed video event from the backend and:
+  /// 1. Validates the event is ready for publishing
+  /// 2. Creates a NIP-94 file metadata event with video details
+  /// 3. Signs and publishes the event to connected Nostr relays
+  /// 4. Updates local upload status and shows user notification
+  /// 5. Cleans up the remote event from backend queue
+  /// 
+  /// Handles failures by adding events to retry queue for later processing.
   Future<void> _processReadyEvent(ReadyEventData eventData) async {
     try {
       debugPrint('🎬 Processing ready event: ${eventData.publicId}');
@@ -224,13 +232,13 @@ class VideoEventPublisher extends ChangeNotifier {
   Future<void> _updateLocalUploadStatus(ReadyEventData eventData, String nostrEventId) async {
     final upload = _uploadManager.getUpload(eventData.originalUploadId);
     if (upload != null) {
-      final updatedUpload = upload.copyWith(
+      upload.copyWith(
         status: UploadStatus.published,
         nostrEventId: nostrEventId,
         completedAt: DateTime.now(),
       );
       
-      // This would normally update the upload in the manager
+      // TODO: Update the upload in the manager when updateUpload method is available
       debugPrint('📱 Updated local upload status: ${eventData.originalUploadId} -> published');
       debugPrint('🔗 Linked to Nostr event: $nostrEventId');
     } else {
@@ -357,8 +365,11 @@ class VideoEventPublisher extends ChangeNotifier {
     };
   }
 
-  /// Force an immediate check (for manual testing)
-  Future<void> forceCheck() async {
+  /// Manually trigger immediate check for ready events
+  /// 
+  /// Forces an immediate poll for ready events, bypassing the normal polling interval.
+  /// Useful for testing or when immediate processing is needed.
+  Future<void> checkForReadyEventsNow() async {
     debugPrint('🔧 Force checking for ready events');
     await _checkForReadyEvents();
   }

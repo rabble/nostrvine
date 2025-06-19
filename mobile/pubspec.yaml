@@ -65,13 +65,12 @@ dependencies:
   crypto: ^3.0.3
   encrypt: ^5.0.3
   
-  # Concurrency control
-  pool: ^1.5.1
-  
   # UI/UX
-  animations: ^2.0.11
   cached_network_image: ^3.3.1
   nostr: ^1.5.0  # Web-compatible nostr package by ethicnology
+  
+  # Navigation
+  go_router: ^14.3.0
 
 dev_dependencies:
   flutter_test:
@@ -84,8 +83,14 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   
-  # Testing
+  # Testing dependencies for TDD rebuild
+  mockito: ^5.4.4
   mocktail: ^1.0.3
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
+  test: ^1.25.8
   
   # Code generation
   build_runner: ^2.4.9

@@ -454,7 +454,7 @@ class PipelineTestStack {
       result.markedReady = true;
       
       // Step 3: Trigger background publishing
-      await videoEventPublisher.forceCheck();
+      await videoEventPublisher.checkForReadyEventsNow();
       result.publishingTriggered = true;
       
       // Wait for processing

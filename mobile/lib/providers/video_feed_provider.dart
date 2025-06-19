@@ -8,6 +8,7 @@ import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
+import '../utils/logger.dart';
 
 /// Provider for managing video feed state and operations
 class VideoFeedProvider extends ChangeNotifier {
@@ -49,7 +50,11 @@ class VideoFeedProvider extends ChangeNotifier {
     _videoCacheService.addListener(_onVideoCacheServiceChanged);
   }
   
-  // Getters
+  // Getters  
+  /// ⚠️ DUAL LIST PROBLEM: These two lists can have different content/ordering!
+  /// videoEvents (ready queue) - Only successfully preloaded videos, used by UI
+  /// allVideoEvents (raw events) - All events from Nostr, used by preloading logic
+  /// → This causes INDEX MISMATCH bugs when scrolling!
   List<VideoEvent> get videoEvents => _videoCacheService.readyToPlayQueue;
   List<VideoEvent> get allVideoEvents => _videoEventService.videoEvents; // All events for background processing
   bool get isInitialized => _isInitialized;
@@ -280,7 +285,14 @@ class VideoFeedProvider extends ChangeNotifier {
   
   /// Handle changes from video cache service (when ready queue updates)
   void _onVideoCacheServiceChanged() {
-    debugPrint('📢 Video cache service changed - ready queue now has ${_videoCacheService.readyToPlayQueue.length} videos');
+    // Log queue state for debugging index mismatches
+    logQueueState(
+      'VideoCacheServiceChanged',
+      allEvents: _videoEventService.videoEvents.length,
+      readyQueue: _videoCacheService.readyToPlayQueue.length,
+      cacheControllers: _videoCacheService.getCacheStats()['cached_videos'],
+    );
+    
     // Notify listeners so UI can rebuild with updated ready queue
     _scheduleNotification();
   }

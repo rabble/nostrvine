@@ -72,6 +72,16 @@ class UnsupportedCameraProvider implements CameraProvider {
   }
   
   @override
+  Size? getCurrentResolution() {
+    return null; // No camera, no resolution
+  }
+  
+  @override
+  String getResolutionString() {
+    return 'Not Available';
+  }
+  
+  @override
   Future<void> dispose() async {
     // Nothing to dispose
   }

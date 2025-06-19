@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
 import '../services/upload_manager.dart';
+import '../services/nostr_service_interface.dart';
 import '../widgets/hashtag_input_widget.dart';
 import '../widgets/character_counter_widget.dart';
 
@@ -112,10 +113,10 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
 
     try {
       final uploadManager = context.read<UploadManager>();
+      final nostrService = context.read<INostrService>();
       
       // Get current user's pubkey from NostrService
-      // For now, we'll use a placeholder - this should be updated when NostrService is accessible
-      const userPubkey = 'placeholder_pubkey';
+      final userPubkey = nostrService.publicKey ?? 'anonymous_user';
       
       await uploadManager.uploadVideo(
         videoFile: widget.videoFile,
@@ -239,6 +240,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        key: const Key('title_field'),
                         controller: _titleController,
                         focusNode: _titleFocus,
                         style: const TextStyle(color: Colors.white),
@@ -286,6 +288,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        key: const Key('description_field'),
                         controller: _descriptionController,
                         focusNode: _descriptionFocus,
                         style: const TextStyle(color: Colors.white),

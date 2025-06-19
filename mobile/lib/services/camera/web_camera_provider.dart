@@ -146,6 +146,30 @@ class WebCameraProvider implements CameraProvider {
   }
   
   @override
+  Size? getCurrentResolution() {
+    if (!isInitialized) return null;
+    
+    // Get actual resolution from camera controller
+    final cameraValue = _controller!.value;
+    final actualSize = cameraValue.previewSize;
+    
+    if (actualSize != null) {
+      debugPrint('📷 Web camera resolution: ${actualSize.width}x${actualSize.height}');
+      return actualSize;
+    }
+    
+    // Fallback to hardcoded values if preview size is null
+    return const Size(640, 480);
+  }
+  
+  @override
+  String getResolutionString() {
+    final resolution = getCurrentResolution();
+    if (resolution == null) return 'Unknown';
+    return '${resolution.width.toInt()}x${resolution.height.toInt()}';
+  }
+
+  @override
   Future<void> dispose() async {
     if (_isRecording) {
       try {

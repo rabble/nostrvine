@@ -88,7 +88,16 @@ class GifService {
     }
   }
   
-  /// Process frames for optimal GIF creation
+  /// Process raw frame bytes into optimized Image objects for GIF encoding
+  /// 
+  /// Converts raw frame data through several optimization steps:
+  /// 1. Calculates optimal dimensions based on quality setting
+  /// 2. Converts raw bytes to Image objects (supports JPEG and RGB formats)
+  /// 3. Resizes frames to target dimensions while maintaining aspect ratio
+  /// 4. Applies quality-based color quantization to reduce file size
+  /// 
+  /// Returns processed Image objects ready for GIF encoding.
+  /// Skips frames that fail to process rather than failing entirely.
   Future<List<img.Image>> _processFramesForGif(
     List<Uint8List> rawFrames,
     int originalWidth,

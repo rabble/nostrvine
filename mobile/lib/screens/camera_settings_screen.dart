@@ -446,6 +446,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             _buildInfoRow('Duration:', '${config.recordingDuration.inSeconds}s'),
             _buildInfoRow('Frame Rate:', '${config.targetFPS.toStringAsFixed(1)} FPS'),
             _buildInfoRow('Total Frames:', '$estimatedFrames frames'),
+            _buildInfoRow('Camera Resolution:', _cameraService.getCurrentResolutionString()),
             _buildInfoRow('Auto-stop:', config.enableAutoStop ? 'Enabled' : 'Disabled'),
             _buildInfoRow('Est. GIF Size:', '~${estimatedSize}KB'),
           ],

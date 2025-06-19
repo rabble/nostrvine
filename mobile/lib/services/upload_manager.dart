@@ -130,6 +130,25 @@ class UploadManager extends ChangeNotifier {
     return upload;
   }
 
+  /// Upload a video with metadata (convenience method)
+  Future<PendingUpload> uploadVideo({
+    required File videoFile,
+    required String nostrPubkey,
+    String? thumbnailPath,
+    String? title,
+    String? description,
+    List<String>? hashtags,
+  }) async {
+    return startUpload(
+      videoFile: videoFile,
+      nostrPubkey: nostrPubkey,
+      thumbnailPath: thumbnailPath,
+      title: title,
+      description: description,
+      hashtags: hashtags,
+    );
+  }
+
   /// Perform the actual upload to Cloudinary
   Future<void> _performUpload(PendingUpload upload) async {
     try {
@@ -313,6 +332,125 @@ class UploadManager extends ChangeNotifier {
       'published': uploads.where((u) => u.status == UploadStatus.published).length,
       'failed': uploads.where((u) => u.status == UploadStatus.failed).length,
     };
+  }
+
+  /// Delete an upload from history
+  Future<void> deleteUpload(String uploadId) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      debugPrint('⚠️ Cannot delete upload - not found: $uploadId');
+      return;
+    }
+
+    if (!_canDelete(upload)) {
+      debugPrint('⚠️ Cannot delete upload in status: ${upload.status}');
+      return;
+    }
+
+    debugPrint('🗑️ Deleting upload from history: $uploadId');
+
+    // Cancel any progress subscription
+    final subscription = _progressSubscriptions.remove(uploadId);
+    subscription?.cancel();
+
+    // Remove from storage
+    await _uploadsBox?.delete(uploadId);
+    notifyListeners();
+    
+    debugPrint('✅ Upload deleted: $uploadId');
+  }
+
+  /// Clear all completed uploads (published/failed) from history
+  Future<void> clearCompletedUploads() async {
+    final completedUploads = pendingUploads
+        .where((upload) => upload.status == UploadStatus.published || upload.status == UploadStatus.failed)
+        .toList();
+
+    if (completedUploads.isEmpty) {
+      debugPrint('📋 No completed uploads to clear');
+      return;
+    }
+
+    debugPrint('🧹 Clearing ${completedUploads.length} completed uploads');
+
+    for (final upload in completedUploads) {
+      await _uploadsBox?.delete(upload.id);
+    }
+
+    notifyListeners();
+    debugPrint('✅ Completed uploads cleared');
+  }
+
+  /// Get active uploads (uploading, processing, ready to publish)
+  List<PendingUpload> get activeUploads {
+    return pendingUploads
+        .where((upload) =>
+            upload.status == UploadStatus.uploading ||
+            upload.status == UploadStatus.processing ||
+            upload.status == UploadStatus.readyToPublish)
+        .toList();
+  }
+
+  /// Get queued uploads (pending)
+  List<PendingUpload> get queuedUploads {
+    return getUploadsByStatus(UploadStatus.pending);
+  }
+
+  /// Get completed uploads (published/failed)
+  List<PendingUpload> get completedUploads {
+    return pendingUploads
+        .where((upload) =>
+            upload.status == UploadStatus.published ||
+            upload.status == UploadStatus.failed)
+        .toList();
+  }
+
+  /// Check if an upload can be cancelled
+  bool _canCancel(PendingUpload upload) {
+    return upload.status == UploadStatus.pending ||
+           upload.status == UploadStatus.uploading;
+  }
+
+  /// Check if an upload can be deleted
+  bool _canDelete(PendingUpload upload) {
+    return upload.status == UploadStatus.published ||
+           upload.status == UploadStatus.failed;
+  }
+
+  /// Get upload success rate as percentage
+  double get successRate {
+    final completed = completedUploads;
+    if (completed.isEmpty) return 0.0;
+    
+    final successful = completed.where((u) => u.status == UploadStatus.published).length;
+    return (successful / completed.length) * 100;
+  }
+
+  /// Get total count of active uploads
+  int get activeUploadCount => activeUploads.length;
+
+  /// Get total count of queued uploads
+  int get queuedUploadCount => queuedUploads.length;
+
+  /// Get total count of completed uploads
+  int get completedUploadCount => completedUploads.length;
+
+  /// Retry all failed uploads
+  Future<void> retryFailedUploads() async {
+    final failedUploads = getUploadsByStatus(UploadStatus.failed);
+    
+    if (failedUploads.isEmpty) {
+      debugPrint('📋 No failed uploads to retry');
+      return;
+    }
+
+    debugPrint('🔄 Retrying ${failedUploads.length} failed uploads');
+
+    for (final upload in failedUploads) {
+      await retryUpload(upload.id);
+    }
+    
+    debugPrint('✅ All failed uploads retry initiated');
   }
 
   @override

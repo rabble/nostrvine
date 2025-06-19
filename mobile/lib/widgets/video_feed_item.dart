@@ -91,6 +91,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   
   /// Handle video activation with robust initialization and autoplay
   void _handleVideoActivation() async {
+    // Mark this video as active in the cache service to protect it from cleanup
+    widget.videoCacheService?.markVideoAsActive(widget.videoEvent.id);
+    
     // Case 1: No controller available
     if (_controller == null) {
       debugPrint('❌ No video controller available for: ${widget.videoEvent.id.substring(0, 8)}');
@@ -131,6 +134,21 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         _playVideo();
         _chewieController!.removeListener(_onChewieStateChange);
       }
+    }
+  }
+
+  /// Check if video controller is valid and not disposed
+  bool _isControllerValid() {
+    if (_controller == null) return false;
+    
+    try {
+      // Try to access value property - this will throw if disposed
+      final _ = _controller!.value.isInitialized;
+      return true;
+    } catch (e) {
+      // Controller is disposed or invalid
+      debugPrint('⚠️ Controller validation failed for ${widget.videoEvent.id.substring(0, 8)}: $e');
+      return false;
     }
   }
 
@@ -377,56 +395,99 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   }
 
   void _playVideo() {
-    if (_chewieController != null && _controller!.value.isInitialized) {
-      debugPrint('▶️ ROBUST: Playing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
-      
-      try {
-        _chewieController!.play();
-        setState(() {
-          _isPlaying = true;
-        });
-        
-        // Mark video as seen when it starts playing
-        if (widget.seenVideosService != null) {
-          widget.seenVideosService!.markVideoAsSeen(widget.videoEvent.id);
-          debugPrint('👁️ Marked video as seen: ${widget.videoEvent.id.substring(0, 8)}');
-        }
-      } catch (e) {
-        debugPrint('❌ Error playing video ${widget.videoEvent.id.substring(0, 8)}: $e');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-            _errorMessage = 'Playback error: $e';
-          });
-        }
+    // Critical: Check if controllers are still valid before using
+    if (_controller == null || _chewieController == null) {
+      debugPrint('⚠️ Cannot play video - controllers null: ${widget.videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    // Critical: Check if controller is disposed
+    try {
+      if (!_controller!.value.isInitialized) {
+        debugPrint('⚠️ Cannot play video - controller not initialized: ${widget.videoEvent.id.substring(0, 8)}');
+        return;
       }
-    } else {
-      debugPrint('⚠️ Cannot play video - Chewie controller not ready: ${widget.videoEvent.id.substring(0, 8)}');
+    } catch (e) {
+      debugPrint('⚠️ Cannot play video - controller error: ${widget.videoEvent.id.substring(0, 8)}: $e');
+      return;
+    }
+    
+    debugPrint('▶️ ROBUST: Playing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
+    
+    try {
+      _chewieController!.play();
+      setState(() {
+        _isPlaying = true;
+      });
+      
+      // Mark video as seen when it starts playing
+      if (widget.seenVideosService != null) {
+        widget.seenVideosService!.markVideoAsSeen(widget.videoEvent.id);
+        debugPrint('👁️ Marked video as seen: ${widget.videoEvent.id.substring(0, 8)}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error playing video ${widget.videoEvent.id.substring(0, 8)}: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Playback error: $e';
+        });
+      }
     }
   }
 
   void _pauseVideo() {
-    if (_chewieController != null && _controller!.value.isInitialized) {
-      debugPrint('⏸️ ROBUST: Pausing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
-      
-      try {
-        _chewieController!.pause();
-        setState(() {
-          _isPlaying = false;
-        });
-      } catch (e) {
-        debugPrint('❌ Error pausing video: $e');
+    // Critical: Check if controllers are still valid before using
+    if (_controller == null || _chewieController == null) {
+      debugPrint('⚠️ Cannot pause video - controllers null: ${widget.videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    // Critical: Check if controller is disposed
+    try {
+      if (!_controller!.value.isInitialized) {
+        debugPrint('⚠️ Cannot pause video - controller not initialized: ${widget.videoEvent.id.substring(0, 8)}');
+        return;
       }
+    } catch (e) {
+      debugPrint('⚠️ Cannot pause video - controller error: ${widget.videoEvent.id.substring(0, 8)}: $e');
+      return;
+    }
+    
+    debugPrint('⏸️ ROBUST: Pausing video ${widget.videoEvent.id.substring(0, 8)}... (format: ${widget.videoEvent.mimeType})');
+    
+    try {
+      _chewieController!.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error pausing video: $e');
     }
   }
 
   void _togglePlayPause() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      if (_isPlaying) {
-        _pauseVideo();
-      } else {
-        _playVideo();
+    // Critical: Check if controllers are still valid before using
+    if (_controller == null) {
+      debugPrint('⚠️ Cannot toggle play/pause - controller null: ${widget.videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    // Critical: Check if controller is disposed
+    try {
+      if (!_controller!.value.isInitialized) {
+        debugPrint('⚠️ Cannot toggle play/pause - controller not initialized: ${widget.videoEvent.id.substring(0, 8)}');
+        return;
       }
+    } catch (e) {
+      debugPrint('⚠️ Cannot toggle play/pause - controller error: ${widget.videoEvent.id.substring(0, 8)}: $e');
+      return;
+    }
+    
+    if (_isPlaying) {
+      _pauseVideo();
+    } else {
+      _playVideo();
     }
   }
   
@@ -679,8 +740,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
               : _buildPlaceholder(),
         ),
         
-        // LAYER 2: Video player (only when ready)
-        if (_chewieController != null && _controller!.value.isInitialized)
+        // LAYER 2: Video player (only when ready and not disposed)
+        if (_chewieController != null && _controller != null && _isControllerValid())
           Positioned.fill(
             child: Center(
               child: Chewie(controller: _chewieController!),
@@ -688,7 +749,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
           ),
         
         // LAYER 3: Loading indicator (when video not ready)
-        if (_chewieController == null || !_controller!.value.isInitialized)
+        if (_chewieController == null || !_isControllerValid())
           Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.3),

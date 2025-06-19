@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../models/video_event.dart';
 import '../widgets/video_feed_item.dart';
 import '../services/connection_status_service.dart';
 import '../services/seen_videos_service.dart';
+import '../services/user_profile_service.dart';
+import '../utils/logger.dart';
+import '../navigation/navigation_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -66,13 +70,13 @@ class _FeedScreenState extends State<FeedScreen> {
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              // TODO: Implement search functionality
+              NavigationService.goToSearch();
             },
           ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () {
-              // TODO: Implement notifications
+              NavigationService.goToNotifications();
             },
           ),
           // Debug option to clear seen videos
@@ -241,29 +245,61 @@ class _FeedScreenState extends State<FeedScreen> {
               final isSubscribed = provider.isSubscribed;
               final canLoadMore = provider.canLoadMore;
               
-              debugPrint('📱 Page changed to video $index/$readyVideoCount (all: $allVideoCount, subscribed: $isSubscribed, canLoadMore: $canLoadMore)');
+              // Enhanced structured logging for debugging index mismatches
+              if (readyVideoCount > 0 && index < readyVideoCount) {
+                appLog(
+                  LogCategory.UI, '📱', 'Page Changed',
+                  videoId: provider.videoEvents[index].id,
+                  details: {
+                    'index': index,
+                    'readyCount': readyVideoCount,
+                    'allCount': allVideoCount,
+                    'isSubscribed': isSubscribed,
+                    'canLoadMore': canLoadMore,
+                  },
+                );
+              } else {
+                appLog(
+                  LogCategory.ERROR, '⚠️', 'Invalid Page Index',
+                  details: {
+                    'index': index,
+                    'readyCount': readyVideoCount,
+                    'allCount': allVideoCount,
+                  },
+                );
+              }
               
               if (readyVideoCount > 0) {
                 // Load more when getting close to the end of ready videos
                 if (index >= readyVideoCount - 3) {
-                  debugPrint('📱 Near end of ready videos ($index/$readyVideoCount), loading more...');
+                  appLog(LogCategory.UI, '📱', 'Near end of ready videos, loading more...', details: {
+                    'index': index,
+                    'readyCount': readyVideoCount,
+                    'canLoadMore': canLoadMore,
+                  });
                   if (canLoadMore) {
                     provider.loadMoreEvents();
                   } else {
-                    debugPrint('⚠️ Cannot load more events - subscription may have stopped');
+                    appLog(LogCategory.ERROR, '⚠️', 'Cannot load more events - subscription may have stopped');
                   }
                 }
                 // Preload videos around current index using the ready video list
                 provider.preloadVideosAroundIndex(index);
               } else {
-                debugPrint('⚠️ No ready videos available for preloading');
+                appLog(LogCategory.ERROR, '⚠️', 'No ready videos available for preloading');
               }
             },
             itemBuilder: (context, index) {
               final readyVideoCount = provider.videoEvents.length;
               if (readyVideoCount == 0 || index >= readyVideoCount) {
                 debugPrint('⚠️ Invalid video index: $index/$readyVideoCount');
-                return const SizedBox.shrink();
+                return Container(
+                  height: MediaQuery.of(context).size.height,
+                  color: Colors.black,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white54),
+                  ),
+                );
               }
               
               // ✅ FIXED: Use ready-to-play videos that have passed compatibility testing
@@ -361,7 +397,7 @@ class _FeedScreenState extends State<FeedScreen> {
               title: const Text('Copy Event ID', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Copy Nostr event ID to clipboard
+                _copyEventIdToClipboard(videoEvent);
               },
             ),
             ListTile(
@@ -377,12 +413,102 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
     );
   }
+
+  void _copyEventIdToClipboard(VideoEvent videoEvent) async {
+    try {
+      // Show option dialog for copy format
+      final format = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text('Copy Format', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'Choose the format for copying the event ID:',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'hex'),
+              child: const Text('Event ID (hex)', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'nevent'),
+              child: const Text('nevent format', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        ),
+      );
+
+      if (format == null) return;
+
+      String textToCopy;
+      String formatName;
+      
+      if (format == 'hex') {
+        textToCopy = videoEvent.id;
+        formatName = 'Event ID';
+      } else {
+        // Create nevent format (simplified version)
+        // Full implementation would use proper NIP-19 encoding
+        textToCopy = 'nevent1${videoEvent.id}'; // Simplified - real implementation needs proper bech32 encoding
+        formatName = 'nevent';
+      }
+
+      await Clipboard.setData(ClipboardData(text: textToCopy));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$formatName copied to clipboard'),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'Show',
+              textColor: Colors.white,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: Colors.grey[900],
+                    title: Text('Copied $formatName', style: const TextStyle(color: Colors.white)),
+                    content: SelectableText(
+                      textToCopy,
+                      style: const TextStyle(color: Colors.white70, fontFamily: 'monospace'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to copy event ID: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy: ${e.toString()}'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    }
+  }
   
   void _openUserProfile(String pubkey) {
-    // TODO: Navigate to user profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening profile for user: ${pubkey.substring(0, 8)}...')),
-    );
+    final displayName = context.read<UserProfileService>()
+        .getCachedProfile(pubkey)?.bestDisplayName;
+    NavigationService.goToUserProfile(pubkey, displayName: displayName);
   }
 }
 

@@ -109,7 +109,16 @@ class ConnectionStatusService extends ChangeNotifier {
     }
   }
   
-  /// Test actual internet access by checking reachable hosts
+  /// Test actual internet access by attempting DNS lookups to reliable hosts
+  /// 
+  /// Device connectivity can show as "connected" even when internet access
+  /// is blocked (e.g., captive portals, DNS issues). This method validates
+  /// real internet access by attempting DNS lookups to multiple reliable hosts.
+  /// 
+  /// Tests multiple hosts in sequence and considers internet available if ANY
+  /// host lookup succeeds. Uses short timeouts to avoid blocking the UI.
+  /// 
+  /// Updates _hasInternetAccess flag and notifies listeners of changes.
   Future<void> _checkInternetAccess() async {
     if (!_isOnline) {
       _hasInternetAccess = false;
@@ -169,8 +178,11 @@ class ConnectionStatusService extends ChangeNotifier {
     });
   }
   
-  /// Force a connection check
-  Future<void> forceCheck() async {
+  /// Immediately check connectivity status and internet access
+  /// 
+  /// Forces an immediate connectivity check bypassing the periodic timer.
+  /// Useful for manual refresh or when network conditions may have changed.
+  Future<void> checkConnectivityNow() async {
     debugPrint('🔄 Force checking connection status...');
     await _checkConnectivity();
   }

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/user_profile_service.dart';
+import 'profile_edit_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -531,11 +534,33 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     // TODO: Implement user options for viewing other profiles
   }
 
-  void _editProfile() {
-    // TODO: Navigate to edit profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening edit profile...')),
-    );
+  void _editProfile() async {
+    try {
+      final userProfileService = context.read<UserProfileService>();
+      final currentProfile = userProfileService.getCurrentUserProfile();
+      
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ProfileEditScreen(
+            existingProfile: currentProfile,
+          ),
+        ),
+      );
+      
+      // Refresh profile after returning from edit screen
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild to show updated profile data
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error opening profile editor: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error opening profile editor: $e')),
+        );
+      }
+    }
   }
 
   void _shareProfile() {

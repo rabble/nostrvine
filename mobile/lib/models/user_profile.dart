@@ -85,8 +85,11 @@ class UserProfile {
     return '${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 8)}';
   }
   
-  /// Get npub encoding of pubkey
-  String get npub {
+  /// Get shortened pubkey for display (placeholder for npub)
+  /// 
+  /// Returns truncated pubkey since bech32 npub encoding is not yet implemented.
+  /// Will be replaced with proper NIP-19 npub encoding in the future.
+  String get displayPubkey {
     // TODO: Implement bech32 encoding for npub format
     // For now, return shortened pubkey
     return shortPubkey;

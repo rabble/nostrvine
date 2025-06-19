@@ -273,7 +273,7 @@ void main() {
         );
 
         // Act
-        final forceCheckFuture = publisher.forceCheck();
+        final forceCheckFuture = publisher.checkForReadyEventsNow();
         newCompleter.complete([]);
         
         // Assert - should complete without error

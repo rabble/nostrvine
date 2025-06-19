@@ -302,6 +302,16 @@ class CameraService extends ChangeNotifier {
     notifyListeners();
   }
   
+  /// Get current camera resolution (returns null if not available)
+  Size? getCurrentResolution() {
+    return _provider.getCurrentResolution();
+  }
+  
+  /// Get current camera resolution as a readable string
+  String getCurrentResolutionString() {
+    return _provider.getResolutionString();
+  }
+  
   /// Dispose resources
   @override
   void dispose() {

@@ -477,14 +477,16 @@ class VinePublishingService extends ChangeNotifier {
     }
   }
   
-  /// Force publish vine with custom retry count (for testing)
-  Future<VinePublishResult> publishVineWithRetries({
+  /// Publish vine using standard retry behavior (testing convenience method)
+  /// 
+  /// Wrapper around publishVine() with explicit parameter forwarding.
+  /// Provided for testing compatibility - uses the service's default retry logic.
+  Future<VinePublishResult> publishVineForTesting({
     required VineRecordingResult recordingResult,
     required String caption,
     List<String> hashtags = const [],
     String? altText,
     bool uploadToBackend = false,
-    int maxRetryOverride = -1,
   }) async {
     return publishVine(
       recordingResult: recordingResult,
@@ -508,7 +510,17 @@ class VinePublishingService extends ChangeNotifier {
     return 'data:image/gif;base64,$base64Data';
   }
   
-  /// Upload to Cloudinary using signed upload workflow
+  /// Upload GIF data to Cloudinary storage using secure signed upload pattern
+  /// 
+  /// Implements the secure upload workflow:
+  /// 1. Requests signed upload parameters from backend (prevents exposing API secrets)
+  /// 2. Uploads file directly to Cloudinary using signed credentials
+  /// 3. Creates NIP-94 metadata with the resulting Cloudinary URL and file hash
+  /// 
+  /// This approach keeps Cloudinary API secrets secure on the backend while
+  /// allowing direct client uploads for better performance and reliability.
+  /// 
+  /// Returns NIP-94 metadata ready for Nostr publishing.
   Future<NIP94Metadata> _uploadToCloudinary(
     Uint8List data, 
     String caption, {
@@ -524,7 +536,7 @@ class VinePublishingService extends ChangeNotifier {
     
     try {
       // Step 1: Get signed upload URL from backend
-      final signedUpload = await _requestSignedUpload(data.length, 'image/gif');
+      final signedUpload = await _fetchSignedUploadParameters(data.length, 'image/gif');
       
       _updateState(PublishingState.uploadingToBackend, 0.4, 'Uploading to Cloudinary...');
       
@@ -550,8 +562,16 @@ class VinePublishingService extends ChangeNotifier {
     }
   }
   
-  /// Request signed upload URL from backend
-  Future<CloudinarySignedUpload> _requestSignedUpload(int fileSize, String contentType) async {
+  /// Fetch signed upload parameters from backend for secure Cloudinary upload
+  /// 
+  /// Contacts the backend API to get pre-signed upload credentials including:
+  /// - Signed upload URL with authentication  
+  /// - Cloudinary upload parameters (timestamp, signature, etc.)
+  /// - Security tokens for authorized upload
+  /// 
+  /// This follows the secure upload pattern where the backend generates
+  /// credentials to prevent exposing Cloudinary API secrets in the client.
+  Future<CloudinarySignedUpload> _fetchSignedUploadParameters(int fileSize, String contentType) async {
     
     try {
       // Create NIP-98 auth header (simplified for now - would need proper signing)
@@ -634,8 +654,11 @@ class VinePublishingService extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// Reset to idle state
-  void reset() {
+  /// Reset publishing state back to idle for new operations
+  /// 
+  /// Clears progress, status message, and returns to initial state.
+  /// Should be called before starting a new publishing operation.
+  void resetToIdleState() {
     _state = PublishingState.idle;
     _progress = 0.0;
     _statusMessage = null;

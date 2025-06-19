@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/video_event.dart';
+import '../utils/logger.dart';
 
 /// Service for managing video cache and preloading
 class VideoCacheService extends ChangeNotifier {
@@ -32,12 +33,29 @@ class VideoCacheService extends ChangeNotifier {
   static const int _preloadAheadCellular = 2; 
   static const int _preloadAheadDataSaver = 1;
   
-  // Progressive caching: start with a smaller, more reasonable size and grow
-  static const List<int> _cachingPrimes = [5, 7, 11, 17, 23]; // Start with 5 to ensure both videos are processed
+  // Progressive caching: start with a reasonable size for the 34 available videos
+  static const List<int> _cachingPrimes = [15, 20, 25, 30, 35]; // Start with 15 to process more videos initially
+  static const List<int> _webCachingPrimes = [1, 2, 3]; // EXTREMELY conservative for web - only current video
   static const int _maxCacheTarget = 50; // Keep a reasonable limit
-  int _currentCacheTarget = 5; // Start with 5 videos to ensure both available videos are processed
+  static const int _webMaxCacheTarget = 3; // VERY small for web - just current + next
+  int _currentCacheTarget = 15; // Start with 15 videos to process more of the available events
+  
+  // Web-specific optimization constants
+  static const int _webMaxConcurrentPreloads = 2; // Limit concurrent video loads on web
+  static const int _webBatchSize = 1; // Process videos one at a time on web
+  static const int _webBatchDelay = 500; // Longer delay between batches on web
   int _primeIndex = 0;
-  bool _isScalingInProgress = false; // Prevent infinite scaling recursion
+  Timer? _batchProcessingTimer; // Batch process videos that arrive quickly
+  final Set<String> _pendingVideoIds = {}; // Videos waiting to be processed
+
+  /// Constructor with web-specific optimizations
+  VideoCacheService() {
+    if (kIsWeb) {
+      // Start with MINIMAL cache target on web for instant loading
+      _currentCacheTarget = _webCachingPrimes[0]; // Start with just 1 video!
+      debugPrint('🌐 Web platform detected - using MINIMAL caching for instant loading (initial target: $_currentCacheTarget)');
+    }
+  }
   
   /// Get a cached video controller for the given video event
   VideoPlayerController? getController(VideoEvent videoEvent) {
@@ -82,10 +100,17 @@ class VideoCacheService extends ChangeNotifier {
       
       controller.play();
       _currentlyPlayingVideoId = videoEvent.id;
+      debugPrint('🎯 Marked video as currently playing: ${videoEvent.id.substring(0, 8)}');
     } catch (e) {
       debugPrint('❌ Error playing video ${videoEvent.id.substring(0, 8)}: $e');
       // Don't crash - just log the error and continue
     }
+  }
+  
+  /// Mark a video as currently active (called by video widgets when they become active)
+  void markVideoAsActive(String videoId) {
+    _currentlyPlayingVideoId = videoId;
+    debugPrint('🎯 Video marked as active by widget: ${videoId.substring(0, 8)}');
   }
   
   /// Pause a specific video
@@ -145,28 +170,51 @@ class VideoCacheService extends ChangeNotifier {
     if (!_addedToQueue.contains(videoEvent.id) && _readyToPlayQueue.length < _maxReadyQueue) {
       _readyToPlayQueue.add(videoEvent);
       _addedToQueue.add(videoEvent.id);
-      debugPrint('✅ Added to ready queue: ${videoEvent.id.substring(0, 8)}... (${videoEvent.isGif ? "GIF" : "VIDEO"}) - queue size: ${_readyToPlayQueue.length}');
+      
+      appLog(
+        LogCategory.LIFECYCLE, '✅', 'Added to ready queue',
+        videoId: videoEvent.id,
+        details: {
+          'type': videoEvent.isGif ? 'GIF' : 'VIDEO',
+          'queueSize': _readyToPlayQueue.length,
+          'maxQueue': _maxReadyQueue,
+        },
+      );
+      
       // Batch notifications to prevent infinite rebuild loops
       _scheduleNotification();
     } else {
-      debugPrint('⚠️ Could not add to ready queue: ${videoEvent.id.substring(0, 8)}... - already added: ${_addedToQueue.contains(videoEvent.id)}, queue full: ${_readyToPlayQueue.length >= _maxReadyQueue}');
+      appLog(
+        LogCategory.ERROR, '⚠️', 'Could not add to ready queue',
+        videoId: videoEvent.id,
+        details: {
+          'alreadyAdded': _addedToQueue.contains(videoEvent.id),
+          'queueFull': _readyToPlayQueue.length >= _maxReadyQueue,
+          'currentSize': _readyToPlayQueue.length,
+        },
+      );
     }
   }
   
-  /// Process new video events and test video compatibility before adding to ready queue
+  /// Process new video events - add GIFs immediately, batch regular videos for efficient processing
+  /// 
+  /// ⚠️ CRITICAL RACE CONDITION POINT ⚠️
+  /// This is where dual video lists can get out of sync:
+  /// - VideoEventService._videoEvents gets updated immediately
+  /// - VideoCacheService._readyToPlayQueue gets updated after preloading (500ms+ later)
+  /// - UI uses ready queue but preloading uses all events → INDEX MISMATCH
   void processNewVideoEvents(List<VideoEvent> videoEvents) {
     if (videoEvents.isEmpty) return;
     
-    debugPrint('📋 Processing ${videoEvents.length} video events for progressive compatibility testing...');
-    debugPrint('📊 Current state: ${_readyToPlayQueue.length} ready, ${_controllers.length} cached, target: $_currentCacheTarget');
-    
-    // Process GIFs immediately (they always work)
+    // Add GIFs immediately to ready queue (no preloading needed - they just work)
     int gifsAdded = 0;
     for (final videoEvent in videoEvents) {
       if (videoEvent.isGif && !_addedToQueue.contains(videoEvent.id)) {
         _addToReadyQueue(videoEvent);
         gifsAdded++;
-        debugPrint('✅ Added GIF to ready queue: ${videoEvent.id.substring(0, 8)}...');
+      } else if (!videoEvent.isGif) {
+        // Add regular videos to pending batch
+        _pendingVideoIds.add(videoEvent.id);
       }
     }
     
@@ -174,93 +222,109 @@ class VideoCacheService extends ChangeNotifier {
       debugPrint('🎬 Added $gifsAdded GIFs to ready queue');
     }
     
-    // Test video compatibility for non-GIF videos in background
-    _testVideoCompatibilityInBackground(videoEvents).catchError((error) {
-      debugPrint('❌ Error during background video compatibility testing: $error');
+    // Batch process regular videos to avoid processing each one individually
+    // Use much longer delay on web to reduce aggressive preloading
+    final batchDelay = kIsWeb ? Duration(milliseconds: 2000) : Duration(milliseconds: 500);
+    _batchProcessingTimer?.cancel();
+    _batchProcessingTimer = Timer(batchDelay, () {
+      if (_pendingVideoIds.isNotEmpty) {
+        final allPendingVideos = videoEvents
+            .where((v) => _pendingVideoIds.contains(v.id))
+            .toList();
+        _pendingVideoIds.clear();
+        
+        // On web, only preload if user seems to be actively scrolling
+        if (kIsWeb && allPendingVideos.length > 5) {
+          debugPrint('🌐 Web: Deferring preload of ${allPendingVideos.length} videos to avoid browser overload');
+          return; // Skip aggressive batch preloading on web
+        }
+        
+        _preloadVideosInBatch(allPendingVideos);
+      }
     });
-    
-    debugPrint('📊 Ready queue status: ${_readyToPlayQueue.length} videos ready (target: $_currentCacheTarget)');
   }
   
-  /// Test video compatibility in background with progressive scaling
-  Future<void> _testVideoCompatibilityInBackground(
-      List<VideoEvent> videoEvents) async {
-    if (_isScalingInProgress) {
-      debugPrint('⏸️ Scaling already in progress, skipping to prevent recursion');
+  /// Preload videos in a batch - much simpler approach without recursion prevention
+  Future<void> _preloadVideosInBatch(List<VideoEvent> videoEvents) async {
+    // On web, be extremely conservative about batch preloading
+    final maxToPreload = kIsWeb ? 
+        (_currentCacheTarget).clamp(1, 2) : // Web: max 2 videos at once
+        _currentCacheTarget; // Mobile: use normal target
+    
+    // Get videos that need preloading (excludes GIFs, already cached, already queued)
+    final videosToPreloadList = videoEvents
+        .where((videoEvent) =>
+            !videoEvent.isGif &&
+            !_controllers.containsKey(videoEvent.id) &&
+            !_addedToQueue.contains(videoEvent.id))
+        .take(maxToPreload) // Preload up to conservative target
+        .toList();
+
+    if (videosToPreloadList.isEmpty) {
       return;
     }
-    _isScalingInProgress = true;
-    try {
-      debugPrint('🧪 Starting progressive video compatibility testing...');
-      debugPrint(
-          '📊 Current cache target: $_currentCacheTarget videos (prime index: $_primeIndex)');
 
-      // Calculate how many videos to test this round
-      final videosToTest = _currentCacheTarget - _readyToPlayQueue.length;
+    // Log batch start with performance details
+    appLog(
+      LogCategory.PERF, '🎥', 'Starting batch preload',
+      details: {
+        'videosToLoad': videosToPreloadList.length,
+        'target': _currentCacheTarget,
+        'readyCount': _readyToPlayQueue.length,
+        'platform': kIsWeb ? 'web' : 'mobile',
+      },
+    );
 
-      if (videosToTest <= 0) {
-        debugPrint('🎯 Cache target met, considering scaling up...');
-        _considerScalingUp();
-        return;
-      }
-
-      debugPrint(
-          '🔍 Testing $videosToTest videos to reach target of $_currentCacheTarget');
-
-      // Get videos that need testing
-      final videosToTestList = videoEvents
-          .where((videoEvent) =>
-              !videoEvent.isGif &&
-              !_controllers.containsKey(videoEvent.id) &&
-              !_addedToQueue.contains(videoEvent.id))
-          .take(videosToTest)
-          .toList();
-
-      if (videosToTestList.isEmpty) {
-        debugPrint('📊 No videos available for testing');
-        return;
-      }
-
-      debugPrint(
-          '🔍 Testing ${videosToTestList.length} videos SEQUENTIALLY to avoid resource contention');
-
-      // Test videos ONE AT A TIME to avoid resource contention and timeouts
-      for (int i = 0; i < videosToTestList.length; i++) {
-        final videoEvent = videosToTestList[i];
-        debugPrint(
-            '🔍 Testing video ${i + 1}/${videosToTestList.length}: ${videoEvent.id.substring(0, 8)}...');
-
-        try {
-          await _testVideoCompatibility(videoEvent);
-          // Add delay between tests to reduce network pressure
-          await Future.delayed(const Duration(milliseconds: 500));
-        } catch (e) {
-          debugPrint(
-              '❌ Video test failed: ${videoEvent.id.substring(0, 8)} - $e');
-          // Continue with next video even if this one fails
+    // Preload videos in small batches for better performance
+    // Web platform gets smaller batches and longer delays for better performance
+    final batchSize = kIsWeb ? _webBatchSize : 3;
+    final batchDelay = kIsWeb ? _webBatchDelay : 200;
+    
+    for (int i = 0; i < videosToPreloadList.length; i += batchSize) {
+      final batch = videosToPreloadList.skip(i).take(batchSize).toList();
+      
+      if (kIsWeb) {
+        // Web: Process videos sequentially to avoid overwhelming browser
+        for (final videoEvent in batch) {
+          await _preloadAndValidateSingleVideo(videoEvent);
+          // Small delay between individual videos on web
+          if (batch.length > 1) {
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
         }
+      } else {
+        // Mobile: Process batch concurrently for speed
+        final futures = batch.map((videoEvent) => _preloadAndValidateSingleVideo(videoEvent)).toList();
+        await Future.wait(futures, eagerError: false);
       }
-
-      debugPrint(
-          '📊 Compatibility test round completed. Ready queue: ${_readyToPlayQueue.length}/$_currentCacheTarget');
-    } finally {
-      _isScalingInProgress = false;
+      
+      // Delay between batches
+      if (i + batchSize < videosToPreloadList.length) {
+        await Future.delayed(Duration(milliseconds: batchDelay));
+      }
     }
+
+    logPerformance('Batch preload completed', 0, details: {
+      'videosReady': _readyToPlayQueue.length,
+      'platform': kIsWeb ? 'web' : 'mobile',
+    });
   }
   
-  /// Test a single video's compatibility and preload it for instant playback
-  Future<void> _testVideoCompatibility(VideoEvent videoEvent) async {
+  /// Preload and validate a single video URL - creates VideoPlayerController and buffers content
+  /// This ensures smooth TikTok-style playback and validates that the video URL actually works
+  Future<void> _preloadAndValidateSingleVideo(VideoEvent videoEvent) async {
     if (videoEvent.videoUrl == null ||
         _controllers.containsKey(videoEvent.id)) {
       return;
     }
 
+    final stopwatch = Stopwatch()..start();
+    
     try {
       // Add to preload queue to prevent duplicate tests
       _preloadQueue.add(videoEvent.id);
 
-      debugPrint(
-          '🚀 PRELOADING: Testing and preloading video for instant playback: ${videoEvent.id.substring(0, 8)}...');
+      appLog(LogCategory.LIFECYCLE, '🚀', 'Starting preload', videoId: videoEvent.id);
 
       // Create and initialize controller immediately for TikTok-style preloading
       final controller = VideoPlayerController.networkUrl(
@@ -275,22 +339,37 @@ class VideoCacheService extends ChangeNotifier {
 
       // Mark as preloaded and ready
       _initializationStatus[videoEvent.id] = true;
+      stopwatch.stop();
 
-      debugPrint(
-          '✅ PRELOADED: Video ready for instant playback: ${videoEvent.id.substring(0, 8)}...');
+      logVideoLifecycle(
+        'Preloaded & Validated',
+        videoEvent.id,
+        durationMs: stopwatch.elapsedMilliseconds,
+        extraDetails: {
+          'platform': kIsWeb ? 'web' : 'mobile',
+          'url': videoEvent.videoUrl!.substring(0, 50) + '...',
+        },
+      );
+      
       _addToReadyQueue(videoEvent);
-
       _scheduleNotification();
     } catch (e) {
-      debugPrint('❌ PRELOAD FAILED: ${videoEvent.id.substring(0, 8)} - $e');
-      debugPrint('📹 Failed video URL: ${videoEvent.videoUrl}');
+      stopwatch.stop();
+      
+      logVideoLifecycle(
+        'Preload Failed',
+        videoEvent.id,
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e.toString(),
+      );
 
       // Clean up failed controller
       final controller = _controllers.remove(videoEvent.id);
       try {
         await controller?.dispose();
       } catch (disposeError) {
-        debugPrint('⚠️ Error disposing failed controller: $disposeError');
+        appLog(LogCategory.ERROR, '⚠️', 'Error disposing failed controller', 
+               videoId: videoEvent.id, details: {'error': disposeError.toString()});
       }
       _initializationStatus.remove(videoEvent.id);
     } finally {
@@ -339,9 +418,13 @@ class VideoCacheService extends ChangeNotifier {
     final isWifi = connectivityResult.contains(ConnectivityResult.wifi);
     final isCellular = connectivityResult.contains(ConnectivityResult.mobile);
     
-    // Determine preloading window based on connection type
+    // Determine preloading window based on connection type and platform
     int preloadAhead;
-    if (isWifi) {
+    if (kIsWeb) {
+      // Web gets very conservative preloading regardless of connection
+      preloadAhead = 1;
+      debugPrint('🌐 Web platform - using minimal preloading (ahead: $preloadAhead)');
+    } else if (isWifi) {
       preloadAhead = _preloadAheadWifi;
       debugPrint('📶 WiFi detected - using aggressive preloading (ahead: $preloadAhead)');
     } else if (isCellular) {
@@ -395,7 +478,9 @@ class VideoCacheService extends ChangeNotifier {
     }
     
     // Clean up videos outside the extended window to manage memory
-    _cleanupDistantVideos(videos, currentIndex, keepRange: preloadAhead + 2);
+    // Use larger keep range on web to be more conservative
+    final keepRange = kIsWeb ? (preloadAhead + 5) : (preloadAhead + 2);
+    _cleanupDistantVideos(videos, currentIndex, keepRange: keepRange);
   }
   
   /// Preload a specific video (for videos that have already passed compatibility test)
@@ -447,11 +532,12 @@ class VideoCacheService extends ChangeNotifier {
         }
       });
       
-      // Set up timeout using Timer
-      Timer(const Duration(seconds: 8), () {
+      // Set up timeout using Timer (longer on web due to browser limitations)
+      final timeoutDuration = kIsWeb ? const Duration(seconds: 15) : const Duration(seconds: 8);
+      Timer(timeoutDuration, () {
         if (!hasCompleted) {
           hasCompleted = true;
-          completer.completeError(TimeoutException('Video initialization timeout after 8 seconds', const Duration(seconds: 8)));
+          completer.completeError(TimeoutException('Video initialization timeout after ${timeoutDuration.inSeconds} seconds', timeoutDuration));
         }
       });
       
@@ -525,7 +611,16 @@ class VideoCacheService extends ChangeNotifier {
     debugPrint('🧹 Cache cleanup completed: ${_controllers.length}/$_maxCachedVideos controllers remaining');
   }
   
-  /// Clean up videos that are far from the current position
+  /// Clean up video controllers for videos far from current viewing position
+  /// 
+  /// Removes video controllers for videos outside the keep range to free memory.
+  /// This prevents excessive memory usage by disposing controllers for videos
+  /// that are unlikely to be viewed soon.
+  /// 
+  /// [videos] - List of all videos in the feed
+  /// [currentIndex] - Current video being viewed (0-based index)
+  /// [keepRange] - Optional override for how many videos to keep around current position
+  ///               (defaults to preloadCount + 2 for extra buffer)
   void _cleanupDistantVideos(List<VideoEvent> videos, int currentIndex, {int? keepRange}) {
     final actualKeepRange = keepRange ?? (_preloadCount + 2); // Keep a bit more than preload range
     final videosToKeep = <String>{};
@@ -536,6 +631,12 @@ class VideoCacheService extends ChangeNotifier {
     
     for (int i = startKeep; i <= endKeep; i++) {
       videosToKeep.add(videos[i].id);
+    }
+    
+    // CRITICAL: Always keep the currently playing video to prevent crashes
+    if (_currentlyPlayingVideoId != null) {
+      videosToKeep.add(_currentlyPlayingVideoId!);
+      debugPrint('🔒 Protecting currently playing video from cleanup: ${_currentlyPlayingVideoId!.substring(0, 8)}');
     }
     
     // Remove controllers for videos outside keep range
@@ -552,11 +653,6 @@ class VideoCacheService extends ChangeNotifier {
     
     for (final videoId in controllersToRemove) {
       final controller = _controllers.remove(videoId);
-      try {
-        controller?.dispose();
-      } catch (e) {
-        debugPrint('⚠️ Error disposing controller: $e');
-      }
       _initializationStatus.remove(videoId);
       
       // Also remove from ready queue and tracking set
@@ -564,6 +660,17 @@ class VideoCacheService extends ChangeNotifier {
       _addedToQueue.remove(videoId);
       
       debugPrint('🗑️ Cleaned up distant video: ${videoId.substring(0, 8)}...');
+      
+      // Critical: Dispose controllers with delay to prevent race conditions with UI
+      if (controller != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          try {
+            controller.dispose();
+          } catch (e) {
+            debugPrint('⚠️ Error disposing controller during cleanup: $e');
+          }
+        });
+      }
     }
   }
   
@@ -695,8 +802,9 @@ class VideoCacheService extends ChangeNotifier {
   
   @override
   void dispose() {
-    // Cancel notification timer
+    // Cancel timers
     _notificationTimer?.cancel();
+    _batchProcessingTimer?.cancel();
     
     // Dispose all controllers
     for (final controller in _controllers.values) {
@@ -707,6 +815,7 @@ class VideoCacheService extends ChangeNotifier {
     _preloadQueue.clear();
     _readyToPlayQueue.clear();
     _addedToQueue.clear();
+    _pendingVideoIds.clear();
     super.dispose();
   }
 }
