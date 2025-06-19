@@ -20,6 +20,7 @@ import 'services/upload_manager.dart';
 import 'services/api_service.dart';
 import 'services/video_event_publisher.dart';
 import 'services/notification_service.dart';
+import 'services/seen_videos_service.dart';
 import 'providers/video_feed_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -75,10 +76,16 @@ class NostrVineApp extends StatelessWidget {
           },
         ),
         
-        // Video event service depends on Nostr service
-        ChangeNotifierProxyProvider<INostrService, VideoEventService>(
-          create: (context) => VideoEventService(context.read<INostrService>()),
-          update: (_, nostrService, previous) => previous ?? VideoEventService(nostrService),
+        // Video event service depends on Nostr and SeenVideos services
+        ChangeNotifierProxyProvider2<INostrService, SeenVideosService, VideoEventService>(
+          create: (context) => VideoEventService(
+            context.read<INostrService>(),
+            seenVideosService: context.read<SeenVideosService>(),
+          ),
+          update: (_, nostrService, seenVideosService, previous) => previous ?? VideoEventService(
+            nostrService,
+            seenVideosService: seenVideosService,
+          ),
         ),
         
         // Video cache service for managing video player controllers
@@ -92,6 +99,9 @@ class NostrVineApp extends StatelessWidget {
         
         // Notification service
         ChangeNotifierProvider(create: (_) => NotificationService.instance),
+        
+        // Seen videos service for tracking viewed content
+        ChangeNotifierProvider(create: (_) => SeenVideosService()),
         
         // Cloudinary upload service
         ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
@@ -202,6 +212,10 @@ class _AppInitializerState extends State<AppInitializer> {
       if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing notifications...');
       await context.read<NotificationService>().initialize();
+
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Initializing seen videos tracker...');
+      await context.read<SeenVideosService>().initialize();
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing upload manager...');

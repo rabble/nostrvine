@@ -7,10 +7,12 @@ import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
+import 'seen_videos_service.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
   final INostrService _nostrService;
+  final SeenVideosService? _seenVideosService;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   final List<VideoEvent> _videoEvents = [];
   final Map<String, StreamSubscription> _subscriptions = {};
@@ -23,7 +25,8 @@ class VideoEventService extends ChangeNotifier {
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
   
-  VideoEventService(this._nostrService);
+  VideoEventService(this._nostrService, {SeenVideosService? seenVideosService}) 
+    : _seenVideosService = seenVideosService;
   
   // Getters
   List<VideoEvent> get videoEvents => List.unmodifiable(_videoEvents);
@@ -88,10 +91,10 @@ class VideoEventService extends ChangeNotifier {
       // If no time bounds specified, get recent historical content
       int? effectiveSince = since;
       if (since == null && until == null && _videoEvents.isEmpty) {
-        // For initial load, get events from the last 7 days to have good content variety
-        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-        effectiveSince = sevenDaysAgo.millisecondsSinceEpoch ~/ 1000;
-        debugPrint('📅 Initial load: fetching events from last 7 days (since: $sevenDaysAgo)');
+        // For initial load, get events from the last 30 days to have good content variety
+        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+        effectiveSince = thirtyDaysAgo.millisecondsSinceEpoch ~/ 1000;
+        debugPrint('📅 Initial load: fetching events from last 30 days (since: $thirtyDaysAgo)');
       }
       
       final filter = Filter(
@@ -153,6 +156,12 @@ class VideoEventService extends ChangeNotifier {
       // Check if we already have this event
       if (_videoEvents.any((e) => e.id == event.id)) {
         debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        return;
+      }
+      
+      // Check if user has already seen this video
+      if (_seenVideosService?.hasSeenVideo(event.id) == true) {
+        debugPrint('👁️ Skipping seen video ${event.id.substring(0, 8)}...');
         return;
       }
       

@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr/nostr.dart';
 import 'package:nostrvine_app/services/vine_publishing_service.dart';
 import 'package:nostrvine_app/services/gif_service.dart';
+import 'package:nostrvine_app/services/stream_upload_service.dart';
 import 'package:nostrvine_app/services/nostr_service.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/services/camera_service.dart';
@@ -14,6 +15,7 @@ import 'package:nostrvine_app/models/nip94_metadata.dart';
 
 // Mock classes for testing
 class MockGifService extends Mock implements GifService {}
+class MockStreamUploadService extends Mock implements StreamUploadService {}
 class MockNostrService extends Mock implements NostrService {}
 
 void main() {
@@ -35,14 +37,17 @@ void main() {
   group('VinePublishingService', () {
     late VinePublishingService publishingService;
     late MockGifService mockGifService;
+    late MockStreamUploadService mockStreamUploadService;
     late MockNostrService mockNostrService;
     late VineRecordingResult mockRecordingResult;
     
     setUp(() {
       mockGifService = MockGifService();
+      mockStreamUploadService = MockStreamUploadService();
       mockNostrService = MockNostrService();
       publishingService = VinePublishingService(
         gifService: mockGifService,
+        streamUploadService: mockStreamUploadService,
         nostrService: mockNostrService,
       );
       

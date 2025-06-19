@@ -9,6 +9,7 @@ import 'package:chewie/chewie.dart';
 import '../models/video_event.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
+import '../services/seen_videos_service.dart';
 
 /// Widget for displaying a single video event in the feed
 class VideoFeedItem extends StatefulWidget {
@@ -21,6 +22,7 @@ class VideoFeedItem extends StatefulWidget {
   final VoidCallback? onUserTap;
   final VideoCacheService? videoCacheService;
   final UserProfileService? userProfileService;
+  final SeenVideosService? seenVideosService;
   
   const VideoFeedItem({
     super.key,
@@ -33,6 +35,7 @@ class VideoFeedItem extends StatefulWidget {
     this.onUserTap,
     this.videoCacheService,
     this.userProfileService,
+    this.seenVideosService,
   });
 
   @override
@@ -54,6 +57,22 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   void initState() {
     super.initState();
     _initializeVideo();
+    
+    // Handle initial autoplay for videos that start as active (fixes first video not autoplaying)
+    if (widget.isActive) {
+      debugPrint('🎬 Initial active video detected: ${widget.videoEvent.id.substring(0, 8)}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.isActive) {
+          debugPrint('🎬 Triggering initial autoplay: ${widget.videoEvent.id.substring(0, 8)}');
+          // Use a small delay to ensure video initialization has time to complete
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted && widget.isActive) {
+              _handleVideoActivation();
+            }
+          });
+        }
+      });
+    }
   }
 
   @override

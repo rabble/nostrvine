@@ -18,6 +18,8 @@ class _FeedScreenState extends State<FeedScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   int _lastLoggedVideoCount = -1;
+  int _lastRebuildTime = 0;
+  int _rebuildCount = 0;
   
   @override
   void initState() {
@@ -76,6 +78,17 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Consumer<VideoFeedProvider>(
         builder: (context, provider, child) {
+          // Debug: Track rebuild frequency
+          final now = DateTime.now().millisecondsSinceEpoch;
+          _rebuildCount++;
+          
+          if (now - _lastRebuildTime < 100) { // If rebuilding faster than 100ms
+            if (_rebuildCount % 10 == 0) { // Only log every 10th rapid rebuild
+              debugPrint('⚠️ RAPID REBUILDS: #$_rebuildCount in ${now - _lastRebuildTime}ms');
+            }
+          }
+          _lastRebuildTime = now;
+          
           // Only log when video count changes to reduce noise
           if (_lastLoggedVideoCount != provider.videoEvents.length) {
             _lastLoggedVideoCount = provider.videoEvents.length;
@@ -230,10 +243,10 @@ class _FeedScreenState extends State<FeedScreen> {
               
               // ✅ FIXED: Use ready-to-play videos that have passed compatibility testing
               final videoEvent = provider.videoEvents[index];
-              // Only log when video is active to reduce spam
-              if (index == _currentPage) {
-                debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: true)');
-              }
+              // TEMPORARILY DISABLED: Reduce debug spam during infinite rebuild investigation
+              // if (index == _currentPage) {
+              //   debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: true)');
+              // }
               
               
               return SizedBox(
