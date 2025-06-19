@@ -129,7 +129,7 @@ describe('Cloudinary Webhook Handler', () => {
     
     expect(response.status).toBe(200);
     const body = await response.text();
-    expect(body).toBe('Upload processed successfully');
+    expect(body).toBe('Upload received, pending moderation');
   });
 
   it('should handle eager transformation completion', async () => {

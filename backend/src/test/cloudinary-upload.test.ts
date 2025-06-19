@@ -3,6 +3,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { handleCloudinarySignedUpload } from '../handlers/cloudinary-upload';
+import { generateTestNIP98Event } from './nip98-test-utils';
 
 // Mock environment for testing
 const mockEnv: Env = {
@@ -52,19 +53,11 @@ describe('Cloudinary Signed Upload Handler', () => {
   });
 
   it('should reject files that are too large', async () => {
-    // Create a valid NIP-98 auth event (simplified for testing)
-    const authEvent = {
-      id: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      pubkey: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-      created_at: Math.floor(Date.now() / 1000),
-      kind: 27235,
-      tags: [
-        ['method', 'POST'],
-        ['u', 'http://localhost:8787/v1/media/request-upload']
-      ],
-      content: '',
-      sig: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-    };
+    // Generate a properly signed NIP-98 auth event
+    const authEvent = generateTestNIP98Event({
+      url: 'http://localhost:8787/v1/media/request-upload',
+      method: 'POST'
+    });
 
     const authBase64 = btoa(JSON.stringify(authEvent));
 
@@ -90,19 +83,11 @@ describe('Cloudinary Signed Upload Handler', () => {
   });
 
   it('should reject unsupported file types', async () => {
-    // Create a valid NIP-98 auth event (simplified for testing)
-    const authEvent = {
-      id: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      pubkey: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-      created_at: Math.floor(Date.now() / 1000),
-      kind: 27235,
-      tags: [
-        ['method', 'POST'],
-        ['u', 'http://localhost:8787/v1/media/request-upload']
-      ],
-      content: '',
-      sig: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-    };
+    // Generate a properly signed NIP-98 auth event
+    const authEvent = generateTestNIP98Event({
+      url: 'http://localhost:8787/v1/media/request-upload',
+      method: 'POST'
+    });
 
     const authBase64 = btoa(JSON.stringify(authEvent));
 
@@ -128,17 +113,37 @@ describe('Cloudinary Signed Upload Handler', () => {
   });
 
   it('should return signed upload parameters for valid requests', async () => {
-    // For this test, we'd need to mock the NIP-98 validation
-    // Since signature verification is complex, we'll skip this for now
-    // and add it when we implement proper secp256k1 validation
+    // Generate a properly signed NIP-98 auth event
+    const authEvent = generateTestNIP98Event({
+      url: 'http://localhost:8787/v1/media/request-upload',
+      method: 'POST'
+    });
+
+    const authBase64 = btoa(JSON.stringify(authEvent));
+
+    const request = new Request('http://localhost:8787/v1/media/request-upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Nostr ${authBase64}`
+      },
+      body: JSON.stringify({
+        fileSize: 5 * 1024 * 1024, // 5MB - within limit
+        contentType: 'video/mp4'
+      })
+    });
+
+    const response = await handleCloudinarySignedUpload(request, mockEnv);
     
-    // This test would verify:
-    // - Valid auth leads to 200 response
-    // - Response contains required Cloudinary parameters
-    // - Signature is properly generated
-    // - Public ID includes user pubkey
+    expect(response.status).toBe(200);
     
-    expect(true).toBe(true); // Placeholder
+    const body = await response.json();
+    expect(body.status).toBe('success');
+    expect(body.data.signature).toBeDefined();
+    expect(body.data.api_key).toBe(mockEnv.CLOUDINARY_API_KEY);
+    expect(body.data.cloud_name).toBe(mockEnv.CLOUDINARY_CLOUD_NAME);
+    expect(body.data.public_id).toContain(authEvent.pubkey.substring(0, 16));
+    expect(body.upload_url).toContain('cloudinary.com');
   });
 });
 

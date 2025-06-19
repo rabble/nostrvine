@@ -41,6 +41,16 @@ export interface CloudinaryWebhookPayload {
     url: string;
     secure_url: string;
   }>;
+  // Moderation fields
+  moderation_status?: 'pending' | 'approved' | 'rejected';
+  moderation_kind?: string;
+  moderation_response?: {
+    moderation_confidence?: string;
+    frames?: Array<{
+      pornography_likelihood?: string;
+      time_offset?: number;
+    }>;
+  };
   signature: string;
 }
 
@@ -55,7 +65,14 @@ export interface ProcessedVideoMetadata {
   resource_type: string;
   created_at: string;
   user_pubkey: string;
-  processing_status: 'completed' | 'failed';
+  processing_status: 'pending_moderation' | 'approved' | 'rejected' | 'failed';
+  moderation_details?: {
+    status: 'approved' | 'rejected';
+    kind: string;
+    response: any;
+    rejected_categories?: string[];
+    quarantined_at?: string;
+  };
   eager_transformations?: Array<{
     transformation: string;
     url: string;
@@ -107,7 +124,9 @@ export async function handleCloudinaryWebhook(
     // Process different notification types
     switch (payload.notification_type) {
       case 'upload':
-        return await handleUploadComplete(payload, env);
+        return await handleUploadReceived(payload, env);
+      case 'moderation':
+        return await handleModerationComplete(payload, env);
       case 'eager':
         return await handleEagerTransformationComplete(payload, env);
       case 'error':
@@ -124,9 +143,9 @@ export async function handleCloudinaryWebhook(
 }
 
 /**
- * Handle successful upload completion
+ * Handle upload received (before moderation)
  */
-async function handleUploadComplete(
+async function handleUploadReceived(
   payload: CloudinaryWebhookPayload,
   env: Env
 ): Promise<Response> {
@@ -149,7 +168,7 @@ async function handleUploadComplete(
       resource_type: payload.resource_type,
       created_at: payload.created_at,
       user_pubkey: userPubkey,
-      processing_status: 'completed'
+      processing_status: 'pending_moderation'
     };
 
     // Store metadata in KV for client retrieval
@@ -183,13 +202,96 @@ async function handleUploadComplete(
       expirationTtl: 86400 * 30 // 30 days
     });
 
-    console.log(`✅ Stored metadata for video ${payload.public_id} by user ${userPubkey.substring(0, 8)}...`);
+    console.log(`✅ Stored metadata for video ${payload.public_id} by user ${userPubkey.substring(0, 8)}... (pending moderation)`);
 
-    return new Response('Upload processed successfully', { status: 200 });
+    return new Response('Upload received, pending moderation', { status: 200 });
 
   } catch (error) {
     console.error('❌ Error processing upload completion:', error);
     return new Response('Failed to process upload', { status: 500 });
+  }
+}
+
+/**
+ * Handle moderation completion
+ */
+async function handleModerationComplete(
+  payload: CloudinaryWebhookPayload,
+  env: Env
+): Promise<Response> {
+  try {
+    console.log(`🔍 Processing moderation result for ${payload.public_id}: ${payload.moderation_status}`);
+
+    // Fetch existing metadata
+    const metadataKey = `video_metadata:${payload.public_id}`;
+    const existingMetadata = await env.METADATA_CACHE.get(metadataKey);
+    
+    if (!existingMetadata) {
+      console.warn(`⚠️ Moderation completed but no metadata found for ${payload.public_id}`);
+      return new Response('Metadata not found', { status: 404 });
+    }
+
+    let metadata: ProcessedVideoMetadata;
+    try {
+      metadata = JSON.parse(existingMetadata);
+    } catch (e) {
+      console.error('Failed to parse existing metadata');
+      return new Response('Invalid metadata format', { status: 500 });
+    }
+
+    // Check for duplicate processing (idempotency)
+    if (metadata.processing_status === 'approved' || metadata.processing_status === 'rejected') {
+      console.log(`ℹ️ Ignoring duplicate moderation webhook for ${payload.public_id} (already ${metadata.processing_status})`);
+      return new Response('Already processed', { status: 200 });
+    }
+
+    // Update metadata based on moderation result
+    if (payload.moderation_status === 'approved') {
+      metadata.processing_status = 'approved';
+      metadata.moderation_details = {
+        status: 'approved',
+        kind: payload.moderation_kind || 'unknown',
+        response: payload.moderation_response
+      };
+      
+      console.log(`✅ Video ${payload.public_id} approved by moderation`);
+      
+    } else if (payload.moderation_status === 'rejected') {
+      metadata.processing_status = 'rejected';
+      metadata.moderation_details = {
+        status: 'rejected',
+        kind: payload.moderation_kind || 'unknown',
+        response: payload.moderation_response,
+        quarantined_at: new Date().toISOString()
+      };
+
+      // Log security event for rejected content
+      console.log(`🚨 SECURITY: Video ${payload.public_id} rejected by moderation`, {
+        user_pubkey: metadata.user_pubkey,
+        moderation_kind: payload.moderation_kind,
+        confidence: payload.moderation_response?.moderation_confidence,
+        timestamp: new Date().toISOString()
+      });
+
+      // TODO: In Phase 2, this will trigger quarantine via Cloudflare Queue
+      // For now, just log the event for manual review
+      console.log(`⚠️ Manual review required for rejected video: ${payload.public_id}`);
+      
+    } else {
+      console.warn(`⚠️ Unknown moderation status: ${payload.moderation_status}`);
+      return new Response('Unknown moderation status', { status: 400 });
+    }
+
+    // Update metadata in KV
+    await env.METADATA_CACHE.put(metadataKey, JSON.stringify(metadata), {
+      expirationTtl: 86400 * 7 // 7 days
+    });
+
+    return new Response('Moderation processed successfully', { status: 200 });
+
+  } catch (error) {
+    console.error('❌ Error processing moderation completion:', error);
+    return new Response('Failed to process moderation', { status: 500 });
   }
 }
 
