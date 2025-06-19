@@ -101,27 +101,52 @@ export function handleStreamWebhookOptions(): Response {
  */
 async function validateWebhookSignature(request: Request, body: string, env: Env): Promise<boolean> {
   try {
-    const signature = request.headers.get('Webhook-Signature');
-    if (!signature || !signature.startsWith('v1=')) {
-      console.error('Missing or invalid signature format');
+    const signature = request.headers.get('webhook-signature');
+    if (!signature) {
+      console.error('Missing webhook-signature header');
       return false;
     }
-
-    // Calculate expected signature
+    
+    // Parse Cloudflare's signature format: "time=timestamp,sig1=hash"
+    const parts = signature.split(',');
+    let timestamp = '';
+    let receivedSig = '';
+    
+    for (const part of parts) {
+      if (part.startsWith('time=')) {
+        timestamp = part.substring(5);
+      } else if (part.startsWith('sig1=')) {
+        receivedSig = part.substring(5);
+      }
+    }
+    
+    if (!timestamp || !receivedSig) {
+      console.error('Invalid signature format');
+      return false;
+    }
+    
+    // Verify timestamp is recent (within 5 minutes)
+    const now = Math.floor(Date.now() / 1000);
+    const webhookTime = parseInt(timestamp);
+    if (Math.abs(now - webhookTime) > 300) {
+      console.error('Webhook timestamp too old or in future');
+      return false;
+    }
+    
+    // Calculate expected signature using Cloudflare's format: timestamp + body
+    const message = timestamp + body;
     const key = await crypto.subtle.importKey(
       'raw',
-      new TextEncoder().encode(env.WEBHOOK_SECRET),
+      new TextEncoder().encode(env.STREAM_WEBHOOK_SECRET),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
     );
 
-    const expectedSignature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+    const expectedSignature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
     const expectedHex = Array.from(new Uint8Array(expectedSignature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
-
-    const receivedSig = signature.slice(3); // Remove 'v1=' prefix
     
     return expectedHex === receivedSig;
 

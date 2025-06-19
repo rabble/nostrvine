@@ -6,7 +6,7 @@ class WebSocket {
     throw UnsupportedError('WebSocket is only available on web platform');
   }
   
-  static const int OPEN = 1;
+  static const int open = 1;
   
   void close() {}
   void send(String data) {}

@@ -13,6 +13,7 @@ import '../config/app_config.dart';
 import '../models/nip94_metadata.dart';
 import '../models/cloudinary_models.dart';
 import '../services/gif_service.dart';
+import '../services/stream_upload_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/nostr_service.dart';
 import '../services/camera_service.dart';
@@ -151,6 +152,7 @@ class OfflineVineData {
 /// Service for publishing vines to Nostr network
 class VinePublishingService extends ChangeNotifier {
   final GifService _gifService;
+  final StreamUploadService _streamUploadService;
   final INostrService _nostrService;
   final ProcessingStatusMonitor _processingMonitor;
   
@@ -169,9 +171,11 @@ class VinePublishingService extends ChangeNotifier {
   
   VinePublishingService({
     required GifService gifService,
+    required StreamUploadService streamUploadService,
     required INostrService nostrService,
     ProcessingStatusMonitor? processingMonitor,
   }) : _gifService = gifService,
+       _streamUploadService = streamUploadService,
        _nostrService = nostrService,
        _processingMonitor = processingMonitor ?? ProcessingStatusMonitor() {
     _loadOfflineQueue();
@@ -364,6 +368,113 @@ class VinePublishingService extends ChangeNotifier {
       altText: altText,
       uploadToBackend: false,
     );
+  }
+  
+  /// Publish vine to Cloudflare Stream CDN (new video workflow)
+  Future<VinePublishResult> publishVineToStream({
+    required File videoFile,
+    required String nostrPubkey,
+    required String caption,
+    List<String> hashtags = const [],
+    String? altText,
+    int retryAttempt = 0,
+  }) async {
+    if (isPublishing) {
+      throw Exception('Publishing already in progress');
+    }
+    
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      // Check network connectivity first
+      if (!await _isConnected()) {
+        throw SocketException('No internet connection available for Stream upload');
+      }
+      
+      _updateState(PublishingState.uploadingToBackend, 0.1, 'Uploading video to Stream CDN...');
+      
+      // Step 1: Upload video to Cloudflare Stream
+      final uploadResult = await _streamUploadService.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: nostrPubkey,
+        title: caption,
+        description: altText,
+        hashtags: hashtags,
+        onProgress: (progress) {
+          _updateState(
+            PublishingState.uploadingToBackend, 
+            0.1 + (progress * 0.4), // 0.1 to 0.5 range for upload
+            'Uploading video... ${(progress * 100).toInt()}%'
+          );
+        },
+      );
+      
+      if (!uploadResult.success) {
+        throw Exception('Stream upload failed: ${uploadResult.errorMessage}');
+      }
+      
+      _updateState(PublishingState.waitingForProcessing, 0.5, 'Waiting for video processing...');
+      
+      // Step 2: Wait for video to be ready
+      final videoStatus = await _streamUploadService.waitForVideoReady(
+        uploadResult.videoId!,
+        timeout: const Duration(minutes: 3),
+      );
+      
+      if (videoStatus == null || !videoStatus.isReady) {
+        throw Exception('Video processing failed or timed out');
+      }
+      
+      _updateState(PublishingState.broadcastingToNostr, 0.8, 'Creating Nostr event...');
+      
+      // Step 3: Create NIP-94 metadata for video
+      final metadata = NIP94Metadata.fromStreamVideo(
+        videoId: uploadResult.videoId!,
+        hlsUrl: videoStatus.hlsUrl!,
+        dashUrl: videoStatus.dashUrl,
+        thumbnailUrl: videoStatus.thumbnailUrl,
+        summary: caption,
+        altText: altText,
+      );
+      
+      _updateState(PublishingState.broadcastingToNostr, 0.9, 'Broadcasting to Nostr...');
+      
+      // Step 4: Broadcast to Nostr network
+      final broadcastResult = await _nostrService.publishFileMetadata(
+        metadata: metadata,
+        content: caption,
+        hashtags: hashtags,
+      );
+      
+      if (!broadcastResult.isSuccessful && broadcastResult.successCount == 0) {
+        throw NostrServiceException('Failed to broadcast to any Nostr relays');
+      }
+      
+      _updateState(PublishingState.completed, 1.0, 'Video published successfully!');
+      
+      final result = VinePublishResult.success(
+        metadata: metadata,
+        broadcastResult: broadcastResult,
+        processingTime: stopwatch.elapsed,
+        retryCount: retryAttempt,
+      );
+      
+      stopwatch.stop();
+      return result;
+      
+    } catch (e) {
+      debugPrint('❌ Stream publishing attempt ${retryAttempt + 1} failed: $e');
+      
+      final error = 'Stream publishing failed: $e';
+      _updateState(PublishingState.error, _progress, error);
+      
+      return VinePublishResult.error(
+        error: error,
+        processingTime: stopwatch.elapsed,
+        finalState: _state,
+        retryCount: retryAttempt,
+      );
+    }
   }
   
   /// Force publish vine with custom retry count (for testing)

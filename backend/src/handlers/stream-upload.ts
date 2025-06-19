@@ -149,26 +149,26 @@ export function handleStreamUploadOptions(): Response {
  */
 async function createStreamUpload(fileName: string, env: Env): Promise<StreamAPIResponse> {
   try {
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/stream?direct_user=true`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.CLOUDFLARE_STREAM_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          maxDurationSeconds: 300, // 5 minutes max
-          allowedOrigins: ['https://nostrvine.com', 'https://api.nostrvine.com', 'http://localhost:53424'],
-          requireSignedURLs: false,
-          thumbnailTimestampPct: 0.5,
-          meta: {
-            name: fileName,
-            service: 'nostrvine'
-          }
-        })
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+    const token = env.CLOUDFLARE_STREAM_TOKEN;
+    
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`;
+
+    const requestBody = {
+      maxDurationSeconds: 300,
+      meta: {
+        name: fileName
       }
-    );
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
 
     const data = await response.json();
     
@@ -176,7 +176,6 @@ async function createStreamUpload(fileName: string, env: Env): Promise<StreamAPI
       console.error('Cloudflare Stream API error:', data);
       return { success: false, errors: data.errors || [] };
     }
-
     return {
       success: true,
       result: {

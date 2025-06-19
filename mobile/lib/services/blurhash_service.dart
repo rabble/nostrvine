@@ -244,7 +244,7 @@ class BlurhashData {
   @override
   String toString() {
     return 'BlurhashData(hash: ${blurhash.substring(0, 8)}..., '
-           'colors: ${colors.length}, primary: #${primaryColor.value.toRadixString(16)})';
+           'colors: ${colors.length}, primary: #${primaryColor.r.toInt().toRadixString(16).padLeft(2, '0')}${primaryColor.g.toInt().toRadixString(16).padLeft(2, '0')}${primaryColor.b.toInt().toRadixString(16).padLeft(2, '0')})';
   }
 }
 

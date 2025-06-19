@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/camera_service.dart';
-import '../services/gif_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/vine_publishing_service.dart';
 import '../services/content_moderation_service.dart';
 import '../services/content_reporting_service.dart';
+import '../services/upload_manager.dart';
+import '../models/pending_upload.dart';
+import '../widgets/upload_progress_indicator.dart';
 import 'camera_settings_screen.dart';
-import 'gif_review_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -24,9 +25,10 @@ class _CameraScreenState extends State<CameraScreen> {
   VinePublishingService? _publishingService;
   ContentModerationService? _moderationService;
   ContentReportingService? _reportingService;
+  UploadManager? _uploadManager;
   String? _errorMessage;
-  GifResult? _lastGifResult;
   VineRecordingResult? _lastRecordingResult;
+  PendingUpload? _currentUpload;
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _CameraScreenState extends State<CameraScreen> {
     // Get services from providers
     _nostrService = context.read<INostrService>();
     _publishingService = context.read<VinePublishingService>();
+    _uploadManager = context.read<UploadManager>();
     
     // Initialize content moderation services
     try {
@@ -271,6 +274,20 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                   ),
 
+                // Upload progress indicator
+                if (_currentUpload != null)
+                  Positioned(
+                    bottom: MediaQuery.of(context).padding.bottom + 120,
+                    left: 20,
+                    right: 20,
+                    child: Center(
+                      child: CompactUploadProgress(
+                        upload: _currentUpload!,
+                        onTap: _showUploadProgress,
+                      ),
+                    ),
+                  ),
+
                 // Bottom controls
                 Positioned(
                   bottom: MediaQuery.of(context).padding.bottom + 30,
@@ -369,21 +386,21 @@ class _CameraScreenState extends State<CameraScreen> {
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: (_lastGifResult != null) 
+                              color: (_currentUpload != null) 
                                   ? Colors.purple 
                                   : Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(25),
-                              border: (_lastGifResult != null) 
+                              border: (_currentUpload != null) 
                                   ? Border.all(color: Colors.white, width: 2)
                                   : null,
                             ),
                             child: IconButton(
                               icon: Icon(
-                                (_lastGifResult != null) ? Icons.publish : Icons.arrow_forward,
+                                (_currentUpload != null) ? Icons.cloud_upload : Icons.arrow_forward,
                                 color: Colors.white,
                                 size: 24,
                               ),
-                              onPressed: (_lastGifResult != null) ? _proceedToEdit : null,
+                              onPressed: (_currentUpload != null) ? _showUploadProgress : null,
                             ),
                           ),
                         ],
@@ -584,15 +601,17 @@ class _CameraScreenState extends State<CameraScreen> {
         // Store recording result for publishing
         _lastRecordingResult = result;
         
-        // Convert frames to GIF
-        await _convertFramesToGif(result);
+        // Start Cloudinary upload
+        await _startCloudinaryUpload(result);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Recorded ${result.frameCount} frames using ${result.selectedApproach}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Recorded ${result.frameCount} frames using ${result.selectedApproach}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('❌ UI: Failed to stop recording: $e');
@@ -606,43 +625,79 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _convertFramesToGif(VineRecordingResult recordingResult) async {
+  Future<void> _startCloudinaryUpload(VineRecordingResult recordingResult) async {
     try {
-      // First create GIF locally so we can show it even if publishing fails
-      final gifService = GifService();
-      final gifResult = await gifService.createGifFromFrames(
-        frames: recordingResult.frames,
-        originalWidth: 640, // Default camera resolution - frames are JPEG so size will be detected
-        originalHeight: 480,
-        quality: GifQuality.medium,
+      if (_uploadManager == null) {
+        throw Exception('Upload manager not initialized');
+      }
+
+      // First, save the video frames to a temporary file
+      // TODO: For now, we'll create a placeholder file - this should be replaced with actual video creation from frames
+      final tempVideoFile = await _createVideoFromFrames(recordingResult);
+      
+      // Get user's public key (for now using a placeholder)
+      final userPubkey = 'placeholder-pubkey'; // TODO: Get from user profile service
+      
+      // Start the upload
+      final upload = await _uploadManager!.startUpload(
+        videoFile: tempVideoFile,
+        nostrPubkey: userPubkey,
+        title: 'Vine Video', // TODO: Allow user to set title
+        description: 'Created with NostrVine', // TODO: Allow user to set description
+        hashtags: ['nostrvine', 'vine'], // TODO: Allow user to set hashtags
       );
       
-      // Store GIF result for review
-      _lastGifResult = gifResult;
+      setState(() {
+        _currentUpload = upload;
+        _errorMessage = null;
+      });
+
+      debugPrint('✅ Upload started successfully: ${upload.id}');
+      debugPrint('📄 Video file: ${tempVideoFile.path}');
+      debugPrint('🎬 Frame count: ${recordingResult.frames.length}');
+      debugPrint('⏱️ Processing time: ${recordingResult.processingTime.inMilliseconds}ms');
+      debugPrint('🎯 Selected approach: ${recordingResult.selectedApproach}');
+      
       if (mounted) {
-        setState(() {}); // Trigger UI update to enable next button
+        setState(() {}); // Trigger UI update to show upload progress
         
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Vine recorded! Tap the arrow to review and publish.'),
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('✅ Vine recorded! Uploading to cloud for processing...'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
       }
-      
     } catch (e) {
-      debugPrint('❌ Failed to create GIF: $e');
+      debugPrint('❌ Failed to start upload: $e');
+      setState(() {
+        _errorMessage = 'Failed to start upload: $e';
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create GIF: $e'),
+            content: Text('Failed to start upload: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  /// Create a temporary video file from frames (placeholder implementation)
+  Future<File> _createVideoFromFrames(VineRecordingResult recordingResult) async {
+    // TODO: Implement proper video creation from frames using FFmpeg
+    // For now, create a placeholder file
+    final tempDir = Directory.systemTemp;
+    final tempFile = File('${tempDir.path}/nostrvine_${DateTime.now().millisecondsSinceEpoch}.mp4');
+    
+    // Write a minimal MP4 header as placeholder
+    await tempFile.writeAsBytes([0x00, 0x00, 0x00, 0x20]); // Placeholder
+    
+    debugPrint('⚠️ TODO: Replace placeholder video creation with real frame-to-video conversion');
+    
+    return tempFile;
   }
 
 
@@ -666,26 +721,44 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
 
-  void _proceedToEdit() {
-    if (_lastGifResult == null || _lastRecordingResult == null) return;
+  void _showUploadProgress() {
+    if (_currentUpload == null) return;
     
-    // Navigate to review screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GifReviewScreen(
-          gifResult: _lastGifResult!,
-          recordingResult: _lastRecordingResult!,
-          publishingService: _publishingService!,
+    // Show upload progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Progress'),
+        content: SizedBox(
+          width: 300,
+          child: UploadProgressIndicator(
+            upload: _currentUpload!,
+            onRetry: () async {
+              Navigator.of(context).pop();
+              if (_uploadManager != null && _currentUpload != null) {
+                await _uploadManager!.retryUpload(_currentUpload!.id);
+              }
+            },
+            onCancel: () async {
+              Navigator.of(context).pop();
+              if (_uploadManager != null && _currentUpload != null) {
+                await _uploadManager!.cancelUpload(_currentUpload!.id);
+                setState(() {
+                  _currentUpload = null;
+                });
+              }
+            },
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
-    ).then((_) {
-      // Reset after returning from review screen
-      setState(() {
-        _lastGifResult = null;
-        _lastRecordingResult = null;
-      });
-    });
+    );
   }
 
 

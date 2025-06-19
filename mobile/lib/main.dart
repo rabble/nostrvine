@@ -14,9 +14,16 @@ import 'services/gif_service.dart';
 import 'services/video_cache_service.dart';
 import 'services/connection_status_service.dart';
 import 'services/user_profile_service.dart';
+import 'services/cloudinary_upload_service.dart';
+import 'services/stream_upload_service.dart';
+import 'services/upload_manager.dart';
+import 'services/api_service.dart';
+import 'services/video_event_publisher.dart';
+import 'services/notification_service.dart';
 import 'providers/video_feed_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
   // Handle Flutter framework errors more gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
     // Log the error but don't crash the app for known framework issues
@@ -29,6 +36,12 @@ void main() {
     // For other errors, use default handling
     FlutterError.presentError(details);
   };
+  
+  // Ensure bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Hive for local data storage
+  await Hive.initFlutter();
   
   runApp(const NostrVineApp());
 }
@@ -77,6 +90,40 @@ class NostrVineApp extends StatelessWidget {
           update: (_, nostrService, previous) => previous ?? UserProfileService(nostrService),
         ),
         
+        // Notification service
+        ChangeNotifierProvider(create: (_) => NotificationService.instance),
+        
+        // Cloudinary upload service
+        ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
+        
+        // Stream upload service
+        ChangeNotifierProvider(create: (_) => StreamUploadService()),
+        
+        // Upload manager depends on Cloudinary service
+        ChangeNotifierProxyProvider<CloudinaryUploadService, UploadManager>(
+          create: (context) => UploadManager(cloudinaryService: context.read<CloudinaryUploadService>()),
+          update: (_, cloudinaryService, previous) => previous ?? UploadManager(cloudinaryService: cloudinaryService),
+        ),
+        
+        // API service
+        ChangeNotifierProvider(create: (_) => ApiService()),
+        
+        // Video event publisher depends on multiple services
+        ChangeNotifierProxyProvider3<UploadManager, INostrService, ApiService, VideoEventPublisher>(
+          create: (context) => VideoEventPublisher(
+            uploadManager: context.read<UploadManager>(),
+            nostrService: context.read<INostrService>(),
+            fetchReadyEvents: () => context.read<ApiService>().getReadyEvents(),
+            cleanupRemoteEvent: (publicId) => context.read<ApiService>().cleanupRemoteEvent(publicId),
+          ),
+          update: (_, uploadManager, nostrService, apiService, previous) => previous ?? VideoEventPublisher(
+            uploadManager: uploadManager,
+            nostrService: nostrService,
+            fetchReadyEvents: () => apiService.getReadyEvents(),
+            cleanupRemoteEvent: (publicId) => apiService.cleanupRemoteEvent(publicId),
+          ),
+        ),
+        
         // Video feed provider depends on multiple services
         ChangeNotifierProxyProvider4<VideoEventService, INostrService, VideoCacheService, UserProfileService, VideoFeedProvider>(
           create: (context) => VideoFeedProvider(
@@ -93,14 +140,16 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Vine publishing service depends on Nostr service
-        ChangeNotifierProxyProvider<INostrService, VinePublishingService>(
+        // Vine publishing service depends on Nostr and Stream services
+        ChangeNotifierProxyProvider2<INostrService, StreamUploadService, VinePublishingService>(
           create: (context) => VinePublishingService(
             gifService: GifService(),
+            streamUploadService: context.read<StreamUploadService>(),
             nostrService: context.read<INostrService>(),
           ),
-          update: (_, nostrService, previous) => previous ?? VinePublishingService(
+          update: (_, nostrService, streamUploadService, previous) => previous ?? VinePublishingService(
             gifService: GifService(),
+            streamUploadService: streamUploadService,
             nostrService: nostrService,
           ),
         ),
@@ -124,9 +173,87 @@ class NostrVineApp extends StatelessWidget {
             type: BottomNavigationBarType.fixed,
           ),
         ),
-        home: const ResponsiveWrapper(child: MainNavigationScreen()),
+        home: const ResponsiveWrapper(child: AppInitializer()),
       ),
     );
+  }
+}
+
+/// AppInitializer handles the async initialization of services
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  bool _isInitialized = false;
+  String _initializationStatus = 'Initializing services...';
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Initializing notifications...');
+      await context.read<NotificationService>().initialize();
+
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Initializing upload manager...');
+      await context.read<UploadManager>().initialize();
+
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Starting background publisher...');
+      await context.read<VideoEventPublisher>().initialize();
+
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+        _initializationStatus = 'Ready!';
+      });
+      
+      debugPrint('✅ All services initialized successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Service initialization failed: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = true; // Continue anyway with basic functionality
+          _initializationStatus = 'Initialization completed with errors';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: Colors.purple),
+              const SizedBox(height: 16),
+              Text(
+                _initializationStatus,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const MainNavigationScreen();
   }
 }
 

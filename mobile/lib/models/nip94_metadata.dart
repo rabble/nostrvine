@@ -106,6 +106,42 @@ class NIP94Metadata {
       },
     );
   }
+
+  /// Create NIP-94 metadata from Cloudflare Stream video
+  factory NIP94Metadata.fromStreamVideo({
+    required String videoId,
+    required String hlsUrl,
+    String? dashUrl,
+    String? thumbnailUrl,
+    String? summary,
+    String? altText,
+    String? blurhash,
+    int? durationMs,
+    double? fps,
+    Map<String, String> additionalTags = const {},
+  }) {
+    return NIP94Metadata(
+      url: hlsUrl, // Use HLS URL as primary URL
+      mimeType: 'video/mp4',
+      sha256Hash: '', // TODO: Get from Stream API or calculate
+      sizeBytes: 0, // TODO: Get from Stream API
+      dimensions: '640x480', // TODO: Get actual dimensions from Stream
+      blurhash: blurhash,
+      altText: altText,
+      summary: summary,
+      durationMs: durationMs,
+      fps: fps ?? 30.0, // Default to 30fps for videos
+      createdAt: DateTime.now(),
+      thumbnailUrl: thumbnailUrl,
+      additionalTags: {
+        'stream_video_id': videoId,
+        'stream_hls_url': hlsUrl,
+        if (dashUrl != null) 'stream_dash_url': dashUrl,
+        'cdn_provider': 'cloudflare_stream',
+        ...additionalTags,
+      },
+    );
+  }
   
   /// Create NIP-94 metadata from JSON (backend response)
   factory NIP94Metadata.fromJson(Map<String, dynamic> json) {

@@ -43,9 +43,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   VideoPlayerController? _controller;
   ChewieController? _chewieController;
   bool _isPlaying = false;
-  final bool _showControls = false;
+  // ABANDONED: Video controls were intended for user interaction but never implemented in UI
+  // final bool _showControls = false;
   bool _hasError = false;
   String? _errorMessage;
+  int _retryCount = 0;
+  static const int _maxRetries = 2; // Allow up to 2 retries before giving up
 
   @override
   void initState() {
@@ -58,15 +61,56 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
-        // If video becomes active, check if we need to initialize it first
-        if (_controller != null && !_controller!.value.isInitialized) {
-          debugPrint('🔄 Video became active but not initialized, triggering lazy init: ${widget.videoEvent.id.substring(0, 8)}');
-          _initializeLazily();
-        } else {
-          _playVideo();
-        }
+        debugPrint('🎬 Video became active: ${widget.videoEvent.id.substring(0, 8)}');
+        _handleVideoActivation();
       } else {
+        debugPrint('⏸️ Video became inactive: ${widget.videoEvent.id.substring(0, 8)}');
         _pauseVideo();
+      }
+    }
+  }
+  
+  /// Handle video activation with robust initialization and autoplay
+  void _handleVideoActivation() async {
+    // Case 1: No controller available
+    if (_controller == null) {
+      debugPrint('❌ No video controller available for: ${widget.videoEvent.id.substring(0, 8)}');
+      return;
+    }
+    
+    // Case 2: Controller exists but not initialized
+    if (!_controller!.value.isInitialized) {
+      debugPrint('🔄 Video controller not initialized, initializing: ${widget.videoEvent.id.substring(0, 8)}');
+      await _initializeLazily();
+      return; // _initializeLazily will handle autoplay
+    }
+    
+    // Case 3: Controller initialized but no Chewie controller
+    if (_chewieController == null) {
+      debugPrint('🔄 Creating Chewie controller for active video: ${widget.videoEvent.id.substring(0, 8)}');
+      _createChewieController();
+      
+      // Wait for Chewie to be ready using proper callback
+      if (_chewieController != null) {
+        // Listen for when Chewie is ready and start playing
+        _chewieController!.addListener(_onChewieStateChange);
+      }
+    }
+    
+    // Case 4: Ready to play immediately
+    if (_chewieController != null && widget.isActive && mounted) {
+      debugPrint('▶️ Starting autoplay for active video: ${widget.videoEvent.id.substring(0, 8)}');
+      _playVideo();
+    }
+  }
+
+  void _onChewieStateChange() {
+    if (_chewieController != null && widget.isActive && mounted) {
+      // Start playing once Chewie controller is ready
+      if (_chewieController!.isPlaying != true && !_isPlaying) {
+        debugPrint('🎬 Chewie ready, starting autoplay: ${widget.videoEvent.id.substring(0, 8)}');
+        _playVideo();
+        _chewieController!.removeListener(_onChewieStateChange);
       }
     }
   }
@@ -120,52 +164,63 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   
   void _createChewieController() {
     if (_controller != null && _controller!.value.isInitialized) {
-      _chewieController = ChewieController(
-        videoPlayerController: _controller!,
-        autoPlay: false,
-        looping: true,
-        showControls: false,
-        allowFullScreen: false,
-        allowMuting: false,
-        allowPlaybackSpeedChanging: false,
-        showControlsOnInitialize: false,
-        aspectRatio: _controller!.value.aspectRatio,
-        placeholder: Container(
-          color: Colors.grey[900],
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white54),
-          ),
-        ),
-        errorBuilder: (context, errorMessage) {
-          return Container(
-            color: Colors.red[900],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Format not supported\n${widget.videoEvent.mimeType ?? "Unknown format"}',
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+      try {
+        _chewieController = ChewieController(
+          videoPlayerController: _controller!,
+          autoPlay: false,
+          looping: true,
+          showControls: false,
+          allowFullScreen: false,
+          allowMuting: false,
+          allowPlaybackSpeedChanging: false,
+          showControlsOnInitialize: false,
+          aspectRatio: _controller!.value.aspectRatio,
+          placeholder: Container(
+            color: Colors.grey[900],
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white54),
             ),
-          );
-        },
-      );
-      
-      debugPrint('✅ INSTANT: Chewie controller ready for ${widget.videoEvent.id.substring(0, 8)}');
-      
-      if (mounted) {
-        setState(() {});
+          ),
+          errorBuilder: (context, errorMessage) {
+            debugPrint('❌ Chewie error for ${widget.videoEvent.id.substring(0, 8)}: $errorMessage');
+            return Container(
+              color: Colors.red[900],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Format not supported\n${widget.videoEvent.mimeType ?? "Unknown format"}',
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+        
+        debugPrint('✅ INSTANT: Chewie controller ready for ${widget.videoEvent.id.substring(0, 8)}');
+        
+        if (mounted) {
+          setState(() {});
+        }
+      } catch (e) {
+        debugPrint('❌ Error creating Chewie controller for ${widget.videoEvent.id.substring(0, 8)}: $e');
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Player initialization error: $e';
+          });
+        }
       }
     }
   }
 
-  void _initializeLazily() async {
+  Future<void> _initializeLazily() async {
     if (_controller == null) {
       debugPrint('⚠️ No controller to initialize: ${widget.videoEvent.id.substring(0, 8)}');
       return;
@@ -193,16 +248,25 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
       }
     } catch (e) {
       debugPrint('❌ FALLBACK: Initialization failed for ${widget.videoEvent.mimeType}: ${widget.videoEvent.id.substring(0, 8)} - $e');
+      _retryCount++;
+      
       if (mounted) {
         setState(() {
           _hasError = true;
           _errorMessage = 'Failed to load ${widget.videoEvent.mimeType ?? "video"}: $e';
         });
       }
-      widget.videoCacheService?.removeVideoFromReadyQueue(widget.videoEvent.id);
+      
+      // Only remove from ready queue after max retries to prevent premature removal
+      if (_retryCount >= _maxRetries) {
+        debugPrint('🚫 Max retries reached for ${widget.videoEvent.id.substring(0, 8)}, removing from ready queue');
+        widget.videoCacheService?.removeVideoFromReadyQueue(widget.videoEvent.id);
+      }
     }
   }
   
+  /// ABANDONED: Advanced timeout initialization with macOS-specific event loop handling
+  /// This was replaced by simpler initialization in _initializeVideo() method
   void _initializeVideoWithTimeout() async {
     const timeoutDuration = Duration(seconds: 15); // Increased to 15 second timeout
     
@@ -279,6 +343,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     }
   }
   
+  /// ABANDONED: Controller listener for automatic initialization state changes
+  /// This callback-based approach was replaced by direct state management
   void _onControllerUpdate() {
     if (_controller != null && _controller!.value.isInitialized) {
       _controller!.removeListener(_onControllerUpdate);
@@ -341,13 +407,15 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
-      decoration: const BoxDecoration(
-        color: Colors.black,
-      ),
-      child: Stack(
+    // Global error boundary to prevent crashes from propagating up
+    try {
+      return Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        decoration: const BoxDecoration(
+          color: Colors.black,
+        ),
+        child: Stack(
         children: [
           // Video/GIF content
           Positioned.fill(
@@ -489,6 +557,54 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         ],
       ),
     );
+    } catch (e, stackTrace) {
+      debugPrint('❌ CRITICAL ERROR in VideoFeedItem build for ${widget.videoEvent.id.substring(0, 8)}: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      
+      // Return a safe fallback widget to prevent app crash
+      return Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Video Error',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'ID: ${widget.videoEvent.id.substring(0, 8)}...',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Swipe to skip this video',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
   
   Widget _buildVideoContent() {
@@ -520,71 +636,70 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
       return _buildErrorWidget();
     }
     
-    // Show Chewie player if available and initialized
-    if (_chewieController != null && _controller!.value.isInitialized) {
-      return Stack(
-        children: [
-          // Use Chewie player which handles most video formats
-          Center(
-            child: Chewie(controller: _chewieController!),
-          ),
-          // Show play/pause overlay when not playing
-          if (!_isPlaying)
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
+    // ALWAYS show thumbnail background first - this is the TikTok UX secret!
+    final hasValidThumbnail = widget.videoEvent.thumbnailUrl != null && 
+                              widget.videoEvent.thumbnailUrl!.isNotEmpty;
     
-    // Show loading or thumbnail while video initializes
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.grey[900],
-      ),
-      child: Stack(
-        children: [
-          if (widget.videoEvent.thumbnailUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: widget.videoEvent.thumbnailUrl!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                placeholder: (context, url) => _buildPlaceholder(),
-                errorWidget: (context, url, error) => _buildPlaceholder(),
-              ),
-            )
-          else
-            _buildPlaceholder(),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: Colors.white54),
-                const SizedBox(height: 8),
-                Text(
-                  'Loading ${widget.videoEvent.mimeType ?? "video"}...',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-              ],
+    return Stack(
+      children: [
+        // LAYER 1: Thumbnail background (always shown for smooth UX)
+        Positioned.fill(
+          child: hasValidThumbnail
+              ? CachedNetworkImage(
+                  imageUrl: widget.videoEvent.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => _buildPlaceholder(),
+                  errorWidget: (context, url, error) => _buildPlaceholder(),
+                )
+              : _buildPlaceholder(),
+        ),
+        
+        // LAYER 2: Video player (only when ready)
+        if (_chewieController != null && _controller!.value.isInitialized)
+          Positioned.fill(
+            child: Center(
+              child: Chewie(controller: _chewieController!),
             ),
           ),
-        ],
-      ),
+        
+        // LAYER 3: Loading indicator (when video not ready)
+        if (_chewieController == null || !_controller!.value.isInitialized)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white70),
+                    SizedBox(height: 8),
+                    Text(
+                      'Preparing video...',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        
+        // LAYER 4: Play/pause overlay
+        if (_chewieController != null && !_isPlaying)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow,
+                size: 48,
+                color: Colors.white,
+              ),
+            ),
+          ),
+      ],
     );
   }
   
@@ -662,20 +777,31 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                 ),
                 const SizedBox(height: 8),
               ],
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _hasError = false;
-                    _errorMessage = null;
-                  });
-                  _initializeVideo();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  foregroundColor: Colors.white,
+              if (_retryCount < _maxRetries) ...[
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _hasError = false;
+                      _errorMessage = null;
+                    });
+                    _initializeVideo();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Retry (${_retryCount + 1}/$_maxRetries)'),
                 ),
-                child: const Text('Retry'),
-              ),
+              ] else ...[
+                Text(
+                  'Video unavailable\nCheck your connection',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ],
           ),
         ),

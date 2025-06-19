@@ -197,6 +197,6 @@ class UserProfile {
   
   @override
   String toString() {
-    return 'UserProfile(pubkey: ${shortPubkey}, name: $bestDisplayName, hasAvatar: $hasAvatar)';
+    return 'UserProfile(pubkey: $shortPubkey, name: $bestDisplayName, hasAvatar: $hasAvatar)';
   }
 }

@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "nostr-tools": "^2.15.0"
+  }
+}

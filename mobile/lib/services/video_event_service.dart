@@ -102,6 +102,11 @@ class VideoEventService extends ChangeNotifier {
         limit: limit,
       );
       
+      // Log the exact filter being sent to debug timestamp issues
+      debugPrint('🔍 Filter details:');
+      debugPrint('  - JSON: ${filter.toJson()}');
+      debugPrint('  - Since timestamp: $effectiveSince (${effectiveSince != null ? DateTime.fromMillisecondsSinceEpoch(effectiveSince * 1000) : 'null'})');
+      
       // Subscribe to events using Nostr service
       debugPrint('📡 Requesting event subscription from Nostr service...');
       final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
@@ -138,7 +143,7 @@ class VideoEventService extends ChangeNotifier {
   /// Handle new video event from subscription
   void _handleNewVideoEvent(Event event) {
     try {
-      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}..., created=${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)}');
       
       if (event.kind != 22) {
         debugPrint('⏩ Skipping non-video event (kind ${event.kind})');
@@ -150,6 +155,16 @@ class VideoEventService extends ChangeNotifier {
         debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
         return;
       }
+      
+      // TEMPORARILY DISABLED: CLIENT-SIDE FILTERING to debug feed issue
+      // TODO: Re-enable after fixing the feed stopping issue
+      // final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      // final eventTime = DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000);
+      // 
+      // if (eventTime.isBefore(sevenDaysAgo)) {
+      //   debugPrint('⏰ FILTERING OUT OLD EVENT: ${event.id.substring(0, 8)} from $eventTime (older than 7 days)');
+      //   return; // Return early without notifying listeners to prevent rebuild loops
+      // }
       
       debugPrint('🎬 Processing new video event ${event.id.substring(0, 8)}...');
       final videoEvent = VideoEvent.fromNostrEvent(event);

@@ -5,7 +5,7 @@ class AppConfig {
   // Backend configuration
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://nostrvine-backend.workers.dev',
+    defaultValue: 'https://nostrvine-backend.protestnet.workers.dev',
   );
   
   // Environment detection
@@ -19,6 +19,15 @@ class AppConfig {
   static bool get isProduction => environment == 'production';
   
   // API endpoints
+  static String get healthUrl => '$backendBaseUrl/health';
+  static String get nip96InfoUrl => '$backendBaseUrl/.well-known/nostr/nip96.json';
+  
+  // Stream CDN endpoints (new Cloudflare Stream integration)
+  static String get streamUploadRequestUrl => '$backendBaseUrl/v1/media/request-upload';
+  static String streamStatusUrl(String videoId) => '$backendBaseUrl/v1/media/status/$videoId';
+  static String get streamWebhookUrl => '$backendBaseUrl/v1/webhooks/stream-complete';
+  
+  // Legacy endpoints (for backward compatibility)
   static String get cloudinarySignedUploadUrl => '$backendBaseUrl/v1/media/request-upload';
   static String get videoMetadataUrl => '$backendBaseUrl/v1/media/metadata';
   static String get videoListUrl => '$backendBaseUrl/v1/media/list';
@@ -39,7 +48,8 @@ class AppConfig {
   static bool get enableDebugLogs => isDevelopment;
   
   // Feature flags
-  static bool get enableCloudinaryUpload => true;
+  static bool get enableStreamCDN => true; // New Cloudflare Stream integration
+  static bool get enableCloudinaryUpload => false; // Legacy fallback
   static bool get enableNIP96Upload => false; // Iceboxed for MVP
   static bool get enableOfflineQueue => true;
   
@@ -50,6 +60,7 @@ class AppConfig {
       'backendUrl': backendBaseUrl,
       'isDevelopment': isDevelopment,
       'isProduction': isProduction,
+      'enableStreamCDN': enableStreamCDN,
       'enableCloudinaryUpload': enableCloudinaryUpload,
       'enableNIP96Upload': enableNIP96Upload,
       'relayCount': defaultNostrRelays.length,

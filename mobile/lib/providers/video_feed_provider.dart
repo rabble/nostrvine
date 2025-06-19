@@ -28,6 +28,10 @@ class VideoFeedProvider extends ChangeNotifier {
   final Set<String> _pendingProfileFetches = <String>{};
   Timer? _profileFetchDebounceTimer;
   
+  // Notification batching to prevent infinite rebuild loops
+  Timer? _notificationTimer;
+  bool _hasPendingNotification = false;
+  
   VideoFeedProvider({
     required VideoEventService videoEventService,
     required INostrService nostrService,
@@ -67,7 +71,7 @@ class VideoFeedProvider extends ChangeNotifier {
     try {
       debugPrint('🎬 Starting VideoFeedProvider initialization...');
       _error = null;
-      notifyListeners();
+      _scheduleNotification();
       
       // Check if Nostr service is disposed
       if (_nostrService.isDisposed) {
@@ -121,7 +125,7 @@ class VideoFeedProvider extends ChangeNotifier {
       debugPrint('📊 Error occurred during video feed setup');
     }
     
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Refresh the video feed
@@ -130,7 +134,7 @@ class VideoFeedProvider extends ChangeNotifier {
     
     _isRefreshing = true;
     _error = null;
-    notifyListeners();
+    _scheduleNotification();
     
     try {
       await _videoEventService.refreshVideoFeed();
@@ -140,7 +144,7 @@ class VideoFeedProvider extends ChangeNotifier {
       debugPrint('❌ Failed to refresh video feed: $e');
     } finally {
       _isRefreshing = false;
-      notifyListeners();
+      _scheduleNotification();
     }
   }
   
@@ -149,7 +153,7 @@ class VideoFeedProvider extends ChangeNotifier {
     if (_isLoadingMore || !hasEvents) return;
     
     _isLoadingMore = true;
-    notifyListeners();
+    _scheduleNotification();
     
     try {
       await _videoEventService.loadMoreEvents();
@@ -159,7 +163,7 @@ class VideoFeedProvider extends ChangeNotifier {
       debugPrint('❌ Failed to load more events: $e');
     } finally {
       _isLoadingMore = false;
-      notifyListeners();
+      _scheduleNotification();
     }
   }
   
@@ -174,7 +178,7 @@ class VideoFeedProvider extends ChangeNotifier {
       debugPrint('❌ Failed to subscribe to user videos: $e');
     }
     
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Subscribe to videos with hashtags
@@ -188,7 +192,7 @@ class VideoFeedProvider extends ChangeNotifier {
       debugPrint('❌ Failed to subscribe to hashtag videos: $e');
     }
     
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Get video event by ID
@@ -240,7 +244,7 @@ class VideoFeedProvider extends ChangeNotifier {
   /// Clear error state
   void clearError() {
     _error = null;
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Retry initialization
@@ -271,14 +275,14 @@ class VideoFeedProvider extends ChangeNotifier {
       // Fetch profiles for video authors
       _fetchProfilesForVideos(_videoEventService.videoEvents);
     }
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Handle changes from video cache service (when ready queue updates)
   void _onVideoCacheServiceChanged() {
     debugPrint('📢 Video cache service changed - ready queue now has ${_videoCacheService.readyToPlayQueue.length} videos');
     // Notify listeners so UI can rebuild with updated ready queue
-    notifyListeners();
+    _scheduleNotification();
   }
   
   /// Fetch user profiles for video authors (only for new events)
@@ -328,11 +332,26 @@ class VideoFeedProvider extends ChangeNotifier {
     _userProfileService.fetchMultipleProfiles(authorsToFetch);
   }
   
+  /// Schedule a batched notification to prevent infinite rebuild loops
+  void _scheduleNotification() {
+    if (_hasPendingNotification) {
+      return; // Already have a pending notification
+    }
+    
+    _hasPendingNotification = true;
+    _notificationTimer?.cancel();
+    _notificationTimer = Timer(const Duration(milliseconds: 100), () {
+      _hasPendingNotification = false;
+      notifyListeners();
+    });
+  }
+  
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
     _videoCacheService.removeListener(_onVideoCacheServiceChanged);
     _profileFetchDebounceTimer?.cancel();
+    _notificationTimer?.cancel();
     // DO NOT dispose _videoCacheService - it's managed by Provider and shared across screens
     super.dispose();
   }

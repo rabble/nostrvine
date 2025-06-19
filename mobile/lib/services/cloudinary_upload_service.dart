@@ -1,0 +1,261 @@
+// ABOUTME: Service for uploading videos directly to Cloudinary cloud storage
+// ABOUTME: Handles signed uploads, progress tracking, and error handling for async video processing
+
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config/app_config.dart';
+
+/// Result of a Cloudinary upload operation
+class UploadResult {
+  final bool success;
+  final String? cloudinaryPublicId;
+  final String? cloudinaryUrl;
+  final String? errorMessage;
+  final Map<String, dynamic>? metadata;
+
+  const UploadResult({
+    required this.success,
+    this.cloudinaryPublicId,
+    this.cloudinaryUrl,
+    this.errorMessage,
+    this.metadata,
+  });
+
+  factory UploadResult.success({
+    required String cloudinaryPublicId,
+    required String cloudinaryUrl,
+    Map<String, dynamic>? metadata,
+  }) {
+    return UploadResult(
+      success: true,
+      cloudinaryPublicId: cloudinaryPublicId,
+      cloudinaryUrl: cloudinaryUrl,
+      metadata: metadata,
+    );
+  }
+
+  factory UploadResult.failure(String errorMessage) {
+    return UploadResult(
+      success: false,
+      errorMessage: errorMessage,
+    );
+  }
+}
+
+/// Signed upload parameters from backend
+class SignedUploadParams {
+  final String cloudName;
+  final String apiKey;
+  final String signature;
+  final int timestamp;
+  final String publicId;
+  final Map<String, dynamic> additionalParams;
+
+  const SignedUploadParams({
+    required this.cloudName,
+    required this.apiKey,
+    required this.signature,
+    required this.timestamp,
+    required this.publicId,
+    required this.additionalParams,
+  });
+
+  factory SignedUploadParams.fromJson(Map<String, dynamic> json) {
+    return SignedUploadParams(
+      cloudName: json['cloud_name'] as String,
+      apiKey: json['api_key'] as String,
+      signature: json['signature'] as String,
+      timestamp: json['timestamp'] as int,
+      publicId: json['public_id'] as String,
+      additionalParams: Map<String, dynamic>.from(json['additional_params'] ?? {}),
+    );
+  }
+}
+
+/// Service for uploading videos to Cloudinary
+class CloudinaryUploadService extends ChangeNotifier {
+  static String get _baseUrl => AppConfig.backendBaseUrl;
+  
+  final Map<String, StreamController<double>> _progressControllers = {};
+  
+  /// Upload a video file to Cloudinary with progress tracking
+  Future<UploadResult> uploadVideo({
+    required File videoFile,
+    required String nostrPubkey,
+    String? title,
+    String? description,
+    List<String>? hashtags,
+    void Function(double progress)? onProgress,
+  }) async {
+    debugPrint('🔄 Starting Cloudinary upload for video: ${videoFile.path}');
+    
+    try {
+      // Step 1: Request signed upload parameters from our backend
+      final signedParams = await _requestSignedUpload(
+        videoFile: videoFile,
+        nostrPubkey: nostrPubkey,
+        title: title,
+        description: description,
+        hashtags: hashtags,
+      );
+      
+      // Step 2: Upload directly to Cloudinary
+      final cloudinary = CloudinaryPublic(signedParams.cloudName, signedParams.apiKey, cache: false);
+      
+      // Setup progress tracking
+      final progressController = StreamController<double>.broadcast();
+      _progressControllers[signedParams.publicId] = progressController;
+      
+      if (onProgress != null) {
+        progressController.stream.listen(onProgress);
+      }
+      
+      // Perform the upload (simplified for now - progress tracking to be implemented later)
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(
+          videoFile.path,
+          publicId: signedParams.publicId,
+          resourceType: CloudinaryResourceType.Video,
+        ),
+      );
+      
+      // Simulate progress for now
+      progressController.add(1.0);
+      debugPrint('📤 Upload completed');
+      
+      // Cleanup progress controller
+      _progressControllers.remove(signedParams.publicId);
+      await progressController.close();
+      
+      if (response.publicId?.isNotEmpty == true) {
+        debugPrint('✅ Cloudinary upload successful: ${response.publicId}');
+        return UploadResult.success(
+          cloudinaryPublicId: response.publicId!,
+          cloudinaryUrl: response.secureUrl ?? response.url ?? '',
+          metadata: {
+            'public_id': response.publicId,
+            'secure_url': response.secureUrl,
+            'url': response.url,
+            'original_filename': response.originalFilename,
+            'created_at': response.createdAt,
+          },
+        );
+      } else {
+        final errorMsg = 'Cloudinary upload failed: Invalid response';
+        debugPrint('❌ $errorMsg');
+        return UploadResult.failure(errorMsg);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Upload error: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      return UploadResult.failure('Upload failed: $e');
+    }
+  }
+  
+  /// Request signed upload parameters from our backend
+  Future<SignedUploadParams> _requestSignedUpload({
+    required File videoFile,
+    required String nostrPubkey,
+    String? title,
+    String? description,
+    List<String>? hashtags,
+  }) async {
+    debugPrint('🔐 Requesting signed upload parameters from backend');
+    
+    try {
+      // Get file size and basic metadata
+      final fileStat = await videoFile.stat();
+      final fileSize = fileStat.size;
+      
+      final requestBody = {
+        'nostr_pubkey': nostrPubkey,
+        'file_size': fileSize,
+        'mime_type': 'video/mp4', // Assume MP4 for now
+        'title': title,
+        'description': description,
+        'hashtags': hashtags,
+      };
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/v1/media/request-upload'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${await _getNip98Token()}',
+        },
+        body: jsonEncode(requestBody),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint('✅ Received signed upload parameters');
+        return SignedUploadParams.fromJson(data);
+      } else {
+        throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to get signed upload parameters: $e');
+      rethrow;
+    }
+  }
+  
+  /// Generate NIP-98 authentication token for backend requests
+  Future<String> _getNip98Token() async {
+    // TODO: Implement proper NIP-98 authentication
+    // For now, return a placeholder token
+    debugPrint('⚠️ TODO: Implement NIP-98 authentication');
+    return 'placeholder-nip98-token';
+  }
+  
+  /// Cancel an ongoing upload
+  Future<void> cancelUpload(String publicId) async {
+    final controller = _progressControllers[publicId];
+    if (controller != null) {
+      _progressControllers.remove(publicId);
+      await controller.close();
+      debugPrint('🚫 Upload cancelled: $publicId');
+    }
+  }
+  
+  /// Get upload progress stream for a specific upload
+  Stream<double>? getProgressStream(String publicId) {
+    return _progressControllers[publicId]?.stream;
+  }
+  
+  /// Check if an upload is currently in progress
+  bool isUploading(String publicId) {
+    return _progressControllers.containsKey(publicId);
+  }
+  
+  /// Get current uploads in progress
+  List<String> get activeUploads => _progressControllers.keys.toList();
+  
+  @override
+  void dispose() {
+    // Cancel all active uploads
+    for (final controller in _progressControllers.values) {
+      controller.close();
+    }
+    _progressControllers.clear();
+    super.dispose();
+  }
+}
+
+/// Exception thrown by CloudinaryUploadService
+class CloudinaryUploadException implements Exception {
+  final String message;
+  final String? code;
+  final dynamic originalError;
+  
+  const CloudinaryUploadException(
+    this.message, {
+    this.code,
+    this.originalError,
+  });
+  
+  @override
+  String toString() => 'CloudinaryUploadException: $message';
+}

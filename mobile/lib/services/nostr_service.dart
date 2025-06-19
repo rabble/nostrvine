@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:collection';
 import 'package:nostr/nostr.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -24,13 +25,17 @@ class NostrService extends ChangeNotifier implements INostrService {
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   bool _isInitialized = false;
   bool _isDisposed = false;
-  List<String> _connectedRelays = [];
+  final List<String> _connectedRelays = [];
   final Map<String, WebSocketChannel> _webSockets = {};
   final Map<String, StreamController<Event>> _eventControllers = {};
   final Map<String, int> _relayRetryCount = {};
   final Map<String, DateTime> _relayLastFailureTime = {};
   final Map<String, Duration> _relayBackoffDuration = {};
   Timer? _reconnectTimer;
+  
+  // Event deduplication to prevent infinite rebuild loops
+  final LinkedHashSet<String> _seenEventIds = LinkedHashSet<String>();
+  static const int _maxSeenEventIds = 5000; // Keep track of recent event IDs
   
   static const int _maxRetryAttempts = 8; // Increased to allow for longer backoff
   static const Duration _initialRetryDelay = Duration(seconds: 2);
@@ -187,7 +192,22 @@ class NostrService extends ChangeNotifier implements INostrService {
   void _handleEventMessage(List<dynamic> eventMessage) {
     try {
       final event = Event.deserialize(eventMessage);
-      debugPrint('🎬 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      
+      // Check for duplicate events to prevent infinite rebuild loops
+      if (_seenEventIds.contains(event.id)) {
+        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        return;
+      }
+      
+      // Add to seen events and manage memory
+      _seenEventIds.add(event.id);
+      if (_seenEventIds.length > _maxSeenEventIds) {
+        // Remove oldest event ID to prevent unbounded memory growth
+        _seenEventIds.remove(_seenEventIds.first);
+      }
+      
+      debugPrint('🎬 Processing new event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
       
       // Forward to all active event controllers
       for (final controller in _eventControllers.values) {
@@ -695,6 +715,7 @@ class NostrService extends ChangeNotifier implements INostrService {
       _relayRetryCount.clear();
       _relayLastFailureTime.clear();
       _relayBackoffDuration.clear();
+      _seenEventIds.clear();
       _isInitialized = false;
       super.dispose();
       debugPrint('🗑️ NostrService disposed');

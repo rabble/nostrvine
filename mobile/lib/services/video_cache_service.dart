@@ -576,6 +576,12 @@ class VideoCacheService extends ChangeNotifier {
   void addController(VideoEvent videoEvent, VideoPlayerController controller) {
     if (videoEvent.videoUrl == null || videoEvent.isGif) return;
     
+    // Check if we already have this controller to avoid duplicate listeners
+    if (_controllers.containsKey(videoEvent.id)) {
+      debugPrint('⚠️ Controller already exists for ${videoEvent.id.substring(0, 8)}, skipping duplicate add');
+      return;
+    }
+    
     _controllers[videoEvent.id] = controller;
     _initializationStatus[videoEvent.id] = controller.value.isInitialized;
     

@@ -22,20 +22,11 @@ export { UploadJobManager } from './services/upload-job-manager';
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
-		const { pathname, method } = url;
+		const pathname = url.pathname;
+		const method = request.method;
+		
 
-		// CORS preflight handling
-		if (method === 'OPTIONS') {
-			return new Response(null, {
-				status: 204,
-				headers: {
-					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-					'Access-Control-Max-Age': '86400'
-				}
-			});
-		}
+		// Note: CORS preflight handling moved to individual endpoint handlers for proper functionality
 
 		// Route handling
 		try {
@@ -44,7 +35,7 @@ export default {
 				return handleNIP96Info(request, env);
 			}
 
-			// Cloudflare Stream upload request endpoint (new CDN flow)
+			// Cloudflare Stream upload request endpoint (CDN implementation)
 			if (pathname === '/v1/media/request-upload') {
 				if (method === 'POST') {
 					return handleStreamUploadRequest(request, env);
@@ -54,7 +45,7 @@ export default {
 				}
 			}
 
-			// Cloudflare Stream webhook endpoint
+			// Cloudflare Stream webhook endpoint (CDN implementation)
 			if (pathname === '/v1/webhooks/stream-complete') {
 				if (method === 'POST') {
 					return handleStreamWebhook(request, env, ctx);
@@ -74,25 +65,6 @@ export default {
 				return handleVideoStatusOptions();
 			}
 
-			// Legacy Cloudinary endpoints (kept for backward compatibility)
-			if (pathname === '/v1/media/cloudinary-upload') {
-				if (method === 'POST') {
-					return handleCloudinarySignedUpload(request, env);
-				}
-				if (method === 'OPTIONS') {
-					return handleCloudinaryUploadOptions();
-				}
-			}
-
-			// Legacy Cloudinary webhook endpoint
-			if (pathname === '/v1/media/webhook') {
-				if (method === 'POST') {
-					return handleCloudinaryWebhook(request, env);
-				}
-				if (method === 'OPTIONS') {
-					return handleCloudinaryWebhookOptions();
-				}
-			}
 
 			// Video metadata endpoints
 			if (pathname === '/v1/media/list' && method === 'GET') {

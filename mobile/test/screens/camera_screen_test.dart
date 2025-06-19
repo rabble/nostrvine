@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import '../../lib/screens/camera_screen.dart';
-import '../../lib/services/camera_service.dart';
+import 'package:nostrvine_app/screens/camera_screen.dart';
+import 'package:nostrvine_app/services/camera_service.dart';
 
 // Mock classes for testing
 class MockCameraService extends Mock implements CameraService {}

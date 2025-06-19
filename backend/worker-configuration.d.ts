@@ -16,6 +16,10 @@ declare namespace Cloudflare {
 		MEDIA_BUCKET: R2Bucket;
 		CACHE_BUCKET: R2Bucket;
 		UPLOAD_ANALYTICS: AnalyticsEngineDataset;
+		// Secrets (set via wrangler secret put)
+		CLOUDFLARE_ACCOUNT_ID: string;
+		CLOUDFLARE_STREAM_TOKEN: string;
+		STREAM_WEBHOOK_SECRET: string;
 	}
 }
 interface Env extends Cloudflare.Env {}

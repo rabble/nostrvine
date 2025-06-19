@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../models/video_event.dart';
@@ -15,6 +17,7 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  int _lastLoggedVideoCount = -1;
   
   @override
   void initState() {
@@ -42,7 +45,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🔄 FeedScreen.build() called - rebuilding UI');
+    // Removed verbose logging to reduce noise
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -73,7 +76,11 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Consumer<VideoFeedProvider>(
         builder: (context, provider, child) {
-          debugPrint('📺 FeedScreen Consumer rebuilding: initialized=${provider.isInitialized}, loading=${provider.isLoading}, hasEvents=${provider.hasEvents}, readyVideos=${provider.videoEvents.length}');
+          // Only log when video count changes to reduce noise
+          if (_lastLoggedVideoCount != provider.videoEvents.length) {
+            _lastLoggedVideoCount = provider.videoEvents.length;
+            debugPrint('📺 FeedScreen Consumer: readyVideos changed to ${provider.videoEvents.length}');
+          }
           
           if (!provider.isInitialized && provider.isLoading) {
             return const Center(
@@ -175,11 +182,16 @@ class _FeedScreenState extends State<FeedScreen> {
             );
           }
           
-          debugPrint('🎬 Building PageView with ${provider.videoEvents.length} ready videos');
+          // Removed redundant logging since we already track video count changes above
           
-          return PageView.builder(
+          // Wrap PageView with desktop-friendly scroll behavior
+          final pageView = PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            // Enable desktop-friendly scrolling for macOS
+            physics: kIsWeb || defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux
+                ? const AlwaysScrollableScrollPhysics()
+                : const ClampingScrollPhysics(),
             itemCount: provider.videoEvents.length, // ✅ FIXED: Use ready-to-play videos, not raw events
             onPageChanged: (index) {
               setState(() {
@@ -187,16 +199,26 @@ class _FeedScreenState extends State<FeedScreen> {
               });
               
               final readyVideoCount = provider.videoEvents.length;
-              debugPrint('📱 Changed to video $index/$readyVideoCount');
+              final allVideoCount = provider.allVideoEvents.length;
+              final isSubscribed = provider.isSubscribed;
+              final canLoadMore = provider.canLoadMore;
+              
+              debugPrint('📱 Page changed to video $index/$readyVideoCount (all: $allVideoCount, subscribed: $isSubscribed, canLoadMore: $canLoadMore)');
               
               if (readyVideoCount > 0) {
                 // Load more when getting close to the end of ready videos
                 if (index >= readyVideoCount - 3) {
-                  debugPrint('📱 Near end of ready videos (${index}/${readyVideoCount}), loading more...');
-                  provider.loadMoreEvents();
+                  debugPrint('📱 Near end of ready videos ($index/$readyVideoCount), loading more...');
+                  if (canLoadMore) {
+                    provider.loadMoreEvents();
+                  } else {
+                    debugPrint('⚠️ Cannot load more events - subscription may have stopped');
+                  }
                 }
                 // Preload videos around current index using the ready video list
                 provider.preloadVideosAroundIndex(index);
+              } else {
+                debugPrint('⚠️ No ready videos available for preloading');
               }
             },
             itemBuilder: (context, index) {
@@ -208,7 +230,10 @@ class _FeedScreenState extends State<FeedScreen> {
               
               // ✅ FIXED: Use ready-to-play videos that have passed compatibility testing
               final videoEvent = provider.videoEvents[index];
-              debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: ${index == _currentPage})');
+              // Only log when video is active to reduce spam
+              if (index == _currentPage) {
+                debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: true)');
+              }
               
               
               return SizedBox(
@@ -227,6 +252,16 @@ class _FeedScreenState extends State<FeedScreen> {
               );
             },
           );
+          
+          // Return PageView with desktop-friendly scroll behavior on supported platforms
+          if (kIsWeb || defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux) {
+            return ScrollConfiguration(
+              behavior: const DesktopScrollBehavior(),
+              child: pageView,
+            );
+          } else {
+            return pageView;
+          }
         },
       ),
     );
@@ -306,4 +341,17 @@ class _FeedScreenState extends State<FeedScreen> {
       SnackBar(content: Text('Opening profile for user: ${pubkey.substring(0, 8)}...')),
     );
   }
+}
+
+/// Custom scroll behavior for desktop platforms that enables mouse drag scrolling
+class DesktopScrollBehavior extends ScrollBehavior {
+  const DesktopScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }

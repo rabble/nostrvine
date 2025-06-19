@@ -65,8 +65,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "METADATA_CACHE",
-			"id": "your-kv-namespace-id",
-			"preview_id": "your-preview-kv-namespace-id"
+			"id": "45b500d029d24315bb447a066fe9e9df"
 		}
 	],
 

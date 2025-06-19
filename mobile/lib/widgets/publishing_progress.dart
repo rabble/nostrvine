@@ -49,7 +49,7 @@ class PublishingProgressDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red[900]?.withOpacity(0.3),
+                    color: Colors.red[900]?.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.red, width: 1),
                   ),
