@@ -2,11 +2,36 @@
 // ABOUTME: Shows VideoManagerService replacing dual-list architecture with single source of truth
 
 import 'dart:async';
-import '../lib/models/video_event.dart';
-import '../lib/models/video_state.dart';
-import '../lib/services/video_manager_interface.dart';
-import '../lib/services/video_manager_service.dart';
-import '../test/helpers/test_helpers.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nostrvine_app/models/video_event.dart';
+import 'package:nostrvine_app/services/video_manager_interface.dart';
+import 'package:nostrvine_app/services/video_manager_service.dart';
+
+// Helper function for creating test video events
+VideoEvent createTestVideoEvent({
+  required String id,
+  required String title,
+  String? videoUrl,
+}) {
+  final now = DateTime.now();
+  return VideoEvent(
+    id: id,
+    pubkey: 'demo-pubkey-for-testing',
+    createdAt: now.millisecondsSinceEpoch ~/ 1000,
+    content: 'Demo video for $title',
+    timestamp: now,
+    title: title,
+    videoUrl: videoUrl ?? 'https://example.com/videos/$id.mp4',
+    hashtags: ['demo', 'test'],
+  );
+}
+
+List<VideoEvent> createTestVideoList(int count) {
+  return List.generate(count, (i) => createTestVideoEvent(
+    id: 'demo-video-$i',
+    title: 'Demo Video ${i + 1}',
+  ));
+}
 
 /// Complete integration demonstration of the new video system
 /// 
@@ -19,22 +44,22 @@ import '../test/helpers/test_helpers.dart';
 /// - Circuit breaker error handling
 /// - Intelligent cleanup around current position
 Future<void> main() async {
-  print('🎬 VideoManager TDD Rebuild Integration Demo');
-  print('=' * 60);
+  debugPrint('🎬 VideoManager TDD Rebuild Integration Demo');
+  debugPrint('=' * 60);
   
   await _demonstrateBasicUsage();
   await _demonstrateMemoryManagement();
   await _demonstrateErrorHandling();
   await _demonstrateRealWorldScenario();
   
-  print('\n✅ Demo completed successfully!');
-  print('🚀 Ready for production integration');
+  debugPrint('\n✅ Demo completed successfully!');
+  debugPrint('🚀 Ready for production integration');
 }
 
 /// Basic usage showing single source of truth pattern
 Future<void> _demonstrateBasicUsage() async {
-  print('\n📋 1. Basic Usage - Single Source of Truth');
-  print('-' * 40);
+  debugPrint('\n📋 1. Basic Usage - Single Source of Truth');
+  debugPrint('-' * 40);
   
   // Create video manager with production configuration
   final videoManager = VideoManagerService(
@@ -42,20 +67,20 @@ Future<void> _demonstrateBasicUsage() async {
   );
   
   // Add videos in newest-first order
-  final videos = TestHelpers.createVideoList(5);
+  final videos = createTestVideoList(5);
   for (final video in videos) {
     await videoManager.addVideoEvent(video);
-    print('   Added: ${video.title} (${video.id})');
+    debugPrint('   Added: ${video.title} (${video.id})');
   }
   
   // Single source of truth - no more dual lists!
-  print('\n📊 Current State:');
-  print('   Videos in manager: ${videoManager.videos.length}');
-  print('   Ready for playback: ${videoManager.readyVideos.length}');
-  print('   Newest video: ${videoManager.videos.first.title}');
+  debugPrint('\n📊 Current State:');
+  debugPrint('   Videos in manager: ${videoManager.videos.length}');
+  debugPrint('   Ready for playback: ${videoManager.readyVideos.length}');
+  debugPrint('   Newest video: ${videoManager.videos.first.title}');
   
   // Preload around current position (index 1)
-  print('\n⚡ Preloading around current position...');
+  debugPrint('\n⚡ Preloading around current position...');
   videoManager.preloadAroundIndex(1, preloadRange: 2);
   
   // Wait for preloading to complete
@@ -68,17 +93,17 @@ Future<void> _demonstrateBasicUsage() async {
     final status = state?.isReady == true ? '✅ Ready' : 
                    state?.isLoading == true ? '⏳ Loading' : 
                    state?.hasFailed == true ? '❌ Failed' : '⭕ Not loaded';
-    print('   [$i] ${video.title}: $status');
+    debugPrint('   [$i] ${video.title}: $status');
   }
   
-  await videoManager.dispose();
-  print('   🧹 Cleanup completed');
+  videoManager.dispose();
+  debugPrint('   🧹 Cleanup completed');
 }
 
 /// Memory management demonstration
 Future<void> _demonstrateMemoryManagement() async {
-  print('\n🧠 2. Memory Management - <500MB Target');
-  print('-' * 40);
+  debugPrint('\n🧠 2. Memory Management - <500MB Target');
+  debugPrint('-' * 40);
   
   final videoManager = VideoManagerService(
     config: const VideoManagerConfig(
@@ -89,17 +114,20 @@ Future<void> _demonstrateMemoryManagement() async {
   );
   
   // Add many videos to test memory management
-  final videos = TestHelpers.createVideoList(15, idPrefix: 'memory_test');
+  final videos = List.generate(15, (i) => createTestVideoEvent(
+    id: 'memory_test-$i',
+    title: 'Memory Test Video ${i + 1}',
+  ));
   for (final video in videos) {
     await videoManager.addVideoEvent(video);
   }
   
-  print('   Added ${videos.length} videos to test memory limits');
-  print('   Configured max: 8 videos');
-  print('   Actual videos: ${videoManager.videos.length}'); // Should be 8
+  debugPrint('   Added ${videos.length} videos to test memory limits');
+  debugPrint('   Configured max: 8 videos');
+  debugPrint('   Actual videos: ${videoManager.videos.length}'); // Should be 8
   
   // Simulate heavy usage - preload multiple videos
-  print('\n⚡ Simulating heavy video usage...');
+  debugPrint('\n⚡ Simulating heavy video usage...');
   for (int i = 0; i < 5; i++) {
     videoManager.preloadAroundIndex(i, preloadRange: 2);
     await Future.delayed(const Duration(milliseconds: 100));
@@ -108,27 +136,27 @@ Future<void> _demonstrateMemoryManagement() async {
   // Check memory usage
   final debugInfo = videoManager.getDebugInfo();
   final memoryMB = debugInfo['estimatedMemoryMB'] as int;
-  final controllers = debugInfo['controllers'] as int;
+  final controllers = debugInfo['activeControllers'] as int;
   
-  print('   Controllers active: $controllers');
-  print('   Estimated memory: ${memoryMB}MB');
-  print('   Memory target: <500MB ✅');
+  debugPrint('   Controllers active: $controllers');
+  debugPrint('   Estimated memory: ${memoryMB}MB');
+  debugPrint('   Memory target: <500MB ✅');
   
   // Trigger memory pressure manually
-  print('\n🚨 Handling memory pressure...');
+  debugPrint('\n🚨 Handling memory pressure...');
   await videoManager.handleMemoryPressure();
   
   final afterPressure = videoManager.getDebugInfo();
-  print('   Controllers after cleanup: ${afterPressure['controllers']}');
-  print('   Memory after cleanup: ${afterPressure['estimatedMemoryMB']}MB');
+  debugPrint('   Controllers after cleanup: ${afterPressure['activeControllers']}');
+  debugPrint('   Memory after cleanup: ${afterPressure['estimatedMemoryMB']}MB');
   
-  await videoManager.dispose();
+  videoManager.dispose();
 }
 
 /// Error handling and circuit breaker demonstration
 Future<void> _demonstrateErrorHandling() async {
-  print('\n🔧 3. Error Handling - Circuit Breaker Pattern');
-  print('-' * 40);
+  debugPrint('\n🔧 3. Error Handling - Circuit Breaker Pattern');
+  debugPrint('-' * 40);
   
   final videoManager = VideoManagerService(
     config: const VideoManagerConfig(
@@ -138,47 +166,49 @@ Future<void> _demonstrateErrorHandling() async {
   );
   
   // Add normal videos and failing videos
-  final workingVideo = TestHelpers.createVideoEvent(
+  final workingVideo = createTestVideoEvent(
     id: 'working_video',
     title: 'Working Video',
   );
-  final failingVideo = TestHelpers.createFailingVideoEvent(
+  final failingVideo = createTestVideoEvent(
     id: 'failing_video',
+    title: 'Failing Video',
+    videoUrl: 'https://invalid-domain-will-fail.com/video.mp4',
   );
   
   await videoManager.addVideoEvent(workingVideo);
   await videoManager.addVideoEvent(failingVideo);
   
-  print('   Added working and failing videos');
+  debugPrint('   Added working and failing videos');
   
   // Preload working video - should succeed
-  print('\n✅ Preloading working video...');
+  debugPrint('\n✅ Preloading working video...');
   await videoManager.preloadVideo(workingVideo.id);
   final workingState = videoManager.getVideoState(workingVideo.id)!;
-  print('   Working video state: ${workingState.loadingState}');
+  debugPrint('   Working video state: ${workingState.loadingState}');
   
   // Preload failing video - should fail with circuit breaker
-  print('\n❌ Preloading failing video...');
+  debugPrint('\n❌ Preloading failing video...');
   await videoManager.preloadVideo(failingVideo.id);
   final failingState = videoManager.getVideoState(failingVideo.id)!;
-  print('   Failing video state: ${failingState.loadingState}');
-  print('   Error message: ${failingState.errorMessage}');
-  print('   Retry count: ${failingState.retryCount}');
+  debugPrint('   Failing video state: ${failingState.loadingState}');
+  debugPrint('   Error message: ${failingState.errorMessage}');
+  debugPrint('   Retry count: ${failingState.retryCount}');
   
   // Show debug info for error tracking
   final debugInfo = videoManager.getDebugInfo();
-  print('\n📊 Error Statistics:');
-  print('   Total videos: ${debugInfo['totalVideos']}');
-  print('   Failed videos: ${debugInfo['failedVideos']}');
-  print('   Ready videos: ${debugInfo['readyVideos']}');
+  debugPrint('\n📊 Error Statistics:');
+  debugPrint('   Total videos: ${debugInfo['totalVideos']}');
+  debugPrint('   Failed videos: ${debugInfo['failedVideos']}');
+  debugPrint('   Ready videos: ${debugInfo['readyVideos']}');
   
-  await videoManager.dispose();
+  videoManager.dispose();
 }
 
 /// Real-world scenario simulation
 Future<void> _demonstrateRealWorldScenario() async {
-  print('\n🌍 4. Real-World Scenario - TikTok-Style Scrolling');
-  print('-' * 40);
+  debugPrint('\n🌍 4. Real-World Scenario - TikTok-Style Scrolling');
+  debugPrint('-' * 40);
   
   final videoManager = VideoManagerService(
     config: VideoManagerConfig.cellular(), // Mobile optimized
@@ -188,21 +218,22 @@ Future<void> _demonstrateRealWorldScenario() async {
   final videos = <VideoEvent>[];
   for (int i = 0; i < 20; i++) {
     final isGif = i % 4 == 0; // Every 4th video is a GIF
-    final video = TestHelpers.createVideoEvent(
+    final video = createTestVideoEvent(
       id: 'feed_video_$i',
       title: 'Feed Video ${i + 1}',
-      isGif: isGif,
-      hashtags: ['tiktok', 'short', if (isGif) 'gif' else 'video'],
+      videoUrl: isGif 
+        ? 'https://example.com/gifs/feed_video_$i.gif'
+        : 'https://example.com/videos/feed_video_$i.mp4',
     );
     videos.add(video);
     await videoManager.addVideoEvent(video);
   }
   
-  print('   Created realistic video feed: ${videos.length} videos');
-  print('   Mix of videos and GIFs for variety');
+  debugPrint('   Created realistic video feed: ${videos.length} videos');
+  debugPrint('   Mix of videos and GIFs for variety');
   
   // Simulate user scrolling through feed
-  print('\n📱 Simulating TikTok-style scrolling...');
+  debugPrint('\n📱 Simulating TikTok-style scrolling...');
   final scrollingCompleter = Completer<void>();
   int currentIndex = 0;
   
@@ -210,7 +241,7 @@ Future<void> _demonstrateRealWorldScenario() async {
   late StreamSubscription stateSubscription;
   stateSubscription = videoManager.stateChanges.listen((_) {
     // In real app, this would trigger UI rebuilds
-    // print('   🔄 UI update triggered');
+    // debugPrint('   🔄 UI update triggered');
   });
   
   // Simulate rapid scrolling
@@ -231,35 +262,35 @@ Future<void> _demonstrateRealWorldScenario() async {
     final status = state?.isReady == true ? '▶️' : 
                    state?.isLoading == true ? '⏳' : '⭕';
     
-    print('   Viewing [$currentIndex]: ${currentVideo.title} $status');
+    debugPrint('   Viewing [$currentIndex]: ${currentVideo.title} $status');
     currentIndex++;
   });
   
   await scrollingCompleter.future;
   
   // Final statistics
-  print('\n📈 Final Performance Stats:');
+  debugPrint('\n📈 Final Performance Stats:');
   final debugInfo = videoManager.getDebugInfo();
-  print('   Videos managed: ${debugInfo['totalVideos']}');
-  print('   Ready for playback: ${debugInfo['readyVideos']}');
-  print('   Active controllers: ${debugInfo['controllers']}');
-  print('   Memory usage: ${debugInfo['estimatedMemoryMB']}MB');
-  print('   Preload ahead: ${debugInfo['preloadAhead']}');
+  debugPrint('   Videos managed: ${debugInfo['totalVideos']}');
+  debugPrint('   Ready for playback: ${debugInfo['readyVideos']}');
+  debugPrint('   Active controllers: ${debugInfo['controllers']}');
+  debugPrint('   Memory usage: ${debugInfo['estimatedMemoryMB']}MB');
+  debugPrint('   Preload ahead: ${debugInfo['preloadAhead']}');
   
   // Demonstrate state inspection
-  print('\n🔍 Video State Inspection:');
+  debugPrint('\n🔍 Video State Inspection:');
   for (int i = currentIndex - 2; i <= currentIndex + 2; i++) {
     if (i >= 0 && i < videoManager.videos.length) {
       final video = videoManager.videos[i];
       final state = videoManager.getVideoState(video.id)!;
       final position = i == currentIndex ? '👆 CURRENT' : 
                       i < currentIndex ? '⬆️ previous' : '⬇️ next';
-      print('   [${state.loadingState.name}] ${video.title} ($position)');
+      debugPrint('   [${state.loadingState.name}] ${video.title} ($position)');
     }
   }
   
-  await videoManager.dispose();
-  print('   🧹 Session cleanup completed');
+  videoManager.dispose();
+  debugPrint('   🧹 Session cleanup completed');
 }
 
 /// Key Advantages of New Architecture

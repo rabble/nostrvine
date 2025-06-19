@@ -2,8 +2,8 @@
 // ABOUTME: Manages video lifecycle, preloading, memory management with full state control
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
@@ -40,6 +40,12 @@ import 'video_manager_interface.dart';
 /// manager.dispose();
 /// ```
 class VideoManagerService implements IVideoManager {
+  /// Maximum number of concurrent video controllers allowed (memory constraint)
+  static const int maxControllers = 15;
+  
+  /// Estimated memory per video controller in MB
+  static const int memoryPerControllerMB = 20;
+  
   /// Configuration for manager behavior
   final VideoManagerConfig _config;
   
@@ -142,14 +148,20 @@ class VideoManagerService implements IVideoManager {
       throw VideoManagerException('Video not found', videoId: videoId);
     }
     
-    // Prevent concurrent preloads of the same video
-    if (_activePreloads.contains(videoId)) {
-      developer.log('Preload already in progress for video: $videoId');
+    // Circuit breaker: Don't attempt preload if permanently failed
+    if (state.loadingState == VideoLoadingState.permanentlyFailed) {
+      developer.log('Skipping preload for permanently failed video: $videoId');
       return;
     }
     
-    // Check if already ready or permanently failed
-    if (state.isReady || state.loadingState == VideoLoadingState.permanentlyFailed) {
+    // Check if already ready
+    if (state.isReady) {
+      return;
+    }
+    
+    // Prevent concurrent preloads of the same video
+    if (_activePreloads.contains(videoId)) {
+      developer.log('Preload already in progress for video: $videoId');
       return;
     }
     
@@ -189,6 +201,9 @@ class VideoManagerService implements IVideoManager {
     final end = (currentIndex + range).clamp(0, _videos.length - 1);
     
     developer.log('Preloading around index $currentIndex (range: $start-$end)');
+    
+    // Dispose controllers for videos outside the viewing window
+    _disposeUnusedControllers(currentIndex);
     
     // Preload in priority order: current, next, previous, then expanding range
     final priorityOrder = _calculatePreloadPriority(currentIndex, start, end);
@@ -239,19 +254,22 @@ class VideoManagerService implements IVideoManager {
     
     // Keep only recent videos based on configuration
     final keepCount = (_config.maxVideos * 0.7).floor(); // Keep 70% when under pressure
-    final videosToDispose = _videos.skip(keepCount).map((v) => v.id).toList();
+    final videosToRemove = _videos.skip(keepCount).toList();
     
-    for (final videoId in videosToDispose) {
-      disposeVideo(videoId);
+    for (final video in videosToRemove) {
+      disposeVideo(video.id);
+      _videos.remove(video);
+      _videoStates.remove(video.id);
     }
     
-    developer.log('Memory cleanup completed, disposed ${videosToDispose.length} videos');
+    developer.log('Memory cleanup completed, removed ${videosToRemove.length} videos');
   }
   
   @override
   Map<String, dynamic> getDebugInfo() {
     final loadingCount = _videoStates.values.where((s) => s.isLoading).length;
     final failedCount = _videoStates.values.where((s) => s.hasFailed).length;
+    final estimatedMemoryMB = _controllers.length * memoryPerControllerMB;
     
     return {
       'totalVideos': _videos.length,
@@ -261,6 +279,8 @@ class VideoManagerService implements IVideoManager {
       'activeControllers': _controllers.length,
       'activePreloads': _activePreloads.length,
       'disposed': _disposed,
+      'estimatedMemoryMB': estimatedMemoryMB,
+      'memoryUtilization': maxControllers > 0 ? (_controllers.length / maxControllers * 100).toStringAsFixed(1) : '0.0',
       'config': {
         'maxVideos': _config.maxVideos,
         'preloadAhead': _config.preloadAhead,
@@ -268,6 +288,8 @@ class VideoManagerService implements IVideoManager {
         'maxRetries': _config.maxRetries,
         'preloadTimeout': _config.preloadTimeout.inMilliseconds,
         'enableMemoryManagement': _config.enableMemoryManagement,
+        'maxControllers': maxControllers,
+        'memoryPerControllerMB': memoryPerControllerMB,
       },
       'metrics': {
         'preloadCount': _preloadCount,
@@ -316,6 +338,9 @@ class VideoManagerService implements IVideoManager {
     VideoPlayerController? controller;
     
     try {
+      // Enforce 15-controller limit before creating new controller
+      _enforceControllerLimit();
+      
       // Create controller with network configuration
       controller = VideoPlayerController.networkUrl(
         Uri.parse(event.videoUrl!),
@@ -436,6 +461,38 @@ class VideoManagerService implements IVideoManager {
     }
   }
   
+  /// Dispose controllers for videos outside the viewing window to save memory
+  /// 
+  /// Keeps controllers only for videos within the preload range around the current index.
+  /// This helps maintain the 500MB memory target by disposing unused video controllers.
+  void _disposeUnusedControllers(int currentIndex) {
+    if (!_config.enableMemoryManagement) return;
+    
+    final keepRange = _config.preloadAhead + _config.preloadBehind + 2; // Extra buffer
+    final start = (currentIndex - keepRange).clamp(0, _videos.length - 1);
+    final end = (currentIndex + keepRange).clamp(0, _videos.length - 1);
+    
+    // Dispose controllers for videos outside the keep range
+    for (int i = 0; i < _videos.length; i++) {
+      if (i < start || i > end) {
+        final videoId = _videos[i].id;
+        final controller = _controllers[videoId];
+        if (controller != null) {
+          controller.dispose();
+          _controllers.remove(videoId);
+          
+          // Update state to indicate controller was disposed but video is still available
+          final state = getVideoState(videoId);
+          if (state?.isReady == true) {
+            _videoStates[videoId] = VideoState(event: state!.event);
+          }
+          
+          developer.log('Disposed controller for video outside viewing window: $videoId');
+        }
+      }
+    }
+  }
+
   /// Calculate exponential backoff delay for retry attempts
   /// 
   /// Uses exponential backoff with jitter to avoid thundering herd:
@@ -445,12 +502,52 @@ class VideoManagerService implements IVideoManager {
     final baseDelayMs = 1000 * (1 << (retryAttempt - 1));
     
     // Add jitter (0-50% of base delay) to avoid thundering herd
-    final maxJitterMs = (baseDelayMs * 0.5).round();
     final jitterMs = (baseDelayMs * 0.5 * (DateTime.now().millisecondsSinceEpoch % 1000) / 1000).round();
     
     final totalDelayMs = baseDelayMs + jitterMs;
     
     // Cap at maximum of 30 seconds
     return Duration(milliseconds: totalDelayMs.clamp(1000, 30000));
+  }
+  
+  /// Enforces the 15-controller limit by disposing least recently used controllers
+  /// 
+  /// This method ensures we never exceed the maxControllers limit to stay within
+  /// the 500MB memory target. It disposes the oldest controllers when the limit
+  /// would be exceeded.
+  void _enforceControllerLimit() {
+    if (_controllers.length < maxControllers) return;
+    
+    final controllersToDispose = _controllers.length - maxControllers + 1; // +1 for the new one
+    developer.log('Enforcing controller limit: disposing $controllersToDispose controllers');
+    
+    // Get video IDs sorted by most recently added (newest first)
+    final videoIds = _videos.map((v) => v.id).toList();
+    final controllerIds = _controllers.keys.toList();
+    
+    // Sort controller IDs by video order (newest videos first, so dispose oldest)
+    controllerIds.sort((a, b) {
+      final indexA = videoIds.indexOf(a);
+      final indexB = videoIds.indexOf(b);
+      // If not found in video list, prioritize for disposal
+      if (indexA == -1) return -1;
+      if (indexB == -1) return 1;
+      return indexB.compareTo(indexA); // Reverse order - oldest videos first for disposal
+    });
+    
+    // Dispose the oldest controllers
+    final toDispose = controllerIds.take(controllersToDispose);
+    for (final videoId in toDispose) {
+      final controller = _controllers.remove(videoId);
+      controller?.dispose();
+      
+      // Update state to indicate controller was disposed but video is still available
+      final state = getVideoState(videoId);
+      if (state?.isReady == true) {
+        _videoStates[videoId] = VideoState(event: state!.event);
+      }
+      
+      developer.log('Disposed controller due to limit: $videoId');
+    }
   }
 }
