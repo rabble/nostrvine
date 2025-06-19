@@ -147,7 +147,7 @@ describe('Cloudinary Webhook Moderation Pipeline', () => {
       expect(metadata.moderation_details?.response.moderation_confidence).toBe('VERY_UNLIKELY');
     });
 
-    it('should reject video when moderation fails and log security event', async () => {
+    it('should reject video when moderation fails, log security event, and quarantine asset', async () => {
       const moderationPayload = {
         notification_type: 'moderation',
         public_id: 'test_video_001',
@@ -177,6 +177,15 @@ describe('Cloudinary Webhook Moderation Pipeline', () => {
       // Mock webhook signature validation
       vi.spyOn(webhookValidation, 'validateWebhookSignature').mockResolvedValue(true);
 
+      // Mock fetch for Cloudinary quarantine API call
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ result: 'ok' }),
+        text: () => Promise.resolve(''),
+        status: 200
+      });
+      global.fetch = mockFetch;
+
       // Capture console logs to verify security logging
       const originalConsoleLog = console.log;
       const logMessages: string[] = [];
@@ -204,8 +213,20 @@ describe('Cloudinary Webhook Moderation Pipeline', () => {
       expect(securityLogs[0]).toContain('test_video_001');
       expect(securityLogs[0]).toContain('rejected');
 
-      // Restore console.log
+      // Verify quarantine API call was made
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [callUrl, callOptions] = mockFetch.mock.calls[0];
+      expect(callUrl).toContain('api.cloudinary.com');
+      expect(callOptions.method).toBe('DELETE');
+      
+      // Verify quarantine success logging
+      const quarantineLogs = logMessages.filter(msg => msg.includes('✅ Quarantined'));
+      expect(quarantineLogs.length).toBe(1);
+      expect(quarantineLogs[0]).toContain('test_video_001');
+
+      // Restore console.log and fetch
       console.log = originalConsoleLog;
+      global.fetch = fetch;
     });
 
     it('should handle duplicate moderation webhooks idempotently', async () => {

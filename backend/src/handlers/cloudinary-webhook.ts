@@ -273,9 +273,14 @@ async function handleModerationComplete(
         timestamp: new Date().toISOString()
       });
 
-      // TODO: In Phase 2, this will trigger quarantine via Cloudflare Queue
-      // For now, just log the event for manual review
-      console.log(`⚠️ Manual review required for rejected video: ${payload.public_id}`);
+      // CRITICAL: Immediately quarantine the rejected asset
+      try {
+        await quarantineCloudinaryAsset(payload.public_id, env);
+        console.log(`✅ Quarantined rejected video: ${payload.public_id}`);
+      } catch (quarantineError) {
+        console.error(`❌ CRITICAL: FAILED TO QUARANTINE rejected video ${payload.public_id}:`, quarantineError);
+        // TODO: Add robust alerting here for manual intervention
+      }
       
     } else {
       console.warn(`⚠️ Unknown moderation status: ${payload.moderation_status}`);
@@ -385,6 +390,43 @@ async function handleProcessingError(
   } catch (error) {
     console.error('❌ Error processing webhook error:', error);
     return new Response('Failed to process error', { status: 500 });
+  }
+}
+
+/**
+ * Deletes a rejected asset from Cloudinary to quarantine it.
+ * This requires the "Resource > Delete" permission for your API key.
+ */
+async function quarantineCloudinaryAsset(publicId: string, env: Env): Promise<void> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const stringToSign = `public_id=${publicId}&timestamp=${timestamp}${env.CLOUDINARY_API_SECRET}`;
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(stringToSign);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', data); // Note: Cloudinary Admin API uses SHA-1 for this style of auth.
+  const signature = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const url = `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/resources/video/upload`;
+  
+  const formData = new FormData();
+  formData.append('public_id', publicId);
+  formData.append('timestamp', String(timestamp));
+  formData.append('api_key', env.CLOUDINARY_API_KEY);
+  formData.append('signature', signature);
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Cloudinary quarantine failed with status ${response.status}: ${errorBody}`);
+  }
+
+  const result = await response.json();
+  if (result.result !== 'ok' && result.result !== 'not found') {
+      throw new Error(`Cloudinary quarantine failed: ${JSON.stringify(result)}`);
   }
 }
 
