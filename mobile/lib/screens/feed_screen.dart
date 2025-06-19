@@ -6,6 +6,7 @@ import '../providers/video_feed_provider.dart';
 import '../models/video_event.dart';
 import '../widgets/video_feed_item.dart';
 import '../services/connection_status_service.dart';
+import '../services/seen_videos_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -74,6 +75,30 @@ class _FeedScreenState extends State<FeedScreen> {
               // TODO: Implement notifications
             },
           ),
+          // Debug option to clear seen videos
+          if (kDebugMode)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              onSelected: (value) async {
+                if (value == 'clear_seen') {
+                  final seenVideosService = context.read<SeenVideosService>();
+                  await seenVideosService.clearSeenVideos();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cleared seen videos history')),
+                    );
+                    // Refresh the feed to show previously seen videos
+                    context.read<VideoFeedProvider>().refreshFeed();
+                  }
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'clear_seen',
+                  child: Text('Clear Seen Videos'),
+                ),
+              ],
+            ),
         ],
       ),
       body: Consumer<VideoFeedProvider>(
@@ -251,16 +276,21 @@ class _FeedScreenState extends State<FeedScreen> {
               
               return SizedBox(
                 height: MediaQuery.of(context).size.height,
-                child: VideoFeedItem(
-                  videoEvent: videoEvent,
-                  isActive: index == _currentPage,
-                  videoCacheService: provider.videoCacheService,
-                  userProfileService: provider.userProfileService,
-                  onLike: () => _toggleLike(videoEvent),
-                  onComment: () => _openComments(videoEvent),
-                  onShare: () => _shareVine(videoEvent),
-                  onMoreOptions: () => _showMoreOptions(videoEvent),
-                  onUserTap: () => _openUserProfile(videoEvent.pubkey),
+                child: Consumer<SeenVideosService>(
+                  builder: (context, seenVideosService, child) {
+                    return VideoFeedItem(
+                      videoEvent: videoEvent,
+                      isActive: index == _currentPage,
+                      videoCacheService: provider.videoCacheService,
+                      userProfileService: provider.userProfileService,
+                      seenVideosService: seenVideosService,
+                      onLike: () => _toggleLike(videoEvent),
+                      onComment: () => _openComments(videoEvent),
+                      onShare: () => _shareVine(videoEvent),
+                      onMoreOptions: () => _showMoreOptions(videoEvent),
+                      onUserTap: () => _openUserProfile(videoEvent.pubkey),
+                    );
+                  },
                 ),
               );
             },

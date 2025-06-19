@@ -234,18 +234,15 @@ class VideoEventService extends ChangeNotifier {
     );
   }
   
-  /// Refresh video feed by fetching recent events
+  /// Refresh video feed by fetching recent events with expanded timeframe
   Future<void> refreshVideoFeed() async {
-    debugPrint('🔄 Refresh requested - reusing existing subscription');
+    debugPrint('🔄 Refresh requested - restarting subscription with expanded timeframe');
     
-    // Don't create new subscriptions for refresh - the main subscription 
-    // should already be getting new events in real-time
-    if (!_isSubscribed) {
-      debugPrint('📡 No active subscription, creating initial subscription...');
-      return subscribeToVideoFeed();
-    }
+    // Close existing subscriptions and create new ones with expanded timeframe
+    await unsubscribeFromVideoFeed();
     
-    debugPrint('✅ Refresh completed - using existing real-time subscription');
+    debugPrint('📡 Creating new subscription with expanded timeframe...');
+    return subscribeToVideoFeed();
   }
   
   /// Load more historical events using one-shot query (not persistent subscription)

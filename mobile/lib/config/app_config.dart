@@ -42,6 +42,7 @@ class AppConfig {
     'wss://nos.lol',
     'wss://relay.nos.social',
     'wss://relay.nostr.band',
+    'wss://cache2.primal.net/v1',
   ];
   
   // Debugging

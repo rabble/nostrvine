@@ -385,6 +385,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         setState(() {
           _isPlaying = true;
         });
+        
+        // Mark video as seen when it starts playing
+        if (widget.seenVideosService != null) {
+          widget.seenVideosService!.markVideoAsSeen(widget.videoEvent.id);
+          debugPrint('👁️ Marked video as seen: ${widget.videoEvent.id.substring(0, 8)}');
+        }
       } catch (e) {
         debugPrint('❌ Error playing video ${widget.videoEvent.id.substring(0, 8)}: $e');
         if (mounted) {

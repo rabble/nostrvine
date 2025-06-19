@@ -19,6 +19,7 @@ class NostrService extends ChangeNotifier implements INostrService {
     'wss://nos.lol',
     'wss://relay.nos.social',
     'wss://relay.nostr.band',
+    'wss://cache2.primal.net/v1',
   ];
   
   final NostrKeyManager _keyManager;

@@ -76,6 +76,9 @@ class NostrVineApp extends StatelessWidget {
           },
         ),
         
+        // Seen videos service for tracking viewed content
+        ChangeNotifierProvider(create: (_) => SeenVideosService()),
+        
         // Video event service depends on Nostr and SeenVideos services
         ChangeNotifierProxyProvider2<INostrService, SeenVideosService, VideoEventService>(
           create: (context) => VideoEventService(
@@ -99,9 +102,6 @@ class NostrVineApp extends StatelessWidget {
         
         // Notification service
         ChangeNotifierProvider(create: (_) => NotificationService.instance),
-        
-        // Seen videos service for tracking viewed content
-        ChangeNotifierProvider(create: (_) => SeenVideosService()),
         
         // Cloudinary upload service
         ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
