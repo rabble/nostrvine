@@ -5,12 +5,12 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr/nostr.dart';
-import '../../lib/services/vine_publishing_service.dart';
-import '../../lib/services/gif_service.dart';
-import '../../lib/services/nostr_service.dart';
-import '../../lib/services/nostr_service_interface.dart';
-import '../../lib/services/camera_service.dart';
-import '../../lib/models/nip94_metadata.dart';
+import 'package:nostrvine_app/services/vine_publishing_service.dart';
+import 'package:nostrvine_app/services/gif_service.dart';
+import 'package:nostrvine_app/services/nostr_service.dart';
+import 'package:nostrvine_app/services/nostr_service_interface.dart';
+import 'package:nostrvine_app/services/camera_service.dart';
+import 'package:nostrvine_app/models/nip94_metadata.dart';
 
 // Mock classes for testing
 class MockGifService extends Mock implements GifService {}

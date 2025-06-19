@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/services/gif_service.dart';
+import 'package:nostrvine_app/services/gif_service.dart';
 
 void main() {
   group('GifService', () {

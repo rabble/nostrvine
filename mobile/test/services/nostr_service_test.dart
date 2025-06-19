@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr/nostr.dart';
-import '../../lib/services/nostr_service.dart';
-import '../../lib/services/nostr_service_interface.dart';
-import '../../lib/services/nostr_key_manager.dart';
-import '../../lib/models/nip94_metadata.dart';
+import 'package:nostrvine_app/services/nostr_service.dart';
+import 'package:nostrvine_app/services/nostr_service_interface.dart';
+import 'package:nostrvine_app/services/nostr_key_manager.dart';
+import 'package:nostrvine_app/models/nip94_metadata.dart';
 
 void main() {
   group('NostrService', () {

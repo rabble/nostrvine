@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/services/blurhash_service.dart';
+import 'package:nostrvine_app/services/blurhash_service.dart';
 
 void main() {
   group('BlurhashService', () {
