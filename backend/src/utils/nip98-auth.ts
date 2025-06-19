@@ -234,19 +234,16 @@ function validateEventStructure(event: any): NIP98AuthResult {
 async function validateEventSignature(event: NostrEvent): Promise<boolean> {
   try {
     // Import nostr-tools for signature verification
-    const { validateEvent, verifySignature } = await import('nostr-tools');
+    const { validateEvent, verifyEvent } = await import('nostr-tools');
     
-    // Create the event hash for signature verification
-    const eventHash = await calculateEventId(event);
-    
-    // Verify the calculated ID matches the event ID
-    if (eventHash !== event.id) {
-      console.error('Event ID mismatch:', { calculated: eventHash, provided: event.id });
+    // First validate event structure
+    if (!validateEvent(event)) {
+      console.error('Event structure validation failed');
       return false;
     }
 
-    // Use nostr-tools for proper signature verification
-    const isValid = validateEvent(event) && verifySignature(event);
+    // Verify the cryptographic signature
+    const isValid = verifyEvent(event);
     
     if (!isValid) {
       console.error('Signature verification failed:', { eventId: event.id, pubkey: event.pubkey });
