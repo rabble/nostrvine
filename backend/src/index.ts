@@ -11,6 +11,11 @@ import { handleCloudinarySignedUpload, handleCloudinaryUploadOptions } from './h
 import { handleCloudinaryWebhook, handleCloudinaryWebhookOptions } from './handlers/cloudinary-webhook';
 import { handleVideoMetadata, handleVideoList, handleVideoMetadataOptions } from './handlers/video-metadata';
 
+// New Cloudflare Stream handlers
+import { handleStreamUploadRequest, handleStreamUploadOptions } from './handlers/stream-upload';
+import { handleStreamWebhook, handleStreamWebhookOptions } from './handlers/stream-webhook';
+import { handleVideoStatus, handleVideoStatusOptions } from './handlers/stream-status';
+
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
 
@@ -39,8 +44,38 @@ export default {
 				return handleNIP96Info(request, env);
 			}
 
-			// Cloudinary signed upload endpoint (new flow)
+			// Cloudflare Stream upload request endpoint (new CDN flow)
 			if (pathname === '/v1/media/request-upload') {
+				if (method === 'POST') {
+					return handleStreamUploadRequest(request, env);
+				}
+				if (method === 'OPTIONS') {
+					return handleStreamUploadOptions();
+				}
+			}
+
+			// Cloudflare Stream webhook endpoint
+			if (pathname === '/v1/webhooks/stream-complete') {
+				if (method === 'POST') {
+					return handleStreamWebhook(request, env, ctx);
+				}
+				if (method === 'OPTIONS') {
+					return handleStreamWebhookOptions();
+				}
+			}
+
+			// Video status polling endpoint
+			if (pathname.startsWith('/v1/media/status/') && method === 'GET') {
+				const videoId = pathname.split('/v1/media/status/')[1];
+				return handleVideoStatus(videoId, request, env);
+			}
+
+			if (pathname.startsWith('/v1/media/status/') && method === 'OPTIONS') {
+				return handleVideoStatusOptions();
+			}
+
+			// Legacy Cloudinary endpoints (kept for backward compatibility)
+			if (pathname === '/v1/media/cloudinary-upload') {
 				if (method === 'POST') {
 					return handleCloudinarySignedUpload(request, env);
 				}
@@ -49,7 +84,7 @@ export default {
 				}
 			}
 
-			// Cloudinary webhook endpoint
+			// Legacy Cloudinary webhook endpoint
 			if (pathname === '/v1/media/webhook') {
 				if (method === 'POST') {
 					return handleCloudinaryWebhook(request, env);
@@ -124,11 +159,14 @@ export default {
 				message: `Endpoint ${pathname} not found`,
 				available_endpoints: [
 					'/.well-known/nostr/nip96.json',
-					'/v1/media/request-upload',
-					'/v1/media/webhook',
+					'/v1/media/request-upload (Stream CDN)',
+					'/v1/webhooks/stream-complete',
+					'/v1/media/status/{videoId}',
 					'/v1/media/list',
 					'/v1/media/metadata/{publicId}',
-					'/api/upload',
+					'/v1/media/cloudinary-upload (Legacy)',
+					'/v1/media/webhook (Legacy)',
+					'/api/upload (NIP-96)',
 					'/api/status/{jobId}',
 					'/health',
 					'/media/{fileId}'

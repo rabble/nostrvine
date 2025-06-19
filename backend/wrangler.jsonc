@@ -55,7 +55,8 @@
 		"MAX_FILE_SIZE_FREE": "104857600",
 		"MAX_FILE_SIZE_PRO": "1073741824",
 		"WEBHOOK_SECRET": "nostrvine-webhook-development",
-		"CLOUDINARY_CLOUD_NAME": "dswu0ugmo"
+		"CLOUDINARY_CLOUD_NAME": "dswu0ugmo",
+		"CLOUDFLARE_IMAGES_ACCOUNT_HASH": "your-images-account-hash"
 	},
 
 	/**
@@ -106,11 +107,15 @@
 	/**
 	 * Secrets to set with `wrangler secret put`:
 	 * - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID
-	 * - CLOUDFLARE_STREAM_TOKEN: Stream API token
-	 * - WEBHOOK_VERIFY_SECRET: Webhook signature verification secret
-	 * - NIP98_VERIFICATION_KEY: Key for NIP-98 auth verification
-	 * - CLOUDINARY_API_KEY: Cloudinary API key (public, but secure)
-	 * - CLOUDINARY_API_SECRET: Cloudinary API secret (CRITICAL - must be secret)
+	 * - CLOUDFLARE_STREAM_TOKEN: Stream API token with upload permissions
+	 * - WEBHOOK_SECRET: Stream webhook signature verification secret (different from WEBHOOK_SECRET var)
+	 * - CLOUDINARY_API_KEY: Cloudinary API key (legacy, for backward compatibility)
+	 * - CLOUDINARY_API_SECRET: Cloudinary API secret (legacy, for backward compatibility)
+	 * 
+	 * Example commands:
+	 * wrangler secret put CLOUDFLARE_ACCOUNT_ID
+	 * wrangler secret put CLOUDFLARE_STREAM_TOKEN
+	 * wrangler secret put WEBHOOK_SECRET
 	 */
 
 	/**

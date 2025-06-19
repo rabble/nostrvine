@@ -229,13 +229,13 @@ function validateEventStructure(event: any): NIP98AuthResult {
 }
 
 /**
- * Validate Nostr event signature using secp256k1
- * 
- * In a production environment, you would use a proper secp256k1 library
- * like @noble/secp256k1 or similar. For now, we'll implement basic validation.
+ * Validate Nostr event signature using nostr-tools
  */
 async function validateEventSignature(event: NostrEvent): Promise<boolean> {
   try {
+    // Import nostr-tools for signature verification
+    const { validateEvent, verifySignature } = await import('nostr-tools');
+    
     // Create the event hash for signature verification
     const eventHash = await calculateEventId(event);
     
@@ -245,29 +245,15 @@ async function validateEventSignature(event: NostrEvent): Promise<boolean> {
       return false;
     }
 
-    // TODO: Implement actual secp256k1 signature verification
-    // For now, we'll do basic validation of signature format
-    const sigPattern = /^[0-9a-f]{128}$/i;
-    const pubkeyPattern = /^[0-9a-f]{64}$/i;
+    // Use nostr-tools for proper signature verification
+    const isValid = validateEvent(event) && verifySignature(event);
     
-    if (!sigPattern.test(event.sig)) {
-      console.error('Invalid signature format');
+    if (!isValid) {
+      console.error('Signature verification failed:', { eventId: event.id, pubkey: event.pubkey });
       return false;
     }
 
-    if (!pubkeyPattern.test(event.pubkey)) {
-      console.error('Invalid pubkey format');
-      return false;
-    }
-
-    // In production, use a library like @noble/secp256k1:
-    // const sigBytes = hexToBytes(event.sig);
-    // const pubkeyBytes = hexToBytes(event.pubkey);
-    // const messageBytes = hexToBytes(event.id);
-    // return secp256k1.verify(sigBytes, messageBytes, pubkeyBytes);
-
-    // For prototype/testing, accept well-formed signatures
-    console.log('⚠️ Using simplified signature validation for prototype');
+    console.log('✅ NIP-98 signature verified successfully');
     return true;
 
   } catch (error) {
