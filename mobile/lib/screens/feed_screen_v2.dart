@@ -1,8 +1,8 @@
 // ABOUTME: TDD-driven video feed screen implementation with single source of truth
 // ABOUTME: Memory-efficient PageView with intelligent preloading and error boundaries
 
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item_v2.dart';
@@ -18,7 +18,7 @@ import '../models/video_event.dart';
 /// - Accessibility support
 /// - Lifecycle management (pause on background, resume on foreground)
 class FeedScreenV2 extends StatefulWidget {
-  const FeedScreenV2({Key? key}) : super(key: key);
+  const FeedScreenV2({super.key});
 
   @override
   State<FeedScreenV2> createState() => _FeedScreenV2State();
@@ -26,9 +26,10 @@ class FeedScreenV2 extends StatefulWidget {
 
 class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver {
   late PageController _pageController;
-  late IVideoManager _videoManager;
+  IVideoManager? _videoManager;
   int _currentIndex = 0;
   bool _isInitialized = false;
+  StreamSubscription? _stateChangeSubscription;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    _stateChangeSubscription?.cancel();
     
     // Pause all videos when screen is disposed
     if (_isInitialized) {
@@ -83,34 +85,46 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
       _isInitialized = true;
       
+      // Listen to state changes
+      _stateChangeSubscription = _videoManager!.stateChanges.listen((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+      
       // Trigger initial preloading
-      if (_videoManager.videos.isNotEmpty) {
-        _videoManager.preloadAroundIndex(0);
+      if (_videoManager!.videos.isNotEmpty) {
+        _videoManager!.preloadAroundIndex(0);
       }
       
       setState(() {});
     } catch (e) {
       // Handle case where video manager is not provided
       debugPrint('FeedScreenV2: VideoManager not found in context: $e');
+      _videoManager = null;
+      _isInitialized = true; // Mark as initialized even without manager
+      setState(() {});
     }
   }
 
   void _onPageChanged(int index) {
-    if (!_isInitialized) return;
+    if (!_isInitialized || _videoManager == null) return;
     
     setState(() {
       _currentIndex = index;
     });
     
     // Trigger preloading around new position
-    _videoManager.preloadAroundIndex(index);
+    _videoManager!.preloadAroundIndex(index);
     
     // Update video playback states
     _updateVideoPlayback(index);
   }
 
   void _updateVideoPlayback(int newIndex) {
-    final videos = _videoManager.videos;
+    if (_videoManager == null) return;
+    
+    final videos = _videoManager!.videos;
     if (newIndex < 0 || newIndex >= videos.length) return;
     
     // Pause previous video
@@ -140,9 +154,9 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   }
 
   void _resumeCurrentVideo() {
-    if (!_isInitialized) return;
+    if (!_isInitialized || _videoManager == null) return;
     
-    final videos = _videoManager.videos;
+    final videos = _videoManager!.videos;
     if (_currentIndex < videos.length) {
       final currentVideo = videos[_currentIndex];
       _playVideo(currentVideo.id);
@@ -162,17 +176,19 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       return _buildLoadingState();
     }
 
-    return Consumer<IVideoManager>(
-      builder: (context, videoManager, child) {
-        final videos = videoManager.videos;
-        
-        if (videos.isEmpty) {
-          return _buildEmptyState();
-        }
+    // If video manager is not available, show loading state
+    if (_videoManager == null) {
+      return _buildLoadingState();
+    }
 
-        return _buildVideoFeed(videos);
-      },
-    );
+    // Use direct video manager access instead of Consumer when available
+    final videos = _videoManager!.videos;
+    
+    if (videos.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return _buildVideoFeed(videos);
   }
 
   Widget _buildLoadingState() {
@@ -302,42 +318,8 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     // For now, just log the error
   }
 
-  // Keyboard navigation support for accessibility
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      switch (event.logicalKey) {
-        case LogicalKeyboardKey.arrowDown:
-          _navigateToNext();
-          break;
-        case LogicalKeyboardKey.arrowUp:
-          _navigateToPrevious();
-          break;
-      }
-    }
-  }
-
-  void _navigateToNext() {
-    if (!_isInitialized) return;
-    
-    final videos = _videoManager.videos;
-    if (_currentIndex < videos.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _navigateToPrevious() {
-    if (!_isInitialized) return;
-    
-    if (_currentIndex > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
+  // Note: Keyboard navigation methods removed to avoid unused warnings
+  // Would be implemented for accessibility support when needed
 }
 
 /// Error widget for video loading failures
@@ -346,10 +328,10 @@ class VideoErrorWidget extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const VideoErrorWidget({
-    Key? key,
+    super.key,
     required this.message,
     this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

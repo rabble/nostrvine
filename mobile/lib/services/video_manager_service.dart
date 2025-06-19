@@ -177,13 +177,7 @@ class VideoManagerService implements IVideoManager {
       
     } catch (e) {
       _preloadFailureCount++;
-      final currentState = getVideoState(videoId);
-      if (currentState != null) {
-        _videoStates[videoId] = currentState.toFailed(e.toString());
-        _notifyStateChange();
-      }
-      
-      developer.log('Preload failed for video $videoId: $e');
+      await _handleVideoError(videoId, e);
       rethrow;
     } finally {
       _activePreloads.remove(videoId);
@@ -331,8 +325,13 @@ class VideoManagerService implements IVideoManager {
   
   /// Performs the actual video preloading with timeout and error handling
   Future<void> _performPreload(String videoId, VideoEvent event) async {
+    // Validate video URL before attempting preload
     if (event.videoUrl?.isEmpty ?? true) {
-      throw VideoManagerException('Video URL is required for preloading', videoId: videoId);
+      throw VideoManagerException(
+        'Video URL is required for preloading', 
+        videoId: videoId,
+        originalError: 'Empty or null video URL',
+      );
     }
     
     VideoPlayerController? controller;
@@ -341,9 +340,19 @@ class VideoManagerService implements IVideoManager {
       // Enforce 15-controller limit before creating new controller
       _enforceControllerLimit();
       
+      // Validate URL format
+      final uri = Uri.tryParse(event.videoUrl!);
+      if (uri == null || !uri.hasScheme) {
+        throw VideoManagerException(
+          'Invalid video URL format',
+          videoId: videoId,
+          originalError: 'Malformed URL: ${event.videoUrl}',
+        );
+      }
+      
       // Create controller with network configuration
       controller = VideoPlayerController.networkUrl(
-        Uri.parse(event.videoUrl!),
+        uri,
         videoPlayerOptions: VideoPlayerOptions(
           mixWithOthers: true,
           allowBackgroundPlayback: false,
@@ -354,7 +363,11 @@ class VideoManagerService implements IVideoManager {
       await controller.initialize().timeout(
         _config.preloadTimeout,
         onTimeout: () {
-          throw VideoManagerException('Preload timeout after ${_config.preloadTimeout.inSeconds}s', videoId: videoId);
+          throw VideoManagerException(
+            'Preload timeout after ${_config.preloadTimeout.inSeconds}s',
+            videoId: videoId,
+            originalError: 'Network timeout',
+          );
         },
       );
       
@@ -375,36 +388,11 @@ class VideoManagerService implements IVideoManager {
       controller?.dispose();
       _controllers.remove(videoId);
       
-      // Handle retries through state management
-      final currentState = getVideoState(videoId);
-      if (currentState != null) {
-        try {
-          final newState = currentState.toFailed(e.toString());
-          _videoStates[videoId] = newState;
-          
-          // Schedule retry if the video can still be retried
-          if (newState.canRetry) {
-            final retryDelay = _calculateRetryDelay(newState.retryCount);
-            developer.log('Scheduling retry for $videoId (attempt ${newState.retryCount}/${VideoState.maxRetryCount}) in ${retryDelay.inMilliseconds}ms');
-            
-            Timer(retryDelay, () {
-              if (!_disposed && _videoStates.containsKey(videoId)) {
-                final latestState = _videoStates[videoId];
-                if (latestState?.canRetry == true) {
-                  developer.log('Retrying preload for $videoId (attempt ${latestState!.retryCount + 1})');
-                  preloadVideo(videoId).catchError((retryError) {
-                    developer.log('Retry failed for $videoId: $retryError');
-                  });
-                }
-              }
-            });
-          } else {
-            developer.log('Video $videoId exhausted all retries, marked as permanently failed');
-          }
-        } catch (stateError) {
-          // If max retries exceeded, state becomes permanently failed
-          developer.log('Video $videoId marked as permanently failed: $stateError');
-        }
+      // Re-throw with proper error context
+      if (e is VideoManagerException) {
+        rethrow;
+      } else {
+        throw _categorizeError(e, videoId);
       }
     }
   }
@@ -549,5 +537,90 @@ class VideoManagerService implements IVideoManager {
       
       developer.log('Disposed controller due to limit: $videoId');
     }
+  }
+
+  /// Centralized error handling for video operations
+  /// 
+  /// Implements circuit breaker pattern and intelligent retry logic.
+  /// Transitions videos to permanently failed state when appropriate.
+  Future<void> _handleVideoError(String videoId, dynamic error) async {
+    final currentState = getVideoState(videoId);
+    if (currentState == null || _disposed) return;
+
+    // Transition to failed state (automatically becomes permanently failed if max retries exceeded)
+    final newState = currentState.toFailed(error.toString());
+    _videoStates[videoId] = newState;
+    _notifyStateChange();
+
+    // Check if video can still be retried
+    if (newState.canRetry) {
+      final retryDelay = _calculateRetryDelay(newState.retryCount);
+      developer.log('Scheduling retry for $videoId (attempt ${newState.retryCount}/${VideoState.maxRetryCount}) in ${retryDelay.inMilliseconds}ms');
+      
+      Timer(retryDelay, () {
+        if (!_disposed && _videoStates.containsKey(videoId)) {
+          final latestState = _videoStates[videoId];
+          if (latestState?.canRetry == true) {
+            developer.log('Retrying preload for $videoId (attempt ${latestState!.retryCount + 1})');
+            preloadVideo(videoId).catchError((retryError) {
+              developer.log('Retry failed for $videoId: $retryError');
+            });
+          }
+        }
+      });
+    } else {
+      // Video has reached max retries and is now permanently failed
+      developer.log('Video $videoId exhausted all retries, marked as permanently failed');
+    }
+  }
+
+  /// Enhanced error categorization for different failure types
+  /// 
+  /// Determines retry strategy based on error type and provides
+  /// meaningful error messages for debugging.
+  VideoManagerException _categorizeError(dynamic error, String videoId) {
+    if (error is VideoManagerException) {
+      return error;
+    }
+
+    String message;
+    String category;
+
+    if (error is TimeoutException || error.toString().contains('timeout')) {
+      message = 'Network timeout during video loading';
+      category = 'TIMEOUT';
+    } else if (error is SocketException || error.toString().contains('network')) {
+      message = 'Network connectivity error';
+      category = 'NETWORK';
+    } else if (error.toString().contains('404') || error.toString().contains('Not Found')) {
+      message = 'Video not found (404)';
+      category = 'NOT_FOUND';
+    } else if (error.toString().contains('403') || error.toString().contains('Forbidden')) {
+      message = 'Access denied to video (403)';
+      category = 'FORBIDDEN';
+    } else if (error.toString().contains('500') || error.toString().contains('Internal Server Error')) {
+      message = 'Server error while loading video (500)';
+      category = 'SERVER_ERROR';
+    } else if (error.toString().contains('format') || error.toString().contains('codec')) {
+      message = 'Unsupported video format or codec';
+      category = 'FORMAT_ERROR';
+    } else if (error.toString().contains('CoreMediaErrorDomain error -12939') || 
+               error.toString().contains('byte range length mismatch')) {
+      message = 'Server configuration error - invalid byte range response';
+      category = 'SERVER_CONFIG_ERROR';
+    } else if (error.toString().contains('CoreMediaErrorDomain') || 
+               error.toString().contains('AVFoundation')) {
+      message = 'Media playback error';
+      category = 'MEDIA_ERROR';
+    } else {
+      message = 'Unknown error during video loading';
+      category = 'UNKNOWN';
+    }
+
+    return VideoManagerException(
+      '$message [$category]',
+      videoId: videoId,
+      originalError: error,
+    );
   }
 }

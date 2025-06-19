@@ -95,6 +95,9 @@ class MockVideoManager implements IVideoManager {
   final Map<String, VideoPlayerController?> _controllers = {};
   final StreamController<void> _stateChangesController = StreamController<void>.broadcast();
   
+  // Configuration (ignored in mock but needed for compatibility)
+  final VideoManagerConfig? _config;
+  
   bool _disposed = false;
   
   // Test control properties
@@ -105,11 +108,29 @@ class MockVideoManager implements IVideoManager {
   Map<String, int> _preloadAttempts = {};
   Set<String> _permanentlyFailedVideos = {};
   
+  // Debug info for test control
+  Map<String, dynamic> _debugInfo = {};
+  
+  // Test error control
+  bool _shouldThrowOnAddVideo = false;
+  bool _shouldThrowOnPreload = false;
+  bool _shouldThrowOnOperation = false;
+  
+  // Call tracking for test verification
+  List<VideoEvent> _addVideoEventCalls = [];
+  List<String> _preloadVideoCalls = [];
+  List<String> _disposeVideoCalls = [];
+  List<List<dynamic>> _preloadAroundIndexCalls = [];
+  
   // Statistics for test verification
   int _preloadCallCount = 0;
   int _disposeCallCount = 0;
   int _memoryPressureCallCount = 0;
+  int _getDebugInfoCallCount = 0;
   List<String> _operationLog = [];
+  
+  /// Creates a MockVideoManager with optional configuration (for compatibility)
+  MockVideoManager({VideoManagerConfig? config}) : _config = config;
 
   @override
   List<VideoEvent> get videos => List.unmodifiable(_videos);
@@ -131,6 +152,11 @@ class MockVideoManager implements IVideoManager {
   @override
   Future<void> addVideoEvent(VideoEvent event) async {
     _logOperation('addVideoEvent', event.id);
+    _addVideoEventCalls.add(event);
+    
+    if (_shouldThrowOnAddVideo || _shouldThrowOnOperation) {
+      throw VideoManagerException('Mock configured to throw on addVideo');
+    }
     
     if (_disposed) {
       if (_throwOnInvalidOperations) {
@@ -165,6 +191,11 @@ class MockVideoManager implements IVideoManager {
   Future<void> preloadVideo(String videoId) async {
     _logOperation('preloadVideo', videoId);
     _preloadCallCount++;
+    _preloadVideoCalls.add(videoId);
+    
+    if (_shouldThrowOnPreload || _shouldThrowOnOperation) {
+      throw VideoManagerException('Mock configured to throw on preload');
+    }
     
     if (_disposed) {
       if (_throwOnInvalidOperations) {
@@ -242,6 +273,7 @@ class MockVideoManager implements IVideoManager {
   @override
   void preloadAroundIndex(int currentIndex, {int? preloadRange}) {
     _logOperation('preloadAroundIndex', 'index:$currentIndex, range:$preloadRange');
+    _preloadAroundIndexCalls.add([currentIndex, preloadRange]);
     
     if (_disposed) return;
     
@@ -266,6 +298,7 @@ class MockVideoManager implements IVideoManager {
   void disposeVideo(String videoId) {
     _logOperation('disposeVideo', videoId);
     _disposeCallCount++;
+    _disposeVideoCalls.add(videoId);
     
     if (_disposed) return;
     
@@ -291,6 +324,13 @@ class MockVideoManager implements IVideoManager {
 
   @override
   Map<String, dynamic> getDebugInfo() {
+    _getDebugInfoCallCount++;
+    
+    // Return custom debug info if set, otherwise return default
+    if (_debugInfo.isNotEmpty) {
+      return Map<String, dynamic>.from(_debugInfo);
+    }
+    
     return {
       'totalVideos': _videos.length,
       'readyVideos': readyVideos.length,
@@ -323,6 +363,11 @@ class MockVideoManager implements IVideoManager {
     _preloadAttempts.clear();
     _permanentlyFailedVideos.clear();
     _operationLog.clear();
+    _addVideoEventCalls.clear();
+    _preloadVideoCalls.clear();
+    _disposeVideoCalls.clear();
+    _preloadAroundIndexCalls.clear();
+    _debugInfo.clear();
     
     _stateChangesController.close();
   }
@@ -360,8 +405,22 @@ class MockVideoManager implements IVideoManager {
     _preloadDelay = const Duration(milliseconds: 50);
     _memoryPressureThreshold = 10;
     _throwOnInvalidOperations = true;
+    _shouldThrowOnAddVideo = false;
+    _shouldThrowOnPreload = false;
+    _shouldThrowOnOperation = false;
     _preloadAttempts.clear();
     _permanentlyFailedVideos.clear();
+    _debugInfo.clear();
+    _addVideoEventCalls.clear();
+    _preloadVideoCalls.clear();
+    _disposeVideoCalls.clear();
+    _preloadAroundIndexCalls.clear();
+    
+    // Reset statistics
+    _preloadCallCount = 0;
+    _disposeCallCount = 0;
+    _memoryPressureCallCount = 0;
+    _getDebugInfoCallCount = 0;
   }
 
   /// Clear operation log for fresh test runs
@@ -390,9 +449,114 @@ class MockVideoManager implements IVideoManager {
       'preloadCallCount': _preloadCallCount,
       'disposeCallCount': _disposeCallCount,
       'memoryPressureCallCount': _memoryPressureCallCount,
+      'getDebugInfoCallCount': _getDebugInfoCallCount,
       'totalVideos': _videos.length,
       'readyVideos': readyVideos.length,
     };
+  }
+  
+  // Test getters and setters for enhanced test control
+  
+  /// Set debug info to be returned by getDebugInfo()
+  set debugInfo(Map<String, dynamic> info) {
+    _debugInfo = Map<String, dynamic>.from(info);
+  }
+  
+  /// Get debug info (for test verification)
+  Map<String, dynamic> get debugInfo => Map<String, dynamic>.from(_debugInfo);
+  
+  /// Get list of addVideoEvent calls
+  List<VideoEvent> get addVideoEventCalls => List.from(_addVideoEventCalls);
+  
+  /// Get count of addVideoEvent calls
+  int get addVideoEventCallCount => _addVideoEventCalls.length;
+  
+  /// Get list of preloadVideo calls
+  List<String> get preloadVideoCalls => List.from(_preloadVideoCalls);
+  
+  /// Get count of preloadVideo calls
+  int get preloadVideoCallCount => _preloadVideoCalls.length;
+  
+  /// Get list of disposeVideo calls
+  List<String> get disposeVideoCalls => List.from(_disposeVideoCalls);
+  
+  /// Get count of disposeVideo calls
+  int get disposeVideoCallCount => _disposeVideoCalls.length;
+  
+  /// Get list of preloadAroundIndex calls
+  List<List<dynamic>> get preloadAroundIndexCalls => List.from(_preloadAroundIndexCalls);
+  
+  /// Get count of preloadAroundIndex calls
+  int get preloadAroundIndexCallCount => _preloadAroundIndexCalls.length;
+  
+  /// Get count of getDebugInfo calls
+  int get getDebugInfoCallCount => _getDebugInfoCallCount;
+  
+  /// Get count of handleMemoryPressure calls
+  int get handleMemoryPressureCallCount => _memoryPressureCallCount;
+  
+  /// Get count of dispose calls
+  int get disposeCallCount => _disposeCallCount;
+  
+  /// Check if disposed
+  bool get isDisposed => _disposed;
+  
+  /// Control exception throwing for addVideo operations
+  set shouldThrowOnAddVideo(bool shouldThrow) {
+    _shouldThrowOnAddVideo = shouldThrow;
+  }
+  
+  /// Control exception throwing for preload operations
+  set shouldThrowOnPreload(bool shouldThrow) {
+    _shouldThrowOnPreload = shouldThrow;
+  }
+  
+  /// Control exception throwing for all operations
+  set shouldThrowOnOperation(bool shouldThrow) {
+    _shouldThrowOnOperation = shouldThrow;
+  }
+  
+  /// Set video state for testing
+  void setVideoState(String videoId, VideoState state) {
+    _videoStates[videoId] = state;
+  }
+  
+  /// Set controller for testing
+  void setController(String videoId, VideoPlayerController? controller) {
+    _controllers[videoId] = controller;
+  }
+  
+  /// Simulate state change for testing notifications
+  void simulateStateChange() {
+    _notifyStateChange();
+  }
+  
+  /// Create a mock controller for testing
+  static VideoPlayerController? createMockController() {
+    // Return null for simplicity in testing - real implementation would return mock
+    return null;
+  }
+  
+  /// Override videos list for testing
+  set videos(List<VideoEvent> videoList) {
+    _videos.clear();
+    _videos.addAll(videoList);
+  }
+  
+  /// Override ready videos list for testing
+  set readyVideos(List<VideoEvent> videoList) {
+    // Clear existing videos and states
+    _videos.clear();
+    _videoStates.clear();
+    
+    // Add videos and set up states as ready
+    _videos.addAll(videoList);
+    for (final video in videoList) {
+      // Proper state transition: notLoaded -> loading -> ready
+      final initialState = VideoState(event: video);
+      final loadingState = initialState.toLoading();
+      _videoStates[video.id] = loadingState.toReady();
+    }
   }
 
   // Private helper methods
@@ -417,7 +581,7 @@ class MockVideoManager implements IVideoManager {
 
   Future<void> _triggerMemoryPressure() async {
     _logOperation('_triggerMemoryPressure', '');
-    _memoryPressureCallCount++;
+    // Don't increment count here - it's already incremented in the caller
     
     // Dispose all but the most recent video
     final controllersToDispose = List.from(_controllers.keys);
