@@ -1,20 +1,32 @@
-// ABOUTME: State management provider for NIP-71 video feed functionality
-// ABOUTME: Manages video events, subscriptions, and UI state for the feed screen
+// ABOUTME: State management provider for NIP-71 video feed functionality  
+// ABOUTME: Single source of truth using VideoManager for video state, preloading, and memory management
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
+import '../models/video_state.dart';
 import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
+import '../services/video_manager_interface.dart';
+import '../services/video_manager_service.dart';
 
-/// Provider for managing video feed state and operations
+/// Provider for managing video feed state and operations using VideoManager
+/// 
+/// This provider replaces the dual-list architecture (VideoEventService + VideoCacheService)
+/// with a single VideoManager that serves as the source of truth for:
+/// - Video ordering and state management
+/// - Memory-efficient preloading (<500MB)
+/// - Race condition prevention  
+/// - Circuit breaker error handling
 class VideoFeedProvider extends ChangeNotifier {
   final VideoEventService _videoEventService;
   final INostrService _nostrService;
-  final VideoCacheService _videoCacheService;
+  final VideoCacheService _videoCacheService; // Legacy - kept for backward compatibility
   final UserProfileService _userProfileService;
+  final IVideoManager _videoManager;
   
   bool _isInitialized = false;
   bool _isRefreshing = false;
@@ -28,6 +40,9 @@ class VideoFeedProvider extends ChangeNotifier {
   final Set<String> _pendingProfileFetches = <String>{};
   Timer? _profileFetchDebounceTimer;
   
+  // Video manager state subscription
+  StreamSubscription<void>? _videoManagerSubscription;
+  
   // Notification batching to prevent infinite rebuild loops
   Timer? _notificationTimer;
   bool _hasPendingNotification = false;
@@ -37,32 +52,47 @@ class VideoFeedProvider extends ChangeNotifier {
     required INostrService nostrService,
     required VideoCacheService videoCacheService,
     required UserProfileService userProfileService,
+    IVideoManager? videoManager,
   }) : _videoEventService = videoEventService,
        _nostrService = nostrService,
        _videoCacheService = videoCacheService,
-       _userProfileService = userProfileService {
+       _userProfileService = userProfileService,
+       _videoManager = videoManager ?? VideoManagerService(
+         config: VideoManagerConfig.wifi(), // Default to WiFi optimized
+       ) {
     
-    // Listen to video event service changes
+    // Listen to video event service changes (for new videos from Nostr)
     _videoEventService.addListener(_onVideoEventServiceChanged);
     
-    // Listen to video cache service changes (when ready queue updates)
-    _videoCacheService.addListener(_onVideoCacheServiceChanged);
+    // Listen to video manager state changes (replaces cache service listener)
+    _videoManagerSubscription = _videoManager.stateChanges.listen((_) {
+      notifyListeners();
+    });
   }
   
-  // Getters
-  List<VideoEvent> get videoEvents => _videoCacheService.readyToPlayQueue;
-  List<VideoEvent> get allVideoEvents => _videoEventService.videoEvents; // All events for background processing
+  // Getters - VideoManager as single source of truth
+  List<VideoEvent> get videoEvents => _videoManager.videos;
+  List<VideoEvent> get readyVideos => _videoManager.readyVideos;
+  List<VideoEvent> get allVideoEvents => _videoEventService.videoEvents; // Raw events from Nostr
   bool get isInitialized => _isInitialized;
   bool get isRefreshing => _isRefreshing;
   bool get isLoadingMore => _isLoadingMore;
-  bool get hasEvents => _videoCacheService.readyToPlayQueue.isNotEmpty;
+  bool get hasEvents => _videoManager.videos.isNotEmpty;
   bool get isLoading => _videoEventService.isLoading;
   String? get error => _error ?? _videoEventService.error;
-  int get eventCount => _videoCacheService.readyToPlayQueue.length;
+  int get eventCount => _videoManager.videos.length;
   bool get isSubscribed => _videoEventService.isSubscribed;
   bool get canLoadMore => _videoEventService.hasEvents && !isLoadingMore;
+  
+  // Legacy compatibility - gradually replace these with videoManager equivalents
   VideoCacheService get videoCacheService => _videoCacheService;
   UserProfileService get userProfileService => _userProfileService;
+  
+  // New VideoManager interface methods
+  IVideoManager get videoManager => _videoManager;
+  VideoState? getVideoState(String videoId) => _videoManager.getVideoState(videoId);
+  VideoPlayerController? getController(String videoId) => _videoManager.getController(videoId);
+  Map<String, dynamic> getDebugInfo() => _videoManager.getDebugInfo();
   
   /// Initialize the video feed provider
   Future<void> initialize() async {
@@ -103,13 +133,14 @@ class VideoFeedProvider extends ChangeNotifier {
       await _videoEventService.subscribeToVideoFeed();
       debugPrint('🎥 Video event subscription completed');
       
-      // Process initial events into ready queue (non-blocking)
+      // Add initial events to VideoManager (replaces dual-list processing)
       if (_videoEventService.hasEvents) {
-        debugPrint('📋 Processing ${_videoEventService.eventCount} initial video events...');
-        _videoCacheService.processNewVideoEvents(_videoEventService.videoEvents);
+        debugPrint('📋 Adding ${_videoEventService.eventCount} initial video events to VideoManager...');
+        await _addEventsToVideoManager(_videoEventService.videoEvents);
         
-        // Start preloading videos for ready queue in background
-        _preloadInitialVideosInBackground();
+        // Start intelligent preloading around position 0
+        debugPrint('⚡ Starting intelligent preloading...');
+        _videoManager.preloadAroundIndex(0, preloadRange: 2);
       }
       
       _isInitialized = true;
@@ -237,8 +268,9 @@ class VideoFeedProvider extends ChangeNotifier {
   
   /// Preload videos around current index for smooth playback
   Future<void> preloadVideosAroundIndex(int currentIndex) async {
-    // Use all video events for preloading, not just ready queue
-    await _videoCacheService.preloadVideos(allVideoEvents, currentIndex);
+    // Use VideoManager's intelligent preloading (replaces cache service)
+    _videoManager.preloadAroundIndex(currentIndex);
+    debugPrint('⚡ VideoManager preloading around index $currentIndex');
   }
   
   /// Clear error state
@@ -254,35 +286,18 @@ class VideoFeedProvider extends ChangeNotifier {
     await initialize();
   }
   
-  /// Start preloading videos in background without blocking UI
-  void _preloadInitialVideosInBackground() {
-    // Run preloading in background without awaiting
-    _videoCacheService.preloadVideos(_videoEventService.videoEvents, 0).then((_) {
-      debugPrint('✅ Background preloading completed');
-    }).catchError((error) {
-      debugPrint('⚠️ Background preloading failed: $error');
-    });
-  }
-
-  /// Handle changes from video event service
+  /// Handle changes from video event service (new videos from Nostr)
   void _onVideoEventServiceChanged() {
-    // Process new video events into ready queue
+    // Add new video events to VideoManager (replaces dual-list processing)
     if (_videoEventService.hasEvents) {
-      debugPrint('📢 Video event service changed - processing ${_videoEventService.videoEvents.length} events into cache...');
-      _videoCacheService.processNewVideoEvents(_videoEventService.videoEvents);
-      debugPrint('🎯 Current ready queue size: ${_videoCacheService.readyToPlayQueue.length}');
+      debugPrint('📢 Video event service changed - adding ${_videoEventService.videoEvents.length} events to VideoManager...');
+      _addEventsToVideoManager(_videoEventService.videoEvents);
+      debugPrint('🎯 VideoManager now has ${_videoManager.videos.length} videos');
       
       // Fetch profiles for video authors
       _fetchProfilesForVideos(_videoEventService.videoEvents);
     }
-    _scheduleNotification();
-  }
-  
-  /// Handle changes from video cache service (when ready queue updates)
-  void _onVideoCacheServiceChanged() {
-    debugPrint('📢 Video cache service changed - ready queue now has ${_videoCacheService.readyToPlayQueue.length} videos');
-    // Notify listeners so UI can rebuild with updated ready queue
-    _scheduleNotification();
+    // Note: VideoManager state changes will trigger UI updates via stream subscription
   }
   
   /// Fetch user profiles for video authors (only for new events)
@@ -346,13 +361,30 @@ class VideoFeedProvider extends ChangeNotifier {
     });
   }
   
+  /// Add video events to VideoManager, filtering out duplicates
+  Future<void> _addEventsToVideoManager(List<VideoEvent> events) async {
+    final existingIds = _videoManager.videos.map((v) => v.id).toSet();
+    final newEvents = events.where((event) => !existingIds.contains(event.id)).toList();
+    
+    debugPrint('📋 Adding ${newEvents.length} new events to VideoManager (filtered ${events.length - newEvents.length} duplicates)');
+    
+    for (final event in newEvents) {
+      try {
+        await _videoManager.addVideoEvent(event);
+      } catch (e) {
+        debugPrint('⚠️ Failed to add video ${event.id} to VideoManager: $e');
+      }
+    }
+  }
+  
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
-    _videoCacheService.removeListener(_onVideoCacheServiceChanged);
+    _videoManagerSubscription?.cancel();
     _profileFetchDebounceTimer?.cancel();
     _notificationTimer?.cancel();
-    // DO NOT dispose _videoCacheService - it's managed by Provider and shared across screens
+    _videoManager.dispose();
+    // Legacy: Keep cache service for backward compatibility
     super.dispose();
   }
 }

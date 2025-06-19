@@ -1,0 +1,42 @@
+# NostrVine Multi-Agent Code Ownership
+# This file defines which agents are responsible for which parts of the codebase
+
+# Root configuration and build files
+/pubspec.yaml                    @agent-flutter-config
+/analysis_options.yaml           @agent-flutter-config
+/android/                        @agent-android
+/ios/                           @agent-ios
+/macos/                         @agent-macos
+/web/                           @agent-web
+/windows/                       @agent-windows
+/linux/                         @agent-linux
+
+# Core application entry point
+/lib/main.dart                  @agent-core
+/lib/config/                    @agent-core
+
+# UI Layer - Screens and Widgets
+/lib/screens/                   @agent-ui
+/lib/widgets/                   @agent-ui
+
+# Business Logic Layer
+/lib/services/                  @agent-services
+/lib/providers/                 @agent-services
+
+# Data Layer
+/lib/models/                    @agent-data
+/lib/utils/                     @agent-data
+
+# Platform-specific camera implementations
+/lib/services/camera/           @agent-camera
+
+# Testing
+/test/unit/                     @agent-testing
+/test/widget/                   @agent-testing
+/test/integration/              @agent-testing
+/test/helpers/                  @agent-testing
+/test/mocks/                    @agent-testing
+
+# Debug and development
+/lib/debug/                     @agent-debug
+/tmp/                           @agent-debug

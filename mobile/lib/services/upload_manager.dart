@@ -220,7 +220,7 @@ class UploadManager extends ChangeNotifier {
     _performUpload(resetUpload);
   }
 
-  /// Cancel an upload
+  /// Cancel an upload (stops the upload but keeps it for retry)
   Future<void> cancelUpload(String uploadId) async {
     final upload = getUpload(uploadId);
     if (upload == null) return;
@@ -232,14 +232,45 @@ class UploadManager extends ChangeNotifier {
       await _cloudinaryService.cancelUpload(upload.cloudinaryPublicId!);
     }
     
-    // Remove from storage
-    await _uploadsBox?.delete(uploadId);
+    // Update status to failed so it can be retried later
+    final cancelledUpload = upload.copyWith(
+      status: UploadStatus.failed,
+      errorMessage: 'Upload cancelled by user',
+      uploadProgress: null,
+    );
+    
+    await _updateUpload(cancelledUpload);
     
     // Cancel progress subscription
     _progressSubscriptions[uploadId]?.cancel();
     _progressSubscriptions.remove(uploadId);
     
+    debugPrint('✅ Upload cancelled and available for retry: $uploadId');
+  }
+
+  /// Delete an upload permanently (removes from storage)
+  Future<void> deleteUpload(String uploadId) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) return;
+    
+    debugPrint('🗑️ Deleting upload: $uploadId');
+    
+    // Cancel any active upload first
+    if (upload.status == UploadStatus.uploading) {
+      if (upload.cloudinaryPublicId != null) {
+        await _cloudinaryService.cancelUpload(upload.cloudinaryPublicId!);
+      }
+    }
+    
+    // Cancel progress subscription
+    _progressSubscriptions[uploadId]?.cancel();
+    _progressSubscriptions.remove(uploadId);
+    
+    // Remove from storage
+    await _uploadsBox?.delete(uploadId);
+    
     notifyListeners();
+    debugPrint('✅ Upload deleted permanently: $uploadId');
   }
 
   /// Remove completed or failed uploads

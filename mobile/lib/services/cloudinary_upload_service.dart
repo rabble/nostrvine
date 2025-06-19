@@ -81,6 +81,7 @@ class CloudinaryUploadService extends ChangeNotifier {
   static String get _baseUrl => AppConfig.backendBaseUrl;
   
   final Map<String, StreamController<double>> _progressControllers = {};
+  final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
   
   /// Upload a video file to Cloudinary with progress tracking
   Future<UploadResult> uploadVideo({
@@ -93,6 +94,8 @@ class CloudinaryUploadService extends ChangeNotifier {
   }) async {
     debugPrint('🔄 Starting Cloudinary upload for video: ${videoFile.path}');
     
+    String? publicId;
+    
     try {
       // Step 1: Request signed upload parameters from our backend
       final signedParams = await _requestSignedUpload(
@@ -103,6 +106,8 @@ class CloudinaryUploadService extends ChangeNotifier {
         hashtags: hashtags,
       );
       
+      publicId = signedParams.publicId;
+      
       // Step 2: Upload directly to Cloudinary
       final cloudinary = CloudinaryPublic(signedParams.cloudName, signedParams.apiKey, cache: false);
       
@@ -111,7 +116,8 @@ class CloudinaryUploadService extends ChangeNotifier {
       _progressControllers[signedParams.publicId] = progressController;
       
       if (onProgress != null) {
-        progressController.stream.listen(onProgress);
+        final subscription = progressController.stream.listen(onProgress);
+        _progressSubscriptions[signedParams.publicId] = subscription;
       }
       
       // Perform the upload (simplified for now - progress tracking to be implemented later)
@@ -127,8 +133,10 @@ class CloudinaryUploadService extends ChangeNotifier {
       progressController.add(1.0);
       debugPrint('📤 Upload completed');
       
-      // Cleanup progress controller
+      // Cleanup progress controller and subscription
       _progressControllers.remove(signedParams.publicId);
+      final subscription = _progressSubscriptions.remove(signedParams.publicId);
+      await subscription?.cancel();
       await progressController.close();
       
       if (response.publicId?.isNotEmpty == true) {
@@ -152,6 +160,15 @@ class CloudinaryUploadService extends ChangeNotifier {
     } catch (e, stackTrace) {
       debugPrint('❌ Upload error: $e');
       debugPrint('📍 Stack trace: $stackTrace');
+      
+      // Clean up progress tracking on error
+      if (publicId != null) {
+        final subscription = _progressSubscriptions.remove(publicId);
+        final controller = _progressControllers.remove(publicId);
+        await subscription?.cancel();
+        await controller?.close();
+      }
+      
       return UploadResult.failure('Upload failed: $e');
     }
   }
@@ -212,10 +229,12 @@ class CloudinaryUploadService extends ChangeNotifier {
   
   /// Cancel an ongoing upload
   Future<void> cancelUpload(String publicId) async {
-    final controller = _progressControllers[publicId];
-    if (controller != null) {
-      _progressControllers.remove(publicId);
-      await controller.close();
+    final controller = _progressControllers.remove(publicId);
+    final subscription = _progressSubscriptions.remove(publicId);
+    
+    if (controller != null || subscription != null) {
+      await subscription?.cancel();
+      await controller?.close();
       debugPrint('🚫 Upload cancelled: $publicId');
     }
   }
@@ -235,10 +254,14 @@ class CloudinaryUploadService extends ChangeNotifier {
   
   @override
   void dispose() {
-    // Cancel all active uploads
+    // Cancel all active uploads and subscriptions
+    for (final subscription in _progressSubscriptions.values) {
+      subscription.cancel();
+    }
     for (final controller in _progressControllers.values) {
       controller.close();
     }
+    _progressSubscriptions.clear();
     _progressControllers.clear();
     super.dispose();
   }

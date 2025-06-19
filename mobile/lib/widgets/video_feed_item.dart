@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../models/video_event.dart';
+import '../models/video_state.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/seen_videos_service.dart';
@@ -20,7 +21,9 @@ class VideoFeedItem extends StatefulWidget {
   final VoidCallback? onShare;
   final VoidCallback? onMoreOptions;
   final VoidCallback? onUserTap;
-  final VideoCacheService? videoCacheService;
+  final VideoCacheService? videoCacheService; // Legacy - for backward compatibility
+  final VideoPlayerController? videoController; // New - direct controller from VideoManager
+  final VideoState? videoState; // New - video state from VideoManager
   final UserProfileService? userProfileService;
   final SeenVideosService? seenVideosService;
   
@@ -34,6 +37,8 @@ class VideoFeedItem extends StatefulWidget {
     this.onMoreOptions,
     this.onUserTap,
     this.videoCacheService,
+    this.videoController,
+    this.videoState,
     this.userProfileService,
     this.seenVideosService,
   });

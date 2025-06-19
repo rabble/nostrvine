@@ -446,18 +446,71 @@ class _CameraScreenState extends State<CameraScreen> {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(height: 16),
-            Text(
-              'Initializing camera...',
+            // Pulsing camera icon with shimmer effect
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 1500),
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: 0.8 + (0.2 * value),
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.1),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt,
+                      size: 60,
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                );
+              },
+              onEnd: () {
+                // Restart animation
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+            ),
+            const SizedBox(height: 32),
+            
+            // Skeleton loading bars with shimmer
+            Column(
+              children: [
+                _buildSkeletonBar(width: 200, height: 20),
+                const SizedBox(height: 12),
+                _buildSkeletonBar(width: 160, height: 16),
+                const SizedBox(height: 8),
+                _buildSkeletonBar(width: 120, height: 16),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            const Text(
+              'Preparing your camera...',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This may take a moment on first launch',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
               ),
             ),
           ],
@@ -466,7 +519,44 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  Widget _buildSkeletonBar({required double width, required double height}) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 1200),
+      builder: (context, value, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(height / 2),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 + (2.0 * value), 0.0),
+              end: Alignment(1.0 + (2.0 * value), 0.0),
+              colors: [
+                Colors.white.withValues(alpha: 0.1),
+                Colors.white.withValues(alpha: 0.3),
+                Colors.white.withValues(alpha: 0.1),
+              ],
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
+  }
+
   Widget _buildErrorState(String error) {
+    // Determine error type and customize UI accordingly
+    final isPermissionError = error.toLowerCase().contains('permission');
+    final isNetworkError = error.toLowerCase().contains('network') || 
+                          error.toLowerCase().contains('connection');
+    final isCameraUnavailable = error.toLowerCase().contains('camera') && 
+                              error.toLowerCase().contains('not available');
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -479,44 +569,252 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.white54,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Camera Error',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                error,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Error-specific icon and color
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _getErrorColor(isPermissionError, isNetworkError, isCameraUnavailable)
+                      .withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: _getErrorColor(isPermissionError, isNetworkError, isCameraUnavailable)
+                        .withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  _getErrorIcon(isPermissionError, isNetworkError, isCameraUnavailable),
+                  size: 60,
+                  color: _getErrorColor(isPermissionError, isNetworkError, isCameraUnavailable),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _initializeCamera,
-              child: const Text('Retry'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              
+              // Error title
+              Text(
+                _getErrorTitle(isPermissionError, isNetworkError, isCameraUnavailable),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // User-friendly error description
+              Text(
+                _getErrorDescription(isPermissionError, isNetworkError, isCameraUnavailable, error),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 16,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              
+              // Technical details (collapsible)
+              if (!isPermissionError && !isNetworkError) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Technical Details',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        error,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 32),
+              
+              // Action buttons
+              Column(
+                children: [
+                  // Primary action button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleErrorAction(isPermissionError, isNetworkError),
+                      icon: Icon(_getActionIcon(isPermissionError, isNetworkError)),
+                      label: Text(_getActionText(isPermissionError, isNetworkError)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _getErrorColor(isPermissionError, isNetworkError, isCameraUnavailable),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Secondary action
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _initializeCamera,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Color _getErrorColor(bool isPermissionError, bool isNetworkError, bool isCameraUnavailable) {
+    if (isPermissionError) return Colors.orange;
+    if (isNetworkError) return Colors.blue;
+    if (isCameraUnavailable) return Colors.red;
+    return Colors.amber;
+  }
+
+  IconData _getErrorIcon(bool isPermissionError, bool isNetworkError, bool isCameraUnavailable) {
+    if (isPermissionError) return Icons.security;
+    if (isNetworkError) return Icons.wifi_off;
+    if (isCameraUnavailable) return Icons.camera_alt_outlined;
+    return Icons.error_outline;
+  }
+
+  String _getErrorTitle(bool isPermissionError, bool isNetworkError, bool isCameraUnavailable) {
+    if (isPermissionError) return 'Camera Permission Required';
+    if (isNetworkError) return 'Network Connection Issue';
+    if (isCameraUnavailable) return 'Camera Not Available';
+    return 'Camera Error';
+  }
+
+  String _getErrorDescription(bool isPermissionError, bool isNetworkError, bool isCameraUnavailable, String originalError) {
+    if (isPermissionError) {
+      return 'NostrVine needs camera access to record videos. Please allow camera permissions in your device settings.';
+    }
+    if (isNetworkError) {
+      return 'Unable to connect to video processing services. Please check your internet connection and try again.';
+    }
+    if (isCameraUnavailable) {
+      return 'Your device camera is currently unavailable. This could be because another app is using it or there\'s a hardware issue.';
+    }
+    return 'Something went wrong while setting up your camera. This is usually temporary and can be fixed by trying again.';
+  }
+
+  IconData _getActionIcon(bool isPermissionError, bool isNetworkError) {
+    if (isPermissionError) return Icons.settings;
+    if (isNetworkError) return Icons.wifi;
+    return Icons.camera_alt;
+  }
+
+  String _getActionText(bool isPermissionError, bool isNetworkError) {
+    if (isPermissionError) return 'Open Settings';
+    if (isNetworkError) return 'Check Connection';
+    return 'Retry Camera';
+  }
+
+  void _handleErrorAction(bool isPermissionError, bool isNetworkError) {
+    if (isPermissionError) {
+      _openAppSettings();
+    } else if (isNetworkError) {
+      _checkNetworkAndRetry();
+    } else {
+      _initializeCamera();
+    }
+  }
+
+  void _openAppSettings() {
+    // TODO: Open app settings using url_launcher or app_settings package
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please enable camera permissions in your device settings'),
+        action: SnackBarAction(
+          label: 'Settings',
+          onPressed: () {
+            // Implementation would go here
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  Future<void> _checkNetworkAndRetry() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Checking network connection...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    // Check network connectivity
+    final hasConnection = await _checkConnectionStatus();
+    
+    if (hasConnection) {
+      _initializeCamera();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No internet connection detected. Please check your network settings.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
 
@@ -744,6 +1042,15 @@ class _CameraScreenState extends State<CameraScreen> {
               Navigator.of(context).pop();
               if (_uploadManager != null && _currentUpload != null) {
                 await _uploadManager!.cancelUpload(_currentUpload!.id);
+                setState(() {
+                  _currentUpload = null;
+                });
+              }
+            },
+            onDelete: () async {
+              Navigator.of(context).pop();
+              if (_uploadManager != null && _currentUpload != null) {
+                await _uploadManager!.deleteUpload(_currentUpload!.id);
                 setState(() {
                   _currentUpload = null;
                 });

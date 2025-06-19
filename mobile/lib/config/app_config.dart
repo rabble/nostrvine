@@ -48,11 +48,28 @@ class AppConfig {
   // Debugging
   static bool get enableDebugLogs => isDevelopment;
   
-  // Feature flags
-  static bool get enableStreamCDN => true; // New Cloudflare Stream integration
-  static bool get enableCloudinaryUpload => false; // Legacy fallback
-  static bool get enableNIP96Upload => false; // Iceboxed for MVP
-  static bool get enableOfflineQueue => true;
+  // Feature flags - Multi-agent development coordination
+  static bool get enableStreamCDN => _getBoolFlag('ENABLE_STREAM_CDN', true);
+  static bool get enableCloudinaryUpload => _getBoolFlag('ENABLE_CLOUDINARY', false);
+  static bool get enableNIP96Upload => _getBoolFlag('ENABLE_NIP96', false);
+  static bool get enableOfflineQueue => _getBoolFlag('ENABLE_OFFLINE_QUEUE', true);
+  
+  // Multi-agent development flags
+  static bool get enableCameraOptimizations => _getBoolFlag('ENABLE_CAMERA_OPTIMIZATIONS', false);
+  static bool get enableVideoProcessingPipeline => _getBoolFlag('ENABLE_VIDEO_PIPELINE', false);
+  static bool get enableMetadataCaching => _getBoolFlag('ENABLE_METADATA_CACHE', false);
+  static bool get enableUIImprovements => _getBoolFlag('ENABLE_UI_IMPROVEMENTS', false);
+  
+  // Helper for environment-based feature flags
+  static bool _getBoolFlag(String envKey, bool defaultValue) {
+    final value = const String.fromEnvironment('').isEmpty 
+        ? '' 
+        : const String.fromEnvironment('FLUTTER_TEST') == 'true'
+            ? '' // Return empty for tests to use default
+            : String.fromEnvironment(envKey);
+    if (value.isEmpty) return defaultValue;
+    return value.toLowerCase() == 'true';
+  }
   
   /// Get configuration summary for debugging
   static Map<String, dynamic> getConfigSummary() {
@@ -65,6 +82,11 @@ class AppConfig {
       'enableCloudinaryUpload': enableCloudinaryUpload,
       'enableNIP96Upload': enableNIP96Upload,
       'relayCount': defaultNostrRelays.length,
+      // Multi-agent development flags
+      'enableCameraOptimizations': enableCameraOptimizations,
+      'enableVideoProcessingPipeline': enableVideoProcessingPipeline,
+      'enableMetadataCaching': enableMetadataCaching,
+      'enableUIImprovements': enableUIImprovements,
     };
   }
 }

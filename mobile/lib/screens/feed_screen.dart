@@ -281,7 +281,9 @@ class _FeedScreenState extends State<FeedScreen> {
                     return VideoFeedItem(
                       videoEvent: videoEvent,
                       isActive: index == _currentPage,
-                      videoCacheService: provider.videoCacheService,
+                      videoCacheService: provider.videoCacheService, // Legacy compatibility
+                      videoController: provider.getController(videoEvent.id), // New: Direct controller from VideoManager
+                      videoState: provider.getVideoState(videoEvent.id), // New: Video state from VideoManager
                       userProfileService: provider.userProfileService,
                       seenVideosService: seenVideosService,
                       onLike: () => _toggleLike(videoEvent),

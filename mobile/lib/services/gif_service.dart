@@ -37,10 +37,39 @@ Uint8List _encodeGifInIsolate(Map<String, dynamic> params) {
 }
 
 class GifService {
-  // GIF configuration
+  // GIF configuration constants
   static const int maxGifWidth = 320;
   static const int maxGifHeight = 320;
   static const int defaultFrameDelay = 200; // 200ms = 5 FPS
+  
+  // JPEG format constants
+  static const int jpegMagicByte1 = 0xFF;
+  static const int jpegMagicByte2 = 0xD8;
+  static const int rgbChannelsPerPixel = 3;
+  
+  // Quality-based color palette constants
+  static const int lowQualityColors = 64;
+  static const int mediumQualityColors = 128;
+  static const int highQualityColors = 256;
+  
+  // Dimension calculation constants
+  static const int lowQualityMaxDimension = 240;
+  static const int mediumQualityMaxDimension = 320;
+  static const int highQualityMaxDimension = 480;
+  static const int dimensionAlignment = 2; // For even dimensions
+  
+  // Thumbnail generation constants
+  static const int defaultThumbnailSize = 120;
+  static const int thumbnailJpegQuality = 85;
+  
+  // Size estimation constants
+  static const int maxColorsInPalette = 256;
+  static const int bitsPerByte = 8;
+  static const int gifHeaderOverheadBytes = 1024;
+  
+  // File size calculation constants
+  static const int bytesPerKB = 1024;
+  static const int bytesPerMB = 1024 * 1024;
   
   /// Convert captured frames to optimized GIF
   Future<GifResult> createGifFromFrames({
@@ -145,7 +174,7 @@ class GifService {
   ) async {
     try {
       // Check if this looks like JPEG data (starts with FFD8)
-      if (frameBytes.length >= 2 && frameBytes[0] == 0xFF && frameBytes[1] == 0xD8) {
+      if (frameBytes.length >= 2 && frameBytes[0] == jpegMagicByte1 && frameBytes[1] == jpegMagicByte2) {
         debugPrint('🖼️ Processing JPEG frame (${frameBytes.length} bytes)');
         
         // Decode JPEG directly
@@ -160,7 +189,7 @@ class GifService {
       }
       
       // Fallback: assume RGB format from camera service
-      final expectedSize = width * height * 3;
+      final expectedSize = width * height * rgbChannelsPerPixel;
       if (frameBytes.length != expectedSize) {
         debugPrint('⚠️ Unexpected raw frame size: expected $expectedSize, got ${frameBytes.length}');
         return null;
@@ -172,12 +201,12 @@ class GifService {
       final image = img.Image(
         width: width, 
         height: height,
-        numChannels: 3,
+        numChannels: rgbChannelsPerPixel,
       );
       
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-          final index = (y * width + x) * 3;
+          final index = (y * width + x) * rgbChannelsPerPixel;
           final r = frameBytes[index];
           final g = frameBytes[index + 1];
           final b = frameBytes[index + 2];
@@ -212,15 +241,15 @@ class GifService {
     switch (quality) {
       case GifQuality.low:
         // Reduce color palette for smaller file size
-        return img.quantize(resized, numberOfColors: 64);
+        return img.quantize(resized, numberOfColors: lowQualityColors);
       
       case GifQuality.medium:
         // Balanced quality and size
-        return img.quantize(resized, numberOfColors: 128);
+        return img.quantize(resized, numberOfColors: mediumQualityColors);
       
       case GifQuality.high:
         // Higher quality, larger file size
-        return img.quantize(resized, numberOfColors: 256);
+        return img.quantize(resized, numberOfColors: highQualityColors);
     }
   }
   
@@ -274,9 +303,9 @@ class GifService {
   ) {
     // Base dimensions on quality setting
     final maxDimension = switch (quality) {
-      GifQuality.low => 240,
-      GifQuality.medium => 320,
-      GifQuality.high => 480,
+      GifQuality.low => lowQualityMaxDimension,
+      GifQuality.medium => mediumQualityMaxDimension,
+      GifQuality.high => highQualityMaxDimension,
     };
     
     // Maintain aspect ratio
@@ -295,8 +324,8 @@ class GifService {
     }
     
     // Ensure even dimensions for better compression
-    targetWidth = (targetWidth / 2).round() * 2;
-    targetHeight = (targetHeight / 2).round() * 2;
+    targetWidth = (targetWidth / dimensionAlignment).round() * dimensionAlignment;
+    targetHeight = (targetHeight / dimensionAlignment).round() * dimensionAlignment;
     
     return (width: targetWidth, height: targetHeight);
   }
@@ -306,7 +335,7 @@ class GifService {
     required List<Uint8List> frames,
     required int originalWidth,
     required int originalHeight,
-    int thumbnailSize = 120,
+    int thumbnailSize = defaultThumbnailSize,
   }) async {
     if (frames.isEmpty) return null;
     
@@ -323,7 +352,7 @@ class GifService {
       final thumbnail = img.copyResizeCropSquare(firstFrame, size: thumbnailSize);
       
       // Encode as JPEG for thumbnail
-      final jpegBytes = img.encodeJpg(thumbnail, quality: 85);
+      final jpegBytes = img.encodeJpg(thumbnail, quality: thumbnailJpegQuality);
       return Uint8List.fromList(jpegBytes);
     } catch (e) {
       debugPrint('❌ Error generating thumbnail: $e');
@@ -339,15 +368,15 @@ class GifService {
     int height = maxGifHeight,
   }) {
     final colors = switch (quality) {
-      GifQuality.low => 64,
-      GifQuality.medium => 128,
-      GifQuality.high => 256,
+      GifQuality.low => lowQualityColors,
+      GifQuality.medium => mediumQualityColors,
+      GifQuality.high => highQualityColors,
     };
     
     // Rough estimation: pixels per frame * colors * frames + overhead
-    final bitsPerPixel = (colors / 256) * 8;
-    final bytesPerFrame = (width * height * bitsPerPixel / 8).round();
-    final overhead = 1024; // GIF header and metadata
+    final bitsPerPixel = (colors / maxColorsInPalette) * bitsPerByte;
+    final bytesPerFrame = (width * height * bitsPerPixel / bitsPerByte).round();
+    final overhead = gifHeaderOverheadBytes; // GIF header and metadata
     
     return (bytesPerFrame * frameCount) + overhead;
   }
@@ -375,7 +404,7 @@ class GifResult {
   });
   
   double get compressionRatio => originalSize > 0 ? compressedSize / originalSize : 0.0;
-  double get fileSizeMB => compressedSize / (1024 * 1024);
+  double get fileSizeMB => compressedSize / GifService.bytesPerMB;
   
   @override
   String toString() {

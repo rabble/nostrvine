@@ -9,6 +9,7 @@ class UploadProgressIndicator extends StatelessWidget {
   final PendingUpload upload;
   final VoidCallback? onRetry;
   final VoidCallback? onCancel;
+  final VoidCallback? onDelete;
   final VoidCallback? onTap;
   final bool showActions;
 
@@ -17,6 +18,7 @@ class UploadProgressIndicator extends StatelessWidget {
     required this.upload,
     this.onRetry,
     this.onCancel,
+    this.onDelete,
     this.onTap,
     this.showActions = true,
   });
@@ -63,9 +65,9 @@ class UploadProgressIndicator extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _buildProgressBar(),
-              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading))
+              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.failed))
                 const SizedBox(height: 8),
-              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading))
+              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.failed))
                 _buildActionButtons(),
             ],
           ),
@@ -132,6 +134,16 @@ class UploadProgressIndicator extends StatelessWidget {
             onPressed: onCancel,
             child: const Text('Cancel'),
           ),
+        if (upload.status == UploadStatus.failed && onDelete != null) ...[
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onDelete,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
         if (upload.canRetry && onRetry != null) ...[
           const SizedBox(width: 8),
           ElevatedButton(

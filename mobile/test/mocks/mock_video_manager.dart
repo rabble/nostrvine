@@ -1,223 +1,279 @@
-// ABOUTME: Mock implementation of IVideoManager for testing purposes
-// ABOUTME: Provides controllable behavior for testing video system contract compliance
+// ABOUTME: Fully controllable MockVideoManager implementation for testing
+// ABOUTME: Provides deterministic behavior and test scenario control
 
 import 'dart:async';
 import 'package:video_player/video_player.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
 import 'package:nostrvine_app/models/video_event.dart';
 import 'package:nostrvine_app/models/video_state.dart';
+import 'package:nostrvine_app/services/video_manager_interface.dart';
 
-/// Mock VideoPlayerController for testing purposes
-class MockVideoPlayerController extends VideoPlayerController {
-  MockVideoPlayerController() : super.asset(''); // Empty asset path
-  
-  @override
-  Future<void> initialize() async {
-    // Mock successful initialization without actually loading anything
-    return;
-  }
-  
-  @override
-  Future<void> dispose() async {
-    // Mock disposal
-    return;
-  }
-}
-
-/// Mock implementation of IVideoManager for testing
+/// Fully controllable mock implementation of IVideoManager for testing
 /// 
-/// This implementation provides full control over behavior for testing purposes.
-/// It simulates real video manager behavior including state transitions,
-/// memory management, error conditions, and performance characteristics.
+/// This mock provides complete control over video manager behavior,
+/// allowing tests to simulate various scenarios including:
+/// - Success and failure states
+/// - Memory pressure conditions
+/// - Network issues and recovery
+/// - Edge cases and race conditions
+/// 
+/// ## Basic Usage Examples
+/// 
+/// ```dart
+/// // Basic video management
+/// final mock = MockVideoManager();
+/// await mock.addVideoEvent(testVideo);
+/// await mock.preloadVideo(testVideo.id);
+/// expect(mock.getVideoState(testVideo.id)!.isReady, isTrue);
+/// 
+/// // Check statistics
+/// final stats = mock.getStatistics();
+/// expect(stats['preloadCallCount'], equals(1));
+/// 
+/// // Always clean up
+/// mock.dispose();
+/// ```
+/// 
+/// ## Advanced Test Scenarios
+/// 
+/// ```dart
+/// // Test failure scenarios
+/// mock.setPreloadBehavior(PreloadBehavior.alwaysFail);
+/// await mock.preloadVideo(testVideo.id);
+/// expect(mock.getVideoState(testVideo.id)!.hasFailed, isTrue);
+/// 
+/// // Test retry logic
+/// mock.setPreloadBehavior(PreloadBehavior.failOnce);
+/// await mock.preloadVideo(testVideo.id); // Fails first time
+/// await mock.preloadVideo(testVideo.id); // Succeeds second time
+/// expect(mock.getPreloadAttempts(testVideo.id), equals(2));
+/// 
+/// // Test memory pressure
+/// mock.setMemoryPressureThreshold(2);
+/// await mock.addVideoEvent(video1);
+/// await mock.addVideoEvent(video2); // Triggers memory pressure
+/// expect(mock.getStatistics()['memoryPressureCallCount'], greaterThan(0));
+/// 
+/// // Test timing-sensitive operations
+/// mock.setPreloadDelay(Duration(milliseconds: 100));
+/// final start = DateTime.now();
+/// await mock.preloadVideo(testVideo.id);
+/// final elapsed = DateTime.now().difference(start);
+/// expect(elapsed.inMilliseconds, greaterThanOrEqualTo(90));
+/// 
+/// // Test operation logging
+/// mock.clearOperationLog();
+/// await mock.addVideoEvent(testVideo);
+/// final log = mock.getOperationLog();
+/// expect(log.first, contains('addVideoEvent'));
+/// 
+/// // Reset between tests
+/// mock.resetTestSettings(); // Resets all control settings
+/// ```
+/// 
+/// ## Error Simulation Patterns
+/// 
+/// ```dart
+/// // Simulate permanent failures
+/// mock.markVideoPermanentlyFailed(testVideo.id);
+/// await mock.preloadVideo(testVideo.id); // Won't attempt preload
+/// 
+/// // Disable exception throwing for graceful failure testing
+/// mock.setThrowOnInvalidOperations(false);
+/// mock.dispose();
+/// await mock.addVideoEvent(testVideo); // Won't throw, returns gracefully
+/// 
+/// // Test state change notifications
+/// final stateChanges = <void>[];
+/// final subscription = mock.stateChanges.listen(stateChanges.add);
+/// await mock.addVideoEvent(testVideo);
+/// expect(stateChanges.length, greaterThan(0));
+/// await subscription.cancel();
+/// ```
 class MockVideoManager implements IVideoManager {
-  final VideoManagerConfig _config;
+  final List<VideoEvent> _videos = [];
   final Map<String, VideoState> _videoStates = {};
-  final Map<String, VideoPlayerController> _controllers = {};
-  final List<String> _orderedVideoIds = []; // Newest first
-  final StreamController<void> _stateController = StreamController<void>.broadcast();
+  final Map<String, VideoPlayerController?> _controllers = {};
+  final StreamController<void> _stateChangesController = StreamController<void>.broadcast();
   
-  // Test control flags
-  bool _shouldFailPreload = false;
-  String? _failurePattern;
-  Duration _preloadDelay = Duration.zero;
   bool _disposed = false;
   
-  MockVideoManager({VideoManagerConfig? config}) 
-      : _config = config ?? const VideoManagerConfig();
+  // Test control properties
+  PreloadBehavior _preloadBehavior = PreloadBehavior.normal;
+  Duration _preloadDelay = const Duration(milliseconds: 50);
+  int _memoryPressureThreshold = 10;
+  bool _throwOnInvalidOperations = true;
+  Map<String, int> _preloadAttempts = {};
+  Set<String> _permanentlyFailedVideos = {};
   
+  // Statistics for test verification
+  int _preloadCallCount = 0;
+  int _disposeCallCount = 0;
+  int _memoryPressureCallCount = 0;
+  List<String> _operationLog = [];
+
   @override
-  List<VideoEvent> get videos {
-    if (_disposed) return [];
-    
-    return _orderedVideoIds
-        .map((id) => _videoStates[id])
-        .where((state) => state != null && 
-                         state.loadingState != VideoLoadingState.permanentlyFailed &&
-                         state.loadingState != VideoLoadingState.failed)
-        .map((state) => state!.event)
-        .toList();
-  }
-  
+  List<VideoEvent> get videos => List.unmodifiable(_videos);
+
   @override
-  List<VideoEvent> get readyVideos {
-    if (_disposed) return [];
-    
-    return _videoStates.values
-        .where((state) => state.isReady)
-        .map((state) => state.event)
-        .toList();
-  }
-  
+  List<VideoEvent> get readyVideos => _videos
+      .where((video) => getVideoState(video.id)?.isReady == true)
+      .toList();
+
   @override
-  VideoState? getVideoState(String videoId) {
-    if (_disposed) return null;
-    return _videoStates[videoId];
-  }
-  
+  VideoState? getVideoState(String videoId) => _videoStates[videoId];
+
   @override
-  VideoPlayerController? getController(String videoId) {
-    if (_disposed) return null;
-    
-    final state = _videoStates[videoId];
-    if (state?.isReady == true && !state!.isDisposed) {
-      return _controllers[videoId];
-    }
-    return null;
-  }
-  
+  VideoPlayerController? getController(String videoId) => _controllers[videoId];
+
+  @override
+  Stream<void> get stateChanges => _stateChangesController.stream;
+
   @override
   Future<void> addVideoEvent(VideoEvent event) async {
+    _logOperation('addVideoEvent', event.id);
+    
     if (_disposed) {
-      throw VideoManagerException(
-        'Cannot add video to disposed manager',
-      );
+      if (_throwOnInvalidOperations) {
+        throw VideoManagerException('Manager is disposed');
+      }
+      return;
     }
     
-    // Validate event - this will throw TypeError if event is null
     if (event.id.isEmpty) {
-      throw VideoManagerException('Video ID cannot be empty', videoId: event.id);
+      if (_throwOnInvalidOperations) {
+        throw VideoManagerException('Invalid video event');
+      }
+      return;
     }
     
     // Prevent duplicates
-    if (_videoStates.containsKey(event.id)) {
-      return; // No-op for duplicates
-    }
+    if (_videos.any((v) => v.id == event.id)) return;
     
-    // Create initial state
+    // Add in newest-first order
+    _videos.insert(0, event);
     _videoStates[event.id] = VideoState(event: event);
-    _orderedVideoIds.insert(0, event.id); // Newest first
     
-    // Handle GIFs immediately (they don't need preloading)
-    if (event.isGif) {
-      _videoStates[event.id] = _videoStates[event.id]!.toReady();
+    // Check for memory pressure
+    if (_videos.length > _memoryPressureThreshold) {
+      await _triggerMemoryPressure();
     }
-    
-    // Enforce memory limits
-    _enforceMemoryLimits();
     
     _notifyStateChange();
   }
-  
+
   @override
   Future<void> preloadVideo(String videoId) async {
-    if (_disposed) return;
+    _logOperation('preloadVideo', videoId);
+    _preloadCallCount++;
     
-    final state = _videoStates[videoId];
+    if (_disposed) {
+      if (_throwOnInvalidOperations) {
+        throw VideoManagerException('Manager is disposed');
+      }
+      return;
+    }
+    
+    final state = getVideoState(videoId);
     if (state == null) {
-      // Silently handle nonexistent videos
+      if (_throwOnInvalidOperations) {
+        throw VideoManagerException('Video not found', videoId: videoId);
+      }
       return;
     }
     
-    // Skip if already loading/ready/permanently failed
-    if (state.isLoading || state.isReady || 
-        state.loadingState == VideoLoadingState.permanentlyFailed) {
-      return;
+    if (state.isReady) return; // Already preloaded
+    
+    // Track preload attempts
+    _preloadAttempts[videoId] = (_preloadAttempts[videoId] ?? 0) + 1;
+    
+    // Check if permanently failed
+    if (_permanentlyFailedVideos.contains(videoId)) {
+      return; // Don't attempt preload
     }
     
-    // Allow retries for failed videos (but not permanently failed)
+    // Update to loading state (only if not already loading)
+    if (!state.isLoading) {
+      _videoStates[videoId] = state.toLoading();
+      _notifyStateChange();
+    }
     
-    // Update to loading
-    _videoStates[videoId] = state.toLoading();
-    _notifyStateChange();
+    // Simulate loading delay
+    await Future.delayed(_preloadDelay);
     
-    try {
-      // Simulate loading delay
-      if (_preloadDelay > Duration.zero) {
-        await Future.delayed(_preloadDelay);
-      } else {
-        await Future.delayed(const Duration(milliseconds: 50)); // Minimal delay
-      }
-      
-      // Check if this video should fail
-      bool shouldFail = _shouldFailPreload || 
-                       _shouldVideoFail(state.event.videoUrl ?? '');
-      
-      if (shouldFail) {
-        throw Exception('Mock preload failure for testing');
-      }
-      
-      try {
-        // Create mock controller for successful load
-        _controllers[videoId] = MockVideoPlayerController();
-        
-        // Mark as ready (use current state from the map, which should be 'loading')
-        final currentState = _videoStates[videoId]!;
-        _videoStates[videoId] = currentState.toReady();
-      } catch (controllerError) {
-        // If controller creation fails, just mark as ready without controller
-        // This is for testing purposes only
-        final currentState = _videoStates[videoId]!;
-        _videoStates[videoId] = currentState.toReady();
-      }
-      
-    } catch (e) {
-      // Handle failure with retry logic
-      final currentState = _videoStates[videoId];
-      if (currentState != null) {
-        _videoStates[videoId] = currentState.toFailed(e.toString());
-      }
+    // Determine outcome based on behavior setting
+    final currentState = getVideoState(videoId);
+    if (currentState == null || !currentState.isLoading) {
+      return; // State changed during loading
+    }
+    
+    switch (_preloadBehavior) {
+      case PreloadBehavior.normal:
+        _handleNormalPreload(videoId, currentState);
+        break;
+      case PreloadBehavior.alwaysFail:
+        _handleFailedPreload(videoId, currentState, 'Mock configured to always fail');
+        break;
+      case PreloadBehavior.failOnce:
+        if ((_preloadAttempts[videoId] ?? 0) == 1) {
+          _handleFailedPreload(videoId, currentState, 'Mock configured to fail once');
+        } else {
+          _handleNormalPreload(videoId, currentState);
+        }
+        break;
+      case PreloadBehavior.failOnRetry:
+        if ((_preloadAttempts[videoId] ?? 0) > 1) {
+          _handleFailedPreload(videoId, currentState, 'Mock configured to fail on retry');
+        } else {
+          _handleNormalPreload(videoId, currentState);
+        }
+        break;
+      case PreloadBehavior.randomFail:
+        if (videoId.hashCode % 3 == 0) {
+          _handleFailedPreload(videoId, currentState, 'Mock random failure');
+        } else {
+          _handleNormalPreload(videoId, currentState);
+        }
+        break;
     }
     
     _notifyStateChange();
   }
-  
+
   @override
   void preloadAroundIndex(int currentIndex, {int? preloadRange}) {
+    _logOperation('preloadAroundIndex', 'index:$currentIndex, range:$preloadRange');
+    
     if (_disposed) return;
     
-    // Validate index
-    if (currentIndex < 0 || currentIndex >= _orderedVideoIds.length) {
-      return; // Silently handle invalid indices
-    }
+    if (_videos.isEmpty) return;
     
-    // Use provided range or config default
-    final range = preloadRange ?? _config.preloadAhead;
+    final range = preloadRange ?? 2;
+    final start = (currentIndex - range).clamp(0, _videos.length - 1);
+    final end = (currentIndex + range).clamp(0, _videos.length - 1);
     
-    // Preload current + next N videos
-    final endIndex = (currentIndex + range).clamp(0, _orderedVideoIds.length - 1);
-    
-    for (int i = currentIndex; i <= endIndex; i++) {
-      final videoId = _orderedVideoIds[i];
-      preloadVideo(videoId); // Fire and forget
-    }
-    
-    // Simulate cleanup of distant videos (if memory management enabled)
-    if (_config.enableMemoryManagement) {
-      _cleanupDistantVideos(currentIndex);
+    for (int i = start; i <= end; i++) {
+      if (i < _videos.length) {
+        final videoId = _videos[i].id;
+        final state = getVideoState(videoId);
+        if (state != null && !state.isLoading && !state.isReady && !state.hasFailed) {
+          preloadVideo(videoId);
+        }
+      }
     }
   }
-  
+
   @override
   void disposeVideo(String videoId) {
+    _logOperation('disposeVideo', videoId);
+    _disposeCallCount++;
+    
     if (_disposed) return;
     
-    final state = _videoStates[videoId];
-    if (state != null && !state.isDisposed) {
-      // Dispose the controller if it exists
-      final controller = _controllers.remove(videoId);
-      controller?.dispose();
-      
-      // Update to disposed state
+    _controllers[videoId]?.dispose();
+    _controllers.remove(videoId);
+    
+    final state = getVideoState(videoId);
+    if (state != null) {
       _videoStates[videoId] = state.toDisposed();
       _notifyStateChange();
     }
@@ -225,204 +281,182 @@ class MockVideoManager implements IVideoManager {
 
   @override
   Future<void> handleMemoryPressure() async {
+    _logOperation('handleMemoryPressure', '');
+    _memoryPressureCallCount++;
+    
     if (_disposed) return;
     
-    // Simulate aggressive memory cleanup
-    // Keep only current video (first in list) plus 1 ahead
-    final videosToKeep = 2;
-    final toRemove = _orderedVideoIds.skip(videosToKeep).toList();
-    
-    for (final videoId in toRemove) {
-      // Dispose controller if it exists
-      final controller = _controllers.remove(videoId);
-      controller?.dispose();
-      
-      // Update state to disposed (but keep video in list)
-      final state = _videoStates[videoId];
-      if (state != null && !state.isDisposed) {
-        _videoStates[videoId] = state.toDisposed();
-      }
-    }
-    
-    // Notify of aggressive cleanup
-    _notifyStateChange();
+    await _triggerMemoryPressure();
   }
-  
+
   @override
   Map<String, dynamic> getDebugInfo() {
-    if (_disposed) {
-      return {
-        'disposed': true,
-        'totalVideos': 0,
-        'readyVideos': 0,
-        'loadingVideos': 0,
-        'failedVideos': 0,
-        'controllers': 0,
-        'estimatedMemoryMB': 0,
-      };
-    }
-    
-    final totalVideos = _videoStates.length;
-    final readyCount = _videoStates.values.where((s) => s.isReady).length;
-    final loadingCount = _videoStates.values.where((s) => s.isLoading).length;
-    final failedCount = _videoStates.values.where((s) => s.hasFailed).length;
-    final controllerCount = _controllers.length; // Actual controller count
-    
     return {
-      'totalVideos': totalVideos,
-      'readyVideos': readyCount,
-      'loadingVideos': loadingCount,
-      'failedVideos': failedCount,
-      'controllers': controllerCount,
-      'estimatedMemoryMB': controllerCount * 30, // Mock: 30MB per controller
-      'maxVideos': _config.maxVideos,
-      'preloadAhead': _config.preloadAhead,
-      'maxRetries': _config.maxRetries,
-      'memoryManagement': _config.enableMemoryManagement,
+      'totalVideos': _videos.length,
+      'readyVideos': readyVideos.length,
+      'loadingVideos': _videoStates.values.where((s) => s.isLoading).length,
+      'failedVideos': _videoStates.values.where((s) => s.hasFailed).length,
+      'controllers': _controllers.length,
+      'disposed': _disposed,
+      'preloadCallCount': _preloadCallCount,
+      'disposeCallCount': _disposeCallCount,
+      'memoryPressureCallCount': _memoryPressureCallCount,
+      'preloadBehavior': _preloadBehavior.toString(),
+      'preloadDelay': _preloadDelay.inMilliseconds,
+      'memoryPressureThreshold': _memoryPressureThreshold,
+      'operationLog': List.from(_operationLog),
     };
   }
-  
-  @override
-  Stream<void> get stateChanges => _stateController.stream;
-  
+
   @override
   void dispose() {
-    if (_disposed) return;
+    _logOperation('dispose', '');
     
     _disposed = true;
     
-    // Dispose all controllers
     for (final controller in _controllers.values) {
-      controller.dispose();
+      controller?.dispose();
     }
     _controllers.clear();
-    
-    // Clear all state
     _videoStates.clear();
-    _orderedVideoIds.clear();
+    _videos.clear();
+    _preloadAttempts.clear();
+    _permanentlyFailedVideos.clear();
+    _operationLog.clear();
     
-    // Close stream
-    _stateController.close();
+    _stateChangesController.close();
   }
-  
+
   // Test control methods
-  
-  /// Control whether preloading should fail for testing
-  void setFailPreload(bool shouldFail) {
-    _shouldFailPreload = shouldFail;
+
+  /// Set the preload behavior for controlling test scenarios
+  void setPreloadBehavior(PreloadBehavior behavior) {
+    _preloadBehavior = behavior;
   }
-  
-  /// Set URL pattern that should trigger failures
-  void setFailurePattern(String pattern) {
-    _failurePattern = pattern;
-  }
-  
-  /// Set artificial delay for preloading operations
+
+  /// Set the delay for preload operations
   void setPreloadDelay(Duration delay) {
     _preloadDelay = delay;
   }
-  
-  /// Add multiple videos for bulk testing
-  void addMockVideos(List<VideoEvent> videos) {
-    for (final video in videos) {
-      addVideoEvent(video);
-    }
+
+  /// Set the threshold for triggering memory pressure
+  void setMemoryPressureThreshold(int threshold) {
+    _memoryPressureThreshold = threshold;
   }
-  
-  /// Simulate a video load with specific result
-  void simulateVideoLoad(String videoId, {bool success = true}) {
-    final state = _videoStates[videoId];
-    if (state != null) {
-      if (success) {
-        _videoStates[videoId] = state.toReady();
-      } else {
-        _videoStates[videoId] = state.toFailed('Mock failure simulation');
-      }
-      _notifyStateChange();
-    }
+
+  /// Control whether to throw exceptions on invalid operations
+  void setThrowOnInvalidOperations(bool shouldThrow) {
+    _throwOnInvalidOperations = shouldThrow;
   }
-  
-  /// Simulate memory pressure cleanup
-  void simulateMemoryPressure() {
-    // Force cleanup by reducing limit temporarily
-    final videosToKeep = _config.maxVideos ~/ 2;
-    final toRemove = _orderedVideoIds.skip(videosToKeep).toList();
-    
-    for (final videoId in toRemove) {
-      // Dispose controller if it exists
-      final controller = _controllers.remove(videoId);
-      controller?.dispose();
-      
-      // Remove from state tracking
-      _videoStates.remove(videoId);
-      _orderedVideoIds.remove(videoId);
-    }
-    
-    _notifyStateChange();
+
+  /// Mark a video as permanently failed
+  void markVideoPermanentlyFailed(String videoId) {
+    _permanentlyFailedVideos.add(videoId);
   }
-  
-  /// Get count of videos in specific state for testing
-  int getVideoCountInState(VideoLoadingState state) {
-    return _videoStates.values.where((s) => s.loadingState == state).length;
+
+  /// Reset all test control settings to defaults
+  void resetTestSettings() {
+    _preloadBehavior = PreloadBehavior.normal;
+    _preloadDelay = const Duration(milliseconds: 50);
+    _memoryPressureThreshold = 10;
+    _throwOnInvalidOperations = true;
+    _preloadAttempts.clear();
+    _permanentlyFailedVideos.clear();
   }
-  
+
+  /// Clear operation log for fresh test runs
+  void clearOperationLog() {
+    _operationLog.clear();
+  }
+
+  /// Get count of preload attempts for a specific video
+  int getPreloadAttempts(String videoId) {
+    return _preloadAttempts[videoId] ?? 0;
+  }
+
+  /// Check if a video is marked as permanently failed
+  bool isVideoPermanentlyFailed(String videoId) {
+    return _permanentlyFailedVideos.contains(videoId);
+  }
+
+  /// Get the operation log for test verification
+  List<String> getOperationLog() {
+    return List.from(_operationLog);
+  }
+
+  /// Get statistics for test verification
+  Map<String, int> getStatistics() {
+    return {
+      'preloadCallCount': _preloadCallCount,
+      'disposeCallCount': _disposeCallCount,
+      'memoryPressureCallCount': _memoryPressureCallCount,
+      'totalVideos': _videos.length,
+      'readyVideos': readyVideos.length,
+    };
+  }
+
   // Private helper methods
-  
-  /// Enforce memory limits by removing old videos
-  void _enforceMemoryLimits() {
-    if (_videoStates.length <= _config.maxVideos) return;
-    
-    final videosToRemove = _orderedVideoIds.skip(_config.maxVideos).toList();
-    
-    for (final videoId in videosToRemove) {
-      // Dispose controller if it exists
-      final controller = _controllers.remove(videoId);
-      controller?.dispose();
-      
-      // Remove from state tracking
-      _videoStates.remove(videoId);
-      _orderedVideoIds.remove(videoId);
+
+  void _handleNormalPreload(String videoId, VideoState currentState) {
+    if (videoId.contains('fail')) {
+      _handleFailedPreload(videoId, currentState, 'Simulated failure based on ID');
+    } else {
+      _videoStates[videoId] = currentState.toReady();
+      _controllers[videoId] = null; // Would be real controller in implementation
     }
   }
-  
-  /// Cleanup videos far from current position  
-  void _cleanupDistantVideos(int currentIndex) {
-    final keepRange = _config.preloadAhead + 2; // Use preloadAhead + buffer
-    final startKeep = (currentIndex - keepRange).clamp(0, _orderedVideoIds.length - 1);
-    final endKeep = (currentIndex + keepRange).clamp(0, _orderedVideoIds.length - 1);
-    
-    // Dispose controllers outside keep range
-    for (int i = 0; i < _orderedVideoIds.length; i++) {
-      if (i < startKeep || i > endKeep) {
-        final videoId = _orderedVideoIds[i];
-        final state = _videoStates[videoId];
-        if (state != null && state.isReady && !state.isDisposed) {
-          // Dispose the controller
-          final controller = _controllers.remove(videoId);
-          controller?.dispose();
-          
-          // Update state to disposed
-          _videoStates[videoId] = state.toDisposed();
-        }
-      }
+
+  void _handleFailedPreload(String videoId, VideoState currentState, String errorMessage) {
+    try {
+      _videoStates[videoId] = currentState.toFailed(errorMessage);
+    } catch (e) {
+      // If max retries exceeded, state becomes permanently failed
+      _permanentlyFailedVideos.add(videoId);
     }
   }
-  
-  /// Check if a video URL should trigger failure (for testing)
-  bool _shouldVideoFail(String videoUrl) {
-    if (_failurePattern != null && videoUrl.contains(_failurePattern!)) {
-      return true;
-    }
+
+  Future<void> _triggerMemoryPressure() async {
+    _logOperation('_triggerMemoryPressure', '');
+    _memoryPressureCallCount++;
     
-    // Built-in failure patterns for testing
-    return videoUrl.contains('invalid-url') || 
-           videoUrl.contains('will-fail') ||
-           videoUrl.contains('fail.mp4');
+    // Dispose all but the most recent video
+    final controllersToDispose = List.from(_controllers.keys);
+    for (final videoId in controllersToDispose.skip(1)) {
+      disposeVideo(videoId);
+    }
   }
-  
+
+  void _logOperation(String operation, String context) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _operationLog.add('$timestamp: $operation($context)');
+    
+    // Keep log size manageable
+    if (_operationLog.length > 100) {
+      _operationLog.removeRange(0, _operationLog.length - 100);
+    }
+  }
+
   void _notifyStateChange() {
-    if (!_disposed && !_stateController.isClosed) {
-      _stateController.add(null);
+    if (!_disposed && !_stateChangesController.isClosed) {
+      _stateChangesController.add(null);
     }
   }
+}
+
+/// Enum for controlling preload behavior in tests
+enum PreloadBehavior {
+  /// Normal preload behavior - success unless video ID contains 'fail'
+  normal,
+  
+  /// Always fail preload operations
+  alwaysFail,
+  
+  /// Fail on first attempt, succeed on subsequent attempts
+  failOnce,
+  
+  /// Succeed on first attempt, fail on retry attempts
+  failOnRetry,
+  
+  /// Randomly fail based on video ID hash
+  randomFail,
 }
