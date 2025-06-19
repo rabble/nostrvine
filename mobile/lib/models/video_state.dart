@@ -1,7 +1,7 @@
 // ABOUTME: VideoState model for tracking video loading and lifecycle states
 // ABOUTME: Immutable model with state transitions following TDD principles
 
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'video_event.dart';
 
 /// Enum representing the different loading states of a video
