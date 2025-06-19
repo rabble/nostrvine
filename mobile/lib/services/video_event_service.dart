@@ -40,6 +40,7 @@ class VideoEventService extends ChangeNotifier {
     int? since,
     int? until,
     int limit = 500, // Increased limit for more diverse content
+    bool replace = true, // Whether to replace existing subscription
   }) async {
     debugPrint('🎥 Starting video event subscription...');
     debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
@@ -64,6 +65,12 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('⚠️ WARNING: No relays connected - subscription will likely fail');
     }
     
+    // Close existing subscriptions if replacing
+    if (replace && _subscriptions.isNotEmpty) {
+      debugPrint('🔄 Closing ${_subscriptions.length} existing subscriptions before creating new one...');
+      await unsubscribeFromVideoFeed();
+    }
+    
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -72,12 +79,25 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('🔍 Creating filter for kind 22 video events...');
       debugPrint('  - Authors: ${authors?.length ?? 'all'}');
       debugPrint('  - Hashtags: ${hashtags?.join(', ') ?? 'none'}');
+      debugPrint('  - Since: ${since != null ? DateTime.fromMillisecondsSinceEpoch(since * 1000) : 'none'}');
+      debugPrint('  - Until: ${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}');
       debugPrint('  - Limit: $limit');
+      debugPrint('  - Replace existing: $replace');
+      
       // Create filter for kind 22 events
+      // If no time bounds specified, get recent historical content
+      int? effectiveSince = since;
+      if (since == null && until == null && _videoEvents.isEmpty) {
+        // For initial load, get events from the last 7 days to have good content variety
+        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+        effectiveSince = sevenDaysAgo.millisecondsSinceEpoch ~/ 1000;
+        debugPrint('📅 Initial load: fetching events from last 7 days (since: $sevenDaysAgo)');
+      }
+      
       final filter = Filter(
         kinds: [22], // NIP-71 short video events
         authors: authors,
-        since: since,
+        since: effectiveSince,
         until: until,
         limit: limit,
       );
@@ -87,13 +107,15 @@ class VideoEventService extends ChangeNotifier {
       final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
       debugPrint('📡 Event stream created, setting up listeners...');
       
+      // Use a unique subscription key to avoid conflicts
+      final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
       final subscription = eventStream.listen(
         (event) => _handleNewVideoEvent(event),
         onError: (error) => _handleSubscriptionError(error),
         onDone: () => _handleSubscriptionComplete(),
       );
       
-      _subscriptions['video_feed'] = subscription;
+      _subscriptions[subscriptionKey] = subscription;
       _isSubscribed = true;
       
       debugPrint('✅ Video event subscription established successfully!');
@@ -190,52 +212,36 @@ class VideoEventService extends ChangeNotifier {
   
   /// Refresh video feed by fetching recent events
   Future<void> refreshVideoFeed() async {
+    debugPrint('🔄 Refresh requested - reusing existing subscription');
+    
+    // Don't create new subscriptions for refresh - the main subscription 
+    // should already be getting new events in real-time
     if (!_isSubscribed) {
+      debugPrint('📡 No active subscription, creating initial subscription...');
       return subscribeToVideoFeed();
     }
     
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    
-    try {
-      // Get events from the last hour
-      final oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
-      final since = oneHourAgo.millisecondsSinceEpoch ~/ 1000;
-      
-      await subscribeToVideoFeed(
-        since: since,
-        limit: 50,
-      );
-    } catch (e) {
-      _error = e.toString();
-      debugPrint('❌ Failed to refresh video feed: $e');
-      
-      if (_isConnectionError(e)) {
-        debugPrint('🌐 Refresh failed due to connection error');
-      }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    debugPrint('✅ Refresh completed - using existing real-time subscription');
   }
   
-  /// Load more historical events
-  Future<void> loadMoreEvents({int limit = 200}) async { // Increased limit for bulk loading
+  /// Load more historical events using one-shot query (not persistent subscription)
+  Future<void> loadMoreEvents({int limit = 200}) async {
     if (_videoEvents.isEmpty) return;
     
     _isLoading = true;
     notifyListeners();
     
     try {
+      debugPrint('📚 Loading more historical events...');
       // Get events older than the oldest event we have
       final oldestEvent = _videoEvents.last;
       final until = oldestEvent.createdAt - 1; // One second before oldest event
       
-      await subscribeToVideoFeed(
-        until: until,
-        limit: limit,
-      );
+      debugPrint('📚 Requesting events older than ${DateTime.fromMillisecondsSinceEpoch(until * 1000)}');
+      
+      // Use one-shot historical query - this will complete when EOSE is received
+      await _queryHistoricalEvents(until: until, limit: limit);
+      
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to load more events: $e');
@@ -247,6 +253,51 @@ class VideoEventService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+  
+  /// One-shot query for historical events (completes when EOSE received)
+  Future<void> _queryHistoricalEvents({int? until, int limit = 200}) async {
+    if (!_nostrService.isInitialized) {
+      throw VideoEventServiceException('Nostr service not initialized');
+    }
+    
+    final completer = Completer<void>();
+    final filter = Filter(
+      kinds: [22],
+      until: until,
+      limit: limit,
+    );
+    
+    debugPrint('🔍 One-shot historical query: until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}, limit=$limit');
+    
+    final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+    late StreamSubscription subscription;
+    
+    subscription = eventStream.listen(
+      (event) {
+        _handleNewVideoEvent(event);
+      },
+      onError: (error) {
+        debugPrint('❌ Historical query error: $error');
+        if (!completer.isCompleted) completer.completeError(error);
+      },
+      onDone: () {
+        debugPrint('✅ Historical query completed (EOSE received)');
+        subscription.cancel();
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    
+    // Set timeout for the query
+    Timer(const Duration(seconds: 30), () {
+      if (!completer.isCompleted) {
+        debugPrint('⏰ Historical query timed out after 30 seconds');
+        subscription.cancel();
+        completer.complete();
+      }
+    });
+    
+    return completer.future;
   }
   
   /// Get video event by ID

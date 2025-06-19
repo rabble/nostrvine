@@ -16,8 +16,8 @@ class NostrService extends ChangeNotifier implements INostrService {
   static const List<String> defaultRelays = [
     'wss://relay.damus.io',
     'wss://nos.lol',
-    'wss://relay.snort.social',
-    // Removed 'wss://relay.current.fyi' - permanently offline causing SocketException flood
+    'wss://relay.nos.social',
+    'wss://relay.nostr.band',
   ];
   
   final NostrKeyManager _keyManager;
@@ -280,11 +280,17 @@ class NostrService extends ChangeNotifier implements INostrService {
       throw NostrServiceException('Nostr service not initialized');
     }
     
-    // Create a subscription ID
-    final subscriptionId = DateTime.now().millisecondsSinceEpoch.toString();
+    // Create a unique subscription ID with microseconds for uniqueness
+    final now = DateTime.now();
+    final subscriptionId = '${now.millisecondsSinceEpoch}_${now.microsecond}';
     
     // Create stream controller for this subscription
-    final controller = StreamController<Event>.broadcast();
+    final controller = StreamController<Event>.broadcast(
+      onCancel: () {
+        // Send CLOSE message when subscription is cancelled
+        _closeSubscription(subscriptionId);
+      },
+    );
     _eventControllers[subscriptionId] = controller;
     
     // Send REQ message to all connected relays
@@ -294,7 +300,7 @@ class NostrService extends ChangeNotifier implements INostrService {
         if (webSocket != null) {
           final reqMessage = ['REQ', subscriptionId, ...filters.map((f) => f.toJson())];
           webSocket.sink.add(jsonEncode(reqMessage));
-          debugPrint('📡 Sent subscription request to $relayUrl');
+          debugPrint('📡 Sent subscription request to $relayUrl with ID: $subscriptionId');
         }
       } catch (e) {
         debugPrint('❌ Failed to send subscription to $relayUrl: $e');
@@ -302,6 +308,28 @@ class NostrService extends ChangeNotifier implements INostrService {
     }
     
     return controller.stream;
+  }
+  
+  /// Close a specific subscription by sending CLOSE messages to all relays
+  void _closeSubscription(String subscriptionId) {
+    debugPrint('🔐 Closing subscription: $subscriptionId');
+    
+    // Send CLOSE message to all connected relays
+    for (final relayUrl in _connectedRelays) {
+      try {
+        final webSocket = _webSockets[relayUrl];
+        if (webSocket != null) {
+          final closeMessage = ['CLOSE', subscriptionId];
+          webSocket.sink.add(jsonEncode(closeMessage));
+          debugPrint('📡 Sent CLOSE message to $relayUrl for subscription: $subscriptionId');
+        }
+      } catch (e) {
+        debugPrint('❌ Failed to send CLOSE to $relayUrl: $e');
+      }
+    }
+    
+    // Clean up the controller
+    _eventControllers.remove(subscriptionId);
   }
   
   /// Add a new relay

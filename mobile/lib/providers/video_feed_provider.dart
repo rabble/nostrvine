@@ -40,6 +40,9 @@ class VideoFeedProvider extends ChangeNotifier {
     
     // Listen to video event service changes
     _videoEventService.addListener(_onVideoEventServiceChanged);
+    
+    // Listen to video cache service changes (when ready queue updates)
+    _videoCacheService.addListener(_onVideoCacheServiceChanged);
   }
   
   // Getters
@@ -271,6 +274,13 @@ class VideoFeedProvider extends ChangeNotifier {
     notifyListeners();
   }
   
+  /// Handle changes from video cache service (when ready queue updates)
+  void _onVideoCacheServiceChanged() {
+    debugPrint('📢 Video cache service changed - ready queue now has ${_videoCacheService.readyToPlayQueue.length} videos');
+    // Notify listeners so UI can rebuild with updated ready queue
+    notifyListeners();
+  }
+  
   /// Fetch user profiles for video authors (only for new events)
   void _fetchProfilesForVideos(List<VideoEvent> videoEvents) {
     // Filter to only new events we haven't processed for profile fetching
@@ -321,6 +331,7 @@ class VideoFeedProvider extends ChangeNotifier {
   @override
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
+    _videoCacheService.removeListener(_onVideoCacheServiceChanged);
     _profileFetchDebounceTimer?.cancel();
     // DO NOT dispose _videoCacheService - it's managed by Provider and shared across screens
     super.dispose();
