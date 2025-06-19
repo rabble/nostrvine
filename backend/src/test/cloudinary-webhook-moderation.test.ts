@@ -37,6 +37,7 @@ describe('Cloudinary Webhook Moderation Pipeline', () => {
   beforeEach(() => {
     mockKV = createMockKV();
     mockEnv.METADATA_CACHE = mockKV;
+    mockEnv.ENVIRONMENT = 'production'; // Default to production mode for tests
     vi.clearAllMocks();
   });
 
@@ -391,6 +392,66 @@ describe('Cloudinary Webhook Moderation Pipeline', () => {
       expect(metadata.moderation_details?.response.frames).toHaveLength(2);
       expect(metadata.moderation_details?.response.frames[0].pornography_likelihood).toBe('LIKELY');
       expect(metadata.moderation_details?.response.frames[1].pornography_likelihood).toBe('VERY_LIKELY');
+    });
+  });
+
+  describe('Beta Mode Behavior', () => {
+    beforeEach(async () => {
+      // Set up initial metadata and beta environment
+      mockEnv.ENVIRONMENT = 'beta';
+      
+      const initialMetadata: ProcessedVideoMetadata = {
+        public_id: 'beta_video_001',
+        secure_url: 'https://res.cloudinary.com/dswu0ugmo/video/upload/beta_video_001.mp4',
+        format: 'mp4',
+        width: 1920,
+        height: 1080,
+        bytes: 5242880,
+        resource_type: 'video',
+        created_at: '2024-01-01T12:00:00Z',
+        user_pubkey: 'beta_test_pubkey',
+        processing_status: 'pending_moderation'
+      };
+      
+      await mockKV.put('video_metadata:beta_video_001', JSON.stringify(initialMetadata));
+    });
+
+    it('should auto-approve flagged content in beta mode', async () => {
+      const moderationPayload = {
+        notification_type: 'moderation',
+        public_id: 'beta_video_001',
+        moderation_status: 'rejected',
+        moderation_kind: 'aws_rek_video',
+        moderation_response: {
+          moderation_confidence: 'VERY_LIKELY'
+        },
+        signature: 'test_signature'
+      };
+
+      const request = new Request('http://localhost:8787/webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cld-Signature': 'valid_signature'
+        },
+        body: JSON.stringify(moderationPayload)
+      });
+
+      // Mock webhook signature validation
+      vi.spyOn(webhookValidation, 'validateWebhookSignature').mockResolvedValue(true);
+
+      const response = await handleCloudinaryWebhook(request, mockEnv);
+      
+      expect(response.status).toBe(200);
+      
+      // Verify metadata shows approved status despite moderation rejection
+      const storedMetadata = await mockKV.get('video_metadata:beta_video_001');
+      const metadata: ProcessedVideoMetadata = JSON.parse(storedMetadata);
+      
+      expect(metadata.processing_status).toBe('approved'); // Auto-approved in beta
+      expect(metadata.moderation_details?.status).toBe('flagged'); // Marked as flagged
+      expect(metadata.moderation_details?.beta_mode).toBe(true); // Beta mode flag
+      expect(metadata.moderation_details?.quarantined_at).toBeUndefined(); // Not quarantined
     });
   });
 });

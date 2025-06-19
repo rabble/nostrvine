@@ -257,29 +257,42 @@ async function handleModerationComplete(
       console.log(`✅ Video ${payload.public_id} approved by moderation`);
       
     } else if (payload.moderation_status === 'rejected') {
-      metadata.processing_status = 'rejected';
-      metadata.moderation_details = {
-        status: 'rejected',
-        kind: payload.moderation_kind || 'unknown',
-        response: payload.moderation_response,
-        quarantined_at: new Date().toISOString()
-      };
+      // Beta mode: Simplified handling of rejected content
+      if (env.ENVIRONMENT === 'beta' || env.ENVIRONMENT === 'development') {
+        console.log(`🔍 BETA: Video ${payload.public_id} flagged by moderation (manual review required)`);
+        metadata.processing_status = 'approved'; // Auto-approve for beta
+        metadata.moderation_details = {
+          status: 'flagged', // Mark as flagged but not rejected
+          kind: payload.moderation_kind || 'unknown',
+          response: payload.moderation_response,
+          beta_mode: true
+        };
+      } else {
+        // Production mode: Full quarantine
+        metadata.processing_status = 'rejected';
+        metadata.moderation_details = {
+          status: 'rejected',
+          kind: payload.moderation_kind || 'unknown',
+          response: payload.moderation_response,
+          quarantined_at: new Date().toISOString()
+        };
 
-      // Log security event for rejected content
-      console.log(`🚨 SECURITY: Video ${payload.public_id} rejected by moderation`, {
-        user_pubkey: metadata.user_pubkey,
-        moderation_kind: payload.moderation_kind,
-        confidence: payload.moderation_response?.moderation_confidence,
-        timestamp: new Date().toISOString()
-      });
+        // Log security event for rejected content
+        console.log(`🚨 SECURITY: Video ${payload.public_id} rejected by moderation`, {
+          user_pubkey: metadata.user_pubkey,
+          moderation_kind: payload.moderation_kind,
+          confidence: payload.moderation_response?.moderation_confidence,
+          timestamp: new Date().toISOString()
+        });
 
-      // CRITICAL: Immediately quarantine the rejected asset
-      try {
-        await quarantineCloudinaryAsset(payload.public_id, env);
-        console.log(`✅ Quarantined rejected video: ${payload.public_id}`);
-      } catch (quarantineError) {
-        console.error(`❌ CRITICAL: FAILED TO QUARANTINE rejected video ${payload.public_id}:`, quarantineError);
-        // TODO: Add robust alerting here for manual intervention
+        // CRITICAL: Immediately quarantine the rejected asset
+        try {
+          await quarantineCloudinaryAsset(payload.public_id, env);
+          console.log(`✅ Quarantined rejected video: ${payload.public_id}`);
+        } catch (quarantineError) {
+          console.error(`❌ CRITICAL: FAILED TO QUARANTINE rejected video ${payload.public_id}:`, quarantineError);
+          // TODO: Add robust alerting here for manual intervention
+        }
       }
       
     } else {
