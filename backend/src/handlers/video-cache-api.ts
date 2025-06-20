@@ -2,6 +2,7 @@
 // ABOUTME: Core endpoint for NostrVine's instant video playback system
 
 import { checkSecurity, applySecurityHeaders } from '../services/security';
+import { VideoAnalyticsService } from '../services/analytics';
 
 interface VideoMetadata {
   videoId: string;
@@ -63,8 +64,11 @@ async function generateVideoId(url: string): Promise<string> {
 export async function handleVideoMetadata(
   videoId: string,
   request: Request,
-  env: Env
+  env: Env,
+  ctx: ExecutionContext
 ): Promise<Response> {
+  const startTime = Date.now();
+  
   try {
     // Check security (API key and rate limiting)
     const securityCheck = await checkSecurity(request, env);
@@ -141,6 +145,11 @@ export async function handleVideoMetadata(
 
     console.log(`✅ Returning metadata for video ${videoId}`);
 
+    // Track analytics
+    const responseTime = Date.now() - startTime;
+    const analytics = new VideoAnalyticsService(env, ctx);
+    analytics.trackVideoRequest(videoId, 'auto', true, responseTime, request, securityCheck.apiKey);
+
     return applySecurityHeaders(new Response(JSON.stringify(response), {
       status: 200,
       headers: {
@@ -153,6 +162,10 @@ export async function handleVideoMetadata(
     }));
   } catch (error) {
     console.error('❌ Error handling video metadata request:', error);
+    
+    // Track error analytics
+    const analytics = new VideoAnalyticsService(env, ctx);
+    analytics.trackError(error as Error, '/api/video', request);
     
     return applySecurityHeaders(new Response(
       JSON.stringify({

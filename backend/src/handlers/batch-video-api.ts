@@ -2,6 +2,7 @@
 // ABOUTME: Enables clients to fetch metadata for multiple videos discovered via Nostr events
 
 import { checkSecurity, applySecurityHeaders } from '../services/security';
+import { VideoAnalyticsService } from '../services/analytics';
 
 interface BatchVideoRequest {
   videoIds: string[];
@@ -89,8 +90,11 @@ async function generateSignedUrls(
  */
 export async function handleBatchVideoLookup(
   request: Request,
-  env: Env
+  env: Env,
+  ctx: ExecutionContext
 ): Promise<Response> {
+  const startTime = Date.now();
+  
   try {
     // Check security (API key and rate limiting)
     const securityCheck = await checkSecurity(request, env);
@@ -255,6 +259,11 @@ export async function handleBatchVideoLookup(
     };
 
     console.log(`✅ Batch lookup complete: ${found} found, ${missing} missing`);
+
+    // Track analytics
+    const responseTime = Date.now() - startTime;
+    const analytics = new VideoAnalyticsService(env, ctx);
+    analytics.trackBatchRequest(uniqueVideoIds, found, missing, responseTime, request, securityCheck.apiKey);
 
     return applySecurityHeaders(new Response(JSON.stringify(response), {
       status: 200,

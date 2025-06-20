@@ -20,6 +20,9 @@ import { handleVideoStatus, handleVideoStatusOptions } from './handlers/stream-s
 import { handleVideoMetadata as handleVideoCacheMetadata, handleVideoMetadataOptions as handleVideoCacheOptions } from './handlers/video-cache-api';
 import { handleBatchVideoLookup, handleBatchVideoOptions } from './handlers/batch-video-api';
 
+// Analytics service
+import { VideoAnalyticsService } from './services/analytics';
+
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
 
@@ -83,7 +86,7 @@ export default {
 			// Video caching API endpoint
 			if (pathname.startsWith('/api/video/') && method === 'GET') {
 				const videoId = pathname.split('/api/video/')[1];
-				return wrapResponse(handleVideoCacheMetadata(videoId, request, env));
+				return wrapResponse(handleVideoCacheMetadata(videoId, request, env, ctx));
 			}
 
 			if (pathname.startsWith('/api/video/') && method === 'OPTIONS') {
@@ -92,7 +95,7 @@ export default {
 
 			// Batch video lookup endpoint
 			if (pathname === '/api/videos/batch' && method === 'POST') {
-				return wrapResponse(handleBatchVideoLookup(request, env));
+				return wrapResponse(handleBatchVideoLookup(request, env, ctx));
 			}
 
 			if (pathname === '/api/videos/batch' && method === 'OPTIONS') {
@@ -134,24 +137,28 @@ export default {
 				return handleJobStatus(jobId, env);
 			}
 
-			// Health check endpoint
+			// Health check endpoint with analytics
 			if (pathname === '/health' && method === 'GET') {
-				return new Response(JSON.stringify({
-					status: 'healthy',
-					timestamp: new Date().toISOString(),
+				const analytics = new VideoAnalyticsService(env, ctx);
+				const healthStatus = await analytics.getHealthStatus();
+				
+				return wrapResponse(Promise.resolve(new Response(JSON.stringify({
+					...healthStatus,
 					version: '1.0.0',
 					services: {
 						nip96: 'active',
-						r2_storage: 'active',
+						r2_storage: healthStatus.dependencies.r2,
 						stream_api: 'active',
-						video_cache_api: 'active'
+						video_cache_api: 'active',
+						kv_storage: healthStatus.dependencies.kv,
+						rate_limiter: healthStatus.dependencies.rateLimiter
 					}
 				}), {
 					headers: {
 						'Content-Type': 'application/json',
 						'Access-Control-Allow-Origin': '*'
 					}
-				});
+				})));
 			}
 
 			// Media serving endpoint
