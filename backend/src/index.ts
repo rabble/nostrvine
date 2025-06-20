@@ -16,6 +16,10 @@ import { handleStreamUploadRequest, handleStreamUploadOptions } from './handlers
 import { handleStreamWebhook, handleStreamWebhookOptions } from './handlers/stream-webhook';
 import { handleVideoStatus, handleVideoStatusOptions } from './handlers/stream-status';
 
+// Video caching API
+import { handleVideoMetadata as handleVideoCacheMetadata, handleVideoMetadataOptions as handleVideoCacheOptions } from './handlers/video-cache-api';
+import { handleBatchVideoLookup, handleBatchVideoOptions } from './handlers/batch-video-api';
+
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
 
@@ -25,14 +29,25 @@ export default {
 		const pathname = url.pathname;
 		const method = request.method;
 		
+		// Request logging
+		const startTime = Date.now();
+		console.log(`🔍 ${method} ${pathname} from ${request.headers.get('origin') || 'unknown'}`);
 
 		// Note: CORS preflight handling moved to individual endpoint handlers for proper functionality
+
+		// Helper to wrap response with timing
+		const wrapResponse = async (responsePromise: Promise<Response>): Promise<Response> => {
+			const response = await responsePromise;
+			const duration = Date.now() - startTime;
+			console.log(`✅ ${method} ${pathname} - ${response.status} (${duration}ms)`);
+			return response;
+		};
 
 		// Route handling
 		try {
 			// NIP-96 server information endpoint
 			if (pathname === '/.well-known/nostr/nip96.json' && method === 'GET') {
-				return handleNIP96Info(request, env);
+				return wrapResponse(handleNIP96Info(request, env));
 			}
 
 			// Cloudflare Stream upload request endpoint (CDN implementation)
@@ -63,6 +78,25 @@ export default {
 
 			if (pathname.startsWith('/v1/media/status/') && method === 'OPTIONS') {
 				return handleVideoStatusOptions();
+			}
+
+			// Video caching API endpoint
+			if (pathname.startsWith('/api/video/') && method === 'GET') {
+				const videoId = pathname.split('/api/video/')[1];
+				return wrapResponse(handleVideoCacheMetadata(videoId, request, env));
+			}
+
+			if (pathname.startsWith('/api/video/') && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleVideoCacheOptions()));
+			}
+
+			// Batch video lookup endpoint
+			if (pathname === '/api/videos/batch' && method === 'POST') {
+				return wrapResponse(handleBatchVideoLookup(request, env));
+			}
+
+			if (pathname === '/api/videos/batch' && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleBatchVideoOptions()));
 			}
 
 
@@ -109,7 +143,8 @@ export default {
 					services: {
 						nip96: 'active',
 						r2_storage: 'active',
-						stream_api: 'active'
+						stream_api: 'active',
+						video_cache_api: 'active'
 					}
 				}), {
 					headers: {
@@ -136,6 +171,8 @@ export default {
 					'/v1/media/status/{videoId}',
 					'/v1/media/list',
 					'/v1/media/metadata/{publicId}',
+					'/api/video/{videoId} (Video Cache API)',
+					'/api/videos/batch (Batch Video Lookup)',
 					'/v1/media/cloudinary-upload (Legacy)',
 					'/v1/media/webhook (Legacy)',
 					'/api/upload (NIP-96)',
@@ -152,17 +189,30 @@ export default {
 			});
 
 		} catch (error) {
-			console.error('Request handling error:', error);
+			const duration = Date.now() - startTime;
+			console.error(`❌ ${method} ${pathname} - Error after ${duration}ms:`, error);
 			
-			return new Response(JSON.stringify({
+			// Structured error response
+			const errorResponse = {
 				error: 'Internal Server Error',
-				message: 'An unexpected error occurred',
-				timestamp: new Date().toISOString()
-			}), {
+				message: error instanceof Error ? error.message : 'An unexpected error occurred',
+				timestamp: new Date().toISOString(),
+				path: pathname,
+				method: method
+			};
+
+			if (env.ENVIRONMENT === 'development') {
+				// Include stack trace in development
+				errorResponse['stack'] = error instanceof Error ? error.stack : undefined;
+			}
+			
+			return new Response(JSON.stringify(errorResponse), {
 				status: 500,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*'
+					'Access-Control-Allow-Origin': '*',
+					'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 				}
 			});
 		}
