@@ -94,10 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       body: Column(
         children: [
           // Profile header
-          _buildProfileHeader(socialService),
+          _buildProfileHeader(socialService, profileStatsProvider),
           
           // Stats row
-          _buildStatsRow(),
+          _buildStatsRow(profileStatsProvider),
           
           // Action buttons
           _buildActionButtons(),
@@ -125,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildProfileHeader(SocialService socialService) {
+  Widget _buildProfileHeader(SocialService socialService, ProfileStatsProvider profileStatsProvider) {
     return Consumer<AuthService>(
       builder: (context, authService, child) {
         final userProfile = authService.currentProfile;
@@ -337,13 +337,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(VineTheme.vineGreen),
                   ),
                 )
               : Text(
                   count != null ? _formatCount(count) : '...',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.primaryText,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -353,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         Text(
           label,
           style: const TextStyle(
-            color: Colors.grey,
+            color: VineTheme.secondaryText,
             fontSize: 12,
           ),
         ),
@@ -372,104 +372,107 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     }
   }
 
-  Widget _buildStatsRow() {
-    return Consumer<ProfileStatsProvider>(
-      builder: (context, profileStatsProvider, child) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildStatsRow(ProfileStatsProvider profileStatsProvider) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: VineTheme.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Column(
             children: [
-              Column(
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: profileStatsProvider.isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            _formatCount(profileStatsProvider.stats?.totalViews ?? 0),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
-                  const Text(
-                    'Total Views',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: profileStatsProvider.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        _formatCount(profileStatsProvider.stats?.totalViews ?? 0),
+                        style: const TextStyle(
+                          color: VineTheme.primaryText,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
-              Column(
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: profileStatsProvider.isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            _formatCount(profileStatsProvider.stats?.totalLikes ?? 0),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
-                  const Text(
-                    'Total Likes',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const Column(
-                children: [
-                  Text(
-                    'Gold',
-                    style: TextStyle(
-                      color: Colors.amber,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    'Creator Tier',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              const Text(
+                'Total Views',
+                style: TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
-        );
-      },
+          Column(
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: profileStatsProvider.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        _formatCount(profileStatsProvider.stats?.totalLikes ?? 0),
+                        style: const TextStyle(
+                          color: VineTheme.primaryText,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+              ),
+              const Text(
+                'Total Likes',
+                style: TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const Column(
+            children: [
+              Text(
+                'Gold',
+                style: TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                'Creator Tier',
+                style: TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

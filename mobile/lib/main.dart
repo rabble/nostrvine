@@ -28,6 +28,7 @@ import 'services/seen_videos_service.dart';
 import 'services/web_auth_service.dart';
 import 'services/social_service.dart';
 import 'providers/video_feed_provider.dart';
+import 'providers/profile_stats_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -125,6 +126,16 @@ class NostrVineApp extends StatelessWidget {
           update: (_, nostrService, authService, previous) => previous ?? SocialService(
             nostrService,
             authService,
+          ),
+        ),
+        
+        // Profile stats provider depends on Social service
+        ChangeNotifierProxyProvider<SocialService, ProfileStatsProvider>(
+          create: (context) => ProfileStatsProvider(
+            context.read<SocialService>(),
+          ),
+          update: (_, socialService, previous) => previous ?? ProfileStatsProvider(
+            socialService,
           ),
         ),
         
@@ -403,18 +414,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
+        backgroundColor: VineTheme.vineGreen,
+        selectedItemColor: VineTheme.whiteText,
+        unselectedItemColor: VineTheme.whiteText.withValues(alpha: 0.7),
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Feed',
+            label: '',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: 'Camera',
+            icon: Icon(Icons.videocam),
+            label: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profile',
+            label: '',
           ),
         ],
       ),

@@ -66,28 +66,39 @@ class _FeedScreenState extends State<FeedScreen> {
         },
         child: Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
-        elevation: 1,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text(
-          'NostrVine',
+          'Vine',
           style: TextStyle(
             color: VineTheme.whiteText,
             fontWeight: FontWeight.bold,
             fontSize: 24,
+            shadows: [
+              Shadow(
+                offset: Offset(0, 1),
+                blurRadius: 3,
+                color: Colors.black54,
+              ),
+            ],
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: VineTheme.whiteText),
+            icon: const Icon(Icons.search, 
+              color: VineTheme.whiteText,
+              shadows: [
+                Shadow(
+                  offset: Offset(0, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
             onPressed: () {
               // TODO: Implement search functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: VineTheme.whiteText),
-            onPressed: () {
-              // TODO: Implement notifications
             },
           ),
           // Debug option to clear seen videos
@@ -402,12 +413,14 @@ class _FeedScreenState extends State<FeedScreen> {
               
               return SizedBox(
                 height: MediaQuery.of(context).size.height,
+                width: MediaQuery.of(context).size.width,
                 child: Consumer<SeenVideosService>(
                   builder: (context, seenVideosService, child) {
                     // Show loading state for videos that aren't ready yet
                     if (!isVideoReady) {
                       return Container(
                         height: MediaQuery.of(context).size.height,
+                        width: MediaQuery.of(context).size.width,
                         color: Colors.black,
                         child: const Center(
                           child: Column(
