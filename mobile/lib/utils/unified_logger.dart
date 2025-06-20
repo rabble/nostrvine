@@ -25,13 +25,20 @@ class UnifiedLogger {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    // Create timestamp
+    final now = DateTime.now();
+    final timestamp = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}';
+    
+    // Format message with timestamp
+    final timestampedMessage = '[$timestamp] $message';
+    
     // Always output to Flutter tool console via debugPrint
-    debugPrint(message);
+    debugPrint(timestampedMessage);
     
     // Also output to browser DevTools via developer.log (web only)
     if (kIsWeb) {
       developer.log(
-        message,
+        timestampedMessage,
         name: name ?? 'NostrVine',
         level: level,
         error: error,

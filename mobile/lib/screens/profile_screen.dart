@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nostr/nostr.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/social_service.dart';
 import '../providers/profile_stats_provider.dart';
+import '../providers/profile_videos_provider.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
 import 'profile_setup_screen.dart';
@@ -25,9 +27,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
-    // Load profile stats when screen initializes
+    // Load profile stats and videos when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProfileStats();
+      _loadProfileVideos();
     });
   }
   
@@ -40,6 +43,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       profileStatsProvider.loadProfileStats(currentUserPubkey);
     }
   }
+  
+  void _loadProfileVideos() {
+    final authService = context.read<AuthService>();
+    final profileVideosProvider = context.read<ProfileVideosProvider>();
+    
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    if (currentUserPubkey != null) {
+      profileVideosProvider.loadVideosForUser(currentUserPubkey);
+    }
+  }
 
   @override
   void dispose() {
@@ -49,8 +62,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Consumer4<AuthService, UserProfileService, SocialService, ProfileStatsProvider>(
-      builder: (context, authService, userProfileService, socialService, profileStatsProvider, child) {
+    return Consumer5<AuthService, UserProfileService, SocialService, ProfileStatsProvider, ProfileVideosProvider>(
+      builder: (context, authService, userProfileService, socialService, profileStatsProvider, profileVideosProvider, child) {
         final userProfile = authService.currentProfile;
         final userName = userProfile?.displayName ?? 'Anonymous';
         
@@ -568,77 +581,238 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _buildVinesGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(2),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: 21, // Placeholder count
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () => _openVine(index),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Stack(
+    return Consumer<ProfileVideosProvider>(
+      builder: (context, profileVideosProvider, child) {
+        // Show loading state
+        if (profileVideosProvider.isLoading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Thumbnail placeholder
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
+                CircularProgressIndicator(color: VineTheme.vineGreen),
+                SizedBox(height: 16),
+                Text(
+                  'Loading your videos...',
+                  style: TextStyle(color: VineTheme.secondaryText),
+                ),
+              ],
+            ),
+          );
+        }
+
+    // Show error state
+    if (profileVideosProvider.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Error loading videos',
+              style: TextStyle(color: VineTheme.primaryText, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              profileVideosProvider.error ?? 'Unknown error',
+              style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => profileVideosProvider.refreshVideos(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.whiteText,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show empty state
+    if (!profileVideosProvider.hasVideos) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.videocam_outlined, color: VineTheme.secondaryText, size: 64),
+            SizedBox(height: 16),
+            Text(
+              'No Videos Yet',
+              style: TextStyle(
+                color: VineTheme.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Share your first video to see it here',
+              style: TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show video grid
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        // Load more videos when scrolling near the bottom
+        if (!profileVideosProvider.isLoadingMore &&
+            profileVideosProvider.hasMore &&
+            scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent - 200) {
+          profileVideosProvider.loadMoreVideos();
+        }
+        return false;
+      },
+      child: GridView.builder(
+        padding: const EdgeInsets.all(2),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 2,
+          mainAxisSpacing: 2,
+          childAspectRatio: 0.7,
+        ),
+        itemCount: profileVideosProvider.hasMore
+            ? profileVideosProvider.videoCount + 1 // +1 for loading indicator
+            : profileVideosProvider.videoCount,
+        itemBuilder: (context, index) {
+          // Show loading indicator at the end if loading more
+          if (index >= profileVideosProvider.videoCount) {
+            return Container(
+              decoration: BoxDecoration(
+                color: VineTheme.cardBackground,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: VineTheme.vineGreen,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          }
+
+          final videoEvent = profileVideosProvider.videos[index];
+          return GestureDetector(
+            onTap: () => _openVine(videoEvent),
+            child: Container(
+              decoration: BoxDecoration(
+                color: VineTheme.cardBackground,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Stack(
+                children: [
+                  // Video thumbnail
+                  Positioned.fill(
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.purple.withValues(alpha: 0.3),
-                          Colors.blue.withValues(alpha: 0.3),
-                        ],
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                      child: videoEvent.thumbnailUrl != null && videoEvent.thumbnailUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: videoEvent.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      VineTheme.vineGreen.withValues(alpha: 0.3),
+                                      Colors.blue.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: VineTheme.whiteText,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      VineTheme.vineGreen.withValues(alpha: 0.3),
+                                      Colors.blue.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    color: VineTheme.whiteText,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    VineTheme.vineGreen.withValues(alpha: 0.3),
+                                    Colors.blue.withValues(alpha: 0.3),
+                                  ],
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.play_circle_outline,
+                                  color: VineTheme.whiteText,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
-                ),
-                
-                // View count
-                Positioned(
-                  bottom: 4,
-                  left: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(4),
+                  
+                  // Play icon overlay
+                  const Center(
+                    child: Icon(
+                      Icons.play_circle_filled,
+                      color: Colors.white70,
+                      size: 32,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.play_arrow, color: Colors.white, size: 12),
-                        Text(
-                          '${(index + 1) * 234}',
+                  ),
+                  
+                  // Duration indicator
+                  if (videoEvent.duration != null)
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          videoEvent.formattedDuration,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        },
+      ),
+    );
       },
     );
   }
@@ -956,10 +1130,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  void _openVine(int index) {
-    // TODO: Navigate to vine detail screen
+  void _openVine(VideoEvent videoEvent) {
+    // TODO: Navigate to video detail screen or open in feed
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening vine $index')),
+      SnackBar(content: Text('Opening video: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}')),
     );
   }
 
