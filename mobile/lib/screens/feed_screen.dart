@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -7,6 +8,8 @@ import '../models/video_event.dart';
 import '../widgets/video_feed_item.dart';
 import '../services/connection_status_service.dart';
 import '../services/seen_videos_service.dart';
+import '../theme/vine_theme.dart';
+import '../utils/video_system_debugger.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -49,28 +52,40 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     // Removed verbose logging to reduce noise
-    return Scaffold(
+    return VideoSystemDebugOverlay(
+      child: GestureDetector(
+        // Debug gesture: Triple-tap top-right corner to toggle debug overlay
+        onTapDown: (details) {
+          if (kDebugMode) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final tapX = details.globalPosition.dx;
+            if (tapX > screenWidth * 0.85) { // Top-right 15% of screen
+              _handleDebugTap();
+            }
+          }
+        },
+        child: Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
+        backgroundColor: VineTheme.vineGreen,
+        elevation: 1,
         title: const Text(
           'NostrVine',
           style: TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: VineTheme.whiteText),
             onPressed: () {
               // TODO: Implement search functionality
             },
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+            icon: const Icon(Icons.notifications_outlined, color: VineTheme.whiteText),
             onPressed: () {
               // TODO: Implement notifications
             },
@@ -78,24 +93,71 @@ class _FeedScreenState extends State<FeedScreen> {
           // Debug option to clear seen videos
           if (kDebugMode)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
+              icon: const Icon(Icons.more_vert, color: VineTheme.whiteText),
               onSelected: (value) async {
                 if (value == 'clear_seen') {
                   final seenVideosService = context.read<SeenVideosService>();
+                  final feedProvider = context.read<VideoFeedProvider>();
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
                   await seenVideosService.clearSeenVideos();
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(content: Text('Cleared seen videos history')),
                     );
                     // Refresh the feed to show previously seen videos
-                    context.read<VideoFeedProvider>().refreshFeed();
+                    feedProvider.refreshFeed();
                   }
+                } else if (value == 'toggle_debug') {
+                  VideoSystemDebugger().toggleDebugOverlay();
+                } else if (value == 'system_legacy') {
+                  VideoSystemDebugger().switchToSystem(VideoSystem.legacy);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Switched to Legacy VideoCacheService')),
+                  );
+                } else if (value == 'system_manager') {
+                  VideoSystemDebugger().switchToSystem(VideoSystem.manager);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Switched to VideoManagerService')),
+                  );
+                } else if (value == 'system_hybrid') {
+                  VideoSystemDebugger().switchToSystem(VideoSystem.hybrid);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Switched to Hybrid mode (current)')),
+                  );
+                } else if (value == 'debug_report') {
+                  final report = VideoSystemDebugger().getComparisonReport();
+                  debugPrint(report);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Debug report printed to console')),
+                  );
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'clear_seen',
                   child: Text('Clear Seen Videos'),
+                ),
+                const PopupMenuItem(
+                  value: 'toggle_debug',
+                  child: Text('Toggle Debug Overlay'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'system_hybrid',
+                  child: Text('🔀 Hybrid Mode (Current)'),
+                ),
+                const PopupMenuItem(
+                  value: 'system_manager',
+                  child: Text('⚡ VideoManagerService'),
+                ),
+                const PopupMenuItem(
+                  value: 'system_legacy',
+                  child: Text('🏛️ VideoCacheService (Legacy)'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'debug_report',
+                  child: Text('📊 Performance Report'),
                 ),
               ],
             ),
@@ -115,24 +177,47 @@ class _FeedScreenState extends State<FeedScreen> {
           _lastRebuildTime = now;
           
           // Only log when video count changes to reduce noise
-          if (_lastLoggedVideoCount != provider.videoEvents.length) {
-            _lastLoggedVideoCount = provider.videoEvents.length;
-            debugPrint('📺 FeedScreen Consumer: readyVideos changed to ${provider.videoEvents.length}');
+          if (_lastLoggedVideoCount != provider.readyVideos.length) {
+            _lastLoggedVideoCount = provider.readyVideos.length;
+            debugPrint('📺 FeedScreen Consumer: readyVideos changed to ${provider.readyVideos.length}');
           }
           
           if (!provider.isInitialized && provider.isLoading) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
-                  Text(
-                    'Connecting to Nostr relays...',
-                    style: TextStyle(color: Colors.white54),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return Center(
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth * 0.8,
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 24),
+                        Text(
+                          'Connecting to Nostr relays...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Setting up your decentralized video feed',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
             );
           }
           
@@ -141,79 +226,117 @@ class _FeedScreenState extends State<FeedScreen> {
               builder: (context, connectionService, child) {
                 final isOffline = !connectionService.isOnline;
                 
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isOffline ? Icons.wifi_off : Icons.error_outline, 
-                        color: isOffline ? Colors.orange : Colors.red, 
-                        size: 48
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Center(
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.8,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isOffline ? Icons.wifi_off : Icons.error_outline, 
+                              color: isOffline ? Colors.orange : Colors.red, 
+                              size: 64
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              isOffline ? 'No Internet Connection' : 'Error: ${provider.error}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isOffline 
+                                ? 'Check your internet connection and try again'
+                                : 'Unable to load video feed',
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: isOffline ? null : () => provider.retry(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                              ),
+                              child: Text(isOffline ? 'Waiting for connection...' : 'Retry'),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isOffline ? 'No Internet Connection' : 'Error: ${provider.error}',
-                        style: const TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isOffline 
-                          ? 'Check your internet connection and try again'
-                          : 'Unable to load video feed',
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: isOffline ? null : () => provider.retry(),
-                        child: Text(isOffline ? 'Waiting for connection...' : 'Retry'),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             );
           }
           
-          if (!provider.hasEvents) {
+          if (provider.videoEvents.isEmpty) {
             return Consumer<ConnectionStatusService>(
               builder: (context, connectionService, child) {
                 final isOffline = !connectionService.isOnline;
                 
                 return RefreshIndicator(
                   onRefresh: isOffline ? () async {} : () => provider.refreshFeed(),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isOffline ? Icons.wifi_off : Icons.video_library_outlined, 
-                          color: Colors.white54, 
-                          size: 64
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          isOffline ? 'Offline' : 'Finding videos...',
-                          style: const TextStyle(color: Colors.white54, fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isOffline 
-                            ? 'Connect to the internet to load videos'
-                            : 'Searching Nostr relays for video content',
-                          style: const TextStyle(color: Colors.white38, fontSize: 14),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (!isOffline) ...[
-                          const SizedBox(height: 16),
-                          const CircularProgressIndicator(
-                            color: Colors.white54,
-                            strokeWidth: 2,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Center(
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.8,
                           ),
-                        ],
-                      ],
-                    ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isOffline ? Icons.wifi_off : Icons.video_library_outlined, 
+                                color: Colors.white54, 
+                                size: 64
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                isOffline ? 'Offline' : 'Finding videos...',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                isOffline 
+                                  ? 'Connect to the internet to load videos'
+                                  : 'Searching Nostr relays for video content',
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (!isOffline) ...[
+                                const SizedBox(height: 20),
+                                const CircularProgressIndicator(
+                                  color: Colors.white54,
+                                  strokeWidth: 2,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -230,44 +353,47 @@ class _FeedScreenState extends State<FeedScreen> {
             physics: kIsWeb || defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux
                 ? const AlwaysScrollableScrollPhysics()
                 : const ClampingScrollPhysics(),
-            itemCount: provider.videoEvents.length, // ✅ FIXED: Use ready-to-play videos, not raw events
+            itemCount: provider.videoEvents.length > 0 ? provider.videoEvents.length : provider.readyVideos.length, // Allow swiping through all videos
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
               
-              final readyVideoCount = provider.videoEvents.length;
-              final allVideoCount = provider.allVideoEvents.length;
+              final allVideoCount = provider.videoEvents.length;
+              final readyVideoCount = provider.readyVideos.length;
               final isSubscribed = provider.isSubscribed;
               final canLoadMore = provider.canLoadMore;
               
-              debugPrint('📱 Page changed to video $index/$readyVideoCount (all: $allVideoCount, subscribed: $isSubscribed, canLoadMore: $canLoadMore)');
+              debugPrint('📱 Page changed to video $index/$allVideoCount (ready: $readyVideoCount, subscribed: $isSubscribed, canLoadMore: $canLoadMore)');
               
-              if (readyVideoCount > 0) {
-                // Load more when getting close to the end of ready videos
-                if (index >= readyVideoCount - 3) {
-                  debugPrint('📱 Near end of ready videos ($index/$readyVideoCount), loading more...');
+              if (allVideoCount > 0) {
+                // Load more when getting close to the end of all videos
+                if (index >= allVideoCount - 3) {
+                  debugPrint('📱 Near end of videos ($index/$allVideoCount), loading more...');
                   if (canLoadMore) {
                     provider.loadMoreEvents();
                   } else {
                     debugPrint('⚠️ Cannot load more events - subscription may have stopped');
                   }
                 }
-                // Preload videos around current index using the ready video list
+                // Preload videos around current index - this will trigger preloading for videos that aren't ready yet
                 provider.preloadVideosAroundIndex(index);
               } else {
-                debugPrint('⚠️ No ready videos available for preloading');
+                debugPrint('⚠️ No videos available for preloading');
               }
             },
             itemBuilder: (context, index) {
-              final readyVideoCount = provider.videoEvents.length;
-              if (readyVideoCount == 0 || index >= readyVideoCount) {
-                debugPrint('⚠️ Invalid video index: $index/$readyVideoCount');
+              final allVideoCount = provider.videoEvents.length;
+              final readyVideoCount = provider.readyVideos.length;
+              
+              if (allVideoCount == 0 || index >= allVideoCount) {
+                debugPrint('⚠️ Invalid video index: $index/$allVideoCount');
                 return const SizedBox.shrink();
               }
               
-              // ✅ FIXED: Use ready-to-play videos that have passed compatibility testing
+              // Use all videos, but check if they're ready for playback
               final videoEvent = provider.videoEvents[index];
+              final isVideoReady = provider.getVideoState(videoEvent.id)?.isReady == true;
               // TEMPORARILY DISABLED: Reduce debug spam during infinite rebuild investigation
               // if (index == _currentPage) {
               //   debugPrint('📱 Building VideoFeedItem for ${videoEvent.id.substring(0, 8)} at index $index (active: true)');
@@ -278,6 +404,27 @@ class _FeedScreenState extends State<FeedScreen> {
                 height: MediaQuery.of(context).size.height,
                 child: Consumer<SeenVideosService>(
                   builder: (context, seenVideosService, child) {
+                    // Show loading state for videos that aren't ready yet
+                    if (!isVideoReady) {
+                      return Container(
+                        height: MediaQuery.of(context).size.height,
+                        color: Colors.black,
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(color: Colors.white),
+                              SizedBox(height: 16),
+                              Text(
+                                'Loading video...',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    
                     return VideoFeedItem(
                       videoEvent: videoEvent,
                       isActive: index == _currentPage,
@@ -286,7 +433,6 @@ class _FeedScreenState extends State<FeedScreen> {
                       videoState: provider.getVideoState(videoEvent.id), // New: Video state from VideoManager
                       userProfileService: provider.userProfileService,
                       seenVideosService: seenVideosService,
-                      onLike: () => _toggleLike(videoEvent),
                       onComment: () => _openComments(videoEvent),
                       onShare: () => _shareVine(videoEvent),
                       onMoreOptions: () => _showMoreOptions(videoEvent),
@@ -309,15 +455,31 @@ class _FeedScreenState extends State<FeedScreen> {
           }
         },
       ),
+        ),
+      ),
     );
   }
 
-  void _toggleLike(VideoEvent videoEvent) {
-    // TODO: Implement NIP-25 reaction events for likes
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Liked video by ${videoEvent.displayPubkey}')),
-    );
+  // Debug tap counter for triple-tap detection
+  int _debugTapCount = 0;
+  Timer? _debugTapTimer;
+
+  void _handleDebugTap() {
+    _debugTapCount++;
+    _debugTapTimer?.cancel();
+    
+    if (_debugTapCount >= 3) {
+      // Triple-tap detected - toggle debug overlay
+      VideoSystemDebugger().toggleDebugOverlay();
+      _debugTapCount = 0;
+    } else {
+      // Reset counter after 1 second
+      _debugTapTimer = Timer(const Duration(seconds: 1), () {
+        _debugTapCount = 0;
+      });
+    }
   }
+
 
   void _openComments(VideoEvent videoEvent) {
     // TODO: Implement comments functionality with threaded replies

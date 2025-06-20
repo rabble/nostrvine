@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'theme/vine_theme.dart';
 import 'screens/camera_screen.dart';
 import 'screens/feed_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/web_auth_screen.dart';
 import 'services/nostr_service.dart';
+import 'services/auth_service.dart';
+import 'services/key_storage_service.dart';
 import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
@@ -21,6 +25,8 @@ import 'services/api_service.dart';
 import 'services/video_event_publisher.dart';
 import 'services/notification_service.dart';
 import 'services/seen_videos_service.dart';
+import 'services/web_auth_service.dart';
+import 'services/social_service.dart';
 import 'providers/video_feed_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -57,6 +63,18 @@ class NostrVineApp extends StatelessWidget {
         // Connection status service
         ChangeNotifierProvider(create: (_) => ConnectionStatusService()),
         
+        // Key storage service (foundational service)
+        ChangeNotifierProvider(create: (_) => KeyStorageService()),
+        
+        // Web authentication service (for web platform only)
+        ChangeNotifierProvider(create: (_) => WebAuthService()),
+        
+        // Authentication service depends on key storage
+        ChangeNotifierProxyProvider<KeyStorageService, AuthService>(
+          create: (context) => AuthService(keyStorage: context.read<KeyStorageService>()),
+          update: (_, keyStorageService, previous) => previous ?? AuthService(keyStorage: keyStorageService),
+        ),
+        
         // Nostr key manager
         ChangeNotifierProvider(create: (_) => NostrKeyManager()),
         
@@ -91,8 +109,6 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Video cache service for managing video player controllers
-        ChangeNotifierProvider(create: (_) => VideoCacheService()),
         
         // User profile service depends on Nostr service
         ChangeNotifierProxyProvider<INostrService, UserProfileService>(
@@ -100,8 +116,20 @@ class NostrVineApp extends StatelessWidget {
           update: (_, nostrService, previous) => previous ?? UserProfileService(nostrService),
         ),
         
+        // Social service depends on Nostr service and Auth service
+        ChangeNotifierProxyProvider2<INostrService, AuthService, SocialService>(
+          create: (context) => SocialService(
+            context.read<INostrService>(),
+            context.read<AuthService>(),
+          ),
+          update: (_, nostrService, authService, previous) => previous ?? SocialService(
+            nostrService,
+            authService,
+          ),
+        ),
+        
         // Notification service
-        ChangeNotifierProvider(create: (_) => NotificationService.instance),
+        ChangeNotifierProvider(create: (_) => NotificationService()),
         
         // Cloudinary upload service
         ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
@@ -134,18 +162,18 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Video feed provider depends on multiple services
-        ChangeNotifierProxyProvider4<VideoEventService, INostrService, VideoCacheService, UserProfileService, VideoFeedProvider>(
+        // Video feed provider depends on core services (VideoManager now handles video caching)
+        ChangeNotifierProxyProvider3<VideoEventService, INostrService, UserProfileService, VideoFeedProvider>(
           create: (context) => VideoFeedProvider(
             videoEventService: context.read<VideoEventService>(),
             nostrService: context.read<INostrService>(),
-            videoCacheService: context.read<VideoCacheService>(),
+            videoCacheService: VideoCacheService(), // Create locally for backward compatibility
             userProfileService: context.read<UserProfileService>(),
           ),
-          update: (_, videoEventService, nostrService, videoCacheService, userProfileService, previous) => previous ?? VideoFeedProvider(
+          update: (_, videoEventService, nostrService, userProfileService, previous) => previous ?? VideoFeedProvider(
             videoEventService: videoEventService,
             nostrService: nostrService,
-            videoCacheService: videoCacheService,
+            videoCacheService: VideoCacheService(), // Create locally for backward compatibility
             userProfileService: userProfileService,
           ),
         ),
@@ -167,22 +195,7 @@ class NostrVineApp extends StatelessWidget {
       child: MaterialApp(
         title: 'NostrVine',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          primarySwatch: Colors.purple,
-          scaffoldBackgroundColor: Colors.black,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.black,
-            elevation: 0,
-            systemOverlayStyle: SystemUiOverlayStyle.light,
-          ),
-          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-            backgroundColor: Colors.black,
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.grey,
-            type: BottomNavigationBarType.fixed,
-          ),
-        ),
+        theme: VineTheme.theme,
         home: const ResponsiveWrapper(child: AppInitializer()),
       ),
     );
@@ -210,8 +223,17 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeServices() async {
     try {
       if (!mounted) return;
+      setState(() => _initializationStatus = 'Checking authentication...');
+      await context.read<AuthService>().initialize();
+
+      if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing notifications...');
-      await context.read<NotificationService>().initialize();
+      try {
+        await context.read<NotificationService>().initialize();
+      } catch (e) {
+        debugPrint('⚠️ Notification service initialization failed (likely hot reload): $e');
+        // Continue anyway - notifications are not critical for core functionality
+      }
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing seen videos tracker...');
@@ -249,16 +271,16 @@ class _AppInitializerState extends State<AppInitializer> {
   Widget build(BuildContext context) {
     if (!_isInitialized) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: Colors.purple),
+              const CircularProgressIndicator(color: VineTheme.vineGreen),
               const SizedBox(height: 16),
               Text(
                 _initializationStatus,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(color: VineTheme.primaryText, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -267,7 +289,94 @@ class _AppInitializerState extends State<AppInitializer> {
       );
     }
 
-    return const MainNavigationScreen();
+    // Check authentication state and show appropriate screen
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        switch (authService.authState) {
+          case AuthState.unauthenticated:
+            // On web platform, show the web authentication screen
+            if (kIsWeb) {
+              return const WebAuthScreen();
+            }
+            
+            // Show error screen only if there's an actual error, not for TikTok-style auto-creation
+            if (authService.lastError != null) {
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Authentication Error',
+                        style: const TextStyle(color: VineTheme.primaryText, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        authService.lastError!,
+                        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => authService.initialize(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: VineTheme.vineGreen,
+                          foregroundColor: VineTheme.whiteText,
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            // If no error, fall through to loading screen (auto-creation in progress)
+            return Scaffold(
+              backgroundColor: VineTheme.backgroundColor,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: VineTheme.vineGreen),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Creating your identity...',
+                      style: TextStyle(color: VineTheme.primaryText, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          case AuthState.checking:
+          case AuthState.authenticating:
+            return Scaffold(
+              backgroundColor: VineTheme.backgroundColor,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: VineTheme.vineGreen),
+                    const SizedBox(height: 16),
+                    Text(
+                      authService.authState == AuthState.checking
+                          ? 'Getting things ready...'
+                          : 'Setting up your identity...',
+                      style: const TextStyle(color: VineTheme.primaryText, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          case AuthState.authenticated:
+            return const MainNavigationScreen();
+        }
+      },
+    );
   }
 }
 
@@ -313,30 +422,58 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-/// ResponsiveWrapper limits the app width to iPad size on web platforms
-class ResponsiveWrapper extends StatelessWidget {
+/// ResponsiveWrapper limits the app width to mobile phone size on web platforms
+class ResponsiveWrapper extends StatefulWidget {
   final Widget child;
   
-  // iPad Pro dimensions: 1024x1366 (we'll use 1024 as max width)
-  static const double maxWidth = 1024.0;
+  // iPhone 14 Pro dimensions: 393x852 (we'll use 393 as max width for vertical video format)
+  static const double maxWidth = 393.0;
   
   const ResponsiveWrapper({super.key, required this.child});
 
   @override
+  State<ResponsiveWrapper> createState() => _ResponsiveWrapperState();
+}
+
+class _ResponsiveWrapperState extends State<ResponsiveWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Force rebuilds on window resize for web
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Listen to media query changes which includes window resizing
+        MediaQuery.of(context);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
+      // Use MediaQuery to get real-time screen dimensions
+      final mediaQuery = MediaQuery.of(context);
+      final screenWidth = mediaQuery.size.width;
+      final screenHeight = mediaQuery.size.height;
+      
       return Container(
         color: Colors.black,
+        width: double.infinity,
+        height: double.infinity,
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: maxWidth),
-            child: child,
+            constraints: BoxConstraints(
+              maxWidth: screenWidth > ResponsiveWrapper.maxWidth ? ResponsiveWrapper.maxWidth : screenWidth,
+              minHeight: screenHeight,
+            ),
+            child: widget.child,
           ),
         ),
       );
     }
     
     // On mobile, return child as-is (no constraints)
-    return child;
+    return widget.child;
   }
 }
