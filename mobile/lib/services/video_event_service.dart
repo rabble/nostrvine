@@ -45,16 +45,31 @@ class VideoEventService extends ChangeNotifier {
     int limit = 500, // Increased limit for more diverse content
     bool replace = true, // Whether to replace existing subscription
   }) async {
+    // Prevent concurrent subscription attempts
+    if (_isLoading) {
+      debugPrint('🎥 Subscription request ignored, another is already in progress.');
+      return;
+    }
+    
+    // Set loading state immediately to prevent race conditions
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
     debugPrint('🎥 Starting video event subscription...');
     debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
     
     if (!_nostrService.isInitialized) {
+      _isLoading = false;
+      notifyListeners();
       debugPrint('❌ Cannot subscribe - Nostr service not initialized');
       throw VideoEventServiceException('Nostr service not initialized');
     }
     
     // Check connection status
     if (!_connectionService.isOnline) {
+      _isLoading = false;
+      notifyListeners();
       debugPrint('⚠️ Device is offline, will retry when connection is restored');
       _scheduleRetryWhenOnline();
       throw VideoEventServiceException('Device is offline');
@@ -73,10 +88,6 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('🔄 Closing ${_subscriptions.length} existing subscriptions before creating new one...');
       await unsubscribeFromVideoFeed();
     }
-    
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
     
     try {
       debugPrint('🔍 Creating filter for kind 22 video events...');
