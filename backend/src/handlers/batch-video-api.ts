@@ -1,6 +1,8 @@
 // ABOUTME: Batch video lookup API for efficient bulk metadata retrieval
 // ABOUTME: Enables clients to fetch metadata for multiple videos discovered via Nostr events
 
+import { checkSecurity, applySecurityHeaders } from '../services/security';
+
 interface BatchVideoRequest {
   videoIds: string[];
   quality?: 'auto' | '480p' | '720p';
@@ -90,12 +92,20 @@ export async function handleBatchVideoLookup(
   env: Env
 ): Promise<Response> {
   try {
+    // Check security (API key and rate limiting)
+    const securityCheck = await checkSecurity(request, env);
+    if (!securityCheck.allowed) {
+      return applySecurityHeaders(securityCheck.response!);
+    }
+
+    console.log(`📦 Batch video lookup request (API key: ${securityCheck.apiKey})`);
+
     // Parse request body
     let body: BatchVideoRequest;
     try {
       body = await request.json();
     } catch (e) {
-      return new Response(
+      return applySecurityHeaders(new Response(
         JSON.stringify({
           error: 'Invalid request body',
         }),
@@ -105,15 +115,15 @@ export async function handleBatchVideoLookup(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           },
         }
-      );
+      ));
     }
 
     // Validate input
     if (!body.videoIds || !Array.isArray(body.videoIds)) {
-      return new Response(
+      return applySecurityHeaders(new Response(
         JSON.stringify({
           error: 'videoIds must be an array',
         }),
@@ -123,15 +133,15 @@ export async function handleBatchVideoLookup(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           },
         }
-      );
+      ));
     }
 
     // Limit batch size
     if (body.videoIds.length > 50) {
-      return new Response(
+      return applySecurityHeaders(new Response(
         JSON.stringify({
           error: 'Maximum 50 video IDs per request',
         }),
@@ -141,10 +151,10 @@ export async function handleBatchVideoLookup(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           },
         }
-      );
+      ));
     }
 
     // Remove duplicates
@@ -246,20 +256,20 @@ export async function handleBatchVideoLookup(
 
     console.log(`✅ Batch lookup complete: ${found} found, ${missing} missing`);
 
-    return new Response(JSON.stringify(response), {
+    return applySecurityHeaders(new Response(JSON.stringify(response), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
       },
-    });
+    }));
   } catch (error) {
     console.error('❌ Error handling batch video lookup:', error);
     
-    return new Response(
+    return applySecurityHeaders(new Response(
       JSON.stringify({
         error: 'Internal server error',
       }),
@@ -269,10 +279,10 @@ export async function handleBatchVideoLookup(
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },
       }
-    );
+    ));
   }
 }
 
@@ -285,7 +295,7 @@ export function handleBatchVideoOptions(): Response {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
     },
   });

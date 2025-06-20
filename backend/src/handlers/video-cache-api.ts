@@ -1,6 +1,8 @@
 // ABOUTME: Video caching API that serves video metadata with signed R2 URLs
 // ABOUTME: Core endpoint for NostrVine's instant video playback system
 
+import { checkSecurity, applySecurityHeaders } from '../services/security';
+
 interface VideoMetadata {
   videoId: string;
   duration: number;
@@ -64,11 +66,17 @@ export async function handleVideoMetadata(
   env: Env
 ): Promise<Response> {
   try {
-    console.log(`📹 Video metadata request for ID: ${videoId}`);
+    // Check security (API key and rate limiting)
+    const securityCheck = await checkSecurity(request, env);
+    if (!securityCheck.allowed) {
+      return applySecurityHeaders(securityCheck.response!);
+    }
+
+    console.log(`📹 Video metadata request for ID: ${videoId} (API key: ${securityCheck.apiKey})`);
 
     // Validate video ID format (should be 64 char hex)
     if (!/^[a-f0-9]{64}$/.test(videoId)) {
-      return new Response(
+      return applySecurityHeaders(new Response(
         JSON.stringify({
           error: 'Invalid video ID format',
         }),
@@ -78,11 +86,11 @@ export async function handleVideoMetadata(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Cache-Control': 'no-cache',
           },
         }
-      );
+      ));
     }
 
     // Check KV for video metadata
@@ -91,7 +99,7 @@ export async function handleVideoMetadata(
 
     if (!storedData) {
       console.log(`❌ Video not found: ${videoId}`);
-      return new Response(
+      return applySecurityHeaders(new Response(
         JSON.stringify({
           error: 'Video not found',
         }),
@@ -101,11 +109,11 @@ export async function handleVideoMetadata(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Cache-Control': 'no-cache',
           },
         }
-      );
+      ));
     }
 
     // Parse stored metadata
@@ -133,20 +141,20 @@ export async function handleVideoMetadata(
 
     console.log(`✅ Returning metadata for video ${videoId}`);
 
-    return new Response(JSON.stringify(response), {
+    return applySecurityHeaders(new Response(JSON.stringify(response), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
       },
-    });
+    }));
   } catch (error) {
     console.error('❌ Error handling video metadata request:', error);
     
-    return new Response(
+    return applySecurityHeaders(new Response(
       JSON.stringify({
         error: 'Internal server error',
       }),
@@ -156,11 +164,11 @@ export async function handleVideoMetadata(
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'Cache-Control': 'no-cache',
         },
       }
-    );
+    ));
   }
 }
 
@@ -173,7 +181,7 @@ export function handleVideoMetadataOptions(): Response {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
     },
   });
