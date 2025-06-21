@@ -21,6 +21,8 @@ class MockVideoPlayerController extends Mock implements VideoPlayerController {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
   group('VideoManagerService Consolidation Tests', () {
     late VideoManagerService videoManager;
     
