@@ -1051,6 +1051,49 @@ class SocialService extends ChangeNotifier {
     }
   }
   
+  // === REPOST SYSTEM (NIP-18) ===
+  
+  /// Reposts a Nostr event (Kind 6)
+  Future<void> repostEvent(Event eventToRepost) async {
+    if (!_authService.isAuthenticated) {
+      debugPrint('❌ Cannot repost - user not authenticated');
+      throw Exception('User not authenticated');
+    }
+    
+    debugPrint('🔄 Reposting event: ${eventToRepost.id.substring(0, 8)}...');
+    
+    try {
+      // Create NIP-18 repost event (Kind 6)
+      final event = await _authService.createAndSignEvent(
+        kind: 6, // Repost event
+        content: '', // Content is typically empty for reposts
+        tags: [
+          ['e', eventToRepost.id], // Reference to reposted event
+          ['p', eventToRepost.pubkey], // Reference to original author
+        ],
+      );
+      
+      if (event == null) {
+        throw Exception('Failed to create repost event');
+      }
+      
+      // Broadcast the repost event
+      final result = await _nostrService.broadcastEvent(event);
+      
+      if (!result.isSuccessful) {
+        final errorMessages = result.errors.values.join(', ');
+        throw Exception('Failed to broadcast repost: $errorMessages');
+      }
+      
+      debugPrint('✅ Event reposted successfully: ${event.id.substring(0, 8)}...');
+      notifyListeners(); // Notify UI of the change
+      
+    } catch (e) {
+      debugPrint('❌ Error reposting event: $e');
+      rethrow;
+    }
+  }
+  
   @override
   void dispose() {
     debugPrint('🗑️ Disposing SocialService');

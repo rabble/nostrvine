@@ -17,7 +17,7 @@ import '../services/stream_upload_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/nostr_service.dart';
 import '../services/camera_service.dart';
-import '../services/processing_monitor.dart';
+// import '../services/processing_monitor.dart'; // Removed - duplicate monitoring service
 
 /// Publishing state for vine content
 enum PublishingState {
@@ -154,7 +154,7 @@ class VinePublishingService extends ChangeNotifier {
   final GifService _gifService;
   final StreamUploadService _streamUploadService;
   final INostrService _nostrService;
-  final ProcessingMonitor _processingMonitor;
+  // final ProcessingMonitor _processingMonitor; // Removed - duplicate monitoring
   
   PublishingState _state = PublishingState.idle;
   double _progress = 0.0;
@@ -173,11 +173,11 @@ class VinePublishingService extends ChangeNotifier {
     required GifService gifService,
     required StreamUploadService streamUploadService,
     required INostrService nostrService,
-    ProcessingMonitor? processingMonitor,
+    // ProcessingMonitor? processingMonitor, // Removed - duplicate monitoring
   }) : _gifService = gifService,
        _streamUploadService = streamUploadService,
-       _nostrService = nostrService,
-       _processingMonitor = processingMonitor ?? ProcessingMonitor() {
+       _nostrService = nostrService {
+       // _processingMonitor = processingMonitor ?? ProcessingMonitor() // Removed
     _loadOfflineQueue();
     _startPeriodicOfflineCheck();
   }
@@ -895,7 +895,7 @@ class VinePublishingService extends ChangeNotifier {
   @override
   void dispose() {
     _retryTimer?.cancel();
-    _processingMonitor.dispose();
+    // _processingMonitor.dispose(); // Removed
     super.dispose();
   }
 }

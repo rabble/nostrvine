@@ -22,6 +22,12 @@ class VideoEvent {
   final String? publishedAt;
   final Map<String, String> rawTags;
   
+  // Repost metadata fields
+  final bool isRepost;
+  final String? reposterId;
+  final String? reposterPubkey;
+  final DateTime? repostedAt;
+  
   const VideoEvent({
     required this.id,
     required this.pubkey,
@@ -39,6 +45,10 @@ class VideoEvent {
     this.hashtags = const [],
     this.publishedAt,
     this.rawTags = const {},
+    this.isRepost = false,
+    this.reposterId,
+    this.reposterPubkey,
+    this.repostedAt,
   });
   
   /// Create VideoEvent from Nostr event
@@ -154,6 +164,10 @@ class VideoEvent {
       hashtags: hashtags,
       publishedAt: publishedAt,
       rawTags: tags,
+      isRepost: false,
+      reposterId: null,
+      reposterPubkey: null,
+      repostedAt: null,
     );
   }
   
@@ -275,6 +289,10 @@ class VideoEvent {
     DateTime? timestamp,
     String? publishedAt,
     Map<String, String>? rawTags,
+    bool? isRepost,
+    String? reposterId,
+    String? reposterPubkey,
+    DateTime? repostedAt,
   }) {
     return VideoEvent(
       id: id ?? this.id,
@@ -293,6 +311,10 @@ class VideoEvent {
       timestamp: timestamp ?? this.timestamp,
       publishedAt: publishedAt ?? this.publishedAt,
       rawTags: rawTags ?? this.rawTags,
+      isRepost: isRepost ?? this.isRepost,
+      reposterId: reposterId ?? this.reposterId,
+      reposterPubkey: reposterPubkey ?? this.reposterPubkey,
+      repostedAt: repostedAt ?? this.repostedAt,
     );
   }
   
@@ -314,6 +336,22 @@ class VideoEvent {
            'duration: $formattedDuration, '
            'time: $relativeTime'
            ')';
+  }
+  
+  /// Create a VideoEvent instance representing a repost
+  /// Used when displaying Kind 6 repost events in the feed
+  static VideoEvent createRepostEvent({
+    required VideoEvent originalEvent,
+    required String repostEventId,
+    required String reposterPubkey,
+    required DateTime repostedAt,
+  }) {
+    return originalEvent.copyWith(
+      isRepost: true,
+      reposterId: repostEventId,
+      reposterPubkey: reposterPubkey,
+      repostedAt: repostedAt,
+    );
   }
 }
 

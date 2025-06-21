@@ -93,7 +93,7 @@ class ContentReportingService extends ChangeNotifier {
   final SharedPreferences _prefs;
   
   // NostrVine moderation relay for reports
-  static const String moderationRelayUrl = 'wss://moderation.nostrvine.com';
+  static const String moderationRelayUrl = 'wss://relay.openvine.co';
   static const String reportsStorageKey = 'content_reports_history';
   
   final List<ContentReport> _reportHistory = [];

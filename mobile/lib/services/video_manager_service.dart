@@ -213,7 +213,8 @@ class VideoManagerService implements IVideoManager {
         final videoId = _videos[index].id;
         final state = getVideoState(videoId);
         
-        Log.verbose('🔍 Video $index: ${videoId.substring(0, 8)} - state: ${state?.loadingState}, active: ${_activePreloads.contains(videoId)}', name: 'VideoManager');
+        final shortId = videoId.length >= 8 ? videoId.substring(0, 8) : videoId;
+        Log.verbose('🔍 Video $index: $shortId - state: ${state?.loadingState}, active: ${_activePreloads.contains(videoId)}', name: 'VideoManager');
         
         if (state != null && 
             state.loadingState == VideoLoadingState.notLoaded && 
@@ -365,23 +366,12 @@ class VideoManagerService implements IVideoManager {
       }
       
       // Create controller with progressive loading (like TikTok/Instagram)
-      // Check if this is a retry after server config error
-      final currentState = getVideoState(videoId);
-      final isRetryAfterServerError = (currentState != null) && 
-          (currentState.retryCount > 0) && 
-          (currentState.errorMessage?.contains('SERVER_CONFIG_ERROR') ?? false);
-      
       final headers = <String, String>{
         'Cache-Control': 'no-cache',
         'User-Agent': 'NostrVine/1.0',
       };
       
-      // For retries after server config errors, explicitly disable range requests
-      if (isRetryAfterServerError) {
-        headers['Range'] = 'bytes=0-'; // Request full file from start
-        Log.debug('🔄 Retrying video ${videoId.substring(0, 8)} with simplified headers', name: 'VideoManager');
-      }
-      
+      // Always use standard configuration - server config errors will be handled by pre-download fallback
       controller = VideoPlayerController.networkUrl(
         uri,
         videoPlayerOptions: VideoPlayerOptions(
@@ -615,8 +605,32 @@ class VideoManagerService implements IVideoManager {
     _videoStates[videoId] = newState;
     _notifyStateChange();
 
-    // Only retry if not a server config error and retries are available
-    if (!isServerConfigError && newState.canRetry) {
+    // Handle retries based on error type
+    if (isServerConfigError && currentState.retryCount == 0) {
+      // Try pre-downloading for servers without range request support
+      developer.log('SERVER_CONFIG_ERROR detected for $videoId - attempting pre-download fallback');
+      
+      Timer(const Duration(milliseconds: 100), () {
+        if (!_disposed) {
+          final latestState = getVideoState(videoId);
+          if (latestState != null && latestState.hasFailed) {
+            developer.log('Attempting pre-download fallback for $videoId');
+            _attemptPreDownloadFallback(videoId, latestState.event).catchError((fallbackError) {
+              developer.log('Pre-download fallback failed for $videoId: $fallbackError');
+              // Mark as permanently failed if pre-download also fails
+              _videoStates[videoId] = VideoState(
+                event: latestState.event,
+                loadingState: VideoLoadingState.permanentlyFailed,
+                errorMessage: 'Both streaming and pre-download failed',
+                retryCount: VideoState.maxRetryCount,
+              );
+              _notifyStateChange();
+            });
+          }
+        }
+      });
+    } else if (!isServerConfigError && newState.canRetry) {
+      // Normal retry logic for other errors
       final retryDelay = _calculateRetryDelay(newState.retryCount);
       developer.log('Scheduling retry for $videoId (attempt ${newState.retryCount}/${VideoState.maxRetryCount}) in ${retryDelay.inMilliseconds}ms');
       
@@ -686,5 +700,92 @@ class VideoManagerService implements IVideoManager {
       videoId: videoId,
       originalError: error,
     );
+  }
+
+  /// Attempt to pre-download video for servers without range request support
+  /// 
+  /// Downloads the entire video file first, then creates a VideoPlayerController
+  /// from the local file. This bypasses range request issues but uses more bandwidth.
+  Future<void> _attemptPreDownloadFallback(String videoId, VideoEvent event) async {
+    if (event.videoUrl?.isEmpty ?? true) {
+      throw VideoManagerException('Video URL is required for pre-download fallback', videoId: videoId);
+    }
+
+    developer.log('🔄 Starting pre-download for $videoId from ${event.videoUrl}');
+    
+    try {
+      // Update state to show we're attempting fallback
+      final currentState = getVideoState(videoId);
+      if (currentState != null) {
+        _videoStates[videoId] = VideoState(
+          event: event,
+          loadingState: VideoLoadingState.loading,
+          errorMessage: 'Downloading video for offline playback...',
+          retryCount: currentState.retryCount + 1,
+        );
+        _notifyStateChange();
+      }
+
+      // Create HTTP client for downloading
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 30);
+      
+      // Download the video file
+      final uri = Uri.parse(event.videoUrl!);
+      final request = await client.getUrl(uri);
+      request.headers.set('User-Agent', 'NostrVine/1.0');
+      
+      final response = await request.close();
+      
+      if (response.statusCode != 200) {
+        throw VideoManagerException('HTTP ${response.statusCode} downloading video', videoId: videoId);
+      }
+
+      // Get temporary directory for caching
+      final tempDir = Directory.systemTemp;
+      final videoFile = File('${tempDir.path}/nostrvine_cache_$videoId.mp4');
+      
+      // Download and write to file
+      final sink = videoFile.openWrite();
+      await response.pipe(sink);
+      await sink.close();
+      
+      developer.log('✅ Pre-download completed for $videoId, size: ${await videoFile.length()} bytes');
+      
+      // Create video controller from local file
+      final controller = VideoPlayerController.file(videoFile);
+      
+      // Initialize the controller
+      await controller.initialize();
+      
+      // Store controller and update state
+      _controllers[videoId] = controller;
+      
+      final updatedState = getVideoState(videoId);
+      if (updatedState != null && updatedState.isLoading) {
+        _videoStates[videoId] = updatedState.toReady();
+        _preloadSuccessCount++;
+        _notifyStateChange();
+        developer.log('✅ Pre-download fallback successful for $videoId');
+      }
+      
+      client.close();
+      
+    } catch (e) {
+      developer.log('❌ Pre-download fallback failed for $videoId: $e');
+      
+      // Clean up any partial downloads
+      try {
+        final tempDir = Directory.systemTemp;
+        final videoFile = File('${tempDir.path}/nostrvine_cache_$videoId.mp4');
+        if (await videoFile.exists()) {
+          await videoFile.delete();
+        }
+      } catch (cleanupError) {
+        developer.log('⚠️ Failed to clean up partial download: $cleanupError');
+      }
+      
+      rethrow;
+    }
   }
 }

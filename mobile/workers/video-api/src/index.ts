@@ -3,10 +3,17 @@
 
 import { VideoAPI } from './video-api';
 import { BatchVideoAPI } from './batch-video-api';
+import { OptimizedBatchVideoAPI } from './batch-video-api-optimized';
 import { SmartFeedAPI } from './smart-feed-api';
 import { PrefetchManager } from './prefetch-manager';
 import { VideoAnalyticsService } from './video-analytics-service';
 import { MonitoringHandler } from './monitoring-handler';
+import { PerformanceOptimizer } from './performance-optimizer';
+import { UploadRequestHandler } from './handlers/upload-request';
+import { CloudinaryUploadHandler } from './handlers/cloudinary-upload';
+import { CloudinaryWebhookHandler } from './handlers/cloudinary-webhook';
+import { ReadyEventsHandler } from './handlers/ready-events';
+import { VideoStatusHandler } from './handlers/video-status';
 import { Env, ExecutionContext } from './types';
 
 // CORS headers for mobile app access
@@ -51,7 +58,15 @@ export default {
 
     // Route: POST /api/videos/batch
     if (request.method === 'POST' && url.pathname === '/api/videos/batch') {
-      const batchAPI = new BatchVideoAPI(env);
+      // Use optimized API if performance mode is enabled
+      const useOptimized = url.searchParams.get('optimize') === 'true' || 
+                          request.headers.get('X-Performance-Mode') === 'optimized' ||
+                          env.ENABLE_PERFORMANCE_MODE === true;
+      
+      const batchAPI = useOptimized 
+        ? new OptimizedBatchVideoAPI(env)
+        : new BatchVideoAPI(env);
+        
       const response = await batchAPI.handleBatchRequest(request, ctx);
       
       // Add CORS headers to response
@@ -70,6 +85,40 @@ export default {
     if (request.method === 'GET' && url.pathname === '/api/feed') {
       const feedAPI = new SmartFeedAPI(env);
       const response = await feedAPI.handleFeedRequest(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: POST /v1/media/request-upload (Cloudflare Stream - deprecated)
+    if (request.method === 'POST' && url.pathname === '/v1/media/request-upload') {
+      const uploadHandler = new UploadRequestHandler(env);
+      const response = await uploadHandler.handleRequest(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: POST /v1/media/cloudinary/request-upload (Cloudinary - recommended)
+    if (request.method === 'POST' && url.pathname === '/v1/media/cloudinary/request-upload') {
+      const cloudinaryHandler = new CloudinaryUploadHandler(env);
+      const response = await cloudinaryHandler.handleRequest(request, ctx);
       
       // Add CORS headers to response
       const newHeaders = new Headers(response.headers);
@@ -115,6 +164,28 @@ export default {
         status: response.status,
         headers: newHeaders
       });
+    }
+
+    // Route: GET /api/performance
+    if (request.method === 'GET' && url.pathname === '/api/performance') {
+      const performanceOptimizer = new PerformanceOptimizer(env);
+      const health = await performanceOptimizer.healthCheck();
+      
+      return new Response(
+        JSON.stringify({
+          status: health.healthy ? 'healthy' : 'degraded',
+          performance: health.performance,
+          recommendations: health.recommendations,
+          timestamp: new Date().toISOString()
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        }
+      );
     }
 
     // Route: GET /health (Enhanced health check - public endpoint)
@@ -220,6 +291,95 @@ export default {
       }
 
       const response = await monitoringHandler.handleDashboard(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: POST /v1/media/webhook
+    if (request.method === 'POST' && url.pathname === '/v1/media/webhook') {
+      const webhookHandler = new CloudinaryWebhookHandler(env);
+      const response = await webhookHandler.handleWebhook(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: GET /v1/media/ready-events
+    if (request.method === 'GET' && url.pathname === '/v1/media/ready-events') {
+      const readyEventsHandler = new ReadyEventsHandler(env);
+      const response = await readyEventsHandler.handleGetReadyEvents(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: DELETE /v1/media/ready-events
+    if (request.method === 'DELETE' && url.pathname === '/v1/media/ready-events') {
+      const readyEventsHandler = new ReadyEventsHandler(env);
+      const response = await readyEventsHandler.handleDeleteReadyEvent(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: GET /v1/media/ready-events/{public_id}
+    const readyEventMatch = url.pathname.match(/^\/v1\/media\/ready-events\/([^\/]+)$/);
+    if (request.method === 'GET' && readyEventMatch) {
+      const publicId = readyEventMatch[1];
+      const readyEventsHandler = new ReadyEventsHandler(env);
+      const response = await readyEventsHandler.handleGetSpecificEvent(request, publicId, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: GET /v1/media/status/{videoId}
+    const statusMatch = url.pathname.match(/^\/v1\/media\/status\/([^\/]+)$/);
+    if (request.method === 'GET' && statusMatch) {
+      const videoId = statusMatch[1];
+      const statusHandler = new VideoStatusHandler(env);
+      const response = await statusHandler.handleStatusCheck(request, videoId, ctx);
       
       // Add CORS headers to response
       const newHeaders = new Headers(response.headers);

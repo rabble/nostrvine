@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../theme/vine_theme.dart';
+import 'search_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -45,7 +46,11 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           IconButton(
             icon: const Icon(Icons.search, color: VineTheme.whiteText),
             onPressed: () {
-              // TODO: Implement search functionality
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SearchScreen(),
+                ),
+              );
             },
           ),
         ],

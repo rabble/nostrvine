@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'theme/vine_theme.dart';
 import 'screens/camera_screen.dart';
-import 'screens/feed_screen.dart';
+import 'screens/feed_screen_v2.dart';
 import 'screens/profile_screen.dart';
 import 'screens/activity_screen.dart';
 import 'screens/explore_screen.dart';
@@ -17,7 +17,7 @@ import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
 import 'services/vine_publishing_service.dart';
 import 'services/gif_service.dart';
-import 'services/video_cache_service.dart';
+// import 'services/video_cache_service.dart'; // Removed - using VideoManager instead
 import 'services/connection_status_service.dart';
 import 'services/user_profile_service.dart';
 import 'services/cloudinary_upload_service.dart';
@@ -29,7 +29,10 @@ import 'services/notification_service.dart';
 import 'services/seen_videos_service.dart';
 import 'services/web_auth_service.dart';
 import 'services/social_service.dart';
-import 'providers/video_feed_provider.dart';
+import 'services/video_manager_interface.dart';
+import 'services/video_manager_service.dart';
+import 'services/video_event_bridge.dart';
+// import 'providers/video_feed_provider.dart'; // Removed - FeedScreenV2 uses VideoManager directly
 import 'providers/profile_stats_provider.dart';
 import 'providers/profile_videos_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -155,6 +158,14 @@ class NostrVineApp extends StatelessWidget {
         // Notification service
         ChangeNotifierProvider(create: (_) => NotificationService()),
         
+        // Video Manager Service - single source of truth for video state
+        Provider<IVideoManager>(
+          create: (_) => VideoManagerService(
+            config: VideoManagerConfig.wifi(), // Default to WiFi optimized
+          ),
+          dispose: (_, videoManager) => videoManager.dispose(),
+        ),
+        
         // Cloudinary upload service
         ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
         
@@ -186,21 +197,17 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Video feed provider depends on core services (VideoManager now handles video caching)
-        ChangeNotifierProxyProvider3<VideoEventService, INostrService, UserProfileService, VideoFeedProvider>(
-          create: (context) => VideoFeedProvider(
+        // Video Event Bridge - connects VideoEventService to VideoManager
+        Provider<VideoEventBridge>(
+          create: (context) => VideoEventBridge(
             videoEventService: context.read<VideoEventService>(),
-            nostrService: context.read<INostrService>(),
-            videoCacheService: VideoCacheService(), // Create locally for backward compatibility
+            videoManager: context.read<IVideoManager>(),
             userProfileService: context.read<UserProfileService>(),
           ),
-          update: (_, videoEventService, nostrService, userProfileService, previous) => previous ?? VideoFeedProvider(
-            videoEventService: videoEventService,
-            nostrService: nostrService,
-            videoCacheService: VideoCacheService(), // Create locally for backward compatibility
-            userProfileService: userProfileService,
-          ),
+          dispose: (_, bridge) => bridge.dispose(),
         ),
+        
+        // Note: VideoFeedProvider removed - FeedScreenV2 uses IVideoManager directly
         
         // Vine publishing service depends on Nostr and Stream services
         ChangeNotifierProxyProvider2<INostrService, StreamUploadService, VinePublishingService>(
@@ -251,6 +258,16 @@ class _AppInitializerState extends State<AppInitializer> {
       await context.read<AuthService>().initialize();
 
       if (!mounted) return;
+      setState(() => _initializationStatus = 'Connecting to Nostr network...');
+      try {
+        await context.read<INostrService>().initialize();
+      } catch (e) {
+        debugPrint('⚠️ Nostr service initialization failed: $e');
+        // This is critical - rethrow
+        rethrow;
+      }
+
+      if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing notifications...');
       try {
         await context.read<NotificationService>().initialize();
@@ -270,6 +287,10 @@ class _AppInitializerState extends State<AppInitializer> {
       if (!mounted) return;
       setState(() => _initializationStatus = 'Starting background publisher...');
       await context.read<VideoEventPublisher>().initialize();
+
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Connecting video feed...');
+      await context.read<VideoEventBridge>().initialize();
 
       if (!mounted) return;
       setState(() {
@@ -415,7 +436,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   
   final List<Widget> _screens = [
-    const FeedScreen(),
+    const FeedScreenV2(),
     const ActivityScreen(),
     const ExploreScreen(),
     const ProfileScreen(),
@@ -434,9 +455,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   void _pauseFeedVideos() {
     try {
-      final videoFeedProvider = context.read<VideoFeedProvider>();
-      // Pause the currently playing video
-      videoFeedProvider.pauseCurrentVideo();
+      // FeedScreenV2 handles its own lifecycle management
+      // No need to manually pause videos here
       debugPrint('🎬 Paused feed videos when navigating away');
     } catch (e) {
       debugPrint('⚠️ Error pausing feed videos: $e');

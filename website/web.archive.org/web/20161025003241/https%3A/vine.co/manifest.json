@@ -1,0 +1,9 @@
+{
+  "short_name": "Vine",
+  "name": "Vine",
+  "prefer_related_applications": true,
+  "related_applications": [{
+    "platform": "play",
+    "id": "co.vine.android"
+  }]
+}

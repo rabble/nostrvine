@@ -23,6 +23,18 @@ import { handleBatchVideoLookup, handleBatchVideoOptions } from './handlers/batc
 // Analytics service
 import { VideoAnalyticsService } from './services/analytics';
 
+// Feature flags
+import {
+  handleListFeatureFlags,
+  handleGetFeatureFlag,
+  handleCheckFeatureFlag,
+  handleUpdateFeatureFlag,
+  handleGradualRollout,
+  handleRolloutHealth,
+  handleRollback,
+  handleFeatureFlagsOptions
+} from './handlers/feature-flags-api';
+
 // Moderation API
 import { 
   handleReportSubmission, 
@@ -169,6 +181,44 @@ export default {
 				}
 			}
 
+			// Feature flag endpoints
+			if (pathname === '/api/feature-flags' && method === 'GET') {
+				return wrapResponse(handleListFeatureFlags(request, env, ctx));
+			}
+
+			if (pathname.startsWith('/api/feature-flags/') && pathname.endsWith('/check') && method === 'POST') {
+				const flagName = pathname.split('/')[3];
+				return wrapResponse(handleCheckFeatureFlag(flagName, request, env, ctx));
+			}
+
+			if (pathname.startsWith('/api/feature-flags/') && pathname.endsWith('/rollout') && method === 'POST') {
+				const flagName = pathname.split('/')[3];
+				return wrapResponse(handleGradualRollout(flagName, request, env, ctx));
+			}
+
+			if (pathname.startsWith('/api/feature-flags/') && pathname.endsWith('/health') && method === 'GET') {
+				const flagName = pathname.split('/')[3];
+				return wrapResponse(handleRolloutHealth(flagName, request, env, ctx));
+			}
+
+			if (pathname.startsWith('/api/feature-flags/') && pathname.endsWith('/rollback') && method === 'POST') {
+				const flagName = pathname.split('/')[3];
+				return wrapResponse(handleRollback(flagName, request, env, ctx));
+			}
+
+			if (pathname.startsWith('/api/feature-flags/') && !pathname.includes('/check') && !pathname.includes('/rollout') && !pathname.includes('/health') && !pathname.includes('/rollback')) {
+				const flagName = pathname.split('/')[3];
+				if (method === 'GET') {
+					return wrapResponse(handleGetFeatureFlag(flagName, request, env, ctx));
+				} else if (method === 'PUT') {
+					return wrapResponse(handleUpdateFeatureFlag(flagName, request, env, ctx));
+				}
+			}
+
+			if (pathname.startsWith('/api/feature-flags') && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleFeatureFlagsOptions()));
+			}
+
 			// Video metadata endpoints
 			if (pathname === '/v1/media/list' && method === 'GET') {
 				return handleVideoList(request, env);
@@ -282,6 +332,8 @@ export default {
 					'/api/videos/batch (Batch Video Lookup)',
 					'/api/analytics/popular (Popular Videos)',
 					'/api/analytics/dashboard (Analytics Dashboard)',
+					'/api/feature-flags (Feature Flag Management)',
+					'/api/feature-flags/{flagName}/check (Check Feature Flag)',
 					'/api/moderation/report (Report content)',
 					'/api/moderation/status/{videoId} (Check moderation status)',
 					'/api/moderation/queue (Admin: View moderation queue)',

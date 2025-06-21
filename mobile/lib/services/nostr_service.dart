@@ -207,7 +207,25 @@ class NostrService extends ChangeNotifier implements INostrService {
         debugPrint('🔍 Event data keys: ${eventData.keys.toList()}');
       }
       
-      final event = Event.deserialize(eventData);
+      Event event;
+      try {
+        // Event.deserialize expects an array format: ["EVENT", subscription_id, event_data]
+        // Since we already have the event data, we need to wrap it properly
+        if (eventData is Map) {
+          // Create the expected array format for deserialize
+          final deserializeInput = [subscriptionId, eventData];
+          event = Event.deserialize(deserializeInput);
+        } else {
+          debugPrint('⚠️ Unexpected event data type: ${eventData.runtimeType}');
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error deserializing event: $e');
+        debugPrint('📋 Event data: $eventData');
+        debugPrint('📋 Error details: ${e.toString()}');
+        return;
+      }
+      
       debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}... for subscription: $subscriptionId');
       
       // Check for duplicate events to prevent infinite rebuild loops

@@ -14,6 +14,16 @@ NostrVine is a Nostr-based vine-like video sharing application with:
 - **Protocol**: Nostr (decentralized social network)
 - **Media Processing**: Real-time frame capture → GIF creation
 
+## Nostr Event Requirements
+NostrVine requires specific Nostr event types for proper functionality:
+- **Kind 0**: User profiles (NIP-01) - Required for user display names and avatars
+- **Kind 6**: Reposts (NIP-18) - Required for video repost/reshare functionality  
+- **Kind 22**: Short videos (NIP-71) - Primary video content
+- **Kind 7**: Reactions (NIP-25) - Like/heart interactions
+- **Kind 3**: Contact lists (NIP-02) - Follow/following relationships
+
+See `mobile/docs/NOSTR_EVENT_TYPES.md` for complete event type documentation.
+
 ## Development Environment
 
 ### Local Development Server
@@ -69,5 +79,11 @@ npm test                           # Run backend tests
 - Combines video recording + real-time streaming with intelligent fallback
 - 87.5/100 confidence score from performance benchmarking
 - Provides maximum reliability for production vine app
+
+**2024-12-21**: Implemented NIP-18 Repost System (Issue #117)
+- Kind 6 events for reposts with proper 'e' and 'p' tag structure
+- VideoEventService processes both Kind 22 (videos) and Kind 6 (reposts)  
+- UserProfileService requires Kind 0 events for proper "Reposted by" display
+- Full UI integration with repost button and attribution indicators
 
 [See ./.claude/memories/ for universal standards]

@@ -4,6 +4,7 @@
 export interface Env {
   // KV Namespace bindings
   VIDEO_METADATA: KVNamespace;
+  VIDEO_STATUS: KVNamespace;
   
   // R2 Bucket bindings
   VIDEO_BUCKET: R2Bucket;
@@ -14,9 +15,21 @@ export interface Env {
   // Secrets (configured via wrangler secret)
   API_KEY_SALT?: string;
   SIGNING_SECRET?: string;
+  CLOUDFLARE_API_TOKEN?: string;
+  STREAM_ACCOUNT_ID?: string;
+  
+  // Cloudinary secrets
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+  
+  // Cloudflare configuration
+  CLOUDFLARE_IMAGES_ACCOUNT_HASH?: string;
+  WORKER_URL?: string; // The public URL of this worker (e.g., https://api.openvine.co)
   
   // Feature flags
   ENABLE_ANALYTICS?: boolean;
+  ENABLE_PERFORMANCE_MODE?: boolean;
 }
 
 export interface ExecutionContext {

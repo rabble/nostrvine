@@ -115,7 +115,7 @@ class VideoEventService extends ChangeNotifier {
       }
       
       final filter = Filter(
-        kinds: [22], // NIP-71 short video events
+        kinds: [22, 6], // NIP-71 short video events and NIP-18 reposts
         authors: authors,
         since: effectiveSince,
         until: until,
@@ -165,12 +165,22 @@ class VideoEventService extends ChangeNotifier {
   }
   
   /// Handle new video event from subscription
-  void _handleNewVideoEvent(Event event) {
+  void _handleNewVideoEvent(dynamic eventData) {
     try {
+      // First log the raw event data to understand what we're receiving
+      debugPrint('🔍 Event data type: ${eventData.runtimeType}');
+      
+      // The event should already be an Event object from NostrService
+      if (eventData is! Event) {
+        debugPrint('⚠️ Expected Event object but got ${eventData.runtimeType}');
+        return;
+      }
+      
+      Event event = eventData;
       debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}..., created=${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)}');
       
-      if (event.kind != 22) {
-        debugPrint('⏩ Skipping non-video event (kind ${event.kind})');
+      if (event.kind != 22 && event.kind != 6) {
+        debugPrint('⏩ Skipping non-video/repost event (kind ${event.kind})');
         return;
       }
       
@@ -196,22 +206,84 @@ class VideoEventService extends ChangeNotifier {
       //   return; // Return early without notifying listeners to prevent rebuild loops
       // }
       
-      debugPrint('🎬 Processing new video event ${event.id.substring(0, 8)}...');
-      final videoEvent = VideoEvent.fromNostrEvent(event);
-      
-      // Only add events with video URLs
-      if (videoEvent.hasVideo) {
-        _videoEvents.insert(0, videoEvent); // Add to beginning for chronological order
+      // Handle different event kinds
+      if (event.kind == 22) {
+        // Direct video event
+        debugPrint('🎬 Processing new video event ${event.id.substring(0, 8)}...');
+        try {
+          final videoEvent = VideoEvent.fromNostrEvent(event);
+          
+          // Only add events with video URLs
+          if (videoEvent.hasVideo) {
+            _videoEvents.insert(0, videoEvent); // Add to beginning for chronological order
+            
+            // Keep only the most recent events to prevent memory issues
+            if (_videoEvents.length > 500) {
+              _videoEvents.removeRange(500, _videoEvents.length);
+            }
+            
+            debugPrint('✅ Added video event! Total: ${_videoEvents.length} events');
+            notifyListeners();
+          } else {
+            debugPrint('⏩ Skipping video event without video URL');
+          }
+        } catch (e, stackTrace) {
+          debugPrint('❌ Failed to parse video event: $e');
+          debugPrint('📍 Stack trace: $stackTrace');
+          debugPrint('🔍 Event details:');
+          debugPrint('  - ID: ${event.id}');
+          debugPrint('  - Kind: ${event.kind}');
+          debugPrint('  - Pubkey: ${event.pubkey}');
+          debugPrint('  - Content: ${event.content}');
+          debugPrint('  - Created at: ${event.createdAt}');
+          debugPrint('  - Tags: ${event.tags}');
+        }
+      } else if (event.kind == 6) {
+        // Repost event - extract original event ID and fetch it
+        debugPrint('🔄 Processing repost event ${event.id.substring(0, 8)}...');
         
-        // Keep only the most recent events to prevent memory issues
-        if (_videoEvents.length > 500) {
-          _videoEvents.removeRange(500, _videoEvents.length);
+        String? originalEventId;
+        for (final tag in event.tags) {
+          if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+            originalEventId = tag[1];
+            break;
+          }
         }
         
-        debugPrint('✅ Added video event! Total: ${_videoEvents.length} events');
-        notifyListeners();
-      } else {
-        debugPrint('⏩ Skipping video event without video URL');
+        if (originalEventId != null) {
+          debugPrint('🔍 Repost references event: ${originalEventId.substring(0, 8)}...');
+          
+          // Check if we already have the original video in our cache
+          final existingOriginal = _videoEvents.firstWhere(
+            (v) => v.id == originalEventId,
+            orElse: () => VideoEvent(
+              id: '',
+              pubkey: '',
+              createdAt: 0,
+              content: '',
+              timestamp: DateTime.now(),
+            ),
+          );
+          
+          if (existingOriginal.id.isNotEmpty) {
+            // Create repost version of existing video
+            debugPrint('✅ Found cached original video, creating repost');
+            final repostEvent = VideoEvent.createRepostEvent(
+              originalEvent: existingOriginal,
+              repostEventId: event.id,
+              reposterPubkey: event.pubkey,
+              repostedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+            );
+            
+            _videoEvents.insert(0, repostEvent);
+            debugPrint('✅ Added repost event! Total: ${_videoEvents.length} events');
+            notifyListeners();
+          } else {
+            // Fetch original event from relays
+            debugPrint('🔍 Fetching original video event from relays...');
+            _fetchOriginalEventForRepost(originalEventId, event);
+          }
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Error processing video event: $e');
@@ -305,7 +377,7 @@ class VideoEventService extends ChangeNotifier {
     
     final completer = Completer<void>();
     final filter = Filter(
-      kinds: [22],
+      kinds: [22, 6], // Include reposts
       until: until,
       limit: limit,
     );
@@ -424,6 +496,84 @@ class VideoEventService extends ChangeNotifier {
       counts[event.pubkey] = (counts[event.pubkey] ?? 0) + 1;
     }
     return counts;
+  }
+  
+  /// Fetch original event for a repost from relays
+  Future<void> _fetchOriginalEventForRepost(String originalEventId, Event repostEvent) async {
+    try {
+      debugPrint('🔍 Fetching original event $originalEventId for repost ${repostEvent.id.substring(0, 8)}...');
+      
+      // Create a one-shot subscription to fetch the specific event
+      final eventStream = _nostrService.subscribeToEvents(
+        filters: [
+          Filter(
+            ids: [originalEventId],
+            kinds: [22], // Only fetch if it's a video event
+          ),
+        ],
+      );
+      
+      // Listen for the original event
+      late StreamSubscription subscription;
+      subscription = eventStream.listen(
+        (originalEvent) {
+          debugPrint('📥 Retrieved original event ${originalEvent.id.substring(0, 8)}...');
+          
+          // Check if it's a valid video event
+          if (originalEvent.kind == 22) {
+            try {
+              final originalVideoEvent = VideoEvent.fromNostrEvent(originalEvent);
+              
+              // Only process if it has video content
+              if (originalVideoEvent.hasVideo) {
+                // Create the repost version
+                final repostVideoEvent = VideoEvent.createRepostEvent(
+                  originalEvent: originalVideoEvent,
+                  repostEventId: repostEvent.id,
+                  reposterPubkey: repostEvent.pubkey,
+                  repostedAt: DateTime.fromMillisecondsSinceEpoch(repostEvent.createdAt * 1000),
+                );
+                
+                // Add to video events
+                _videoEvents.insert(0, repostVideoEvent);
+                
+                // Keep list size manageable
+                if (_videoEvents.length > 500) {
+                  _videoEvents.removeRange(500, _videoEvents.length);
+                }
+                
+                debugPrint('✅ Added fetched repost event! Total: ${_videoEvents.length} events');
+                notifyListeners();
+              } else {
+                debugPrint('⏩ Skipping repost of video without URL');
+              }
+            } catch (e) {
+              debugPrint('❌ Failed to parse original video event for repost: $e');
+            }
+          }
+          
+          // Clean up subscription
+          subscription.cancel();
+        },
+        onError: (error) {
+          debugPrint('❌ Error fetching original event for repost: $error');
+          subscription.cancel();
+        },
+        onDone: () {
+          debugPrint('🏁 Finished fetching original event for repost');
+          subscription.cancel();
+        },
+      );
+      
+      // Set timeout to avoid hanging
+      Timer(const Duration(seconds: 5), () {
+        debugPrint('⏰ Timeout fetching original event for repost');
+        subscription.cancel();
+      });
+      
+    } catch (e) {
+      debugPrint('❌ Error in _fetchOriginalEventForRepost: $e');
+    }
   }
   
   /// Check if an error is connection-related

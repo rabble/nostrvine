@@ -3,6 +3,19 @@ main = "src/index.ts"
 compatibility_date = "2025-06-20"
 compatibility_flags = ["nodejs_compat"]
 
+# Custom domain routing
+[[routes]]
+pattern = "api.openvine.co/*"
+zone_name = "openvine.co"
+
+[[env.staging.routes]]
+pattern = "staging-api.openvine.co/*"
+zone_name = "openvine.co"
+
+[[env.production.routes]]
+pattern = "api.openvine.co/*"
+zone_name = "openvine.co"
+
 # Environment configuration
 [env.staging]
 name = "nostrvine-video-api-staging"
@@ -16,13 +29,27 @@ binding = "VIDEO_METADATA"
 id = "85ae949f9eee483693c8fe5c1b707c52"
 preview_id = "85ae949f9eee483693c8fe5c1b707c52"
 
+# KV Namespace for video status and rate limiting
+[[kv_namespaces]]
+binding = "VIDEO_STATUS"
+id = "dc416e9b166d4148abf8c0e9da6c48f2"
+preview_id = "dc416e9b166d4148abf8c0e9da6c48f2"
+
 [[env.staging.kv_namespaces]]
 binding = "VIDEO_METADATA"
 id = "38ac1592adba4a068ac0f8c693efb159"
 
+[[env.staging.kv_namespaces]]
+binding = "VIDEO_STATUS"
+id = "9b3f8ea79060444ca94e05d0fe501db5"
+
 [[env.production.kv_namespaces]]
 binding = "VIDEO_METADATA"
 id = "9a013d14d2f54c0284564486dc030b63"
+
+[[env.production.kv_namespaces]]
+binding = "VIDEO_STATUS"
+id = "55d47eeb43a24fbfa36f8aae133a0495"
 
 # R2 Bucket for video storage
 [[r2_buckets]]
@@ -42,11 +69,18 @@ bucket_name = "nostrvine-videos"
 [vars]
 ENVIRONMENT = "development"
 ENABLE_ANALYTICS = true
+CLOUDINARY_CLOUD_NAME = "dswu0ugmo"
+WORKER_URL = "http://localhost:8787"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
 ENABLE_ANALYTICS = true
+CLOUDINARY_CLOUD_NAME = "dswu0ugmo"
+WORKER_URL = "https://staging-api.openvine.co"
 
 [env.production.vars]
 ENVIRONMENT = "production"
 ENABLE_ANALYTICS = true
+ENABLE_PERFORMANCE_MODE = true
+CLOUDINARY_CLOUD_NAME = "dswu0ugmo"
+WORKER_URL = "https://api.openvine.co"

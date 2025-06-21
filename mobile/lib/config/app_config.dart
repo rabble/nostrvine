@@ -5,7 +5,7 @@ class AppConfig {
   // Backend configuration
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://nostrvine-backend.protestnet.workers.dev',
+    defaultValue: 'https://api.openvine.co',
   );
   
   // Environment detection
@@ -16,6 +16,7 @@ class AppConfig {
   
   // Development mode flag
   static bool get isDevelopment => environment == 'development';
+  static bool get isStaging => environment == 'staging';
   static bool get isProduction => environment == 'production';
   
   // API endpoints
@@ -27,13 +28,17 @@ class AppConfig {
   static String streamStatusUrl(String videoId) => '$backendBaseUrl/v1/media/status/$videoId';
   static String get streamWebhookUrl => '$backendBaseUrl/v1/webhooks/stream-complete';
   
+  // Cloudinary endpoints
+  static String get cloudinarySignedUploadUrl => '$backendBaseUrl/v1/media/cloudinary/request-upload';
+  static String get cloudinaryWebhookUrl => '$backendBaseUrl/v1/media/webhook';
+  static String get readyEventsUrl => '$backendBaseUrl/v1/media/ready-events';
+  
   // Legacy endpoints (for backward compatibility)
-  static String get cloudinarySignedUploadUrl => '$backendBaseUrl/v1/media/request-upload';
   static String get videoMetadataUrl => '$backendBaseUrl/v1/media/metadata';
   static String get videoListUrl => '$backendBaseUrl/v1/media/list';
   
   // App configuration
-  static const String appName = 'NostrVine';
+  static const String appName = 'OpenVine';
   static const String appVersion = '1.0.0';
   
   // Nostr configuration
