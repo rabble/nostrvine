@@ -379,7 +379,7 @@ void main() {
         );
       });
 
-      tearDown() {
+      tearDown(() {
         videoManager.dispose();
       });
 

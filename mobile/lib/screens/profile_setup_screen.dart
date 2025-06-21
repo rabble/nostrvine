@@ -75,24 +75,29 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         elevation: 0,
         automaticallyImplyLeading: false, // Don't show back button for setup flow
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.isNewUser 
-                      ? 'Welcome to NostrVine!'
-                      : 'Update Your Profile',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+      body: GestureDetector(
+        onTap: () {
+          // Dismiss keyboard when tapping outside text fields
+          FocusScope.of(context).unfocus();
+        },
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isNewUser 
+                        ? 'Welcome to NostrVine!'
+                        : 'Update Your Profile',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 8),
                 Text(
                   widget.isNewUser
@@ -108,6 +113,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 // Display Name
                 TextFormField(
                   controller: _nameController,
+                  autofocus: true, // Automatically focus on first field
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Display Name',
@@ -120,8 +126,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.purple, width: 2),
+                    ),
                     prefixIcon: const Icon(Icons.person, color: Colors.grey),
                   ),
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a display name';
@@ -146,11 +162,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.purple, width: 2),
+                    ),
                     prefixIcon: const Icon(Icons.info_outline, color: Colors.grey),
                   ),
                   maxLines: 3,
                   minLines: 1,
                   maxLength: 160,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                 ),
                 const SizedBox(height: 16),
 
@@ -169,8 +195,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.purple, width: 2),
+                    ),
                     prefixIcon: const Icon(Icons.image, color: Colors.grey),
                   ),
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _publishProfile(),
+                  keyboardType: TextInputType.url,
                   validator: (value) {
                     if (value != null && value.trim().isNotEmpty) {
                       // Basic URL validation
@@ -294,7 +331,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

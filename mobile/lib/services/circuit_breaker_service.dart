@@ -45,7 +45,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
   final Set<String> _permanentlyFailedUrls = {};
   Timer? _recoveryTimer;
   int _halfOpenSuccessCount = 0;
-  int _halfOpenRequiredSuccesses = 3;
+  final int _halfOpenRequiredSuccesses = 3;
   
   VideoCircuitBreaker({
     int failureThreshold = 5,
@@ -62,6 +62,19 @@ class VideoCircuitBreaker extends ChangeNotifier {
 
   /// Whether requests should be allowed through
   bool get allowRequests => _state != CircuitBreakerState.open;
+
+  /// Get current failure rate (percentage of recent failures)
+  double get failureRate {
+    final recentFailures = _getRecentFailures(const Duration(minutes: 5));
+    if (recentFailures.isEmpty) return 0.0;
+    
+    // Calculate failure rate based on recent activity
+    const maxRecentFailuresForRate = 20; // Consider last 20 requests for rate calculation
+    final failureCount = recentFailures.length;
+    final rate = (failureCount / maxRecentFailuresForRate * 100).clamp(0.0, 100.0);
+    
+    return rate;
+  }
 
   /// Check if a specific URL should be blocked
   bool shouldAllowUrl(String url) {

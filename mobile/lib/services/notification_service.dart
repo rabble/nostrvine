@@ -97,14 +97,20 @@ class NotificationService extends ChangeNotifier {
   
   /// Singleton instance
   static NotificationService get instance {
-    _instance ??= NotificationService._();
+    if (_instance == null || _instance!._disposed) {
+      _instance = NotificationService._();
+    }
     return _instance!;
   }
+  
+  /// Factory constructor that returns the singleton instance
+  factory NotificationService() => instance;
   
   NotificationService._();
 
   final List<AppNotification> _notifications = [];
   bool _permissionsGranted = false;
+  bool _disposed = false;
   
   /// List of recent notifications
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
@@ -264,7 +270,14 @@ class NotificationService extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Check if already disposed to prevent double disposal
+    if (_disposed) return;
+    
+    _disposed = true;
     _notifications.clear();
     super.dispose();
   }
+  
+  /// Check if this service is still mounted/active
+  bool get mounted => !_disposed;
 }

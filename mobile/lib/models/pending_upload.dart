@@ -15,15 +15,18 @@ enum UploadStatus {
   uploading,     // Currently uploading to Cloudinary
   
   @HiveField(2)
-  processing,    // Cloudinary is processing the video
+  retrying,      // Retrying after failure
   
   @HiveField(3)
-  readyToPublish, // Processing complete, ready for Nostr publishing
+  processing,    // Cloudinary is processing the video
   
   @HiveField(4)
-  published,     // Successfully published to Nostr
+  readyToPublish, // Processing complete, ready for Nostr publishing
   
   @HiveField(5)
+  published,     // Successfully published to Nostr
+  
+  @HiveField(6)
   failed,        // Upload or processing failed
 }
 
@@ -168,6 +171,8 @@ class PendingUpload {
           return 'Uploading ${(uploadProgress! * 100).toInt()}%...';
         }
         return 'Uploading...';
+      case UploadStatus.retrying:
+        return 'Retrying upload...';
       case UploadStatus.processing:
         return 'Processing video...';
       case UploadStatus.readyToPublish:
@@ -185,6 +190,8 @@ class PendingUpload {
       case UploadStatus.pending:
         return 0.0;
       case UploadStatus.uploading:
+        return uploadProgress ?? 0.0;
+      case UploadStatus.retrying:
         return uploadProgress ?? 0.0;
       case UploadStatus.processing:
         return 0.8; // Show 80% when processing

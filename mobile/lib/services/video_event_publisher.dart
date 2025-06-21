@@ -8,12 +8,14 @@ import '../models/ready_event_data.dart';
 import '../models/pending_upload.dart';
 import '../services/upload_manager.dart';
 import '../services/nostr_service_interface.dart';
+import '../services/auth_service.dart';
 import 'package:nostr/nostr.dart';
 
 /// Service for publishing processed videos to Nostr relays
 class VideoEventPublisher extends ChangeNotifier {
   final UploadManager _uploadManager;
   final INostrService _nostrService;
+  final AuthService? _authService;
   final Future<List<ReadyEventData>> Function() _fetchReadyEvents;
   final Future<void> Function(String publicId) _cleanupRemoteEvent;
   
@@ -45,10 +47,12 @@ class VideoEventPublisher extends ChangeNotifier {
   VideoEventPublisher({
     required UploadManager uploadManager,
     required INostrService nostrService,
+    AuthService? authService,
     required Future<List<ReadyEventData>> Function() fetchReadyEvents,
     required Future<void> Function(String publicId) cleanupRemoteEvent,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
+       _authService = authService,
        _fetchReadyEvents = fetchReadyEvents,
        _cleanupRemoteEvent = cleanupRemoteEvent;
 
@@ -150,6 +154,9 @@ class VideoEventPublisher extends ChangeNotifier {
       
       // Create NIP-94 event
       final nostrEvent = await _createNip94Event(eventData);
+      if (nostrEvent == null) {
+        throw Exception('Failed to create Nostr event');
+      }
       
       // Publish to Nostr relays
       final publishResult = await _publishEventToNostr(nostrEvent);
@@ -185,22 +192,34 @@ class VideoEventPublisher extends ChangeNotifier {
   }
 
   /// Create NIP-94 file metadata event from ready event data
-  Future<Event> _createNip94Event(ReadyEventData eventData) async {
-    // Get user's private key (placeholder implementation)
-    final privateKey = await _getUserPrivateKey();
+  Future<Event?> _createNip94Event(ReadyEventData eventData) async {
+    if (_authService == null || !_authService!.isAuthenticated) {
+      debugPrint('❌ Cannot create NIP-94 event - user not authenticated');
+      return null;
+    }
     
-    final event = Event.from(
-      kind: 1063, // NIP-94 file metadata
-      content: eventData.contentSuggestion,
-      tags: eventData.nip94Tags,
-      privkey: privateKey,
-    );
-    
-    debugPrint('📝 Created NIP-94 event: ${event.id}');
-    debugPrint('📊 Event size: ${eventData.estimatedEventSize} bytes');
-    debugPrint('🏷️ Tags: ${event.tags.length}');
-    
-    return event;
+    try {
+      final event = await _authService!.createAndSignEvent(
+        kind: 1063, // NIP-94 file metadata
+        content: eventData.contentSuggestion,
+        tags: eventData.nip94Tags,
+      );
+      
+      if (event == null) {
+        debugPrint('❌ Failed to create and sign NIP-94 event');
+        return null;
+      }
+      
+      debugPrint('📝 Created NIP-94 event: ${event.id}');
+      debugPrint('📊 Event size: ${eventData.estimatedEventSize} bytes');
+      debugPrint('🏷️ Tags: ${event.tags.length}');
+      
+      return event;
+      
+    } catch (e) {
+      debugPrint('❌ Error creating NIP-94 event: $e');
+      return null;
+    }
   }
 
   /// Publish event to Nostr relays
@@ -335,13 +354,6 @@ class VideoEventPublisher extends ChangeNotifier {
     });
   }
 
-  /// Get user's private key for signing events
-  Future<String> _getUserPrivateKey() async {
-    // TODO: Implement proper private key management
-    // This should get the user's private key from secure storage
-    debugPrint('⚠️ TODO: Implement proper private key management');
-    return 'placeholder-private-key-hex';
-  }
 
   /// Get publishing statistics
   Map<String, dynamic> get publishingStats {

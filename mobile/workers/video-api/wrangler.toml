@@ -1,0 +1,52 @@
+name = "nostrvine-video-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-20"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment configuration
+[env.staging]
+name = "nostrvine-video-api-staging"
+
+[env.production]
+name = "nostrvine-video-api"
+
+# KV Namespace for video metadata
+[[kv_namespaces]]
+binding = "VIDEO_METADATA"
+id = "85ae949f9eee483693c8fe5c1b707c52"
+preview_id = "85ae949f9eee483693c8fe5c1b707c52"
+
+[[env.staging.kv_namespaces]]
+binding = "VIDEO_METADATA"
+id = "38ac1592adba4a068ac0f8c693efb159"
+
+[[env.production.kv_namespaces]]
+binding = "VIDEO_METADATA"
+id = "9a013d14d2f54c0284564486dc030b63"
+
+# R2 Bucket for video storage
+[[r2_buckets]]
+binding = "VIDEO_BUCKET"
+bucket_name = "nostrvine-videos-dev"
+preview_bucket_name = "nostrvine-videos-preview"
+
+[[env.staging.r2_buckets]]
+binding = "VIDEO_BUCKET"
+bucket_name = "nostrvine-videos-staging"
+
+[[env.production.r2_buckets]]
+binding = "VIDEO_BUCKET"
+bucket_name = "nostrvine-videos"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+ENABLE_ANALYTICS = true
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+ENABLE_ANALYTICS = true
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ENABLE_ANALYTICS = true

@@ -539,9 +539,9 @@ class VideoPerformanceDashboard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -682,7 +682,7 @@ class VideoPerformanceDashboard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.left(color: color, width: 4),
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -705,7 +705,7 @@ class VideoPerformanceDashboard extends StatelessWidget {
                     recommendation.priority.name.toUpperCase(),
                     style: const TextStyle(fontSize: 10),
                   ),
-                  backgroundColor: color.withOpacity(0.2),
+                  backgroundColor: color.withValues(alpha: 0.2),
                 ),
               ],
             ),

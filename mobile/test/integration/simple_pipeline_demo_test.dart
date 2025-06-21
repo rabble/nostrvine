@@ -163,7 +163,7 @@ void main() {
       expect(estimatedSize, greaterThan(100));
       expect(estimatedSize, lessThan(5000));
       
-      print('  ✅ Event size estimation: ~${estimatedSize} bytes');
+      print('  ✅ Event size estimation: ~$estimatedSize bytes');
     });
 
     test('demonstrates concurrent operation handling', () async {

@@ -192,8 +192,23 @@ class NostrService extends ChangeNotifier implements INostrService {
   /// Handle incoming event message
   void _handleEventMessage(List<dynamic> eventMessage) {
     try {
-      final event = Event.deserialize(eventMessage);
-      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      // EVENT messages come as ["EVENT", subscription_id, event_data]
+      if (eventMessage.length < 3) {
+        debugPrint('⚠️ Invalid EVENT message format');
+        return;
+      }
+      
+      final subscriptionId = eventMessage[1];
+      final eventData = eventMessage[2];
+      
+      // Add debugging to understand the event format
+      debugPrint('🔍 Event data type: ${eventData.runtimeType}');
+      if (eventData is Map) {
+        debugPrint('🔍 Event data keys: ${eventData.keys.toList()}');
+      }
+      
+      final event = Event.deserialize(eventData);
+      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}... for subscription: $subscriptionId');
       
       // Check for duplicate events to prevent infinite rebuild loops
       if (_seenEventIds.contains(event.id)) {

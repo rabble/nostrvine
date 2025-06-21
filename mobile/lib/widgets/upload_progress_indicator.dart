@@ -86,6 +86,12 @@ class UploadProgressIndicator extends StatelessWidget {
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         );
+      case UploadStatus.retrying:
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange),
+        );
       case UploadStatus.processing:
         return const Icon(Icons.settings, color: Colors.blue);
       case UploadStatus.readyToPublish:
@@ -165,6 +171,8 @@ class UploadProgressIndicator extends StatelessWidget {
         return Colors.orange;
       case UploadStatus.uploading:
         return Colors.blue;
+      case UploadStatus.retrying:
+        return Colors.orange;
       case UploadStatus.processing:
         return Colors.blue;
       case UploadStatus.readyToPublish:
@@ -182,6 +190,8 @@ class UploadProgressIndicator extends StatelessWidget {
         return Colors.orange;
       case UploadStatus.uploading:
         return Colors.blue;
+      case UploadStatus.retrying:
+        return Colors.orange;
       case UploadStatus.processing:
         return Colors.blue;
       case UploadStatus.readyToPublish:

@@ -11,6 +11,8 @@ import '../services/upload_manager.dart';
 import '../models/pending_upload.dart';
 import '../widgets/upload_progress_indicator.dart';
 import 'camera_settings_screen.dart';
+import 'vine_preview_screen.dart';
+import 'vine_drafts_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -27,7 +29,6 @@ class _CameraScreenState extends State<CameraScreen> {
   ContentReportingService? _reportingService;
   UploadManager? _uploadManager;
   String? _errorMessage;
-  VineRecordingResult? _lastRecordingResult;
   PendingUpload? _currentUpload;
 
   @override
@@ -141,8 +142,11 @@ class _CameraScreenState extends State<CameraScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Remove the X button that was causing navigation issues
-                      const SizedBox(width: 48), // Maintain spacing
+                      // Back button
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                       Row(
                         children: [
                           // Offline queue indicator
@@ -247,11 +251,17 @@ class _CameraScreenState extends State<CameraScreen> {
                   }(),
                 ),
 
-                // Settings button only
+                // Right side buttons
                 Positioned(
                   right: 20,
-                  top: MediaQuery.of(context).size.height * 0.3,
-                  child: _buildSettingsButton(),
+                  top: MediaQuery.of(context).size.height * 0.25,
+                  child: Column(
+                    children: [
+                      _buildDraftsButton(),
+                      const SizedBox(height: 16),
+                      _buildSettingsButton(),
+                    ],
+                  ),
                 ),
 
                 // Recording state indicator (only show during manual processing, not auto-stop)
@@ -818,6 +828,39 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
 
+  Widget _buildDraftsButton() {
+    return GestureDetector(
+      onTap: () => _openDrafts(),
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1),
+            ),
+            child: const Icon(
+              Icons.drafts,
+              color: Colors.orange,
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Drafts',
+            style: TextStyle(
+              color: Colors.orange,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSettingsButton() {
     return GestureDetector(
       onTap: () => _openSettings(),
@@ -896,17 +939,18 @@ class _CameraScreenState extends State<CameraScreen> {
       debugPrint('✅ UI: Recording stopped successfully');
       
       if (mounted && result.hasFrames) {
-        // Store recording result for publishing
-        _lastRecordingResult = result;
-        
-        // Start Cloudinary upload
-        await _startCloudinaryUpload(result);
+        // Create video file from frames for preview
+        final tempVideoFile = await _createVideoFromFrames(result);
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Recorded ${result.frameCount} frames using ${result.selectedApproach}'),
-              duration: const Duration(seconds: 2),
+          // Navigate to Vine-style preview screen
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => VinePreviewScreen(
+                videoFile: tempVideoFile,
+                frameCount: result.frameCount,
+                selectedApproach: result.selectedApproach,
+              ),
             ),
           );
         }
@@ -1004,6 +1048,14 @@ class _CameraScreenState extends State<CameraScreen> {
     // TODO: Implement gallery/library functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Opening gallery...')),
+    );
+  }
+
+  void _openDrafts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const VineDraftsScreen(),
+      ),
     );
   }
 

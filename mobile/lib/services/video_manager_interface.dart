@@ -219,10 +219,10 @@ class VideoManagerConfig {
   factory VideoManagerConfig.wifi() {
     return const VideoManagerConfig(
       maxVideos: 100,
-      preloadAhead: 5,
-      preloadBehind: 2,
-      maxRetries: 3,
-      preloadTimeout: Duration(seconds: 10),
+      preloadAhead: 2,  // Reduced from 5 to 2
+      preloadBehind: 1, // Reduced from 2 to 1
+      maxRetries: 2,    // Reduced from 3 to 2
+      preloadTimeout: Duration(seconds: 15), // Increased timeout
       enableMemoryManagement: true,
     );
   }

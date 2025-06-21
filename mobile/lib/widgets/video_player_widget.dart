@@ -260,7 +260,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Widget _buildLoadingWidget() {
     return Container(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       child: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -284,7 +284,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Widget _buildErrorWidget(String message) {
     return Container(
-      color: Colors.black.withOpacity(0.8),
+      color: Colors.black.withValues(alpha: 0.8),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

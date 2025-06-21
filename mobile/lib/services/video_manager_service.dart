@@ -4,9 +4,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
+import '../utils/unified_logger.dart';
 import 'video_manager_interface.dart';
 
 /// Production implementation of IVideoManager providing comprehensive video lifecycle management
@@ -134,7 +136,7 @@ class VideoManagerService implements IVideoManager {
     // Notify listeners
     _notifyStateChange();
     
-    developer.log('Added video event: ${event.id}, total videos: ${_videos.length}');
+    Log.info('Added video event: ${event.id}, total videos: ${_videos.length}', name: 'VideoManager');
   }
   
   @override
@@ -188,13 +190,16 @@ class VideoManagerService implements IVideoManager {
   void preloadAroundIndex(int currentIndex, {int? preloadRange}) {
     if (_disposed) return;
     
-    if (_videos.isEmpty) return;
+    if (_videos.isEmpty) {
+      developer.log('⚠️ preloadAroundIndex called but no videos available');
+      return;
+    }
     
     final range = preloadRange ?? _config.preloadAhead;
     final start = (currentIndex - _config.preloadBehind).clamp(0, _videos.length - 1);
     final end = (currentIndex + range).clamp(0, _videos.length - 1);
     
-    developer.log('Preloading around index $currentIndex (range: $start-$end)');
+    Log.info('🚀 Preloading around index $currentIndex (range: $start-$end), total videos: ${_videos.length}', name: 'VideoManager');
     
     // Dispose controllers for videos outside the viewing window
     _disposeUnusedControllers(currentIndex);
@@ -202,18 +207,24 @@ class VideoManagerService implements IVideoManager {
     // Preload in priority order: current, next, previous, then expanding range
     final priorityOrder = _calculatePreloadPriority(currentIndex, start, end);
     
+    Log.debug('📋 Checking ${priorityOrder.length} videos for preloading...', name: 'VideoManager');
     for (final index in priorityOrder) {
       if (index < _videos.length) {
         final videoId = _videos[index].id;
         final state = getVideoState(videoId);
         
+        Log.verbose('🔍 Video $index: ${videoId.substring(0, 8)} - state: ${state?.loadingState}, active: ${_activePreloads.contains(videoId)}', name: 'VideoManager');
+        
         if (state != null && 
             state.loadingState == VideoLoadingState.notLoaded && 
             !_activePreloads.contains(videoId)) {
+          Log.info('▶️ Starting preload for video $index: ${videoId.substring(0, 8)}', name: 'VideoManager');
           // Fire and forget - don't await to avoid blocking
           preloadVideo(videoId).catchError((e) {
-            developer.log('Background preload failed for $videoId: $e');
+            Log.error('❌ Background preload failed for ${videoId.substring(0, 8)}: $e', name: 'VideoManager', error: e);
           });
+        } else {
+          Log.verbose('⏭️ Skipping video $index: ${videoId.substring(0, 8)} (state: ${state?.loadingState})', name: 'VideoManager');
         }
       }
     }
@@ -325,8 +336,11 @@ class VideoManagerService implements IVideoManager {
   
   /// Performs the actual video preloading with timeout and error handling
   Future<void> _performPreload(String videoId, VideoEvent event) async {
+    Log.info('🔄 Starting preload for video ${videoId.substring(0, 8)} with URL: ${event.videoUrl}', name: 'VideoManager');
+    
     // Validate video URL before attempting preload
     if (event.videoUrl?.isEmpty ?? true) {
+      Log.error('❌ Preload failed: Video URL is empty for ${videoId.substring(0, 8)}', name: 'VideoManager');
       throw VideoManagerException(
         'Video URL is required for preloading', 
         videoId: videoId,
@@ -350,41 +364,65 @@ class VideoManagerService implements IVideoManager {
         );
       }
       
-      // Create controller with network configuration
+      // Create controller with progressive loading (like TikTok/Instagram)
+      // Check if this is a retry after server config error
+      final currentState = getVideoState(videoId);
+      final isRetryAfterServerError = (currentState != null) && 
+          (currentState.retryCount > 0) && 
+          (currentState.errorMessage?.contains('SERVER_CONFIG_ERROR') ?? false);
+      
+      final headers = <String, String>{
+        'Cache-Control': 'no-cache',
+        'User-Agent': 'NostrVine/1.0',
+      };
+      
+      // For retries after server config errors, explicitly disable range requests
+      if (isRetryAfterServerError) {
+        headers['Range'] = 'bytes=0-'; // Request full file from start
+        Log.debug('🔄 Retrying video ${videoId.substring(0, 8)} with simplified headers', name: 'VideoManager');
+      }
+      
       controller = VideoPlayerController.networkUrl(
         uri,
         videoPlayerOptions: VideoPlayerOptions(
           mixWithOthers: true,
           allowBackgroundPlayback: false,
         ),
+        httpHeaders: headers,
       );
       
-      // Initialize with timeout
+      // Initialize with shorter timeout for progressive loading
+      Log.debug('📺 Initializing video controller for ${videoId.substring(0, 8)}...', name: 'VideoManager');
       await controller.initialize().timeout(
-        _config.preloadTimeout,
+        const Duration(seconds: 3), // Shorter timeout for progressive loading
         onTimeout: () {
-          throw VideoManagerException(
-            'Preload timeout after ${_config.preloadTimeout.inSeconds}s',
-            videoId: videoId,
-            originalError: 'Network timeout',
-          );
+          Log.warning('⏰ Initial load timeout for ${videoId.substring(0, 8)} - will continue progressive loading', name: 'VideoManager');
+          // Don't throw - allow progressive loading to continue
         },
       );
       
+      // For progressive playback, mark as ready even if not fully loaded
+      // The video will start playing and buffer as needed
+      
       // Store controller and update state
       _controllers[videoId] = controller;
+      Log.debug('💾 Stored controller for ${videoId.substring(0, 8)}', name: 'VideoManager');
       
-      final currentState = getVideoState(videoId);
-      if (currentState != null && currentState.isLoading) {
-        _videoStates[videoId] = currentState.toReady();
+      final updatedState = getVideoState(videoId);
+      if (updatedState != null && updatedState.isLoading) {
+        _videoStates[videoId] = updatedState.toReady();
         _preloadSuccessCount++;
         _notifyStateChange();
+        Log.info('✅ Video ${videoId.substring(0, 8)} marked as READY! (progressive loading)', name: 'VideoManager');
+      } else {
+        Log.warning('⚠️ Video ${videoId.substring(0, 8)} state issue: currentState=${updatedState?.loadingState}, isLoading=${updatedState?.isLoading}', name: 'VideoManager');
       }
       
-      developer.log('Successfully preloaded video: $videoId');
+      Log.info('✅ Successfully preloaded video: ${videoId.substring(0, 8)} with progressive streaming', name: 'VideoManager');
       
     } catch (e) {
       // Clean up failed controller
+      Log.error('❌ Preload failed for ${videoId.substring(0, 8)}: $e', name: 'VideoManager', error: e);
       controller?.dispose();
       _controllers.remove(videoId);
       
@@ -547,13 +585,38 @@ class VideoManagerService implements IVideoManager {
     final currentState = getVideoState(videoId);
     if (currentState == null || _disposed) return;
 
-    // Transition to failed state (automatically becomes permanently failed if max retries exceeded)
-    final newState = currentState.toFailed(error.toString());
+    // Check if this is a server configuration error that needs special handling
+    final errorString = error.toString().toLowerCase();
+    final isServerConfigError = errorString.contains('server is not correctly configured') ||
+        errorString.contains('coremediaerrordomain error -12939') ||
+        errorString.contains('byte range length mismatch');
+
+    VideoState newState;
+    if (isServerConfigError) {
+      // For server config errors, try once more without range requests
+      if (currentState.retryCount == 0) {
+        newState = currentState.toFailed('SERVER_CONFIG_ERROR - retrying without range requests');
+        developer.log('Server configuration error for $videoId - will retry without range requests');
+      } else {
+        // Already retried, mark as permanently failed
+        newState = VideoState(
+          event: currentState.event,
+          loadingState: VideoLoadingState.permanentlyFailed,
+          errorMessage: 'SERVER_CONFIG_ERROR',
+          retryCount: VideoState.maxRetryCount,
+        );
+        developer.log('Server configuration error for $videoId - marking as permanently failed after retry');
+      }
+    } else {
+      // Normal error handling with retries
+      newState = currentState.toFailed(error.toString());
+    }
+    
     _videoStates[videoId] = newState;
     _notifyStateChange();
 
-    // Check if video can still be retried
-    if (newState.canRetry) {
+    // Only retry if not a server config error and retries are available
+    if (!isServerConfigError && newState.canRetry) {
       final retryDelay = _calculateRetryDelay(newState.retryCount);
       developer.log('Scheduling retry for $videoId (attempt ${newState.retryCount}/${VideoState.maxRetryCount}) in ${retryDelay.inMilliseconds}ms');
       
@@ -569,8 +632,9 @@ class VideoManagerService implements IVideoManager {
         }
       });
     } else {
-      // Video has reached max retries and is now permanently failed
-      developer.log('Video $videoId exhausted all retries, marked as permanently failed');
+      // Video has reached max retries or is permanently failed
+      final reason = isServerConfigError ? 'server configuration error' : 'exhausted all retries';
+      developer.log('Video $videoId marked as permanently failed: $reason');
     }
   }
 

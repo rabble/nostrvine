@@ -2,10 +2,8 @@
 // ABOUTME: Handles gradual rollout between legacy and new TDD video systems
 
 import 'package:flutter/foundation.dart';
-import 'package:provider/provider.dart';
 import '../services/ab_testing_service.dart';
 import '../services/video_manager_interface.dart';
-import '../services/video_manager_service.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import 'package:video_player/video_player.dart';
@@ -22,7 +20,7 @@ class VideoSystemABProvider extends ChangeNotifier {
   
   // Current system state
   late final bool _useNewSystem;
-  String? _currentUserId;
+  final String? _currentUserId;
   
   // Migration tracking
   DateTime? _systemSwitchTime;

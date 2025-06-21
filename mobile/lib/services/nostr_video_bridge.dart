@@ -264,7 +264,7 @@ class NostrVideoBridge extends ChangeNotifier {
     // Filter out videos that are too old (optional)
     final daysSinceCreated = DateTime.now().difference(event.timestamp).inDays;
     if (daysSinceCreated > 30) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - too old (${daysSinceCreated} days)');
+      debugPrint('NostrVideoBridge: Filtered event ${event.id} - too old ($daysSinceCreated days)');
       return false;
     }
 

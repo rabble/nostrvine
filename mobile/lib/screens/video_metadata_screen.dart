@@ -117,7 +117,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
       // For now, we'll use a placeholder - this should be updated when NostrService is accessible
       const userPubkey = 'placeholder_pubkey';
       
-      await uploadManager.uploadVideo(
+      await uploadManager.startUpload(
         videoFile: widget.videoFile,
         nostrPubkey: userPubkey,
         title: _titleController.text.trim(),
@@ -232,8 +232,8 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                             ),
                           ),
                           CharacterCounterWidget(
-                            current: _titleController.text.length,
-                            max: _maxTitleLength,
+                            currentLength: _titleController.text.length,
+                            maxLength: _maxTitleLength,
                           ),
                         ],
                       ),
@@ -279,8 +279,8 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                             ),
                           ),
                           CharacterCounterWidget(
-                            current: _descriptionController.text.length,
-                            max: _maxDescriptionLength,
+                            currentLength: _descriptionController.text.length,
+                            maxLength: _maxDescriptionLength,
                           ),
                         ],
                       ),
@@ -325,7 +325,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                       ),
                       const SizedBox(height: 8),
                       HashtagInputWidget(
-                        hashtags: _hashtags,
+                        initialValue: _hashtags.join(' '),
                         onHashtagsChanged: (hashtags) {
                           setState(() {
                             _hashtags = hashtags;

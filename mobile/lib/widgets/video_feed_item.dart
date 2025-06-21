@@ -11,6 +11,7 @@ import '../models/video_state.dart';
 import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/seen_videos_service.dart';
+import '../utils/video_system_debugger.dart';
 
 /// Widget for displaying a single video event in the feed
 class VideoFeedItem extends StatefulWidget {
@@ -144,15 +145,18 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     // Dispose Chewie controller but NOT the video controller if it's managed by cache service
     try {
       _chewieController?.dispose();
+      _chewieController = null;
       
       // Only dispose video controller if it's not from the cache service
-      final isCachedController = widget.videoCacheService?.getController(widget.videoEvent) == _controller;
+      final isCachedController = widget.videoCacheService?.getController(widget.videoEvent) == _controller ||
+                                widget.videoController == _controller;
       if (!isCachedController && _controller != null) {
         _controller!.dispose();
         debugPrint('🗑️ DISPOSED: Own controller for: ${widget.videoEvent.id.substring(0, 8)}');
       } else {
         debugPrint('🔗 KEPT: Cache-managed controller for: ${widget.videoEvent.id.substring(0, 8)}');
       }
+      _controller = null;
     } catch (e) {
       debugPrint('⚠️ Error disposing controllers: $e');
     }
@@ -165,20 +169,68 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         widget.videoEvent.videoUrl!.isNotEmpty && 
         !widget.videoEvent.isGif) {
       
-      // First check if we have a preloaded controller from the cache service
-      final preloadedController = widget.videoCacheService?.getController(widget.videoEvent);
-      if (preloadedController != null) {
-        debugPrint('⚡ INSTANT: Using preloaded controller for ${widget.videoEvent.id.substring(0, 8)} (${widget.videoEvent.mimeType})');
-        _controller = preloadedController;
-        
-        // Create Chewie controller immediately since video is preloaded
-        if (_controller!.value.isInitialized) {
-          _createChewieController();
-        }
-        return;
+      final loadStartTime = DateTime.now();
+      final debugger = VideoSystemDebugger();
+      
+      // Choose controller source based on debug system mode
+      switch (debugger.currentSystem) {
+        case VideoSystem.manager:
+          // Use only VideoManager controller
+          if (widget.videoController != null) {
+            debugPrint('⚡ MANAGER: Using VideoManager controller for ${widget.videoEvent.id.substring(0, 8)}');
+            _controller = widget.videoController;
+            final loadTime = DateTime.now().difference(loadStartTime);
+            debugger.recordVideoLoad(widget.videoEvent, loadTime);
+            if (_controller!.value.isInitialized) {
+              _createChewieController();
+            }
+            return;
+          }
+          break;
+          
+        case VideoSystem.legacy:
+          // Use only VideoCacheService controller
+          final preloadedController = widget.videoCacheService?.getController(widget.videoEvent);
+          if (preloadedController != null) {
+            debugPrint('⚡ LEGACY: Using VideoCacheService controller for ${widget.videoEvent.id.substring(0, 8)}');
+            _controller = preloadedController;
+            final loadTime = DateTime.now().difference(loadStartTime);
+            debugger.recordVideoLoad(widget.videoEvent, loadTime);
+            if (_controller!.value.isInitialized) {
+              _createChewieController();
+            }
+            return;
+          }
+          break;
+          
+        case VideoSystem.hybrid:
+          // Original hybrid logic - try VideoManager first, fallback to cache
+          if (widget.videoController != null) {
+            debugPrint('⚡ HYBRID-MANAGER: Using VideoManager controller for ${widget.videoEvent.id.substring(0, 8)}');
+            _controller = widget.videoController;
+            final loadTime = DateTime.now().difference(loadStartTime);
+            debugger.recordVideoLoad(widget.videoEvent, loadTime);
+            if (_controller!.value.isInitialized) {
+              _createChewieController();
+            }
+            return;
+          }
+          
+          final preloadedController = widget.videoCacheService?.getController(widget.videoEvent);
+          if (preloadedController != null) {
+            debugPrint('⚡ HYBRID-CACHE: Using VideoCacheService controller for ${widget.videoEvent.id.substring(0, 8)}');
+            _controller = preloadedController;
+            final loadTime = DateTime.now().difference(loadStartTime);
+            debugger.recordVideoLoad(widget.videoEvent, loadTime);
+            if (_controller!.value.isInitialized) {
+              _createChewieController();
+            }
+            return;
+          }
+          break;
       }
       
-      // Fallback: create our own controller if not preloaded
+      // Fallback: create our own controller if no preloaded controller available
       debugPrint('🔄 FALLBACK: Creating controller for ${widget.videoEvent.id.substring(0, 8)} (${widget.videoEvent.mimeType})');
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoEvent.videoUrl!),
@@ -258,11 +310,17 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
       return;
     }
     
+    final loadStartTime = DateTime.now();
+    
     try {
       debugPrint('🔄 FALLBACK: Initializing non-preloaded video ${widget.videoEvent.id.substring(0, 8)}...');
       
       // Initialize video player (fallback for non-preloaded videos)
       await _controller!.initialize();
+      
+      // Track successful fallback load
+      final loadTime = DateTime.now().difference(loadStartTime);
+      VideoSystemDebugger().recordVideoLoad(widget.videoEvent, loadTime);
       
       // Create Chewie controller
       _createChewieController();
@@ -273,6 +331,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     } catch (e) {
       debugPrint('❌ FALLBACK: Initialization failed for ${widget.videoEvent.mimeType}: ${widget.videoEvent.id.substring(0, 8)} - $e');
       _retryCount++;
+      
+      // Track failed load
+      VideoSystemDebugger().recordVideoFailure(widget.videoEvent, e.toString());
       
       if (mounted) {
         setState(() {
@@ -455,135 +516,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
             ),
           ),
           
-          // Right side interaction panel
-          Positioned(
-            right: 12,
-            bottom: 100,
-            child: Column(
-              children: [
-                _buildInteractionButton(
-                  Icons.favorite_border,
-                  '', // TODO: Get actual like count
-                  widget.onLike,
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.chat_bubble_outline,
-                  '', // TODO: Get actual comment count
-                  widget.onComment,
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.share_outlined,
-                  'Share',
-                  widget.onShare,
-                ),
-                const SizedBox(height: 20),
-                _buildInteractionButton(
-                  Icons.more_horiz,
-                  '',
-                  widget.onMoreOptions,
-                ),
-              ],
-            ),
-          ),
+          // Interaction buttons removed - handled by FeedScreen overlay to prevent duplication
           
-          // Bottom user info and caption
-          Positioned(
-            left: 12,
-            bottom: 20,
-            right: 80,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _buildUserAvatar(),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: widget.onUserTap,
-                        child: Text(
-                          _getUserDisplayName(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Follow',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (widget.videoEvent.title?.isNotEmpty == true) ...[
-                  Text(
-                    widget.videoEvent.title!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                if (widget.videoEvent.content.isNotEmpty) ...[
-                  Text(
-                    _buildCaptionWithHashtags(widget.videoEvent.content, widget.videoEvent.hashtags),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                Row(
-                  children: [
-                    Text(
-                      widget.videoEvent.relativeTime,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (widget.videoEvent.duration != null) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.timer, color: Colors.grey, size: 12),
-                      const SizedBox(width: 2),
-                      Text(
-                        widget.videoEvent.formattedDuration,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // User info removed - handled by FeedScreen overlay to prevent duplication
         ],
       ),
     );
@@ -661,6 +596,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   }
   
   Widget _buildVideoPlayer() {
+    // Check for permanently failed video due to server configuration errors
+    final videoState = widget.videoState;
+    if (videoState?.loadingState == VideoLoadingState.permanentlyFailed && 
+        videoState?.errorMessage == 'SERVER_CONFIG_ERROR') {
+      return _buildServerErrorWidget();
+    }
+    
     // Show error state if video failed to load
     if (_hasError) {
       return _buildErrorWidget();
@@ -685,7 +627,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
         ),
         
         // LAYER 2: Video player (only when ready)
-        if (_chewieController != null && _controller!.value.isInitialized)
+        if (_chewieController != null && _controller != null && _controller!.value.isInitialized)
           Positioned.fill(
             child: Center(
               child: Chewie(controller: _chewieController!),
@@ -693,7 +635,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
           ),
         
         // LAYER 3: Loading indicator (when video not ready)
-        if (_chewieController == null || !_controller!.value.isInitialized)
+        if (_chewieController == null || _controller == null || !_controller!.value.isInitialized)
           Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.3),
@@ -769,6 +711,145 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     );
   }
   
+  Widget _buildServerErrorWidget() {
+    // Beautiful, TikTok-style UI for server configuration errors
+    final hasValidThumbnail = widget.videoEvent.thumbnailUrl != null && 
+                              widget.videoEvent.thumbnailUrl!.isNotEmpty;
+    
+    return Stack(
+      children: [
+        // Background thumbnail with overlay
+        Positioned.fill(
+          child: hasValidThumbnail
+              ? Stack(
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: widget.videoEvent.thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => _buildPlaceholder(),
+                      errorWidget: (context, url, error) => _buildPlaceholder(),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.grey[800]!,
+                        Colors.grey[900]!,
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+        
+        // Elegant error overlay
+        Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.cloud_off_outlined,
+                    size: 48,
+                    color: Colors.orange[300],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Video Temporarily Unavailable',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'The video host is experiencing technical difficulties',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.swipe_up,
+                        size: 16,
+                        color: Colors.white54,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Swipe to skip',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (widget.videoEvent.title?.isNotEmpty == true) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '"${widget.videoEvent.title}"',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildErrorWidget() {
     return Container(
       decoration: BoxDecoration(
@@ -798,7 +879,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
               const SizedBox(height: 8),
               if (_errorMessage != null) ...[
                 Text(
-                  _errorMessage!.contains('timeout') ? 'Connection timeout' : 'Loading error',
+                  _getErrorDisplayText(_errorMessage!),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -839,83 +920,30 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     );
   }
   
-  Widget _buildInteractionButton(IconData icon, String label, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.4),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          if (label.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+
+
   
-  String _buildCaptionWithHashtags(String content, List<String> hashtags) {
-    String caption = content;
-    
-    // Add hashtags if they're not already in the content
-    if (hashtags.isNotEmpty) {
-      final hashtagsText = hashtags.map((tag) => '#$tag').join(' ');
-      if (!content.contains('#')) {
-        caption = '$content $hashtagsText';
-      }
+  
+  
+
+  /// Get user-friendly error message based on error type
+  String _getErrorDisplayText(String errorMessage) {
+    if (errorMessage.contains('timeout')) {
+      return 'Connection timeout';
+    } else if (errorMessage.contains('SERVER_CONFIG_ERROR') || 
+               errorMessage.contains('byte range length mismatch') ||
+               errorMessage.contains('CoreMediaErrorDomain error -12939')) {
+      return 'Server error - video temporarily unavailable';
+    } else if (errorMessage.contains('NETWORK')) {
+      return 'Network connectivity issue';
+    } else if (errorMessage.contains('NOT_FOUND') || errorMessage.contains('404')) {
+      return 'Video not found';
+    } else if (errorMessage.contains('FORBIDDEN') || errorMessage.contains('403')) {
+      return 'Access denied';
+    } else if (errorMessage.contains('FORMAT_ERROR')) {
+      return 'Unsupported video format';
+    } else {
+      return 'Loading error';
     }
-    
-    return caption;
-  }
-  
-  /// Build user avatar with profile picture or fallback
-  Widget _buildUserAvatar() {
-    final profile = widget.userProfileService?.getCachedProfile(widget.videoEvent.pubkey);
-    final avatarUrl = profile?.picture;
-    
-    return GestureDetector(
-      onTap: widget.onUserTap,
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: Colors.grey[700],
-        backgroundImage: (avatarUrl?.isNotEmpty == true) 
-            ? CachedNetworkImageProvider(avatarUrl!) 
-            : null,
-        child: (avatarUrl?.isEmpty != false) 
-            ? const Icon(Icons.person, color: Colors.white, size: 18)
-            : null,
-      ),
-    );
-  }
-  
-  /// Get user display name from profile or fallback
-  String _getUserDisplayName() {
-    final profile = widget.userProfileService?.getCachedProfile(widget.videoEvent.pubkey);
-    
-    if (profile != null) {
-      return '@${profile.bestDisplayName}';
-    }
-    
-    // Fallback to shortened pubkey
-    return '@${widget.videoEvent.displayPubkey}';
   }
 }

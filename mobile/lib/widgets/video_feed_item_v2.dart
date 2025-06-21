@@ -254,7 +254,7 @@ class _VideoFeedItemV2State extends State<VideoFeedItemV2> {
 
   Widget _buildFailedState(VideoState videoState, {required bool canRetry}) {
     return Container(
-      color: Colors.red[900]?.withOpacity(0.3),
+      color: Colors.red[900]?.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -329,7 +329,7 @@ class _VideoFeedItemV2State extends State<VideoFeedItemV2> {
 
   Widget _buildErrorState(String message) {
     return Container(
-      color: Colors.red[900]?.withOpacity(0.3),
+      color: Colors.red[900]?.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -374,7 +374,7 @@ class _VideoFeedItemV2State extends State<VideoFeedItemV2> {
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black.withOpacity(0.8),
+              Colors.black.withValues(alpha: 0.8),
               Colors.transparent,
             ],
           ),
@@ -437,7 +437,7 @@ class _VideoFeedItemV2State extends State<VideoFeedItemV2> {
 
   Widget _buildLoadingOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       child: const Center(
         child: CircularProgressIndicator(
           color: Colors.white,

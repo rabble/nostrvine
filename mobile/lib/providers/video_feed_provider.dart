@@ -12,6 +12,7 @@ import '../services/video_cache_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/video_manager_interface.dart';
 import '../services/video_manager_service.dart';
+import '../utils/video_system_debugger.dart';
 
 /// Provider for managing video feed state and operations using VideoManager
 /// 
@@ -93,6 +94,21 @@ class VideoFeedProvider extends ChangeNotifier {
   VideoState? getVideoState(String videoId) => _videoManager.getVideoState(videoId);
   VideoPlayerController? getController(String videoId) => _videoManager.getController(videoId);
   Map<String, dynamic> getDebugInfo() => _videoManager.getDebugInfo();
+  
+  /// Pause the currently playing video (used when navigating away from feed)
+  void pauseCurrentVideo() {
+    try {
+      for (final videoEvent in _videoManager.videos) {
+        final controller = _videoManager.getController(videoEvent.id);
+        if (controller != null && controller.value.isInitialized && controller.value.isPlaying) {
+          controller.pause();
+          debugPrint('🎬 Paused video: ${videoEvent.id.substring(0, 8)}');
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error pausing current video: $e');
+    }
+  }
   
   /// Initialize the video feed provider
   Future<void> initialize() async {
@@ -271,6 +287,45 @@ class VideoFeedProvider extends ChangeNotifier {
     // Use VideoManager's intelligent preloading (replaces cache service)
     _videoManager.preloadAroundIndex(currentIndex);
     debugPrint('⚡ VideoManager preloading around index $currentIndex');
+    
+    // Update memory usage for debug system
+    _updateMemoryUsage();
+  }
+  
+  /// Update memory usage tracking for debug system
+  void _updateMemoryUsage() {
+    try {
+      // Get memory usage from both systems based on current debug mode
+      final debugger = VideoSystemDebugger();
+      int memoryMB = 0;
+      
+      switch (debugger.currentSystem) {
+        case VideoSystem.manager:
+          // VideoManager system memory
+          final debugInfo = _videoManager.getDebugInfo();
+          memoryMB = debugInfo['estimatedMemoryMB'] as int? ?? 0;
+          break;
+        case VideoSystem.legacy:
+          // VideoCacheService system memory
+          final stats = _videoCacheService.getCacheStats();
+          final cachedVideos = stats['cached_videos'] as int? ?? 0;
+          memoryMB = cachedVideos * 20; // Estimate 20MB per video
+          break;
+        case VideoSystem.hybrid:
+          // Both systems combined
+          final managerInfo = _videoManager.getDebugInfo();
+          final managerMemory = managerInfo['estimatedMemoryMB'] as int? ?? 0;
+          final cacheStats = _videoCacheService.getCacheStats();
+          final cacheVideos = cacheStats['cached_videos'] as int? ?? 0;
+          final cacheMemory = cacheVideos * 20;
+          memoryMB = managerMemory + cacheMemory;
+          break;
+      }
+      
+      debugger.updateMemoryUsage(memoryMB);
+    } catch (e) {
+      debugPrint('⚠️ Error updating memory usage: $e');
+    }
   }
   
   /// Clear error state
@@ -291,13 +346,16 @@ class VideoFeedProvider extends ChangeNotifier {
     // Add new video events to VideoManager (replaces dual-list processing)
     if (_videoEventService.hasEvents) {
       debugPrint('📢 Video event service changed - adding ${_videoEventService.videoEvents.length} events to VideoManager...');
-      _addEventsToVideoManager(_videoEventService.videoEvents);
-      debugPrint('🎯 VideoManager now has ${_videoManager.videos.length} videos');
       
-      // Fetch profiles for video authors
+      // Process videos asynchronously to avoid blocking UI
+      _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
+      
+      // Fetch profiles for video authors (also async)
       _fetchProfilesForVideos(_videoEventService.videoEvents);
     }
-    // Note: VideoManager state changes will trigger UI updates via stream subscription
+    
+    // Immediately notify UI with current state (don't wait for video processing)
+    _scheduleNotification();
   }
   
   /// Fetch user profiles for video authors (only for new events)
@@ -324,8 +382,9 @@ class VideoFeedProvider extends ChangeNotifier {
       _pendingProfileFetches.addAll(authorsToFetch);
       
       // Cancel existing timer and start new debounce timer
+      // Increased delay to reduce initial network load
       _profileFetchDebounceTimer?.cancel();
-      _profileFetchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _profileFetchDebounceTimer = Timer(const Duration(seconds: 2), () {
         _executeBatchedProfileFetch();
       });
     }
@@ -355,13 +414,14 @@ class VideoFeedProvider extends ChangeNotifier {
     
     _hasPendingNotification = true;
     _notificationTimer?.cancel();
-    _notificationTimer = Timer(const Duration(milliseconds: 100), () {
+    // Increased delay to reduce rapid UI rebuilds during startup
+    _notificationTimer = Timer(const Duration(milliseconds: 500), () {
       _hasPendingNotification = false;
       notifyListeners();
     });
   }
   
-  /// Add video events to VideoManager, filtering out duplicates
+  /// Add video events to VideoManager, filtering out duplicates (SYNC version for initialization)
   Future<void> _addEventsToVideoManager(List<VideoEvent> events) async {
     final existingIds = _videoManager.videos.map((v) => v.id).toSet();
     final newEvents = events.where((event) => !existingIds.contains(event.id)).toList();
@@ -377,8 +437,90 @@ class VideoFeedProvider extends ChangeNotifier {
     }
   }
   
+  /// Add video events to VideoManager asynchronously (ASYNC version for real-time updates)
+  void _addEventsToVideoManagerAsync(List<VideoEvent> events) {
+    // Run in background without blocking UI
+    Future.microtask(() async {
+      final existingIds = _videoManager.videos.map((v) => v.id).toSet();
+      final newEvents = events.where((event) => !existingIds.contains(event.id)).toList();
+      
+      if (newEvents.isEmpty) {
+        debugPrint('📋 No new events to add to VideoManager');
+        return;
+      }
+      
+      debugPrint('📋 Processing ${newEvents.length} new events in background...');
+      final wasEmpty = _videoManager.videos.isEmpty;
+      
+      // Process events in small batches to avoid blocking
+      const batchSize = 5;
+      for (int i = 0; i < newEvents.length; i += batchSize) {
+        final batch = newEvents.skip(i).take(batchSize).toList();
+        
+        for (final event in batch) {
+          try {
+            await _videoManager.addVideoEvent(event);
+            // DEBUG: Log video URL info to understand why preloading fails
+            if (event.videoUrl?.isEmpty ?? true) {
+              debugPrint('🔍 DEBUG: Video ${event.id.substring(0, 8)} has empty/null videoUrl');
+            } else {
+              debugPrint('🔍 DEBUG: Video ${event.id.substring(0, 8)} has videoUrl: ${event.videoUrl}');
+            }
+          } catch (e) {
+            debugPrint('⚠️ Failed to add video ${event.id} to VideoManager: $e');
+          }
+        }
+        
+        // Yield control back to UI thread after each batch
+        await Future.delayed(Duration.zero);
+        
+        // Notify UI of progress
+        if (mounted) {
+          _scheduleNotification();
+        }
+      }
+      
+      debugPrint('✅ Finished processing ${newEvents.length} events in background');
+      debugPrint('🎯 VideoManager now has ${_videoManager.videos.length} total videos');
+      
+      // 🚀 CRITICAL FIX: Start preloading when first videos arrive
+      if (wasEmpty && _videoManager.videos.isNotEmpty) {
+        debugPrint('⚡ First videos arrived - starting aggressive preloading from index 0');
+        debugPrint('📊 Total videos: ${_videoManager.videos.length}, ready: ${_videoManager.readyVideos.length}');
+        
+        // Conservative preloading - start with just 1 video to avoid overwhelming the system
+        debugPrint('🔧 Calling preloadAroundIndex(0, preloadRange: 1)...');
+        _videoManager.preloadAroundIndex(0, preloadRange: 1);
+        
+        // Only preload additional videos if the first one loads successfully
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && _videoManager.readyVideos.isNotEmpty) {
+            debugPrint('🔄 First video loaded successfully - preloading second video');
+            _videoManager.preloadAroundIndex(0, preloadRange: 2);
+          } else {
+            debugPrint('⚠️ First video failed to load - waiting before retry');
+            // Try a different video if first one fails
+            if (_videoManager.videos.length > 1) {
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) {
+                  debugPrint('🔄 Trying second video instead');
+                  _videoManager.preloadAroundIndex(1, preloadRange: 1);
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+  
+  /// Check if this provider is still mounted/active
+  bool get mounted => !_isDisposed;
+  bool _isDisposed = false;
+  
   @override
   void dispose() {
+    _isDisposed = true;
     _videoEventService.removeListener(_onVideoEventServiceChanged);
     _videoManagerSubscription?.cancel();
     _profileFetchDebounceTimer?.cancel();

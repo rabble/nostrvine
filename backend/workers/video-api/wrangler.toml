@@ -1,0 +1,42 @@
+name = "nostrvine-video-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-14"
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespace for video metadata
+[[kv_namespaces]]
+binding = "VIDEO_METADATA"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# R2 Bucket for video storage
+[[r2_buckets]]
+binding = "VIDEO_STORAGE"
+bucket_name = "nostrvine-videos"
+
+# Environment variables
+[vars]
+R2_PUBLIC_URL = "https://videos.nostrvine.com"
+
+# Development environment
+[env.development]
+vars = { R2_PUBLIC_URL = "http://localhost:8787" }
+
+# Staging environment
+[env.staging]
+vars = { R2_PUBLIC_URL = "https://videos-staging.nostrvine.com" }
+
+# Production environment
+[env.production]
+vars = { R2_PUBLIC_URL = "https://videos.nostrvine.com" }
+
+# Route configuration (if using custom domain)
+# route = { pattern = "api.nostrvine.com/*", custom_domain = true }
+
+# Analytics (optional)
+# [analytics_engine_datasets]
+# VIDEO_ANALYTICS = "nostrvine_video_analytics"
+
+# Observability
+[observability]
+enabled = true

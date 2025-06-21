@@ -9,10 +9,13 @@ import '../providers/profile_stats_provider.dart';
 import '../providers/profile_videos_provider.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
+import '../utils/nostr_encoding.dart';
 import 'profile_setup_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? profilePubkey; // If null, shows current user's profile
+  
+  const ProfileScreen({super.key, this.profilePubkey});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -20,38 +23,60 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  final bool _isOwnProfile = true; // TODO: Determine if viewing own profile
+  bool _isOwnProfile = true;
+  String? _targetPubkey;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
-    // Load profile stats and videos when screen initializes
+    // Determine if viewing own profile and set target pubkey
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProfileStats();
-      _loadProfileVideos();
+      _initializeProfile();
     });
   }
   
-  void _loadProfileStats() {
+  void _initializeProfile() {
     final authService = context.read<AuthService>();
-    final profileStatsProvider = context.read<ProfileStatsProvider>();
-    
     final currentUserPubkey = authService.currentPublicKeyHex;
-    if (currentUserPubkey != null) {
-      profileStatsProvider.loadProfileStats(currentUserPubkey);
+    
+    // Determine target pubkey and ownership
+    _targetPubkey = widget.profilePubkey ?? currentUserPubkey;
+    _isOwnProfile = _targetPubkey == currentUserPubkey;
+    
+    // Load profile data for the target user
+    if (_targetPubkey != null) {
+      _loadProfileStats();
+      _loadProfileVideos();
+      
+      // If viewing another user's profile, fetch their profile data
+      if (!_isOwnProfile) {
+        _loadUserProfile();
+      }
     }
   }
   
-  void _loadProfileVideos() {
-    final authService = context.read<AuthService>();
-    final profileVideosProvider = context.read<ProfileVideosProvider>();
+  void _loadProfileStats() {
+    if (_targetPubkey == null) return;
     
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    if (currentUserPubkey != null) {
-      profileVideosProvider.loadVideosForUser(currentUserPubkey);
-    }
+    final profileStatsProvider = context.read<ProfileStatsProvider>();
+    profileStatsProvider.loadProfileStats(_targetPubkey!);
+  }
+  
+  void _loadProfileVideos() {
+    if (_targetPubkey == null) return;
+    
+    debugPrint('👤 Loading profile videos for: ${_targetPubkey!.substring(0, 8)}... (isOwnProfile: $_isOwnProfile)');
+    final profileVideosProvider = context.read<ProfileVideosProvider>();
+    profileVideosProvider.loadVideosForUser(_targetPubkey!);
+  }
+  
+  void _loadUserProfile() {
+    if (_targetPubkey == null) return;
+    
+    final userProfileService = context.read<UserProfileService>();
+    userProfileService.fetchProfile(_targetPubkey!);
   }
 
   @override
@@ -64,8 +89,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     return Consumer5<AuthService, UserProfileService, SocialService, ProfileStatsProvider, ProfileVideosProvider>(
       builder: (context, authService, userProfileService, socialService, profileStatsProvider, profileVideosProvider, child) {
-        final userProfile = authService.currentProfile;
-        final userName = userProfile?.displayName ?? 'Anonymous';
+        // Get profile for display name in app bar
+        final authProfile = _isOwnProfile ? authService.currentProfile : null;
+        final cachedProfile = !_isOwnProfile ? userProfileService.getCachedProfile(_targetPubkey!) : null;
+        final userName = authProfile?.displayName ?? cachedProfile?.displayName ?? 'Anonymous';
         
         return Scaffold(
           backgroundColor: VineTheme.backgroundColor,
@@ -139,20 +166,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _buildProfileHeader(SocialService socialService, ProfileStatsProvider profileStatsProvider) {
-    return Consumer<AuthService>(
-      builder: (context, authService, child) {
-        final userProfile = authService.currentProfile;
-        final profilePictureUrl = userProfile?.picture;
-        final hasCustomName = userProfile?.displayName != null && 
-                              !userProfile!.displayName.startsWith('npub1') &&
-                              userProfile.displayName != 'Anonymous';
+    return Consumer2<AuthService, UserProfileService>(
+      builder: (context, authService, userProfileService, child) {
+        // Get the profile data for the target user (could be current user or another user)
+        final authProfile = _isOwnProfile ? authService.currentProfile : null;
+        final cachedProfile = !_isOwnProfile ? userProfileService.getCachedProfile(_targetPubkey!) : null;
+        
+        final profilePictureUrl = authProfile?.picture ?? cachedProfile?.picture;
+        final displayName = authProfile?.displayName ?? cachedProfile?.displayName;
+        final hasCustomName = displayName != null && 
+                              !displayName.startsWith('npub1') &&
+                              displayName != 'Anonymous';
         
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Setup profile banner for new users with default names
-              if (!hasCustomName)
+              // Setup profile banner for new users with default names (only on own profile)
+              if (_isOwnProfile && !hasCustomName)
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
@@ -242,28 +273,25 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               
               // Stats
               Expanded(
-                child: FutureBuilder<Map<String, int>>(
-                  future: authService.currentPublicKeyHex != null 
-                      ? socialService.getFollowerStats(authService.currentPublicKeyHex!)
-                      : Future.value({'followers': 0, 'following': 0}),
-                  builder: (context, snapshot) {
-                    final stats = snapshot.data ?? {'followers': 0, 'following': 0};
-                    final followersCount = stats['followers'] ?? 0;
-                    final followingCount = stats['following'] ?? 0;
-                    
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDynamicStatColumn(
-                          profileStatsProvider.hasData ? profileStatsProvider.stats!.videoCount : null,
-                          'Vines',
-                          profileStatsProvider.isLoading,
-                        ),
-                        _buildStatColumn(_formatCount(followersCount), 'Followers'),
-                        _buildStatColumn(_formatCount(followingCount), 'Following'),
-                      ],
-                    );
-                  },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildDynamicStatColumn(
+                      profileStatsProvider.hasData ? profileStatsProvider.stats!.videoCount : null,
+                      'Vines',
+                      profileStatsProvider.isLoading,
+                    ),
+                    _buildDynamicStatColumn(
+                      profileStatsProvider.hasData ? profileStatsProvider.stats!.followers : null,
+                      'Followers',
+                      profileStatsProvider.isLoading,
+                    ),
+                    _buildDynamicStatColumn(
+                      profileStatsProvider.hasData ? profileStatsProvider.stats!.following : null,
+                      'Following',
+                      profileStatsProvider.isLoading,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -278,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userProfile?.displayName ?? 'Anonymous',
+                  displayName ?? 'Anonymous',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -286,9 +314,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 4),
-                if (userProfile?.about != null && userProfile!.about!.isNotEmpty)
+                if ((authProfile?.about ?? cachedProfile?.about) != null && (authProfile?.about ?? cachedProfile?.about)!.isNotEmpty)
                   Text(
-                    userProfile.about!,
+                    (authProfile?.about ?? cachedProfile?.about)!,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -297,9 +325,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   ),
                 const SizedBox(height: 8),
                 // Public key display
-                if (authService.currentNpub != null)
+                if (_targetPubkey != null)
                   Text(
-                    authService.currentNpub!,
+                    NostrEncoding.encodePublicKey(_targetPubkey!),
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 12,
@@ -316,27 +344,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildStatColumn(String count, String label) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
   
   /// Build a stat column with loading state support
   Widget _buildDynamicStatColumn(int? count, String label, bool isLoading) {
@@ -356,7 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               : Text(
                   count != null ? _formatCount(count) : '...',
                   style: const TextStyle(
-                    color: VineTheme.primaryText,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -366,7 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         Text(
           label,
           style: const TextStyle(
-            color: VineTheme.secondaryText,
+            color: Colors.grey,
             fontSize: 12,
           ),
         ),
@@ -419,16 +426,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     : Text(
                         _formatCount(profileStatsProvider.stats?.totalViews ?? 0),
                         style: const TextStyle(
-                          color: VineTheme.primaryText,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
               ),
-              const Text(
+              Text(
                 'Total Views',
                 style: TextStyle(
-                  color: VineTheme.secondaryText,
+                  color: Colors.grey.shade300,
                   fontSize: 12,
                 ),
               ),
@@ -450,35 +457,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     : Text(
                         _formatCount(profileStatsProvider.stats?.totalLikes ?? 0),
                         style: const TextStyle(
-                          color: VineTheme.primaryText,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
               ),
-              const Text(
+              Text(
                 'Total Likes',
                 style: TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const Column(
-            children: [
-              Text(
-                'Gold',
-                style: TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Text(
-                'Creator Tier',
-                style: TextStyle(
-                  color: VineTheme.secondaryText,
+                  color: Colors.grey.shade300,
                   fontSize: 12,
                 ),
               ),
@@ -526,17 +514,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
           ] else ...[
             Expanded(
-              child: ElevatedButton(
-                onPressed: _followUser,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Follow'),
+              child: Consumer<SocialService>(
+                builder: (context, socialService, child) {
+                  final isFollowing = socialService.isFollowing(_targetPubkey!);
+                  return ElevatedButton(
+                    onPressed: isFollowing ? _unfollowUser : _followUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isFollowing ? Colors.grey[700] : Colors.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(isFollowing ? 'Following' : 'Follow'),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -593,7 +586,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 SizedBox(height: 16),
                 Text(
                   'Loading your videos...',
-                  style: TextStyle(color: VineTheme.secondaryText),
+                  style: TextStyle(color: Colors.grey),
                 ),
               ],
             ),
@@ -610,12 +603,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             const SizedBox(height: 16),
             const Text(
               'Error loading videos',
-              style: TextStyle(color: VineTheme.primaryText, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               profileVideosProvider.error ?? 'Unknown error',
-              style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -638,12 +631,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.videocam_outlined, color: VineTheme.secondaryText, size: 64),
+            Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
             SizedBox(height: 16),
             Text(
               'No Videos Yet',
               style: TextStyle(
-                color: VineTheme.primaryText,
+                color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -652,7 +645,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             Text(
               'Share your first video to see it here',
               style: TextStyle(
-                color: VineTheme.secondaryText,
+                color: Colors.grey,
                 fontSize: 14,
               ),
             ),
@@ -820,9 +813,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildLikedGrid() {
     return Consumer2<AuthService, SocialService>(
       builder: (context, authService, socialService, child) {
-        final currentUserPubkey = authService.currentPublicKeyHex;
-        
-        if (currentUserPubkey == null) {
+        if (_targetPubkey == null) {
           return const Center(
             child: Text(
               'Sign in to view liked videos',
@@ -832,7 +823,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         }
         
         return FutureBuilder<List<Event>>(
-          future: socialService.fetchLikedEvents(currentUserPubkey),
+          future: socialService.fetchLikedEvents(_targetPubkey!),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
@@ -1101,13 +1092,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _followUser() async {
-    // TODO: Get the actual pubkey of the user we're viewing
-    // For now, this is a placeholder since _isOwnProfile is hardcoded to true
-    final targetPubkey = 'placeholder_pubkey'; // This would come from navigation arguments
+    if (_targetPubkey == null) return;
     
     try {
       final socialService = context.read<SocialService>();
-      await socialService.followUser(targetPubkey);
+      await socialService.followUser(_targetPubkey!);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1118,6 +1107,27 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to follow user: $e')),
+        );
+      }
+    }
+  }
+
+  void _unfollowUser() async {
+    if (_targetPubkey == null) return;
+    
+    try {
+      final socialService = context.read<SocialService>();
+      await socialService.unfollowUser(_targetPubkey!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully unfollowed user!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to unfollow user: $e')),
         );
       }
     }

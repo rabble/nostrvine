@@ -333,7 +333,15 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     }
     
     private func requestPermission(result: @escaping FlutterResult) {
+        print("🔵 [NativeCamera] Requesting camera permission explicitly")
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        print("🔵 [NativeCamera] Current status before request: \(currentStatus.rawValue)")
+        
         AVCaptureDevice.requestAccess(for: .video) { granted in
+            print("🔵 [NativeCamera] Permission request completed with result: \(granted)")
+            let newStatus = AVCaptureDevice.authorizationStatus(for: .video)
+            print("🔵 [NativeCamera] New status after request: \(newStatus.rawValue)")
+            
             DispatchQueue.main.async {
                 result(granted)
             }
@@ -342,6 +350,8 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     
     private func hasPermission(result: @escaping FlutterResult) {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
+        print("🔵 [NativeCamera] Checking permission status: \(status.rawValue)")
+        print("🔵 [NativeCamera] Status meanings: 0=notDetermined, 1=restricted, 2=denied, 3=authorized")
         result(status == .authorized)
     }
     

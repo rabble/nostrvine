@@ -51,6 +51,12 @@ class VideoEventService extends ChangeNotifier {
       return;
     }
     
+    // Prevent duplicate subscriptions if already subscribed and no parameters changed
+    if (_isSubscribed && authors == null && hashtags == null && since == null && until == null) {
+      debugPrint('🎥 Subscription request ignored, already subscribed with same parameters.');
+      return;
+    }
+    
     // Set loading state immediately to prevent race conditions
     _isLoading = true;
     _error = null;
@@ -83,8 +89,8 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('⚠️ WARNING: No relays connected - subscription will likely fail');
     }
     
-    // Close existing subscriptions if replacing
-    if (replace && _subscriptions.isNotEmpty) {
+    // Always close existing subscriptions to prevent leaks
+    if (_subscriptions.isNotEmpty) {
       debugPrint('🔄 Closing ${_subscriptions.length} existing subscriptions before creating new one...');
       await unsubscribeFromVideoFeed();
     }
@@ -128,6 +134,8 @@ class VideoEventService extends ChangeNotifier {
       
       // Use a unique subscription key to avoid conflicts
       final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('🔑 Creating subscription with key: $subscriptionKey');
+      
       final subscription = eventStream.listen(
         (event) => _handleNewVideoEvent(event),
         onError: (error) => _handleSubscriptionError(error),
@@ -136,6 +144,8 @@ class VideoEventService extends ChangeNotifier {
       
       _subscriptions[subscriptionKey] = subscription;
       _isSubscribed = true;
+      
+      debugPrint('📋 Active subscriptions after creation: ${_subscriptions.keys.toList()}');
       
       debugPrint('✅ Video event subscription established successfully!');
       debugPrint('📊 Subscription status: active=${_subscriptions.length} subscriptions');
@@ -362,13 +372,17 @@ class VideoEventService extends ChangeNotifier {
   /// Unsubscribe from all video event subscriptions
   Future<void> unsubscribeFromVideoFeed() async {
     try {
-      for (final subscription in _subscriptions.values) {
-        await subscription.cancel();
+      debugPrint('🔔 Unsubscribing from ${_subscriptions.length} video event subscriptions...');
+      debugPrint('📋 Subscription keys being cancelled: ${_subscriptions.keys.toList()}');
+      
+      for (final entry in _subscriptions.entries) {
+        debugPrint('🗑️ Cancelling subscription: ${entry.key}');
+        await entry.value.cancel();
       }
       _subscriptions.clear();
       _isSubscribed = false;
       
-      debugPrint('🔔 Unsubscribed from video events');
+      debugPrint('✅ Successfully unsubscribed from all video events');
     } catch (e) {
       debugPrint('⚠️ Error unsubscribing from video events: $e');
     }

@@ -1,7 +1,6 @@
 // ABOUTME: Provider wrapper for VideoManagerService integration with existing Flutter architecture
 // ABOUTME: Bridges new TDD video system with existing Provider-based state management
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import '../models/video_event.dart';

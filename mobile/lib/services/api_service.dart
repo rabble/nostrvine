@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/ready_event_data.dart';
 import '../config/app_config.dart';
+import 'nip98_auth_service.dart';
 
 /// Exception thrown by API service
 class ApiException implements Exception {
@@ -26,8 +27,13 @@ class ApiService extends ChangeNotifier {
   static const Duration _defaultTimeout = Duration(seconds: 30);
   
   final http.Client _client;
+  final Nip98AuthService? _authService;
   
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({
+    http.Client? client,
+    Nip98AuthService? authService,
+  }) : _client = client ?? http.Client(),
+       _authService = authService;
 
   /// Get ready events from the backend
   Future<List<ReadyEventData>> getReadyEvents() async {
@@ -38,7 +44,7 @@ class ApiService extends ChangeNotifier {
       
       final response = await _client.get(
         uri,
-        headers: await _getHeaders(),
+        headers: await _getHeaders(url: uri.toString(), method: HttpMethod.get),
       ).timeout(_defaultTimeout);
       
       debugPrint('📡 API Response: ${response.statusCode}');
@@ -86,7 +92,7 @@ class ApiService extends ChangeNotifier {
       
       final response = await _client.delete(
         uri,
-        headers: await _getHeaders(),
+        headers: await _getHeaders(url: uri.toString(), method: HttpMethod.delete),
       ).timeout(_defaultTimeout);
       
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -134,7 +140,7 @@ class ApiService extends ChangeNotifier {
       
       final response = await _client.post(
         uri,
-        headers: await _getHeaders(),
+        headers: await _getHeaders(url: uri.toString(), method: HttpMethod.post),
         body: jsonEncode(requestBody),
       ).timeout(_defaultTimeout);
       
@@ -167,7 +173,7 @@ class ApiService extends ChangeNotifier {
       
       final response = await _client.get(
         uri,
-        headers: await _getHeaders(),
+        headers: await _getHeaders(url: uri.toString(), method: HttpMethod.get),
       ).timeout(_defaultTimeout);
       
       if (response.statusCode == 200) {
@@ -191,21 +197,34 @@ class ApiService extends ChangeNotifier {
   }
 
   /// Get standard headers for API requests
-  Future<Map<String, String>> _getHeaders() async {
-    return {
+  Future<Map<String, String>> _getHeaders({
+    String? url,
+    HttpMethod method = HttpMethod.get,
+  }) async {
+    final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': 'Bearer ${await _getNip98Token()}',
       'User-Agent': 'NostrVine-Mobile/1.0',
     };
-  }
-
-  /// Generate NIP-98 authentication token
-  Future<String> _getNip98Token() async {
-    // TODO: Implement proper NIP-98 authentication
-    // This should create a signed event for HTTP authentication
-    debugPrint('⚠️ TODO: Implement NIP-98 authentication');
-    return 'placeholder-nip98-token';
+    
+    // Add NIP-98 authentication if available
+    if (_authService?.canCreateTokens == true && url != null) {
+      final authToken = await _authService!.createAuthToken(
+        url: url,
+        method: method,
+      );
+      
+      if (authToken != null) {
+        headers['Authorization'] = authToken.authorizationHeader;
+        debugPrint('🔐 Added NIP-98 auth to request');
+      } else {
+        debugPrint('⚠️ Failed to create NIP-98 auth token');
+      }
+    } else {
+      debugPrint('⚠️ No authentication service available');
+    }
+    
+    return headers;
   }
 
   /// Test API connectivity

@@ -5,9 +5,14 @@ import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../models/video_event.dart';
+import '../models/video_state.dart';
 import '../widgets/video_feed_item.dart';
 import '../services/connection_status_service.dart';
 import '../services/seen_videos_service.dart';
+import '../services/auth_service.dart';
+import '../services/user_profile_service.dart';
+import '../services/social_service.dart';
+import 'profile_screen.dart';
 import '../theme/vine_theme.dart';
 import '../utils/video_system_debugger.dart';
 
@@ -67,131 +72,28 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Vine',
-          style: TextStyle(
-            color: VineTheme.whiteText,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            shadows: [
-              Shadow(
-                offset: Offset(0, 1),
-                blurRadius: 3,
-                color: Colors.black54,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, 
-              color: VineTheme.whiteText,
-              shadows: [
-                Shadow(
-                  offset: Offset(0, 1),
-                  blurRadius: 3,
-                  color: Colors.black54,
-                ),
-              ],
-            ),
-            onPressed: () {
-              // TODO: Implement search functionality
-            },
-          ),
-          // Debug option to clear seen videos
-          if (kDebugMode)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: VineTheme.whiteText),
-              onSelected: (value) async {
-                if (value == 'clear_seen') {
-                  final seenVideosService = context.read<SeenVideosService>();
-                  final feedProvider = context.read<VideoFeedProvider>();
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                  await seenVideosService.clearSeenVideos();
-                  if (mounted) {
-                    scaffoldMessenger.showSnackBar(
-                      const SnackBar(content: Text('Cleared seen videos history')),
-                    );
-                    // Refresh the feed to show previously seen videos
-                    feedProvider.refreshFeed();
-                  }
-                } else if (value == 'toggle_debug') {
-                  VideoSystemDebugger().toggleDebugOverlay();
-                } else if (value == 'system_legacy') {
-                  VideoSystemDebugger().switchToSystem(VideoSystem.legacy);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Switched to Legacy VideoCacheService')),
-                  );
-                } else if (value == 'system_manager') {
-                  VideoSystemDebugger().switchToSystem(VideoSystem.manager);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Switched to VideoManagerService')),
-                  );
-                } else if (value == 'system_hybrid') {
-                  VideoSystemDebugger().switchToSystem(VideoSystem.hybrid);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Switched to Hybrid mode (current)')),
-                  );
-                } else if (value == 'debug_report') {
-                  final report = VideoSystemDebugger().getComparisonReport();
-                  debugPrint(report);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Debug report printed to console')),
-                  );
+      extendBody: true,
+      body: Stack(
+        children: [
+          // Main video content
+          Consumer<VideoFeedProvider>(
+            builder: (context, provider, child) {
+              // Debug: Track rebuild frequency
+              final now = DateTime.now().millisecondsSinceEpoch;
+              _rebuildCount++;
+              
+              if (now - _lastRebuildTime < 100) { // If rebuilding faster than 100ms
+                if (_rebuildCount % 10 == 0) { // Only log every 10th rapid rebuild
+                  debugPrint('⚠️ RAPID REBUILDS: #$_rebuildCount in ${now - _lastRebuildTime}ms');
                 }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'clear_seen',
-                  child: Text('Clear Seen Videos'),
-                ),
-                const PopupMenuItem(
-                  value: 'toggle_debug',
-                  child: Text('Toggle Debug Overlay'),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'system_hybrid',
-                  child: Text('🔀 Hybrid Mode (Current)'),
-                ),
-                const PopupMenuItem(
-                  value: 'system_manager',
-                  child: Text('⚡ VideoManagerService'),
-                ),
-                const PopupMenuItem(
-                  value: 'system_legacy',
-                  child: Text('🏛️ VideoCacheService (Legacy)'),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'debug_report',
-                  child: Text('📊 Performance Report'),
-                ),
-              ],
-            ),
-        ],
-      ),
-      body: Consumer<VideoFeedProvider>(
-        builder: (context, provider, child) {
-          // Debug: Track rebuild frequency
-          final now = DateTime.now().millisecondsSinceEpoch;
-          _rebuildCount++;
-          
-          if (now - _lastRebuildTime < 100) { // If rebuilding faster than 100ms
-            if (_rebuildCount % 10 == 0) { // Only log every 10th rapid rebuild
-              debugPrint('⚠️ RAPID REBUILDS: #$_rebuildCount in ${now - _lastRebuildTime}ms');
-            }
-          }
-          _lastRebuildTime = now;
-          
-          // Only log when video count changes to reduce noise
-          if (_lastLoggedVideoCount != provider.readyVideos.length) {
-            _lastLoggedVideoCount = provider.readyVideos.length;
-            debugPrint('📺 FeedScreen Consumer: readyVideos changed to ${provider.readyVideos.length}');
-          }
+              }
+              _lastRebuildTime = now;
+              
+              // Only log when video count changes to reduce noise
+              if (_lastLoggedVideoCount != provider.readyVideos.length) {
+                _lastLoggedVideoCount = provider.readyVideos.length;
+                debugPrint('📺 FeedScreen Consumer: readyVideos changed to ${provider.readyVideos.length}');
+              }
           
           if (!provider.isInitialized && provider.isLoading) {
             return LayoutBuilder(
@@ -364,7 +266,7 @@ class _FeedScreenState extends State<FeedScreen> {
             physics: kIsWeb || defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux
                 ? const AlwaysScrollableScrollPhysics()
                 : const ClampingScrollPhysics(),
-            itemCount: provider.videoEvents.length > 0 ? provider.videoEvents.length : provider.readyVideos.length, // Allow swiping through all videos
+            itemCount: provider.videoEvents.isNotEmpty ? provider.videoEvents.length : provider.readyVideos.length, // Allow swiping through all videos
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
@@ -378,6 +280,9 @@ class _FeedScreenState extends State<FeedScreen> {
               debugPrint('📱 Page changed to video $index/$allVideoCount (ready: $readyVideoCount, subscribed: $isSubscribed, canLoadMore: $canLoadMore)');
               
               if (allVideoCount > 0) {
+                // Auto-skip permanently failed videos due to server config errors
+                _handleAutoSkipIfNeeded(index, provider);
+                
                 // Load more when getting close to the end of all videos
                 if (index >= allVideoCount - 3) {
                   debugPrint('📱 Near end of videos ($index/$allVideoCount), loading more...');
@@ -395,7 +300,6 @@ class _FeedScreenState extends State<FeedScreen> {
             },
             itemBuilder: (context, index) {
               final allVideoCount = provider.videoEvents.length;
-              final readyVideoCount = provider.readyVideos.length;
               
               if (allVideoCount == 0 || index >= allVideoCount) {
                 debugPrint('⚠️ Invalid video index: $index/$allVideoCount');
@@ -468,9 +372,426 @@ class _FeedScreenState extends State<FeedScreen> {
           }
         },
       ),
+          
+          // Vine-style transparent overlay UI
+          _buildVineOverlay(),
+        ],
+      ),
         ),
       ),
     );
+  }
+
+  Widget _buildVineOverlay() {
+    return SafeArea(
+      child: Stack(
+        children: [
+          // Top bar with Vine logo and search
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Vine',
+                    style: TextStyle(
+                      color: VineTheme.whiteText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.search,
+                      color: VineTheme.whiteText,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                    onPressed: () {
+                      // TODO: Implement search functionality
+                    },
+                  ),
+                  // Debug menu (only in debug mode)
+                  if (kDebugMode)
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: VineTheme.whiteText),
+                      onSelected: (value) async {
+                        if (value == 'clear_seen') {
+                          final seenVideosService = context.read<SeenVideosService>();
+                          final feedProvider = context.read<VideoFeedProvider>();
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          await seenVideosService.clearSeenVideos();
+                          if (mounted) {
+                            scaffoldMessenger.showSnackBar(
+                              const SnackBar(content: Text('Cleared seen videos history')),
+                            );
+                            feedProvider.refreshFeed();
+                          }
+                        } else if (value == 'toggle_debug') {
+                          VideoSystemDebugger().toggleDebugOverlay();
+                        } else if (value == 'system_legacy') {
+                          VideoSystemDebugger().switchToSystem(VideoSystem.legacy);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Switched to Legacy VideoCacheService')),
+                          );
+                        } else if (value == 'system_manager') {
+                          VideoSystemDebugger().switchToSystem(VideoSystem.manager);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Switched to VideoManagerService')),
+                          );
+                        } else if (value == 'system_hybrid') {
+                          VideoSystemDebugger().switchToSystem(VideoSystem.hybrid);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Switched to Hybrid mode (current)')),
+                          );
+                        } else if (value == 'debug_report') {
+                          final report = VideoSystemDebugger().getComparisonReport();
+                          debugPrint(report);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Debug report printed to console')),
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'clear_seen', child: Text('Clear Seen Videos')),
+                        const PopupMenuItem(value: 'toggle_debug', child: Text('Toggle Debug Overlay')),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'system_hybrid', child: Text('🔀 Hybrid Mode (Current)')),
+                        const PopupMenuItem(value: 'system_manager', child: Text('⚡ VideoManagerService')),
+                        const PopupMenuItem(value: 'system_legacy', child: Text('🏛️ VideoCacheService (Legacy)')),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'debug_report', child: Text('📊 Performance Report')),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Right side action buttons (Vine-style)
+          Positioned(
+            right: 12,
+            bottom: 100,
+            child: Consumer<VideoFeedProvider>(
+              builder: (context, provider, child) {
+                if (provider.videoEvents.isEmpty) return const SizedBox.shrink();
+                
+                final videoEvent = provider.videoEvents[_currentPage];
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Like button with real SocialService integration
+                    Consumer<SocialService>(
+                      builder: (context, socialService, child) {
+                        final isLiked = socialService.isLiked(videoEvent.id);
+                        final cachedLikeCount = socialService.getCachedLikeCount(videoEvent.id);
+                        
+                        return FutureBuilder<Map<String, dynamic>>(
+                          future: cachedLikeCount == null 
+                              ? socialService.getLikeStatus(videoEvent.id)
+                              : Future.value({'count': cachedLikeCount, 'user_liked': isLiked}),
+                          builder: (context, snapshot) {
+                            final likeCount = snapshot.data?['count'] ?? 0;
+                            final userLiked = snapshot.data?['user_liked'] ?? isLiked;
+                            
+                            return _buildActionButton(
+                              icon: Icons.favorite_border,
+                              filledIcon: Icons.favorite,
+                              count: likeCount > 0 ? _formatCount(likeCount) : '',
+                              isActive: userLiked,
+                              onTap: () => _likeVideo(videoEvent, socialService),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Comment button  
+                    _buildActionButton(
+                      icon: Icons.chat_bubble_outline,
+                      filledIcon: Icons.chat_bubble,
+                      count: '0', // TODO: Get real comment count
+                      isActive: false,
+                      onTap: () => _openComments(videoEvent),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Share button
+                    _buildActionButton(
+                      icon: Icons.share_outlined,
+                      filledIcon: Icons.share,
+                      count: '',
+                      isActive: false,
+                      onTap: () => _shareVine(videoEvent),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // More options button
+                    _buildActionButton(
+                      icon: Icons.more_horiz,
+                      filledIcon: Icons.more_horiz,
+                      count: '',
+                      isActive: false,
+                      onTap: () => _showMoreOptions(videoEvent),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          
+          // Bottom user info overlay (Vine-style)
+          Positioned(
+            left: 12,
+            right: 80, // Leave space for action buttons
+            bottom: 20,
+            child: Consumer<VideoFeedProvider>(
+              builder: (context, provider, child) {
+                if (provider.videoEvents.isEmpty) return const SizedBox.shrink();
+                
+                final videoEvent = provider.videoEvents[_currentPage];
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Username row
+                      GestureDetector(
+                        onTap: () => _openUserProfile(videoEvent.pubkey),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: VineTheme.vineGreen,
+                                border: Border.all(color: Colors.white, width: 1),
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Consumer<UserProfileService>(
+                                builder: (context, userProfileService, child) {
+                                  final profile = userProfileService.getCachedProfile(videoEvent.pubkey);
+                                  return Text(
+                                    profile?.displayName ?? 'Anonymous',
+                                    style: const TextStyle(
+                                      color: VineTheme.whiteText,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      shadows: [
+                                        Shadow(
+                                          offset: Offset(0, 1),
+                                          blurRadius: 2,
+                                          color: Colors.black54,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Follow button (for other users)
+                            Consumer<AuthService>(
+                              builder: (context, authService, child) {
+                                if (videoEvent.pubkey == authService.currentPublicKeyHex) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.white, width: 1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Follow',
+                                    style: TextStyle(
+                                      color: VineTheme.whiteText,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Video title/description
+                      if (videoEvent.title?.isNotEmpty == true) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          videoEvent.title!,
+                          style: const TextStyle(
+                            color: VineTheme.whiteText,
+                            fontSize: 14,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 1),
+                                blurRadius: 2,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      
+                      // Hashtags (if any)
+                      if (videoEvent.hashtags.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          children: videoEvent.hashtags.take(3).map((hashtag) => Text(
+                            '#$hashtag',
+                            style: const TextStyle(
+                              color: VineTheme.vineGreen,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 3,
+                                  color: Colors.black87,
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required IconData filledIcon,
+    required String count,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isActive ? filledIcon : icon,
+            color: isActive ? VineTheme.vineGreen : VineTheme.whiteText,
+            size: 32,
+            shadows: const [
+              Shadow(
+                offset: Offset(0, 2),
+                blurRadius: 4,
+                color: Colors.black87,
+              ),
+            ],
+          ),
+          if (count.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              count,
+              style: const TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                shadows: [
+                  Shadow(
+                    offset: Offset(0, 1),
+                    blurRadius: 3,
+                    color: Colors.black87,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _likeVideo(VideoEvent videoEvent, SocialService socialService) async {
+    try {
+      await socialService.toggleLike(videoEvent.id, videoEvent.pubkey);
+      debugPrint('✅ Successfully toggled like for video: ${videoEvent.id.substring(0, 8)}');
+    } catch (e) {
+      debugPrint('❌ Failed to toggle like: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to like video: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Format large numbers (e.g., 1234 -> "1.2K")
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    } else {
+      return count.toString();
+    }
   }
 
   // Debug tap counter for triple-tap detection
@@ -489,6 +810,32 @@ class _FeedScreenState extends State<FeedScreen> {
       // Reset counter after 1 second
       _debugTapTimer = Timer(const Duration(seconds: 1), () {
         _debugTapCount = 0;
+      });
+    }
+  }
+
+  /// Auto-skip videos that are permanently failed due to server configuration errors
+  void _handleAutoSkipIfNeeded(int currentIndex, VideoFeedProvider provider) {
+    if (currentIndex >= provider.videoEvents.length) return;
+    
+    final videoEvent = provider.videoEvents[currentIndex];
+    final videoState = provider.getVideoState(videoEvent.id);
+    
+    // Check if current video is permanently failed due to server config error
+    if (videoState?.loadingState == VideoLoadingState.permanentlyFailed && 
+        videoState?.errorMessage == 'SERVER_CONFIG_ERROR') {
+      
+      debugPrint('🔄 Auto-skipping permanently failed video: ${videoEvent.id.substring(0, 8)}');
+      
+      // Auto-advance to next video after a brief delay to show the error state
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && _currentPage == currentIndex && currentIndex < provider.videoEvents.length - 1) {
+          debugPrint('⏭️ Auto-advancing to next video...');
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
       });
     }
   }
@@ -556,9 +903,11 @@ class _FeedScreenState extends State<FeedScreen> {
   }
   
   void _openUserProfile(String pubkey) {
-    // TODO: Navigate to user profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening profile for user: ${pubkey.substring(0, 8)}...')),
+    // Navigate to the profile screen to view user profile
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(profilePubkey: pubkey),
+      ),
     );
   }
 }

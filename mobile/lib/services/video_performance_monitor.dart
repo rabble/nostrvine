@@ -4,8 +4,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import '../models/video_event.dart';
-import '../models/video_state.dart';
 import 'video_manager_interface.dart';
 
 /// Performance monitoring service for video system
@@ -369,8 +367,8 @@ class VideoPerformanceMonitor extends ChangeNotifier {
       return MemoryTrend(direction: TrendDirection.stable, changeRate: 0.0);
     }
     
-    final recent = samples.takeLast(10).toList();
-    final older = samples.take(samples.length - 10).takeLast(10).toList();
+    final recent = samples.skip(samples.length - 10).toList();
+    final older = samples.take(samples.length - 10).skip((samples.length - 20).clamp(0, samples.length - 10)).toList();
     
     final recentAvg = recent.fold(0, (sum, s) => sum + s.memoryUsageMB) / recent.length;
     final olderAvg = older.fold(0, (sum, s) => sum + s.memoryUsageMB) / older.length;

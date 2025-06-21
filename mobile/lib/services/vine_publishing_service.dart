@@ -154,7 +154,7 @@ class VinePublishingService extends ChangeNotifier {
   final GifService _gifService;
   final StreamUploadService _streamUploadService;
   final INostrService _nostrService;
-  final ProcessingStatusMonitor _processingMonitor;
+  final ProcessingMonitor _processingMonitor;
   
   PublishingState _state = PublishingState.idle;
   double _progress = 0.0;
@@ -173,11 +173,11 @@ class VinePublishingService extends ChangeNotifier {
     required GifService gifService,
     required StreamUploadService streamUploadService,
     required INostrService nostrService,
-    ProcessingStatusMonitor? processingMonitor,
+    ProcessingMonitor? processingMonitor,
   }) : _gifService = gifService,
        _streamUploadService = streamUploadService,
        _nostrService = nostrService,
-       _processingMonitor = processingMonitor ?? ProcessingStatusMonitor() {
+       _processingMonitor = processingMonitor ?? ProcessingMonitor() {
     _loadOfflineQueue();
     _startPeriodicOfflineCheck();
   }

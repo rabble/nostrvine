@@ -10,8 +10,8 @@ class VineTheme {
   static const Color vineGreenLight = Color(0xFF4DD190);
   
   // Background colors
-  static const Color backgroundColor = Color(0xFFF5F5F5);
-  static const Color cardBackground = Colors.white;
+  static const Color backgroundColor = Color(0xFF000000);
+  static const Color cardBackground = Color(0xFF1A1A1A);
   static const Color darkOverlay = Color(0x88000000);
   
   // Text colors

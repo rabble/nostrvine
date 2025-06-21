@@ -8,6 +8,7 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';
+import 'nip98_auth_service.dart';
 
 /// Result of a Cloudinary upload operation
 class UploadResult {
@@ -82,6 +83,10 @@ class CloudinaryUploadService extends ChangeNotifier {
   
   final Map<String, StreamController<double>> _progressControllers = {};
   final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
+  final Nip98AuthService? _authService;
+  
+  CloudinaryUploadService({Nip98AuthService? authService}) 
+      : _authService = authService;
   
   /// Upload a video file to Cloudinary with progress tracking
   Future<UploadResult> uploadVideo({
@@ -139,11 +144,11 @@ class CloudinaryUploadService extends ChangeNotifier {
       await subscription?.cancel();
       await progressController.close();
       
-      if (response.publicId?.isNotEmpty == true) {
+      if (response.publicId != null && response.publicId!.isNotEmpty) {
         debugPrint('✅ Cloudinary upload successful: ${response.publicId}');
         return UploadResult.success(
           cloudinaryPublicId: response.publicId!,
-          cloudinaryUrl: response.secureUrl ?? response.url ?? '',
+          cloudinaryUrl: response.secureUrl.isNotEmpty ? response.secureUrl : response.url,
           metadata: {
             'public_id': response.publicId,
             'secure_url': response.secureUrl,
@@ -197,12 +202,10 @@ class CloudinaryUploadService extends ChangeNotifier {
         'hashtags': hashtags,
       };
       
+      final url = '$_baseUrl/v1/media/request-upload';
       final response = await http.post(
-        Uri.parse('$_baseUrl/v1/media/request-upload'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getNip98Token()}',
-        },
+        Uri.parse(url),
+        headers: await _getAuthHeaders(url),
         body: jsonEncode(requestBody),
       );
       
@@ -219,12 +222,30 @@ class CloudinaryUploadService extends ChangeNotifier {
     }
   }
   
-  /// Generate NIP-98 authentication token for backend requests
-  Future<String> _getNip98Token() async {
-    // TODO: Implement proper NIP-98 authentication
-    // For now, return a placeholder token
-    debugPrint('⚠️ TODO: Implement NIP-98 authentication');
-    return 'placeholder-nip98-token';
+  /// Get authorization headers for backend requests
+  Future<Map<String, String>> _getAuthHeaders(String url) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    
+    // Add NIP-98 authentication if available
+    if (_authService?.canCreateTokens == true) {
+      final authToken = await _authService!.createAuthToken(
+        url: url,
+        method: HttpMethod.post,
+      );
+      
+      if (authToken != null) {
+        headers['Authorization'] = authToken.authorizationHeader;
+        debugPrint('🔐 Added NIP-98 auth to upload request');
+      } else {
+        debugPrint('⚠️ Failed to create NIP-98 auth token for upload');
+      }
+    } else {
+      debugPrint('⚠️ No authentication service available for upload');
+    }
+    
+    return headers;
   }
   
   /// Cancel an ongoing upload

@@ -1,5 +1,5 @@
 // ABOUTME: Provider for managing user-specific video fetching and grid display
-// ABOUTME: Fetches Kind 22 video events by author with pagination and caching
+// ABOUTME: Fetches Kind 34550 video events by author with pagination and caching
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -85,10 +85,10 @@ class ProfileVideosProvider extends ChangeNotifier {
       // Cancel existing subscription
       await _subscription?.cancel();
 
-      // Create filter for user's Kind 22 video events
+      // Create filter for user's Kind 34550 video events
       final filter = Filter(
         authors: [pubkey],
-        kinds: [22], // NIP-71 short video events
+        kinds: [34550], // NostrVine short video events
         limit: _pageSize,
       );
 
@@ -176,7 +176,7 @@ class ProfileVideosProvider extends ChangeNotifier {
       // Create filter for next page
       final filter = Filter(
         authors: [_currentPubkey!],
-        kinds: [22],
+        kinds: [34550],
         until: _lastTimestamp, // Get videos older than the last one we have
         limit: _pageSize,
       );

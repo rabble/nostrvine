@@ -228,7 +228,7 @@ void main() {
         expect(estimatedSize, greaterThan(200)); // Should include content + tags
         expect(estimatedSize, lessThan(10000)); // Should be reasonable
         
-        print('✅ NIP-94 event validated: ${nip94Tags.length} tags, ~${estimatedSize} bytes');
+        print('✅ NIP-94 event validated: ${nip94Tags.length} tags, ~$estimatedSize bytes');
       });
 
       test('should handle edge cases in event data', () async {

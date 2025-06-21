@@ -60,10 +60,15 @@ dependencies:
   shared_preferences: ^2.2.3
   sqflite: ^2.3.3+1
   path_provider: ^2.1.4
+  flutter_secure_storage: ^9.0.0
   
   # Crypto (needed for Nostr)
   crypto: ^3.0.3
   encrypt: ^5.0.3
+  bech32: ^0.2.2
+  
+  # JavaScript interop for web
+  js: ^0.6.7
   
   # Concurrency control
   pool: ^1.5.1
@@ -88,6 +93,7 @@ dev_dependencies:
   
   # Testing
   mocktail: ^1.0.3
+  mockito: ^5.4.4
   
   # Code generation
   build_runner: ^2.4.9

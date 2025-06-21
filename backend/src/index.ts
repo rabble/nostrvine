@@ -23,6 +23,15 @@ import { handleBatchVideoLookup, handleBatchVideoOptions } from './handlers/batc
 // Analytics service
 import { VideoAnalyticsService } from './services/analytics';
 
+// Moderation API
+import { 
+  handleReportSubmission, 
+  handleModerationStatus, 
+  handleModerationQueue, 
+  handleModerationAction, 
+  handleModerationOptions 
+} from './handlers/moderation-api';
+
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
 
@@ -102,6 +111,63 @@ export default {
 				return wrapResponse(Promise.resolve(handleBatchVideoOptions()));
 			}
 
+			// Analytics endpoints
+			if (pathname === '/api/analytics/popular' && method === 'GET') {
+				try {
+					const analytics = new VideoAnalyticsService(env, ctx);
+					const url = new URL(request.url);
+					const timeframe = url.searchParams.get('window') as '1h' | '24h' | '7d' || '24h';
+					const limit = parseInt(url.searchParams.get('limit') || '10');
+					
+					const popularVideos = await analytics.getPopularVideos(timeframe, limit);
+					
+					return new Response(JSON.stringify({
+						timeframe,
+						videos: popularVideos,
+						timestamp: new Date().toISOString()
+					}), {
+						headers: {
+							'Content-Type': 'application/json',
+							'Access-Control-Allow-Origin': '*',
+							'Cache-Control': 'public, max-age=300'
+						}
+					});
+				} catch (error) {
+					return new Response(JSON.stringify({ error: 'Failed to fetch popular videos' }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+					});
+				}
+			}
+
+			if (pathname === '/api/analytics/dashboard' && method === 'GET') {
+				try {
+					const analytics = new VideoAnalyticsService(env, ctx);
+					const [healthStatus, currentMetrics, popular24h] = await Promise.all([
+						analytics.getHealthStatus(),
+						analytics.getCurrentMetrics(),
+						analytics.getPopularVideos('24h', 5)
+					]);
+					
+					return new Response(JSON.stringify({
+						health: healthStatus,
+						metrics: currentMetrics,
+						popularVideos: popular24h,
+						timestamp: new Date().toISOString()
+					}), {
+						headers: {
+							'Content-Type': 'application/json',
+							'Access-Control-Allow-Origin': '*',
+							'Cache-Control': 'public, max-age=60'
+						}
+					});
+				} catch (error) {
+					return new Response(JSON.stringify({ error: 'Failed to fetch dashboard data' }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+					});
+				}
+			}
 
 			// Video metadata endpoints
 			if (pathname === '/v1/media/list' && method === 'GET') {
@@ -167,6 +233,40 @@ export default {
 				return handleMediaServing(fileId, request, env);
 			}
 
+			// Moderation API endpoints
+			if (pathname === '/api/moderation/report' && method === 'POST') {
+				return wrapResponse(handleReportSubmission(request, env, ctx));
+			}
+
+			if (pathname === '/api/moderation/report' && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleModerationOptions()));
+			}
+
+			if (pathname.startsWith('/api/moderation/status/') && method === 'GET') {
+				const videoId = pathname.split('/api/moderation/status/')[1];
+				return wrapResponse(handleModerationStatus(videoId, request, env));
+			}
+
+			if (pathname.startsWith('/api/moderation/status/') && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleModerationOptions()));
+			}
+
+			if (pathname === '/api/moderation/queue' && method === 'GET') {
+				return wrapResponse(handleModerationQueue(request, env));
+			}
+
+			if (pathname === '/api/moderation/queue' && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleModerationOptions()));
+			}
+
+			if (pathname === '/api/moderation/action' && method === 'POST') {
+				return wrapResponse(handleModerationAction(request, env, ctx));
+			}
+
+			if (pathname === '/api/moderation/action' && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleModerationOptions()));
+			}
+
 			// Default 404 response
 			return new Response(JSON.stringify({
 				error: 'Not Found',
@@ -180,6 +280,12 @@ export default {
 					'/v1/media/metadata/{publicId}',
 					'/api/video/{videoId} (Video Cache API)',
 					'/api/videos/batch (Batch Video Lookup)',
+					'/api/analytics/popular (Popular Videos)',
+					'/api/analytics/dashboard (Analytics Dashboard)',
+					'/api/moderation/report (Report content)',
+					'/api/moderation/status/{videoId} (Check moderation status)',
+					'/api/moderation/queue (Admin: View moderation queue)',
+					'/api/moderation/action (Admin: Take moderation action)',
 					'/v1/media/cloudinary-upload (Legacy)',
 					'/v1/media/webhook (Legacy)',
 					'/api/upload (NIP-96)',

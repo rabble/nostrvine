@@ -1,6 +1,8 @@
 // ABOUTME: Service for converting captured frames into GIF animations
 // ABOUTME: Handles frame processing, optimization, and GIF encoding for vine content
 
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
@@ -8,6 +10,39 @@ enum GifQuality {
   low,
   medium,
   high,
+}
+
+/// Exception thrown when GIF processing fails
+class GifProcessingException implements Exception {
+  final String message;
+  final dynamic originalError;
+  final StackTrace? stackTrace;
+  
+  const GifProcessingException(
+    this.message, [
+    this.originalError,
+    this.stackTrace,
+  ]);
+  
+  @override
+  String toString() => 'GifProcessingException: $message';
+}
+
+/// Retry configuration for GIF operations
+class RetryConfig {
+  final int maxRetries;
+  final Duration initialDelay;
+  final double backoffMultiplier;
+  final Duration maxDelay;
+  final Duration timeout;
+  
+  const RetryConfig({
+    this.maxRetries = 3,
+    this.initialDelay = const Duration(milliseconds: 500),
+    this.backoffMultiplier = 2.0,
+    this.maxDelay = const Duration(seconds: 10),
+    this.timeout = const Duration(minutes: 2),
+  });
 }
 
 // Helper function for isolate-based GIF encoding to prevent UI blocking
@@ -42,6 +77,184 @@ class GifService {
   static const int maxGifHeight = 320;
   static const int defaultFrameDelay = 200; // 200ms = 5 FPS
   
+  // Retry configuration
+  final RetryConfig _retryConfig;
+  
+  GifService({RetryConfig? retryConfig})
+      : _retryConfig = retryConfig ?? const RetryConfig();
+
+  /// Execute operation with exponential backoff retry logic
+  Future<T> _executeWithRetry<T>(
+    String operationName,
+    Future<T> Function() operation, {
+    bool Function(dynamic error)? isRetriable,
+  }) async {
+    Duration currentDelay = _retryConfig.initialDelay;
+    dynamic lastError;
+    StackTrace? lastStackTrace;
+    
+    for (int attempt = 0; attempt <= _retryConfig.maxRetries; attempt++) {
+      try {
+        debugPrint('🔄 $operationName: Attempt ${attempt + 1}/${_retryConfig.maxRetries + 1}');
+        
+        final result = await operation().timeout(_retryConfig.timeout);
+        
+        if (attempt > 0) {
+          debugPrint('✅ $operationName: Succeeded after ${attempt + 1} attempts');
+        }
+        
+        return result;
+        
+      } catch (error, stackTrace) {
+        lastError = error;
+        lastStackTrace = stackTrace;
+        
+        debugPrint('❌ $operationName: Attempt ${attempt + 1} failed: $error');
+        
+        // Check if we should retry
+        if (attempt >= _retryConfig.maxRetries) {
+          debugPrint('💥 $operationName: Max retries exceeded, giving up');
+          break;
+        }
+        
+        // Check if error is retriable
+        if (isRetriable != null && !isRetriable(error)) {
+          debugPrint('🚫 $operationName: Error not retriable, giving up');
+          break;
+        }
+        
+        // Wait before retry with exponential backoff
+        debugPrint('⏳ $operationName: Waiting ${currentDelay.inMilliseconds}ms before retry');
+        await Future.delayed(currentDelay);
+        
+        // Calculate next delay with jitter
+        currentDelay = Duration(
+          milliseconds: min(
+            (currentDelay.inMilliseconds * _retryConfig.backoffMultiplier).round(),
+            _retryConfig.maxDelay.inMilliseconds,
+          ),
+        );
+        
+        // Add random jitter to avoid thundering herd
+        final jitter = Random().nextDouble() * 0.1; // 0-10% jitter
+        currentDelay = Duration(
+          milliseconds: (currentDelay.inMilliseconds * (1 + jitter)).round(),
+        );
+      }
+    }
+    
+    // All retries failed
+    throw GifProcessingException(
+      '$operationName: All retry attempts failed',
+      lastError,
+      lastStackTrace,
+    );
+  }
+
+  /// Check if an error is retriable
+  bool _isRetriable(dynamic error) {
+    // Memory errors are generally not retriable
+    if (error.toString().toLowerCase().contains('memory')) {
+      return false;
+    }
+    
+    // Argument errors suggest bad input data, not retriable
+    if (error is ArgumentError) {
+      return false;
+    }
+    
+    // Format errors suggest corrupted data, not retriable
+    if (error.toString().toLowerCase().contains('format') ||
+        error.toString().toLowerCase().contains('corrupt')) {
+      return false;
+    }
+    
+    // Timeout and IO errors are retriable
+    if (error is TimeoutException ||
+        error.toString().toLowerCase().contains('timeout') ||
+        error.toString().toLowerCase().contains('io')) {
+      return true;
+    }
+    
+    // Unknown errors are retriable by default
+    return true;
+  }
+
+  /// Comprehensive input validation with detailed error messages
+  void _validateInput(
+    List<Uint8List> frames,
+    int originalWidth,
+    int originalHeight,
+    int? customFrameDelay,
+  ) {
+    // Frame count validation
+    if (frames.isEmpty) {
+      throw ArgumentError('Cannot create GIF from empty frame list');
+    }
+    
+    if (frames.length > 120) { // 120 frames = 24 seconds at 5fps
+      throw ArgumentError('Too many frames: ${frames.length}. Maximum supported: 120');
+    }
+    
+    if (frames.length < 2) {
+      throw ArgumentError('Need at least 2 frames for animation. Got: ${frames.length}');
+    }
+    
+    // Dimension validation
+    if (originalWidth <= 0 || originalHeight <= 0) {
+      throw ArgumentError('Invalid dimensions: ${originalWidth}x$originalHeight. Must be positive');
+    }
+    
+    if (originalWidth > 4096 || originalHeight > 4096) {
+      throw ArgumentError('Dimensions too large: ${originalWidth}x$originalHeight. Maximum: 4096x4096');
+    }
+    
+    // Memory estimation validation
+    final estimatedMemoryMB = _estimateMemoryUsage(frames, originalWidth, originalHeight);
+    if (estimatedMemoryMB > 500) { // 500MB limit
+      throw ArgumentError('Estimated memory usage too high: ${estimatedMemoryMB}MB. Maximum: 500MB');
+    }
+    
+    // Frame delay validation
+    if (customFrameDelay != null) {
+      if (customFrameDelay < 50) {
+        throw ArgumentError('Frame delay too short: ${customFrameDelay}ms. Minimum: 50ms');
+      }
+      if (customFrameDelay > 5000) {
+        throw ArgumentError('Frame delay too long: ${customFrameDelay}ms. Maximum: 5000ms');
+      }
+    }
+    
+    // Individual frame validation
+    for (int i = 0; i < frames.length; i++) {
+      final frame = frames[i];
+      if (frame.isEmpty) {
+        throw ArgumentError('Frame $i is empty');
+      }
+      
+      // Check for reasonable frame size
+      if (frame.length > 50 * bytesPerMB) { // 50MB per frame max
+        throw ArgumentError('Frame $i too large: ${frame.length} bytes. Maximum: ${50 * bytesPerMB} bytes');
+      }
+    }
+    
+    debugPrint('✅ Input validation passed: ${frames.length} frames, ${originalWidth}x$originalHeight, estimated ${estimatedMemoryMB}MB memory usage');
+  }
+
+  /// Estimate memory usage for processing
+  double _estimateMemoryUsage(List<Uint8List> frames, int width, int height) {
+    // Raw frame data
+    final rawDataMB = frames.fold(0, (sum, frame) => sum + frame.length) / bytesPerMB;
+    
+    // Decoded image data (RGBA, so 4 bytes per pixel)
+    final decodedDataMB = (frames.length * width * height * 4) / bytesPerMB;
+    
+    // Processing overhead (temporary buffers, encoding, etc.)
+    final overheadMB = (decodedDataMB * 0.5).clamp(10, 100); // 50% overhead, min 10MB, max 100MB
+    
+    return rawDataMB + decodedDataMB + overheadMB;
+  }
+  
   // JPEG format constants
   static const int jpegMagicByte1 = 0xFF;
   static const int jpegMagicByte2 = 0xD8;
@@ -71,7 +284,7 @@ class GifService {
   static const int bytesPerKB = 1024;
   static const int bytesPerMB = 1024 * 1024;
   
-  /// Convert captured frames to optimized GIF
+  /// Convert captured frames to optimized GIF with retry logic and enhanced error handling
   Future<GifResult> createGifFromFrames({
     required List<Uint8List> frames,
     required int originalWidth,
@@ -79,30 +292,34 @@ class GifService {
     GifQuality quality = GifQuality.medium,
     int? customFrameDelay,
   }) async {
-    if (frames.isEmpty) {
-      throw ArgumentError('Cannot create GIF from empty frame list');
-    }
+    // Enhanced input validation
+    _validateInput(frames, originalWidth, originalHeight, customFrameDelay);
     
     final stopwatch = Stopwatch()..start();
     
     try {
-      // Step 1: Process frames for GIF optimization
-      final processedFrames = await _processFramesForGif(
-        frames,
-        originalWidth,
-        originalHeight,
-        quality,
+      debugPrint('🎬 Starting GIF creation: ${frames.length} frames, ${originalWidth}x${originalHeight}, quality: $quality');
+      
+      // Step 1: Process frames for GIF optimization with retry
+      final processedFrames = await _executeWithRetry(
+        'Frame Processing',
+        () => _processFramesForGif(frames, originalWidth, originalHeight, quality),
+        isRetriable: _isRetriable,
       );
       
-      // Step 2: Create GIF animation
-      final gifBytes = await _encodeGifAnimation(
-        processedFrames,
-        customFrameDelay ?? defaultFrameDelay,
+      // Step 2: Create GIF animation with retry
+      final gifBytes = await _executeWithRetry(
+        'GIF Encoding',
+        () => _encodeGifAnimation(processedFrames, customFrameDelay ?? defaultFrameDelay),
+        isRetriable: _isRetriable,
       );
       
       final processingTime = stopwatch.elapsed;
       
-      return GifResult(
+      debugPrint('✅ GIF creation completed in ${processingTime.inMilliseconds}ms: ${gifBytes.length} bytes');
+      
+      // Final validation and metrics
+      final result = GifResult(
         gifBytes: gifBytes,
         frameCount: frames.length,
         width: processedFrames.first.width,
@@ -112,12 +329,47 @@ class GifService {
         compressedSize: gifBytes.length,
         quality: quality,
       );
-    } catch (e) {
-      throw GifProcessingException('Failed to create GIF: $e');
+      
+      _logPerformanceMetrics(result, frames.length);
+      
+      return result;
+      
+    } on ArgumentError catch (e) {
+      debugPrint('❌ GIF creation failed due to invalid input: $e');
+      rethrow; // Don't wrap argument errors
+    } on GifProcessingException catch (e) {
+      debugPrint('❌ GIF processing failed: $e');
+      rethrow; // Don't double-wrap our exceptions
+    } catch (e, stackTrace) {
+      debugPrint('❌ Unexpected error during GIF creation: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      throw GifProcessingException(
+        'Failed to create GIF: $e',
+        e,
+        stackTrace,
+      );
     }
   }
+
+  /// Log performance metrics for monitoring
+  void _logPerformanceMetrics(GifResult result, int originalFrameCount) {
+    final compressionRatio = result.originalSize > 0 
+        ? (result.compressedSize / result.originalSize * 100).toStringAsFixed(1)
+        : 'N/A';
+    
+    final processingSpeed = result.processingTime.inMilliseconds > 0
+        ? (originalFrameCount / (result.processingTime.inMilliseconds / 1000)).toStringAsFixed(1)
+        : 'N/A';
+    
+    debugPrint('📊 GIF Performance Metrics:');
+    debugPrint('   Size: ${result.originalSize} → ${result.compressedSize} bytes ($compressionRatio%)');
+    debugPrint('   Time: ${result.processingTime.inMilliseconds}ms ($processingSpeed fps)');
+    debugPrint('   Dimensions: ${result.width}x${result.height}');
+    debugPrint('   Quality: ${result.quality}');
+    debugPrint('   Frames: ${result.frameCount}');
+  }
   
-  /// Process frames for optimal GIF creation
+  /// Process frames for optimal GIF creation with graceful degradation
   Future<List<img.Image>> _processFramesForGif(
     List<Uint8List> rawFrames,
     int originalWidth,
@@ -125,6 +377,10 @@ class GifService {
     GifQuality quality,
   ) async {
     final processedFrames = <img.Image>[];
+    int failedFrames = 0;
+    int corruptedFrames = 0;
+    
+    debugPrint('🖼️ Processing ${rawFrames.length} frames for GIF creation');
     
     // Calculate target dimensions (maintain aspect ratio)
     final targetDimensions = _calculateTargetDimensions(
@@ -133,34 +389,97 @@ class GifService {
       quality,
     );
     
+    debugPrint('📐 Target dimensions: ${targetDimensions.width}x${targetDimensions.height}');
+    
     for (int i = 0; i < rawFrames.length; i++) {
-      final rawFrame = rawFrames[i];
-      
-      // Convert raw bytes to Image
-      final image = await _convertRawBytesToImage(
-        rawFrame,
-        originalWidth,
-        originalHeight,
-      );
-      
-      if (image == null) {
-        debugPrint('⚠️ Failed to process frame $i, skipping');
+      try {
+        final rawFrame = rawFrames[i];
+        
+        // Validate frame data
+        if (rawFrame.isEmpty) {
+          debugPrint('⚠️ Frame $i is empty, skipping');
+          failedFrames++;
+          continue;
+        }
+        
+        // Convert raw bytes to Image with timeout
+        final image = await _convertRawBytesToImage(
+          rawFrame,
+          originalWidth,
+          originalHeight,
+        ).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⏱️ Frame $i conversion timed out');
+            return null;
+          },
+        );
+        
+        if (image == null) {
+          corruptedFrames++;
+          debugPrint('⚠️ Failed to convert frame $i (corrupted data), skipping');
+          
+          // Apply graceful degradation - if too many frames are corrupted, fail early
+          if (corruptedFrames > rawFrames.length * 0.3) { // 30% corruption threshold
+            throw GifProcessingException(
+              'Too many corrupted frames: $corruptedFrames/${rawFrames.length}. '
+              'Video data may be corrupted.'
+            );
+          }
+          continue;
+        }
+        
+        // Validate image dimensions
+        if (image.width != originalWidth || image.height != originalHeight) {
+          debugPrint('⚠️ Frame $i has unexpected dimensions: ${image.width}x${image.height}, expected ${originalWidth}x$originalHeight');
+        }
+        
+        // Resize and optimize frame with error handling
+        try {
+          final optimizedFrame = _optimizeFrameForGif(
+            image,
+            targetDimensions.width,
+            targetDimensions.height,
+            quality,
+          );
+          
+          processedFrames.add(optimizedFrame);
+          
+        } catch (e) {
+          debugPrint('⚠️ Failed to optimize frame $i: $e');
+          failedFrames++;
+          continue;
+        }
+        
+      } catch (e) {
+        debugPrint('⚠️ Error processing frame $i: $e');
+        failedFrames++;
         continue;
       }
-      
-      // Resize and optimize frame
-      final optimizedFrame = _optimizeFrameForGif(
-        image,
-        targetDimensions.width,
-        targetDimensions.height,
-        quality,
-      );
-      
-      processedFrames.add(optimizedFrame);
     }
     
+    // Final validation
     if (processedFrames.isEmpty) {
-      throw GifProcessingException('No frames could be processed');
+      throw GifProcessingException(
+        'No frames could be processed. Failed: $failedFrames, Corrupted: $corruptedFrames'
+      );
+    }
+    
+    // Check minimum viable frame count
+    if (processedFrames.length < 2) {
+      throw GifProcessingException(
+        'Not enough frames for animation: ${processedFrames.length}. Need at least 2.'
+      );
+    }
+    
+    // Warn about significant frame loss
+    final successRate = (processedFrames.length / rawFrames.length * 100);
+    if (successRate < 70) { // Less than 70% success rate
+      debugPrint('⚠️ Low frame processing success rate: ${successRate.toStringAsFixed(1)}%');
+      debugPrint('   Processed: ${processedFrames.length}/${rawFrames.length}');
+      debugPrint('   Failed: $failedFrames, Corrupted: $corruptedFrames');
+    } else {
+      debugPrint('✅ Frame processing completed: ${processedFrames.length}/${rawFrames.length} frames (${successRate.toStringAsFixed(1)}%)');
     }
     
     return processedFrames;
@@ -420,11 +739,3 @@ GifResult(
   }
 }
 
-class GifProcessingException implements Exception {
-  final String message;
-  
-  GifProcessingException(this.message);
-  
-  @override
-  String toString() => 'GifProcessingException: $message';
-}

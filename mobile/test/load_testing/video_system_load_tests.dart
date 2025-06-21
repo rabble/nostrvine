@@ -377,7 +377,7 @@ void main() {
           // Check system health
           final debugInfo = videoManager.getDebugInfo();
           expect(debugInfo['estimatedMemoryMB'], lessThan(500),
-              reason: 'Memory exceeded at ${totalVideosAdded} videos');
+              reason: 'Memory exceeded at $totalVideosAdded videos');
           
           // Simulate time passing (1 minute)
           await Future.delayed(Duration(milliseconds: 100)); // Accelerated for testing
@@ -388,7 +388,7 @@ void main() {
         expect(finalStats.totalVideos, equals(totalVideosAdded));
         expect(finalStats.currentMemoryMB, lessThan(500));
         
-        debugPrint('Session completed: ${totalVideosAdded} videos, ${finalStats.currentMemoryMB}MB memory');
+        debugPrint('Session completed: $totalVideosAdded videos, ${finalStats.currentMemoryMB}MB memory');
       });
       
       test('should handle memory cleanup cycles over time', () async {

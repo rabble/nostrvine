@@ -6,6 +6,8 @@ import 'theme/vine_theme.dart';
 import 'screens/camera_screen.dart';
 import 'screens/feed_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/activity_screen.dart';
+import 'screens/explore_screen.dart';
 import 'screens/web_auth_screen.dart';
 import 'services/nostr_service.dart';
 import 'services/auth_service.dart';
@@ -29,6 +31,7 @@ import 'services/web_auth_service.dart';
 import 'services/social_service.dart';
 import 'providers/video_feed_provider.dart';
 import 'providers/profile_stats_provider.dart';
+import 'providers/profile_videos_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -136,6 +139,16 @@ class NostrVineApp extends StatelessWidget {
           ),
           update: (_, socialService, previous) => previous ?? ProfileStatsProvider(
             socialService,
+          ),
+        ),
+        
+        // Profile videos provider depends on Nostr service
+        ChangeNotifierProxyProvider<INostrService, ProfileVideosProvider>(
+          create: (context) => ProfileVideosProvider(
+            context.read<INostrService>(),
+          ),
+          update: (_, nostrService, previous) => previous ?? ProfileVideosProvider(
+            nostrService,
           ),
         ),
         
@@ -403,9 +416,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   final List<Widget> _screens = [
     const FeedScreen(),
-    const CameraScreen(),
+    const ActivityScreen(),
+    const ExploreScreen(),
     const ProfileScreen(),
   ];
+
+  void _onTabTapped(int index) {
+    // If leaving the feed screen (index 0), pause all videos
+    if (_currentIndex == 0 && index != 0) {
+      _pauseFeedVideos();
+    }
+    
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+  
+  void _pauseFeedVideos() {
+    try {
+      final videoFeedProvider = context.read<VideoFeedProvider>();
+      // Pause the currently playing video
+      videoFeedProvider.pauseCurrentVideo();
+      debugPrint('🎬 Paused feed videos when navigating away');
+    } catch (e) {
+      debugPrint('⚠️ Error pausing feed videos: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,7 +449,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) => _onTabTapped(index),
         backgroundColor: VineTheme.vineGreen,
         selectedItemColor: VineTheme.whiteText,
         unselectedItemColor: VineTheme.whiteText.withValues(alpha: 0.7),
@@ -422,18 +458,38 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: '',
+            label: 'FEED',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.videocam),
-            label: '',
+            icon: Icon(Icons.notifications),
+            label: 'ACTIVITY',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore),
+            label: 'EXPLORE',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
+            label: 'PROFILE',
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Pause feed videos before opening camera
+          if (_currentIndex == 0) {
+            _pauseFeedVideos();
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CameraScreen()),
+          );
+        },
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.whiteText,
+        child: const Icon(Icons.videocam, size: 32),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

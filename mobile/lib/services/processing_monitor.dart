@@ -1,552 +1,573 @@
-// ABOUTME: Backend processing status monitoring service for NIP-96 file uploads
-// ABOUTME: Handles async processing monitoring and status polling for video/GIF processing
+// ABOUTME: Service for monitoring video processing pipeline health and performance
+// ABOUTME: Tracks metrics, detects anomalies, and provides debugging information
 
 import 'dart:async';
-import 'dart:convert';
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import '../models/nip94_metadata.dart';
 
-/// Status of backend file processing
-enum ProcessingStatus {
-  pending,      // Processing not yet started
-  processing,   // Currently processing
-  completed,    // Processing completed successfully
-  failed,       // Processing failed with error
-  timeout,      // Processing timed out
-  cancelled,    // Processing was cancelled
+/// Processing stage identifiers
+enum ProcessingStage {
+  frameCapture,
+  frameValidation,
+  gifCreation,
+  uploading,
+  cloudProcessing,
+  publishing,
 }
 
-/// Backend upload and processing response
-class BackendUploadResponse {
-  final String status;           // 'success' | 'error' | 'processing'
-  final String? message;         // Status message or error description
-  final NIP94Metadata? nip94Event; // Final metadata if completed
-  final String? processingUrl;   // URL for status checking
-  final String? jobId;           // Processing job identifier
-  final Map<String, dynamic>? rawResponse; // Full backend response
-  
-  const BackendUploadResponse({
-    required this.status,
-    this.message,
-    this.nip94Event,
-    this.processingUrl,
-    this.jobId,
-    this.rawResponse,
-  });
-  
-  factory BackendUploadResponse.fromJson(Map<String, dynamic> json) {
-    return BackendUploadResponse(
-      status: json['status'] as String,
-      message: json['message'] as String?,
-      nip94Event: json['nip94_event'] != null 
-        ? NIP94Metadata.fromJson(json['nip94_event'] as Map<String, dynamic>)
-        : null,
-      processingUrl: json['processing_url'] as String?,
-      jobId: json['job_id'] as String?,
-      rawResponse: json,
-    );
-  }
-  
-  bool get isSuccess => status == 'success';
-  bool get isError => status == 'error';
-  bool get isProcessing => status == 'processing';
-  bool get hasProcessingUrl => processingUrl != null && processingUrl!.isNotEmpty;
-  bool get hasJobId => jobId != null && jobId!.isNotEmpty;
+/// Processing event types
+enum ProcessingEventType {
+  stageStarted,
+  stageCompleted,
+  stageFailed,
+  stageRetried,
+  memoryWarning,
+  performanceWarning,
 }
 
-/// Processing status response from backend
-class ProcessingStatusResponse {
-  final ProcessingStatus status;
-  final String? message;
-  final double? progress;        // 0.0 to 1.0
-  final NIP94Metadata? metadata; // Available when completed
-  final String? error;           // Error details if failed
-  final Map<String, dynamic>? processingInfo; // Additional processing details
+/// Individual processing event
+class ProcessingEvent {
+  final String sessionId;
+  final ProcessingStage stage;
+  final ProcessingEventType type;
   final DateTime timestamp;
-  
-  const ProcessingStatusResponse({
-    required this.status,
-    this.message,
-    this.progress,
-    this.metadata,
-    this.error,
-    this.processingInfo,
+  final Map<String, dynamic> metadata;
+  final String? errorMessage;
+  final StackTrace? stackTrace;
+
+  ProcessingEvent({
+    required this.sessionId,
+    required this.stage,
+    required this.type,
     required this.timestamp,
+    this.metadata = const {},
+    this.errorMessage,
+    this.stackTrace,
   });
+
+  Duration get age => DateTime.now().difference(timestamp);
+}
+
+/// Processing session metrics
+class ProcessingSessionMetrics {
+  final String sessionId;
+  final DateTime startTime;
+  final DateTime? endTime;
+  final Map<ProcessingStage, Duration> stageDurations;
+  final Map<ProcessingStage, int> stageRetries;
+  final List<ProcessingEvent> events;
+  final bool wasSuccessful;
+  final String? failureReason;
+  final Map<String, dynamic> metadata;
+
+  ProcessingSessionMetrics({
+    required this.sessionId,
+    required this.startTime,
+    this.endTime,
+    required this.stageDurations,
+    required this.stageRetries,
+    required this.events,
+    required this.wasSuccessful,
+    this.failureReason,
+    this.metadata = const {},
+  });
+
+  Duration? get totalDuration => endTime?.difference(startTime);
   
-  factory ProcessingStatusResponse.fromJson(Map<String, dynamic> json) {
-    ProcessingStatus status;
-    switch (json['status'] as String) {
-      case 'pending':
-        status = ProcessingStatus.pending;
-        break;
-      case 'processing':
-        status = ProcessingStatus.processing;
-        break;
-      case 'completed':
-        status = ProcessingStatus.completed;
-        break;
-      case 'failed':
-        status = ProcessingStatus.failed;
-        break;
-      case 'timeout':
-        status = ProcessingStatus.timeout;
-        break;
-      case 'cancelled':
-        status = ProcessingStatus.cancelled;
-        break;
-      default:
-        status = ProcessingStatus.failed;
-    }
-    
-    return ProcessingStatusResponse(
-      status: status,
-      message: json['message'] as String?,
-      progress: (json['progress'] as num?)?.toDouble(),
-      metadata: json['metadata'] != null 
-        ? NIP94Metadata.fromJson(json['metadata'] as Map<String, dynamic>)
-        : null,
-      error: json['error'] as String?,
-      processingInfo: json['processing_info'] as Map<String, dynamic>?,
-      timestamp: DateTime.now(),
-    );
-  }
-  
-  bool get isCompleted => status == ProcessingStatus.completed;
-  bool get isFailed => status == ProcessingStatus.failed || status == ProcessingStatus.timeout;
-  bool get isProcessing => status == ProcessingStatus.processing || status == ProcessingStatus.pending;
-  String get displayMessage => message ?? _getDefaultMessage();
-  
-  String _getDefaultMessage() {
-    switch (status) {
-      case ProcessingStatus.pending:
-        return 'Queued for processing';
-      case ProcessingStatus.processing:
-        return progress != null 
-          ? 'Processing... ${(progress! * 100).toInt()}%'
-          : 'Processing your content';
-      case ProcessingStatus.completed:
-        return 'Processing completed successfully';
-      case ProcessingStatus.failed:
-        return error ?? 'Processing failed';
-      case ProcessingStatus.timeout:
-        return 'Processing timed out';
-      case ProcessingStatus.cancelled:
-        return 'Processing was cancelled';
-    }
+  double get successRate {
+    final completedStages = stageDurations.length;
+    final totalStages = ProcessingStage.values.length;
+    return completedStages / totalStages;
   }
 }
 
-/// Exception thrown during processing monitoring
-class ProcessingMonitorException implements Exception {
-  final String message;
-  final ProcessingStatus? lastStatus;
-  final bool isRetryable;
-  
-  const ProcessingMonitorException(
-    this.message, [
-    this.lastStatus,
-    this.isRetryable = false,
-  ]);
-  
-  @override
-  String toString() => 'ProcessingMonitorException: $message';
+/// Processing health status
+class ProcessingHealthStatus {
+  final bool isHealthy;
+  final int recentSuccesses;
+  final int recentFailures;
+  final double averageProcessingTime;
+  final Map<ProcessingStage, double> stageSuccessRates;
+  final List<String> warnings;
+  final DateTime lastUpdated;
+
+  ProcessingHealthStatus({
+    required this.isHealthy,
+    required this.recentSuccesses,
+    required this.recentFailures,
+    required this.averageProcessingTime,
+    required this.stageSuccessRates,
+    required this.warnings,
+    required this.lastUpdated,
+  });
+
+  double get overallSuccessRate {
+    final total = recentSuccesses + recentFailures;
+    return total > 0 ? recentSuccesses / total : 0.0;
+  }
 }
 
-/// Service for monitoring backend processing status
-class ProcessingStatusMonitor extends ChangeNotifier {
-  final http.Client _httpClient;
-  final Map<String, StreamController<ProcessingStatusResponse>> _statusStreams = {};
-  final Map<String, Timer> _pollTimers = {};
+/// Monitors video processing pipeline health and performance
+class ProcessingMonitor extends ChangeNotifier {
+  // Configuration
+  static const int maxSessionHistory = 100;
+  static const int maxEventHistory = 1000;
+  static const Duration sessionTimeout = Duration(minutes: 30);
+  static const Duration metricsRetentionPeriod = Duration(hours: 24);
   
-  // Intelligent backoff configuration
-  static const Duration initialPollInterval = Duration(seconds: 1); // Start fast
-  static const Duration maxPollInterval = Duration(seconds: 30);    // Max backoff
-  static const Duration defaultTimeout = Duration(minutes: 10);     // Longer timeout
-  static const double backoffMultiplier = 1.5;                     // Moderate backoff
-  static const int maxRetries = 120;                               // More retries with longer intervals
+  // Performance thresholds
+  static const Map<ProcessingStage, Duration> stageTimeoutThresholds = {
+    ProcessingStage.frameCapture: Duration(seconds: 30),
+    ProcessingStage.frameValidation: Duration(seconds: 10),
+    ProcessingStage.gifCreation: Duration(minutes: 2),
+    ProcessingStage.uploading: Duration(minutes: 10),
+    ProcessingStage.cloudProcessing: Duration(minutes: 5),
+    ProcessingStage.publishing: Duration(seconds: 30),
+  };
+
+  // State
+  final Map<String, ProcessingSessionMetrics> _activeSessions = {};
+  final Queue<ProcessingSessionMetrics> _completedSessions = Queue();
+  final Queue<ProcessingEvent> _eventHistory = Queue();
+  final Map<ProcessingStage, List<Duration>> _stageDurationHistory = {};
   
-  ProcessingStatusMonitor({http.Client? httpClient}) 
-    : _httpClient = httpClient ?? http.Client();
-  
-  /// Monitor processing status with intelligent backoff
-  Stream<ProcessingStatusResponse> monitorProcessing({
-    required String processingUrl,
-    Duration pollInterval = initialPollInterval,
-    Duration timeout = defaultTimeout,
-    String? jobId,
-  }) {
-    final streamKey = jobId ?? processingUrl;
-    
-    // Return existing stream if already monitoring
-    if (_statusStreams.containsKey(streamKey)) {
-      return _statusStreams[streamKey]!.stream;
-    }
-    
-    final controller = StreamController<ProcessingStatusResponse>.broadcast(
-      onCancel: () => _stopMonitoring(streamKey),
-    );
-    
-    _statusStreams[streamKey] = controller;
-    
-    // Start polling
-    _startPolling(
-      streamKey: streamKey,
-      processingUrl: processingUrl,
-      controller: controller,
-      pollInterval: pollInterval,
-      timeout: timeout,
-    );
-    
-    return controller.stream;
+  // Timers
+  Timer? _cleanupTimer;
+  Timer? _timeoutCheckTimer;
+
+  ProcessingMonitor() {
+    _initialize();
   }
-  
-  /// Wait for processing completion with timeout
-  Future<NIP94Metadata> waitForProcessing(
-    String processingUrl, {
-    Duration timeout = defaultTimeout,
-    Duration pollInterval = initialPollInterval,
-    String? jobId,
-  }) async {
-    final completer = Completer<NIP94Metadata>();
-    
-    late StreamSubscription subscription;
-    late Timer timeoutTimer;
-    
-    // Set up timeout
-    timeoutTimer = Timer(timeout, () {
-      if (!completer.isCompleted) {
-        subscription.cancel();
-        completer.completeError(ProcessingMonitorException(
-          'Processing timed out after ${timeout.inSeconds} seconds',
-          ProcessingStatus.timeout,
-          false,
-        ));
-      }
+
+  void _initialize() {
+    // Initialize stage duration history
+    for (final stage in ProcessingStage.values) {
+      _stageDurationHistory[stage] = [];
+    }
+
+    // Start periodic cleanup
+    _cleanupTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _cleanupOldData();
     });
-    
-    try {
-      subscription = monitorProcessing(
-        processingUrl: processingUrl,
-        pollInterval: pollInterval,
-        jobId: jobId,
-      ).listen(
-        (status) {
-          if (status.isCompleted && status.metadata != null) {
-            timeoutTimer.cancel();
-            subscription.cancel();
-            if (!completer.isCompleted) {
-              completer.complete(status.metadata!);
-            }
-          } else if (status.isFailed) {
-            timeoutTimer.cancel();
-            subscription.cancel();
-            if (!completer.isCompleted) {
-              completer.completeError(ProcessingMonitorException(
-                status.error ?? 'Processing failed',
-                status.status,
-                status.status == ProcessingStatus.timeout,
-              ));
-            }
-          }
-        },
-        onError: (error) {
-          timeoutTimer.cancel();
-          if (!completer.isCompleted) {
-            completer.completeError(error);
-          }
-        },
-      );
-      
-      return await completer.future;
-    } catch (e) {
-      timeoutTimer.cancel();
-      subscription.cancel();
-      rethrow;
-    }
-  }
-  
-  /// Get current processing status (single check)
-  Future<ProcessingStatusResponse> getProcessingStatus(String processingUrl) async {
-    try {
-      final response = await _httpClient.get(
-        Uri.parse(processingUrl),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'NostrVine/1.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-      
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        return ProcessingStatusResponse.fromJson(jsonData);
-      } else {
-        throw ProcessingMonitorException(
-          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
-          null,
-          response.statusCode >= 500, // Server errors are retryable
-        );
-      }
-    } catch (e) {
-      if (e is ProcessingMonitorException) rethrow;
-      
-      debugPrint('❌ Error checking processing status: $e');
-      throw ProcessingMonitorException(
-        'Failed to check processing status: $e',
-        null,
-        true, // Network errors are retryable
-      );
-    }
-  }
-  
-  /// Start polling for status updates with intelligent backoff
-  void _startPolling({
-    required String streamKey,
-    required String processingUrl,
-    required StreamController<ProcessingStatusResponse> controller,
-    required Duration pollInterval,
-    required Duration timeout,
-  }) {
-    int attemptCount = 0;
-    final startTime = DateTime.now();
-    Duration currentInterval = pollInterval;
-    ProcessingStatus? lastStatus;
-    
-    // Start with immediate first poll, then schedule subsequent polls
-    _scheduleNextPoll(
-      streamKey: streamKey,
-      processingUrl: processingUrl,
-      controller: controller,
-      currentInterval: currentInterval,
-      attemptCount: attemptCount,
-      startTime: startTime,
-      timeout: timeout,
-      lastStatus: lastStatus,
-    );
-  }
-  
-  /// Schedule next poll with intelligent backoff
-  void _scheduleNextPoll({
-    required String streamKey,
-    required String processingUrl,
-    required StreamController<ProcessingStatusResponse> controller,
-    required Duration currentInterval,
-    required int attemptCount,
-    required DateTime startTime,
-    required Duration timeout,
-    required ProcessingStatus? lastStatus,
-  }) {
-    // Check timeout
-    if (DateTime.now().difference(startTime) > timeout) {
-      _pollTimers.remove(streamKey);
-      
-      if (!controller.isClosed) {
-        final timeoutResponse = ProcessingStatusResponse(
-          status: ProcessingStatus.timeout,
-          message: 'Processing timed out after ${timeout.inSeconds} seconds',
-          timestamp: DateTime.now(),
-        );
-        controller.add(timeoutResponse);
-        controller.close();
-      }
-      return;
-    }
-    
-    // Check max attempts
-    if (attemptCount >= maxRetries) {
-      _pollTimers.remove(streamKey);
-      
-      if (!controller.isClosed) {
-        final timeoutResponse = ProcessingStatusResponse(
-          status: ProcessingStatus.timeout,
-          message: 'Maximum polling attempts reached',
-          timestamp: DateTime.now(),
-        );
-        controller.add(timeoutResponse);
-        controller.close();
-      }
-      return;
-    }
-    
-    final timer = Timer(currentInterval, () async {
-      try {
-        final status = await getProcessingStatus(processingUrl);
-        final newAttemptCount = attemptCount + 1;
-        
-        if (!controller.isClosed) {
-          controller.add(status);
-        }
-        
-        // Stop polling if completed or failed
-        if (status.isCompleted || status.isFailed) {
-          _pollTimers.remove(streamKey);
-          
-          if (!controller.isClosed) {
-            controller.close();
-          }
-          return;
-        }
-        
-        // Calculate next interval with intelligent backoff
-        Duration nextInterval = _calculateNextInterval(
-          currentInterval: currentInterval,
-          currentStatus: status.status,
-          lastStatus: lastStatus,
-          attemptCount: newAttemptCount,
-        );
-        
-        // Schedule next poll
-        _scheduleNextPoll(
-          streamKey: streamKey,
-          processingUrl: processingUrl,
-          controller: controller,
-          currentInterval: nextInterval,
-          attemptCount: newAttemptCount,
-          startTime: startTime,
-          timeout: timeout,
-          lastStatus: status.status,
-        );
-        
-      } catch (e) {
-        debugPrint('⚠️ Status polling error (attempt ${attemptCount + 1}): $e');
-        
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-        
-        // Stop polling on non-retryable errors
-        if (e is ProcessingMonitorException && !e.isRetryable) {
-          _pollTimers.remove(streamKey);
-          
-          if (!controller.isClosed) {
-            controller.close();
-          }
-          return;
-        }
-        
-        // Backoff more aggressively on errors
-        Duration nextInterval = Duration(
-          milliseconds: (currentInterval.inMilliseconds * (backoffMultiplier * 1.5)).round()
-        );
-        if (nextInterval > maxPollInterval) {
-          nextInterval = maxPollInterval;
-        }
-        
-        // Schedule retry
-        _scheduleNextPoll(
-          streamKey: streamKey,
-          processingUrl: processingUrl,
-          controller: controller,
-          currentInterval: nextInterval,
-          attemptCount: attemptCount + 1,
-          startTime: startTime,
-          timeout: timeout,
-          lastStatus: lastStatus,
-        );
-      }
+
+    // Start timeout checker
+    _timeoutCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _checkForTimeouts();
     });
-    
-    _pollTimers[streamKey] = timer;
   }
-  
-  /// Calculate next polling interval with intelligent backoff
-  Duration _calculateNextInterval({
-    required Duration currentInterval,
-    required ProcessingStatus currentStatus,
-    required ProcessingStatus? lastStatus,
-    required int attemptCount,
-  }) {
-    // Fast polling for first few attempts
-    if (attemptCount <= 3) {
-      return initialPollInterval;
-    }
-    
-    // If status changed (progress detected), reset to faster polling
-    if (lastStatus != null && currentStatus != lastStatus) {
-      debugPrint('⚡ Processing status changed from $lastStatus to $currentStatus - resetting polling interval');
-      return initialPollInterval;
-    }
-    
-    // If actively processing, moderate backoff
-    if (currentStatus == ProcessingStatus.processing) {
-      final nextInterval = Duration(
-        milliseconds: (currentInterval.inMilliseconds * backoffMultiplier).round()
-      );
-      return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
-    }
-    
-    // For pending status, more aggressive backoff
-    if (currentStatus == ProcessingStatus.pending) {
-      final nextInterval = Duration(
-        milliseconds: (currentInterval.inMilliseconds * (backoffMultiplier * 1.3)).round()
-      );
-      return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
-    }
-    
-    // Default backoff
-    final nextInterval = Duration(
-      milliseconds: (currentInterval.inMilliseconds * backoffMultiplier).round()
-    );
-    return nextInterval <= maxPollInterval ? nextInterval : maxPollInterval;
-  }
-  
-  /// Stop monitoring a specific processing job
-  void _stopMonitoring(String streamKey) {
-    _pollTimers[streamKey]?.cancel();
-    _pollTimers.remove(streamKey);
-    
-    final controller = _statusStreams.remove(streamKey);
-    if (controller != null && !controller.isClosed) {
-      controller.close();
-    }
-    
-    debugPrint('🛑 Stopped monitoring processing: $streamKey');
-  }
-  
-  /// Cancel monitoring for a specific job
-  void cancelMonitoring(String processingUrlOrJobId) {
-    _stopMonitoring(processingUrlOrJobId);
-  }
-  
-  /// Cancel all active monitoring
-  void cancelAllMonitoring() {
-    final keys = List<String>.from(_statusStreams.keys);
-    for (final key in keys) {
-      _stopMonitoring(key);
-    }
-    
-    debugPrint('🛑 Cancelled all processing monitoring');
-  }
-  
-  /// Get list of currently monitored jobs
-  List<String> get activeMonitoring => List.unmodifiable(_statusStreams.keys);
-  
-  /// Check if a job is being monitored
-  bool isMonitoring(String processingUrlOrJobId) {
-    return _statusStreams.containsKey(processingUrlOrJobId);
-  }
-  
+
   @override
   void dispose() {
-    debugPrint('🧹 ProcessingStatusMonitor disposing - cleaning up ${_pollTimers.length} timers');
-    cancelAllMonitoring();
+    _cleanupTimer?.cancel();
+    _timeoutCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Start monitoring a new processing session
+  String startSession({Map<String, dynamic>? metadata}) {
+    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
     
-    // Force cleanup any remaining timers
-    for (final timer in _pollTimers.values) {
-      timer.cancel();
+    _activeSessions[sessionId] = ProcessingSessionMetrics(
+      sessionId: sessionId,
+      startTime: DateTime.now(),
+      stageDurations: {},
+      stageRetries: {},
+      events: [],
+      wasSuccessful: false,
+      metadata: metadata ?? {},
+    );
+
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: ProcessingStage.frameCapture,
+      type: ProcessingEventType.stageStarted,
+      timestamp: DateTime.now(),
+      metadata: metadata ?? {},
+    ));
+
+    debugPrint('📊 Started processing session: $sessionId');
+    notifyListeners();
+    
+    return sessionId;
+  }
+
+  /// Record stage start
+  void recordStageStart(String sessionId, ProcessingStage stage, {Map<String, dynamic>? metadata}) {
+    final session = _activeSessions[sessionId];
+    if (session == null) {
+      debugPrint('⚠️ Unknown session: $sessionId');
+      return;
     }
-    _pollTimers.clear();
+
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: stage,
+      type: ProcessingEventType.stageStarted,
+      timestamp: DateTime.now(),
+      metadata: metadata ?? {},
+    ));
+
+    debugPrint('🎬 Stage started: ${stage.name} for session $sessionId');
+  }
+
+  /// Record stage completion
+  void recordStageComplete(String sessionId, ProcessingStage stage, {Map<String, dynamic>? metadata}) {
+    final session = _activeSessions[sessionId];
+    if (session == null) {
+      debugPrint('⚠️ Unknown session: $sessionId');
+      return;
+    }
+
+    // Calculate stage duration
+    final stageStartEvent = session.events.lastWhere(
+      (e) => e.stage == stage && e.type == ProcessingEventType.stageStarted,
+      orElse: () => ProcessingEvent(
+        sessionId: sessionId,
+        stage: stage,
+        type: ProcessingEventType.stageStarted,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    final duration = DateTime.now().difference(stageStartEvent.timestamp);
+    session.stageDurations[stage] = duration;
+
+    // Record duration history
+    _stageDurationHistory[stage]!.add(duration);
+    if (_stageDurationHistory[stage]!.length > 100) {
+      _stageDurationHistory[stage]!.removeAt(0);
+    }
+
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: stage,
+      type: ProcessingEventType.stageCompleted,
+      timestamp: DateTime.now(),
+      metadata: {
+        'duration_ms': duration.inMilliseconds,
+        ...?metadata,
+      },
+    ));
+
+    // Check for performance warnings
+    final threshold = stageTimeoutThresholds[stage];
+    if (threshold != null && duration > threshold * 0.8) {
+      recordPerformanceWarning(
+        sessionId,
+        stage,
+        'Stage took ${duration.inSeconds}s (threshold: ${threshold.inSeconds}s)',
+      );
+    }
+
+    debugPrint('✅ Stage completed: ${stage.name} in ${duration.inMilliseconds}ms');
+    notifyListeners();
+  }
+
+  /// Record stage failure
+  void recordStageFailure(
+    String sessionId,
+    ProcessingStage stage,
+    String error, {
+    StackTrace? stackTrace,
+    Map<String, dynamic>? metadata,
+  }) {
+    final session = _activeSessions[sessionId];
+    if (session == null) {
+      debugPrint('⚠️ Unknown session: $sessionId');
+      return;
+    }
+
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: stage,
+      type: ProcessingEventType.stageFailed,
+      timestamp: DateTime.now(),
+      errorMessage: error,
+      stackTrace: stackTrace,
+      metadata: metadata ?? {},
+    ));
+
+    // Update retry count
+    session.stageRetries[stage] = (session.stageRetries[stage] ?? 0) + 1;
+
+    debugPrint('❌ Stage failed: ${stage.name} - $error');
+    notifyListeners();
+  }
+
+  /// Record stage retry
+  void recordStageRetry(String sessionId, ProcessingStage stage, int attemptNumber) {
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: stage,
+      type: ProcessingEventType.stageRetried,
+      timestamp: DateTime.now(),
+      metadata: {'attempt': attemptNumber},
+    ));
+
+    debugPrint('🔄 Stage retry: ${stage.name} attempt $attemptNumber');
+  }
+
+  /// Record memory warning
+  void recordMemoryWarning(String sessionId, int availableMemoryMB, int requiredMemoryMB) {
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: ProcessingStage.values.first, // Use current stage
+      type: ProcessingEventType.memoryWarning,
+      timestamp: DateTime.now(),
+      metadata: {
+        'available_mb': availableMemoryMB,
+        'required_mb': requiredMemoryMB,
+      },
+    ));
+
+    debugPrint('⚠️ Memory warning: ${availableMemoryMB}MB available, ${requiredMemoryMB}MB required');
+  }
+
+  /// Record performance warning
+  void recordPerformanceWarning(String sessionId, ProcessingStage stage, String warning) {
+    _recordEvent(ProcessingEvent(
+      sessionId: sessionId,
+      stage: stage,
+      type: ProcessingEventType.performanceWarning,
+      timestamp: DateTime.now(),
+      metadata: {'warning': warning},
+    ));
+
+    debugPrint('⚠️ Performance warning at ${stage.name}: $warning');
+  }
+
+  /// Complete a processing session
+  void completeSession(String sessionId, {bool success = true, String? failureReason}) {
+    final session = _activeSessions[sessionId];
+    if (session == null) {
+      debugPrint('⚠️ Unknown session: $sessionId');
+      return;
+    }
+
+    // Move to completed sessions
+    final completedSession = ProcessingSessionMetrics(
+      sessionId: session.sessionId,
+      startTime: session.startTime,
+      endTime: DateTime.now(),
+      stageDurations: Map.from(session.stageDurations),
+      stageRetries: Map.from(session.stageRetries),
+      events: List.from(session.events),
+      wasSuccessful: success,
+      failureReason: failureReason,
+      metadata: Map.from(session.metadata),
+    );
+
+    _completedSessions.addLast(completedSession);
+    if (_completedSessions.length > maxSessionHistory) {
+      _completedSessions.removeFirst();
+    }
+
+    _activeSessions.remove(sessionId);
+
+    debugPrint('🏁 Session completed: $sessionId (success: $success)');
+    notifyListeners();
+  }
+
+  /// Get current health status
+  ProcessingHealthStatus getHealthStatus() {
+    final recentSessions = _completedSessions.where(
+      (s) => DateTime.now().difference(s.startTime) < const Duration(hours: 1),
+    ).toList();
+
+    final recentSuccesses = recentSessions.where((s) => s.wasSuccessful).length;
+    final recentFailures = recentSessions.length - recentSuccesses;
+
+    // Calculate average processing time
+    final successfulSessions = recentSessions.where((s) => s.wasSuccessful && s.totalDuration != null);
+    final averageTime = successfulSessions.isEmpty
+        ? 0.0
+        : successfulSessions.map((s) => s.totalDuration!.inSeconds).reduce((a, b) => a + b) / successfulSessions.length;
+
+    // Calculate stage success rates
+    final stageSuccessRates = <ProcessingStage, double>{};
+    for (final stage in ProcessingStage.values) {
+      final stageEvents = _eventHistory.where((e) => e.stage == stage);
+      final completed = stageEvents.where((e) => e.type == ProcessingEventType.stageCompleted).length;
+      final failed = stageEvents.where((e) => e.type == ProcessingEventType.stageFailed).length;
+      final total = completed + failed;
+      stageSuccessRates[stage] = total > 0 ? completed / total : 1.0;
+    }
+
+    // Generate warnings
+    final warnings = <String>[];
     
-    // Force cleanup any remaining streams
-    for (final controller in _statusStreams.values) {
-      if (!controller.isClosed) {
-        controller.close();
+    // Check overall success rate
+    final overallSuccessRate = recentSessions.isEmpty
+        ? 1.0
+        : recentSuccesses / recentSessions.length;
+    if (overallSuccessRate < 0.8) {
+      warnings.add('Low success rate: ${(overallSuccessRate * 100).toStringAsFixed(1)}%');
+    }
+
+    // Check for stuck sessions
+    final stuckSessions = _activeSessions.values.where(
+      (s) => DateTime.now().difference(s.startTime) > sessionTimeout,
+    );
+    if (stuckSessions.isNotEmpty) {
+      warnings.add('${stuckSessions.length} sessions appear stuck');
+    }
+
+    // Check stage performance
+    for (final stage in ProcessingStage.values) {
+      if (stageSuccessRates[stage]! < 0.7) {
+        warnings.add('${stage.name} has low success rate: ${(stageSuccessRates[stage]! * 100).toStringAsFixed(1)}%');
       }
     }
-    _statusStreams.clear();
-    
-    _httpClient.close();
-    super.dispose();
+
+    return ProcessingHealthStatus(
+      isHealthy: warnings.isEmpty && overallSuccessRate > 0.8,
+      recentSuccesses: recentSuccesses,
+      recentFailures: recentFailures,
+      averageProcessingTime: averageTime,
+      stageSuccessRates: stageSuccessRates,
+      warnings: warnings,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  /// Get session metrics
+  ProcessingSessionMetrics? getSessionMetrics(String sessionId) {
+    return _activeSessions[sessionId] ?? 
+           _completedSessions.firstWhere(
+             (s) => s.sessionId == sessionId,
+             orElse: () => null as dynamic,
+           );
+  }
+
+  /// Get recent events for debugging
+  List<ProcessingEvent> getRecentEvents({int limit = 50}) {
+    return _eventHistory.toList()
+        .reversed
+        .take(limit)
+        .toList();
+  }
+
+  /// Get stage performance statistics
+  Map<ProcessingStage, Map<String, dynamic>> getStageStatistics() {
+    final stats = <ProcessingStage, Map<String, dynamic>>{};
+
+    for (final stage in ProcessingStage.values) {
+      final durations = _stageDurationHistory[stage] ?? [];
+      if (durations.isEmpty) {
+        stats[stage] = {
+          'count': 0,
+          'average_ms': 0,
+          'min_ms': 0,
+          'max_ms': 0,
+          'p50_ms': 0,
+          'p95_ms': 0,
+        };
+        continue;
+      }
+
+      // Sort durations for percentile calculations
+      final sorted = List<Duration>.from(durations)
+        ..sort((a, b) => a.compareTo(b));
+
+      stats[stage] = {
+        'count': durations.length,
+        'average_ms': durations.map((d) => d.inMilliseconds).reduce((a, b) => a + b) ~/ durations.length,
+        'min_ms': sorted.first.inMilliseconds,
+        'max_ms': sorted.last.inMilliseconds,
+        'p50_ms': sorted[sorted.length ~/ 2].inMilliseconds,
+        'p95_ms': sorted[(sorted.length * 0.95).floor()].inMilliseconds,
+      };
+    }
+
+    return stats;
+  }
+
+  /// Record an event
+  void _recordEvent(ProcessingEvent event) {
+    final session = _activeSessions[event.sessionId];
+    session?.events.add(event);
+
+    _eventHistory.addLast(event);
+    if (_eventHistory.length > maxEventHistory) {
+      _eventHistory.removeFirst();
+    }
+  }
+
+  /// Check for timed out sessions
+  void _checkForTimeouts() {
+    final now = DateTime.now();
+    final timedOutSessions = <String>[];
+
+    for (final entry in _activeSessions.entries) {
+      final session = entry.value;
+      final age = now.difference(session.startTime);
+
+      if (age > sessionTimeout) {
+        timedOutSessions.add(entry.key);
+      } else {
+        // Check individual stage timeouts
+        for (final stage in ProcessingStage.values) {
+          final lastStageStart = session.events
+              .where((e) => e.stage == stage && e.type == ProcessingEventType.stageStarted)
+              .lastOrNull;
+
+          if (lastStageStart != null && !session.stageDurations.containsKey(stage)) {
+            final stageAge = now.difference(lastStageStart.timestamp);
+            final threshold = stageTimeoutThresholds[stage];
+
+            if (threshold != null && stageAge > threshold) {
+              recordPerformanceWarning(
+                session.sessionId,
+                stage,
+                'Stage timeout: ${stageAge.inSeconds}s elapsed',
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Complete timed out sessions
+    for (final sessionId in timedOutSessions) {
+      completeSession(sessionId, success: false, failureReason: 'Session timeout');
+    }
+  }
+
+  /// Clean up old data
+  void _cleanupOldData() {
+    final cutoff = DateTime.now().subtract(metricsRetentionPeriod);
+
+    // Clean up old events
+    while (_eventHistory.isNotEmpty && _eventHistory.first.timestamp.isBefore(cutoff)) {
+      _eventHistory.removeFirst();
+    }
+
+    // Clean up old completed sessions
+    while (_completedSessions.isNotEmpty && _completedSessions.first.startTime.isBefore(cutoff)) {
+      _completedSessions.removeFirst();
+    }
+
+    debugPrint('🧹 Cleaned up old monitoring data');
+  }
+
+  /// Export metrics for analysis
+  Map<String, dynamic> exportMetrics() {
+    return {
+      'health_status': {
+        'is_healthy': getHealthStatus().isHealthy,
+        'success_rate': getHealthStatus().overallSuccessRate,
+        'warnings': getHealthStatus().warnings,
+      },
+      'active_sessions': _activeSessions.length,
+      'completed_sessions': _completedSessions.length,
+      'stage_statistics': getStageStatistics(),
+      'recent_events': getRecentEvents(limit: 20).map((e) => {
+        'session': e.sessionId,
+        'stage': e.stage.name,
+        'type': e.type.name,
+        'timestamp': e.timestamp.toIso8601String(),
+        'error': e.errorMessage,
+      }).toList(),
+    };
   }
 }
