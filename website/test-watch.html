@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Test Watch</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="watch-styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-button">Home</a>
+                    <a href="about.html" class="nav-button">About</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="test-controls" style="text-align: center; margin: 2rem 0; padding: 1rem; background: #f5f5f5; border-radius: 10px;">
+            <h2>Test Nostr Video Viewer</h2>
+            <p>Enter a Nostr event ID (kind 22) to test the viewer:</p>
+            <input type="text" id="eventIdInput" placeholder="Enter 64-character event ID" 
+                   style="width: 500px; padding: 0.5rem; margin: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
+            <br>
+            <button id="loadBtn" style="background: #00D4AA; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; margin: 0.5rem;">
+                Load Video
+            </button>
+            <button id="sampleBtn" style="background: #666; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; margin: 0.5rem;">
+                Load Sample Event
+            </button>
+        </div>
+
+        <div class="watch-container">
+            <div class="loading-state" id="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Loading video from Nostr...</p>
+            </div>
+            
+            <div class="error-state" id="error" style="display: none;">
+                <div class="error-content">
+                    <h2>❌ Video Not Found</h2>
+                    <p id="error-message">Could not load the requested video.</p>
+                    <button id="retryBtn" class="retry-button">Try Again</button>
+                </div>
+            </div>
+            
+            <div class="video-viewer" id="viewer" style="display: none;">
+                <div class="video-container">
+                    <video 
+                        id="nostr-video" 
+                        class="vine-video" 
+                        autoplay 
+                        playsinline
+                        loop
+                        controls>
+                    </video>
+                    
+                    <div class="video-overlay">
+                        <div class="video-controls">
+                            <button class="control-btn like-btn" id="like-btn">❤️</button>
+                            <button class="control-btn share-btn" id="share-btn">🔗</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="video-info">
+                    <div class="author-info">
+                        <div class="author-avatar" id="author-avatar">
+                            <span id="author-initial">?</span>
+                        </div>
+                        <div class="author-details">
+                            <h3 id="author-name">Loading...</h3>
+                            <p id="author-pubkey"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="video-content">
+                        <p id="video-description">Loading video content...</p>
+                    </div>
+                    
+                    <div class="video-metadata">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Event ID:</span>
+                            <span class="metadata-value" id="event-id">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Published:</span>
+                            <span class="metadata-value" id="publish-time">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Relays:</span>
+                            <span class="metadata-value" id="relay-status">Not connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024</p>
+    </footer>
+
+    <script src="nostr-viewer.js"></script>
+    <script>
+        let currentViewer = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const eventIdInput = document.getElementById('eventIdInput');
+            const loadBtn = document.getElementById('loadBtn');
+            const sampleBtn = document.getElementById('sampleBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            
+            // Sample event ID for testing (replace with actual event ID when available)
+            const sampleEventId = '22e73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3';
+            
+            function loadVideo(eventId) {
+                if (!/^[a-f0-9]{64}$/i.test(eventId)) {
+                    alert('Please enter a valid 64-character hexadecimal event ID');
+                    return;
+                }
+                
+                // Reset UI
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('viewer').style.display = 'none';
+                
+                // Dispose previous viewer
+                if (currentViewer) {
+                    currentViewer.dispose();
+                }
+                
+                // Create new viewer
+                currentViewer = new NostrViewer();
+                currentViewer.initialize(eventId).catch(error => {
+                    console.error('Failed to load video:', error);
+                });
+            }
+            
+            loadBtn.addEventListener('click', () => {
+                const eventId = eventIdInput.value.trim();
+                if (eventId) {
+                    loadVideo(eventId);
+                }
+            });
+            
+            sampleBtn.addEventListener('click', () => {
+                eventIdInput.value = sampleEventId;
+                loadVideo(sampleEventId);
+            });
+            
+            retryBtn.addEventListener('click', () => {
+                const eventId = eventIdInput.value.trim();
+                if (eventId) {
+                    loadVideo(eventId);
+                }
+            });
+            
+            eventIdInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

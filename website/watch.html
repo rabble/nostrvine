@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Watch</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="watch-styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="Watch Nostr video on OpenVine">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-button">Home</a>
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="watch-container">
+            <div class="loading-state" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading video from Nostr...</p>
+            </div>
+            
+            <div class="error-state" id="error" style="display: none;">
+                <div class="error-content">
+                    <h2>❌ Video Not Found</h2>
+                    <p id="error-message">Could not load the requested video.</p>
+                    <a href="index.html" class="retry-button">← Back to Home</a>
+                </div>
+            </div>
+            
+            <div class="video-viewer" id="viewer" style="display: none;">
+                <div class="video-container">
+                    <video 
+                        id="nostr-video" 
+                        class="vine-video" 
+                        autoplay 
+                        playsinline
+                        loop
+                        controls>
+                    </video>
+                    
+                    <div class="video-overlay">
+                        <div class="video-controls">
+                            <button class="control-btn like-btn" id="like-btn">❤️</button>
+                            <button class="control-btn share-btn" id="share-btn">🔗</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="video-info">
+                    <div class="author-info">
+                        <div class="author-avatar" id="author-avatar">
+                            <span id="author-initial">?</span>
+                        </div>
+                        <div class="author-details">
+                            <h3 id="author-name">Loading...</h3>
+                            <p id="author-pubkey"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="video-content">
+                        <p id="video-description">Loading video content...</p>
+                    </div>
+                    
+                    <div class="video-metadata">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Event ID:</span>
+                            <span class="metadata-value" id="event-id">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Published:</span>
+                            <span class="metadata-value" id="publish-time">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Relays:</span>
+                            <span class="metadata-value" id="relay-status">Connecting...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script src="nostr-viewer.js"></script>
+</body>
+</html>
