@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 
 /// Reasons for content filtering/reporting
 enum ContentFilterReason {

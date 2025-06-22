@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Recording Button Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .record-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid white;
+            background: #00b894;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        .record-btn:hover {
+            background: #00a085;
+        }
+        .record-btn:active, .record-btn.recording {
+            background: #d63031;
+            transform: scale(0.9);
+        }
+        .status {
+            margin: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .video-container {
+            width: 400px;
+            height: 400px;
+            background: black;
+            margin: 20px auto;
+            border-radius: 8px;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Web Recording Button Test</h1>
+    <p>This tests the press-and-hold recording functionality on web</p>
+    
+    <div class="video-container">
+        <video id="preview" autoplay muted playsinline></video>
+    </div>
+    
+    <div class="status" id="status">Click "Initialize" to start</div>
+    
+    <button onclick="initCamera()">Initialize Camera</button>
+    
+    <div class="record-btn" id="recordBtn" onmousedown="startRecord()" onmouseup="stopRecord()" onmouseleave="stopRecord()" ontouchstart="startRecord()" ontouchend="stopRecord()">
+        HOLD
+    </div>
+    
+    <div id="log" style="text-align: left; margin: 20px; font-family: monospace; font-size: 12px;"></div>
+
+    <script>
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let isRecording = false;
+        let recordButton = document.getElementById('recordBtn');
+        let statusDiv = document.getElementById('status');
+        let logDiv = document.getElementById('log');
+        let preview = document.getElementById('preview');
+
+        function log(message) {
+            console.log(message);
+            logDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function initCamera() {
+            try {
+                log('Requesting camera access...');
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 640 },
+                    audio: true
+                });
+                
+                preview.srcObject = mediaStream;
+                statusDiv.textContent = 'Camera ready! Press and hold to record';
+                log('Camera initialized successfully');
+                
+            } catch (error) {
+                log('Camera error: ' + error.message);
+                statusDiv.textContent = 'Camera error: ' + error.message;
+            }
+        }
+
+        function startRecord() {
+            if (!mediaStream || isRecording) {
+                log('Cannot start: no stream or already recording');
+                return;
+            }
+
+            try {
+                log('Starting recording...');
+                recordButton.classList.add('recording');
+                recordButton.textContent = 'REC';
+                
+                mediaRecorder = new MediaRecorder(mediaStream);
+                let chunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        chunks.push(event.data);
+                        log('Received data chunk: ' + event.data.size + ' bytes');
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    log('Recording stopped, creating blob...');
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    log('Created blob URL: ' + url.substring(0, 50) + '...');
+                    statusDiv.innerHTML = 'Recording saved! <a href="' + url + '" download="test.webm">Download</a>';
+                };
+                
+                mediaRecorder.onerror = (event) => {
+                    log('Recording error: ' + event.error);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                statusDiv.textContent = 'Recording... (release to stop)';
+                log('MediaRecorder started successfully');
+                
+            } catch (error) {
+                log('Start recording error: ' + error.message);
+                recordButton.classList.remove('recording');
+                recordButton.textContent = 'HOLD';
+            }
+        }
+
+        function stopRecord() {
+            if (!isRecording || !mediaRecorder) {
+                log('Cannot stop: not recording');
+                return;
+            }
+
+            try {
+                log('Stopping recording...');
+                mediaRecorder.stop();
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                recordButton.textContent = 'HOLD';
+                statusDiv.textContent = 'Processing recording...';
+                
+            } catch (error) {
+                log('Stop recording error: ' + error.message);
+            }
+        }
+
+        // Prevent context menu on long press
+        recordButton.addEventListener('contextmenu', (e) => e.preventDefault());
+        
+        // Touch event handling
+        recordButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startRecord();
+        });
+        
+        recordButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopRecord();
+        });
+
+        log('Test page loaded');
+    </script>
+</body>
+</html>

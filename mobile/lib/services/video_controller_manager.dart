@@ -288,7 +288,7 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
     await _baseManager.handleMemoryPressure();
     
     // Also pause all videos during memory pressure
-    await pauseAllVideos();
+    pauseAllVideos();
   }
 
   @override
@@ -314,7 +314,7 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
 
     // Pause current video if different
     if (_currentlyPlayingVideoId != null && _currentlyPlayingVideoId != videoId) {
-      await pauseVideo(_currentlyPlayingVideoId!);
+      pauseVideo(_currentlyPlayingVideoId!);
     }
 
     // Configure and play
@@ -327,20 +327,41 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
     notifyListeners();
   }
 
-  Future<void> pauseVideo(String videoId) async {
+  @override
+  void pauseVideo(String videoId) {
     final controller = getController(videoId);
     if (controller == null) return;
 
-    await controller.pause();
-    if (_currentlyPlayingVideoId == videoId) {
-      _currentlyPlayingVideoId = null;
+    try {
+      controller.pause();
+      if (_currentlyPlayingVideoId == videoId) {
+        _currentlyPlayingVideoId = null;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error pausing video $videoId: $e');
     }
-    notifyListeners();
   }
 
-  Future<void> pauseAllVideos() async {
+  @override
+  void pauseAllVideos() {
     if (_currentlyPlayingVideoId != null) {
-      await pauseVideo(_currentlyPlayingVideoId!);
+      pauseVideo(_currentlyPlayingVideoId!);
+    }
+  }
+
+  @override
+  void resumeVideo(String videoId) {
+    final controller = getController(videoId);
+    if (controller == null) return;
+
+    try {
+      controller.play();
+      _currentlyPlayingVideoId = videoId;
+      _trackPlayback(videoId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error resuming video $videoId: $e');
     }
   }
 

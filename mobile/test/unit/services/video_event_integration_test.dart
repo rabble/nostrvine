@@ -7,7 +7,7 @@ import 'package:nostrvine_app/services/video_manager_service.dart';
 import 'package:nostrvine_app/services/video_manager_interface.dart';
 import 'package:nostrvine_app/models/video_event.dart';
 import 'package:nostrvine_app/models/video_state.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import '../../helpers/test_helpers.dart';
 
 void main() {
@@ -30,17 +30,17 @@ void main() {
     group('VideoEventProcessor to VideoManager Flow', () {
       test('should process valid Nostr video event through complete pipeline', () async {
         // ARRANGE: Create a valid Nostr event (kind 22 for short videos)
-        final event = Event.from(
-          kind: 22, // NIP-71 short video event
-          content: 'Test video content',
-          tags: [
+        final event = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22, // NIP-71 short video event
+          [
             ['url', 'https://example.com/test-video.mp4'],
             ['m', 'video/mp4'],
             ['size', '1024000'],
             ['duration', '30'],
             ['title', 'Test Video Title'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video content'
         );
 
         // ACT: Process the Nostr event through the pipeline
@@ -66,15 +66,15 @@ void main() {
 
       test('should handle GIF events immediately as ready', () async {
         // ARRANGE: Create a GIF event
-        final gifEvent = Event.from(
-          kind: 22,
-          content: 'Animated GIF content',
-          tags: [
+        final gifEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/animated.gif'],
             ['m', 'image/gif'],
             ['title', 'Test GIF'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Animated GIF content'
         );
 
         // ACT: Process the GIF event
@@ -92,20 +92,20 @@ void main() {
 
       test('should maintain newest-first ordering across multiple events', () async {
         // ARRANGE: Create multiple events with different timestamps
-        final olderEvent = Event.from(
-          kind: 22,
-          content: 'Older video',
-          tags: [['url', 'https://example.com/older.mp4'], ['title', 'Older Video']],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-          createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 3600, // 1 hour ago
+        final olderEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['url', 'https://example.com/older.mp4'], ['title', 'Older Video']],
+          'Older video',
+          createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 3600 // 1 hour ago
         );
 
-        final newerEvent = Event.from(
-          kind: 22,
-          content: 'Newer video',
-          tags: [['url', 'https://example.com/newer.mp4'], ['title', 'Newer Video']],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000, // Now
+        final newerEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['url', 'https://example.com/newer.mp4'], ['title', 'Newer Video']],
+          'Newer video',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 // Now
         );
 
         // ACT: Add events in chronological order (older first)
@@ -123,11 +123,11 @@ void main() {
 
       test('should prevent duplicate video events', () async {
         // ARRANGE: Create the same event twice
-        final event = Event.from(
-          kind: 22,
-          content: 'Duplicate test video',
-          tags: [['url', 'https://example.com/duplicate.mp4']],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final event = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['url', 'https://example.com/duplicate.mp4']],
+          'Duplicate test video'
         );
 
         // ACT: Process the same event twice
@@ -144,11 +144,11 @@ void main() {
 
       test('should handle VideoEventProcessor validation errors', () {
         // ARRANGE: Create an invalid event (wrong kind)
-        final invalidEvent = Event.from(
-          kind: 1, // Wrong kind - should be 22 for videos
-          content: 'Not a video event',
-          tags: [],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final invalidEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          1, // Wrong kind - should be 22 for videos
+          [],
+          'Not a video event'
         );
 
         // ACT & ASSERT: Should throw VideoEventProcessorException
@@ -160,11 +160,11 @@ void main() {
 
       test('should handle events with missing video URLs', () {
         // ARRANGE: Create event without video URL
-        final eventWithoutUrl = Event.from(
-          kind: 22,
-          content: 'Video without URL',
-          tags: [['title', 'Video Without URL']], // No URL tag
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final eventWithoutUrl = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['title', 'Video Without URL']], // No URL tag
+          'Video without URL'
         );
 
         // ACT & ASSERT: Should throw exception due to missing URL
@@ -181,15 +181,15 @@ void main() {
         final events = <VideoEvent>[];
         
         for (int i = 0; i < 50; i++) {
-          final event = Event.from(
-            kind: 22,
-            content: 'Performance test video $i',
-            tags: [
+          final event = Event(
+            '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+            22,
+            [
               ['url', 'https://example.com/video$i.mp4'],
               ['title', 'Performance Test Video $i'],
             ],
-            privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-            createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) - i, // Decreasing timestamps
+            'Performance test video $i',
+            createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) - i // Decreasing timestamps
           );
           
           events.add(VideoEventProcessor.fromNostrEvent(event));
@@ -250,14 +250,14 @@ void main() {
         final testCases = [
           {
             'description': 'unsupported video format',
-            'event': Event.from(
-              kind: 22,
-              content: 'Test',
-              tags: [
+            'event': Event(
+              '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+              22,
+              [
                 ['url', 'https://example.com/test.mp4'],
                 ['m', 'video/unsupported-format'],
               ],
-              privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+              'Test'
             ),
           },
         ];
@@ -279,11 +279,11 @@ void main() {
         ];
 
         for (final url in invalidUrls) {
-          final event = Event.from(
-            kind: 22,
-            content: 'URL test',
-            tags: [['url', url]],
-            privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          final event = Event(
+            '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+            22,
+            [['url', url]],
+            'URL test'
           );
 
           expect(

@@ -4,20 +4,20 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
+import 'package:nostrvine_app/services/direct_upload_service.dart';
 import 'package:nostrvine_app/services/video_event_publisher.dart';
 import 'package:nostrvine_app/services/api_service.dart';
 import 'package:nostrvine_app/services/notification_service.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostrvine_app/models/ready_event_data.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Mock classes
 class MockHttpClient extends Mock implements http.Client {}
@@ -55,7 +55,7 @@ void main() {
 
   group('Video Processing Pipeline Integration Tests', () {
     late UploadManager uploadManager;
-    late CloudinaryUploadService cloudinaryService;
+    late DirectUploadService uploadService;
     late VideoEventPublisher videoEventPublisher;
     late ApiService apiService;
     late NotificationService notificationService;
@@ -74,14 +74,14 @@ void main() {
       mockNostrService = MockNostrService();
       
       // Initialize real services with mocked dependencies
-      cloudinaryService = CloudinaryUploadService();
+      uploadService = DirectUploadService();
       apiService = ApiService(client: mockHttpClient);
       notificationService = NotificationService.instance;
-      uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+      uploadManager = UploadManager(uploadService: uploadService);
       
       // Open test Hive box
       uploadsBox = await Hive.openBox<PendingUpload>('test_uploads');
-      uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+      uploadManager = UploadManager(uploadService: uploadService);
       
       // Initialize upload manager with test box
       await uploadManager.initialize();
@@ -121,42 +121,33 @@ void main() {
         final testVideoFile = MockFile();
         when(() => testVideoFile.path).thenReturn('/tmp/test_video.mp4');
         when(() => testVideoFile.existsSync()).thenReturn(true);
-        when(() => testVideoFile.readAsBytesSync()).thenReturn([1, 2, 3, 4]); // Minimal file content
+        when(() => testVideoFile.readAsBytesSync()).thenReturn(Uint8List.fromList([1, 2, 3, 4])); // Minimal file content
 
-        // Mock successful Cloudinary upload
-        final cloudinaryResponse = MockResponse();
-        when(() => cloudinaryResponse.statusCode).thenReturn(200);
-        when(() => cloudinaryResponse.body).thenReturn(jsonEncode({
-          'public_id': 'test-video-123',
-          'secure_url': 'https://cloudinary.com/test-video-123.mp4',
-          'bytes': 1024000,
-          'width': 1920,
-          'height': 1080,
-          'duration': 6.5,
+        // Mock successful direct upload
+        final uploadResponse = MockResponse();
+        when(() => uploadResponse.statusCode).thenReturn(200);
+        when(() => uploadResponse.body).thenReturn(jsonEncode({
+          'success': true,
+          'videoId': 'test-video-123',
+          'cdnUrl': 'https://cdn.openvine.co/test-video-123.mp4',
+          'metadata': {
+            'bytes': 1024000,
+            'width': 1920,
+            'height': 1080,
+            'duration': 6.5,
+          },
         }));
         
         when(() => mockHttpClient.post(
           any(),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
-        )).thenAnswer((_) async => cloudinaryResponse);
+        )).thenAnswer((_) async => uploadResponse);
 
-        // Mock backend ready events API
+        // For direct uploads, polling endpoint may not exist
         final readyEventResponse = MockResponse();
-        when(() => readyEventResponse.statusCode).thenReturn(200);
-        when(() => readyEventResponse.body).thenReturn(jsonEncode({
-          'events': [{
-            'public_id': 'test-video-123',
-            'secure_url': 'https://cloudinary.com/test-video-123.mp4',
-            'content_suggestion': 'Test video content',
-            'tags': [['url', 'https://cloudinary.com/test-video-123.mp4']],
-            'metadata': {'width': 1920, 'height': 1080},
-            'processed_at': DateTime.now().toIso8601String(),
-            'original_upload_id': 'will-be-set-by-test',
-            'mime_type': 'video/mp4',
-            'file_size': 1024000,
-          }]
-        }));
+        when(() => readyEventResponse.statusCode).thenReturn(404);
+        when(() => readyEventResponse.body).thenReturn('');
 
         when(() => mockHttpClient.get(any(), headers: any(named: 'headers')))
             .thenAnswer((_) async => readyEventResponse);
@@ -307,7 +298,7 @@ void main() {
         final testVideoFile = MockFile();
         when(() => testVideoFile.path).thenReturn('/tmp/sync_test.mp4');
         when(() => testVideoFile.existsSync()).thenReturn(true);
-        when(() => testVideoFile.readAsBytesSync()).thenReturn([1, 2, 3]);
+        when(() => testVideoFile.readAsBytesSync()).thenReturn(Uint8List.fromList([1, 2, 3]));
 
         // Mock minimal successful upload
         final response = MockResponse();
@@ -364,7 +355,7 @@ void main() {
           final file = MockFile();
           when(() => file.path).thenReturn('/tmp/concurrent_$i.mp4');
           when(() => file.existsSync()).thenReturn(true);
-          when(() => file.readAsBytesSync()).thenReturn([i, i + 1, i + 2]);
+          when(() => file.readAsBytesSync()).thenReturn(Uint8List.fromList([i, i + 1, i + 2]));
           return file;
         });
 
@@ -403,7 +394,7 @@ void main() {
         final testVideoFile = MockFile();
         when(() => testVideoFile.path).thenReturn('/tmp/restart_test.mp4');
         when(() => testVideoFile.existsSync()).thenReturn(true);
-        when(() => testVideoFile.readAsBytesSync()).thenReturn([9, 8, 7]);
+        when(() => testVideoFile.readAsBytesSync()).thenReturn(Uint8List.fromList([9, 8, 7]));
 
         final response = MockResponse();
         when(() => response.statusCode).thenReturn(200);
@@ -427,7 +418,7 @@ void main() {
         // Simulate restart by creating new UploadManager instance with same storage
         uploadManager.dispose();
         
-        final newUploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final newUploadManager = UploadManager(uploadService: uploadService);
         await newUploadManager.initialize();
 
         // Verify upload persisted across restart

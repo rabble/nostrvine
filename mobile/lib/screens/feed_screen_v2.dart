@@ -5,8 +5,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/video_manager_interface.dart';
-import '../widgets/video_feed_item_v2.dart';
+import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
+
+/// Feed context for filtering videos
+enum FeedContext {
+  general,        // All videos (default feed)
+  hashtag,        // Videos from specific hashtag
+  editorsPicks,   // Curated videos
+  trending,       // Trending content
+  userProfile,    // User's videos
+}
 
 /// Main video feed screen implementing TDD specifications
 /// 
@@ -17,11 +26,29 @@ import '../models/video_event.dart';
 /// - Error boundaries for individual videos
 /// - Accessibility support
 /// - Lifecycle management (pause on background, resume on foreground)
+/// - Context-aware content filtering
 class FeedScreenV2 extends StatefulWidget {
-  const FeedScreenV2({super.key});
+  final VideoEvent? startingVideo;
+  final FeedContext context;
+  final String? contextValue; // hashtag name, user pubkey, etc.
+  
+  const FeedScreenV2({
+    super.key,
+    this.startingVideo,
+    this.context = FeedContext.general,
+    this.contextValue,
+  });
 
   @override
   State<FeedScreenV2> createState() => _FeedScreenV2State();
+  
+  /// Static method to pause videos - called from external components
+  static void pauseVideos(GlobalKey<State<FeedScreenV2>> key) {
+    final state = key.currentState;
+    if (state is _FeedScreenV2State) {
+      state.pauseVideos();
+    }
+  }
 }
 
 class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver {
@@ -30,6 +57,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   int _currentIndex = 0;
   bool _isInitialized = false;
   StreamSubscription? _stateChangeSubscription;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -48,6 +76,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _stateChangeSubscription?.cancel();
+    _debounceTimer?.cancel();
     
     // Pause all videos when screen is disposed
     if (_isInitialized) {
@@ -85,11 +114,21 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
       _isInitialized = true;
       
-      // Listen to state changes
+      // Apply context filtering if needed
+      _applyContextFiltering();
+      
+      // Set starting video position if provided
+      _setInitialPosition();
+      
+      // Listen to state changes with debouncing to prevent UI flashing
       _stateChangeSubscription = _videoManager!.stateChanges.listen((_) {
-        if (mounted) {
-          setState(() {});
-        }
+        // Debounce rapid state changes to prevent flashing during video loading
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            setState(() {});
+          }
+        });
       });
       
       // Trigger initial preloading
@@ -144,13 +183,108 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   }
 
   void _pauseVideo(String videoId) {
-    // This would be implemented by the video manager extension
-    // For now, it's a no-op since we're in TDD phase
+    if (!_isInitialized || _videoManager == null) return;
+    
+    try {
+      _videoManager!.pauseVideo(videoId);
+      debugPrint('⏸️ Paused video: ${videoId.substring(0, 8)}...');
+    } catch (e) {
+      debugPrint('⚠️ Error pausing video $videoId: $e');
+    }
   }
 
   void _pauseAllVideos() {
-    // This would be implemented by the video manager extension
-    // For now, it's a no-op since we're in TDD phase
+    if (!_isInitialized || _videoManager == null) return;
+    
+    try {
+      _videoManager!.pauseAllVideos();
+      debugPrint('⏸️ Paused all videos in feed');
+    } catch (e) {
+      debugPrint('⚠️ Error pausing all videos: $e');
+    }
+  }
+
+  /// Public method to pause videos from external sources (like navigation)
+  void pauseVideos() {
+    _pauseAllVideos();
+  }
+
+  /// Apply context-specific filtering to video list
+  void _applyContextFiltering() {
+    if (_videoManager == null) return;
+    
+    switch (widget.context) {
+      case FeedContext.general:
+        // No filtering - show all videos
+        break;
+        
+      case FeedContext.hashtag:
+        if (widget.contextValue != null) {
+          // Filter videos by hashtag
+          _filterVideosByHashtag(widget.contextValue!);
+        }
+        break;
+        
+      case FeedContext.editorsPicks:
+        // Filter to show only editor's picks (could be based on tags or metadata)
+        _filterEditorsPicks();
+        break;
+        
+      case FeedContext.trending:
+        // Filter to show trending content
+        _filterTrendingContent();
+        break;
+        
+      case FeedContext.userProfile:
+        if (widget.contextValue != null) {
+          // Filter videos by user pubkey
+          _filterVideosByUser(widget.contextValue!);
+        }
+        break;
+    }
+  }
+
+  void _filterVideosByHashtag(String hashtag) {
+    // TODO: Implement hashtag filtering
+    // This would filter _videoManager!.videos to only include videos with the hashtag
+    debugPrint('🏷️ Filtering by hashtag: $hashtag');
+  }
+
+  void _filterEditorsPicks() {
+    // TODO: Implement editor's picks filtering
+    // This would filter _videoManager!.videos to only include curated content
+    debugPrint('⭐ Filtering for editor\'s picks');
+  }
+
+  void _filterTrendingContent() {
+    // TODO: Implement trending content filtering
+    // This would filter _videoManager!.videos to only include trending videos
+    debugPrint('📈 Filtering for trending content');
+  }
+
+  void _filterVideosByUser(String pubkey) {
+    // TODO: Implement user filtering
+    // This would filter _videoManager!.videos to only include videos by specific user
+    debugPrint('👤 Filtering by user: ${pubkey.substring(0, 8)}...');
+  }
+
+  /// Set initial video position if starting video is provided
+  void _setInitialPosition() {
+    if (widget.startingVideo == null || _videoManager == null) return;
+    
+    final videos = _videoManager!.videos;
+    final startIndex = videos.indexWhere((video) => video.id == widget.startingVideo!.id);
+    
+    if (startIndex >= 0) {
+      _currentIndex = startIndex;
+      // Update page controller to start at the correct position
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(startIndex);
+        }
+      });
+      debugPrint('🎯 Starting feed at video ${startIndex + 1}/${videos.length}');
+    }
   }
 
   void _resumeCurrentVideo() {
@@ -265,7 +399,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
 
   Widget _buildVideoItemWithErrorBoundary(VideoEvent video, bool isActive) {
     try {
-      return VideoFeedItemV2(
+      return VideoFeedItem(
         video: video,
         isActive: isActive,
         onVideoError: (error) => _handleVideoError(video.id, error),
@@ -299,12 +433,26 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // Trigger refresh
-                setState(() {});
-              },
-              child: const Text('Retry'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[700],
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Go Back'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // Trigger refresh
+                    setState(() {});
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           ],
         ),
@@ -326,11 +474,13 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
 class VideoErrorWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
+  final VoidCallback? onGoBack;
 
   const VideoErrorWidget({
     super.key,
     required this.message,
     this.onRetry,
+    this.onGoBack,
   });
 
   @override
@@ -364,15 +514,32 @@ class VideoErrorWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (onRetry != null) ...[
+            if (onGoBack != null || onRetry != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onRetry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Retry'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (onGoBack != null) ...[
+                    ElevatedButton(
+                      onPressed: onGoBack,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[700],
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Go Back'),
+                    ),
+                    if (onRetry != null) const SizedBox(width: 16),
+                  ],
+                  if (onRetry != null)
+                    ElevatedButton(
+                      onPressed: onRetry,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                ],
               ),
             ],
           ],

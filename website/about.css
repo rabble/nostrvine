@@ -1,0 +1,403 @@
+/* ABOUTME: About page styles with nostalgic Vine-era design
+   ABOUTME: Includes retro styling, memory cards, and storytelling layout */
+
+.about-page {
+    background-color: #f8f8f8;
+    min-height: calc(100vh - 80px);
+}
+
+/* Hero Section */
+.hero-about {
+    background: linear-gradient(135deg, #0ae68a 0%, #08c478 100%);
+    color: white;
+    padding: 5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-about::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255,255,255,0.05) 10px,
+        rgba(255,255,255,0.05) 20px
+    );
+    animation: stripes 20s linear infinite;
+}
+
+@keyframes stripes {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-about h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.subtitle {
+    font-size: 1.3rem;
+    font-weight: 300;
+    opacity: 0.95;
+}
+
+/* Story Section */
+.story-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+}
+
+.story-content h2 {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.story-block {
+    margin-bottom: 3rem;
+}
+
+.intro-text {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: #555;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Memory Card */
+.memory-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: 3px solid #0ae68a;
+    position: relative;
+    transform: rotate(-1deg);
+    transition: transform 0.3s ease;
+}
+
+.memory-card:hover {
+    transform: rotate(0deg);
+}
+
+.memory-card h3 {
+    color: #0ae68a;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.memory-card p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #444;
+}
+
+/* Philosophy Section */
+.philosophy-section {
+    background: linear-gradient(to bottom, #f8f8f8, white);
+    padding: 2rem;
+    border-radius: 10px;
+    margin: 3rem 0;
+}
+
+.philosophy-section h3 {
+    color: #333;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.philosophy-section p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+
+/* Tech Card */
+.tech-card {
+    background: #333;
+    color: white;
+    border-radius: 15px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.tech-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    color: #0ae68a;
+}
+
+.tech-features {
+    display: grid;
+    gap: 2rem;
+}
+
+.feature {
+    display: flex;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    display: block;
+    min-width: 60px;
+}
+
+.feature h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #0ae68a;
+}
+
+.feature p {
+    font-size: 1rem;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+/* Creator Section */
+.creator-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.creator-section h3 {
+    color: #333;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.creator-section p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+
+.creator-section a {
+    color: #0ae68a;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.creator-section a:hover {
+    border-bottom-color: #0ae68a;
+}
+
+/* Archive Notice */
+.archive-notice {
+    background-color: #f0f8ff;
+    border: 2px solid #0ae68a;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 3rem 0;
+}
+
+.archive-notice h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.archive-notice p {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.archive-notice p:last-child {
+    margin-bottom: 0;
+}
+
+.archive-notice strong {
+    color: #0ae68a;
+}
+
+/* Nostalgic Quote */
+.nostalgic-quote {
+    text-align: center;
+    margin: 4rem 0;
+    position: relative;
+}
+
+.nostalgic-quote blockquote {
+    font-size: 2rem;
+    color: #666;
+    font-style: italic;
+    font-weight: 300;
+    position: relative;
+    padding: 2rem;
+}
+
+.nostalgic-quote blockquote::before,
+.nostalgic-quote blockquote::after {
+    content: '"';
+    font-size: 4rem;
+    color: #0ae68a;
+    opacity: 0.3;
+    position: absolute;
+}
+
+.nostalgic-quote blockquote::before {
+    top: -10px;
+    left: -20px;
+}
+
+.nostalgic-quote blockquote::after {
+    bottom: -40px;
+    right: -20px;
+}
+
+.quote-attribution {
+    display: block;
+    font-size: 1rem;
+    color: #999;
+    margin-top: 1rem;
+    font-style: normal;
+}
+
+/* CTA Section */
+.cta-section {
+    background: linear-gradient(135deg, #0ae68a 0%, #08c478 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 3rem;
+    margin: 4rem 0 2rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(10, 230, 138, 0.3);
+}
+
+.cta-section h3 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.cta-section p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cta-button {
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.cta-button.primary {
+    background-color: white;
+    color: #0ae68a;
+}
+
+.cta-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.cta-button.secondary {
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.cta-button.secondary:hover {
+    background-color: white;
+    color: #0ae68a;
+}
+
+/* Footer Updates */
+footer a {
+    color: #0ae68a;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-about h1 {
+        font-size: 2rem;
+    }
+    
+    .subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .story-content h2 {
+        font-size: 2rem;
+    }
+    
+    .memory-card {
+        padding: 1.5rem;
+        transform: none;
+    }
+    
+    .tech-card {
+        padding: 1.5rem;
+    }
+    
+    .feature {
+        gap: 1rem;
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        min-width: 40px;
+    }
+    
+    .nostalgic-quote blockquote {
+        font-size: 1.5rem;
+        padding: 1rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+    }
+    
+    .cta-button {
+        width: 100%;
+        text-align: center;
+    }
+}

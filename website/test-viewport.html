@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Viewport Width Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .viewport-info { 
+            background: #f0f0f0; 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-info">
+        <h3>Current Viewport Width: <span id="width"></span>px</h3>
+        <p id="layout-status"></p>
+    </div>
+    
+    <script>
+        function updateViewportInfo() {
+            const width = window.innerWidth;
+            document.getElementById('width').textContent = width;
+            
+            let layoutStatus = '';
+            if (width > 1200) {
+                layoutStatus = '✅ Desktop: 3-column layout (280px 1fr 300px)';
+            } else if (width > 900) {
+                layoutStatus = '⚠️ Medium: 3-column layout (250px 1fr 250px)';
+            } else {
+                layoutStatus = '📱 Mobile: 1-column layout (1fr)';
+            }
+            
+            document.getElementById('layout-status').textContent = layoutStatus;
+        }
+        
+        updateViewportInfo();
+        window.addEventListener('resize', updateViewportInfo);
+    </script>
+</body>
+</html>

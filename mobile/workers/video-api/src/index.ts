@@ -14,6 +14,7 @@ import { CloudinaryUploadHandler } from './handlers/cloudinary-upload';
 import { CloudinaryWebhookHandler } from './handlers/cloudinary-webhook';
 import { ReadyEventsHandler } from './handlers/ready-events';
 import { VideoStatusHandler } from './handlers/video-status';
+import { DirectUploadHandler } from './handlers/direct-upload';
 import { Env, ExecutionContext } from './types';
 
 // CORS headers for mobile app access
@@ -119,6 +120,23 @@ export default {
     if (request.method === 'POST' && url.pathname === '/v1/media/cloudinary/request-upload') {
       const cloudinaryHandler = new CloudinaryUploadHandler(env);
       const response = await cloudinaryHandler.handleRequest(request, ctx);
+      
+      // Add CORS headers to response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: newHeaders
+      });
+    }
+
+    // Route: POST /v1/media/upload (Direct upload - new simplified approach)
+    if (request.method === 'POST' && url.pathname === '/v1/media/upload') {
+      const directUploadHandler = new DirectUploadHandler(env);
+      const response = await directUploadHandler.handleUpload(request, ctx);
       
       // Add CORS headers to response
       const newHeaders = new Headers(response.headers);

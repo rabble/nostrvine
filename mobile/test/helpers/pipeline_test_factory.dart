@@ -9,14 +9,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
+import 'package:nostrvine_app/services/direct_upload_service.dart';
 import 'package:nostrvine_app/services/video_event_publisher.dart';
 import 'package:nostrvine_app/services/api_service.dart';
 import 'package:nostrvine_app/services/notification_service.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
 import 'package:nostrvine_app/models/ready_event_data.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Mock classes
 class MockHttpClient extends Mock implements http.Client {}
@@ -40,18 +40,18 @@ enum PipelineTestScenario {
 class PipelineTestConfig {
   final PipelineTestScenario scenario;
   final String uploadId;
-  final String cloudinaryPublicId;
+  final String videoId;
   final String nostrEventId;
-  final String videoUrl;
+  final String cdnUrl;
   final Duration? networkDelay;
   final Map<String, dynamic>? customMetadata;
   
   const PipelineTestConfig({
     required this.scenario,
     this.uploadId = 'test-upload-123',
-    this.cloudinaryPublicId = 'test-cloudinary-456',
+    this.videoId = 'test-video-456',
     this.nostrEventId = 'test-event-789',
-    this.videoUrl = 'https://cloudinary.com/test-video.mp4',
+    this.cdnUrl = 'https://cdn.openvine.co/test-video-456.mp4',
     this.networkDelay,
     this.customMetadata,
   });
@@ -77,7 +77,7 @@ class PipelineTestFactory {
     
     // Create real services with mocked dependencies
     final apiService = ApiService(client: mockHttpClient);
-    final cloudinaryService = CloudinaryUploadService();
+    final uploadService = DirectUploadService();
     final notificationService = NotificationService.instance;
     
     // Create Hive box for this test
@@ -85,7 +85,7 @@ class PipelineTestFactory {
     final uploadsBox = await Hive.openBox<PendingUpload>(boxName);
     _openBoxes[boxName] = uploadsBox;
     
-    final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+    final uploadManager = UploadManager(uploadService: uploadService);
     await uploadManager.initialize();
     
     final videoEventPublisher = VideoEventPublisher(
@@ -97,7 +97,7 @@ class PipelineTestFactory {
     
     return PipelineTestStack(
       uploadManager: uploadManager,
-      cloudinaryService: cloudinaryService,
+      uploadService: uploadService,
       videoEventPublisher: videoEventPublisher,
       apiService: apiService,
       notificationService: notificationService,
@@ -145,17 +145,19 @@ class PipelineTestFactory {
     MockNostrService mockNostrService,
     PipelineTestConfig config,
   ) {
-    // Successful Cloudinary upload
-    final cloudinaryResponse = MockResponse();
-    when(() => cloudinaryResponse.statusCode).thenReturn(200);
-    when(() => cloudinaryResponse.body).thenReturn(jsonEncode({
-      'public_id': config.cloudinaryPublicId,
-      'secure_url': config.videoUrl,
-      'bytes': 1024000,
-      'width': 1920,
-      'height': 1080,
-      'duration': 6.5,
-      ...?config.customMetadata,
+    // Successful direct upload
+    final uploadResponse = MockResponse();
+    when(() => uploadResponse.statusCode).thenReturn(200);
+    when(() => uploadResponse.body).thenReturn(jsonEncode({
+      'videoId': config.videoId,
+      'cdnUrl': config.cdnUrl,
+      'metadata': {
+        'bytes': 1024000,
+        'width': 1920,
+        'height': 1080,
+        'duration': 6.5,
+        ...?config.customMetadata,
+      },
     }));
     
     when(() => mockHttpClient.post(
@@ -166,18 +168,18 @@ class PipelineTestFactory {
       if (config.networkDelay != null) {
         await Future.delayed(config.networkDelay!);
       }
-      return cloudinaryResponse;
+      return uploadResponse;
     });
     
-    // Successful ready events API
+    // Successful ready events API (for direct upload, events are immediately ready)
     final readyEventResponse = MockResponse();
     when(() => readyEventResponse.statusCode).thenReturn(200);
     when(() => readyEventResponse.body).thenReturn(jsonEncode({
       'events': [{
-        'public_id': config.cloudinaryPublicId,
-        'secure_url': config.videoUrl,
+        'videoId': config.videoId,
+        'cdnUrl': config.cdnUrl,
         'content_suggestion': 'Test video content',
-        'tags': [['url', config.videoUrl], ['m', 'video/mp4']],
+        'tags': [['url', config.cdnUrl], ['m', 'video/mp4']],
         'metadata': {'width': 1920, 'height': 1080},
         'processed_at': DateTime.now().toIso8601String(),
         'original_upload_id': config.uploadId,
@@ -389,7 +391,7 @@ class PipelineTestFactory {
 /// Container for all test services and mocks
 class PipelineTestStack {
   final UploadManager uploadManager;
-  final CloudinaryUploadService cloudinaryService;
+  final DirectUploadService uploadService;
   final VideoEventPublisher videoEventPublisher;
   final ApiService apiService;
   final NotificationService notificationService;
@@ -401,7 +403,7 @@ class PipelineTestStack {
   
   const PipelineTestStack({
     required this.uploadManager,
-    required this.cloudinaryService,
+    required this.uploadService,
     required this.videoEventPublisher,
     required this.apiService,
     required this.notificationService,
@@ -449,8 +451,8 @@ class PipelineTestStack {
       result.upload = upload;
       result.uploadCreated = true;
       
-      // Step 2: Simulate processing completion
-      await uploadManager.markUploadReadyToPublish(upload.id, config.cloudinaryPublicId);
+      // Step 2: Simulate processing completion (for direct upload, it's immediately ready)
+      await uploadManager.markUploadReadyToPublish(upload.id, config.videoId);
       result.markedReady = true;
       
       // Step 3: Trigger background publishing

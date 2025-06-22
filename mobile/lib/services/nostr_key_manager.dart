@@ -4,8 +4,21 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:crypto/crypto.dart';
+
+// Simple KeyPair class to replace Keychain
+class Keychain {
+  final String private;
+  final String public;
+  
+  Keychain(this.private) : public = getPublicKey(private);
+  
+  static Keychain generate() {
+    final privateKey = generatePrivateKey();
+    return Keychain(privateKey);
+  }
+}
 
 /// Secure management of Nostr private keys with persistence
 class NostrKeyManager extends ChangeNotifier {

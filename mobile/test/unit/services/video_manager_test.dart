@@ -160,6 +160,26 @@ class TestVideoManager implements IVideoManager {
   }
 
   @override
+  void pauseVideo(String videoId) {
+    final controller = _controllers[videoId];
+    // In test, we don't actually pause since it's a mock
+    // Just log for verification
+  }
+
+  @override
+  void pauseAllVideos() {
+    // In test, we don't actually pause since controllers are mocks
+    // Just log for verification
+  }
+
+  @override
+  void resumeVideo(String videoId) {
+    final controller = _controllers[videoId];
+    // In test, we don't actually resume since it's a mock
+    // Just log for verification
+  }
+
+  @override
   void dispose() {
     for (final controller in _controllers.values) {
       controller.dispose();

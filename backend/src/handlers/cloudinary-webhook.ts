@@ -3,6 +3,19 @@
 
 import { validateWebhookSignature } from '../utils/webhook-validation';
 
+// Env interface declaration for TypeScript
+declare global {
+  interface Env {
+    METADATA_CACHE: KVNamespace;
+    MEDIA_BUCKET: R2Bucket;
+    ENVIRONMENT: string;
+    WEBHOOK_SECRET: string;
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_API_KEY: string;
+    CLOUDINARY_API_SECRET: string;
+  }
+}
+
 export interface CloudinaryWebhookPayload {
   notification_type: string;
   timestamp: number;
@@ -65,7 +78,7 @@ export interface ProcessedVideoMetadata {
   resource_type: string;
   created_at: string;
   user_pubkey: string;
-  processing_status: 'pending_moderation' | 'approved' | 'rejected' | 'failed';
+  processing_status: 'pending_moderation' | 'approved' | 'rejected' | 'failed' | 'transferring' | 'ready';
   moderation_details?: {
     status: 'approved' | 'rejected';
     kind: string;
@@ -79,6 +92,92 @@ export interface ProcessedVideoMetadata {
     format: string;
     bytes: number;
   }>;
+  // R2 storage information
+  r2_url?: string;
+  r2_key?: string;
+  transferred_at?: string;
+  cdn_url?: string;
+}
+
+/**
+ * Transfer video from Cloudinary to R2 storage
+ */
+async function transferVideoToR2(
+  metadata: ProcessedVideoMetadata,
+  env: Env
+): Promise<ProcessedVideoMetadata> {
+  try {
+    console.log(`📦 Starting transfer for video ${metadata.public_id} to R2`);
+    
+    // Download video from Cloudinary
+    const cloudinaryResponse = await fetch(metadata.secure_url);
+    if (!cloudinaryResponse.ok) {
+      throw new Error(`Failed to download from Cloudinary: ${cloudinaryResponse.status}`);
+    }
+    
+    const videoData = await cloudinaryResponse.arrayBuffer();
+    console.log(`📥 Downloaded ${videoData.byteLength} bytes from Cloudinary`);
+    
+    // Generate R2 key (organized by date and user)
+    const date = new Date(metadata.created_at);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const userPrefix = metadata.user_pubkey.substring(0, 8);
+    
+    const r2Key = `videos/${year}/${month}/${day}/${userPrefix}/${metadata.public_id}.${metadata.format}`;
+    
+    // Upload to R2
+    await env.MEDIA_BUCKET.put(r2Key, videoData, {
+      httpMetadata: {
+        contentType: `video/${metadata.format}`,
+        cacheControl: 'public, max-age=31536000', // 1 year cache
+      },
+      customMetadata: {
+        'original-cloudinary-id': metadata.public_id,
+        'user-pubkey': metadata.user_pubkey,
+        'uploaded-at': metadata.created_at,
+        'transferred-at': new Date().toISOString(),
+        'video-width': metadata.width.toString(),
+        'video-height': metadata.height.toString(),
+        'video-bytes': metadata.bytes.toString(),
+      }
+    });
+    
+    console.log(`📤 Uploaded to R2: ${r2Key}`);
+    
+    // Generate CDN URL (will point to custom domain once configured)
+    const cdnUrl = `https://cdn.openvine.co/${r2Key}`;
+    
+    // Generate R2 public URL (using bucket's public domain)
+    const bucketName = env.ENVIRONMENT === 'production' ? 'nostrvine-videos' : 
+                      env.ENVIRONMENT === 'staging' ? 'nostrvine-videos-staging' : 
+                      'nostrvine-videos-dev';
+    
+    const r2PublicUrl = `https://pub-${bucketName}.r2.dev/${r2Key}`;
+    
+    // Update metadata with R2 information
+    const updatedMetadata: ProcessedVideoMetadata = {
+      ...metadata,
+      processing_status: 'ready',
+      r2_key: r2Key,
+      r2_url: r2PublicUrl,
+      cdn_url: cdnUrl,
+      transferred_at: new Date().toISOString(),
+    };
+    
+    console.log(`✅ Video ${metadata.public_id} successfully transferred to R2`);
+    return updatedMetadata;
+    
+  } catch (error) {
+    console.error(`❌ Failed to transfer video ${metadata.public_id} to R2:`, error);
+    
+    // Don't fail the webhook - just log the error and continue with Cloudinary URL
+    return {
+      ...metadata,
+      processing_status: 'approved', // Fall back to approved status with Cloudinary URL
+    };
+  }
 }
 
 /**
@@ -247,26 +346,32 @@ async function handleModerationComplete(
 
     // Update metadata based on moderation result
     if (payload.moderation_status === 'approved') {
-      metadata.processing_status = 'approved';
+      metadata.processing_status = 'transferring';
       metadata.moderation_details = {
         status: 'approved',
         kind: payload.moderation_kind || 'unknown',
         response: payload.moderation_response
       };
       
-      console.log(`✅ Video ${payload.public_id} approved by moderation`);
+      console.log(`✅ Video ${payload.public_id} approved by moderation, starting transfer to R2`);
+      
+      // Transfer video to R2 storage
+      metadata = await transferVideoToR2(metadata, env);
       
     } else if (payload.moderation_status === 'rejected') {
       // Beta mode: Simplified handling of rejected content
       if (env.ENVIRONMENT === 'beta' || env.ENVIRONMENT === 'development') {
-        console.log(`🔍 BETA: Video ${payload.public_id} flagged by moderation (manual review required)`);
-        metadata.processing_status = 'approved'; // Auto-approve for beta
+        console.log(`🔍 BETA: Video ${payload.public_id} flagged by moderation (auto-approving for beta)`);
+        metadata.processing_status = 'transferring';
         metadata.moderation_details = {
           status: 'flagged', // Mark as flagged but not rejected
           kind: payload.moderation_kind || 'unknown',
           response: payload.moderation_response,
           beta_mode: true
         };
+        
+        // Transfer to R2 even in beta mode for flagged content
+        metadata = await transferVideoToR2(metadata, env);
       } else {
         // Production mode: Full quarantine
         metadata.processing_status = 'rejected';

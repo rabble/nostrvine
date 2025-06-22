@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Explore a world of beautiful, looping videos.</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="single-player-styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="OpenVine - The decentralized vine-like video sharing platform powered by Nostr">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <h1>OpenVine</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="#" class="nav-button active" data-platform="ios">Get it for iOS</a>
+                    <a href="#" class="nav-button" data-platform="android">Get it for Android</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="single-player-container">
+            <div class="video-wrapper">
+                <video 
+                    id="main-vine-player" 
+                    class="vine-video" 
+                    autoplay 
+                    loop 
+                    playsinline
+                    poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+                    <source src="https://res.cloudinary.com/dswu0ugmo/video/upload/v1750583297/5eM6tu9HFIu_20250622_162133_lm26h7.mp4" type="video/mp4">
+                </video>
+                
+                <div class="video-overlay">
+                    <p class="tap-hint">Tap to play/pause • Double tap for next</p>
+                </div>
+            </div>
+            
+            <div class="video-info">
+                <h2 class="current-video-title">Pokemon Go</h2>
+                <div class="video-indicators"></div>
+                <p class="loop-counter">Loop 1 of 4</p>
+            </div>
+            
+            <div class="controls-hint">
+                <p>🎬 Videos advance after 4 loops or double-tap to skip</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script src="single-vine-player.js"></script>
+</body>
+</html>

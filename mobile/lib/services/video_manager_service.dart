@@ -232,6 +232,58 @@ class VideoManagerService implements IVideoManager {
   }
   
   @override
+  void pauseVideo(String videoId) {
+    if (_disposed) return;
+    
+    final controller = _controllers[videoId];
+    if (controller != null && controller.value.isInitialized && controller.value.isPlaying) {
+      try {
+        controller.pause();
+        debugPrint('⏸️ Paused video: ${videoId.substring(0, 8)}...');
+      } catch (e) {
+        debugPrint('⚠️ Error pausing video $videoId: $e');
+      }
+    }
+  }
+  
+  @override
+  void pauseAllVideos() {
+    if (_disposed) return;
+    
+    int pausedCount = 0;
+    for (final entry in _controllers.entries) {
+      final controller = entry.value;
+      if (controller.value.isInitialized && controller.value.isPlaying) {
+        try {
+          controller.pause();
+          pausedCount++;
+        } catch (e) {
+          debugPrint('⚠️ Error pausing video ${entry.key}: $e');
+        }
+      }
+    }
+    
+    if (pausedCount > 0) {
+      debugPrint('⏸️ Paused $pausedCount videos');
+    }
+  }
+  
+  @override
+  void resumeVideo(String videoId) {
+    if (_disposed) return;
+    
+    final controller = _controllers[videoId];
+    if (controller != null && controller.value.isInitialized && !controller.value.isPlaying) {
+      try {
+        controller.play();
+        debugPrint('▶️ Resumed video: ${videoId.substring(0, 8)}...');
+      } catch (e) {
+        debugPrint('⚠️ Error resuming video $videoId: $e');
+      }
+    }
+  }
+  
+  @override
   void disposeVideo(String videoId) {
     if (_disposed) return;
     
@@ -371,28 +423,60 @@ class VideoManagerService implements IVideoManager {
         'User-Agent': 'NostrVine/1.0',
       };
       
-      // Always use standard configuration - server config errors will be handled by pre-download fallback
-      controller = VideoPlayerController.networkUrl(
-        uri,
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true,
-          allowBackgroundPlayback: false,
-        ),
-        httpHeaders: headers,
-      );
+      // Platform-specific configuration for better compatibility
+      if (kIsWeb) {
+        // Web platform configuration
+        controller = VideoPlayerController.networkUrl(
+          uri,
+          videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: true,
+            allowBackgroundPlayback: false,
+            webOptions: const VideoPlayerWebOptions(
+              controls: VideoPlayerWebOptionsControls.disabled(),
+            ),
+          ),
+          httpHeaders: headers,
+        );
+      } else {
+        // Native platform configuration (macOS, iOS, etc.)
+        controller = VideoPlayerController.networkUrl(
+          uri,
+          videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: false, // Might help with macOS audio issues
+            allowBackgroundPlayback: false,
+          ),
+          httpHeaders: headers,
+        );
+      }
       
-      // Initialize with shorter timeout for progressive loading
-      Log.debug('📺 Initializing video controller for ${videoId.substring(0, 8)}...', name: 'VideoManager');
+      // Initialize with longer timeout for better reliability
+      Log.debug('📺 Initializing video controller for ${videoId.substring(0, 8)} on ${kIsWeb ? 'web' : 'native'} platform...', name: 'VideoManager');
+      Log.debug('📺 Video URL: ${event.videoUrl}', name: 'VideoManager');
+      
       await controller.initialize().timeout(
-        const Duration(seconds: 3), // Shorter timeout for progressive loading
+        const Duration(seconds: 10), // Longer timeout for better reliability
         onTimeout: () {
-          Log.warning('⏰ Initial load timeout for ${videoId.substring(0, 8)} - will continue progressive loading', name: 'VideoManager');
-          // Don't throw - allow progressive loading to continue
+          Log.warning('⏰ Initial load timeout for ${videoId.substring(0, 8)} - continuing with progressive loading', name: 'VideoManager');
+          // Don't throw - many videos can still play after timeout
         },
       );
       
+      Log.debug('📺 Controller initialized - isInitialized: ${controller.value.isInitialized}, hasError: ${controller.value.hasError}', name: 'VideoManager');
+      if (controller.value.hasError) {
+        Log.error('📺 Controller error: ${controller.value.errorDescription}', name: 'VideoManager');
+      }
+      
       // For progressive playback, mark as ready even if not fully loaded
       // The video will start playing and buffer as needed
+      
+      // Verify controller is actually usable before storing
+      if (controller.value.hasError) {
+        Log.error('❌ Controller has error after initialization: ${controller.value.errorDescription}', name: 'VideoManager');
+        throw VideoManagerException(
+          'Controller initialization failed with error: ${controller.value.errorDescription}',
+          videoId: videoId,
+        );
+      }
       
       // Store controller and update state
       _controllers[videoId] = controller;
@@ -403,7 +487,7 @@ class VideoManagerService implements IVideoManager {
         _videoStates[videoId] = updatedState.toReady();
         _preloadSuccessCount++;
         _notifyStateChange();
-        Log.info('✅ Video ${videoId.substring(0, 8)} marked as READY! (progressive loading)', name: 'VideoManager');
+        Log.info('✅ Video ${videoId.substring(0, 8)} marked as READY! Controller initialized: ${controller.value.isInitialized}', name: 'VideoManager');
       } else {
         Log.warning('⚠️ Video ${videoId.substring(0, 8)} state issue: currentState=${updatedState?.loadingState}, isLoading=${updatedState?.isLoading}', name: 'VideoManager');
       }

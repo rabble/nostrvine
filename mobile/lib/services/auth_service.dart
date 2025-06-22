@@ -3,7 +3,7 @@
 
 import 'dart:async';
 import 'package:flutter/widgets.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import 'key_storage_service.dart';
 import '../utils/nostr_encoding.dart';
 
@@ -303,14 +303,17 @@ class AuthService extends ChangeNotifier {
       final privateKey = await getPrivateKeyForSigning();
       if (privateKey == null) return null;
       
-      final event = Event.from(
-        kind: kind,
-        content: content,
-        tags: tags ?? [],
-        privkey: privateKey,
+      // Create event with current user's public key
+      final event = Event(
+        _currentKeyPair!.publicKeyHex,
+        kind,
+        tags ?? [],
+        content,
       );
       
-      debugPrint('✏️ Created and signed event: ${event.id}');
+      // Sign the event
+      event.sign(privateKey);
+      
       return event;
       
     } catch (e) {

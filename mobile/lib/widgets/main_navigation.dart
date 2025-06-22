@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import '../screens/feed_screen.dart';
+import 'package:provider/provider.dart';
+import '../screens/feed_screen_v2.dart';
 import '../screens/camera_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/notifications_screen.dart';
+import '../services/notification_service_enhanced.dart';
+import '../services/video_manager_interface.dart';
+import '../widgets/notification_badge.dart';
+import '../widgets/global_upload_indicator.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -15,8 +21,9 @@ class _MainNavigationState extends State<MainNavigation> {
   late PageController _pageController;
 
   final List<Widget> _screens = [
-    const FeedScreen(),
+    const FeedScreenV2(),
     const CameraScreen(),
+    const NotificationsScreen(),
     const ProfileScreen(),
   ];
 
@@ -34,18 +41,20 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: PageView(
-        controller: _pageController,
-        children: _screens,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
-      bottomNavigationBar: Container(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.black,
+          body: PageView(
+            controller: _pageController,
+            children: _screens,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+          ),
+          bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(
             top: BorderSide(color: Colors.grey, width: 0.2),
@@ -61,6 +70,13 @@ class _MainNavigationState extends State<MainNavigation> {
           showUnselectedLabels: false,
           elevation: 0,
           onTap: (index) {
+            // Pause all videos when switching to camera (index 1)
+            if (index == 1) {
+              final videoManager = context.read<IVideoManager>();
+              videoManager.pauseAllVideos();
+              debugPrint('🎥 Paused all videos before entering camera mode');
+            }
+            
             setState(() {
               _currentIndex = index;
             });
@@ -98,8 +114,22 @@ class _MainNavigationState extends State<MainNavigation> {
               label: 'Create',
             ),
             BottomNavigationBarItem(
+              icon: Consumer<NotificationServiceEnhanced>(
+                builder: (context, notificationService, _) {
+                  return AnimatedNotificationBadge(
+                    count: notificationService.unreadCount,
+                    child: Icon(
+                      _currentIndex == 2 ? Icons.notifications : Icons.notifications_outlined,
+                      size: 28,
+                    ),
+                  );
+                },
+              ),
+              label: 'Notifications',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(
-                _currentIndex == 2 ? Icons.person : Icons.person_outline,
+                _currentIndex == 3 ? Icons.person : Icons.person_outline,
                 size: 28,
               ),
               label: 'Profile',
@@ -107,6 +137,10 @@ class _MainNavigationState extends State<MainNavigation> {
           ],
         ),
       ),
-    );
-  }
+    ),
+    // Global upload indicator overlay
+    const GlobalUploadIndicator(),
+  ],
+);
+}
 }

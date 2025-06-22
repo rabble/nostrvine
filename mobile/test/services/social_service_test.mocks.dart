@@ -4,11 +4,12 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:ui' as _i8;
+import 'dart:ui' as _i9;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:nostr/nostr.dart' as _i6;
-import 'package:nostrvine_app/models/nip94_metadata.dart' as _i7;
+import 'package:nostr_sdk/event.dart' as _i6;
+import 'package:nostr_sdk/filter.dart' as _i7;
+import 'package:nostrvine_app/models/nip94_metadata.dart' as _i8;
 import 'package:nostrvine_app/services/auth_service.dart' as _i4;
 import 'package:nostrvine_app/services/nostr_key_manager.dart' as _i2;
 import 'package:nostrvine_app/services/nostr_service_interface.dart' as _i3;
@@ -132,7 +133,7 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
 
   @override
   _i5.Stream<_i6.Event> subscribeToEvents(
-          {required List<_i6.Filter>? filters}) =>
+          {required List<_i7.Filter>? filters}) =>
       (super.noSuchMethod(
         Invocation.method(
           #subscribeToEvents,
@@ -161,7 +162,7 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
 
   @override
   _i5.Future<_i3.NostrBroadcastResult> publishFileMetadata({
-    required _i7.NIP94Metadata? metadata,
+    required _i8.NIP94Metadata? metadata,
     required String? content,
     List<String>? hashtags = const [],
   }) =>
@@ -191,6 +192,58 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i5.Future<_i3.NostrBroadcastResult>);
 
   @override
+  _i5.Future<_i3.NostrBroadcastResult> publishVideoEvent({
+    required String? videoUrl,
+    required String? content,
+    String? title,
+    String? thumbnailUrl,
+    int? duration,
+    String? dimensions,
+    String? mimeType,
+    String? sha256,
+    int? fileSize,
+    List<String>? hashtags = const [],
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #publishVideoEvent,
+          [],
+          {
+            #videoUrl: videoUrl,
+            #content: content,
+            #title: title,
+            #thumbnailUrl: thumbnailUrl,
+            #duration: duration,
+            #dimensions: dimensions,
+            #mimeType: mimeType,
+            #sha256: sha256,
+            #fileSize: fileSize,
+            #hashtags: hashtags,
+          },
+        ),
+        returnValue: _i5.Future<_i3.NostrBroadcastResult>.value(
+            _FakeNostrBroadcastResult_1(
+          this,
+          Invocation.method(
+            #publishVideoEvent,
+            [],
+            {
+              #videoUrl: videoUrl,
+              #content: content,
+              #title: title,
+              #thumbnailUrl: thumbnailUrl,
+              #duration: duration,
+              #dimensions: dimensions,
+              #mimeType: mimeType,
+              #sha256: sha256,
+              #fileSize: fileSize,
+              #hashtags: hashtags,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i3.NostrBroadcastResult>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -200,7 +253,7 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       );
 
   @override
-  void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -209,7 +262,7 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       );
 
   @override
-  void removeListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -397,7 +450,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       );
 
   @override
-  void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -406,7 +459,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       );
 
   @override
-  void removeListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],

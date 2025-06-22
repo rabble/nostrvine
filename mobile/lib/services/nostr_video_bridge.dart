@@ -21,7 +21,6 @@ class NostrVideoBridge extends ChangeNotifier {
   final IVideoManager _videoManager;
   final VideoEventService _videoEventService;
   final SeenVideosService? _seenVideosService;
-  final ConnectionStatusService _connectionService;
   
   // Bridge state
   bool _isActive = false;
@@ -45,11 +44,9 @@ class NostrVideoBridge extends ChangeNotifier {
     required IVideoManager videoManager,
     required INostrService nostrService,
     SeenVideosService? seenVideosService,
-    ConnectionStatusService? connectionService,
   }) : _videoManager = videoManager,
        _videoEventService = VideoEventService(nostrService, seenVideosService: seenVideosService),
-       _seenVideosService = seenVideosService,
-       _connectionService = connectionService ?? ConnectionStatusService();
+       _seenVideosService = seenVideosService;
 
   /// Whether the bridge is actively processing events
   bool get isActive => _isActive;
@@ -310,18 +307,6 @@ class NostrVideoBridge extends ChangeNotifier {
     }
   }
 
-  void _onConnectionStatusChanged(bool isConnected) {
-    debugPrint('NostrVideoBridge: Connection status changed: $isConnected');
-    
-    if (isConnected && _isActive) {
-      // Reconnected - restart video event subscription
-      Future.delayed(const Duration(seconds: 2), () {
-        if (_isActive) {
-          _videoEventService.subscribeToVideoFeed();
-        }
-      });
-    }
-  }
 
   void _startHealthCheck() {
     _healthCheckTimer = Timer.periodic(_healthCheckInterval, (_) {
@@ -367,7 +352,6 @@ class NostrVideoBridgeFactory {
       videoManager: videoManager,
       nostrService: nostrService,
       seenVideosService: seenVideosService,
-      connectionService: connectionService,
     );
   }
 }

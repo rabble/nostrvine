@@ -181,7 +181,7 @@ class MockVideoManager implements IVideoManager {
     
     // Check for memory pressure
     if (_videos.length > _memoryPressureThreshold) {
-      await _triggerMemoryPressure();
+      await handleMemoryPressure();
     }
     
     _notifyStateChange();

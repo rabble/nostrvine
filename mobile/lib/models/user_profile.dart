@@ -2,7 +2,7 @@
 // ABOUTME: Represents user information like display name, avatar, bio, and social links
 
 import 'dart:convert';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 
 /// Model representing a Nostr user profile from kind 0 events
 class UserProfile {

@@ -16,6 +16,7 @@ class VideoEventBridge {
   final VideoEventService _videoEventService;
   final IVideoManager _videoManager;
   final UserProfileService _userProfileService;
+  int _initRetryCount = 0;
   
   StreamSubscription? _eventSubscription;
   final Set<String> _processedEventIds = {};
@@ -46,11 +47,12 @@ class VideoEventBridge {
       
       debugPrint('✅ VideoEventBridge initialized');
     } catch (e) {
-      if (e.toString().contains('Nostr service not initialized')) {
-        debugPrint('⏳ Nostr service not ready yet, waiting before retry...');
+      if (e.toString().contains('Nostr service not initialized') && _initRetryCount < 3) {
+        _initRetryCount++;
+        debugPrint('⏳ Nostr service not ready yet, waiting before retry ($_initRetryCount/3)...');
         // Retry after a short delay to allow Nostr service to initialize
         await Future.delayed(const Duration(milliseconds: 500));
-        return initialize(); // Recursive retry
+        return initialize(); // Recursive retry with limit
       } else {
         debugPrint('❌ VideoEventBridge initialization failed: $e');
         rethrow;

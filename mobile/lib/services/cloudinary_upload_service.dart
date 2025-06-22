@@ -144,10 +144,10 @@ class CloudinaryUploadService extends ChangeNotifier {
       await subscription?.cancel();
       await progressController.close();
       
-      if (response.publicId != null && response.publicId!.isNotEmpty) {
+      if (response.publicId.isNotEmpty) {
         debugPrint('✅ Cloudinary upload successful: ${response.publicId}');
         return UploadResult.success(
-          cloudinaryPublicId: response.publicId!,
+          cloudinaryPublicId: response.publicId,
           cloudinaryUrl: response.secureUrl.isNotEmpty ? response.secureUrl : response.url,
           metadata: {
             'public_id': response.publicId,

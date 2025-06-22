@@ -3,17 +3,13 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
-import 'package:nostrvine_app/services/video_event_publisher.dart';
-import 'package:nostrvine_app/services/api_service.dart';
+import 'package:nostrvine_app/services/direct_upload_service.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostrvine_app/models/ready_event_data.dart';
 
 /// Real file pipeline tests with actual I/O operations
 void main() {
@@ -61,8 +57,8 @@ void main() {
 
         // Initialize services with real persistence
         final uploadsBox = await Hive.openBox<PendingUpload>('real_test_uploads');
-        final cloudinaryService = CloudinaryUploadService();
-        final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final uploadService = DirectUploadService();
+        final uploadManager = UploadManager(uploadService: uploadService);
         await uploadManager.initialize();
 
         try {
@@ -112,8 +108,8 @@ void main() {
         expect(nonExistentFile.existsSync(), false);
 
         final uploadsBox = await Hive.openBox<PendingUpload>('error_test_uploads');
-        final cloudinaryService = CloudinaryUploadService();
-        final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final uploadService = DirectUploadService();
+        final uploadManager = UploadManager(uploadService: uploadService);
         await uploadManager.initialize();
 
         try {
@@ -148,8 +144,8 @@ void main() {
         print('🧪 Created large test file: ${largeFile.lengthSync()} bytes');
 
         final uploadsBox = await Hive.openBox<PendingUpload>('large_file_uploads');
-        final cloudinaryService = CloudinaryUploadService();
-        final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final uploadService = DirectUploadService();
+        final uploadManager = UploadManager(uploadService: uploadService);
         await uploadManager.initialize();
 
         try {
@@ -273,8 +269,8 @@ void main() {
 
         // Initialize services
         final uploadsBox = await Hive.openBox<PendingUpload>('sync_test_uploads');
-        final cloudinaryService = CloudinaryUploadService();
-        final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final uploadService = DirectUploadService();
+        final uploadManager = UploadManager(uploadService: uploadService);
         await uploadManager.initialize();
 
         try {
@@ -333,8 +329,8 @@ void main() {
         }
 
         final uploadsBox = await Hive.openBox<PendingUpload>('concurrent_uploads');
-        final cloudinaryService = CloudinaryUploadService();
-        final uploadManager = UploadManager(cloudinaryService: cloudinaryService);
+        final uploadService = DirectUploadService();
+        final uploadManager = UploadManager(uploadService: uploadService);
         await uploadManager.initialize();
 
         try {

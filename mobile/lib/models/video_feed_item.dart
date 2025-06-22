@@ -2,7 +2,7 @@
 // ABOUTME: Wraps VideoEvent with optional repost metadata for NIP-18 support
 
 import 'video_event.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 
 /// Represents an item in the video feed which can be a direct video or a repost
 class VideoFeedItem {

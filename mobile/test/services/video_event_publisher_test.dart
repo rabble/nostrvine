@@ -9,7 +9,7 @@ import 'package:nostrvine_app/services/upload_manager.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/models/ready_event_data.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}

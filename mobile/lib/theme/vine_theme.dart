@@ -14,10 +14,10 @@ class VineTheme {
   static const Color cardBackground = Color(0xFF1A1A1A);
   static const Color darkOverlay = Color(0x88000000);
   
-  // Text colors
-  static const Color primaryText = Color(0xFF333333);
-  static const Color secondaryText = Color(0xFF666666);
-  static const Color lightText = Color(0xFF999999);
+  // Text colors (dark theme optimized)
+  static const Color primaryText = Color(0xFFFFFFFF);  // White for dark backgrounds
+  static const Color secondaryText = Color(0xFFBBBBBB); // Light gray for secondary text
+  static const Color lightText = Color(0xFF888888);    // Medium gray for tertiary text
   static const Color whiteText = Colors.white;
   
   // Accent colors
@@ -97,7 +97,7 @@ class VineTheme {
   static MaterialColor _createMaterialColor(Color color) {
     List strengths = <double>[.05];
     final swatch = <int, Color>{};
-    final int r = color.red, g = color.green, b = color.blue;
+    final int r = (color.r * 255.0).round() & 0xff, g = (color.g * 255.0).round() & 0xff, b = (color.b * 255.0).round() & 0xff;
 
     for (int i = 1; i < 10; i++) {
       strengths.add(0.1 * i);
@@ -111,6 +111,6 @@ class VineTheme {
         1,
       );
     }
-    return MaterialColor(color.value, swatch);
+    return MaterialColor(color.toARGB32(), swatch);
   }
 }

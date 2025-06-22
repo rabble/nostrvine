@@ -118,6 +118,30 @@ abstract class IVideoManager {
   /// [preloadRange] - Number of videos to preload in each direction
   void preloadAroundIndex(int currentIndex, {int? preloadRange});
   
+  /// Pause a specific video
+  /// 
+  /// This method:
+  /// - Pauses the VideoPlayerController if it exists and is playing
+  /// - Does nothing if video is not loaded or already paused
+  /// - Safe to call multiple times
+  void pauseVideo(String videoId);
+  
+  /// Pause all currently playing videos
+  /// 
+  /// This method:
+  /// - Pauses all active VideoPlayerControllers
+  /// - Used when leaving video feed or app goes to background
+  /// - Preserves controller state for quick resume
+  void pauseAllVideos();
+  
+  /// Resume a specific video
+  /// 
+  /// This method:
+  /// - Resumes the VideoPlayerController if it exists and is paused
+  /// - Does nothing if video is not loaded or already playing
+  /// - Safe to call multiple times
+  void resumeVideo(String videoId);
+
   /// Dispose a specific video's controller to free memory
   /// 
   /// This method:

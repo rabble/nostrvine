@@ -1,8 +1,16 @@
 // ABOUTME: NIP-94 File Metadata model for Nostr file sharing events
 // ABOUTME: Handles vine content metadata structure and Nostr event generation
 
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import 'cloudinary_models.dart';
+
+// Simple key pair class to replace Keychain temporarily
+class SimpleKeyPair {
+  final String public;
+  final String private;
+  
+  const SimpleKeyPair({required this.public, required this.private});
+}
 
 /// NIP-94 File Metadata for vine content sharing on Nostr
 class NIP94Metadata {
@@ -192,7 +200,7 @@ class NIP94Metadata {
   
   /// Convert to Nostr event (NIP-94 kind 1063)
   Event toNostrEvent({
-    required Keychain keyPairs,
+    required SimpleKeyPair keyPairs,
     required String content,
     List<String> hashtags = const [],
     List<String> customTags = const [],
@@ -234,13 +242,18 @@ class NIP94Metadata {
       }
     }
     
-    // Use Event.from constructor which handles signing automatically
-    return Event.from(
-      kind: 1063, // NIP-94 File Metadata
-      content: content,
-      tags: tags,
-      privkey: keyPairs.private,
+    // Create event using nostr_sdk Event constructor
+    final event = Event(
+      keyPairs.public,
+      1063, // NIP-94 File Metadata
+      tags,
+      content,
     );
+    
+    // Sign the event
+    event.sign(keyPairs.private);
+    
+    return event;
   }
   
   /// Extract width from dimensions string

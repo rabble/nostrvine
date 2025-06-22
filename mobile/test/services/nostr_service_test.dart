@@ -2,7 +2,7 @@
 // ABOUTME: Tests relay management, event broadcasting, and service lifecycle
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostrvine_app/services/nostr_service.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
 import 'package:nostrvine_app/services/nostr_key_manager.dart';
@@ -59,13 +59,15 @@ void main() {
     
     group('Event Broadcasting', () {
       test('should require initialization before broadcasting', () async {
-        final testKeyPairs = Keychain.generate();
-        final event = Event.from(
-          kind: 1063,
-          content: 'Test content',
-          tags: [['url', 'test.com']],
-          privkey: testKeyPairs.private,
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final event = Event(
+          publicKey,
+          1063,
+          [['url', 'test.com']],
+          'Test content',
         );
+        event.sign(privateKey);
         
         expect(
           () => nostrService.broadcastEvent(event),
@@ -75,19 +77,21 @@ void main() {
       
       test('should validate event structure', () {
         // Test that events have required fields
-        final testKeyPairs = Keychain.generate();
-        final event = Event.from(
-          kind: 1063,
-          content: 'Test NIP-94 event',
-          tags: [
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final event = Event(
+          publicKey,
+          1063,
+          [
             ['url', 'https://example.com/file.gif'],
             ['m', 'image/gif'],
             ['x', 'sha256hash'],
             ['size', '1024'],
             ['dim', '320x240'],
           ],
-          privkey: testKeyPairs.private,
+          'Test NIP-94 event',
         );
+        event.sign(privateKey);
         
         expect(event.kind, equals(1063));
         expect(event.content, equals('Test NIP-94 event'));
@@ -178,13 +182,15 @@ void main() {
     
     group('Broadcasting Results', () {
       test('should create valid broadcast result', () {
-        final testKeyPairs = Keychain.generate();
-        final mockEvent = Event.from(
-          kind: 1063,
-          content: 'Test',
-          tags: [],
-          privkey: testKeyPairs.private,
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final mockEvent = Event(
+          publicKey,
+          1063,
+          [],
+          'Test',
         );
+        mockEvent.sign(privateKey);
         
         final result = NostrBroadcastResult(
           event: mockEvent,
@@ -212,13 +218,15 @@ void main() {
       });
       
       test('should handle complete success', () {
-        final testKeyPairs = Keychain.generate();
-        final mockEvent = Event.from(
-          kind: 1063,
-          content: 'Test',
-          tags: [],
-          privkey: testKeyPairs.private,
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final mockEvent = Event(
+          publicKey,
+          1063,
+          [],
+          'Test',
         );
+        mockEvent.sign(privateKey);
         
         final result = NostrBroadcastResult(
           event: mockEvent,
@@ -235,13 +243,15 @@ void main() {
       });
       
       test('should handle complete failure', () {
-        final testKeyPairs = Keychain.generate();
-        final mockEvent = Event.from(
-          kind: 1063,
-          content: 'Test',
-          tags: [],
-          privkey: testKeyPairs.private,
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final mockEvent = Event(
+          publicKey,
+          1063,
+          [],
+          'Test',
         );
+        mockEvent.sign(privateKey);
         
         final result = NostrBroadcastResult(
           event: mockEvent,
@@ -259,13 +269,15 @@ void main() {
       });
       
       test('should provide meaningful string representation', () {
-        final testKeyPairs = Keychain.generate();
-        final mockEvent = Event.from(
-          kind: 1063,
-          content: 'Test',
-          tags: [],
-          privkey: testKeyPairs.private,
+        final privateKey = generatePrivateKey();
+        final publicKey = getPublicKey(privateKey);
+        final mockEvent = Event(
+          publicKey,
+          1063,
+          [],
+          'Test',
         );
+        mockEvent.sign(privateKey);
         
         final result = NostrBroadcastResult(
           event: mockEvent,

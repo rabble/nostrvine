@@ -7,7 +7,7 @@ import 'dart:async' as _i3;
 import 'dart:ui' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:nostr/nostr.dart' as _i4;
+import 'package:nostr_sdk/event.dart' as _i4;
 import 'package:nostrvine_app/services/social_service.dart' as _i2;
 
 // ignore_for_file: type=lint
@@ -221,6 +221,16 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
         ),
         returnValue: _i3.Future<int>.value(0),
       ) as _i3.Future<int>);
+
+  @override
+  _i3.Future<void> repostEvent(_i4.Event? eventToRepost) => (super.noSuchMethod(
+        Invocation.method(
+          #repostEvent,
+          [eventToRepost],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(

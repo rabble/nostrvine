@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'theme/vine_theme.dart';
 import 'screens/camera_screen.dart';
+import 'screens/web_camera_placeholder.dart';
 import 'screens/feed_screen_v2.dart';
 import 'screens/profile_screen.dart';
 import 'screens/activity_screen.dart';
@@ -15,17 +15,18 @@ import 'services/key_storage_service.dart';
 import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
-import 'services/vine_publishing_service.dart';
-import 'services/gif_service.dart';
+// import 'services/vine_publishing_service.dart'; // Removed - using video-based approach
+// import 'services/gif_service.dart'; // Removed - using video-based approach
 // import 'services/video_cache_service.dart'; // Removed - using VideoManager instead
 import 'services/connection_status_service.dart';
 import 'services/user_profile_service.dart';
-import 'services/cloudinary_upload_service.dart';
+import 'services/direct_upload_service.dart';
+import 'services/nip98_auth_service.dart';
 import 'services/stream_upload_service.dart';
 import 'services/upload_manager.dart';
 import 'services/api_service.dart';
 import 'services/video_event_publisher.dart';
-import 'services/notification_service.dart';
+import 'services/notification_service_enhanced.dart';
 import 'services/seen_videos_service.dart';
 import 'services/web_auth_service.dart';
 import 'services/social_service.dart';
@@ -155,8 +156,31 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Notification service
-        ChangeNotifierProvider(create: (_) => NotificationService()),
+        // Enhanced notification service with Nostr integration
+        ChangeNotifierProxyProvider3<INostrService, UserProfileService, VideoEventService, NotificationServiceEnhanced>(
+          create: (context) {
+            final service = NotificationServiceEnhanced();
+            final nostrService = context.read<INostrService>();
+            final profileService = context.read<UserProfileService>();
+            final videoService = context.read<VideoEventService>();
+            
+            // Initialize asynchronously after frame
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              try {
+                await service.initialize(
+                  nostrService: nostrService,
+                  profileService: profileService,
+                  videoService: videoService,
+                );
+              } catch (e) {
+                debugPrint('❌ Failed to initialize enhanced notification service: $e');
+              }
+            });
+            
+            return service;
+          },
+          update: (_, nostrService, profileService, videoService, previous) => previous ?? NotificationServiceEnhanced(),
+        ),
         
         // Video Manager Service - single source of truth for video state
         Provider<IVideoManager>(
@@ -166,16 +190,25 @@ class NostrVineApp extends StatelessWidget {
           dispose: (_, videoManager) => videoManager.dispose(),
         ),
         
-        // Cloudinary upload service
-        ChangeNotifierProvider(create: (_) => CloudinaryUploadService()),
+        // NIP-98 authentication service
+        ChangeNotifierProxyProvider<AuthService, Nip98AuthService>(
+          create: (context) => Nip98AuthService(authService: context.read<AuthService>()),
+          update: (_, authService, previous) => previous ?? Nip98AuthService(authService: authService),
+        ),
+        
+        // Direct upload service with auth
+        ChangeNotifierProxyProvider<Nip98AuthService, DirectUploadService>(
+          create: (context) => DirectUploadService(authService: context.read<Nip98AuthService>()),
+          update: (_, authService, previous) => previous ?? DirectUploadService(authService: authService),
+        ),
         
         // Stream upload service
         ChangeNotifierProvider(create: (_) => StreamUploadService()),
         
-        // Upload manager depends on Cloudinary service
-        ChangeNotifierProxyProvider<CloudinaryUploadService, UploadManager>(
-          create: (context) => UploadManager(cloudinaryService: context.read<CloudinaryUploadService>()),
-          update: (_, cloudinaryService, previous) => previous ?? UploadManager(cloudinaryService: cloudinaryService),
+        // Upload manager depends on direct upload service
+        ChangeNotifierProxyProvider<DirectUploadService, UploadManager>(
+          create: (context) => UploadManager(uploadService: context.read<DirectUploadService>()),
+          update: (_, uploadService, previous) => previous ?? UploadManager(uploadService: uploadService),
         ),
         
         // API service
@@ -208,20 +241,7 @@ class NostrVineApp extends StatelessWidget {
         ),
         
         // Note: VideoFeedProvider removed - FeedScreenV2 uses IVideoManager directly
-        
-        // Vine publishing service depends on Nostr and Stream services
-        ChangeNotifierProxyProvider2<INostrService, StreamUploadService, VinePublishingService>(
-          create: (context) => VinePublishingService(
-            gifService: GifService(),
-            streamUploadService: context.read<StreamUploadService>(),
-            nostrService: context.read<INostrService>(),
-          ),
-          update: (_, nostrService, streamUploadService, previous) => previous ?? VinePublishingService(
-            gifService: GifService(),
-            streamUploadService: streamUploadService,
-            nostrService: nostrService,
-          ),
-        ),
+        // Note: VinePublishingService removed - using video-based approach now
       ],
       child: MaterialApp(
         title: 'NostrVine',
@@ -267,14 +287,7 @@ class _AppInitializerState extends State<AppInitializer> {
         rethrow;
       }
 
-      if (!mounted) return;
-      setState(() => _initializationStatus = 'Initializing notifications...');
-      try {
-        await context.read<NotificationService>().initialize();
-      } catch (e) {
-        debugPrint('⚠️ Notification service initialization failed (likely hot reload): $e');
-        // Continue anyway - notifications are not critical for core functionality
-      }
+      // NotificationServiceEnhanced is initialized automatically via provider
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Initializing seen videos tracker...');
@@ -286,7 +299,12 @@ class _AppInitializerState extends State<AppInitializer> {
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Starting background publisher...');
-      await context.read<VideoEventPublisher>().initialize();
+      try {
+        await context.read<VideoEventPublisher>().initialize();
+      } catch (e) {
+        debugPrint('⚠️ VideoEventPublisher initialization failed (backend endpoint missing): $e');
+        // Continue anyway - this is for background publishing optimization
+      }
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Connecting video feed...');
@@ -434,13 +452,20 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  final GlobalKey<State<FeedScreenV2>> _feedScreenKey = GlobalKey<State<FeedScreenV2>>();
   
-  final List<Widget> _screens = [
-    const FeedScreenV2(),
-    const ActivityScreen(),
-    const ExploreScreen(),
-    const ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      FeedScreenV2(key: _feedScreenKey),
+      const ActivityScreen(),
+      const ExploreScreen(),
+      const ProfileScreen(),
+    ];
+  }
 
   void _onTabTapped(int index) {
     // If leaving the feed screen (index 0), pause all videos
@@ -455,8 +480,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   void _pauseFeedVideos() {
     try {
-      // FeedScreenV2 handles its own lifecycle management
-      // No need to manually pause videos here
+      FeedScreenV2.pauseVideos(_feedScreenKey);
       debugPrint('🎬 Paused feed videos when navigating away');
     } catch (e) {
       debugPrint('⚠️ Error pausing feed videos: $e');
@@ -500,10 +524,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           if (_currentIndex == 0) {
             _pauseFeedVideos();
           }
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CameraScreen()),
-          );
+          // Show different screen based on platform
+          if (kIsWeb) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const WebCameraPlaceholder()),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CameraScreen()),
+            );
+          }
         },
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: VineTheme.whiteText,

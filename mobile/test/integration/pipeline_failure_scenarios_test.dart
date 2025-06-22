@@ -3,7 +3,9 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
 import '../helpers/pipeline_test_factory.dart';
@@ -62,7 +64,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should handle upload failure gracefully
-        print('🧪 Upload failure test result: ${result.toSummary()}');
+        debugPrint('🧪 Upload failure test result: ${result.toSummary()}');
         
         expect(result.uploadCreated, true); // Upload record should be created
         expect(result.success, false); // Overall pipeline should fail
@@ -95,7 +97,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should handle processing timeout gracefully
-        print('🧪 Processing timeout test result: ${result.toSummary()}');
+        debugPrint('🧪 Processing timeout test result: ${result.toSummary()}');
         
         expect(result.uploadCreated, true);
         expect(result.markedReady, true);
@@ -130,7 +132,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should handle Nostr failure gracefully
-        print('🧪 Nostr failure test result: ${result.toSummary()}');
+        debugPrint('🧪 Nostr failure test result: ${result.toSummary()}');
         
         expect(result.uploadCreated, true);
         expect(result.markedReady, true);
@@ -165,7 +167,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should handle timeouts without crashing
-        print('🧪 Network timeout test result: ${result.toSummary()}');
+        debugPrint('🧪 Network timeout test result: ${result.toSummary()}');
         
         expect(result.uploadCreated, true);
         expect(result.publishingTriggered, true);
@@ -197,7 +199,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should handle malformed data gracefully
-        print('🧪 Malformed response test result: ${result.toSummary()}');
+        debugPrint('🧪 Malformed response test result: ${result.toSummary()}');
         
         expect(result.publishingTriggered, true);
         
@@ -229,7 +231,7 @@ void main() {
         final result = await stack.executeFullPipeline(testFile: testFile);
         
         // ASSERT: Should consider partial success as success
-        print('🧪 Partial success test result: ${result.toSummary()}');
+        debugPrint('🧪 Partial success test result: ${result.toSummary()}');
         
         expect(result.uploadCreated, true);
         expect(result.markedReady, true);
@@ -287,7 +289,7 @@ void main() {
           final persistedUpload = stack2.uploadManager.getUpload(upload.id);
           
           // ASSERT: Upload should be recoverable after restart
-          print('🧪 Service restart recovery test - upload recovered: ${persistedUpload != null}');
+          debugPrint('🧪 Service restart recovery test - upload recovered: ${persistedUpload != null}');
           
           // Note: In real implementation, uploads would persist across restarts
           // This test verifies the recovery mechanism exists
@@ -347,12 +349,12 @@ void main() {
         // ASSERT: Each scenario should behave as expected
         expect(results.length, scenarios.length);
         
-        print('🧪 Concurrent failure scenarios summary:');
+        debugPrint('🧪 Concurrent failure scenarios summary:');
         for (int i = 0; i < results.length; i++) {
           final scenario = scenarios[i];
           final result = results[i];
           
-          print('  $scenario: ${result.toSummary()}');
+          debugPrint('  $scenario: ${result.toSummary()}');
           
           switch (scenario) {
             case PipelineTestScenario.success:

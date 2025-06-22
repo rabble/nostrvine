@@ -7,7 +7,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/pending_upload.dart';
-import 'cloudinary_upload_service.dart';
+import 'direct_upload_service.dart';
 import 'circuit_breaker_service.dart';
 
 /// Upload retry configuration
@@ -58,7 +58,7 @@ class UploadManager extends ChangeNotifier {
   
   // Core services
   Box<PendingUpload>? _uploadsBox;
-  final CloudinaryUploadService _cloudinaryService;
+  final DirectUploadService _uploadService;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
   
@@ -68,10 +68,10 @@ class UploadManager extends ChangeNotifier {
   final Map<String, Timer> _retryTimers = {};
   
   UploadManager({
-    required CloudinaryUploadService cloudinaryService,
+    required DirectUploadService uploadService,
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
-  }) : _cloudinaryService = cloudinaryService,
+  }) : _uploadService = uploadService,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
        _retryConfig = retryConfig ?? const UploadRetryConfig();
 
@@ -279,7 +279,7 @@ class UploadManager extends ChangeNotifier {
 
   /// Execute upload with timeout and progress tracking
   Future<dynamic> _executeUploadWithTimeout(PendingUpload upload, File videoFile) async {
-    return await _cloudinaryService.uploadVideo(
+    return await _uploadService.uploadVideo(
       videoFile: videoFile,
       nostrPubkey: upload.nostrPubkey,
       title: upload.title,
@@ -302,12 +302,15 @@ class UploadManager extends ChangeNotifier {
     final metrics = _uploadMetrics[upload.id];
     
     if (result.success) {
-      await _updateUpload(upload.copyWith(
-        status: UploadStatus.processing,
-        cloudinaryPublicId: result.cloudinaryPublicId,
+      final updatedUpload = upload.copyWith(
+        status: UploadStatus.readyToPublish,  // Direct upload is immediately ready
+        cloudinaryPublicId: result.videoId,   // Use videoId for existing systems
+        cdnUrl: result.cdnUrl,                 // Store CDN URL directly
         uploadProgress: 1.0,
         completedAt: endTime,
-      ));
+      );
+      
+      await _updateUpload(updatedUpload);
       
       // Record successful metrics
       if (metrics != null) {
@@ -325,9 +328,13 @@ class UploadManager extends ChangeNotifier {
           wasSuccessful: true,
         );
         
-        debugPrint('✅ Upload successful: ${result.cloudinaryPublicId}');
+        debugPrint('✅ Direct upload successful: ${result.videoId}');
+        debugPrint('🔗 CDN URL: ${result.cdnUrl}');
         debugPrint('📊 Upload metrics: ${metrics.fileSizeMB.toStringAsFixed(1)}MB in ${duration.inSeconds}s (${throughput.toStringAsFixed(2)} MB/s)');
       }
+      
+      // Notify that upload is ready for immediate publishing
+      notifyListeners();
     } else {
       throw Exception(result.errorMessage ?? 'Upload failed with unknown error');
     }
@@ -425,6 +432,71 @@ class UploadManager extends ChangeNotifier {
     }
   }
 
+  /// Pause an active upload
+  Future<void> pauseUpload(String uploadId) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      debugPrint('❌ Upload not found for pause: $uploadId');
+      return;
+    }
+    
+    if (upload.status != UploadStatus.uploading) {
+      debugPrint('❌ Upload is not currently uploading: ${upload.status}');
+      return;
+    }
+    
+    debugPrint('⏸️ Pausing upload: $uploadId');
+    
+    // Cancel the active upload (similar to cancelUpload but non-destructive)
+    if (upload.cloudinaryPublicId != null) {
+      await _uploadService.cancelUpload(upload.cloudinaryPublicId!);
+    }
+    
+    // Update status to paused instead of failed
+    final pausedUpload = upload.copyWith(
+      status: UploadStatus.paused,
+      // Keep current progress and don't set error message
+    );
+    
+    await _updateUpload(pausedUpload);
+    
+    // Cancel progress subscription
+    _progressSubscriptions[uploadId]?.cancel();
+    _progressSubscriptions.remove(uploadId);
+    
+    debugPrint('✅ Upload paused: $uploadId');
+  }
+
+  /// Resume a paused upload
+  Future<void> resumeUpload(String uploadId) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      debugPrint('❌ Upload not found for resume: $uploadId');
+      return;
+    }
+    
+    if (upload.status != UploadStatus.paused) {
+      debugPrint('❌ Upload is not paused: ${upload.status}');
+      return;
+    }
+    
+    debugPrint('▶️ Resuming upload: $uploadId');
+    
+    // Reset to pending to restart upload from beginning
+    final resumedUpload = upload.copyWith(
+      status: UploadStatus.pending,
+      uploadProgress: 0.0, // Reset progress since we're starting over
+      errorMessage: null,
+    );
+    
+    await _updateUpload(resumedUpload);
+    
+    // Start upload process again
+    _performUpload(resumedUpload);
+    
+    debugPrint('✅ Upload resumed: $uploadId');
+  }
+
   /// Retry a failed upload
   Future<void> retryUpload(String uploadId) async {
     final upload = getUpload(uploadId);
@@ -462,7 +534,7 @@ class UploadManager extends ChangeNotifier {
     
     // Cancel any active upload
     if (upload.cloudinaryPublicId != null) {
-      await _cloudinaryService.cancelUpload(upload.cloudinaryPublicId!);
+      await _uploadService.cancelUpload(upload.cloudinaryPublicId!);
     }
     
     // Update status to failed so it can be retried later
@@ -491,7 +563,7 @@ class UploadManager extends ChangeNotifier {
     // Cancel any active upload first
     if (upload.status == UploadStatus.uploading) {
       if (upload.cloudinaryPublicId != null) {
-        await _cloudinaryService.cancelUpload(upload.cloudinaryPublicId!);
+        await _uploadService.cancelUpload(upload.cloudinaryPublicId!);
       }
     }
     
@@ -563,6 +635,24 @@ class UploadManager extends ChangeNotifier {
     
     await _uploadsBox!.put(upload.id, upload);
     notifyListeners();
+  }
+  
+  /// Update upload status (public method for VideoEventPublisher)
+  Future<void> updateUploadStatus(String uploadId, UploadStatus status, {String? nostrEventId}) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      debugPrint('⚠️ Upload not found for status update: $uploadId');
+      return;
+    }
+    
+    final updatedUpload = upload.copyWith(
+      status: status,
+      nostrEventId: nostrEventId ?? upload.nostrEventId,
+      completedAt: status == UploadStatus.published ? DateTime.now() : upload.completedAt,
+    );
+    
+    await _updateUpload(updatedUpload);
+    debugPrint('✅ Updated upload status: $uploadId -> $status');
   }
 
   /// Get upload statistics

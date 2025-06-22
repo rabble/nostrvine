@@ -7,8 +7,12 @@ import 'dart:async' as _i3;
 import 'dart:ui' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:nostr/nostr.dart' as _i4;
+import 'package:nostr_sdk/event.dart' as _i4;
+import 'package:nostrvine_app/models/video_event.dart' as _i7;
+import 'package:nostrvine_app/models/video_state.dart' as _i8;
 import 'package:nostrvine_app/services/social_service.dart' as _i2;
+import 'package:nostrvine_app/services/video_manager_interface.dart' as _i6;
+import 'package:video_player/video_player.dart' as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -223,6 +227,16 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
       ) as _i3.Future<int>);
 
   @override
+  _i3.Future<void> repostEvent(_i4.Event? eventToRepost) => (super.noSuchMethod(
+        Invocation.method(
+          #repostEvent,
+          [eventToRepost],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -253,6 +267,145 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
   void notifyListeners() => super.noSuchMethod(
         Invocation.method(
           #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+}
+
+/// A class which mocks [IVideoManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockIVideoManager extends _i1.Mock implements _i6.IVideoManager {
+  MockIVideoManager() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  List<_i7.VideoEvent> get videos => (super.noSuchMethod(
+        Invocation.getter(#videos),
+        returnValue: <_i7.VideoEvent>[],
+      ) as List<_i7.VideoEvent>);
+
+  @override
+  List<_i7.VideoEvent> get readyVideos => (super.noSuchMethod(
+        Invocation.getter(#readyVideos),
+        returnValue: <_i7.VideoEvent>[],
+      ) as List<_i7.VideoEvent>);
+
+  @override
+  _i3.Stream<void> get stateChanges => (super.noSuchMethod(
+        Invocation.getter(#stateChanges),
+        returnValue: _i3.Stream<void>.empty(),
+      ) as _i3.Stream<void>);
+
+  @override
+  _i8.VideoState? getVideoState(String? videoId) =>
+      (super.noSuchMethod(Invocation.method(
+        #getVideoState,
+        [videoId],
+      )) as _i8.VideoState?);
+
+  @override
+  _i9.VideoPlayerController? getController(String? videoId) =>
+      (super.noSuchMethod(Invocation.method(
+        #getController,
+        [videoId],
+      )) as _i9.VideoPlayerController?);
+
+  @override
+  _i3.Future<void> addVideoEvent(_i7.VideoEvent? event) => (super.noSuchMethod(
+        Invocation.method(
+          #addVideoEvent,
+          [event],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> preloadVideo(String? videoId) => (super.noSuchMethod(
+        Invocation.method(
+          #preloadVideo,
+          [videoId],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  void preloadAroundIndex(
+    int? currentIndex, {
+    int? preloadRange,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #preloadAroundIndex,
+          [currentIndex],
+          {#preloadRange: preloadRange},
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void pauseVideo(String? videoId) => super.noSuchMethod(
+        Invocation.method(
+          #pauseVideo,
+          [videoId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void pauseAllVideos() => super.noSuchMethod(
+        Invocation.method(
+          #pauseAllVideos,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void resumeVideo(String? videoId) => super.noSuchMethod(
+        Invocation.method(
+          #resumeVideo,
+          [videoId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void disposeVideo(String? videoId) => super.noSuchMethod(
+        Invocation.method(
+          #disposeVideo,
+          [videoId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i3.Future<void> handleMemoryPressure() => (super.noSuchMethod(
+        Invocation.method(
+          #handleMemoryPressure,
+          [],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
+  Map<String, dynamic> getDebugInfo() => (super.noSuchMethod(
+        Invocation.method(
+          #getDebugInfo,
+          [],
+        ),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
           [],
         ),
         returnValueForMissingStub: null,

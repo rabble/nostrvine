@@ -159,15 +159,15 @@ class VideoManagerProvider extends ChangeNotifier {
   }
 
   /// Pause specific video
-  Future<void> pauseVideo(String videoId) async {
+  void pauseVideo(String videoId) {
     if (!_isInitialized) return;
-    await _videoManager.pauseVideo(videoId);
+    _videoManager.pauseVideo(videoId);
   }
 
   /// Pause all videos
-  Future<void> pauseAllVideos() async {
+  void pauseAllVideos() {
     if (!_isInitialized) return;
-    await _videoManager.pauseAllVideos();
+    _videoManager.pauseAllVideos();
   }
 
   /// Set global mute state
@@ -317,7 +317,6 @@ class VideoManagerProvider extends ChangeNotifier {
         videoManager: _videoManager,
         nostrService: nostrService,
         seenVideosService: seenVideosService,
-        connectionService: connectionService,
       );
 
       // Listen for state changes

@@ -8,7 +8,7 @@ import 'package:nostrvine_app/models/video_event.dart';
 import 'package:nostrvine_app/models/video_state.dart';
 import 'package:nostrvine_app/screens/feed_screen_v2.dart';
 import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/widgets/video_feed_item_v2.dart';
+import 'package:nostrvine_app/widgets/video_feed_item.dart';
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_video_manager.dart';
 
@@ -142,7 +142,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // ASSERT - PageView.builder only builds visible items (typically 1-3)
-        expect(find.byType(VideoFeedItemV2), findsAtLeastNWidgets(1));
+        expect(find.byType(VideoFeedItem), findsAtLeastNWidgets(1));
         
         // Verify PageView exists and renders correctly
         expect(find.byType(PageView), findsOneWidget);
@@ -216,7 +216,7 @@ void main() {
 
         // ASSERT
         expect(tester.takeException(), isNull);
-        expect(find.byType(VideoFeedItemV2), findsOneWidget);
+        expect(find.byType(VideoFeedItem), findsOneWidget);
       });
 
       testWidgets('should handle index boundary conditions', (tester) async {
@@ -259,7 +259,7 @@ void main() {
         // ASSERT - Should handle error gracefully
         expect(tester.takeException(), isNull);
         // Either shows the video item or an error boundary
-        expect(find.byType(VideoFeedItemV2).evaluate().isNotEmpty || 
+        expect(find.byType(VideoFeedItem).evaluate().isNotEmpty || 
                find.byIcon(Icons.error_outline).evaluate().isNotEmpty, isTrue);
       });
 
@@ -329,7 +329,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // ASSERT - Only visible video items are built
-        final videoItems = tester.widgetList<VideoFeedItemV2>(find.byType(VideoFeedItemV2));
+        final videoItems = tester.widgetList<VideoFeedItem>(find.byType(VideoFeedItem));
         expect(videoItems.length, greaterThanOrEqualTo(1));
         
         // First visible video should be active by default
@@ -350,7 +350,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // ASSERT - Check that active state changed
-        final videoItems = tester.widgetList<VideoFeedItemV2>(find.byType(VideoFeedItemV2));
+        final videoItems = tester.widgetList<VideoFeedItem>(find.byType(VideoFeedItem));
         final activeItems = videoItems.where((item) => item.isActive);
         expect(activeItems.length, equals(1)); // Only one should be active
       });
@@ -371,7 +371,7 @@ void main() {
 
         // ASSERT
         // PageView.builder should only build visible items
-        final videoItems = find.byType(VideoFeedItemV2);
+        final videoItems = find.byType(VideoFeedItem);
         expect(videoItems.evaluate().length, lessThan(manyVideos.length));
         expect(videoItems.evaluate().length, greaterThan(0));
       });
@@ -535,7 +535,7 @@ void main() {
         // ASSERT
         expect(tester.takeException(), isNull);
         // Should either show the video item or handle gracefully
-        expect(find.byType(VideoFeedItemV2).evaluate().isNotEmpty ||
+        expect(find.byType(VideoFeedItem).evaluate().isNotEmpty ||
                find.byIcon(Icons.error_outline).evaluate().isNotEmpty, isTrue);
       });
     });

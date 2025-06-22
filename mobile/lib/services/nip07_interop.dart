@@ -49,6 +49,7 @@ class NostrEvent {
   external factory NostrEvent({
     String? id,
     required String pubkey,
+    // ignore: non_constant_identifier_names
     required int created_at,
     required int kind,
     required List<List<String>> tags,
@@ -62,7 +63,9 @@ class NostrEvent {
   external String get pubkey;
   external set pubkey(String pubkey);
   
+  // ignore: non_constant_identifier_names
   external int get created_at;
+  // ignore: non_constant_identifier_names
   external set created_at(int created_at);
   
   external int get kind;

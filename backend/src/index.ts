@@ -104,6 +104,32 @@ export default {
 				return handleVideoStatusOptions();
 			}
 
+			// Ready events endpoint (for VideoEventPublisher)
+			if (pathname === '/v1/media/ready-events' && method === 'GET') {
+				// For now, return empty list - this endpoint would poll for processed videos
+				// In a full implementation, this would check for videos ready to publish to Nostr
+				return new Response(JSON.stringify({
+					events: [],
+					timestamp: new Date().toISOString()
+				}), {
+					headers: {
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*'
+					}
+				});
+			}
+
+			if (pathname === '/v1/media/ready-events' && method === 'OPTIONS') {
+				return new Response(null, {
+					status: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'GET, OPTIONS',
+						'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+					}
+				});
+			}
+
 			// Video caching API endpoint
 			if (pathname.startsWith('/api/video/') && method === 'GET') {
 				const videoId = pathname.split('/api/video/')[1];

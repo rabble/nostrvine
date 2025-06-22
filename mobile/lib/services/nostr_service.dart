@@ -4,7 +4,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:collection';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/nip94_metadata.dart';
@@ -163,26 +164,34 @@ class NostrService extends ChangeNotifier implements INostrService {
   void _handleRelayMessage(String relayUrl, dynamic data) {
     try {
       if (data is String) {
-        final message = jsonDecode(data);
-        if (message is List && message.isNotEmpty) {
-          final messageType = message[0];
-          switch (messageType) {
-            case 'EVENT':
-              if (message.length >= 3) {
-                _handleEventMessage(message);
-              }
-              break;
-            case 'EOSE':
-              debugPrint('📄 End of stored events from $relayUrl');
-              break;
-            case 'OK':
-              debugPrint('✅ Event published successfully to $relayUrl');
-              break;
-            case 'NOTICE':
-              debugPrint('📢 Notice from $relayUrl: ${message.length > 1 ? message[1] : 'No message'}');
-              break;
+        // Parse JSON message manually since nostr_sdk doesn't expose Message class
+      final jsonData = jsonDecode(data);
+      final messageType = jsonData[0] as String;
+      switch (messageType.toLowerCase()) {
+        case 'event':
+          // Parse EVENT message: ["EVENT", subscriptionId, eventObject]
+          if (jsonData.length >= 3) {
+            try {
+              final eventData = jsonData[2] as Map<String, dynamic>;
+              final event = Event.fromJson(eventData);
+              _handleEventMessage(event);
+            } catch (e) {
+              debugPrint('⚠️ Error parsing EVENT: $e');
+            }
           }
-        }
+          break;
+        case 'eose':
+          debugPrint('📄 End of stored events from $relayUrl');
+          break;
+        case 'ok':
+          debugPrint('✅ Event published successfully to $relayUrl');
+          break;
+        case 'notice':
+          // For NOTICE messages: ["NOTICE", message]
+          final noticeMessage = jsonData.length > 1 ? jsonData[1] : 'Unknown notice';
+          debugPrint('📢 Notice from $relayUrl: $noticeMessage');
+          break;
+      }
       }
     } catch (e) {
       debugPrint('⚠️ Error parsing message from $relayUrl: $e');
@@ -190,43 +199,9 @@ class NostrService extends ChangeNotifier implements INostrService {
   }
   
   /// Handle incoming event message
-  void _handleEventMessage(List<dynamic> eventMessage) {
+  void _handleEventMessage(Event event) {
     try {
-      // EVENT messages come as ["EVENT", subscription_id, event_data]
-      if (eventMessage.length < 3) {
-        debugPrint('⚠️ Invalid EVENT message format');
-        return;
-      }
-      
-      final subscriptionId = eventMessage[1];
-      final eventData = eventMessage[2];
-      
-      // Add debugging to understand the event format
-      debugPrint('🔍 Event data type: ${eventData.runtimeType}');
-      if (eventData is Map) {
-        debugPrint('🔍 Event data keys: ${eventData.keys.toList()}');
-      }
-      
-      Event event;
-      try {
-        // Event.deserialize expects an array format: ["EVENT", subscription_id, event_data]
-        // Since we already have the event data, we need to wrap it properly
-        if (eventData is Map) {
-          // Create the expected array format for deserialize
-          final deserializeInput = [subscriptionId, eventData];
-          event = Event.deserialize(deserializeInput);
-        } else {
-          debugPrint('⚠️ Unexpected event data type: ${eventData.runtimeType}');
-          return;
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error deserializing event: $e');
-        debugPrint('📋 Event data: $eventData');
-        debugPrint('📋 Error details: ${e.toString()}');
-        return;
-      }
-      
-      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}... for subscription: $subscriptionId');
+      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
       
       // Check for duplicate events to prevent infinite rebuild loops
       if (_seenEventIds.contains(event.id)) {
@@ -270,13 +245,14 @@ class NostrService extends ChangeNotifier implements INostrService {
       final errors = <String, String>{};
       int successCount = 0;
       
-      // Send event to each connected relay
+      // Send event to each connected relay using manual JSON serialization
+      final eventMessage = jsonEncode(['EVENT', event.toJson()]);
+      
       for (final relayUrl in _connectedRelays) {
         try {
           final webSocket = _webSockets[relayUrl];
           if (webSocket != null) {
-            final eventMessage = ['EVENT', event.toJson()];
-            webSocket.sink.add(jsonEncode(eventMessage));
+            webSocket.sink.add(eventMessage);
             results[relayUrl] = true;
             successCount++;
           } else {
@@ -316,13 +292,90 @@ class NostrService extends ChangeNotifier implements INostrService {
       throw NIP94ValidationException('Invalid NIP-94 metadata');
     }
     
+    // Convert Keychain to SimpleKeyPair for compatibility
+    final simpleKeyPair = SimpleKeyPair(
+      public: _keyManager.keyPair!.public,
+      private: _keyManager.keyPair!.private,
+    );
+    
     final event = metadata.toNostrEvent(
-      keyPairs: _keyManager.keyPair!,
+      keyPairs: simpleKeyPair,
       content: content,
       hashtags: hashtags,
     );
     
     return await broadcastEvent(event);
+  }
+  
+  /// Publish a NIP-71 short video event (kind 22)
+  @override
+  Future<NostrBroadcastResult> publishVideoEvent({
+    required String videoUrl,
+    required String content,
+    String? title,
+    String? thumbnailUrl,
+    int? duration,
+    String? dimensions,
+    String? mimeType,
+    String? sha256,
+    int? fileSize,
+    List<String> hashtags = const [],
+  }) async {
+    if (!_isInitialized || !hasKeys) {
+      throw NostrServiceException('NostrService not initialized or no keys available');
+    }
+
+    try {
+      // Build tags for NIP-71 video event
+      final tags = <List<String>>[];
+      
+      // Required: video URL
+      tags.add(['url', videoUrl]);
+      
+      // Optional metadata
+      if (title != null && title.isNotEmpty) tags.add(['title', title]);
+      if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) tags.add(['thumb', thumbnailUrl]);
+      if (duration != null) tags.add(['duration', duration.toString()]);
+      if (dimensions != null && dimensions.isNotEmpty) tags.add(['dim', dimensions]);
+      if (mimeType != null && mimeType.isNotEmpty) tags.add(['m', mimeType]);
+      if (sha256 != null && sha256.isNotEmpty) tags.add(['x', sha256]);
+      if (fileSize != null) tags.add(['size', fileSize.toString()]);
+      
+      // Add hashtags
+      for (final tag in hashtags) {
+        if (tag.isNotEmpty) {
+          tags.add(['t', tag.toLowerCase()]);
+        }
+      }
+      
+      // Add client tag
+      tags.add(['client', 'nostrvine']);
+      
+      // Create the event using nostr_sdk Event constructor
+      final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final event = Event(
+        _keyManager.keyPair!.public,
+        22,
+        tags,
+        content,
+        createdAt: createdAt,
+      );
+      
+      // Sign the event
+      event.sign(_keyManager.keyPair!.private);
+      
+      debugPrint('🎬 Created Kind 22 video event: ${event.id}');
+      debugPrint('📹 Video URL: $videoUrl');
+      if (title != null) debugPrint('📝 Title: $title');
+      if (thumbnailUrl != null) debugPrint('🖼️ Thumbnail: $thumbnailUrl');
+      
+      // Broadcast to relays
+      return await broadcastEvent(event);
+      
+    } catch (e) {
+      debugPrint('❌ Failed to publish video event: $e');
+      rethrow;
+    }
   }
   
   /// Subscribe to events
@@ -347,13 +400,16 @@ class NostrService extends ChangeNotifier implements INostrService {
     );
     _eventControllers[subscriptionId] = controller;
     
-    // Send REQ message to all connected relays
+    // Send REQ message to all connected relays using manual JSON serialization
+    final reqFilters = filters.map((f) => f.toJson()).toList();
+    final reqMessage = jsonEncode(['REQ', subscriptionId, ...reqFilters]);
+    
     for (final relayUrl in _connectedRelays) {
       try {
         final webSocket = _webSockets[relayUrl];
         if (webSocket != null) {
-          final reqMessage = ['REQ', subscriptionId, ...filters.map((f) => f.toJson())];
-          webSocket.sink.add(jsonEncode(reqMessage));
+          debugPrint('🔍 REQ message to $relayUrl: $reqMessage');
+          webSocket.sink.add(reqMessage);
           debugPrint('📡 Sent subscription request to $relayUrl with ID: $subscriptionId');
         }
       } catch (e) {
@@ -368,13 +424,14 @@ class NostrService extends ChangeNotifier implements INostrService {
   void _closeSubscription(String subscriptionId) {
     debugPrint('🔐 Closing subscription: $subscriptionId');
     
-    // Send CLOSE message to all connected relays
+    // Send CLOSE message to all connected relays using manual JSON serialization
+    final closeMessage = jsonEncode(['CLOSE', subscriptionId]);
+    
     for (final relayUrl in _connectedRelays) {
       try {
         final webSocket = _webSockets[relayUrl];
         if (webSocket != null) {
-          final closeMessage = ['CLOSE', subscriptionId];
-          webSocket.sink.add(jsonEncode(closeMessage));
+          webSocket.sink.add(closeMessage);
           debugPrint('📡 Sent CLOSE message to $relayUrl for subscription: $subscriptionId');
         }
       } catch (e) {

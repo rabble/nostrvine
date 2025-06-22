@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:crypto/crypto.dart';
 import 'auth_service.dart';
 
@@ -202,7 +202,7 @@ class Nip98AuthService extends ChangeNotifier {
       
       final urlTag = tags.firstWhere(
         (tag) => tag.isNotEmpty && tag[0] == 'u',
-        orElse: () => [],
+        orElse: () => <String>[],
       );
       if (urlTag.isEmpty || urlTag[1] != url) {
         debugPrint('❌ Missing or invalid URL tag');
@@ -211,7 +211,7 @@ class Nip98AuthService extends ChangeNotifier {
       
       final methodTag = tags.firstWhere(
         (tag) => tag.isNotEmpty && tag[0] == 'method',
-        orElse: () => [],
+        orElse: () => <String>[],
       );
       if (methodTag.isEmpty || methodTag[1] != method.value) {
         debugPrint('❌ Missing or invalid method tag');
@@ -220,7 +220,7 @@ class Nip98AuthService extends ChangeNotifier {
       
       final createdAtTag = tags.firstWhere(
         (tag) => tag.isNotEmpty && tag[0] == 'created_at',
-        orElse: () => [],
+        orElse: () => <String>[],
       );
       if (createdAtTag.isEmpty) {
         debugPrint('❌ Missing created_at tag');

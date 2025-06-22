@@ -10,6 +10,8 @@ class UploadProgressIndicator extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onCancel;
   final VoidCallback? onDelete;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
   final VoidCallback? onTap;
   final bool showActions;
 
@@ -19,6 +21,8 @@ class UploadProgressIndicator extends StatelessWidget {
     this.onRetry,
     this.onCancel,
     this.onDelete,
+    this.onPause,
+    this.onResume,
     this.onTap,
     this.showActions = true,
   });
@@ -65,9 +69,9 @@ class UploadProgressIndicator extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _buildProgressBar(),
-              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.failed))
+              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.paused || upload.status == UploadStatus.failed))
                 const SizedBox(height: 8),
-              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.failed))
+              if (showActions && (upload.canRetry || upload.status == UploadStatus.uploading || upload.status == UploadStatus.paused || upload.status == UploadStatus.failed))
                 _buildActionButtons(),
             ],
           ),
@@ -100,6 +104,8 @@ class UploadProgressIndicator extends StatelessWidget {
         return const Icon(Icons.check_circle, color: Colors.green);
       case UploadStatus.failed:
         return const Icon(Icons.error, color: Colors.red);
+      case UploadStatus.paused:
+        return const Icon(Icons.pause_circle, color: Colors.orange);
     }
   }
 
@@ -135,22 +141,60 @@ class UploadProgressIndicator extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (upload.status == UploadStatus.uploading && onCancel != null)
-          TextButton(
-            onPressed: onCancel,
-            child: const Text('Cancel'),
-          ),
-        if (upload.status == UploadStatus.failed && onDelete != null) ...[
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: onDelete,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+        if (upload.status == UploadStatus.uploading && onPause != null)
+          ElevatedButton.icon(
+            onPressed: onPause,
+            icon: const Icon(Icons.pause),
+            label: const Text('Pause'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
             ),
-            child: const Text('Delete'),
           ),
-        ],
-        if (upload.canRetry && onRetry != null) ...[
+        if (upload.status == UploadStatus.paused && onResume != null)
+          ElevatedButton.icon(
+            onPressed: onResume,
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Resume'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        if (upload.status == UploadStatus.failed) ...[
+          if (onCancel != null) ...[
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: onCancel,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[700],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Go Back'),
+            ),
+          ],
+          if (onRetry != null && upload.canRetry) ...[
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Retry (${3 - (upload.retryCount ?? 0)} left)'),
+            ),
+          ],
+          if (onDelete != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onDelete,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        ] else if (upload.canRetry && onRetry != null) ...[
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed: onRetry,
@@ -181,6 +225,8 @@ class UploadProgressIndicator extends StatelessWidget {
         return Colors.green;
       case UploadStatus.failed:
         return Colors.red;
+      case UploadStatus.paused:
+        return Colors.orange;
     }
   }
 
@@ -200,6 +246,8 @@ class UploadProgressIndicator extends StatelessWidget {
         return Colors.green;
       case UploadStatus.failed:
         return Colors.red;
+      case UploadStatus.paused:
+        return Colors.orange;
     }
   }
 
@@ -259,7 +307,9 @@ class CompactUploadProgress extends StatelessWidget {
             Text(
               upload.status == UploadStatus.uploading
                   ? 'Uploading ${(upload.progressValue * 100).toInt()}%'
-                  : upload.statusText,
+                  : upload.status == UploadStatus.paused
+                      ? 'Paused ${(upload.progressValue * 100).toInt()}%'
+                      : upload.statusText,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,

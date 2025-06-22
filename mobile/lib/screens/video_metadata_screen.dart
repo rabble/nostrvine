@@ -1,433 +1,394 @@
-// ABOUTME: Video metadata entry screen for adding title, description, and hashtags to recorded videos
-// ABOUTME: Displays video preview alongside input fields for enhanced user experience
+// ABOUTME: Screen for adding metadata to recorded videos before publishing
+// ABOUTME: Allows users to add title, description, and hashtags to their vines
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
+import '../theme/vine_theme.dart';
+import '../models/pending_upload.dart';
 import '../services/upload_manager.dart';
-import '../widgets/hashtag_input_widget.dart';
-import '../widgets/character_counter_widget.dart';
+import '../services/auth_service.dart';
 
 class VideoMetadataScreen extends StatefulWidget {
   final File videoFile;
-  final VoidCallback? onCancel;
-  final VoidCallback? onPublish;
-
+  final Duration duration;
+  
   const VideoMetadataScreen({
     super.key,
     required this.videoFile,
-    this.onCancel,
-    this.onPublish,
+    required this.duration,
   });
-
+  
   @override
   State<VideoMetadataScreen> createState() => _VideoMetadataScreenState();
 }
 
 class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
-  VideoPlayerController? _controller;
-  bool _isPlaying = false;
-  bool _isUploading = false;
-  
+  late VideoPlayerController _videoController;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final FocusNode _titleFocus = FocusNode();
-  final FocusNode _descriptionFocus = FocusNode();
+  final TextEditingController _hashtagController = TextEditingController();
+  final List<String> _hashtags = [];
+  bool _isVideoInitialized = false;
+  String? _currentUploadId;
   
-  List<String> _hashtags = [];
-  
-  static const int _maxTitleLength = 100;
-  static const int _maxDescriptionLength = 280;
-
   @override
   void initState() {
     super.initState();
-    _initializeVideo();
+    // Delay initialization to ensure file is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeVideo();
+      _startBackgroundUpload();
+    });
   }
-
+  
   @override
   void dispose() {
-    _controller?.dispose();
+    _videoController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _titleFocus.dispose();
-    _descriptionFocus.dispose();
+    _hashtagController.dispose();
     super.dispose();
   }
-
-  void _initializeVideo() async {
-    _controller = VideoPlayerController.file(widget.videoFile);
+  
+  Future<void> _initializeVideo() async {
+    debugPrint('🎬 Initializing video preview: ${widget.videoFile.path}');
+    debugPrint('📁 File exists: ${widget.videoFile.existsSync()}');
+    debugPrint('📏 File size: ${widget.videoFile.existsSync() ? widget.videoFile.lengthSync() : 0} bytes');
     
+    _videoController = VideoPlayerController.file(widget.videoFile);
     try {
-      await _controller!.initialize();
-      if (mounted) {
-        setState(() {});
-        _controller!.setLooping(true);
-        _playVideo();
-      }
+      await _videoController.initialize();
+      debugPrint('✅ Video initialized: ${_videoController.value.size}');
+      await _videoController.setLooping(true);
+      await _videoController.play();
+      setState(() => _isVideoInitialized = true);
     } catch (e) {
-      debugPrint('❌ Error initializing video preview: $e');
+      debugPrint('❌ Failed to initialize video: $e');
+      debugPrint('📍 Stack trace: ${StackTrace.current}');
+      // Still update UI to show error state
+      setState(() => _isVideoInitialized = false);
     }
   }
-
-  void _playVideo() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      _controller!.play();
-      setState(() {
-        _isPlaying = true;
-      });
+  
+  Widget _buildVideoPreview() {
+    if (_isVideoInitialized && _videoController.value.isInitialized) {
+      return VideoPlayer(_videoController);
     }
-  }
-
-  void _pauseVideo() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      _controller!.pause();
-      setState(() {
-        _isPlaying = false;
-      });
-    }
-  }
-
-  void _togglePlayPause() {
-    if (_isPlaying) {
-      _pauseVideo();
-    } else {
-      _playVideo();
-    }
-  }
-
-  bool get _isFormValid {
-    return _titleController.text.trim().isNotEmpty &&
-           _titleController.text.length <= _maxTitleLength &&
-           _descriptionController.text.length <= _maxDescriptionLength;
-  }
-
-  Future<void> _publishVideo() async {
-    if (!_isFormValid || _isUploading) return;
-
-    setState(() {
-      _isUploading = true;
-    });
-
-    try {
-      final uploadManager = context.read<UploadManager>();
-      
-      // Get current user's pubkey from NostrService
-      // For now, we'll use a placeholder - this should be updated when NostrService is accessible
-      const userPubkey = 'placeholder_pubkey';
-      
-      await uploadManager.startUpload(
-        videoFile: widget.videoFile,
-        nostrPubkey: userPubkey,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        hashtags: _hashtags,
+    
+    // Check if file exists
+    if (!widget.videoFile.existsSync()) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 8),
+            const Text(
+              'Video file not found',
+              style: TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Go Back', style: TextStyle(color: VineTheme.vineGreen)),
+            ),
+          ],
+        ),
       );
-
-      if (mounted) {
-        widget.onPublish?.call();
-        Navigator.of(context).pop();
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video uploaded! Publishing in background...'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('❌ Error uploading video: $e');
-      
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Upload failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
+    
+    // Loading state
+    return const Center(
+      child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    );
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: _isUploading ? null : () {
-            widget.onCancel?.call();
-            Navigator.of(context).pop();
-          },
-        ),
+        backgroundColor: VineTheme.vineGreen,
         title: const Text(
           'Add Details',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           TextButton(
-            onPressed: _isFormValid && !_isUploading ? _publishVideo : null,
-            child: _isUploading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    'Publish',
-                    style: TextStyle(
-                      color: _isFormValid ? Colors.purple : Colors.grey,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+            onPressed: _publishVideo,
+            child: const Text(
+              'PUBLISH',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Video preview
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Container(
+                    color: Colors.black,
+                    child: _buildVideoPreview(),
+                  ),
+                ),
+            
+            // Metadata form
+            Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Video Preview Section
-                  Container(
-                    height: 300,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(12),
+                  // Title
+                  TextField(
+                    controller: _titleController,
+                    style: const TextStyle(color: VineTheme.primaryText),
+                    decoration: InputDecoration(
+                      labelText: 'Title',
+                      labelStyle: TextStyle(color: VineTheme.secondaryText),
+                      hintText: 'Give your vine a title',
+                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.secondaryText),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.vineGreen),
+                      ),
                     ),
-                    child: _buildVideoPreview(),
+                    maxLength: 100,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Description
+                  TextField(
+                    controller: _descriptionController,
+                    style: const TextStyle(color: VineTheme.primaryText),
+                    decoration: InputDecoration(
+                      labelText: 'Description (optional)',
+                      labelStyle: TextStyle(color: VineTheme.secondaryText),
+                      hintText: 'Add a description',
+                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.secondaryText),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.vineGreen),
+                      ),
+                    ),
+                    maxLines: 3,
+                    maxLength: 500,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Hashtags
+                  TextField(
+                    controller: _hashtagController,
+                    style: const TextStyle(color: VineTheme.primaryText),
+                    decoration: InputDecoration(
+                      labelText: 'Add hashtags',
+                      labelStyle: TextStyle(color: VineTheme.secondaryText),
+                      hintText: 'Type a hashtag and press enter',
+                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.secondaryText),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: VineTheme.vineGreen),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.add, color: VineTheme.vineGreen),
+                        onPressed: _addHashtag,
+                      ),
+                    ),
+                    onSubmitted: (_) => _addHashtag(),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Hashtag chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      // Default nostrvine tag
+                      Chip(
+                        label: const Text('#nostrvine'),
+                        backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
+                        labelStyle: const TextStyle(color: VineTheme.vineGreen),
+                      ),
+                      // User added tags
+                      ..._hashtags.map((tag) => Chip(
+                        label: Text('#$tag'),
+                        backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
+                        labelStyle: const TextStyle(color: VineTheme.vineGreen),
+                        deleteIcon: const Icon(Icons.close, size: 18),
+                        deleteIconColor: VineTheme.vineGreen,
+                        onDeleted: () {
+                          setState(() {
+                            _hashtags.remove(tag);
+                          });
+                        },
+                      )),
+                    ],
                   ),
                   
                   const SizedBox(height: 24),
                   
-                  // Title Input
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Title',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                  // Video info and upload status
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, color: VineTheme.secondaryText, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Duration: ${widget.duration.inSeconds}s • Size: ${_getFileSize()}',
+                              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
                             ),
-                          ),
-                          CharacterCounterWidget(
-                            currentLength: _titleController.text.length,
-                            maxLength: _maxTitleLength,
+                          ],
+                        ),
+                        if (_currentUploadId != null) ...[
+                          const SizedBox(height: 8),
+                          Consumer<UploadManager>(
+                            builder: (context, uploadManager, child) {
+                              final upload = uploadManager.getUpload(_currentUploadId!);
+                              if (upload == null) return const SizedBox.shrink();
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.cloud_upload, color: VineTheme.vineGreen, size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          upload.status == UploadStatus.uploading
+                                              ? 'Uploading ${(upload.progressValue * 100).toInt()}%'
+                                              : upload.status == UploadStatus.readyToPublish
+                                                  ? 'Upload complete'
+                                                  : upload.statusText,
+                                          style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  LinearProgressIndicator(
+                                    value: upload.progressValue,
+                                    backgroundColor: Colors.grey[700],
+                                    valueColor: const AlwaysStoppedAnimation<Color>(VineTheme.vineGreen),
+                                    minHeight: 2,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _titleController,
-                        focusNode: _titleFocus,
-                        style: const TextStyle(color: Colors.white),
-                        maxLength: _maxTitleLength,
-                        decoration: InputDecoration(
-                          hintText: 'Give your video a catchy title...',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.grey[900],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          counterText: '', // Hide default counter
-                        ),
-                        onChanged: (value) {
-                          setState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Description Input
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Description',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          CharacterCounterWidget(
-                            currentLength: _descriptionController.text.length,
-                            maxLength: _maxDescriptionLength,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _descriptionController,
-                        focusNode: _descriptionFocus,
-                        style: const TextStyle(color: Colors.white),
-                        maxLines: 4,
-                        maxLength: _maxDescriptionLength,
-                        decoration: InputDecoration(
-                          hintText: 'Tell viewers what your video is about...',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.grey[900],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          counterText: '', // Hide default counter
-                        ),
-                        onChanged: (value) {
-                          setState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Hashtags Section
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Hashtags',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      HashtagInputWidget(
-                        initialValue: _hashtags.join(' '),
-                        onHashtagsChanged: (hashtags) {
-                          setState(() {
-                            _hashtags = hashtags;
-                          });
-                        },
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVideoPreview() {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey[800],
+          ],
         ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: Colors.white54),
-              SizedBox(height: 12),
-              Text(
-                'Loading preview...',
-                style: TextStyle(color: Colors.white54),
-              ),
-            ],
-          ),
+      ),
+    ],
+  ),
+);
+}
+  
+  void _addHashtag() {
+    final tag = _hashtagController.text.trim().replaceAll('#', '');
+    if (tag.isNotEmpty && !_hashtags.contains(tag) && tag != 'nostrvine') {
+      setState(() {
+        _hashtags.add(tag);
+        _hashtagController.clear();
+      });
+    }
+  }
+  
+  String _getFileSize() {
+    final bytes = widget.videoFile.lengthSync();
+    final mb = bytes / 1024 / 1024;
+    return '${mb.toStringAsFixed(1)}MB';
+  }
+  
+  /// Start upload immediately in the background
+  Future<void> _startBackgroundUpload() async {
+    try {
+      final uploadManager = context.read<UploadManager>();
+      final authService = context.read<AuthService>();
+      
+      // Get user's public key
+      final userPubkey = authService.currentPublicKeyHex ?? 'anonymous';
+      
+      // Start the upload with placeholder metadata (will update when user publishes)
+      final upload = await uploadManager.startUpload(
+        videoFile: widget.videoFile,
+        nostrPubkey: userPubkey,
+        title: 'Untitled', // Placeholder title
+        description: '',
+        hashtags: ['nostrvine'],
+      );
+      
+      setState(() {
+        _currentUploadId = upload.id;
+      });
+      
+      debugPrint('🚀 Background upload started: ${upload.id}');
+    } catch (e) {
+      debugPrint('❌ Failed to start background upload: $e');
+    }
+  }
+  
+  Future<void> _publishVideo() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add a title'),
+          backgroundColor: Colors.orange,
         ),
       );
+      return;
     }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: [
-          SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _controller!.value.size.width,
-                height: _controller!.value.size.height,
-                child: VideoPlayer(_controller!),
-              ),
-            ),
-          ),
-          
-          // Play/Pause Overlay
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _togglePlayPause,
-              child: Container(
-                color: Colors.transparent,
-                child: Center(
-                  child: AnimatedOpacity(
-                    opacity: _isPlaying ? 0.0 : 1.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow,
-                        size: 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          // Mute indicator (videos are always muted in preview)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(
-                Icons.volume_off,
-                size: 16,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    
+    // Always include nostrvine tag
+    final allHashtags = ['nostrvine', ..._hashtags];
+    
+    // TODO: Update the upload metadata with the final title/description
+    // For now, the upload continues with the original metadata
+    
+    // Just navigate back to the feed
+    if (mounted) {
+      Navigator.of(context).pop({
+        'uploadId': _currentUploadId,
+        'title': title,
+        'description': _descriptionController.text.trim(),
+        'hashtags': allHashtags,
+      });
+    }
   }
 }

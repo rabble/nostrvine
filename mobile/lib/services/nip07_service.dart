@@ -136,10 +136,8 @@ class Nip07Service extends ChangeNotifier {
       // Try to get user's relays (optional feature)
       try {
         final relaysMethod = nip07.nostr!.getRelays;
-        if (relaysMethod != null) {
-          _userRelays = await relaysMethod();
-          debugPrint('📡 Retrieved ${_userRelays?.length ?? 0} relays from extension');
-        }
+        _userRelays = await relaysMethod();
+        debugPrint('📡 Retrieved ${_userRelays?.length ?? 0} relays from extension');
       } catch (e) {
         debugPrint('⚠️ Extension does not support getRelays: $e');
         // Not a critical error, continue without relays

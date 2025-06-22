@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Explore a world of beautiful, looping videos.</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="vine-styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="OpenVine - The decentralized vine-like video sharing platform powered by Nostr">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <h1>OpenVine</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="#" class="nav-button active" data-platform="ios">Get it for iOS</a>
+                    <a href="#" class="nav-button" data-platform="android">Get it for Android</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>Explore a world of beautiful, looping videos.</h2>
+            <div class="search-container">
+                <input type="text" placeholder="Search" class="search-input">
+                <button class="search-button">🔍</button>
+            </div>
+            <div class="app-buttons">
+                <a href="ios.html" class="app-button ios">
+                    <span class="app-icon">🍎</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">iOS</span>
+                    </div>
+                </a>
+                <a href="android.html" class="app-button android">
+                    <span class="app-icon">🤖</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">Android</span>
+                    </div>
+                </a>
+                <a href="#" class="app-button windows">
+                    <span class="app-icon">🪟</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">Windows</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section class="main-content">
+            <div class="left-sidebar">
+                <div class="channels">
+                    <h3>Channels</h3>
+                    <div class="channel-grid">
+                        <div class="channel-item" style="background-color: #0ae68a;">
+                            <span class="channel-icon">🎬</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #a03a1a;">
+                            <span class="channel-icon">🎵</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ea5959;">
+                            <span class="channel-icon">😄</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #3561f3;">
+                            <span class="channel-icon">🌟</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #f43ce1;">
+                            <span class="channel-icon">🎨</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ff6700;">
+                            <span class="channel-icon">🔥</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #f6a734;">
+                            <span class="channel-icon">🎮</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #7e5cf6;">
+                            <span class="channel-icon">💥</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #0ae68a;">
+                            <span class="channel-icon">🌈</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #141414;">
+                            <span class="channel-icon">🎯</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #9ddaf3;">
+                            <span class="channel-icon">⚡</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #f6a734;">
+                            <span class="channel-icon">🎭</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #08a0cf;">
+                            <span class="channel-icon">🏀</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ff6700;">
+                            <span class="channel-icon">🍕</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #141414;">
+                            <span class="channel-icon">🎸</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ea5959;">
+                            <span class="channel-icon">🚗</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ff3434;">
+                            <span class="channel-icon">🍔</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #ffd640;">
+                            <span class="channel-icon">🌮</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #0ae68a;">
+                            <span class="channel-icon">💚</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #f43ce1;">
+                            <span class="channel-icon">🎪</span>
+                        </div>
+                        <div class="channel-item" style="background-color: #edb92e;">
+                            <span class="channel-icon">⚠️</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="center-content">
+                <h3>🎬 Vine Playlist</h3>
+                <div class="vine-playlist-grid">
+                    <div class="vine-item active" data-video="0" onclick="playVideo(0)">
+                        <div class="vine-thumbnail">
+                            <video 
+                                id="main-vine-player" 
+                                class="vine-video main-video" 
+                                autoplay 
+                                loop 
+                                playsinline
+                                poster="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3C/svg%3E">
+                                <source src="https://res.cloudinary.com/dswu0ugmo/video/upload/v1750583297/5eM6tu9HFIu_20250622_162133_lm26h7.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <h4>Pokemon Go</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 250.5K views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="vine-item" data-video="1" onclick="playVideo(1)">
+                        <div class="vine-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23444'/%3E%3C/svg%3E" alt="Video thumbnail">
+                        </div>
+                        <h4>Creative Content</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 189.2K views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="vine-item" data-video="2" onclick="playVideo(2)">
+                        <div class="vine-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23555'/%3E%3C/svg%3E" alt="Video thumbnail">
+                        </div>
+                        <h4>Camp Unplug</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 324.1K views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="vine-item" data-video="3" onclick="playVideo(3)">
+                        <div class="vine-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23666'/%3E%3C/svg%3E" alt="Video thumbnail">
+                        </div>
+                        <h4>2016 iHeartRadio MMVAs</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 89.2K views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="vine-item" data-video="4" onclick="playVideo(4)">
+                        <div class="vine-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23777'/%3E%3C/svg%3E" alt="Video thumbnail">
+                        </div>
+                        <h4>Beach Vibes</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 423.9K views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="vine-item" data-video="5" onclick="playVideo(5)">
+                        <div class="vine-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23888'/%3E%3C/svg%3E" alt="Video thumbnail">
+                        </div>
+                        <h4>Viral Content</h4>
+                        <div class="vine-stats">
+                            <span class="likes">❤️ 1</span>
+                            <span class="views">👁️ 156.7K views</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-sidebar">
+                <div class="featured-viners">
+                    <h3>👥 Featured Viners</h3>
+                    <div class="viner-list">
+                        <div class="viner-profile">
+                            <div class="viner-avatar">
+                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23333'/%3E%3C/svg%3E" alt="Avatar">
+                            </div>
+                            <div class="viner-info">
+                                <h4>Justin J Ruane</h4>
+                            </div>
+                        </div>
+                        <div class="viner-profile">
+                            <div class="viner-avatar">
+                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23444'/%3E%3C/svg%3E" alt="Avatar">
+                            </div>
+                            <div class="viner-info">
+                                <h4>Mario Jones</h4>
+                            </div>
+                        </div>
+                        <div class="viner-profile">
+                            <div class="viner-avatar">
+                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23555'/%3E%3C/svg%3E" alt="Avatar">
+                            </div>
+                            <div class="viner-info">
+                                <h4>Val</h4>
+                            </div>
+                        </div>
+                        <div class="viner-profile">
+                            <div class="viner-avatar">
+                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23666'/%3E%3C/svg%3E" alt="Avatar">
+                            </div>
+                            <div class="viner-info">
+                                <h4>@IREMFORASEC</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="popular-now-small">
+                    <h3>📈 Popular Now</h3>
+                    <div class="popular-small-list">
+                        <div class="popular-small-item">
+                            <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%23333'/%3E%3C/svg%3E" alt="Thumbnail">
+                            <div>
+                                <p class="pop-title">Thomas Sand...</p>
+                                <p class="pop-subtitle">It Never Ends ∞</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="trending-tags">
+                    <h3>🏷️ Trending Tags</h3>
+                    <div class="tag-list">
+                        <span class="tag">#funny</span>
+                        <span class="tag">#vibes</span>
+                        <span class="tag">#comedy</span>
+                        <span class="tag">#viral</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="featured-viners">
+            <h3>🌟 Featured Viners</h3>
+            <div class="viners-grid">
+                <div class="viner-card">
+                    <div class="viner-avatar" style="background-color: #ff6b6b;">
+                        <span>🎭</span>
+                    </div>
+                    <p class="viner-name">Insta: mason.chill</p>
+                </div>
+                <div class="viner-card">
+                    <div class="viner-avatar" style="background-color: #4ecdc4;">
+                        <span>🎨</span>
+                    </div>
+                    <p class="viner-name">@AliciaHerber (IG)</p>
+                </div>
+                <div class="viner-card">
+                    <div class="viner-avatar" style="background-color: #ffe66d;">
+                        <span>😎</span>
+                    </div>
+                    <p class="viner-name">OMG its Richley</p>
+                </div>
+                <div class="viner-card">
+                    <div class="viner-avatar" style="background-color: #95e1d3;">
+                        <span>🌟</span>
+                    </div>
+                    <p class="viner-name">Ryan Gordon</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script src="vine-player.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

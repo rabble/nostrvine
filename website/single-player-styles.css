@@ -1,0 +1,245 @@
+/* ABOUTME: Styles for single video player layout
+   ABOUTME: Centered video with tap controls and indicators */
+
+.single-player-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.vine-video {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+}
+
+/* Remove ALL video controls */
+.vine-video::-webkit-media-controls {
+    display: none !important;
+}
+
+.vine-video::-webkit-media-controls-enclosure {
+    display: none !important;
+}
+
+.vine-video::-webkit-media-controls-panel {
+    display: none !important;
+}
+
+.vine-video::-webkit-media-controls-play-button {
+    display: none !important;
+}
+
+.vine-video::-webkit-media-controls-overlay-play-button {
+    display: none !important;
+}
+
+.vine-video::-webkit-media-controls-start-playback-button {
+    display: none !important;
+}
+
+.vine-video::-moz-media-controls {
+    display: none !important;
+}
+
+.vine-video::media-controls {
+    display: none !important;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 30%);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.tap-hint {
+    color: white;
+    font-size: 0.9rem;
+    padding: 1rem;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    animation: fadeInOut 4s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+}
+
+.video-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.video-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 1rem 0;
+}
+
+.video-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ddd;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.video-indicator:hover {
+    background: #0ae68a;
+    transform: scale(1.2);
+}
+
+.video-indicator.active {
+    background: #0ae68a;
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* Loop counter removed */
+
+.controls-hint {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.controls-hint p {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Remove pause indicator - keeping space for other styles */
+
+/* Unmute overlay */
+.unmute-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: opacity 0.3s ease;
+}
+
+.unmute-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.unmute-content {
+    text-align: center;
+    color: white;
+}
+
+.unmute-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 1rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.unmute-text {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Navigation buttons */
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.prev-btn {
+    left: 10px;
+}
+
+.next-btn {
+    right: 10px;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.nav-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* Hide nav buttons on mobile for swipe */
+@media (max-width: 768px) {
+    .nav-btn {
+        display: none;
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .single-player-container {
+        padding: 0.5rem;
+        margin: 1rem auto;
+    }
+    
+    .video-wrapper {
+        max-width: 100%;
+    }
+    
+    .current-video-title {
+        font-size: 1.2rem;
+    }
+}

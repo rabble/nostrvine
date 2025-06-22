@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Camera Recording Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .video-container {
+            position: relative;
+            width: 640px;
+            height: 640px;
+            background: black;
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #00b894;
+            color: white;
+        }
+        .btn-secondary {
+            background: #636e72;
+            color: white;
+        }
+        .btn-danger {
+            background: #d63031;
+            color: white;
+        }
+        .btn:disabled {
+            background: #ddd;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00b894;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        .recording-indicator {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: red;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .segment-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .segment {
+            background: white;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 4px solid #00b894;
+        }
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Web Camera Recording Test</h1>
+        <p>This test simulates the Vine-style recording system to verify start/stop/continue functionality.</p>
+        
+        <div class="instructions">
+            <h3>📋 How to Test:</h3>
+            <ul>
+                <li><strong>Press and Hold</strong> the record button to start recording a segment</li>
+                <li><strong>Release</strong> to pause recording (segment saved)</li>
+                <li><strong>Press and Hold again</strong> to continue recording another segment</li>
+                <li>Recording automatically stops at 6 seconds total</li>
+                <li>You can finish early with the "Finish Recording" button</li>
+            </ul>
+        </div>
+
+        <div class="video-container">
+            <video id="preview" autoplay muted playsinline></video>
+            <div class="recording-indicator" id="recordingIndicator">● REC</div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="status status-info" id="status">Ready to start recording</div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" id="initBtn" onclick="initCamera()">Initialize Camera</button>
+            <button class="btn btn-primary" id="recordBtn" disabled onmousedown="startRecording()" onmouseup="stopRecording()" onmouseleave="stopRecording()">
+                Hold to Record
+            </button>
+            <button class="btn btn-danger" id="finishBtn" disabled onclick="finishRecording()">Finish Recording</button>
+            <button class="btn btn-secondary" id="resetBtn" disabled onclick="resetRecording()">Reset</button>
+        </div>
+
+        <div class="segment-list" id="segmentList" style="display: none;">
+            <h3>📹 Recording Segments:</h3>
+            <div id="segments"></div>
+            <p><strong>Total Duration:</strong> <span id="totalDuration">0.0s</span> / 6.0s</p>
+        </div>
+    </div>
+
+    <script>
+        // Recording state
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let isRecording = false;
+        let segments = [];
+        let currentSegmentStartTime = null;
+        let totalDuration = 0;
+        let recordedChunks = [];
+        const MAX_DURATION = 6000; // 6 seconds in milliseconds
+
+        // DOM elements
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        const progressFill = document.getElementById('progressFill');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const initBtn = document.getElementById('initBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const finishBtn = document.getElementById('finishBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const segmentList = document.getElementById('segmentList');
+        const segmentsDiv = document.getElementById('segments');
+        const totalDurationSpan = document.getElementById('totalDuration');
+
+        // Initialize camera
+        async function initCamera() {
+            try {
+                updateStatus('Requesting camera access...', 'info');
+                
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 640 },
+                        facingMode: 'user'
+                    },
+                    audio: true
+                });
+
+                preview.srcObject = mediaStream;
+                
+                updateStatus('Camera initialized successfully! Ready to record.', 'success');
+                initBtn.disabled = true;
+                recordBtn.disabled = false;
+                
+            } catch (error) {
+                updateStatus(`Camera initialization failed: ${error.message}`, 'error');
+                console.error('Camera error:', error);
+            }
+        }
+
+        // Start recording segment
+        function startRecording() {
+            if (isRecording || totalDuration >= MAX_DURATION) return;
+
+            try {
+                currentSegmentStartTime = Date.now();
+                isRecording = true;
+                recordedChunks = [];
+
+                // Create new MediaRecorder for this segment
+                mediaRecorder = new MediaRecorder(mediaStream, {
+                    mimeType: getSupportedMimeType()
+                });
+
+                mediaRecorder.addEventListener('dataavailable', (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    finishSegment();
+                });
+
+                mediaRecorder.start();
+                
+                updateStatus(`Recording segment ${segments.length + 1}... (Release to pause)`, 'info');
+                recordingIndicator.style.display = 'block';
+                finishBtn.disabled = false;
+                
+                // Start progress timer
+                startProgressTimer();
+                
+            } catch (error) {
+                updateStatus(`Failed to start recording: ${error.message}`, 'error');
+                console.error('Recording error:', error);
+            }
+        }
+
+        // Stop recording segment
+        function stopRecording() {
+            if (!isRecording) return;
+
+            const segmentDuration = Date.now() - currentSegmentStartTime;
+            const MIN_SEGMENT_DURATION = 100; // 100ms minimum
+
+            if (segmentDuration < MIN_SEGMENT_DURATION) {
+                // Too short, cancel this segment
+                mediaRecorder.stop();
+                isRecording = false;
+                recordingIndicator.style.display = 'none';
+                stopProgressTimer();
+                updateStatus('Segment too short, cancelled. Try holding longer.', 'error');
+                return;
+            }
+
+            mediaRecorder.stop();
+            isRecording = false;
+            recordingIndicator.style.display = 'none';
+            stopProgressTimer();
+        }
+
+        // Finish current segment
+        function finishSegment() {
+            if (recordedChunks.length === 0) return;
+
+            const segmentDuration = Date.now() - currentSegmentStartTime;
+            const segmentData = {
+                id: segments.length + 1,
+                duration: segmentDuration,
+                startTime: new Date(currentSegmentStartTime).toLocaleTimeString(),
+                blob: new Blob(recordedChunks, { type: getSupportedMimeType() })
+            };
+
+            segments.push(segmentData);
+            totalDuration += segmentDuration;
+
+            // Update UI
+            updateSegmentsList();
+            updateProgress();
+
+            if (totalDuration >= MAX_DURATION) {
+                updateStatus('Recording completed! (6 second limit reached)', 'success');
+                recordBtn.disabled = true;
+                finishBtn.disabled = true;
+                resetBtn.disabled = false;
+            } else {
+                const remaining = (MAX_DURATION - totalDuration) / 1000;
+                updateStatus(`Segment ${segments.length} saved! ${remaining.toFixed(1)}s remaining. Hold to continue.`, 'success');
+            }
+        }
+
+        // Finish recording completely
+        function finishRecording() {
+            if (isRecording) {
+                stopRecording();
+            }
+            
+            updateStatus(`Recording finished with ${segments.length} segments!`, 'success');
+            recordBtn.disabled = true;
+            finishBtn.disabled = true;
+            resetBtn.disabled = false;
+
+            // Create download links for each segment
+            segments.forEach((segment, index) => {
+                const url = URL.createObjectURL(segment.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vine_segment_${index + 1}.webm`;
+                a.textContent = `Download Segment ${index + 1}`;
+                a.style.marginRight = '10px';
+                segmentsDiv.appendChild(a);
+            });
+        }
+
+        // Reset recording
+        function resetRecording() {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordingIndicator.style.display = 'none';
+                stopProgressTimer();
+            }
+
+            segments = [];
+            totalDuration = 0;
+            recordedChunks = [];
+            
+            updateStatus('Recording reset. Ready to start new recording.', 'info');
+            updateSegmentsList();
+            updateProgress();
+            
+            recordBtn.disabled = false;
+            finishBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+
+        // Update segments list
+        function updateSegmentsList() {
+            if (segments.length === 0) {
+                segmentList.style.display = 'none';
+                return;
+            }
+
+            segmentList.style.display = 'block';
+            segmentsDiv.innerHTML = '';
+
+            segments.forEach((segment, index) => {
+                const div = document.createElement('div');
+                div.className = 'segment';
+                div.innerHTML = `
+                    <strong>Segment ${segment.id}</strong> - 
+                    Duration: ${(segment.duration / 1000).toFixed(2)}s - 
+                    Started: ${segment.startTime}
+                `;
+                segmentsDiv.appendChild(div);
+            });
+
+            totalDurationSpan.textContent = `${(totalDuration / 1000).toFixed(1)}s`;
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const progress = Math.min((totalDuration / MAX_DURATION) * 100, 100);
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Progress timer for real-time updates
+        let progressTimer = null;
+
+        function startProgressTimer() {
+            stopProgressTimer();
+            progressTimer = setInterval(() => {
+                if (isRecording && currentSegmentStartTime) {
+                    const currentSegmentDuration = Date.now() - currentSegmentStartTime;
+                    const currentTotal = totalDuration + currentSegmentDuration;
+                    const progress = Math.min((currentTotal / MAX_DURATION) * 100, 100);
+                    progressFill.style.width = `${progress}%`;
+
+                    // Auto-stop at max duration
+                    if (currentTotal >= MAX_DURATION) {
+                        stopRecording();
+                    }
+                }
+            }, 50);
+        }
+
+        function stopProgressTimer() {
+            if (progressTimer) {
+                clearInterval(progressTimer);
+                progressTimer = null;
+            }
+        }
+
+        // Update status message
+        function updateStatus(message, type) {
+            status.textContent = message;
+            status.className = `status status-${type}`;
+        }
+
+        // Get supported MIME type
+        function getSupportedMimeType() {
+            const types = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm',
+                'video/mp4'
+            ];
+
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    return type;
+                }
+            }
+
+            return 'video/webm';
+        }
+
+        // Touch support for mobile
+        recordBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startRecording();
+        });
+
+        recordBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopRecording();
+        });
+
+        // Prevent context menu on long press
+        recordBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

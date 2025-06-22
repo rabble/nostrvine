@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'nip98_auth_service.dart';
 
 /// Result of a Stream upload operation
 class StreamUploadResult {
@@ -136,12 +137,14 @@ class StreamVideoStatus {
 
 /// Service for uploading videos to Cloudflare Stream
 class StreamUploadService extends ChangeNotifier {
-  static String get _baseUrl => AppConfig.backendBaseUrl;
   
   final Map<String, StreamController<double>> _progressControllers = {};
   final http.Client _client;
+  final Nip98AuthService? _authService;
   
-  StreamUploadService({http.Client? client}) : _client = client ?? http.Client();
+  StreamUploadService({http.Client? client, Nip98AuthService? authService}) 
+    : _client = client ?? http.Client(),
+      _authService = authService;
   
   /// Upload a video file to Cloudflare Stream with progress tracking
   Future<StreamUploadResult> uploadVideo({
@@ -219,7 +222,7 @@ class StreamUploadService extends ChangeNotifier {
         Uri.parse(AppConfig.streamUploadRequestUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getNip98Token()}',
+          'Authorization': await _getNip98Token(url: AppConfig.streamUploadRequestUrl, method: HttpMethod.post),
         },
         body: jsonEncode(uploadRequest.toJson()),
       ).timeout(const Duration(seconds: 30));
@@ -343,10 +346,11 @@ class StreamUploadService extends ChangeNotifier {
     debugPrint('📊 Getting video status for: $videoId');
     
     try {
+      final statusUrl = AppConfig.streamStatusUrl(videoId);
       final response = await _client.get(
-        Uri.parse(AppConfig.streamStatusUrl(videoId)),
+        Uri.parse(statusUrl),
         headers: {
-          'Authorization': 'Bearer ${await _getNip98Token()}',
+          'Authorization': await _getNip98Token(url: statusUrl, method: HttpMethod.get),
         },
       ).timeout(const Duration(seconds: 15));
       
@@ -399,11 +403,24 @@ class StreamUploadService extends ChangeNotifier {
   }
   
   /// Generate NIP-98 authentication token for backend requests
-  Future<String> _getNip98Token() async {
-    // TODO: Implement proper NIP-98 authentication
-    // For now, return a placeholder token
-    debugPrint('⚠️ TODO: Implement NIP-98 authentication');
-    return 'placeholder-nip98-token';
+  Future<String> _getNip98Token({String? url, HttpMethod method = HttpMethod.post}) async {
+    if (_authService == null) {
+      debugPrint('⚠️ No authentication service available');
+      throw Exception('Authentication service not available');
+    }
+    
+    final targetUrl = url ?? AppConfig.streamUploadRequestUrl;
+    final token = await _authService!.createAuthToken(
+      url: targetUrl,
+      method: method,
+    );
+    
+    if (token == null) {
+      debugPrint('❌ Failed to create NIP-98 token');
+      throw Exception('Failed to create authentication token');
+    }
+    
+    return token.token;
   }
   
   /// Cancel an ongoing upload

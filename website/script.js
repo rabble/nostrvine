@@ -1,6 +1,7 @@
 // ABOUTME: OpenVine landing page JavaScript for interactivity
 // ABOUTME: Handles channel clicks, search, and dynamic content loading
 
+
 document.addEventListener('DOMContentLoaded', function() {
     // Channel categories mapping
     const channelCategories = {
@@ -70,13 +71,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle platform buttons
-    const navButtons = document.querySelectorAll('.nav-button');
+    const navButtons = document.querySelectorAll('.nav-button[data-platform]');
     navButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const platform = this.dataset.platform;
             
-            // Remove active class from all buttons
+            // Remove active class from all platform buttons
             navButtons.forEach(btn => btn.classList.remove('active'));
             // Add active class to clicked button
             this.classList.add('active');
@@ -84,13 +85,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Platform-specific actions
             switch(platform) {
                 case 'ios':
-                    window.open('https://apps.apple.com/', '_blank');
+                    window.location.href = 'ios.html';
                     break;
                 case 'android':
-                    window.open('https://play.google.com/', '_blank');
-                    break;
-                case 'windows':
-                    showNotification('Windows app coming soon!');
+                    window.location.href = 'android.html';
                     break;
             }
         });
@@ -229,4 +227,43 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Log that the page is ready
     console.log('OpenVine landing page loaded successfully!');
+    
+    // Matrix-style view counter animation
+    function animateViewCounts() {
+        const viewElements = document.querySelectorAll('.vine-stats .views');
+        
+        viewElements.forEach(element => {
+            // Random chance to update each counter
+            if (Math.random() > 0.7) {
+                const currentText = element.textContent;
+                const match = currentText.match(/[\d.]+/);
+                if (match) {
+                    let currentNum = parseFloat(match[0]);
+                    // Random increment between 0.1 and 2.5
+                    const increment = (Math.random() * 2.4 + 0.1).toFixed(1);
+                    currentNum = parseFloat(currentNum) + parseFloat(increment);
+                    
+                    // Format with K suffix
+                    element.textContent = `👁️ ${currentNum.toFixed(1)}K views`;
+                    
+                    // Add glitch effect
+                    element.style.color = '#0ae68a';
+                    element.style.textShadow = '0 0 3px #0ae68a';
+                    
+                    setTimeout(() => {
+                        element.style.color = '#666';
+                        element.style.textShadow = 'none';
+                    }, 200);
+                }
+            }
+        });
+    }
+    
+    // Start the animation
+    setInterval(animateViewCounts, 500);
+    
+    // Initial animation
+    animateViewCounts();
 });
+
+// All video functionality moved to vine-player.js

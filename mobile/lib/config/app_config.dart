@@ -2,10 +2,10 @@
 // ABOUTME: Centralizes app configuration for different environments (dev, staging, prod)
 
 class AppConfig {
-  // Backend configuration
+  // Backend configuration  
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://api.openvine.co',
+    defaultValue: 'https://nostrvine-backend.protestnet.workers.dev',
   );
   
   // Environment detection

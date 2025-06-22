@@ -2,7 +2,7 @@
 // ABOUTME: Tests Nostr event validation, processing, and error handling for video events
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:nostrvine_app/services/video_event_processor.dart';
 import 'package:nostrvine_app/models/video_event.dart';
 import '../../helpers/test_helpers.dart';
@@ -15,15 +15,15 @@ void main() {
     group('Event Validation', () {
       test('should validate correct kind 22 video events', () {
         // ARRANGE
-        final validEvent = Event.from(
-          kind: 22,
-          content: 'Check out this awesome video!',
-          tags: [
+        final validEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['title', 'Test Video'],
             ['duration', '30'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Check out this awesome video!'
         );
         
         // ACT & ASSERT
@@ -36,11 +36,11 @@ void main() {
       
       test('should reject events with wrong kind', () {
         // ARRANGE
-        final wrongKindEvent = Event.from(
-          kind: 1, // Text note, not video
-          content: 'This is not a video event',
-          tags: [],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final wrongKindEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          1, // Text note, not video
+          [],
+          'This is not a video event'
         );
         
         // ACT & ASSERT
@@ -53,13 +53,13 @@ void main() {
       
       test('should reject events without video URL', () {
         // ARRANGE
-        final noUrlEvent = Event.from(
-          kind: 22,
-          content: 'Video without URL',
-          tags: [
+        final noUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['title', 'Video Title'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video without URL'
         );
         
         // ACT & ASSERT
@@ -72,13 +72,13 @@ void main() {
       
       test('should validate video URL format', () {
         // ARRANGE
-        final invalidUrlEvent = Event.from(
-          kind: 22,
-          content: 'Video with invalid URL',
-          tags: [
+        final invalidUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'not-a-valid-url'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with invalid URL'
         );
         
         // ACT & ASSERT
@@ -91,14 +91,14 @@ void main() {
       
       test('should validate supported video formats', () {
         // ARRANGE
-        final unsupportedFormatEvent = Event.from(
-          kind: 22,
-          content: 'Video with unsupported format',
-          tags: [
+        final unsupportedFormatEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.avi'],
             ['m', 'video/avi'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with unsupported format'
         );
         
         // ACT & ASSERT
@@ -111,13 +111,13 @@ void main() {
       
       test('should validate event fields are not empty', () {
         // ARRANGE - Create event with empty content but valid structure
-        final emptyFieldsEvent = Event.from(
-          kind: 22,
-          content: '', // Empty content is allowed
-          tags: [
+        final emptyFieldsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          '' // Empty content is allowed
         );
         
         // ACT & ASSERT
@@ -133,10 +133,10 @@ void main() {
     group('Event Processing', () {
       test('should successfully process valid video event', () {
         // ARRANGE
-        final validEvent = Event.from(
-          kind: 22,
-          content: 'Amazing short video content!',
-          tags: [
+        final validEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/awesome_video.mp4'],
             ['title', 'Awesome Video'],
             ['duration', '45'],
@@ -145,7 +145,7 @@ void main() {
             ['t', 'awesome'],
             ['t', 'viral'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Amazing short video content!'
         );
         
         // ACT
@@ -166,14 +166,14 @@ void main() {
       
       test('should handle events with imeta tags', () {
         // ARRANGE
-        final imetaEvent = Event.from(
-          kind: 22,
-          content: 'Video with imeta data',
-          tags: [
+        final imetaEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['imeta', 'url https://example.com/imeta_video.mp4', 'm video/mp4', 'x abc123def456', 'size 5242880', 'dim 1280x720', 'duration 60'],
             ['title', 'Imeta Video'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with imeta data'
         );
         
         // ACT
@@ -190,13 +190,13 @@ void main() {
       
       test('should handle missing optional fields gracefully', () {
         // ARRANGE
-        final minimalEvent = Event.from(
-          kind: 22,
-          content: 'Minimal video event',
-          tags: [
+        final minimalEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/minimal.mp4'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Minimal video event'
         );
         
         // ACT
@@ -215,11 +215,11 @@ void main() {
     group('Error Handling', () {
       test('should throw VideoEventProcessorException for invalid events', () {
         // ARRANGE
-        final invalidEvent = Event.from(
-          kind: 1, // Wrong kind
-          content: 'Not a video event',
-          tags: [],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final invalidEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          1, // Wrong kind
+          [],
+          'Not a video event'
         );
         
         // ACT & ASSERT
@@ -239,17 +239,17 @@ void main() {
       
       test('should handle malformed tag data', () {
         // ARRANGE
-        final malformedTagsEvent = Event.from(
-          kind: 22,
-          content: 'Video with malformed tags',
-          tags: [
+        final malformedTagsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration'], // Missing value
             ['dim', ''], // Empty value
             ['size', 'not-a-number'], // Invalid number
             [], // Empty tag
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with malformed tags'
         );
         
         // ACT
@@ -264,14 +264,14 @@ void main() {
       
       test('should handle special characters in content', () {
         // ARRANGE
-        final specialCharsEvent = Event.from(
-          kind: 22,
-          content: 'Video with émojis 🎥 and special chars: "quotes" & <tags>',
-          tags: [
+        final specialCharsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/special.mp4'],
             ['title', 'Special "Title" with émojis 🎬'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with émojis 🎥 and special chars: "quotes" & <tags>'
         );
         
         // ACT
@@ -285,13 +285,13 @@ void main() {
       test('should handle very large content fields', () {
         // ARRANGE
         final longContent = 'A' * 10000; // 10KB content
-        final largeContentEvent = Event.from(
-          kind: 22,
-          content: longContent,
-          tags: [
+        final largeContentEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/large.mp4'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          longContent
         );
         
         // ACT
@@ -306,10 +306,10 @@ void main() {
     group('Edge Cases', () {
       test('should handle duplicate tags', () {
         // ARRANGE
-        final duplicateTagsEvent = Event.from(
-          kind: 22,
-          content: 'Video with duplicate tags',
-          tags: [
+        final duplicateTagsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/first.mp4'],
             ['url', 'https://example.com/second.mp4'], // Duplicate URL
             ['title', 'First Title'],
@@ -317,7 +317,7 @@ void main() {
             ['duration', '30'],
             ['duration', '60'], // Duplicate duration
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with duplicate tags'
         );
         
         // ACT
@@ -334,18 +334,18 @@ void main() {
         final oldTimestamp = DateTime(1970, 1, 1);
         final futureTimestamp = DateTime(2030, 12, 31);
         
-        final oldEvent = Event.from(
-          kind: 22,
-          content: 'Very old video',
-          tags: [['url', 'https://example.com/old.mp4']],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final oldEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['url', 'https://example.com/old.mp4']],
+          'Very old video'
         );
         
-        final futureEvent = Event.from(
-          kind: 22,
-          content: 'Future video',
-          tags: [['url', 'https://example.com/future.mp4']],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final futureEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [['url', 'https://example.com/future.mp4']],
+          'Future video'
         );
         
         // ACT
@@ -359,14 +359,14 @@ void main() {
       
       test('should handle international domain names and URLs', () {
         // ARRANGE
-        final internationalEvent = Event.from(
-          kind: 22,
-          content: 'International video',
-          tags: [
+        final internationalEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://видео.рф/test.mp4'], // Cyrillic domain
             ['title', 'Vidéo Français'], // French characters
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'International video'
         );
         
         // ACT
@@ -379,16 +379,16 @@ void main() {
       
       test('should handle boundary values for numeric fields', () {
         // ARRANGE
-        final boundaryEvent = Event.from(
-          kind: 22,
-          content: 'Boundary values video',
-          tags: [
+        final boundaryEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/boundary.mp4'],
             ['duration', '0'], // Zero duration
             ['size', '0'], // Zero file size
             ['dim', '1x1'], // Minimal dimensions
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Boundary values video'
         );
         
         // ACT
@@ -405,13 +405,13 @@ void main() {
       test('should handle extremely long URLs', () {
         // ARRANGE
         final longUrl = 'https://example.com/' + 'very-long-path/' * 100 + 'video.mp4';
-        final longUrlEvent = Event.from(
-          kind: 22,
-          content: 'Video with very long URL',
-          tags: [
+        final longUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', longUrl],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with very long URL'
         );
         
         // ACT
@@ -426,15 +426,15 @@ void main() {
     group('Performance', () {
       test('should process events efficiently', () {
         // ARRANGE
-        final events = List.generate(100, (index) => Event.from(
-          kind: 22,
-          content: 'Performance test video $index',
-          tags: [
+        final events = List.generate(100, (index) => Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/perf$index.mp4'],
             ['title', 'Performance Video $index'],
             ['duration', '${30 + index}'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Performance test video $index'
         ));
         
         // ACT
@@ -451,13 +451,13 @@ void main() {
     group('Additional Coverage Tests', () {
       test('should handle empty string URL', () {
         // ARRANGE
-        final emptyUrlEvent = Event.from(
-          kind: 22,
-          content: 'Test video',
-          tags: [
+        final emptyUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', ''], // Empty string URL
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video'
         );
         
         // ACT
@@ -470,13 +470,13 @@ void main() {
 
       test('should validate URL scheme requirement', () {
         // ARRANGE
-        final noSchemeEvent = Event.from(
-          kind: 22,
-          content: 'Test video',
-          tags: [
+        final noSchemeEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'example.com/video.mp4'], // No scheme
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video'
         );
         
         // ACT
@@ -489,13 +489,13 @@ void main() {
 
       test('should validate URL authority requirement', () {
         // ARRANGE - file:// URLs with file path are actually valid
-        final noAuthorityEvent = Event.from(
-          kind: 22,
-          content: 'Test video',
-          tags: [
+        final noAuthorityEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'file:///local/video.mp4'], // File URL with path
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video'
         );
         
         // ACT
@@ -507,14 +507,14 @@ void main() {
 
       test('should handle case-insensitive MIME type validation', () {
         // ARRANGE
-        final mixedCaseEvent = Event.from(
-          kind: 22,
-          content: 'Test video',
-          tags: [
+        final mixedCaseEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['m', 'Video/MP4'], // Mixed case - should be normalized to lowercase
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video'
         );
         
         // ACT
@@ -526,15 +526,15 @@ void main() {
 
       test('should handle negative numeric values', () {
         // ARRANGE
-        final negativeValuesEvent = Event.from(
-          kind: 22,
-          content: 'Test video',
-          tags: [
+        final negativeValuesEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration', '-10'], // Negative duration
             ['size', '-1000'], // Negative size
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Test video'
         );
         
         // ACT
@@ -549,13 +549,13 @@ void main() {
       test('should handle content at exact boundary length', () {
         // ARRANGE
         final boundaryContent = 'A' * 10000; // Exactly 10000 characters
-        final boundaryContentEvent = Event.from(
-          kind: 22,
-          content: boundaryContent,
-          tags: [
+        final boundaryContentEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          boundaryContent
         );
         
         // ACT
@@ -569,13 +569,13 @@ void main() {
       test('should warn about content exceeding boundary length', () {
         // ARRANGE
         final exceededContent = 'A' * 10001; // Just over 10000 characters
-        final exceededContentEvent = Event.from(
-          kind: 22,
-          content: exceededContent,
-          tags: [
+        final exceededContentEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          exceededContent
         );
         
         // ACT
@@ -589,15 +589,15 @@ void main() {
 
       test('should handle completely empty tags', () {
         // ARRANGE
-        final emptyTagsEvent = Event.from(
-          kind: 22,
-          content: 'Video with empty tags',
-          tags: [
+        final emptyTagsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             [], // Completely empty tag
             ['url', 'https://example.com/video.mp4'],
             [], // Another empty tag
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with empty tags'
         );
         
         // ACT
@@ -609,15 +609,15 @@ void main() {
 
       test('should handle tags with only tag name', () {
         // ARRANGE
-        final incompleteTagsEvent = Event.from(
-          kind: 22,
-          content: 'Video with incomplete tags',
-          tags: [
+        final incompleteTagsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration'], // Missing value
             ['title'], // Missing value
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with incomplete tags'
         );
         
         // ACT
@@ -632,16 +632,16 @@ void main() {
 
       test('should handle malformed imeta tags', () {
         // ARRANGE
-        final malformedImetaEvent = Event.from(
-          kind: 22,
-          content: 'Video with malformed imeta',
-          tags: [
+        final malformedImetaEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['imeta', 'url ', 'm '], // Empty values after keys
             ['imeta', 'justtext'], // No key-value pairs
             ['imeta', 'url  https://example.com/imeta.mp4'], // Multiple spaces
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with malformed imeta'
         );
         
         // ACT
@@ -655,15 +655,15 @@ void main() {
 
       test('should handle numeric parsing edge cases', () {
         // ARRANGE
-        final numericEdgeCasesEvent = Event.from(
-          kind: 22,
-          content: 'Video with numeric edge cases',
-          tags: [
+        final numericEdgeCasesEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration', ' 123 '], // Leading/trailing whitespace
             ['size', '9223372036854775808'], // Larger than int64 max
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with numeric edge cases'
         );
         
         // ACT
@@ -678,14 +678,14 @@ void main() {
 
       test('should warn at duration boundary', () {
         // ARRANGE
-        final boundaryDurationEvent = Event.from(
-          kind: 22,
-          content: 'Video at duration boundary',
-          tags: [
+        final boundaryDurationEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration', '600'], // Exactly at maxReasonableDuration
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video at duration boundary'
         );
         
         // ACT
@@ -698,14 +698,14 @@ void main() {
 
       test('should warn beyond duration boundary', () {
         // ARRANGE
-        final exceededDurationEvent = Event.from(
-          kind: 22,
-          content: 'Video exceeding duration boundary',
-          tags: [
+        final exceededDurationEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration', '601'], // Just over maxReasonableDuration
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video exceeding duration boundary'
         );
         
         // ACT
@@ -720,14 +720,14 @@ void main() {
       test('should warn at file size boundary', () {
         // ARRANGE
         final maxSize = VideoEventProcessor.maxReasonableFileSize + 1;
-        final largeSizeEvent = Event.from(
-          kind: 22,
-          content: 'Video with large file size',
-          tags: [
+        final largeSizeEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['size', maxSize.toString()],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with large file size'
         );
         
         // ACT
@@ -741,13 +741,13 @@ void main() {
 
       test('should handle URL with non-video extension', () {
         // ARRANGE
-        final nonVideoExtEvent = Event.from(
-          kind: 22,
-          content: 'URL with non-video extension',
-          tags: [
+        final nonVideoExtEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/file.txt'], // Non-video extension
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'URL with non-video extension'
         );
         
         // ACT
@@ -761,15 +761,15 @@ void main() {
 
       test('should handle multiple warnings simultaneously', () {
         // ARRANGE
-        final multipleWarningsEvent = Event.from(
-          kind: 22,
-          content: 'A' * 15000, // Long content warning
-          tags: [
+        final multipleWarningsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/file.txt'], // Non-video URL warning
             ['duration', '700'], // Long duration warning
             ['size', '200000000'], // Large size warning
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'A' * 15000 // Long content warning
         );
         
         // ACT
@@ -783,13 +783,13 @@ void main() {
 
       test('should handle special URL protocols', () {
         // ARRANGE
-        final ftpUrlEvent = Event.from(
-          kind: 22,
-          content: 'Video with FTP URL',
-          tags: [
+        final ftpUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'ftp://ftp.example.com/video.mp4'], // FTP protocol
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with FTP URL'
         );
         
         // ACT
@@ -801,13 +801,13 @@ void main() {
 
       test('should handle URL with port numbers', () {
         // ARRANGE
-        final portUrlEvent = Event.from(
-          kind: 22,
-          content: 'Video with port in URL',
-          tags: [
+        final portUrlEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com:8080/video.mp4'], // URL with port
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with port in URL'
         );
         
         // ACT
@@ -822,11 +822,11 @@ void main() {
         final largeTags = List.generate(100, (i) => ['t', 'tag$i']);
         largeTags.insert(0, ['url', 'https://example.com/video.mp4']);
         
-        final largeTagsEvent = Event.from(
-          kind: 22,
-          content: 'Video with many tags',
-          tags: largeTags,
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        final largeTagsEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          largeTags,
+          'Video with many tags'
         );
         
         // ACT
@@ -843,13 +843,13 @@ void main() {
     group('ValidationResult', () {
       test('should provide detailed validation results', () {
         // ARRANGE
-        final invalidEvent = Event.from(
-          kind: 1, // Wrong kind
-          content: '',
-          tags: [
+        final invalidEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          1, // Wrong kind
+          [
             ['url', 'invalid-url'],
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          ''
         );
         
         // ACT
@@ -865,14 +865,14 @@ void main() {
       
       test('should provide warnings for suspicious but valid events', () {
         // ARRANGE
-        final suspiciousEvent = Event.from(
-          kind: 22,
-          content: 'Video with suspicious duration',
-          tags: [
+        final suspiciousEvent = Event(
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
+          22,
+          [
             ['url', 'https://example.com/video.mp4'],
             ['duration', '36000'], // 10 hours - suspiciously long for short video
           ],
-          privkey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          'Video with suspicious duration'
         );
         
         // ACT

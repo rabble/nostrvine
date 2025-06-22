@@ -1,0 +1,419 @@
+/* ABOUTME: Coming soon page styles for iOS and Android
+   ABOUTME: Includes device mockups, progress bars, and platform-specific styling */
+
+.coming-soon-page {
+    background-color: #f8f8f8;
+    min-height: calc(100vh - 80px);
+}
+
+/* Platform Hero Section */
+.platform-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    padding: 4rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: center;
+}
+
+/* iOS Specific Styling */
+.ios-hero {
+    background: linear-gradient(135deg, #f5f5f7 0%, #e3e3e8 100%);
+}
+
+/* Android Specific Styling */
+.android-hero {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+/* Device Mockups */
+.device-mockup {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.iphone-frame {
+    width: 300px;
+    height: 600px;
+    background: #1c1c1e;
+    border-radius: 40px;
+    padding: 10px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.iphone-frame::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 25px;
+    background: #1c1c1e;
+    border-radius: 15px;
+}
+
+.android-frame {
+    width: 300px;
+    height: 600px;
+    background: #263238;
+    border-radius: 30px;
+    padding: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.screen-content {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.app-preview {
+    text-align: center;
+    padding: 2rem;
+}
+
+.app-icon {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.app-preview h3 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.app-preview p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Hero Text */
+.hero-text {
+    padding: 2rem;
+}
+
+.platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.android-badge {
+    background: #3ddc84;
+    color: white;
+}
+
+.apple-logo, .android-logo {
+    font-size: 1.2rem;
+}
+
+.hero-text h1 {
+    font-size: 3rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.hero-text h2 {
+    font-size: 1.5rem;
+    color: #666;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+}
+
+.hero-description {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 2rem;
+}
+
+/* Notify Section */
+.notify-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.notify-section h3 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.notify-section p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.notify-form {
+    display: flex;
+    gap: 1rem;
+}
+
+.email-input {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.email-input:focus {
+    border-color: #0ae68a;
+}
+
+.notify-button {
+    padding: 0.75rem 2rem;
+    background: #0ae68a;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.notify-button:hover {
+    background: #08c478;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(10, 230, 138, 0.3);
+}
+
+.android-notify {
+    background: #3ddc84;
+}
+
+.android-notify:hover {
+    background: #2dc770;
+    box-shadow: 0 5px 15px rgba(61, 220, 132, 0.3);
+}
+
+/* Alternative CTA */
+.alternative-cta {
+    text-align: center;
+}
+
+.alternative-cta p {
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.web-app-button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: transparent;
+    color: #0ae68a;
+    border: 2px solid #0ae68a;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.web-app-button:hover {
+    background: #0ae68a;
+    color: white;
+}
+
+.android-web-button {
+    color: #3ddc84;
+    border-color: #3ddc84;
+}
+
+.android-web-button:hover {
+    background: #3ddc84;
+    color: white;
+}
+
+/* Features Preview */
+.features-preview {
+    padding: 4rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.features-preview h2 {
+    font-size: 2.5rem;
+    text-align: center;
+    color: #333;
+    margin-bottom: 3rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-emoji {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+    font-size: 1.3rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* Development Status */
+.development-status {
+    background: white;
+    padding: 3rem 2rem;
+    max-width: 800px;
+    margin: 2rem auto;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.development-status h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 2rem;
+}
+
+.progress-container {
+    background: #e0e0e0;
+    height: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #0ae68a;
+    border-radius: 15px;
+    position: relative;
+    transition: width 1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.android-progress {
+    background: #3ddc84;
+}
+
+.progress-text {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-text {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Beta Signup */
+.beta-signup {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.beta-signup h3 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.beta-signup p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.beta-button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: #333;
+    color: white;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.beta-button:hover {
+    background: #111;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .platform-hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .device-mockup {
+        margin-bottom: 2rem;
+    }
+    
+    .iphone-frame, .android-frame {
+        width: 250px;
+        height: 500px;
+    }
+    
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+    
+    .notify-form {
+        flex-direction: column;
+    }
+    
+    .email-input, .notify-button {
+        width: 100%;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+}

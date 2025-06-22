@@ -1,33 +1,25 @@
-// ABOUTME: Camera service implementing hybrid frame capture for vine creation
-// ABOUTME: Manages recording, frame extraction, and GIF generation pipeline using provider abstraction
+// ABOUTME: Simplified camera service using direct video recording for vine creation
+// ABOUTME: Records MP4 videos directly without frame extraction complexity
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-import 'camera/camera_provider.dart';
-import 'camera/mobile_camera_provider.dart';
-import 'camera/web_camera_provider.dart';
-import 'camera/macos_camera_provider.dart';
-import 'camera/unsupported_camera_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 
 /// Camera recording configuration
 class CameraConfiguration {
   final Duration recordingDuration;
-  final double targetFPS;
   final bool enableAutoStop;
   
   const CameraConfiguration({
     this.recordingDuration = const Duration(seconds: 6),
-    this.targetFPS = 5.0,
     this.enableAutoStop = true,
   });
   
   /// Create configuration for vine-style recording (3-15 seconds)
   static CameraConfiguration vine({
     Duration? duration,
-    double? fps,
     bool? autoStop,
   }) {
     Duration clampedDuration;
@@ -39,20 +31,15 @@ class CameraConfiguration {
       clampedDuration = const Duration(seconds: 6);
     }
     
-    final clampedFPS = fps?.clamp(3.0, 10.0) ?? 5.0;
-    
     return CameraConfiguration(
       recordingDuration: clampedDuration,
-      targetFPS: clampedFPS,
       enableAutoStop: autoStop ?? true,
     );
   }
   
-  int get targetFrameCount => (recordingDuration.inSeconds * targetFPS).round();
-  
   @override
   String toString() {
-    return 'CameraConfiguration(duration: ${recordingDuration.inSeconds}s, fps: $targetFPS, frames: $targetFrameCount)';
+    return 'CameraConfiguration(duration: ${recordingDuration.inSeconds}s)';
   }
 }
 
@@ -66,57 +53,27 @@ enum RecordingState {
 }
 
 class CameraService extends ChangeNotifier {
-  late final CameraProvider _provider;
+  CameraController? _controller;
   RecordingState _state = RecordingState.idle;
   bool _disposed = false;
   
-  // Hybrid capture data
-  final List<Uint8List> _realtimeFrames = [];
+  // Recording state
   bool _isRecording = false;
   DateTime? _recordingStartTime;
   Timer? _progressTimer;
+  Timer? _autoStopTimer;
   
   // Recording configuration
   CameraConfiguration _configuration = const CameraConfiguration();
   
   // Convenience getters for current configuration
   Duration get maxVineDuration => _configuration.recordingDuration;
-  double get targetFPS => _configuration.targetFPS;
   bool get enableAutoStop => _configuration.enableAutoStop;
-  int get targetFrameCount => _configuration.targetFrameCount;
   CameraConfiguration get configuration => _configuration;
-  
-  /// Constructor with platform-specific provider selection
-  CameraService() {
-    _provider = _createProviderForPlatform();
-  }
-  
-  /// Create appropriate camera provider based on current platform
-  CameraProvider _createProviderForPlatform() {
-    if (kIsWeb) {
-      debugPrint('🌐 Using WebCameraProvider for web platform');
-      return WebCameraProvider();
-    }
-    
-    if (!kIsWeb) {
-      if (Platform.isIOS || Platform.isAndroid) {
-        debugPrint('📱 Using MobileCameraProvider for mobile platform');
-        return MobileCameraProvider();
-      }
-      
-      if (Platform.isMacOS) {
-        debugPrint('💻 Using MacosCameraProvider for macOS platform');
-        return MacosCameraProvider();
-      }
-    }
-    
-    debugPrint('❓ Using UnsupportedCameraProvider for unknown platform');
-    return UnsupportedCameraProvider();
-  }
   
   // Getters
   RecordingState get state => _state;
-  bool get isInitialized => _provider.isInitialized;
+  bool get isInitialized => _controller?.value.isInitialized ?? false;
   bool get isRecording => _isRecording;
   double get recordingProgress {
     if (!_isRecording || _recordingStartTime == null) return 0.0;
@@ -129,7 +86,44 @@ class CameraService extends ChangeNotifier {
     try {
       _setState(RecordingState.initializing);
       
-      await _provider.initialize();
+      // Skip camera initialization on Linux/Windows (not supported)
+      if (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.windows) {
+        throw Exception('Camera recording not currently supported on Linux/Windows. Please use mobile app for recording.');
+      }
+      
+      // Handle macOS camera initialization differently
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        await _initializeMacOSCamera();
+        return;
+      }
+      
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        // Check if we're running on iOS/Android simulator
+        if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) {
+          throw Exception('Camera not available on simulator. Please test on a real device.');
+        }
+        throw Exception('No cameras available on device');
+      }
+      
+      // Prefer back camera for initial setup
+      final camera = cameras.firstWhere(
+        (cam) => cam.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+      
+      _controller = CameraController(
+        camera,
+        ResolutionPreset.high, // High quality for vine videos
+        enableAudio: true, // Enable audio for videos
+      );
+      
+      await _controller!.initialize();
+      
+      // Prepare for video recording
+      await _controller!.prepareForVideoRecording();
+      
       _setState(RecordingState.idle);
       
       debugPrint('📷 Camera initialized successfully');
@@ -140,7 +134,7 @@ class CameraService extends ChangeNotifier {
     }
   }
   
-  /// Start vine recording using hybrid approach
+  /// Start vine recording (direct video recording)
   Future<void> startRecording() async {
     if (!isInitialized || _isRecording) {
       debugPrint('⚠️ Cannot start recording: initialized=$isInitialized, recording=$_isRecording');
@@ -149,25 +143,18 @@ class CameraService extends ChangeNotifier {
     
     try {
       _setState(RecordingState.recording);
-      _isRecording = true; // Set this immediately to prevent double calls
-      _realtimeFrames.clear();
+      _isRecording = true;
       _recordingStartTime = DateTime.now();
       
-      // Start recording using the provider with frame callback
-      await _provider.startRecording(
-        onFrame: (frameData) {
-          if (_isRecording) {
-            _realtimeFrames.add(frameData);
-          }
-        },
-      );
+      // Start video recording
+      await _controller!.startVideoRecording();
       
       // Start progress timer to update UI regularly
       _startProgressTimer();
       
       // Set up auto-stop timer if enabled
       if (enableAutoStop) {
-        Timer(maxVineDuration, () {
+        _autoStopTimer = Timer(maxVineDuration, () {
           if (_isRecording) {
             debugPrint('⏰ Auto-stopping recording after ${maxVineDuration.inSeconds}s');
             stopRecording();
@@ -175,17 +162,16 @@ class CameraService extends ChangeNotifier {
         });
       }
       
-      debugPrint('🎬 Started vine recording (provider-based approach)');
-      debugPrint('🕰️ Recording duration: ${maxVineDuration.inSeconds}s, Auto-stop: $enableAutoStop');
+      debugPrint('🎬 Started vine recording (${maxVineDuration.inSeconds}s max)');
     } catch (e) {
       _setState(RecordingState.error);
-      _isRecording = false; // Reset on error
+      _isRecording = false;
       debugPrint('❌ Failed to start recording: $e');
       rethrow;
     }
   }
   
-  /// Stop recording and process frames
+  /// Stop recording and return video file
   Future<VineRecordingResult> stopRecording() async {
     if (!_isRecording) {
       debugPrint('⚠️ Not currently recording, cannot stop');
@@ -195,19 +181,31 @@ class CameraService extends ChangeNotifier {
     try {
       _setState(RecordingState.processing);
       
-      // Stop progress timer immediately
+      // Cancel timers
       _stopProgressTimer();
+      _autoStopTimer?.cancel();
+      _autoStopTimer = null;
       
-      // Stop recording using the provider
-      final cameraResult = await _provider.stopRecording();
+      // Calculate recording duration
+      final duration = _recordingStartTime != null 
+        ? DateTime.now().difference(_recordingStartTime!)
+        : Duration.zero;
       
-      // Process the result using our hybrid strategy
-      final vineResult = await _processRecordingResult(cameraResult);
+      // Stop video recording
+      final xFile = await _controller!.stopVideoRecording();
+      final videoFile = File(xFile.path);
       
       _setState(RecordingState.completed);
-      debugPrint('✅ Vine recording completed: ${vineResult.frameCount} frames');
       
-      return vineResult;
+      debugPrint('✅ Vine recording completed:');
+      debugPrint('  📹 File: ${videoFile.path}');
+      debugPrint('  ⏱️ Duration: ${duration.inSeconds}s');
+      debugPrint('  📦 Size: ${(await videoFile.length() / 1024 / 1024).toStringAsFixed(2)}MB');
+      
+      return VineRecordingResult(
+        videoFile: videoFile,
+        duration: duration,
+      );
     } catch (e) {
       _setState(RecordingState.error);
       debugPrint('❌ Failed to stop recording: $e');
@@ -215,7 +213,6 @@ class CameraService extends ChangeNotifier {
     } finally {
       _isRecording = false;
       _recordingStartTime = null;
-      _stopProgressTimer();
     }
   }
   
@@ -224,13 +221,17 @@ class CameraService extends ChangeNotifier {
     if (!_isRecording) return;
     
     try {
-      // Just stop the recording without processing
-      await _provider.stopRecording();
+      // Cancel timers
+      _stopProgressTimer();
+      _autoStopTimer?.cancel();
+      _autoStopTimer = null;
+      
+      // Stop the recording without saving
+      await _controller!.stopVideoRecording();
+      
       _setState(RecordingState.idle);
       _isRecording = false;
       _recordingStartTime = null;
-      _realtimeFrames.clear();
-      _stopProgressTimer();
       
       debugPrint('🚫 Recording canceled');
     } catch (e) {
@@ -243,16 +244,47 @@ class CameraService extends ChangeNotifier {
     if (!isInitialized || _isRecording) return;
     
     try {
-      await _provider.switchCamera();
+      final cameras = await availableCameras();
+      if (cameras.length < 2) return;
+      
+      final currentCamera = _controller!.description;
+      final currentDirection = currentCamera.lensDirection;
+      
+      // Find camera with opposite direction
+      final newCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection != currentDirection,
+        orElse: () => cameras.firstWhere((cam) => cam != currentCamera),
+      );
+      
+      // Dispose current controller
+      await _controller?.dispose();
+      
+      // Create new controller with new camera
+      _controller = CameraController(
+        newCamera,
+        ResolutionPreset.high,
+        enableAudio: true,
+      );
+      
+      await _controller!.initialize();
+      await _controller!.prepareForVideoRecording();
+      
       notifyListeners();
-      debugPrint('🔄 Camera switched successfully');
+      debugPrint('🔄 Switched to ${newCamera.lensDirection} camera');
     } catch (e) {
       debugPrint('❌ Failed to switch camera: $e');
     }
   }
   
   /// Get camera preview widget
-  Widget get cameraPreview => _provider.buildPreview();
+  Widget get cameraPreview {
+    if (!isInitialized || _controller == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    return CameraPreview(_controller!);
+  }
   
   /// Update camera configuration
   void updateConfiguration(CameraConfiguration newConfiguration) {
@@ -268,34 +300,19 @@ class CameraService extends ChangeNotifier {
     
     _configuration = CameraConfiguration(
       recordingDuration: clampedDuration,
-      targetFPS: _configuration.targetFPS,
       enableAutoStop: _configuration.enableAutoStop,
     );
     debugPrint('📹 Updated recording duration to ${clampedDuration.inSeconds}s');
     notifyListeners();
   }
   
-  /// Set target frame rate (clamped to 3-10 FPS)
-  void setTargetFPS(double fps) {
-    final clampedFPS = fps.clamp(3.0, 10.0);
-    _configuration = CameraConfiguration(
-      recordingDuration: _configuration.recordingDuration,
-      targetFPS: clampedFPS,
-      enableAutoStop: _configuration.enableAutoStop,
-    );
-    debugPrint('📹 Updated target FPS to $clampedFPS');
-    notifyListeners();
-  }
-  
   /// Configure recording using vine-style presets
   void useVineConfiguration({
     Duration? duration,
-    double? fps,
     bool? autoStop,
   }) {
     _configuration = CameraConfiguration.vine(
       duration: duration,
-      fps: fps,
       autoStop: autoStop,
     );
     debugPrint('📹 Applied vine configuration: $_configuration');
@@ -307,7 +324,8 @@ class CameraService extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopProgressTimer();
-    _provider.dispose();
+    _autoStopTimer?.cancel();
+    _controller?.dispose();
     super.dispose();
   }
   
@@ -328,114 +346,13 @@ class CameraService extends ChangeNotifier {
       }
     });
   }
-
-  /// Process camera recording result using hybrid strategy
-  Future<VineRecordingResult> _processRecordingResult(CameraRecordingResult cameraResult) async {
-    final stopwatch = Stopwatch()..start();
-    
-    List<Uint8List> finalFrames;
-    String selectedApproach;
-    double qualityRatio;
-    
-    switch (cameraResult.extractionStrategy) {
-      case FrameExtractionStrategy.useRealTimeFrames:
-        // Use frames captured in real-time
-        finalFrames = List.from(_realtimeFrames);
-        selectedApproach = 'Real-time Stream';
-        qualityRatio = _realtimeFrames.length / targetFrameCount;
-        debugPrint('📸 Using real-time frames: ${_realtimeFrames.length}/$targetFrameCount');
-        break;
-        
-      case FrameExtractionStrategy.extractFromVideo:
-        // Extract frames from video file
-        finalFrames = await _extractFramesFromVideo(cameraResult.videoPath!);
-        selectedApproach = 'Video Extraction (Fallback)';
-        qualityRatio = finalFrames.length / targetFrameCount;
-        debugPrint('🎥 Using video extraction fallback: ${finalFrames.length} frames');
-        break;
-        
-      case FrameExtractionStrategy.usePlaceholderFrames:
-        // Generate placeholder frames (development/testing)
-        finalFrames = _generatePlaceholderFrames();
-        selectedApproach = 'Placeholder Frames (Development)';
-        qualityRatio = 1.0;
-        debugPrint('🎨 Using placeholder frames for development');
-        break;
-    }
-    
-    final processingTime = stopwatch.elapsed;
-    
-    return VineRecordingResult(
-      frames: finalFrames,
-      frameCount: finalFrames.length,
-      processingTime: processingTime,
-      selectedApproach: selectedApproach,
-      qualityRatio: qualityRatio,
-    );
-  }
-
-  /// Extract frames from video file (placeholder for now)
-  Future<List<Uint8List>> _extractFramesFromVideo(String videoPath) async {
-    // TODO: Implement real video frame extraction using FFmpeg
-    debugPrint('🔄 Extracting frames from video: $videoPath');
-    
-    // For now, return placeholder frames
-    return _generatePlaceholderFrames();
-  }
-
-  /// Generate placeholder frames for development/testing
-  List<Uint8List> _generatePlaceholderFrames() {
-    final frames = <Uint8List>[];
-    
-    for (int i = 0; i < targetFrameCount; i++) {
-      final frameData = _createVariedPlaceholderFrame(640, 480, i);
-      frames.add(frameData);
-    }
-    
-    debugPrint('✅ Generated ${frames.length} placeholder frames');
-    return frames;
-  }
-
-  /// Create varied placeholder frame for animation preview
-  Uint8List _createVariedPlaceholderFrame(int width, int height, int frameIndex) {
-    final rgbData = Uint8List(width * height * 3);
-    
-    // Create a simple animation effect - color shifting gradient
-    final phase = (frameIndex * 0.2) % (2 * math.pi); // Cycling through phases
-    
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        final pixelIndex = (y * width + x) * 3;
-        
-        // Create a moving gradient pattern
-        final normalizedX = x / width;
-        final normalizedY = y / height;
-        final distance = (normalizedX * normalizedX + normalizedY * normalizedY);
-        
-        // Animated color based on distance and frame
-        final colorValue = ((math.sin(distance * 10 + phase) + 1) * 127.5).round();
-        final complementColor = 255 - colorValue;
-        
-        rgbData[pixelIndex] = colorValue;     // R
-        rgbData[pixelIndex + 1] = complementColor; // G  
-        rgbData[pixelIndex + 2] = ((colorValue + complementColor) / 2).round(); // B
-      }
-    }
-    
-    return rgbData;
-  }
-
+  
   /// Start progress timer to update UI during recording
   void _startProgressTimer() {
     _stopProgressTimer(); // Clean up any existing timer
     _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (_isRecording && !_disposed && hasListeners) {
         try {
-          // Add debug logging every second
-          final elapsed = DateTime.now().difference(_recordingStartTime!);
-          if (elapsed.inMilliseconds % 1000 < 100) {
-            debugPrint('⏱️ Recording progress: ${(recordingProgress * 100).toStringAsFixed(1)}% (${elapsed.inSeconds}s)');
-          }
           notifyListeners(); // Update UI with current progress
         } catch (e) {
           // Ignore errors during disposal
@@ -450,46 +367,36 @@ class CameraService extends ChangeNotifier {
     _progressTimer?.cancel();
     _progressTimer = null;
   }
+  
+  /// Initialize macOS camera using camera_macos plugin
+  Future<void> _initializeMacOSCamera() async {
+    try {
+      // For now, throw an exception to indicate macOS needs special handling
+      // We'll implement a proper macOS camera widget in the next step
+      throw Exception('macOS camera requires CameraMacOSView widget. Use dedicated macOS camera screen.');
+      
+    } catch (e) {
+      debugPrint('❌ macOS camera initialization failed: $e');
+      // Fall back to showing error
+      throw Exception('macOS camera initialization failed: $e');
+    }
+  }
 }
 
+/// Result from vine recording
 class VineRecordingResult {
-  final List<Uint8List> frames;
-  final int frameCount;
-  final Duration processingTime;
-  final String selectedApproach;
-  final double qualityRatio;
-  final bool isCanceled;
+  final File videoFile;
+  final Duration duration;
   
   VineRecordingResult({
-    required this.frames,
-    required this.frameCount,
-    required this.processingTime,
-    required this.selectedApproach,
-    required this.qualityRatio,
-    this.isCanceled = false,
+    required this.videoFile,
+    required this.duration,
   });
   
-  factory VineRecordingResult.canceled() {
-    return VineRecordingResult(
-      frames: [],
-      frameCount: 0,
-      processingTime: Duration.zero,
-      selectedApproach: 'Canceled',
-      qualityRatio: 0.0,
-      isCanceled: true,
-    );
-  }
-  
-  bool get hasFrames => frameCount > 0 && !isCanceled;
-  double get averageFrameSize => hasFrames ? frames.first.length / 1024.0 : 0.0;
+  bool get hasVideo => videoFile.existsSync();
   
   @override
   String toString() {
-    return 'VineRecordingResult('
-        'frames: $frameCount, '
-        'approach: $selectedApproach, '
-        'quality: ${(qualityRatio * 100).toStringAsFixed(1)}%, '
-        'processing: ${processingTime.inMilliseconds}ms'
-        ')';
+    return 'VineRecordingResult(file: ${videoFile.path}, duration: ${duration.inSeconds}s)';
   }
 }

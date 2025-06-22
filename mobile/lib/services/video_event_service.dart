@@ -2,7 +2,8 @@
 // ABOUTME: Handles real-time feed updates and local caching of video content
 
 import 'dart:async';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
@@ -12,7 +13,6 @@ import 'seen_videos_service.dart';
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
   final INostrService _nostrService;
-  final SeenVideosService? _seenVideosService;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   final List<VideoEvent> _videoEvents = [];
   final Map<String, StreamSubscription> _subscriptions = {};
@@ -21,12 +21,12 @@ class VideoEventService extends ChangeNotifier {
   String? _error;
   Timer? _retryTimer;
   int _retryAttempts = 0;
+  List<String>? _activeHashtagFilter;
   
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
   
-  VideoEventService(this._nostrService, {SeenVideosService? seenVideosService}) 
-    : _seenVideosService = seenVideosService;
+  VideoEventService(this._nostrService, {SeenVideosService? seenVideosService});
   
   // Getters
   List<VideoEvent> get videoEvents => List.unmodifiable(_videoEvents);
@@ -42,8 +42,9 @@ class VideoEventService extends ChangeNotifier {
     List<String>? hashtags,
     int? since,
     int? until,
-    int limit = 500, // Increased limit for more diverse content
+    int limit = 50, // Start with smaller limit for fast initial load
     bool replace = true, // Whether to replace existing subscription
+    bool includeReposts = false, // Whether to include kind 6 reposts (disabled by default)
   }) async {
     // Prevent concurrent subscription attempts
     if (_isLoading) {
@@ -105,32 +106,51 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('  - Replace existing: $replace');
       
       // Create filter for kind 22 events
-      // If no time bounds specified, get recent historical content
+      // No artificial date constraints - let relays return their best content
       int? effectiveSince = since;
+      int? effectiveUntil = until;
+      
       if (since == null && until == null && _videoEvents.isEmpty) {
-        // For initial load, get events from the last 30 days to have good content variety
-        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-        effectiveSince = thirtyDaysAgo.millisecondsSinceEpoch ~/ 1000;
-        debugPrint('📅 Initial load: fetching events from last 30 days (since: $thirtyDaysAgo)');
+        debugPrint('📅 Initial load: requesting best video content (no date constraints)');
+        // Let relays decide what content to return - they know their data best
       }
       
-      final filter = Filter(
-        kinds: [22, 6], // NIP-71 short video events and NIP-18 reposts
+      // Create optimized filter for Kind 22 video events
+      final videoFilter = Filter(
+        kinds: [22], // NIP-71 short video events only
         authors: authors,
         since: effectiveSince,
-        until: until,
-        limit: limit,
+        until: effectiveUntil,
+        limit: limit, // Use full limit for video events
       );
       
-      // Log the exact filter being sent to debug timestamp issues
-      debugPrint('🔍 Filter details:');
-      debugPrint('  - JSON: ${filter.toJson()}');
-      debugPrint('  - Since timestamp: $effectiveSince (${effectiveSince != null ? DateTime.fromMillisecondsSinceEpoch(effectiveSince * 1000) : 'null'})');
+      List<Filter> filters = [videoFilter];
       
-      // Subscribe to events using Nostr service
-      debugPrint('📡 Requesting event subscription from Nostr service...');
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-      debugPrint('📡 Event stream created, setting up listeners...');
+      // Optionally add repost filter if enabled
+      if (includeReposts) {
+        final repostFilter = Filter(
+          kinds: [6], // NIP-18 reposts only
+          authors: authors,
+          since: effectiveSince,
+          until: effectiveUntil,
+          limit: (limit * 0.2).round(), // Only 20% for reposts when enabled
+        );
+        filters.add(repostFilter);
+        debugPrint('🔍 Using primary video filter + optional repost filter:');
+        debugPrint('  - Video filter ($limit limit): ${videoFilter.toJson()}');
+        debugPrint('  - Repost filter (${(limit * 0.2).round()} limit): ${repostFilter.toJson()}');
+      } else {
+        debugPrint('🔍 Using video-only filter (reposts disabled):');
+        debugPrint('  - Video filter ($limit limit): ${videoFilter.toJson()}');
+      }
+      
+      // Use nostr_sdk's optimized subscription management
+      debugPrint('📡 Creating optimized subscription via nostr_sdk...');
+      final eventStream = _nostrService.subscribeToEvents(filters: filters);
+      debugPrint('📡 Event stream created, setting up efficient event handling...');
+      
+      // Store hashtag filter for event processing
+      _activeHashtagFilter = hashtags;
       
       // Use a unique subscription key to avoid conflicts
       final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
@@ -148,6 +168,8 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('📋 Active subscriptions after creation: ${_subscriptions.keys.toList()}');
       
       debugPrint('✅ Video event subscription established successfully!');
+      
+      // Progressive loading removed - let UI trigger loadMore as needed
       debugPrint('📊 Subscription status: active=${_subscriptions.length} subscriptions');
     } catch (e) {
       _error = e.toString();
@@ -184,17 +206,24 @@ class VideoEventService extends ChangeNotifier {
         return;
       }
       
+      // Skip repost events if reposts are disabled
+      if (event.kind == 6) {
+        debugPrint('⏩ Skipping repost event ${event.id.substring(0, 8)}... (reposts disabled by default)');
+        return;
+      }
+      
       // Check if we already have this event
       if (_videoEvents.any((e) => e.id == event.id)) {
         debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
         return;
       }
       
-      // Check if user has already seen this video
-      if (_seenVideosService?.hasSeenVideo(event.id) == true) {
-        debugPrint('👁️ Skipping seen video ${event.id.substring(0, 8)}...');
-        return;
-      }
+      // TEMPORARILY DISABLED: Check if user has already seen this video
+      // TODO: Re-enable after testing the video feed
+      // if (_seenVideosService?.hasSeenVideo(event.id) == true) {
+      //   debugPrint('👁️ Skipping seen video ${event.id.substring(0, 8)}...');
+      //   return;
+      // }
       
       // TEMPORARILY DISABLED: CLIENT-SIDE FILTERING to debug feed issue
       // TODO: Re-enable after fixing the feed stopping issue
@@ -210,8 +239,23 @@ class VideoEventService extends ChangeNotifier {
       if (event.kind == 22) {
         // Direct video event
         debugPrint('🎬 Processing new video event ${event.id.substring(0, 8)}...');
+        debugPrint('🔍 Direct event tags: ${event.tags}');
         try {
           final videoEvent = VideoEvent.fromNostrEvent(event);
+          debugPrint('🎥 Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+          
+          // Check hashtag filter if active
+          if (_activeHashtagFilter != null && _activeHashtagFilter!.isNotEmpty) {
+            // Check if video has any of the required hashtags
+            final hasRequiredHashtag = _activeHashtagFilter!.any((tag) => 
+              videoEvent.hashtags.contains(tag)
+            );
+            
+            if (!hasRequiredHashtag) {
+              debugPrint('⏩ Skipping video without required hashtags: $_activeHashtagFilter');
+              return;
+            }
+          }
           
           // Only add events with video URLs
           if (videoEvent.hasVideo) {
@@ -239,7 +283,7 @@ class VideoEventService extends ChangeNotifier {
           debugPrint('  - Tags: ${event.tags}');
         }
       } else if (event.kind == 6) {
-        // Repost event - extract original event ID and fetch it
+        // Repost event - only process if it likely references video content
         debugPrint('🔄 Processing repost event ${event.id.substring(0, 8)}...');
         
         String? originalEventId;
@@ -248,6 +292,12 @@ class VideoEventService extends ChangeNotifier {
             originalEventId = tag[1];
             break;
           }
+        }
+        
+        // Smart filtering: Only process reposts that are likely video-related
+        if (!_isLikelyVideoRepost(event)) {
+          debugPrint('⏩ Skipping non-video repost ${event.id.substring(0, 8)}... (no video indicators)');
+          return;
         }
         
         if (originalEventId != null) {
@@ -274,6 +324,18 @@ class VideoEventService extends ChangeNotifier {
               reposterPubkey: event.pubkey,
               repostedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
             );
+            
+            // Check hashtag filter for reposts too
+            if (_activeHashtagFilter != null && _activeHashtagFilter!.isNotEmpty) {
+              final hasRequiredHashtag = _activeHashtagFilter!.any((tag) => 
+                repostEvent.hashtags.contains(tag)
+              );
+              
+              if (!hasRequiredHashtag) {
+                debugPrint('⏩ Skipping repost without required hashtags: $_activeHashtagFilter');
+                return;
+              }
+            }
             
             _videoEvents.insert(0, repostEvent);
             debugPrint('✅ Added repost event! Total: ${_videoEvents.length} events');
@@ -338,6 +400,17 @@ class VideoEventService extends ChangeNotifier {
     return subscribeToVideoFeed();
   }
   
+  /// Progressive loading: load more videos after initial fast load
+  Future<void> loadMoreVideos({int limit = 100}) async {
+    debugPrint('📚 Loading more videos progressively...');
+    
+    // Use larger limit for progressive loading
+    return subscribeToVideoFeed(
+      limit: limit,
+      replace: false, // Don't replace existing subscription
+    );
+  }
+
   /// Load more historical events using one-shot query (not persistent subscription)
   Future<void> loadMoreEvents({int limit = 200}) async {
     if (_videoEvents.isEmpty) return;
@@ -518,11 +591,13 @@ class VideoEventService extends ChangeNotifier {
       subscription = eventStream.listen(
         (originalEvent) {
           debugPrint('📥 Retrieved original event ${originalEvent.id.substring(0, 8)}...');
+          debugPrint('🔍 Event tags: ${originalEvent.tags}');
           
           // Check if it's a valid video event
           if (originalEvent.kind == 22) {
             try {
               final originalVideoEvent = VideoEvent.fromNostrEvent(originalEvent);
+              debugPrint('🎥 Parsed video event: hasVideo=${originalVideoEvent.hasVideo}, videoUrl=${originalVideoEvent.videoUrl}');
               
               // Only process if it has video content
               if (originalVideoEvent.hasVideo) {
@@ -533,6 +608,18 @@ class VideoEventService extends ChangeNotifier {
                   reposterPubkey: repostEvent.pubkey,
                   repostedAt: DateTime.fromMillisecondsSinceEpoch(repostEvent.createdAt * 1000),
                 );
+                
+                // Check hashtag filter for fetched reposts too
+                if (_activeHashtagFilter != null && _activeHashtagFilter!.isNotEmpty) {
+                  final hasRequiredHashtag = _activeHashtagFilter!.any((tag) => 
+                    repostVideoEvent.hashtags.contains(tag)
+                  );
+                  
+                  if (!hasRequiredHashtag) {
+                    debugPrint('⏩ Skipping fetched repost without required hashtags: $_activeHashtagFilter');
+                    return;
+                  }
+                }
                 
                 // Add to video events
                 _videoEvents.insert(0, repostVideoEvent);
@@ -643,6 +730,42 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('❌ Manual retry failed: $e');
       rethrow;
     }
+  }
+  
+  /// Check if a repost event is likely to reference video content
+  bool _isLikelyVideoRepost(Event repostEvent) {
+    // Check content for video-related keywords
+    final content = repostEvent.content.toLowerCase();
+    final videoKeywords = ['video', 'gif', 'mp4', 'webm', 'mov', 'vine', 'clip', 'watch'];
+    
+    // Check for video file extensions or video-related terms
+    if (videoKeywords.any((keyword) => content.contains(keyword))) {
+      return true;
+    }
+    
+    // Check tags for video-related hashtags
+    for (final tag in repostEvent.tags) {
+      if (tag.isNotEmpty && tag[0] == 't' && tag.length > 1) {
+        final hashtag = tag[1].toLowerCase();
+        if (videoKeywords.any((keyword) => hashtag.contains(keyword))) {
+          return true;
+        }
+      }
+    }
+    
+    // Check for presence of 'k' tag indicating original event kind
+    for (final tag in repostEvent.tags) {
+      if (tag.isNotEmpty && tag[0] == 'k' && tag.length > 1) {
+        // If the repost explicitly indicates it's reposting a kind 22 event
+        if (tag[1] == '22') {
+          return true;
+        }
+      }
+    }
+    
+    // For now, default to processing all reposts to avoid missing content
+    // This can be made more strict as we gather data on repost patterns
+    return true;
   }
   
   @override

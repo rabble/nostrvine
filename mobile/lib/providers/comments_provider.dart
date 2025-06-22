@@ -2,7 +2,7 @@
 // ABOUTME: Handles comment threads, reply chains, and optimistic UI updates for video comments
 
 import 'package:flutter/foundation.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../models/comment.dart';
@@ -71,6 +71,7 @@ class CommentsProvider extends ChangeNotifier {
   final SocialService _socialService;
   final AuthService _authService;
   final String rootEventId;
+  final String rootAuthorPubkey;
   
   CommentsState _state;
   
@@ -78,6 +79,7 @@ class CommentsProvider extends ChangeNotifier {
     required SocialService socialService,
     required AuthService authService,
     required this.rootEventId,
+    required this.rootAuthorPubkey,
   }) : _socialService = socialService,
        _authService = authService,
        _state = CommentsState(rootEventId: rootEventId) {
@@ -153,9 +155,9 @@ class CommentsProvider extends ChangeNotifier {
             rootEventId = tag[1];
           } else if (tag.length >= 4 && tag[3] == 'reply') {
             replyToEventId = tag[1];
-          } else if (rootEventId == null) {
+          } else {
             // First e tag without marker is assumed to be root
-            rootEventId = tag[1];
+            rootEventId ??= tag[1];
           }
         } else if (tag[0] == 'p') {
           // Pubkey reference tag
@@ -292,9 +294,7 @@ class CommentsProvider extends ChangeNotifier {
         commentCache: updatedCache,
       ));
       
-      // Get root author pubkey from the video event
-      // For now, we'll need to pass this from the UI or fetch it
-      String rootAuthorPubkey = '';
+      // Use the root author pubkey passed to the provider
       
       // Post the actual comment
       await _socialService.postComment(

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostrvine_app/models/video_event.dart';
 import 'package:nostrvine_app/models/video_state.dart';

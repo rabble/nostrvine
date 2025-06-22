@@ -13,7 +13,12 @@ export interface VideoMetadataResponse {
   duration?: number;
   resource_type: string;
   created_at: string;
-  processing_status: 'completed' | 'failed' | 'processing';
+  processing_status: 'pending_moderation' | 'approved' | 'rejected' | 'failed' | 'transferring' | 'ready' | 'completed' | 'processing';
+  // R2 storage information
+  r2_url?: string;
+  r2_key?: string;
+  transferred_at?: string;
+  cdn_url?: string;
   eager_transformations?: Array<{
     transformation: string;
     url: string;
@@ -111,7 +116,7 @@ export async function handleVideoMetadata(
     };
 
     // Generate NIP-94 metadata for completed videos
-    if (metadata.processing_status === 'completed' && metadata.secure_url) {
+    if ((metadata.processing_status === 'completed' || metadata.processing_status === 'approved' || metadata.processing_status === 'ready') && (metadata.secure_url || metadata.cdn_url)) {
       response.nip94_metadata = generateNIP94Metadata(metadata);
     }
 
@@ -251,8 +256,11 @@ function generateNIP94Metadata(metadata: any): VideoMetadataResponse['nip94_meta
   const hashInput = `${metadata.public_id}:${metadata.created_at}`;
   const hash = btoa(hashInput).substring(0, 32); // Simple hash for demo
 
+  // Prefer CDN URL over Cloudinary URL
+  const videoUrl = metadata.cdn_url || metadata.secure_url;
+
   const nip94: VideoMetadataResponse['nip94_metadata'] = {
-    url: metadata.secure_url,
+    url: videoUrl,
     m: `video/${metadata.format}`,
     x: hash, // Should be actual file hash in production
     size: metadata.bytes.toString()

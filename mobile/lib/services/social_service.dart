@@ -3,7 +3,8 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'nostr_service_interface.dart';
 import 'auth_service.dart';
 

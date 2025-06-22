@@ -2,7 +2,8 @@
 // ABOUTME: Provides common contract for NostrService implementations
 
 import 'dart:async';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:flutter/foundation.dart';
 import '../models/nip94_metadata.dart';
 import 'nostr_key_manager.dart';
@@ -61,6 +62,20 @@ abstract class INostrService extends ChangeNotifier {
   Future<NostrBroadcastResult> publishFileMetadata({
     required NIP94Metadata metadata,
     required String content,
+    List<String> hashtags = const [],
+  });
+  
+  // Add publishVideoEvent method to interface
+  Future<NostrBroadcastResult> publishVideoEvent({
+    required String videoUrl,
+    required String content,
+    String? title,
+    String? thumbnailUrl,
+    int? duration,
+    String? dimensions,
+    String? mimeType,
+    String? sha256,
+    int? fileSize,
     List<String> hashtags = const [],
   });
   

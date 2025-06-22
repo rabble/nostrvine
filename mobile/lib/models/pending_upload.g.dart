@@ -23,6 +23,8 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       status: fields[3] as UploadStatus,
       createdAt: fields[4] as DateTime,
       cloudinaryPublicId: fields[5] as String?,
+      videoId: fields[15] as String?,
+      cdnUrl: fields[16] as String?,
       errorMessage: fields[6] as String?,
       uploadProgress: fields[7] as double?,
       thumbnailPath: fields[8] as String?,
@@ -38,7 +40,7 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
   @override
   void write(BinaryWriter writer, PendingUpload obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -51,6 +53,10 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       ..write(obj.createdAt)
       ..writeByte(5)
       ..write(obj.cloudinaryPublicId)
+      ..writeByte(15)
+      ..write(obj.videoId)
+      ..writeByte(16)
+      ..write(obj.cdnUrl)
       ..writeByte(6)
       ..write(obj.errorMessage)
       ..writeByte(7)
@@ -103,6 +109,8 @@ class UploadStatusAdapter extends TypeAdapter<UploadStatus> {
         return UploadStatus.published;
       case 6:
         return UploadStatus.failed;
+      case 7:
+        return UploadStatus.paused;
       default:
         return UploadStatus.pending;
     }
@@ -131,6 +139,9 @@ class UploadStatusAdapter extends TypeAdapter<UploadStatus> {
         break;
       case UploadStatus.failed:
         writer.writeByte(6);
+        break;
+      case UploadStatus.paused:
+        writer.writeByte(7);
         break;
     }
   }

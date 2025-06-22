@@ -144,7 +144,7 @@ class KeyStorageService extends ChangeNotifier {
         
         // Check fallback storage for development
         final prefs = await SharedPreferences.getInstance();
-        return prefs.getString('dev_${_hasKeysKey}') == 'true';
+        return prefs.getString('dev_$_hasKeysKey') == 'true';
       } else {
         // Fallback to SharedPreferences for web
         final prefs = await SharedPreferences.getInstance();
@@ -180,12 +180,12 @@ class KeyStorageService extends ChangeNotifier {
         
         // Fallback to SharedPreferences for development
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('dev_${_privateKeyKey}', keyPair.privateKeyHex);
-        await prefs.setString('dev_${_publicKeyKey}', keyPair.publicKeyHex);
-        await prefs.setString('dev_${_npubKey}', keyPair.npub);
-        await prefs.setString('dev_${_nsecKey}', keyPair.nsec);
-        await prefs.setString('dev_${_hasKeysKey}', 'true');
-        await prefs.setString('dev_${_keyCreatedAtKey}', DateTime.now().toIso8601String());
+        await prefs.setString('dev_$_privateKeyKey', keyPair.privateKeyHex);
+        await prefs.setString('dev_$_publicKeyKey', keyPair.publicKeyHex);
+        await prefs.setString('dev_$_npubKey', keyPair.npub);
+        await prefs.setString('dev_$_nsecKey', keyPair.nsec);
+        await prefs.setString('dev_$_hasKeysKey', 'true');
+        await prefs.setString('dev_$_keyCreatedAtKey', DateTime.now().toIso8601String());
         
         debugPrint('✅ Key pair stored in SharedPreferences (development fallback)');
       }
@@ -293,8 +293,8 @@ class KeyStorageService extends ChangeNotifier {
       // Check fallback storage if secure storage failed
       if (privateKey == null) {
         final prefs = await SharedPreferences.getInstance();
-        if (prefs.getString('dev_${_hasKeysKey}') == 'true') {
-          privateKey = prefs.getString('dev_${_privateKeyKey}');
+        if (prefs.getString('dev_$_hasKeysKey') == 'true') {
+          privateKey = prefs.getString('dev_$_privateKeyKey');
         }
       }
       

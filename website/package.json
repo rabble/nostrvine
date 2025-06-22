@@ -1,0 +1,19 @@
+{
+  "name": "openvine-website",
+  "version": "1.0.0",
+  "description": "OpenVine landing page - A decentralized vine-like video platform",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx live-server --port=8080",
+    "start": "npx http-server -p 8080",
+    "serve": "npx serve -p 8080"
+  },
+  "keywords": ["openvine", "nostr", "video", "vine"],
+  "author": "OpenVine Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "http-server": "^14.1.1",
+    "serve": "^14.2.1"
+  }
+}

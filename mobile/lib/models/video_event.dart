@@ -1,7 +1,8 @@
 // ABOUTME: NIP-71 Video Event model for handling kind 22 short video events
 // ABOUTME: Parses and structures video content data from Nostr relays
 
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
+import 'dart:developer' as developer;
 
 /// Represents a NIP-71 video event (kind 22 for short videos)
 class VideoEvent {
@@ -57,6 +58,8 @@ class VideoEvent {
       throw ArgumentError('Event must be kind 22 (short video)');
     }
     
+    developer.log('🔍 DEBUG: Parsing Kind 22 event ${event.id.substring(0, 8)}...', name: 'VideoEvent');
+    
     final tags = <String, String>{};
     final hashtags = <String>[];
     String? videoUrl;
@@ -70,8 +73,12 @@ class VideoEvent {
     String? publishedAt;
     
     // Parse event tags according to NIP-71
-    for (final tag in event.tags) {
-      if (tag.isEmpty) continue;
+    // Handle both List<String> and List<dynamic> from different nostr implementations
+    for (final tagRaw in event.tags) {
+      if (tagRaw.isEmpty) continue;
+      
+      // Convert List<dynamic> to List<String> safely
+      final tag = tagRaw.map((e) => e.toString()).toList();
       
       final tagName = tag[0];
       final tagValue = tag.length > 1 ? tag[1] : '';
@@ -81,11 +88,16 @@ class VideoEvent {
           videoUrl = tagValue;
           break;
         case 'imeta':
+          developer.log('🔍 DEBUG: Found imeta tag with ${tag.length} elements', name: 'VideoEvent');
           // Parse imeta tag which contains comma-separated metadata
-          _parseImetaTag(tag, (key, value) {
+          // Ensure we have a List<String> for the parser
+          final iMetaTag = List<String>.from(tag);
+          _parseImetaTag(iMetaTag, (key, value) {
+            developer.log('🔍 DEBUG: imeta key="$key" value="$value"', name: 'VideoEvent');
             switch (key) {
               case 'url':
                 videoUrl ??= value; // Only set if not already set
+                developer.log('🔍 DEBUG: Set videoUrl to: $value', name: 'VideoEvent');
                 break;
               case 'm':
                 mimeType ??= value;
@@ -147,6 +159,12 @@ class VideoEvent {
           ? (event.createdAt as DateTime).millisecondsSinceEpoch ~/ 1000
           : int.tryParse(event.createdAt.toString()) ?? 0;
     
+    developer.log('🔍 DEBUG: Final parsing results:', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: hasVideo = ${videoUrl != null && videoUrl!.isNotEmpty}', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: duration = $duration', name: 'VideoEvent');
+    
     return VideoEvent(
       id: event.id,
       pubkey: event.pubkey,
@@ -171,7 +189,7 @@ class VideoEvent {
     );
   }
   
-  /// Parse imeta tag which contains space-separated key-value pairs
+  /// Parse imeta tag which contains key-value pairs as separate elements
   static void _parseImetaTag(List<String> tag, void Function(String key, String value) onKeyValue) {
     // Skip the first element which is "imeta"
     for (int i = 1; i < tag.length; i++) {

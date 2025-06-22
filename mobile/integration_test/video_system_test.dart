@@ -10,7 +10,7 @@ import 'package:nostrvine_app/models/video_state.dart';
 import 'package:nostrvine_app/services/video_manager_interface.dart';
 import 'package:nostrvine_app/services/video_manager_service.dart';
 import 'package:nostrvine_app/screens/feed_screen_v2.dart';
-import 'package:nostrvine_app/widgets/video_feed_item_v2.dart';
+import 'package:nostrvine_app/widgets/video_feed_item.dart';
 
 import '../test/helpers/test_helpers.dart';
 import '../test/mocks/mock_video_manager.dart';
@@ -63,7 +63,7 @@ void main() {
       expect(find.byType(PageView), findsOneWidget);
       
       // Check that video feed items are displayed
-      expect(find.byType(VideoFeedItemV2), findsAtLeastNWidgets(1));
+      expect(find.byType(VideoFeedItem), findsAtLeastNWidgets(1));
 
       // Verify video manager state
       expect(videoManager.videos.length, equals(5));
@@ -156,7 +156,7 @@ void main() {
       expect(debugInfo['totalVideos'], equals(3));
 
       // UI should still be functional despite errors
-      expect(find.byType(VideoFeedItemV2), findsAtLeastNWidgets(1));
+      expect(find.byType(VideoFeedItem), findsAtLeastNWidgets(1));
     });
 
     testWidgets('Memory usage stays within reasonable limits', (tester) async {
@@ -237,7 +237,7 @@ void main() {
 
       // Now should show video feed
       expect(find.byType(PageView), findsOneWidget);
-      expect(find.byType(VideoFeedItemV2), findsOneWidget);
+      expect(find.byType(VideoFeedItem), findsOneWidget);
 
       // Test state change when preloading
       await videoManager.preloadVideo(testVideo.id);
@@ -408,7 +408,7 @@ void main() {
 
       // UI should reflect successful recovery
       await tester.pumpAndSettle();
-      expect(find.byType(VideoFeedItemV2), findsOneWidget);
+      expect(find.byType(VideoFeedItem), findsOneWidget);
     });
 
     testWidgets('UI handles permanent failures gracefully', (tester) async {
@@ -451,7 +451,7 @@ void main() {
 
       // UI should still be functional despite permanent failures
       expect(find.byType(PageView), findsOneWidget);
-      expect(find.byType(VideoFeedItemV2), findsAtLeastNWidgets(1));
+      expect(find.byType(VideoFeedItem), findsAtLeastNWidgets(1));
 
       // Check that videos are marked as permanently failed
       for (final video in testVideos) {

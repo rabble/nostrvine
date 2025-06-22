@@ -28,6 +28,9 @@ enum UploadStatus {
   
   @HiveField(6)
   failed,        // Upload or processing failed
+  
+  @HiveField(7)
+  paused,        // Upload paused by user
 }
 
 /// Represents a video upload in progress or completed
@@ -49,7 +52,13 @@ class PendingUpload {
   final DateTime createdAt;
   
   @HiveField(5)
-  final String? cloudinaryPublicId;
+  final String? cloudinaryPublicId; // Deprecated - use videoId instead
+  
+  @HiveField(15)
+  final String? videoId; // New field for direct upload
+  
+  @HiveField(16)
+  final String? cdnUrl; // Direct CDN URL from upload
   
   @HiveField(6)
   final String? errorMessage;
@@ -85,6 +94,8 @@ class PendingUpload {
     required this.status,
     required this.createdAt,
     this.cloudinaryPublicId,
+    this.videoId,
+    this.cdnUrl,
     this.errorMessage,
     this.uploadProgress,
     this.thumbnailPath,
@@ -126,6 +137,8 @@ class PendingUpload {
     UploadStatus? status,
     DateTime? createdAt,
     String? cloudinaryPublicId,
+    String? videoId,
+    String? cdnUrl,
     String? errorMessage,
     double? uploadProgress,
     String? thumbnailPath,
@@ -143,6 +156,8 @@ class PendingUpload {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       cloudinaryPublicId: cloudinaryPublicId ?? this.cloudinaryPublicId,
+      videoId: videoId ?? this.videoId,
+      cdnUrl: cdnUrl ?? this.cdnUrl,
       errorMessage: errorMessage ?? this.errorMessage,
       uploadProgress: uploadProgress ?? this.uploadProgress,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
@@ -181,6 +196,8 @@ class PendingUpload {
         return 'Published';
       case UploadStatus.failed:
         return 'Failed: ${errorMessage ?? 'Unknown error'}';
+      case UploadStatus.paused:
+        return 'Upload paused';
     }
   }
 
@@ -201,6 +218,8 @@ class PendingUpload {
         return 1.0;
       case UploadStatus.failed:
         return 0.0;
+      case UploadStatus.paused:
+        return uploadProgress ?? 0.0; // Preserve current progress
     }
   }
 

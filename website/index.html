@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenVine - Explore a world of beautiful, looping videos.</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="single-player-styles.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <meta name="description" content="OpenVine - The decentralized vine-like video sharing platform powered by Nostr">
 </head>
@@ -13,12 +14,14 @@
         <nav>
             <div class="nav-container">
                 <div class="logo">
-                    <h1>OpenVine</h1>
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
                 </div>
                 <div class="nav-links">
-                    <a href="#" class="nav-button active" data-platform="ios">Get it for iOS</a>
-                    <a href="#" class="nav-button" data-platform="android">Get it for Android</a>
-                    <a href="#" class="nav-button" data-platform="windows">Get it for Windows</a>
+                    <a href="index.html" class="nav-button active">Home</a>
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
                 </div>
             </div>
         </nav>
@@ -26,99 +29,69 @@
 
     <main>
         <section class="hero">
-            <h2>Explore a world of beautiful, looping videos.</h2>
+            <h2>Do it for the Vine!</h2>
             <div class="search-container">
                 <input type="text" placeholder="Search" class="search-input">
                 <button class="search-button">🔍</button>
             </div>
-        </section>
-
-        <section class="channels">
-            <h3>Channels</h3>
-            <div class="channel-grid">
-                <div class="channel-item" style="background-color: #0ae68a;">
-                    <span class="channel-icon">🎬</span>
-                </div>
-                <div class="channel-item" style="background-color: #a03a1a;">
-                    <span class="channel-icon">🎵</span>
-                </div>
-                <div class="channel-item" style="background-color: #ea5959;">
-                    <span class="channel-icon">😄</span>
-                </div>
-                <div class="channel-item" style="background-color: #3561f3;">
-                    <span class="channel-icon">🌟</span>
-                </div>
-                <div class="channel-item" style="background-color: #f43ce1;">
-                    <span class="channel-icon">🎨</span>
-                </div>
-                <div class="channel-item" style="background-color: #ff6700;">
-                    <span class="channel-icon">🔥</span>
-                </div>
-                <div class="channel-item" style="background-color: #f6a734;">
-                    <span class="channel-icon">🎮</span>
-                </div>
-                <div class="channel-item" style="background-color: #7e5cf6;">
-                    <span class="channel-icon">💥</span>
-                </div>
-                <div class="channel-item" style="background-color: #0ae68a;">
-                    <span class="channel-icon">🌈</span>
-                </div>
-                <div class="channel-item" style="background-color: #141414;">
-                    <span class="channel-icon">🎯</span>
-                </div>
-                <div class="channel-item" style="background-color: #9ddaf3;">
-                    <span class="channel-icon">⚡</span>
-                </div>
-                <div class="channel-item" style="background-color: #f6a734;">
-                    <span class="channel-icon">🎭</span>
-                </div>
-                <div class="channel-item" style="background-color: #08a0cf;">
-                    <span class="channel-icon">🏀</span>
-                </div>
-                <div class="channel-item" style="background-color: #ff6700;">
-                    <span class="channel-icon">🍕</span>
-                </div>
-                <div class="channel-item" style="background-color: #141414;">
-                    <span class="channel-icon">🎸</span>
-                </div>
-                <div class="channel-item" style="background-color: #ea5959;">
-                    <span class="channel-icon">🚗</span>
-                </div>
-                <div class="channel-item" style="background-color: #ff3434;">
-                    <span class="channel-icon">🍔</span>
-                </div>
-                <div class="channel-item" style="background-color: #ffd640;">
-                    <span class="channel-icon">🌮</span>
-                </div>
-                <div class="channel-item" style="background-color: #0ae68a;">
-                    <span class="channel-icon">💚</span>
-                </div>
-                <div class="channel-item" style="background-color: #f43ce1;">
-                    <span class="channel-icon">🎪</span>
-                </div>
-                <div class="channel-item" style="background-color: #edb92e;">
-                    <span class="channel-icon">⚠️</span>
-                </div>
+            <div class="app-buttons">
+                <a href="ios.html" class="app-button ios">
+                    <span class="app-icon">🍎</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">iOS</span>
+                    </div>
+                </a>
+                <a href="android.html" class="app-button android">
+                    <span class="app-icon">🤖</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">Android</span>
+                    </div>
+                </a>
+                <a href="#" class="app-button windows">
+                    <span class="app-icon">🪟</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">Windows</span>
+                    </div>
+                </a>
+                <a href="https://app.openvine.co" class="app-button web" target="_blank">
+                    <span class="app-icon">🌐</span>
+                    <div class="app-text">
+                        <span class="get-it">Get it for</span>
+                        <span class="platform">the web</span>
+                    </div>
+                </a>
             </div>
         </section>
 
-        <section class="vine-playlist">
-            <h3>🎬 Vine Playlist</h3>
-            <div class="vine-preview">
-                <div class="video-container">
-                    <div class="video-placeholder">
-                        <span class="loading-text">Loading amazing vines...</span>
-                    </div>
-                    <div class="video-info">
-                        <h4 class="username">TownsKiller</h4>
-                        <p class="timestamp">1 of 20</p>
-                        <div class="video-stats">
-                            <span class="likes">❤️ 443,668 Loops</span>
-                        </div>
+        <div class="single-player-container">
+            <div class="video-wrapper">
+                <video 
+                    id="main-vine-player" 
+                    class="vine-video" 
+                    autoplay 
+                    playsinline
+                    poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+                    <source src="https://res.cloudinary.com/dswu0ugmo/video/upload/v1750583297/5eM6tu9HFIu_20250622_162133_lm26h7.mp4" type="video/mp4">
+                </video>
+                
+                <div class="video-overlay">
+                </div>
+                
+                <div class="unmute-overlay" onclick="unmuteAndPlay()">
+                    <div class="unmute-content">
+                        <span class="unmute-icon">🔇</span>
+                        <p class="unmute-text">Tap to unmute</p>
                     </div>
                 </div>
+                
+                <button class="nav-btn prev-btn" onclick="previousVideo()">‹</button>
+                <button class="nav-btn next-btn" onclick="nextVideo()">›</button>
             </div>
-        </section>
+            
+        </div>
 
         <section class="featured-viners">
             <h3>🌟 Featured Viners</h3>
@@ -149,25 +122,13 @@
                 </div>
             </div>
         </section>
-
-        <section class="popular-now">
-            <h3>⭐ Popular Now</h3>
-            <div class="popular-item">
-                <div class="thumbnail">
-                    <img src="data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23333'/%3E%3C/svg%3E" alt="Video thumbnail">
-                </div>
-                <div class="popular-info">
-                    <h4>Thomas Sand...</h4>
-                    <p>0 Never Ends ∞</p>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer>
-        <p>Powered by Nostr Protocol | OpenVine 2024</p>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
     </footer>
 
+    <script src="single-vine-player.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

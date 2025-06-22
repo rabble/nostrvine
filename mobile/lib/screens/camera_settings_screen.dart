@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/camera_service.dart';
-import '../services/gif_service.dart';
 
 class CameraSettingsScreen extends StatefulWidget {
   const CameraSettingsScreen({super.key});
@@ -52,20 +51,12 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
                 _buildDurationSlider(config),
                 const SizedBox(height: 30),
                 
-                _buildSectionHeader('Frame Rate'),
-                const SizedBox(height: 10),
-                _buildFrameRateSlider(config),
-                const SizedBox(height: 30),
                 
                 _buildSectionHeader('Recording Options'),
                 const SizedBox(height: 10),
                 _buildAutoStopSwitch(config),
                 const SizedBox(height: 30),
                 
-                _buildSectionHeader('Quality Settings'),
-                const SizedBox(height: 10),
-                _buildQualitySelector(),
-                const SizedBox(height: 30),
                 
                 _buildSectionHeader('Quick Presets'),
                 const SizedBox(height: 10),
@@ -143,59 +134,6 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
     );
   }
 
-  Widget _buildFrameRateSlider(CameraConfiguration config) {
-    return Card(
-      color: Colors.grey[900],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Frame Rate',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                Text(
-                  '${config.targetFPS.toStringAsFixed(1)} FPS',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Slider(
-              value: config.targetFPS,
-              min: 3.0,
-              max: 10.0,
-              divisions: 14, // 0.5 increments
-              activeColor: Colors.blue,
-              inactiveColor: Colors.grey[600],
-              onChanged: (value) {
-                _cameraService.setTargetFPS(value);
-              },
-            ),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('3 FPS', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                Text('10 FPS', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Higher frame rates create smoother motion but larger file sizes',
-              style: TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAutoStopSwitch(CameraConfiguration config) {
     return Card(
@@ -225,7 +163,6 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
               onChanged: (value) {
                 _cameraService.useVineConfiguration(
                   duration: config.recordingDuration,
-                  fps: config.targetFPS,
                   autoStop: value,
                 );
               },
@@ -236,101 +173,6 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
     );
   }
 
-  Widget _buildQualitySelector() {
-    return Card(
-      color: Colors.grey[900],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'GIF Quality',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQualityOption(
-                    'Low',
-                    'Smaller file size',
-                    GifQuality.low,
-                    Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildQualityOption(
-                    'Medium',
-                    'Balanced',
-                    GifQuality.medium,
-                    Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildQualityOption(
-                    'High',
-                    'Best quality',
-                    GifQuality.high,
-                    Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQualityOption(String label, String description, GifQuality quality, Color color) {
-    // For now, we'll just show the options. The actual quality setting would need
-    // to be stored in a separate preferences service since it's used in GifService
-    final isSelected = quality == GifQuality.medium; // Default selection
-    
-    return GestureDetector(
-      onTap: () {
-        // TODO: Implement quality preference storage
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label quality selected'),
-            duration: const Duration(seconds: 1),
-            backgroundColor: color,
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.2) : Colors.grey[800],
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: const TextStyle(color: Colors.white54, fontSize: 10),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildPresetButtons() {
     return Column(
@@ -340,7 +182,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             Expanded(
               child: _buildPresetButton(
                 'Vine Classic',
-                '6s, 5 FPS',
+                '6 seconds',
                 () => _cameraService.useVineConfiguration(),
                 Colors.purple,
               ),
@@ -349,10 +191,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             Expanded(
               child: _buildPresetButton(
                 'Quick Snap',
-                '3s, 8 FPS',
+                '3 seconds',
                 () => _cameraService.useVineConfiguration(
                   duration: const Duration(seconds: 3),
-                  fps: 8.0,
                 ),
                 Colors.blue,
               ),
@@ -365,10 +206,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             Expanded(
               child: _buildPresetButton(
                 'Extended',
-                '12s, 4 FPS',
+                '12 seconds',
                 () => _cameraService.useVineConfiguration(
                   duration: const Duration(seconds: 12),
-                  fps: 4.0,
                 ),
                 Colors.green,
               ),
@@ -377,10 +217,9 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             Expanded(
               child: _buildPresetButton(
                 'High Motion',
-                '8s, 10 FPS',
+                '8 seconds',
                 () => _cameraService.useVineConfiguration(
                   duration: const Duration(seconds: 8),
-                  fps: 10.0,
                 ),
                 Colors.orange,
               ),
@@ -424,9 +263,6 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
   }
 
   Widget _buildCurrentConfigInfo(CameraConfiguration config) {
-    final estimatedFrames = config.targetFrameCount;
-    final estimatedSize = (estimatedFrames * 0.5).round(); // Rough estimate in KB per frame
-    
     return Card(
       color: Colors.grey[900],
       child: Padding(
@@ -444,10 +280,7 @@ class _CameraSettingsScreenState extends State<CameraSettingsScreen> {
             ),
             const SizedBox(height: 12),
             _buildInfoRow('Duration:', '${config.recordingDuration.inSeconds}s'),
-            _buildInfoRow('Frame Rate:', '${config.targetFPS.toStringAsFixed(1)} FPS'),
-            _buildInfoRow('Total Frames:', '$estimatedFrames frames'),
             _buildInfoRow('Auto-stop:', config.enableAutoStop ? 'Enabled' : 'Disabled'),
-            _buildInfoRow('Est. GIF Size:', '~${estimatedSize}KB'),
           ],
         ),
       ),

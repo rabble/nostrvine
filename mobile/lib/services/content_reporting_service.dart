@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import 'nostr_service_interface.dart';
 import 'content_moderation_service.dart';
 

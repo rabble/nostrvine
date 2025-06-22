@@ -1,7 +1,7 @@
 // ABOUTME: Service for processing and validating Nostr video events with robust error handling
 // ABOUTME: Provides comprehensive validation, type checking, and sanitization for video event data
 
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
 
 /// Comprehensive video event processing service with validation and error handling

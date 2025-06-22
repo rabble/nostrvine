@@ -113,9 +113,14 @@ export class CloudinarySignerService {
    * Get notification URL for webhook callbacks
    */
   private getNotificationUrl(): string {
-    // TODO: Replace with actual production webhook URL
-    // This should be your actual Cloudflare Workers URL
-    return `${this.workerUrl || 'http://localhost:8787'}/v1/media/webhook`;
+    // Use production URL for webhook callbacks
+    if (this.workerUrl && this.workerUrl.includes('localhost')) {
+      // Development mode - use localhost
+      return `${this.workerUrl}/v1/media/webhook`;
+    } else {
+      // Production mode - use production domain
+      return 'https://api.openvine.co/v1/media/webhook';
+    }
   }
 
   /**

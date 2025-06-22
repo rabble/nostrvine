@@ -9,7 +9,7 @@ import '../models/pending_upload.dart';
 import '../services/upload_manager.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/auth_service.dart';
-import 'package:nostr/nostr.dart';
+import 'package:nostr_sdk/event.dart';
 
 /// Service for publishing processed videos to Nostr relays
 class VideoEventPublisher extends ChangeNotifier {
@@ -36,7 +36,6 @@ class VideoEventPublisher extends ChangeNotifier {
   
   // Retry configuration
   final List<ReadyEventData> _failedEvents = [];
-  static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(minutes: 1);
   
   // Statistics
@@ -63,6 +62,9 @@ class VideoEventPublisher extends ChangeNotifier {
     // Set up app lifecycle monitoring
     _setupAppLifecycleListener();
     
+    // Listen for upload status changes to publish direct uploads immediately
+    _uploadManager.addListener(_checkForDirectUploads);
+    
     // Start polling for ready events
     await startPolling();
     
@@ -81,11 +83,17 @@ class VideoEventPublisher extends ChangeNotifier {
     
     debugPrint('🔄 Starting video event polling (interval: ${_currentPollInterval.inSeconds}s)');
     
-    // Do an immediate check
-    await _checkForReadyEvents();
-    
-    // Schedule periodic checks
-    _pollTimer = Timer.periodic(_currentPollInterval, (_) => _checkForReadyEvents());
+    // Check if we're using direct uploads (skip polling if so)
+    try {
+      // Do an immediate check
+      await _checkForReadyEvents();
+      
+      // Schedule periodic checks
+      _pollTimer = Timer.periodic(_currentPollInterval, (_) => _checkForReadyEvents());
+    } catch (e) {
+      debugPrint('⚠️ Polling endpoint not available - using direct upload only mode');
+      // Continue without polling - direct uploads will still work
+    }
   }
 
   /// Stop the background polling service
@@ -152,8 +160,8 @@ class VideoEventPublisher extends ChangeNotifier {
         return;
       }
       
-      // Create NIP-94 event
-      final nostrEvent = await _createNip94Event(eventData);
+      // Create Kind 22 video event
+      final nostrEvent = await _createVideoEvent(eventData);
       if (nostrEvent == null) {
         throw Exception('Failed to create Nostr event');
       }
@@ -191,33 +199,96 @@ class VideoEventPublisher extends ChangeNotifier {
     }
   }
 
-  /// Create NIP-94 file metadata event from ready event data
-  Future<Event?> _createNip94Event(ReadyEventData eventData) async {
+  /// Create NIP-71 video event from ready event data
+  Future<Event?> _createVideoEvent(ReadyEventData eventData) async {
     if (_authService == null || !_authService!.isAuthenticated) {
-      debugPrint('❌ Cannot create NIP-94 event - user not authenticated');
+      debugPrint('❌ Cannot create video event - user not authenticated');
       return null;
     }
     
     try {
+      // Extract video metadata from eventData
+      String? videoUrl;
+      String? thumbnailUrl;
+      String? title;
+      int? duration;
+      String? dimensions;
+      String? mimeType;
+      String? sha256;
+      int? fileSize;
+      
+      // Parse the NIP-94 tags to extract video info
+      for (final tag in eventData.nip94Tags) {
+        if (tag.isEmpty) continue;
+        switch (tag[0]) {
+          case 'url':
+            videoUrl = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'thumb':
+            thumbnailUrl = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'title':
+            title = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'duration':
+            duration = tag.length > 1 ? int.tryParse(tag[1]) : null;
+            break;
+          case 'dim':
+            dimensions = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'm':
+            mimeType = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'x':
+            sha256 = tag.length > 1 ? tag[1] : null;
+            break;
+          case 'size':
+            fileSize = tag.length > 1 ? int.tryParse(tag[1]) : null;
+            break;
+        }
+      }
+      
+      // Create Kind 22 tags
+      final videoTags = <List<String>>[];
+      if (videoUrl != null) videoTags.add(['url', videoUrl]);
+      if (title != null) videoTags.add(['title', title]);
+      if (thumbnailUrl != null) videoTags.add(['thumb', thumbnailUrl]);
+      if (duration != null) videoTags.add(['duration', duration.toString()]);
+      if (dimensions != null) videoTags.add(['dim', dimensions]);
+      if (mimeType != null) videoTags.add(['m', mimeType]);
+      if (sha256 != null) videoTags.add(['x', sha256]);
+      if (fileSize != null) videoTags.add(['size', fileSize.toString()]);
+      
+      // Add hashtags from original tags
+      for (final tag in eventData.nip94Tags) {
+        if (tag.isNotEmpty && tag[0] == 't') {
+          videoTags.add(tag);
+        }
+      }
+      
+      // Add client tag
+      videoTags.add(['client', 'nostrvine']);
+      
       final event = await _authService!.createAndSignEvent(
-        kind: 1063, // NIP-94 file metadata
+        kind: 22, // NIP-71 short video
         content: eventData.contentSuggestion,
-        tags: eventData.nip94Tags,
+        tags: videoTags,
       );
       
       if (event == null) {
-        debugPrint('❌ Failed to create and sign NIP-94 event');
+        debugPrint('❌ Failed to create and sign video event');
         return null;
       }
       
-      debugPrint('📝 Created NIP-94 event: ${event.id}');
+      debugPrint('📹 Created Kind 22 video event: ${event.id}');
+      debugPrint('🎬 Video URL: $videoUrl');
       debugPrint('📊 Event size: ${eventData.estimatedEventSize} bytes');
       debugPrint('🏷️ Tags: ${event.tags.length}');
       
       return event;
       
     } catch (e) {
-      debugPrint('❌ Error creating NIP-94 event: $e');
+      debugPrint('❌ Error creating video event: $e');
       return null;
     }
   }
@@ -243,13 +314,8 @@ class VideoEventPublisher extends ChangeNotifier {
   Future<void> _updateLocalUploadStatus(ReadyEventData eventData, String nostrEventId) async {
     final upload = _uploadManager.getUpload(eventData.originalUploadId);
     if (upload != null) {
-      final updatedUpload = upload.copyWith(
-        status: UploadStatus.published,
-        nostrEventId: nostrEventId,
-        completedAt: DateTime.now(),
-      );
-      
-      // This would normally update the upload in the manager
+      // This would normally update the upload in the manager with:
+      // upload.copyWith(status: UploadStatus.published, nostrEventId: nostrEventId, completedAt: DateTime.now())
       debugPrint('📱 Updated local upload status: ${eventData.originalUploadId} -> published');
       debugPrint('🔗 Linked to Nostr event: $nostrEventId');
     } else {
@@ -374,6 +440,115 @@ class VideoEventPublisher extends ChangeNotifier {
     debugPrint('🔧 Force checking for ready events');
     await _checkForReadyEvents();
   }
+  
+  /// Check for direct uploads that are ready to publish
+  void _checkForDirectUploads() async {
+    try {
+      // Get all uploads that are ready to publish
+      final readyUploads = _uploadManager.getUploadsByStatus(UploadStatus.readyToPublish);
+      
+      if (readyUploads.isEmpty) return;
+      
+      debugPrint('📬 Found ${readyUploads.length} direct uploads ready to publish');
+      
+      // Process each ready upload
+      for (final upload in readyUploads) {
+        // Skip if missing required fields
+        if (upload.videoId == null || upload.cdnUrl == null) {
+          debugPrint('⚠️ Skipping upload ${upload.id} - missing videoId or cdnUrl');
+          continue;
+        }
+        
+        // Publish directly without polling
+        final success = await publishDirectUpload(upload);
+        
+        if (success) {
+          debugPrint('✅ Published direct upload: ${upload.id}');
+        } else {
+          debugPrint('❌ Failed to publish direct upload: ${upload.id}');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking direct uploads: $e');
+    }
+  }
+  
+  /// Publish a video directly without polling (for direct upload)
+  Future<bool> publishDirectUpload(PendingUpload upload) async {
+    if (upload.videoId == null || upload.cdnUrl == null) {
+      debugPrint('❌ Cannot publish upload - missing videoId or cdnUrl');
+      return false;
+    }
+    
+    try {
+      debugPrint('🎬 Publishing direct upload: ${upload.videoId}');
+      
+      // Create NIP-94 style tags for the video
+      final tags = <List<String>>[];
+      
+      // Required tags
+      tags.add(['url', upload.cdnUrl!]);
+      tags.add(['m', 'video/mp4']); // Assume MP4 for now
+      
+      // Optional tags
+      if (upload.title != null) tags.add(['title', upload.title!]);
+      if (upload.description != null) tags.add(['summary', upload.description!]);
+      
+      // Add hashtags
+      if (upload.hashtags != null) {
+        for (final hashtag in upload.hashtags!) {
+          tags.add(['t', hashtag]);
+        }
+      }
+      
+      // Add client tag
+      tags.add(['client', 'nostrvine']);
+      
+      // Create the event content
+      final content = upload.description ?? upload.title ?? '';
+      
+      // Create and sign the event
+      final event = await _authService?.createAndSignEvent(
+        kind: 22, // NIP-71 short video
+        content: content,
+        tags: tags,
+      );
+      
+      if (event == null) {
+        debugPrint('❌ Failed to create and sign video event');
+        return false;
+      }
+      
+      // Publish to Nostr relays
+      final publishResult = await _publishEventToNostr(event);
+      
+      if (publishResult) {
+        // Update upload status
+        await _uploadManager.updateUploadStatus(
+          upload.id,
+          UploadStatus.published,
+          nostrEventId: event.id,
+        );
+        
+        _totalEventsPublished++;
+        _lastPublishTime = DateTime.now();
+        
+        debugPrint('✅ Successfully published direct upload: ${event.id}');
+        debugPrint('🎬 Video URL: ${upload.cdnUrl}');
+        
+        return true;
+      } else {
+        debugPrint('❌ Failed to publish to Nostr relays');
+        return false;
+      }
+      
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error publishing direct upload: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      _totalEventsFailed++;
+      return false;
+    }
+  }
 
   @override
   void dispose() {
@@ -381,6 +556,9 @@ class VideoEventPublisher extends ChangeNotifier {
     
     stopPolling();
     _failedEvents.clear();
+    
+    // Remove upload manager listener
+    _uploadManager.removeListener(_checkForDirectUploads);
     
     // Remove app lifecycle listener
     SystemChannels.lifecycle.setMessageHandler(null);
