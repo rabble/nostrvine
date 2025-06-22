@@ -11,6 +11,7 @@ import '../services/video_manager_interface.dart';
 import '../services/video_event_service.dart';
 import '../models/video_event.dart';
 import 'profile_screen.dart';
+import 'explore_video_screen.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -172,7 +173,12 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(16),
           itemCount: activities.length,
           itemBuilder: (context, index) {
-            return _ActivityItem(activity: activities[index]);
+            return _ActivityItem(
+              activity: activities[index],
+              onVideoTap: activities[index].targetVideo != null 
+                ? () => _openVideo(activities[index].targetVideo!, videoEventService)
+                : null,
+            );
           },
         );
       },
@@ -284,7 +290,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           itemCount: userVideos.length,
           itemBuilder: (context, index) {
             final video = userVideos[index];
-            return _PersonalVideoItem(video: video);
+            return _PersonalVideoItem(
+              video: video,
+              onTap: () => _openVideo(video, videoEventService),
+            );
           },
         );
       },
@@ -330,6 +339,37 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
       ),
     );
   }
+
+  void _openVideo(VideoEvent video, VideoEventService videoEventService) {
+    debugPrint('🎬 Opening video from Activity: ${video.id.substring(0, 8)}...');
+    debugPrint('📺 Video URL: ${video.videoUrl}');
+    debugPrint('🖼️ Thumbnail URL: ${video.thumbnailUrl}');
+    debugPrint('📝 Title: ${video.title}');
+    
+    // Check if video has a valid URL
+    if (video.videoUrl?.isEmpty != false) {
+      debugPrint('❌ Cannot open video - empty or null video URL');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Video URL is not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    final allVideos = videoEventService.videoEvents;
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ExploreVideoScreen(
+          startingVideo: video,
+          videoList: allVideos,
+          contextTitle: 'Activity Video',
+        ),
+      ),
+    );
+  }
 }
 
 enum ActivityType { like, follow, comment, repost }
@@ -352,8 +392,12 @@ class ActivityData {
 
 class _ActivityItem extends StatelessWidget {
   final ActivityData activity;
+  final VoidCallback? onVideoTap;
 
-  const _ActivityItem({required this.activity});
+  const _ActivityItem({
+    required this.activity,
+    this.onVideoTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -418,17 +462,20 @@ class _ActivityItem extends StatelessWidget {
                   // Video thumbnail if applicable
                   if (activity.targetVideo != null) ...[
                     const SizedBox(width: 12),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: VineTheme.vineGreen,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 20,
+                    GestureDetector(
+                      onTap: onVideoTap,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: VineTheme.vineGreen,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -555,8 +602,12 @@ class _FollowingItem extends StatelessWidget {
 
 class _PersonalVideoItem extends StatelessWidget {
   final VideoEvent video;
+  final VoidCallback? onTap;
 
-  const _PersonalVideoItem({required this.video});
+  const _PersonalVideoItem({
+    required this.video,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -564,9 +615,12 @@ class _PersonalVideoItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: Card(
         color: Colors.grey[900],
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
             children: [
               // Video thumbnail
               Container(
@@ -626,6 +680,7 @@ class _PersonalVideoItem extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

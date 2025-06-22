@@ -85,10 +85,11 @@ class VideoEvent {
       
       switch (tagName) {
         case 'url':
-          videoUrl = tagValue;
+          // Fix incorrect apt.openvine.co domain to api.openvine.co
+          videoUrl = tagValue.replaceAll('apt.openvine.co', 'api.openvine.co');
           developer.log('🔍 DEBUG: Found url tag with value: $tagValue', name: 'VideoEvent');
           if (tagValue.contains('apt.openvine.co')) {
-            developer.log('⚠️ WARNING: Found apt.openvine.co URL in video event!', name: 'VideoEvent');
+            developer.log('🔧 FIXED: Corrected apt.openvine.co to api.openvine.co in URL', name: 'VideoEvent');
           }
           break;
         case 'imeta':
@@ -100,10 +101,12 @@ class VideoEvent {
             developer.log('🔍 DEBUG: imeta key="$key" value="$value"', name: 'VideoEvent');
             switch (key) {
               case 'url':
-                videoUrl ??= value; // Only set if not already set
+                // Fix incorrect apt.openvine.co domain to api.openvine.co
+                final correctedUrl = value.replaceAll('apt.openvine.co', 'api.openvine.co');
+                videoUrl ??= correctedUrl; // Only set if not already set
                 developer.log('🔍 DEBUG: Set videoUrl from imeta to: $value', name: 'VideoEvent');
                 if (value.contains('apt.openvine.co')) {
-                  developer.log('⚠️ WARNING: Found apt.openvine.co URL in imeta tag!', name: 'VideoEvent');
+                  developer.log('🔧 FIXED: Corrected apt.openvine.co to api.openvine.co in imeta URL', name: 'VideoEvent');
                 }
                 break;
               case 'm':
@@ -119,7 +122,8 @@ class VideoEvent {
                 dimensions ??= value;
                 break;
               case 'thumb':
-                thumbnailUrl ??= value;
+                // Fix incorrect apt.openvine.co domain to api.openvine.co
+                thumbnailUrl ??= value.replaceAll('apt.openvine.co', 'api.openvine.co');
                 break;
               case 'duration':
                 duration ??= double.tryParse(value)?.round();
@@ -149,7 +153,8 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
           break;
         case 'thumb':
-          thumbnailUrl = tagValue;
+          // Fix incorrect apt.openvine.co domain to api.openvine.co
+          thumbnailUrl = tagValue.replaceAll('apt.openvine.co', 'api.openvine.co');
           break;
         case 't':
           if (tagValue.isNotEmpty) {
