@@ -146,8 +146,8 @@ async function transferVideoToR2(
     
     console.log(`📤 Uploaded to R2: ${r2Key}`);
     
-    // Generate CDN URL (will point to custom domain once configured)
-    const cdnUrl = `https://cdn.openvine.co/${r2Key}`;
+    // Generate CDN URL using the media serving endpoint
+    const cdnUrl = `https://api.openvine.co/media/${metadata.public_id}`;
     
     // Generate R2 public URL (using bucket's public domain)
     const bucketName = env.ENVIRONMENT === 'production' ? 'nostrvine-videos' : 

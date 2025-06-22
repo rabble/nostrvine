@@ -86,6 +86,10 @@ class VideoEvent {
       switch (tagName) {
         case 'url':
           videoUrl = tagValue;
+          developer.log('🔍 DEBUG: Found url tag with value: $tagValue', name: 'VideoEvent');
+          if (tagValue.contains('apt.openvine.co')) {
+            developer.log('⚠️ WARNING: Found apt.openvine.co URL in video event!', name: 'VideoEvent');
+          }
           break;
         case 'imeta':
           developer.log('🔍 DEBUG: Found imeta tag with ${tag.length} elements', name: 'VideoEvent');
@@ -97,7 +101,10 @@ class VideoEvent {
             switch (key) {
               case 'url':
                 videoUrl ??= value; // Only set if not already set
-                developer.log('🔍 DEBUG: Set videoUrl to: $value', name: 'VideoEvent');
+                developer.log('🔍 DEBUG: Set videoUrl from imeta to: $value', name: 'VideoEvent');
+                if (value.contains('apt.openvine.co')) {
+                  developer.log('⚠️ WARNING: Found apt.openvine.co URL in imeta tag!', name: 'VideoEvent');
+                }
                 break;
               case 'm':
                 mimeType ??= value;
@@ -164,6 +171,11 @@ class VideoEvent {
     developer.log('🔍 DEBUG: hasVideo = ${videoUrl != null && videoUrl!.isNotEmpty}', name: 'VideoEvent');
     developer.log('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent');
     developer.log('🔍 DEBUG: duration = $duration', name: 'VideoEvent');
+    
+    // Final check for apt.openvine.co URLs
+    if (videoUrl != null && videoUrl!.contains('apt.openvine.co')) {
+      developer.log('🚨 FINAL WARNING: VideoEvent ${event.id.substring(0, 8)} has apt.openvine.co URL: $videoUrl', name: 'VideoEvent');
+    }
     
     return VideoEvent(
       id: event.id,
@@ -266,6 +278,22 @@ class VideoEvent {
   
   /// Check if this event has video content
   bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
+
+  /// Get effective thumbnail URL with fallback generation
+  String? get effectiveThumbnailUrl {
+    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
+      return thumbnailUrl;
+    }
+    
+    // Generate fallback thumbnail based on video characteristics
+    if (hasVideo) {
+      // Use a consistent hash of the video ID to ensure same thumbnail for same video
+      final hash = id.hashCode.abs() % 1000;
+      return 'https://picsum.photos/640/480?random=$hash';
+    }
+    
+    return null;
+  }
   
   /// Check if video URL is a GIF
   bool get isGif {
