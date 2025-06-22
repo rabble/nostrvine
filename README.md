@@ -4,6 +4,22 @@
 
 A decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
 
+## App Screenshots
+
+<div align="center">
+  
+### 📱 Mobile Experience
+  
+<img src="mobile/screenshots/feed-screen.png" alt="Video Feed - Zappix Flix uploads video" width="300"/>
+<img src="mobile/screenshots/explore-screen.png" alt="Explore Screen - Browse trending content with hashtags" width="300"/>
+<img src="mobile/screenshots/video-player.png" alt="Video Player - Immersive full-screen viewing" width="300"/>
+
+*Experience Vine-style short videos with seamless social features and decentralized content sharing*
+
+**Features shown:** Feed navigation • Hashtag filtering • Video interactions • Social sharing • Real-time content discovery
+
+</div>
+
 ## Recent Updates ✨
 
 - **Enhanced Activity Screen**: Video thumbnails in activity notifications are now clickable and open videos in the full player
