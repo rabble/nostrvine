@@ -17,7 +17,7 @@ class MobileCameraProvider implements CameraProvider {
   Function(Uint8List)? _frameCallback;
   
   // Recording parameters
-  static const Duration maxVineDuration = Duration(seconds: 6);
+  static const Duration maxVineDuration = Duration(milliseconds: 6300); // 6.3 seconds like original Vine
   static const double targetFPS = 5.0;
   
   @override

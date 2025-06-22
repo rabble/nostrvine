@@ -39,7 +39,7 @@ class TestHelpers {
       content: content ?? 'Test video content',
       timestamp: effectiveTimestamp,
       videoUrl: videoUrl ?? (isGif ? 'https://example.com/test.gif' : 'https://example.com/test_video.mp4'),
-      thumbnailUrl: thumbnailUrl ?? 'https://example.com/test_thumb.jpg',
+      thumbnailUrl: thumbnailUrl ?? 'https://picsum.photos/640/480?random=${now.millisecondsSinceEpoch % 1000}',
       title: title ?? 'Test Video Title',
       hashtags: hashtags ?? ['test', 'video'],
       duration: duration ?? (isGif ? 0 : 30),

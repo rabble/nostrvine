@@ -93,6 +93,9 @@ class UploadManager extends ChangeNotifier {
       
       debugPrint('✅ UploadManager initialized with ${_uploadsBox!.length} existing uploads');
       
+      // Clean up any problematic uploads first
+      await cleanupProblematicUploads();
+      
       // Resume any interrupted uploads
       await _resumeInterruptedUploads();
       
@@ -305,7 +308,9 @@ class UploadManager extends ChangeNotifier {
       final updatedUpload = upload.copyWith(
         status: UploadStatus.readyToPublish,  // Direct upload is immediately ready
         cloudinaryPublicId: result.videoId,   // Use videoId for existing systems
+        videoId: result.videoId,               // Store videoId for new publishing system
         cdnUrl: result.cdnUrl,                 // Store CDN URL directly
+        thumbnailPath: result.thumbnailUrl,    // Store thumbnail URL
         uploadProgress: 1.0,
         completedAt: endTime,
       );
@@ -667,6 +672,29 @@ class UploadManager extends ChangeNotifier {
       'published': uploads.where((u) => u.status == UploadStatus.published).length,
       'failed': uploads.where((u) => u.status == UploadStatus.failed).length,
     };
+  }
+
+  /// Fix uploads stuck in readyToPublish without proper data (debug method)
+  Future<void> cleanupProblematicUploads() async {
+    final uploads = pendingUploads;
+    int fixedCount = 0;
+    
+    for (final upload in uploads) {
+      // Fix uploads that are ready to publish but missing required data
+      // These should be moved back to failed status so user can retry
+      if (upload.status == UploadStatus.readyToPublish && 
+          (upload.videoId == null || upload.cdnUrl == null)) {
+        debugPrint('🔄 Fixing stuck upload: ${upload.id} (missing videoId/cdnUrl) - moving to failed');
+        final fixedUpload = upload.copyWith(status: UploadStatus.failed);
+        await _updateUpload(fixedUpload);
+        fixedCount++;
+      }
+    }
+    
+    if (fixedCount > 0) {
+      debugPrint('🔄 Fixed $fixedCount stuck uploads - moved back to failed status');
+      notifyListeners();
+    }
   }
 
   /// Get comprehensive performance metrics

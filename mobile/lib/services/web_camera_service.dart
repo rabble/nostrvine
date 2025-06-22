@@ -249,10 +249,12 @@ class WebCameraService {
   /// Dispose resources
   void dispose() {
     _mediaStream?.getTracks().forEach((track) => track.stop());
+    _mediaStream = null;  // Clear the stream reference
     _mediaRecorder = null;
     _videoElement = null;
     _recordingCompleteController?.close();
     _isInitialized = false;
+    _isRecording = false;  // Reset recording state
     debugPrint('🗑️ Web camera service disposed');
   }
 }

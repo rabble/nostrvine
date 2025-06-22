@@ -29,7 +29,7 @@ This document provides operational procedures and troubleshooting guides for mai
 1. **Check Current System Status**
    ```bash
    # Via analytics dashboard or debug endpoint
-   curl -X GET https://api.nostrvine.com/debug/video-system-status
+   curl -X GET https://api.openvine.co/debug/video-system-status
    ```
 
 2. **Trigger Emergency Memory Cleanup**
@@ -457,19 +457,19 @@ echo "Date: $(date)"
 
 # Check memory usage trends
 echo "Memory usage over last 24h:"
-curl -s "https://api.nostrvine.com/metrics/memory?range=24h" | jq '.peak_memory_mb'
+curl -s "https://api.openvine.co/metrics/memory?range=24h" | jq '.peak_memory_mb'
 
 # Check error rates
 echo "Error rates:"
-curl -s "https://api.nostrvine.com/metrics/errors?range=24h" | jq '.error_rate'
+curl -s "https://api.openvine.co/metrics/errors?range=24h" | jq '.error_rate'
 
 # Check performance metrics
 echo "Performance metrics:"
-curl -s "https://api.nostrvine.com/metrics/performance?range=24h" | jq '.avg_preload_time_ms'
+curl -s "https://api.openvine.co/metrics/performance?range=24h" | jq '.avg_preload_time_ms'
 
 # Check A/B test health
 echo "A/B test status:"
-curl -s "https://api.nostrvine.com/metrics/ab-tests" | jq '.video_system_migration_v2'
+curl -s "https://api.openvine.co/metrics/ab-tests" | jq '.video_system_migration_v2'
 ```
 
 #### Log Analysis
@@ -689,18 +689,18 @@ class PostDeploymentVerification {
 ```yaml
 # oncall_schedule.yml
 week_1:
-  primary: engineer_a@nostrvine.com
-  secondary: engineer_b@nostrvine.com
+  primary: engineer_a@openvine.co
+  secondary: engineer_b@openvine.co
   
 week_2:
-  primary: engineer_b@nostrvine.com
-  secondary: engineer_c@nostrvine.com
+  primary: engineer_b@openvine.co
+  secondary: engineer_c@openvine.co
 ```
 
 #### Contact Information
 - **Slack Channel**: #video-system-alerts
 - **PagerDuty**: nostrvine-video-system
-- **Email Group**: video-team@nostrvine.com
+- **Email Group**: video-team@openvine.co
 
 ### Alert Configuration
 
@@ -711,7 +711,7 @@ query: avg(video_memory_mb) > 500
 for: 5m
 severity: P1
 message: "Video system memory usage is {{ $value }}MB (threshold: 500MB)"
-runbook: "https://docs.nostrvine.com/runbooks/memory-usage"
+runbook: "https://docs.openvine.co/runbooks/memory-usage"
 ```
 
 #### Crash Rate Alert
@@ -721,7 +721,7 @@ query: rate(app_crashes[5m]) > 0.03
 for: 2m
 severity: P0
 message: "Video system crash rate is {{ $value | humanizePercentage }} (threshold: 3%)"
-runbook: "https://docs.nostrvine.com/runbooks/crash-rate"
+runbook: "https://docs.openvine.co/runbooks/crash-rate"
 ```
 
 #### Performance Alert
@@ -731,7 +731,7 @@ query: avg(preload_duration_ms) > 5000
 for: 10m
 severity: P2
 message: "Video preload time is {{ $value }}ms (threshold: 5000ms)"
-runbook: "https://docs.nostrvine.com/runbooks/performance"
+runbook: "https://docs.openvine.co/runbooks/performance"
 ```
 
 ## Appendix
@@ -741,26 +741,26 @@ runbook: "https://docs.nostrvine.com/runbooks/performance"
 #### System Health Check
 ```bash
 # Quick system status
-curl -X GET https://api.nostrvine.com/health/video-system
+curl -X GET https://api.openvine.co/health/video-system
 
 # Detailed debug information
-curl -X GET https://api.nostrvine.com/debug/video-manager
+curl -X GET https://api.openvine.co/debug/video-manager
 
 # Export performance data
-curl -X GET "https://api.nostrvine.com/metrics/export?range=1h" > performance_data.json
+curl -X GET "https://api.openvine.co/metrics/export?range=1h" > performance_data.json
 ```
 
 #### Emergency Recovery
 ```bash
 # Emergency memory cleanup
-curl -X POST https://api.nostrvine.com/admin/memory-pressure
+curl -X POST https://api.openvine.co/admin/memory-pressure
 
 # Disable new video system
-curl -X POST https://api.nostrvine.com/admin/feature-flags \
+curl -X POST https://api.openvine.co/admin/feature-flags \
   -d '{"new_video_manager": false}'
 
 # Reset A/B test rollout
-curl -X POST https://api.nostrvine.com/admin/ab-tests \
+curl -X POST https://api.openvine.co/admin/ab-tests \
   -d '{"video_system_migration_v2": {"percentage": 0}}'
 ```
 

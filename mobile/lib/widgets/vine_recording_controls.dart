@@ -124,7 +124,7 @@ class _VineRecordButtonState extends State<VineRecordButton>
 
   void _onTapUp(TapUpDetails details) {
     debugPrint('🎬 Record button tap up - isPressed: $_isPressed, state: ${widget.controller.state}');
-    if (!_isPressed) return;
+    if (!_isPressed || !mounted) return;
     
     setState(() => _isPressed = false);
     _animationController.reverse();
@@ -133,7 +133,7 @@ class _VineRecordButtonState extends State<VineRecordButton>
 
   void _onTapCancel() {
     debugPrint('🎬 Record button tap cancel - isPressed: $_isPressed, state: ${widget.controller.state}');
-    if (!_isPressed) return;
+    if (!_isPressed || !mounted) return;
     
     setState(() => _isPressed = false);
     _animationController.reverse();
@@ -142,43 +142,7 @@ class _VineRecordButtonState extends State<VineRecordButton>
 
   @override
   Widget build(BuildContext context) {
-    // For web, use simple tap-to-toggle behavior as fallback
-    if (kIsWeb) {
-      return GestureDetector(
-        onTap: () {
-          debugPrint('🎬 Web record button tap - state: ${widget.controller.state}');
-          if (widget.controller.state == VineRecordingState.recording) {
-            widget.controller.stopRecording();
-          } else if (widget.controller.canRecord) {
-            widget.controller.startRecording();
-          }
-        },
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _getButtonColor(),
-                border: Border.all(
-                  color: Colors.white,
-                  width: 3,
-                ),
-              ),
-              child: Icon(
-                _getButtonIcon(),
-                color: Colors.white,
-                size: 40,
-              ),
-            );
-          },
-        ),
-      );
-    }
-    
-    // For mobile, use press-and-hold behavior
+    // Use press-and-hold behavior for all platforms
     return Listener(
       onPointerDown: (event) {
         _onTapDown(TapDownDetails(globalPosition: event.position));
@@ -319,22 +283,16 @@ class VineRecordingInstructions extends StatelessWidget {
         if (controller.hasSegments) {
           return '$recorded"/${VineRecordingController.maxRecordingDuration.inSeconds}" • ${remaining}s remaining';
         }
-        return '${VineRecordingController.maxRecordingDuration.inSeconds}s Vine • Tap and hold to record';
+        return '${VineRecordingController.maxRecordingDuration.inSeconds}s Vine • Press and hold to record';
     }
   }
 
   String _getInstructionText() {
     switch (controller.state) {
       case VineRecordingState.recording:
-        if (kIsWeb) {
-          return 'Tap to pause • Recording segment ${controller.segments.length + 1}';
-        }
         return 'Release to pause • Recording segment ${controller.segments.length + 1}';
       case VineRecordingState.paused:
-        if (kIsWeb) {
-          return 'Tap to continue recording';
-        }
-        return 'Tap and hold to continue recording';
+        return 'Press and hold to continue recording';
       case VineRecordingState.completed:
         return 'Tap next to add caption and share';
       case VineRecordingState.processing:
@@ -342,9 +300,6 @@ class VineRecordingInstructions extends StatelessWidget {
       case VineRecordingState.error:
         return 'Something went wrong. Try again.';
       default:
-        if (kIsWeb) {
-          return 'Tap to start recording, tap again to pause';
-        }
         return 'Press and hold to record, release to pause';
     }
   }

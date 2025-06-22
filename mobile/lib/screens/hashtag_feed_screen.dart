@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/vine_theme.dart';
 import '../services/video_event_service.dart';
+import '../services/hashtag_service.dart';
 import '../widgets/video_feed_item.dart';
+import 'explore_video_screen.dart';
 
 class HashtagFeedScreen extends StatefulWidget {
   final String hashtag;
@@ -22,8 +24,8 @@ class _HashtagFeedScreenState extends State<HashtagFeedScreen> {
     super.initState();
     // Subscribe to videos with this hashtag
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final videoService = context.read<VideoEventService>();
-      videoService.subscribeToHashtagVideos([widget.hashtag]);
+      final hashtagService = context.read<HashtagService>();
+      hashtagService.subscribeToHashtagVideos([widget.hashtag]);
     });
   }
 
@@ -47,9 +49,10 @@ class _HashtagFeedScreenState extends State<HashtagFeedScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Consumer<VideoEventService>(
-        builder: (context, videoService, child) {
-          final videos = videoService.getVideoEventsByHashtags([widget.hashtag]);
+      body: Consumer2<VideoEventService, HashtagService>(
+        builder: (context, videoService, hashtagService, child) {
+          final videos = hashtagService.getVideosByHashtags([widget.hashtag]);
+          final stats = hashtagService.getHashtagStats(widget.hashtag);
           
           if (videoService.isLoading && videos.isEmpty) {
             return const Center(
@@ -95,22 +98,47 @@ class _HashtagFeedScreenState extends State<HashtagFeedScreen> {
               Container(
                 color: VineTheme.cardBackground,
                 padding: const EdgeInsets.all(16),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.trending_up,
-                      color: VineTheme.vineGreen,
-                      size: 20,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.trending_up,
+                          color: VineTheme.vineGreen,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${videos.length} videos',
+                          style: const TextStyle(
+                            color: VineTheme.primaryText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (stats != null) ...[
+                          const Spacer(),
+                          Text(
+                            'by ${stats.authorCount} authors',
+                            style: const TextStyle(
+                              color: VineTheme.secondaryText,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${videos.length} videos',
-                      style: const TextStyle(
-                        color: VineTheme.primaryText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                    if (stats != null && stats.recentVideoCount > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${stats.recentVideoCount} new in last 24 hours',
+                        style: const TextStyle(
+                          color: VineTheme.secondaryText,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -122,9 +150,28 @@ class _HashtagFeedScreenState extends State<HashtagFeedScreen> {
                   itemCount: videos.length,
                   itemBuilder: (context, index) {
                     final video = videos[index];
-                    return VideoFeedItem(
-                      video: video,
-                      isActive: index == 0, // Only first video is active
+                    return GestureDetector(
+                      onTap: () {
+                        // Navigate to inline video player for this hashtag
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ExploreVideoScreen(
+                              startingVideo: video,
+                              videoList: videos,
+                              contextTitle: "#${widget.hashtag}",
+                              startingIndex: index,
+                            ),
+                          ),
+                        );
+                      },
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height,
+                        width: double.infinity,
+                        child: VideoFeedItem(
+                          video: video,
+                          isActive: false, // Never active in list view
+                        ),
+                      ),
                     );
                   },
                 ),

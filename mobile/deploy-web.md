@@ -49,6 +49,6 @@ flutter build web --release --base-href="/app/"
 Update `lib/config/app_config.dart` for web:
 ```dart
 static const String backendUrl = kIsWeb 
-  ? 'https://api.nostrvine.com'  // Production
+  ? 'https://api.openvine.co'  // Production
   : 'http://localhost:8787';     // Development
 ```

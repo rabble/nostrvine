@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import '../utils/nostr_encoding.dart';
 
 /// Exception thrown by key storage operations
@@ -38,9 +39,8 @@ class NostrKeyPair {
       throw const KeyStorageException('Invalid private key format');
     }
     
-    // TODO: Derive actual public key when secp256k1 is implemented
-    // For now, use a placeholder approach
-    final publicKeyHex = _generatePlaceholderPublicKey(privateKeyHex);
+    // Derive the actual public key using secp256k1
+    final publicKeyHex = getPublicKey(privateKeyHex);
     
     return NostrKeyPair(
       publicKeyHex: publicKeyHex,
@@ -58,16 +58,8 @@ class NostrKeyPair {
   
   /// Generate a new random key pair
   factory NostrKeyPair.generate() {
-    final privateKeyHex = NostrEncoding.generatePrivateKey();
+    final privateKeyHex = generatePrivateKey();
     return NostrKeyPair.fromPrivateKey(privateKeyHex);
-  }
-  
-  /// Placeholder public key generation (until secp256k1 is implemented)
-  static String _generatePlaceholderPublicKey(String privateKeyHex) {
-    // This is a temporary implementation for development
-    // In production, this would use actual secp256k1 public key derivation
-    final hash = privateKeyHex.substring(0, 32) + privateKeyHex.substring(32);
-    return hash.padRight(64, '0');
   }
   
   @override

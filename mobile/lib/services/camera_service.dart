@@ -13,7 +13,7 @@ class CameraConfiguration {
   final bool enableAutoStop;
   
   const CameraConfiguration({
-    this.recordingDuration = const Duration(seconds: 6),
+    this.recordingDuration = const Duration(milliseconds: 6300), // 6.3 seconds like original Vine
     this.enableAutoStop = true,
   });
   
@@ -28,7 +28,7 @@ class CameraConfiguration {
       final clampedSeconds = seconds.clamp(3, 15);
       clampedDuration = Duration(seconds: clampedSeconds);
     } else {
-      clampedDuration = const Duration(seconds: 6);
+      clampedDuration = const Duration(milliseconds: 6300); // 6.3 seconds like original Vine
     }
     
     return CameraConfiguration(

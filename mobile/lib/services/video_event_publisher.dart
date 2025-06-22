@@ -43,6 +43,9 @@ class VideoEventPublisher extends ChangeNotifier {
   int _totalEventsFailed = 0;
   DateTime? _lastPublishTime;
   
+  // Synchronization for preventing duplicate publishing
+  final Set<String> _activePublishes = {};
+  
   VideoEventPublisher({
     required UploadManager uploadManager,
     required INostrService nostrService,
@@ -459,13 +462,30 @@ class VideoEventPublisher extends ChangeNotifier {
           continue;
         }
         
-        // Publish directly without polling
-        final success = await publishDirectUpload(upload);
+        // Check if already being published (prevent duplicates)
+        if (_activePublishes.contains(upload.id)) {
+          debugPrint('⏭️ Skipping upload ${upload.id} - already being published');
+          continue;
+        }
         
-        if (success) {
-          debugPrint('✅ Published direct upload: ${upload.id}');
-        } else {
-          debugPrint('❌ Failed to publish direct upload: ${upload.id}');
+        // Mark as being published
+        _activePublishes.add(upload.id);
+        
+        try {
+          // Publish directly without polling
+          final success = await publishDirectUpload(upload);
+          
+          if (success) {
+            debugPrint('✅ Published direct upload: ${upload.id}');
+          } else {
+            debugPrint('❌ Failed to publish direct upload: ${upload.id}');
+            // Remove from active set so it can be retried
+            _activePublishes.remove(upload.id);
+          }
+        } catch (e) {
+          debugPrint('❌ Exception publishing direct upload ${upload.id}: $e');
+          // Remove from active set so it can be retried
+          _activePublishes.remove(upload.id);
         }
       }
     } catch (e) {
@@ -490,6 +510,12 @@ class VideoEventPublisher extends ChangeNotifier {
       tags.add(['url', upload.cdnUrl!]);
       tags.add(['m', 'video/mp4']); // Assume MP4 for now
       
+      // Add thumbnail if available
+      if (upload.thumbnailPath != null) {
+        tags.add(['thumb', upload.thumbnailPath!]);
+        debugPrint('🖼️ Including thumbnail: ${upload.thumbnailPath}');
+      }
+      
       // Optional tags
       if (upload.title != null) tags.add(['title', upload.title!]);
       if (upload.description != null) tags.add(['summary', upload.description!]);
@@ -508,16 +534,32 @@ class VideoEventPublisher extends ChangeNotifier {
       final content = upload.description ?? upload.title ?? '';
       
       // Create and sign the event
-      final event = await _authService?.createAndSignEvent(
+      if (_authService == null) {
+        debugPrint('❌ Auth service is null - cannot create video event');
+        return false;
+      }
+      
+      if (!_authService!.isAuthenticated) {
+        debugPrint('❌ User not authenticated - cannot create video event');
+        return false;
+      }
+      
+      debugPrint('🔐 Creating and signing video event...');
+      debugPrint('📝 Content: "$content"');
+      debugPrint('🏷️ Tags: ${tags.length} tags');
+      
+      final event = await _authService!.createAndSignEvent(
         kind: 22, // NIP-71 short video
         content: content,
         tags: tags,
       );
       
       if (event == null) {
-        debugPrint('❌ Failed to create and sign video event');
+        debugPrint('❌ Failed to create and sign video event - createAndSignEvent returned null');
         return false;
       }
+      
+      debugPrint('✅ Created video event: ${event.id}');
       
       // Publish to Nostr relays
       final publishResult = await _publishEventToNostr(event);

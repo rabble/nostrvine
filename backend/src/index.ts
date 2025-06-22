@@ -263,6 +263,13 @@ export default {
 				return handleVideoMetadataOptions();
 			}
 
+			// Media serving endpoint
+			if (pathname.startsWith('/media/')) {
+				if (method === 'GET') {
+					return wrapResponse(handleMediaServing(pathname.substring(7), request, env));
+				}
+			}
+
 			// NIP-96 upload endpoint (compatibility)
 			if (pathname === '/api/upload') {
 				if (method === 'POST') {

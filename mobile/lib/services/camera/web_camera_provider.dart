@@ -14,7 +14,7 @@ class WebCameraProvider implements CameraProvider {
   DateTime? _recordingStartTime;
   
   // Recording parameters
-  static const Duration maxVineDuration = Duration(seconds: 6);
+  static const Duration maxVineDuration = Duration(milliseconds: 6300); // 6.3 seconds like original Vine
   static const double targetFPS = 5.0;
   static const int targetFrameCount = 30;
   

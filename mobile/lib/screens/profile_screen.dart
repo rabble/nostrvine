@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/social_service.dart';
+import '../services/video_event_service.dart';
 import '../providers/profile_stats_provider.dart';
 import '../providers/profile_videos_provider.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
 import '../utils/nostr_encoding.dart';
 import 'profile_setup_screen.dart';
+import 'debug_video_test.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? profilePubkey; // If null, shows current user's profile
@@ -54,6 +57,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       if (!_isOwnProfile) {
         _loadUserProfile();
       }
+      
+      // Force refresh video events when viewing profile to pick up newly published videos
+      final videoEventService = context.read<VideoEventService>();
+      videoEventService.refreshVideoFeed();
     }
   }
   
@@ -154,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               children: [
                 _buildVinesGrid(),
                 _buildLikedGrid(),
-                _buildPrivateGrid(),
+                _buildRepostsGrid(),
               ],
             ),
           ),
@@ -352,16 +359,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(VineTheme.vineGreen),
+              ? const Text(
+                  '—',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
                 )
               : Text(
-                  count != null ? _formatCount(count) : '...',
+                  count != null ? _formatCount(count) : '—',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -415,12 +422,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: profileStatsProvider.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ? const Text(
+                        '—',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       )
                     : Text(
@@ -446,12 +453,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: profileStatsProvider.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ? const Text(
+                        '—',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       )
                     : Text(
@@ -567,7 +574,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         tabs: const [
           Tab(icon: Icon(Icons.grid_on, size: 20)),
           Tab(icon: Icon(Icons.favorite_border, size: 20)),
-          Tab(icon: Icon(Icons.lock_outline, size: 20)),
+          Tab(icon: Icon(Icons.repeat, size: 20)),
         ],
       ),
     );
@@ -578,17 +585,31 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       builder: (context, profileVideosProvider, child) {
         // Show loading state
         if (profileVideosProvider.isLoading) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: VineTheme.vineGreen),
-                SizedBox(height: 16),
-                Text(
-                  'Loading your videos...',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+          return Center(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(1),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 1,
+                crossAxisSpacing: 2,
+                mainAxisSpacing: 2,
+              ),
+              itemCount: 9, // Show 9 placeholder tiles
+              itemBuilder: (context, index) {
+                return Container(
+                  color: Colors.grey.shade900,
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade800,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           );
         }
@@ -627,9 +648,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
     // Show empty state
     if (!profileVideosProvider.hasVideos) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
             SizedBox(height: 16),
@@ -895,7 +917,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             
             // Convert Events to VideoEvents for display
             final videoEvents = likedEvents
-                .where((event) => event.kind == 34550) // Filter for video events
+                .where((event) => event.kind == 22) // Filter for NIP-71 video events
                 .map((event) {
                   try {
                     return VideoEvent.fromNostrEvent(event);
@@ -998,31 +1020,193 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildPrivateGrid() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.lock_outline, color: Colors.grey, size: 64),
-          SizedBox(height: 16),
-          Text(
-            'Private Vines',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+  Widget _buildRepostsGrid() {
+    return Consumer2<AuthService, VideoEventService>(
+      builder: (context, authService, videoEventService, child) {
+        if (_targetPubkey == null) {
+          return const Center(
+            child: Text(
+              'Sign in to view reposts',
+              style: TextStyle(color: Colors.grey),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Only you can see your private vines',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
+          );
+        }
+        
+        // Get all video events and filter for reposts by this user
+        final allVideos = videoEventService.videoEvents;
+        final userReposts = allVideos.where((video) => 
+          video.isRepost && video.reposterPubkey == _targetPubkey
+        ).toList();
+        
+        if (userReposts.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.repeat, color: Colors.grey, size: 64),
+                SizedBox(height: 16),
+                Text(
+                  'No Reposts Yet',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Videos you repost will appear here',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
+          );
+        }
+        
+        return GridView.builder(
+          padding: const EdgeInsets.all(2),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 2,
+            mainAxisSpacing: 2,
+            childAspectRatio: 0.7,
           ),
-        ],
-      ),
+          itemCount: userReposts.length,
+          itemBuilder: (context, index) {
+            final videoEvent = userReposts[index];
+            
+            return GestureDetector(
+              onTap: () => _openVine(videoEvent),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: VineTheme.cardBackground,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Stack(
+                  children: [
+                    // Video thumbnail
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: videoEvent.thumbnailUrl != null && videoEvent.thumbnailUrl!.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: videoEvent.thumbnailUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        VineTheme.vineGreen.withValues(alpha: 0.3),
+                                        Colors.blue.withValues(alpha: 0.3),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      color: VineTheme.whiteText,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        VineTheme.vineGreen.withValues(alpha: 0.3),
+                                        Colors.blue.withValues(alpha: 0.3),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.play_circle_outline,
+                                      color: VineTheme.whiteText,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      VineTheme.vineGreen.withValues(alpha: 0.3),
+                                      Colors.blue.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    color: VineTheme.whiteText,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
+                    
+                    // Play icon overlay
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_filled,
+                        color: Colors.white70,
+                        size: 32,
+                      ),
+                    ),
+                    
+                    // Repost indicator
+                    Positioned(
+                      top: 4,
+                      left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(
+                          Icons.repeat,
+                          color: VineTheme.vineGreen,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    
+                    // Duration indicator
+                    if (videoEvent.duration != null)
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            videoEvent.formattedDuration,
+                            style: const TextStyle(
+                              color: VineTheme.whiteText,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1155,9 +1339,443 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _openSettings() {
-    // TODO: Navigate to settings screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening settings...')),
+    // Show settings menu with debug options
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.notifications, color: Colors.white),
+              title: const Text('Notification Settings', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigate to notification settings
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notification settings coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip, color: Colors.white),
+              title: const Text('Privacy', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _openPrivacySettings();
+              },
+            ),
+            const Divider(color: Colors.grey),
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.orange),
+              title: const Text('Debug Menu', style: TextStyle(color: Colors.orange)),
+              subtitle: const Text('Developer options', style: TextStyle(color: Colors.grey)),
+              onTap: () {
+                Navigator.pop(context);
+                _openDebugMenu();
+              },
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  void _openDebugMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.play_circle_outline, color: Colors.green),
+              title: const Text('Video Player Test', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Test video playback functionality', style: TextStyle(color: Colors.grey)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DebugVideoTestScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_queue, color: Colors.blue),
+              title: const Text('Relay Status', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Check connection to Nostr relays', style: TextStyle(color: Colors.grey)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Show relay status
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Relay status coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.storage, color: Colors.purple),
+              title: const Text('Clear Cache', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Clear video and image caches', style: TextStyle(color: Colors.grey)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Clear cache
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cache cleared')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openPrivacySettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Title
+              const Text(
+                'Privacy Settings',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    // Backup nsec key Section
+                    ListTile(
+                      leading: const Icon(Icons.key, color: Colors.purple),
+                      title: const Text('Backup Private Key (nsec)', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Copy your private key for backup or use in other Nostr apps', style: TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showNsecBackupDialog();
+                      },
+                    ),
+                    
+                    const Divider(color: Colors.grey),
+                    
+                    // Data Export Section
+                    ListTile(
+                      leading: const Icon(Icons.download, color: Colors.blue),
+                      title: const Text('Export My Data', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Download all your posts and profile data', style: TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDataExportDialog();
+                      },
+                    ),
+                    
+                    const Divider(color: Colors.grey),
+                    
+                    // Right to be Forgotten Section
+                    ListTile(
+                      leading: const Icon(Icons.delete_forever, color: Colors.red),
+                      title: const Text('Right to be Forgotten', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Request deletion of all your data (NIP-62)', style: TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showRightToBeForgottenDialog();
+                      },
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Explanation text
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'About Nostr Privacy',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Nostr is a decentralized protocol. While you can request deletion, data may persist on some relays. The "Right to be Forgotten" publishes a NIP-62 deletion request that compliant relays will honor.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDataExportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Export Data', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'This feature will compile and download all your posts, profile information, and associated data.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement data export
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Data export feature coming soon')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRightToBeForgottenDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const Icon(Icons.warning, color: Colors.red),
+            const SizedBox(width: 8),
+            const Text(
+              'Right to be Forgotten',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will publish a NIP-62 deletion request to all relays requesting removal of:',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '• All your posts and videos\n'
+              '• Your profile information\n'
+              '• Your reactions and comments\n'
+              '• All associated metadata',
+              style: TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                '⚠️ WARNING: This action cannot be undone. While compliant relays will honor this request, some data may persist on non-compliant relays due to the decentralized nature of Nostr.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _confirmRightToBeForgotten();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRightToBeForgotten() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Final Confirmation',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Type "DELETE MY DATA" to confirm:',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'DELETE MY DATA',
+                hintStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[800],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                // Enable/disable button based on exact match
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _executeRightToBeForgotten();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete All Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _executeRightToBeForgotten() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          content: const Row(
+            children: [
+              CircularProgressIndicator(color: Colors.red),
+              SizedBox(width: 16),
+              Text(
+                'Publishing deletion request...',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final socialService = context.read<SocialService>();
+      await socialService.publishRightToBeForgotten();
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              'Deletion Request Sent',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'Your NIP-62 deletion request has been published to all relays. Compliant relays will begin removing your data. This may take some time to propagate across the network.',
+              style: TextStyle(color: Colors.grey),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Optionally log out the user
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to publish deletion request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

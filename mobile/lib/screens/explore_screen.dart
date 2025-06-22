@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/vine_theme.dart';
 import '../services/video_event_service.dart';
-import '../services/video_manager_interface.dart';
-import '../widgets/video_feed_item.dart';
+import '../services/explore_video_manager.dart';
+import '../services/hashtag_service.dart';
+import '../models/curation_set.dart';
+import '../models/video_event.dart';
 import 'search_screen.dart';
 import 'hashtag_feed_screen.dart';
-import '../utils/feed_navigation.dart';
+import '../widgets/video_preview_tile.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -21,6 +23,7 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _selectedHashtag;
+  String? _playingVideoId;
 
   @override
   void initState() {
@@ -86,39 +89,16 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
     );
   }
 
-  /// Ensure video is registered with VideoManager before displaying
-  Future<void> _ensureVideoRegistered(BuildContext context, dynamic video) async {
-    try {
-      final videoManager = Provider.of<IVideoManager>(context, listen: false);
-      final videoState = videoManager.getVideoState(video.id);
-      
-      if (videoState == null) {
-        // Video not registered, add it to VideoManager
-        await videoManager.addVideoEvent(video);
-        debugPrint('📋 Registered video ${video.id.substring(0, 8)}... with VideoManager');
-      }
-    } catch (e) {
-      debugPrint('⚠️ Failed to register video ${video.id}: $e');
-    }
-  }
 
   Widget _buildEditorsPicks() {
-    return Consumer<VideoEventService>(
-      builder: (context, videoService, child) {
-        // For editor's picks, we'll show all videos (no time limit)
-        // In a real app, this might be curated by moderators
-        final allVideos = videoService.videoEvents;
-        
-        // Sort by creation date, newest first
-        final sortedVideos = List.from(allVideos)
-          ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-        
-        // Take up to 20 videos for editor's picks
-        final editorsPicks = sortedVideos.take(20).toList();
+    return Consumer2<ExploreVideoManager, HashtagService>(
+      builder: (context, exploreVideoManager, hashtagService, child) {
+        // Get editor's picks from explore video manager (managed through VideoManager)
+        final editorsPicks = exploreVideoManager.getVideosForType(CurationSetType.editorsPicks);
         
         // VideoEventBridge handles subscription during app initialization
         
-        if (videoService.isLoading && editorsPicks.isEmpty) {
+        if (exploreVideoManager.isLoading && editorsPicks.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(
               color: VineTheme.vineGreen,
@@ -159,28 +139,102 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           );
         }
         
+        // Get editor's pick hashtags
+        final editorsHashtags = hashtagService.getEditorsPicks(limit: 10);
+        
         // Display as a featured list with larger thumbnails
-        return ListView.builder(
-          padding: const EdgeInsets.all(8),
-          itemCount: editorsPicks.length,
-          itemBuilder: (context, index) {
-            final video = editorsPicks[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: GestureDetector(
-                onTap: () async {
-                  // Ensure video is registered with VideoManager first
-                  await _ensureVideoRegistered(context, video);
-                  
-                  if (!mounted) return;
-                  
-                  if (context.mounted) {
-                    // Navigate to editor's picks feed starting with this video
-                    FeedNavigation.goToEditorsPicks(context, video);
+        return Column(
+          children: [
+            // Editor's pick hashtags
+            if (editorsHashtags.isNotEmpty) ...[
+              Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemCount: editorsHashtags.length,
+                  itemBuilder: (context, index) {
+                    final hashtag = editorsHashtags[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text('#$hashtag'),
+                        onPressed: () {
+                          debugPrint('🔗 Navigating to hashtag feed from editor\'s picks: #$hashtag');
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(
+                              builder: (context) => HashtagFeedScreen(hashtag: hashtag),
+                            ),
+                          );
+                        },
+                        backgroundColor: VineTheme.cardBackground,
+                        labelStyle: const TextStyle(
+                          color: VineTheme.primaryText,
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const Divider(color: VineTheme.secondaryText, height: 1),
+              const SizedBox(height: 8),
+            ],
+            
+            // Video list - responsive layout
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
+                  // For wide screens, show grid layout; for narrow screens, show list
+                  if (screenWidth > 900) {
+                    // Grid layout for desktop
+                    final crossAxisCount = screenWidth < 1200 ? 2 : 3;
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 16/9, // Wide aspect ratio for featured content
+                      ),
+                      itemCount: editorsPicks.length,
+                      itemBuilder: (context, index) {
+                        final video = editorsPicks[index];
+                        return _buildEditorsPickCard(video);
+                      },
+                    );
+                  } else {
+                    // List layout for mobile/tablet
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: editorsPicks.length,
+                      itemBuilder: (context, index) {
+                        final video = editorsPicks[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildEditorsPickCard(video),
+                        );
+                      },
+                    );
                   }
                 },
-                child: Container(
-                  height: 200,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEditorsPickCard(VideoEvent video) {
+    final isPlaying = _playingVideoId == video.id;
+    
+    debugPrint('🎬 Building editor\'s pick card: ${video.id.substring(0, 8)}..., isPlaying: $isPlaying, hasVideo: ${video.hasVideo}, thumbnailUrl: ${video.effectiveThumbnailUrl}');
+    
+    return Container(
+      height: 250, // Increased height for better video display
                   decoration: BoxDecoration(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(8),
@@ -188,37 +242,15 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: video.thumbnailUrl != null
-                            ? Image.network(
-                                video.thumbnailUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Center(
-                                    child: Icon(
-                                      Icons.play_circle_outline,
-                                      color: Colors.white54,
-                                      size: 64,
-                                    ),
-                                  );
-                                },
-                              )
-                            : const Center(
-                                child: Icon(
-                                  Icons.play_circle_outline,
-                                  color: Colors.white54,
-                                  size: 64,
-                                ),
-                              ),
-                      ),
-                      // Play button overlay
-                      const Center(
-                        child: Icon(
-                          Icons.play_circle_filled,
-                          color: Colors.white70,
-                          size: 64,
-                        ),
+                      // Use VideoPreviewTile for automatic playback
+                      VideoPreviewTile(
+                        video: video,
+                        isActive: isPlaying,
+                        onTap: () {
+                          setState(() {
+                            _playingVideoId = isPlaying ? null : video.id;
+                          });
+                        },
                       ),
                       // Info overlay
                       Positioned(
@@ -291,24 +323,18 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                       ),
                     ],
                   ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
   Widget _buildPopularNow() {
-    return Consumer<VideoEventService>(
-      builder: (context, videoService, child) {
-        // Get recent videos from the last 24 hours
-        final videos = videoService.getRecentVideoEvents(hours: 24);
+    return Consumer2<ExploreVideoManager, HashtagService>(
+      builder: (context, exploreVideoManager, hashtagService, child) {
+        // Get trending videos from explore video manager (managed through VideoManager)
+        final videos = exploreVideoManager.getVideosForType(CurationSetType.trending);
         
         // VideoEventBridge handles subscription during app initialization
         
-        if (videoService.isLoading && videos.isEmpty) {
+        if (exploreVideoManager.isLoading && videos.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(
               color: VineTheme.vineGreen,
@@ -349,11 +375,19 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           );
         }
         
-        // Display videos in a grid layout similar to original Vine
+        // Display videos in a responsive grid layout
+        final screenWidth = MediaQuery.of(context).size.width;
+        // Calculate columns based on screen width
+        // Mobile: 2 columns, Tablet: 3-4 columns, Desktop: 4-6 columns
+        final crossAxisCount = screenWidth < 600 ? 2 : 
+                               screenWidth < 900 ? 3 : 
+                               screenWidth < 1200 ? 4 : 
+                               screenWidth < 1600 ? 5 : 6;
+        
         return GridView.builder(
           padding: const EdgeInsets.all(1),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
             crossAxisSpacing: 1,
             mainAxisSpacing: 1,
             childAspectRatio: 1,
@@ -362,72 +396,24 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           itemBuilder: (context, index) {
             final video = videos[index];
             return GestureDetector(
-              onTap: () async {
-                // Ensure video is registered with VideoManager first
-                await _ensureVideoRegistered(context, video);
-                
-                if (!mounted) return;
-                
-                // Navigate to full screen video view
-                if (context.mounted) {
-                  Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => Scaffold(
-                      backgroundColor: Colors.black,
-                      body: Stack(
-                        children: [
-                          Center(
-                            child: VideoFeedItem(
-                              video: video,
-                              isActive: true,
-                            ),
-                          ),
-                          SafeArea(
-                            child: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-                }
+              onTap: () {
+                setState(() {
+                  _playingVideoId = _playingVideoId == video.id ? null : video.id;
+                });
               },
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   Container(
                     color: Colors.black,
-                    child: video.thumbnailUrl != null
-                        ? Image.network(
-                            video.thumbnailUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Icon(
-                                  Icons.play_circle_outline,
-                                  color: Colors.white54,
-                                  size: 48,
-                                ),
-                              );
-                            },
-                          )
-                        : const Center(
-                            child: Icon(
-                              Icons.play_circle_outline,
-                              color: Colors.white54,
-                              size: 48,
-                            ),
-                          ),
-                  ),
-                  // Overlay with play icon
-                  const Center(
-                    child: Icon(
-                      Icons.play_circle_filled,
-                      color: Colors.white70,
-                      size: 48,
+                    child: VideoPreviewTile(
+                      video: video,
+                      isActive: _playingVideoId == video.id,
+                      onTap: () {
+                        setState(() {
+                          _playingVideoId = _playingVideoId == video.id ? null : video.id;
+                        });
+                      },
                     ),
                   ),
                   // Video info overlay
@@ -486,24 +472,34 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   }
 
   Widget _buildTrending() {
-    return Consumer<VideoEventService>(
-      builder: (context, videoService, child) {
-        final allHashtags = videoService.getAllHashtags().toList();
-        final videos = _selectedHashtag != null 
-            ? videoService.getVideoEventsByHashtags([_selectedHashtag!])
-            : videoService.getRecentVideoEvents(hours: 24);
+    return Consumer3<ExploreVideoManager, VideoEventService, HashtagService>(
+      builder: (context, exploreVideoManager, videoService, hashtagService, child) {
+        final trendingHashtags = hashtagService.getTrendingHashtags(limit: 30);
+        
+        // Get videos based on selection
+        late final List<VideoEvent> videos;
+        if (_selectedHashtag != null) {
+          // Filter by specific hashtag
+          videos = hashtagService.getVideosByHashtags([_selectedHashtag!]);
+        } else {
+          // Use trending from explore video manager, fallback to recent videos
+          final trendingVideos = exploreVideoManager.getVideosForType(CurationSetType.trending);
+          videos = trendingVideos.isNotEmpty 
+              ? trendingVideos 
+              : videoService.getRecentVideoEvents(hours: 24);
+        }
 
         return Column(
           children: [
             // Hashtag filter chips
-            if (allHashtags.isNotEmpty) ...[
+            if (trendingHashtags.isNotEmpty) ...[
               Container(
                 height: 50,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: allHashtags.length + 1, // +1 for "All" chip
+                  itemCount: trendingHashtags.length + 1, // +1 for "All" chip
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       // "All" chip
@@ -529,13 +525,14 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                       );
                     }
                     
-                    final hashtag = allHashtags[index - 1];
+                    final hashtag = trendingHashtags[index - 1];
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: GestureDetector(
                         onLongPress: () {
                           // Navigate to full hashtag feed on long press
-                          Navigator.of(context).push(
+                          debugPrint('🔗 Navigating to hashtag feed from trending (long press): #$hashtag');
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => HashtagFeedScreen(hashtag: hashtag),
                             ),
@@ -606,41 +603,91 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                       ),
                     )
                   : ListView.builder(
+                      padding: const EdgeInsets.all(8),
                       itemCount: videos.length,
                       itemBuilder: (context, index) {
                         final video = videos[index];
-                        return FutureBuilder(
-                          future: _ensureVideoRegistered(context, video),
-                          builder: (context, snapshot) {
-                            // While registering, show a placeholder
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return Container(
-                                height: 200,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _playingVideoId = _playingVideoId == video.id ? null : video.id;
+                              });
+                            },
+                            child: Container(
+                              height: 250,  // Increased height for better video display
+                              decoration: BoxDecoration(
                                 color: Colors.black,
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: VineTheme.vineGreen,
-                                  ),
-                                ),
-                              );
-                            }
-                            
-                            return GestureDetector(
-                              onTap: () {
-                                if (_selectedHashtag != null) {
-                                  // Navigate to hashtag feed
-                                  FeedNavigation.goToHashtagFeed(context, video, _selectedHashtag!);
-                                } else {
-                                  // Navigate to trending feed
-                                  FeedNavigation.goToTrendingFeed(context, video);
-                                }
-                              },
-                              child: VideoFeedItem(
-                                video: video,
-                                isActive: false,
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            );
-                          },
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Use VideoPreviewTile for automatic playback
+                                  VideoPreviewTile(
+                                    video: video,
+                                    isActive: _playingVideoId == video.id,
+                                    onTap: () {
+                                      setState(() {
+                                        _playingVideoId = _playingVideoId == video.id ? null : video.id;
+                                      });
+                                    },
+                                  ),
+                                  // Video info overlay
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: const BorderRadius.only(
+                                          bottomLeft: Radius.circular(8),
+                                          bottomRight: Radius.circular(8),
+                                        ),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black.withValues(alpha: 0.9),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (video.title != null)
+                                            Text(
+                                              video.title!,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          if (video.hashtags.isNotEmpty)
+                                            Text(
+                                              video.hashtags.map((tag) => '#$tag').join(' '),
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         );
                       },
                     ),

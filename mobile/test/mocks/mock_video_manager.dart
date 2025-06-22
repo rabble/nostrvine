@@ -349,6 +349,57 @@ class MockVideoManager implements IVideoManager {
   }
 
   @override
+  void pauseVideo(String videoId) {
+    _logOperation('pauseVideo', videoId);
+    
+    if (_disposed) return;
+    
+    final controller = _controllers[videoId];
+    if (controller != null && controller.value.isInitialized) {
+      controller.pause();
+    }
+  }
+
+  @override
+  void resumeVideo(String videoId) {
+    _logOperation('resumeVideo', videoId);
+    
+    if (_disposed) return;
+    
+    final controller = _controllers[videoId];
+    if (controller != null && controller.value.isInitialized) {
+      controller.play();
+    }
+  }
+
+  @override
+  void pauseAllVideos() {
+    _logOperation('pauseAllVideos', '');
+    
+    if (_disposed) return;
+    
+    for (final controller in _controllers.values) {
+      if (controller != null && controller.value.isInitialized) {
+        controller.pause();
+      }
+    }
+  }
+
+  @override
+  void stopAllVideos() {
+    _logOperation('stopAllVideos', '');
+    
+    if (_disposed) return;
+    
+    for (final controller in _controllers.values) {
+      if (controller != null && controller.value.isInitialized) {
+        controller.pause();
+        controller.seekTo(Duration.zero);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _logOperation('dispose', '');
     

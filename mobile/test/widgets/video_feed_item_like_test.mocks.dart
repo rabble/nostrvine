@@ -366,6 +366,15 @@ class MockIVideoManager extends _i1.Mock implements _i6.IVideoManager {
       );
 
   @override
+  void stopAllVideos() => super.noSuchMethod(
+        Invocation.method(
+          #stopAllVideos,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void resumeVideo(String? videoId) => super.noSuchMethod(
         Invocation.method(
           #resumeVideo,

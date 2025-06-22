@@ -117,27 +117,35 @@ class ConnectionStatusService extends ChangeNotifier {
     }
     
     try {
-      // Test multiple hosts for reliability
-      final hosts = [
-        'relay.damus.io',
-        'nos.lol', 
-        'google.com',
-        'cloudflare.com',
-      ];
-      
       bool hasAccess = false;
       
-      for (final host in hosts) {
-        try {
-          final result = await InternetAddress.lookup(host)
-              .timeout(const Duration(seconds: 3));
-          
-          if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-            hasAccess = true;
-            break;
+      if (kIsWeb) {
+        // Web platform: Use connectivity check assumption
+        // On web, if connectivity_plus reports we're online, we assume internet access
+        // since we can't use InternetAddress.lookup on web
+        hasAccess = _isOnline;
+        debugPrint('🌐 Web platform: Using connectivity assumption for internet access');
+      } else {
+        // Native platform: Use DNS lookup to test actual internet access
+        final hosts = [
+          'relay.damus.io',
+          'nos.lol', 
+          'google.com',
+          'cloudflare.com',
+        ];
+        
+        for (final host in hosts) {
+          try {
+            final result = await InternetAddress.lookup(host)
+                .timeout(const Duration(seconds: 3));
+            
+            if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+              hasAccess = true;
+              break;
+            }
+          } catch (e) {
+            debugPrint('⚠️ Failed to reach $host: $e');
           }
-        } catch (e) {
-          debugPrint('⚠️ Failed to reach $host: $e');
         }
       }
       
@@ -150,7 +158,7 @@ class ConnectionStatusService extends ChangeNotifier {
         debugPrint('⚠️ Internet access lost');
       }
       
-      debugPrint('🌐 Internet access check: $hasAccess');
+      debugPrint('🌐 Internet access check: $hasAccess (platform: ${kIsWeb ? 'web' : 'native'})');
     } catch (e) {
       debugPrint('❌ Error checking internet access: $e');
       _lastError = e.toString();

@@ -156,7 +156,7 @@ class MacOSCameraInterface extends CameraPlatformInterface {
       // Start recording with max Vine duration
       await _controller!.recordVideo(
         url: filePath,
-        maxVideoDuration: 6.0, // 6 seconds max for Vine
+        maxVideoDuration: 6.3, // 6.3 seconds like original Vine
         onVideoRecordingFinished: (file, exception) {
           _isRecording = false;
           if (exception != null) {
@@ -331,7 +331,7 @@ class WebCameraInterface extends CameraPlatformInterface {
 
 /// Universal Vine recording controller that works across all platforms
 class VineRecordingController extends ChangeNotifier {
-  static const Duration maxRecordingDuration = Duration(seconds: 6);
+  static const Duration maxRecordingDuration = Duration(milliseconds: 6300); // 6.3 seconds like original Vine
   static const Duration minSegmentDuration = Duration(milliseconds: 100);
   
   late CameraPlatformInterface _cameraInterface;
@@ -393,6 +393,12 @@ class VineRecordingController extends ChangeNotifier {
   /// Start recording a new segment (press down)
   Future<void> startRecording() async {
     if (!canRecord || _state == VineRecordingState.recording) return;
+    
+    // On web, prevent multiple segments until compilation is implemented
+    if (kIsWeb && _segments.isNotEmpty) {
+      debugPrint('⚠️ Multiple segments not supported on web yet');
+      return;
+    }
     
     try {
       _setState(VineRecordingState.recording);
@@ -470,10 +476,10 @@ class VineRecordingController extends ChangeNotifier {
         (total, segment) => total + segment.duration,
       );
       
-      // Check if we've reached the maximum duration
-      if (_totalRecordedDuration >= maxRecordingDuration) {
+      // Check if we've reached the maximum duration or if on web (single segment only)
+      if (_totalRecordedDuration >= maxRecordingDuration || kIsWeb) {
         _setState(VineRecordingState.completed);
-        debugPrint('🏁 Recording completed - reached maximum duration');
+        debugPrint('🏁 Recording completed - ${kIsWeb ? "web single segment" : "reached maximum duration"}');
       } else {
         _setState(VineRecordingState.paused);
       }
@@ -544,7 +550,31 @@ class VineRecordingController extends ChangeNotifier {
     _segments.clear();
     _totalRecordedDuration = Duration.zero;
     _currentSegmentStartTime = null;
+    
+    // Check if we need to reinitialize before resetting state
+    final wasInError = _state == VineRecordingState.error;
+    
+    // Reset state
     _setState(VineRecordingState.idle);
+    
+    // If was in error state and on web, reinitialize the camera
+    if (wasInError && kIsWeb) {
+      debugPrint('🔄 Reinitializing web camera after error...');
+      if (_cameraInterface is WebCameraInterface) {
+        final webInterface = _cameraInterface as WebCameraInterface;
+        webInterface.dispose();
+      }
+      // Create new camera interface and initialize
+      _cameraInterface = WebCameraInterface();
+      initialize().then((_) {
+        debugPrint('✅ Web camera reinitialized successfully');
+        _setState(VineRecordingState.idle);
+      }).catchError((e) {
+        debugPrint('❌ Failed to reinitialize web camera: $e');
+        _setState(VineRecordingState.error);
+      });
+    }
+    
     debugPrint('🔄 Recording session reset');
   }
   

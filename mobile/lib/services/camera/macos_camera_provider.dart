@@ -22,7 +22,7 @@ class MacosCameraProvider implements CameraProvider {
   Timer? _autoStopTimer;
   
   // Recording parameters
-  static const Duration maxVineDuration = Duration(seconds: 6);
+  static const Duration maxVineDuration = Duration(milliseconds: 6300); // 6.3 seconds like original Vine
   
   bool _isInitialized = false;
   

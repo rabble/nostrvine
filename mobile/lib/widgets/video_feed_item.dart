@@ -2,6 +2,7 @@
 // ABOUTME: Supports GIF and video playback with memory-efficient lifecycle management
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:nostr_sdk/event.dart';
@@ -10,6 +11,8 @@ import '../models/video_state.dart';
 import '../services/video_manager_interface.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/share_video_menu.dart';
+import '../services/user_profile_service.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../screens/comments_screen.dart';
 
@@ -53,6 +56,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       vsync: this,
     );
     _initializeVideoManager();
+    _loadUserProfile();
   }
 
   @override
@@ -89,6 +93,18 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     }
   }
 
+  void _loadUserProfile() {
+    try {
+      final profileService = Provider.of<UserProfileService>(context, listen: false);
+      // Request profile if not already cached
+      if (!profileService.hasProfile(widget.video.pubkey)) {
+        profileService.fetchProfile(widget.video.pubkey);
+      }
+    } catch (e) {
+      debugPrint('VideoFeedItem: UserProfileService not found: $e');
+    }
+  }
+
   void _handleActivationChange() {
     if (!_isInitialized) return;
     
@@ -102,8 +118,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         _playVideo();
       }
     } else {
-      // Video became inactive - pause and controller will be managed by VideoManager
+      // Video became inactive - pause and disable looping
       _pauseVideo();
+      if (_controller != null) {
+        _controller!.setLooping(false);
+      }
       _controller = null;
     }
   }
@@ -111,7 +130,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void _updateController() {
     if (!_isInitialized) return;
     
+    final videoState = _videoManager.getVideoState(widget.video.id);
     final newController = _videoManager.getController(widget.video.id);
+    
+    debugPrint('🎬 Controller state for ${widget.video.id.substring(0, 8)}: ${_controller?.value.isInitialized}');
+    debugPrint('🎬 Video state: ${videoState?.loadingState}');
+    debugPrint('🎬 VideoManager has controller: ${newController != null}');
+    
     if (newController != _controller) {
       setState(() {
         _controller = newController;
@@ -137,7 +162,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     if (_controller != null && _controller!.value.isInitialized && !_controller!.value.isPlaying) {
       debugPrint('▶️ Playing video: ${widget.video.id.substring(0, 8)}...');
       _controller!.play();
-      _controller!.setLooping(true); // Loop videos like TikTok
+      // Only loop when the video is active (not in background/comments)
+      _controller!.setLooping(widget.isActive);
     }
   }
 
@@ -149,13 +175,22 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _togglePlayPause() {
+    debugPrint('🎬 _togglePlayPause called for ${widget.video.id.substring(0, 8)}...');
     if (_controller != null && _controller!.value.isInitialized) {
-      if (_controller!.value.isPlaying) {
+      final wasPlaying = _controller!.value.isPlaying;
+      debugPrint('🎬 Current playing state: $wasPlaying');
+      
+      if (wasPlaying) {
+        debugPrint('⏸️ Calling _pauseVideo()');
         _pauseVideo();
       } else {
+        debugPrint('▶️ Calling _playVideo()');
         _playVideo();
       }
+      debugPrint('🎭 Showing play/pause icon');
       _showPlayPauseIconBriefly();
+    } else {
+      debugPrint('❌ _togglePlayPause failed - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}');
     }
   }
 
@@ -183,7 +218,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _navigateToHashtagFeed(String hashtag) {
-    Navigator.of(context).push(
+    debugPrint('🔗 Navigating to hashtag feed: #$hashtag');
+    
+    // Get the root navigator to ensure we have access to all providers
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => HashtagFeedScreen(hashtag: hashtag),
       ),
@@ -227,8 +265,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
           // Video overlay information
           _buildVideoOverlay(),
           
-          // Loading indicator (when loading)
-          if (videoState.isLoading) _buildLoadingOverlay(),
+          // Loading indicator (when loading but not showing loading state)
+          if (videoState.isLoading && videoState.loadingState != VideoLoadingState.loading) _buildLoadingOverlay(),
           
           // Play/Pause icon overlay (when tapped and video is ready)
           if (_showPlayPauseIcon && !videoState.isLoading && videoState.loadingState == VideoLoadingState.ready) _buildPlayPauseIconOverlay(),
@@ -259,6 +297,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         return _buildFailedState(videoState, canRetry: false);
         
       case VideoLoadingState.disposed:
+        // Auto-retry disposed videos when they come into view
+        if (widget.isActive) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _videoManager.preloadVideo(widget.video.id);
+          });
+        }
         return _buildDisposedState();
     }
   }
@@ -329,14 +373,52 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return _buildNotLoadedState();
     }
 
+    // Web platform needs special handling for video tap events
+    if (kIsWeb) {
+      return Center(
+        child: AspectRatio(
+          aspectRatio: _controller!.value.aspectRatio,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () {
+                debugPrint('🎯 Web video tap detected for ${widget.video.id.substring(0, 8)}...');
+                if (_controller != null && _controller!.value.isInitialized && !_controller!.value.hasError) {
+                  debugPrint('✅ Web video tap conditions met, toggling play/pause');
+                  _togglePlayPause();
+                } else {
+                  debugPrint('❌ Web video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}');
+                }
+              },
+              child: Stack(
+                children: [
+                  VideoPlayer(_controller!),
+                  // Extra transparent layer for web gesture capture
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Native platform (mobile) - original implementation
     return Center(
       child: AspectRatio(
         aspectRatio: _controller!.value.aspectRatio,
         child: GestureDetector(
           onTap: () {
-            // Only allow tap-to-pause when video is ready and initialized
+            debugPrint('🎯 Native video tap detected for ${widget.video.id.substring(0, 8)}...');
             if (_controller != null && _controller!.value.isInitialized && !_controller!.value.hasError) {
+              debugPrint('✅ Native video tap conditions met, toggling play/pause');
               _togglePlayPause();
+            } else {
+              debugPrint('❌ Native video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}');
             }
           },
           child: VideoPlayer(_controller!),
@@ -477,6 +559,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Username/Creator info
+            _buildCreatorInfo(),
+            const SizedBox(height: 8),
+            
             // Repost attribution (if this is a repost)
             if (widget.video.isRepost) ...[
               _buildRepostAttribution(),
@@ -592,6 +678,44 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     );
   }
 
+  Widget _buildCreatorInfo() {
+    return Consumer<UserProfileService>(
+      builder: (context, profileService, child) {
+        final profile = profileService.getCachedProfile(widget.video.pubkey);
+        final displayName = profile?.displayName ?? 
+                           profile?.name ?? 
+                           '@${widget.video.pubkey.substring(0, 8)}...';
+        
+        return Row(
+          children: [
+            const Icon(
+              Icons.person,
+              color: Colors.white70,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              displayName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '• ${_formatTimestamp(widget.video.timestamp)}',
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildRepostAttribution() {
     final reposterName = widget.video.reposterPubkey != null 
         ? '${widget.video.reposterPubkey!.substring(0, 8)}...'
@@ -690,12 +814,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             },
           ),
           
-          // Share button (placeholder)
+          // Share button
           _buildActionButton(
             icon: Icons.share_outlined,
-            onPressed: () {
-              // TODO: Implement share functionality
-            },
+            onPressed: () => _handleShare(context),
           ),
         ],
       ),
@@ -860,12 +982,20 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _openComments(BuildContext context) {
+    // Pause the video when opening comments
+    _pauseVideo();
+    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CommentsScreen(videoEvent: widget.video),
       ),
-    );
+    ).then((_) {
+      // Resume video when returning from comments (only if still active)
+      if (widget.isActive && _controller != null) {
+        _playVideo();
+      }
+    });
   }
 
   Future<int> _getCommentCount() async {
@@ -907,6 +1037,35 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return '${(count / 1000).toStringAsFixed(1)}K';
     } else {
       return count.toString();
+    }
+  }
+
+  void _handleShare(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ShareVideoMenu(
+        video: widget.video,
+        onDismiss: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final diff = now.difference(timestamp);
+    
+    if (diff.inDays > 7) {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    } else if (diff.inDays > 0) {
+      return '${diff.inDays}d ago';
+    } else if (diff.inHours > 0) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inMinutes > 0) {
+      return '${diff.inMinutes}m ago';
+    } else {
+      return 'now';
     }
   }
 

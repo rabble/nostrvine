@@ -9,9 +9,9 @@ import '../services/upload_manager.dart';
 import '../services/video_manager_interface.dart';
 import '../models/pending_upload.dart';
 import '../widgets/vine_recording_controls.dart';
-import '../widgets/upload_progress_indicator.dart';
 import '../theme/vine_theme.dart';
 import 'video_metadata_screen.dart';
+import '../main.dart';
 
 class UniversalCameraScreen extends StatefulWidget {
   const UniversalCameraScreen({super.key});
@@ -26,7 +26,6 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
   UploadManager? _uploadManager;
   
   String? _errorMessage;
-  PendingUpload? _currentUpload;
   bool _isProcessing = false;
 
   @override
@@ -44,10 +43,10 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
 
   Future<void> _initializeServices() async {
     try {
-      // Pause all background videos immediately when camera screen opens
+      // Stop all background videos immediately when camera screen opens
       final videoManager = context.read<IVideoManager>();
-      videoManager.pauseAllVideos();
-      debugPrint('🎥 Paused all background videos on camera screen init');
+      videoManager.stopAllVideos();
+      debugPrint('🎥 Stopped all background videos on camera screen init');
       
       // Get services from providers
       _uploadManager = context.read<UploadManager>();
@@ -111,12 +110,18 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
             hashtags: result['hashtags'] ?? [],
           );
 
-          setState(() {
-            _currentUpload = upload;
-          });
-          
           // Reset recording controller for next use
           _recordingController.reset();
+          
+          // Navigate back to the main feed immediately after starting upload
+          // The upload will continue in the background
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const MainNavigationScreen(initialTabIndex: 0),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -144,6 +149,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
     _recordingController.reset();
     Navigator.of(context).pop();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -188,16 +194,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
               ),
             ),
           
-          // Upload progress indicator
-          if (_currentUpload != null)
-            Positioned(
-              top: 60,
-              left: 0,
-              right: 0,
-              child: UploadProgressIndicator(
-                upload: _currentUpload!,
-              ),
-            ),
+          // Upload progress indicator removed - we navigate away immediately after upload starts
           
           // Processing overlay
           if (_isProcessing)

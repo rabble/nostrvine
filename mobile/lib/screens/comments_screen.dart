@@ -7,7 +7,9 @@ import '../models/video_event.dart';
 import '../providers/comments_provider.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
+import '../services/video_manager_interface.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/video_feed_item.dart';
 
 class CommentsScreen extends StatefulWidget {
   final VideoEvent videoEvent;
@@ -39,6 +41,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       socialService: _socialService,
       authService: _authService,
       rootEventId: widget.videoEvent.id,
+      rootAuthorPubkey: widget.videoEvent.pubkey,
     );
   }
 
@@ -88,57 +91,122 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Comments'),
-        backgroundColor: Colors.black,
-      ),
       backgroundColor: Colors.black,
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ChangeNotifierProvider.value(
-              value: _commentsProvider,
-              child: Consumer<CommentsProvider>(
-                builder: (context, provider, child) {
-                  if (provider.state.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    );
-                  }
-                  
-                  if (provider.state.error != null) {
-                    return Center(
-                      child: Text(
-                        'Error loading comments: ${provider.state.error}',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  }
-                  
-                  if (provider.state.topLevelComments.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No comments yet.\nBe the first to comment!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    );
-                  }
-                  
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: provider.state.topLevelComments.length,
-                    itemBuilder: (context, index) {
-                      return _buildCommentThread(provider.state.topLevelComments[index]);
-                    },
-                  );
-                },
-              ),
-            ),
+          // Video in background (paused)
+          Consumer<IVideoManager>(
+            builder: (context, videoManager, child) {
+              return VideoFeedItem(
+                video: widget.videoEvent,
+                isActive: false, // Keep video paused
+              );
+            },
           ),
-          _buildCommentInput(),
+          
+          // Comments overlay
+          DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.3,
+            maxChildSize: 0.9,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white54,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    
+                    // Comments header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Comments',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const Divider(color: Colors.white24, height: 1),
+                    
+                    // Comments list
+                    Expanded(
+                      child: ChangeNotifierProvider.value(
+                        value: _commentsProvider,
+                        child: Consumer<CommentsProvider>(
+                          builder: (context, provider, child) {
+                            if (provider.state.isLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              );
+                            }
+                            
+                            if (provider.state.error != null) {
+                              return Center(
+                                child: Text(
+                                  'Error loading comments: ${provider.state.error}',
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              );
+                            }
+                            
+                            if (provider.state.topLevelComments.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  'No comments yet.\nBe the first to comment!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              );
+                            }
+                            
+                            return ListView.builder(
+                              controller: scrollController,
+                              padding: const EdgeInsets.only(bottom: 80),
+                              itemCount: provider.state.topLevelComments.length,
+                              itemBuilder: (context, index) {
+                                return _buildCommentThread(provider.state.topLevelComments[index]);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    
+                    // Comment input
+                    _buildCommentInput(),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

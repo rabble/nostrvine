@@ -41,8 +41,10 @@ dependencies:
   
   # Networking
   http: ^1.2.1
+  http_parser: ^4.0.2
   web_socket_channel: ^3.0.3
   connectivity_plus: ^6.0.5
+  url_launcher: ^6.2.5
   
   # Camera and media
   camera: ^0.11.0+2
@@ -50,6 +52,7 @@ dependencies:
   video_player: ^2.9.1
   chewie: ^1.8.3  # Better video player with format support
   image: ^4.1.7  # Image processing for GIF generation
+  video_thumbnail: ^0.5.3  # Extract thumbnails from videos
   
   # Cloud services
   cloudinary_public: ^0.21.0
@@ -119,9 +122,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/videos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

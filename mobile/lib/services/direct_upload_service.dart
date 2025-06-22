@@ -5,15 +5,18 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../config/app_config.dart';
 import 'nip98_auth_service.dart';
+import 'video_thumbnail_service.dart';
 
 /// Result of a direct upload operation
 class DirectUploadResult {
   final bool success;
   final String? videoId;
   final String? cdnUrl;
+  final String? thumbnailUrl;
   final String? errorMessage;
   final Map<String, dynamic>? metadata;
 
@@ -21,6 +24,7 @@ class DirectUploadResult {
     required this.success,
     this.videoId,
     this.cdnUrl,
+    this.thumbnailUrl,
     this.errorMessage,
     this.metadata,
   });
@@ -28,12 +32,14 @@ class DirectUploadResult {
   factory DirectUploadResult.success({
     required String videoId,
     required String cdnUrl,
+    String? thumbnailUrl,
     Map<String, dynamic>? metadata,
   }) {
     return DirectUploadResult(
       success: true,
       videoId: videoId,
       cdnUrl: cdnUrl,
+      thumbnailUrl: thumbnailUrl,
       metadata: metadata,
     );
   }
@@ -82,9 +88,30 @@ class DirectUploadService extends ChangeNotifier {
         final subscription = progressController.stream.listen(onProgress);
         _progressSubscriptions[videoId] = subscription;
       }
+      
+      // Generate thumbnail before upload
+      progressController.add(0.05); // 5% for thumbnail generation
+      debugPrint('📸 Generating video thumbnail...');
+      
+      Uint8List? thumbnailBytes;
+      try {
+        thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
+          videoPath: videoFile.path,
+          timeMs: 500, // Extract at 500ms
+          quality: 80,
+        );
+        
+        if (thumbnailBytes != null) {
+          debugPrint('✅ Thumbnail generated: ${(thumbnailBytes.length / 1024).toStringAsFixed(2)}KB');
+        } else {
+          debugPrint('⚠️ Failed to generate thumbnail, continuing without it');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Thumbnail generation error: $e, continuing without thumbnail');
+      }
 
       // Create multipart request for direct CF Workers upload
-      final url = '$_baseUrl/v1/media/upload';
+      final url = '$_baseUrl/api/upload';
       final uri = Uri.parse(url);
       
       final request = http.MultipartRequest('POST', uri);
@@ -110,13 +137,29 @@ class DirectUploadService extends ChangeNotifier {
         ),
       );
       
+      final filename = videoFile.path.split('/').last;
+      final contentType = _getContentType(filename);
+      
       final multipartFile = http.MultipartFile(
-        'video',
+        'file',
         progressStream,
         fileLength,
-        filename: videoFile.path.split('/').last,
+        filename: filename,
+        contentType: contentType,
       );
       request.files.add(multipartFile);
+      
+      // Add thumbnail to the same request if available
+      if (thumbnailBytes != null) {
+        final thumbnailFile = http.MultipartFile.fromBytes(
+          'thumbnail',
+          thumbnailBytes,
+          filename: 'thumbnail.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        );
+        request.files.add(thumbnailFile);
+        debugPrint('🖼️ Added thumbnail to upload request');
+      }
       
       // Add optional metadata fields
       if (title != null) request.fields['title'] = title;
@@ -126,7 +169,7 @@ class DirectUploadService extends ChangeNotifier {
       }
       
       // Send request
-      progressController.add(0.05); // Start progress
+      progressController.add(0.10); // 10% - Starting main upload
       
       final streamedResponse = await request.send();
       
@@ -147,15 +190,36 @@ class DirectUploadService extends ChangeNotifier {
         debugPrint('✅ Direct upload successful');
         debugPrint('📄 Response: $data');
         
-        // CF Workers response structure
-        if (data['success'] == true) {
+        // Updated NIP-96 response structure
+        if (data['status'] == 'success') {
+          // Extract video ID from URL if not provided separately
+          final cdnUrl = data['download_url'] ?? data['url'];
+          String? videoId = data['video_id'];
+          
+          // Extract video ID from CDN URL if not provided
+          if (videoId == null && cdnUrl != null) {
+            final uri = Uri.parse(cdnUrl);
+            final pathSegments = uri.pathSegments;
+            if (pathSegments.isNotEmpty) {
+              videoId = pathSegments.last;
+            }
+          }
+          
           return DirectUploadResult.success(
-            videoId: data['videoId'],
-            cdnUrl: data['cdnUrl'],
-            metadata: data['metadata'],
+            videoId: videoId ?? 'unknown',
+            cdnUrl: cdnUrl,
+            thumbnailUrl: data['thumbnail_url'] ?? data['thumb_url'], // Get thumbnail URL from response
+            metadata: {
+              'sha256': data['sha256'],
+              'size': data['size'],
+              'type': data['type'],
+              'dimensions': data['dimensions'],
+              'url': data['url'],
+              'thumbnail_url': data['thumbnail_url'] ?? data['thumb_url'],
+            },
           );
         } else {
-          final errorMsg = data['error'] ?? 'Upload failed';
+          final errorMsg = data['message'] ?? data['error'] ?? 'Upload failed';
           debugPrint('❌ $errorMsg');
           return DirectUploadResult.failure(errorMsg);
         }
@@ -237,6 +301,30 @@ class DirectUploadService extends ChangeNotifier {
   
   /// Get current uploads in progress
   List<String> get activeUploads => _progressControllers.keys.toList();
+  
+  /// Determine content type based on file extension
+  MediaType _getContentType(String filename) {
+    final extension = filename.toLowerCase().split('.').last;
+    
+    switch (extension) {
+      case 'mp4':
+        return MediaType('video', 'mp4');
+      case 'mov':
+        return MediaType('video', 'quicktime');
+      case 'avi':
+        return MediaType('video', 'x-msvideo');
+      case 'mkv':
+        return MediaType('video', 'x-matroska');
+      case 'webm':
+        return MediaType('video', 'webm');
+      case 'm4v':
+        return MediaType('video', 'x-m4v');
+      default:
+        // Default to mp4 for unknown video files
+        debugPrint('⚠️ Unknown video file extension: $extension, defaulting to mp4');
+        return MediaType('video', 'mp4');
+    }
+  }
   
   @override
   void dispose() {

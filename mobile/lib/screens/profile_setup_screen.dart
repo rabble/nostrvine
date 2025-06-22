@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/nostr_service_interface.dart';
@@ -294,35 +295,100 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 
                 const Spacer(),
 
-                // Key info for new users
+                // Nostr explanation for new users
                 if (widget.isNewUser)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.grey[900],
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.key, color: Colors.purple),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          children: [
+                            const Icon(Icons.public, color: Colors.purple),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Built on Nostr',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'NostrVine uses Nostr, a decentralized protocol where YOU own your identity and data. Unlike centralized platforms, no single company controls your account.',
+                          style: TextStyle(
+                            color: Colors.grey[300],
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
                             children: [
-                              const Text(
-                                'Your Identity',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                              const Icon(Icons.key, color: Colors.purple, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Your Identity Key (nsec)',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      'We\'ve created a secure private key for you. Back it up in Profile > Settings to use your account in other Nostr apps.',
+                                      style: TextStyle(
+                                        color: Colors.grey[300],
+                                        fontSize: 12,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () async {
+                            final Uri url = Uri.parse('https://nostr.org');
+                            try {
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            } catch (e) {
+                              debugPrint('Could not launch nostr.org: $e');
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.blue[300], size: 16),
+                              const SizedBox(width: 4),
                               Text(
-                                'We\'ve created a secure identity for you. You can view and backup your keys in Profile > Settings.',
+                                'Learn more about Nostr →',
                                 style: TextStyle(
-                                  color: Colors.grey[300],
+                                  color: Colors.blue[300],
                                   fontSize: 12,
+                                  decoration: TextDecoration.underline,
                                 ),
                               ),
                             ],

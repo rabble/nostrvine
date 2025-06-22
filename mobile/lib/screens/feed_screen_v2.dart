@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
+import '../models/video_state.dart';
 
 /// Feed context for filtering videos
 enum FeedContext {
@@ -47,6 +48,14 @@ class FeedScreenV2 extends StatefulWidget {
     final state = key.currentState;
     if (state is _FeedScreenV2State) {
       state.pauseVideos();
+    }
+  }
+  
+  /// Static method to resume videos - called from external components
+  static void resumeVideos(GlobalKey<State<FeedScreenV2>> key) {
+    final state = key.currentState;
+    if (state is _FeedScreenV2State) {
+      state.resumeVideos();
     }
   }
 }
@@ -208,6 +217,17 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   void pauseVideos() {
     _pauseAllVideos();
   }
+  
+  /// Public method to resume videos from external sources (like navigation)
+  void resumeVideos() {
+    _resumeCurrentVideo();
+    
+    // Also trigger preloading around current position to reload videos that were stopped
+    if (_videoManager != null && _videoManager!.videos.isNotEmpty) {
+      _videoManager!.preloadAroundIndex(_currentIndex);
+      debugPrint('▶️ Triggered preloading around index $_currentIndex when resuming feed');
+    }
+  }
 
   /// Apply context-specific filtering to video list
   void _applyContextFiltering() {
@@ -293,6 +313,14 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     final videos = _videoManager!.videos;
     if (_currentIndex < videos.length) {
       final currentVideo = videos[_currentIndex];
+      
+      // Check if video needs to be preloaded first
+      final videoState = _videoManager!.getVideoState(currentVideo.id);
+      if (videoState != null && videoState.loadingState == VideoLoadingState.notLoaded) {
+        debugPrint('🔄 Current video needs reload, preloading: ${currentVideo.id.substring(0, 8)}...');
+        _videoManager!.preloadVideo(currentVideo.id);
+      }
+      
       _playVideo(currentVideo.id);
     }
   }

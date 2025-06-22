@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'theme/vine_theme.dart';
-import 'screens/camera_screen.dart';
-import 'screens/web_camera_placeholder.dart';
+import 'screens/universal_camera_screen.dart';
 import 'screens/feed_screen_v2.dart';
 import 'screens/profile_screen.dart';
 import 'screens/activity_screen.dart';
@@ -30,12 +29,21 @@ import 'services/notification_service_enhanced.dart';
 import 'services/seen_videos_service.dart';
 import 'services/web_auth_service.dart';
 import 'services/social_service.dart';
+import 'services/hashtag_service.dart';
 import 'services/video_manager_interface.dart';
 import 'services/video_manager_service.dart';
 import 'services/video_event_bridge.dart';
+import 'services/curation_service.dart';
+import 'services/explore_video_manager.dart';
+import 'services/content_reporting_service.dart';
+import 'services/curated_list_service.dart';
+import 'services/video_sharing_service.dart';
+import 'services/content_deletion_service.dart';
+import 'services/fake_shared_preferences.dart';
 // import 'providers/video_feed_provider.dart'; // Removed - FeedScreenV2 uses VideoManager directly
 import 'providers/profile_stats_provider.dart';
 import 'providers/profile_videos_provider.dart';
+import 'models/video_event.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -117,6 +125,11 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
+        // Hashtag service depends on Video event service
+        ChangeNotifierProxyProvider<VideoEventService, HashtagService>(
+          create: (context) => HashtagService(context.read<VideoEventService>()),
+          update: (_, videoService, previous) => previous ?? HashtagService(videoService),
+        ),
         
         // User profile service depends on Nostr service
         ChangeNotifierProxyProvider<INostrService, UserProfileService>(
@@ -215,16 +228,18 @@ class NostrVineApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ApiService()),
         
         // Video event publisher depends on multiple services
-        ChangeNotifierProxyProvider3<UploadManager, INostrService, ApiService, VideoEventPublisher>(
+        ChangeNotifierProxyProvider4<UploadManager, INostrService, ApiService, AuthService, VideoEventPublisher>(
           create: (context) => VideoEventPublisher(
             uploadManager: context.read<UploadManager>(),
             nostrService: context.read<INostrService>(),
+            authService: context.read<AuthService>(),
             fetchReadyEvents: () => context.read<ApiService>().getReadyEvents(),
             cleanupRemoteEvent: (publicId) => context.read<ApiService>().cleanupRemoteEvent(publicId),
           ),
-          update: (_, uploadManager, nostrService, apiService, previous) => previous ?? VideoEventPublisher(
+          update: (_, uploadManager, nostrService, apiService, authService, previous) => previous ?? VideoEventPublisher(
             uploadManager: uploadManager,
             nostrService: nostrService,
+            authService: authService,
             fetchReadyEvents: () => apiService.getReadyEvents(),
             cleanupRemoteEvent: (publicId) => apiService.cleanupRemoteEvent(publicId),
           ),
@@ -239,8 +254,86 @@ class NostrVineApp extends StatelessWidget {
           ),
           dispose: (_, bridge) => bridge.dispose(),
         ),
+
+        // Curation Service - manages NIP-51 video curation sets
+        ChangeNotifierProxyProvider3<INostrService, VideoEventService, SocialService, CurationService>(
+          create: (context) => CurationService(
+            nostrService: context.read<INostrService>(),
+            videoEventService: context.read<VideoEventService>(),
+            socialService: context.read<SocialService>(),
+          ),
+          update: (_, nostrService, videoEventService, socialService, previous) => previous ?? CurationService(
+            nostrService: nostrService,
+            videoEventService: videoEventService,
+            socialService: socialService,
+          ),
+        ),
         
-        // Note: VideoFeedProvider removed - FeedScreenV2 uses IVideoManager directly
+        // ExploreVideoManager - bridges CurationService with VideoManager
+        ChangeNotifierProxyProvider2<CurationService, IVideoManager, ExploreVideoManager>(
+          create: (context) => ExploreVideoManager(
+            curationService: context.read<CurationService>(),
+            videoManager: context.read<IVideoManager>(),
+          ),
+          update: (_, curationService, videoManager, previous) => previous ?? ExploreVideoManager(
+            curationService: curationService,
+            videoManager: videoManager,
+          ),
+        ),
+        
+        // Content reporting service for NIP-56 compliance (temporarily using FakeSharedPreferences)
+        ChangeNotifierProxyProvider<INostrService, ContentReportingService>(
+          create: (context) => ContentReportingService(
+            nostrService: context.read<INostrService>(),
+            prefs: FakeSharedPreferences(),
+          ),
+          update: (_, nostrService, previous) => previous ?? ContentReportingService(
+            nostrService: nostrService,
+            prefs: FakeSharedPreferences(),
+          ),
+        ),
+        
+        // Curated list service for NIP-51 lists (temporarily using FakeSharedPreferences)
+        ChangeNotifierProxyProvider2<INostrService, AuthService, CuratedListService>(
+          create: (context) => CuratedListService(
+            nostrService: context.read<INostrService>(),
+            authService: context.read<AuthService>(),
+            prefs: FakeSharedPreferences(),
+          ),
+          update: (_, nostrService, authService, previous) => previous ?? CuratedListService(
+            nostrService: nostrService,
+            authService: authService,
+            prefs: FakeSharedPreferences(),
+          ),
+        ),
+        
+        // Video sharing service
+        ChangeNotifierProxyProvider3<INostrService, AuthService, UserProfileService, VideoSharingService>(
+          create: (context) => VideoSharingService(
+            nostrService: context.read<INostrService>(),
+            authService: context.read<AuthService>(),
+            userProfileService: context.read<UserProfileService>(),
+          ),
+          update: (_, nostrService, authService, userProfileService, previous) => previous ?? VideoSharingService(
+            nostrService: nostrService,
+            authService: authService,
+            userProfileService: userProfileService,
+          ),
+        ),
+        
+        // Content deletion service for NIP-09 delete events (temporarily using FakeSharedPreferences)
+        ChangeNotifierProxyProvider<INostrService, ContentDeletionService>(
+          create: (context) => ContentDeletionService(
+            nostrService: context.read<INostrService>(),
+            prefs: FakeSharedPreferences(),
+          ),
+          update: (_, nostrService, previous) => previous ?? ContentDeletionService(
+            nostrService: nostrService,
+            prefs: FakeSharedPreferences(),
+          ),
+        ),
+        
+        // Note: VideoFeedProvider removed - FeedScreenV2 uses VideoManager directly
         // Note: VinePublishingService removed - using video-based approach now
       ],
       child: MaterialApp(
@@ -309,6 +402,10 @@ class _AppInitializerState extends State<AppInitializer> {
       if (!mounted) return;
       setState(() => _initializationStatus = 'Connecting video feed...');
       await context.read<VideoEventBridge>().initialize();
+
+      if (!mounted) return;
+      setState(() => _initializationStatus = 'Loading curated content...');
+      await context.read<CurationService>().subscribeToCurationSets();
 
       if (!mounted) return;
       setState(() {
@@ -444,7 +541,14 @@ class _AppInitializerState extends State<AppInitializer> {
 }
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int? initialTabIndex;
+  final VideoEvent? startingVideo;
+  
+  const MainNavigationScreen({
+    super.key,
+    this.initialTabIndex,
+    this.startingVideo,
+  });
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -459,8 +563,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex ?? 0;
     _screens = [
-      FeedScreenV2(key: _feedScreenKey),
+      FeedScreenV2(
+        key: _feedScreenKey,
+        startingVideo: widget.startingVideo,
+      ),
       const ActivityScreen(),
       const ExploreScreen(),
       const ProfileScreen(),
@@ -471,6 +579,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // If leaving the feed screen (index 0), pause all videos
     if (_currentIndex == 0 && index != 0) {
       _pauseFeedVideos();
+    }
+    
+    // If returning to the feed screen (index 0), resume videos
+    if (_currentIndex != 0 && index == 0) {
+      _resumeFeedVideos();
     }
     
     setState(() {
@@ -484,6 +597,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       debugPrint('🎬 Paused feed videos when navigating away');
     } catch (e) {
       debugPrint('⚠️ Error pausing feed videos: $e');
+    }
+  }
+  
+  void _resumeFeedVideos() {
+    try {
+      FeedScreenV2.resumeVideos(_feedScreenKey);
+      debugPrint('▶️ Resumed feed videos when returning to feed');
+    } catch (e) {
+      debugPrint('⚠️ Error resuming feed videos: $e');
     }
   }
 
@@ -524,18 +646,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           if (_currentIndex == 0) {
             _pauseFeedVideos();
           }
-          // Show different screen based on platform
-          if (kIsWeb) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const WebCameraPlaceholder()),
-            );
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CameraScreen()),
-            );
-          }
+          // Use universal camera screen that works on all platforms
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
+          );
         },
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: VineTheme.whiteText,
@@ -550,8 +665,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 class ResponsiveWrapper extends StatefulWidget {
   final Widget child;
   
-  // iPhone 14 Pro dimensions: 393x852 (we'll use 393 as max width for vertical video format)
-  static const double maxWidth = 393.0;
+  // Web responsive width: Allow up to 1200px for desktop experience
+  // This provides a proper web experience while still maintaining some constraints
+  static const double maxWidth = 1200.0;
   
   const ResponsiveWrapper({super.key, required this.child});
 
@@ -578,22 +694,13 @@ class _ResponsiveWrapperState extends State<ResponsiveWrapper> {
     if (kIsWeb) {
       // Use MediaQuery to get real-time screen dimensions
       final mediaQuery = MediaQuery.of(context);
-      final screenWidth = mediaQuery.size.width;
-      final screenHeight = mediaQuery.size.height;
       
+      // For web, use full width without constraints for a proper web experience
       return Container(
         color: Colors.black,
         width: double.infinity,
         height: double.infinity,
-        child: Center(
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: screenWidth > ResponsiveWrapper.maxWidth ? ResponsiveWrapper.maxWidth : screenWidth,
-              minHeight: screenHeight,
-            ),
-            child: widget.child,
-          ),
-        ),
+        child: widget.child,
       );
     }
     

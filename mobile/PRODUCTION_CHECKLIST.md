@@ -58,14 +58,14 @@ wrangler deploy --env production
 ### 6. Configure Stream Webhooks
 1. Go to Cloudflare Dashboard → Stream → Settings → Webhooks
 2. Add webhook:
-   - URL: `https://api.nostrvine.com/v1/webhooks/stream-complete`
+   - URL: `https://api.openvine.co/v1/webhooks/stream-complete`
    - Secret: (use the STREAM_WEBHOOK_SECRET from step 4)
    - Events: ✓ Video ready to stream
 
 ### 7. Update Mobile App
 Edit `mobile/lib/config/app_config.dart`:
 ```dart
-static const String backendBaseUrl = 'https://api.nostrvine.com';
+static const String backendBaseUrl = 'https://api.openvine.co';
 ```
 
 ### 8. Build & Deploy Apps
@@ -73,13 +73,13 @@ static const String backendBaseUrl = 'https://api.nostrvine.com';
 cd mobile
 
 # Android
-flutter build apk --release --dart-define=BACKEND_URL=https://api.nostrvine.com
+flutter build apk --release --dart-define=BACKEND_URL=https://api.openvine.co
 
 # iOS (macOS only)
-flutter build ios --release --dart-define=BACKEND_URL=https://api.nostrvine.com
+flutter build ios --release --dart-define=BACKEND_URL=https://api.openvine.co
 
 # Web
-flutter build web --release --dart-define=BACKEND_URL=https://api.nostrvine.com
+flutter build web --release --dart-define=BACKEND_URL=https://api.openvine.co
 npx wrangler pages deploy build/web --project-name nostrvine-web
 ```
 
@@ -87,7 +87,7 @@ npx wrangler pages deploy build/web --project-name nostrvine-web
 
 ### 1. Backend Health Check
 ```bash
-curl https://api.nostrvine.com/health
+curl https://api.openvine.co/health
 ```
 
 ### 2. Test Video Upload Flow
@@ -120,10 +120,10 @@ wrangler tail --env production
 
 ## 📊 Production URLs
 
-- **Backend API**: https://api.nostrvine.com
-- **Health Check**: https://api.nostrvine.com/health
-- **Web App**: https://app.nostrvine.com (after Pages deployment)
-- **Analytics**: https://api.nostrvine.com/api/analytics/dashboard
+- **Backend API**: https://api.openvine.co
+- **Health Check**: https://api.openvine.co/health
+- **Web App**: https://app.openvine.co (after Pages deployment)
+- **Analytics**: https://api.openvine.co/api/analytics/dashboard
 
 ## 💰 Cost Monitoring
 

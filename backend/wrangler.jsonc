@@ -16,9 +16,7 @@
 	 * R2 Object Storage Buckets
 	 */
 	"r2_buckets": [
-		{ "binding": "FRAMES_BUCKET", "bucket_name": "nostrvine-frames" },
-		{ "binding": "MEDIA_BUCKET", "bucket_name": "nostrvine-media" },
-		{ "binding": "CACHE_BUCKET", "bucket_name": "nostrvine-cache" }
+		{ "binding": "MEDIA_BUCKET", "bucket_name": "nostrvine-media" }
 	],
 
 	/**

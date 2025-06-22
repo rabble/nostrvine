@@ -351,6 +351,22 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
   }
 
   @override
+  void stopAllVideos() {
+    // Stop all videos by pausing and seeking to start
+    final allVideos = videos;
+    
+    for (final video in allVideos) {
+      final controller = getController(video.id);
+      if (controller != null && controller.value.isInitialized) {
+        controller.pause();
+        controller.seekTo(Duration.zero);
+      }
+    }
+    
+    _currentlyPlayingVideoId = null;
+  }
+
+  @override
   void resumeVideo(String videoId) {
     final controller = getController(videoId);
     if (controller == null) return;

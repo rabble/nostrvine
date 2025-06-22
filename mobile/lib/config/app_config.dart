@@ -5,7 +5,7 @@ class AppConfig {
   // Backend configuration  
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://nostrvine-backend.protestnet.workers.dev',
+    defaultValue: 'https://api.openvine.co',
   );
   
   // Environment detection

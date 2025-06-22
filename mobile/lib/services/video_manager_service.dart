@@ -269,6 +269,48 @@ class VideoManagerService implements IVideoManager {
   }
   
   @override
+  void stopAllVideos() {
+    if (_disposed) return;
+    
+    final videoIds = _controllers.keys.toList();
+    int stoppedCount = 0;
+    
+    for (final videoId in videoIds) {
+      try {
+        final controller = _controllers[videoId];
+        if (controller != null && controller.value.isInitialized) {
+          // Stop the video first
+          if (controller.value.isPlaying) {
+            controller.pause();
+          }
+          // Then dispose the controller
+          controller.dispose();
+          stoppedCount++;
+        }
+        
+        // Remove from controllers map
+        _controllers.remove(videoId);
+        
+        // Reset state to notLoaded so videos can be reloaded when needed
+        final currentState = _videoStates[videoId];
+        if (currentState != null) {
+          _videoStates[videoId] = VideoState(event: currentState.event);
+        }
+        
+      } catch (e) {
+        debugPrint('⚠️ Error stopping video $videoId: $e');
+      }
+    }
+    
+    if (stoppedCount > 0) {
+      debugPrint('🛑 Stopped $stoppedCount videos for camera mode (reset to notLoaded for reload)');
+    }
+    
+    // Notify listeners of state changes
+    _notifyStateChange();
+  }
+  
+  @override
   void resumeVideo(String videoId) {
     if (_disposed) return;
     
@@ -294,11 +336,11 @@ class VideoManagerService implements IVideoManager {
     
     final state = getVideoState(videoId);
     if (state != null && !state.isDisposed) {
-      _videoStates[videoId] = state.toDisposed();
+      _videoStates[videoId] = VideoState(event: state.event);
       _notifyStateChange();
     }
     
-    developer.log('Disposed video: $videoId');
+    developer.log('Disposed video controller: $videoId (reset to notLoaded for reload)');
   }
   
   @override

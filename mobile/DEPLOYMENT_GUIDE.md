@@ -93,7 +93,7 @@ Edit `backend/wrangler.jsonc`:
     "production": {
       "vars": {
         "ENVIRONMENT": "production",
-        "BASE_URL": "https://api.nostrvine.com"  // Your domain
+        "BASE_URL": "https://api.openvine.co"  // Your domain
       }
     }
   }
@@ -131,7 +131,7 @@ wrangler deploy --env production
 
 1. Go to Cloudflare Dashboard → Stream → Settings
 2. Add webhook endpoint:
-   - URL: `https://api.nostrvine.com/v1/webhooks/stream-complete`
+   - URL: `https://api.openvine.co/v1/webhooks/stream-complete`
    - Secret: (use the same secret from Step 5)
    - Events: Select "Video ready to stream"
 
@@ -140,7 +140,7 @@ wrangler deploy --env production
 1. In Cloudflare Dashboard → Workers & Pages
 2. Select your worker
 3. Go to Triggers → Custom Domains
-4. Add `api.nostrvine.com` (or your preferred domain)
+4. Add `api.openvine.co` (or your preferred domain)
 
 ## Mobile App Configuration
 
@@ -151,8 +151,8 @@ Edit `mobile/lib/config/app_config.dart`:
 ```dart
 class AppConfig {
   static const String backendUrl = kIsWeb 
-    ? 'https://api.nostrvine.com'  // Production URL
-    : 'https://api.nostrvine.com'; // Same for mobile
+    ? 'https://api.openvine.co'  // Production URL
+    : 'https://api.openvine.co'; // Same for mobile
     
   static const String streamCDNUrl = 'https://customer-YOUR-HASH.cloudflarestream.com';
 }
@@ -177,7 +177,7 @@ flutter build web --release
 
 ### 1. Test Health Endpoint
 ```bash
-curl https://api.nostrvine.com/health
+curl https://api.openvine.co/health
 ```
 
 Expected response:
@@ -203,7 +203,7 @@ Use the mobile app or this curl command:
 AUTH_HEADER="Nostr <base64-encoded-event>"
 
 # Request upload URL
-curl -X POST https://api.nostrvine.com/v1/media/request-upload \
+curl -X POST https://api.openvine.co/v1/media/request-upload \
   -H "Authorization: $AUTH_HEADER" \
   -H "Content-Type: application/json" \
   -d '{"fileName": "test.mp4"}'
@@ -267,8 +267,8 @@ If experiencing CORS errors:
 ### Custom Analytics
 Access analytics dashboard:
 ```
-GET https://api.nostrvine.com/api/analytics/dashboard
-GET https://api.nostrvine.com/api/analytics/popular
+GET https://api.openvine.co/api/analytics/dashboard
+GET https://api.openvine.co/api/analytics/popular
 ```
 
 ## Cost Considerations

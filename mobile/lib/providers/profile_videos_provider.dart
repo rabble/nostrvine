@@ -86,10 +86,10 @@ class ProfileVideosProvider extends ChangeNotifier {
       // Cancel existing subscription
       await _subscription?.cancel();
 
-      // Create filter for user's Kind 34550 video events
+      // Create filter for user's Kind 22 video events
       final filter = Filter(
         authors: [pubkey],
-        kinds: [34550], // NostrVine short video events
+        kinds: [22], // NIP-71 short video events
         limit: _pageSize,
       );
 
@@ -177,7 +177,7 @@ class ProfileVideosProvider extends ChangeNotifier {
       // Create filter for next page
       final filter = Filter(
         authors: [_currentPubkey!],
-        kinds: [34550],
+        kinds: [22], // NIP-71 short video events
         until: _lastTimestamp, // Get videos older than the last one we have
         limit: _pageSize,
       );

@@ -69,13 +69,17 @@ class FeedNavigation {
   }
 
   /// Navigate to main feed tab (for bottom navigation)
-  static void goToMainFeed(BuildContext context) {
-    // This would typically be handled by the main navigation controller
-    // by switching to the feed tab
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const FeedScreenV2(),
-      ),
-    );
+  static void goToMainFeed(BuildContext context, {VideoEvent? startingVideo}) {
+    // Find the MainNavigationScreen and switch to feed tab
+    // This preserves the bottom navigation instead of pushing a full-screen view
+    Navigator.of(context).popUntil((route) {
+      return route.settings.name == Navigator.defaultRouteName ||
+             route.isFirst;
+    });
+    
+    if (startingVideo != null) {
+      // TODO: Need to communicate the starting video to the feed tab
+      // For now, just navigate to feed tab - this needs MainNavigationScreen enhancement
+    }
   }
 }

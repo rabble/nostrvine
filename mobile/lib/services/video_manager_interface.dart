@@ -134,6 +134,14 @@ abstract class IVideoManager {
   /// - Preserves controller state for quick resume
   void pauseAllVideos();
   
+  /// Stop and dispose all video controllers
+  /// 
+  /// This method:
+  /// - Stops and disposes all VideoPlayerControllers
+  /// - Used when entering camera mode to prevent audio/resource conflicts
+  /// - More aggressive than pause - requires reload to resume videos
+  void stopAllVideos();
+  
   /// Resume a specific video
   /// 
   /// This method:

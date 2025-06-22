@@ -9,6 +9,7 @@ import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
 import 'seen_videos_service.dart';
+import 'default_content_service.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
@@ -22,6 +23,10 @@ class VideoEventService extends ChangeNotifier {
   Timer? _retryTimer;
   int _retryAttempts = 0;
   List<String>? _activeHashtagFilter;
+  
+  // Duplicate event aggregation for logging
+  int _duplicateVideoEventCount = 0;
+  DateTime? _lastDuplicateVideoLogTime;
   
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
@@ -63,8 +68,6 @@ class VideoEventService extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    debugPrint('🎥 Starting video event subscription...');
-    debugPrint('📊 Current state: subscribed=$_isSubscribed, loading=$_isLoading, events=${_videoEvents.length}');
     
     if (!_nostrService.isInitialized) {
       _isLoading = false;
@@ -81,10 +84,6 @@ class VideoEventService extends ChangeNotifier {
       _scheduleRetryWhenOnline();
       throw VideoEventServiceException('Device is offline');
     }
-    
-    debugPrint('🔍 Nostr service status for video subscription:');
-    debugPrint('  - Connected relays: ${_nostrService.connectedRelayCount}');
-    debugPrint('  - Relay list: ${_nostrService.connectedRelays}');
     
     if (_nostrService.connectedRelayCount == 0) {
       debugPrint('⚠️ WARNING: No relays connected - subscription will likely fail');
@@ -169,6 +168,9 @@ class VideoEventService extends ChangeNotifier {
       
       debugPrint('✅ Video event subscription established successfully!');
       
+      // Add default video if feed is empty to ensure new users have content
+      _ensureDefaultContent();
+      
       // Progressive loading removed - let UI trigger loadMore as needed
       debugPrint('📊 Subscription status: active=${_subscriptions.length} subscriptions');
     } catch (e) {
@@ -214,7 +216,8 @@ class VideoEventService extends ChangeNotifier {
       
       // Check if we already have this event
       if (_videoEvents.any((e) => e.id == event.id)) {
-        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        _duplicateVideoEventCount++;
+        _logDuplicateVideoEventsAggregated();
         return;
       }
       
@@ -243,6 +246,11 @@ class VideoEventService extends ChangeNotifier {
         try {
           final videoEvent = VideoEvent.fromNostrEvent(event);
           debugPrint('🎥 Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+          debugPrint('🖼️ Thumbnail URL: ${videoEvent.thumbnailUrl}');
+          debugPrint('🖼️ Has thumbnail: ${videoEvent.thumbnailUrl != null && videoEvent.thumbnailUrl!.isNotEmpty}');
+          debugPrint('👤 Video author pubkey: ${videoEvent.pubkey}');
+          debugPrint('📝 Video title: ${videoEvent.title}');
+          debugPrint('🏷️ Video hashtags: ${videoEvent.hashtags}');
           
           // Check hashtag filter if active
           if (_activeHashtagFilter != null && _activeHashtagFilter!.isNotEmpty) {
@@ -259,7 +267,7 @@ class VideoEventService extends ChangeNotifier {
           
           // Only add events with video URLs
           if (videoEvent.hasVideo) {
-            _videoEvents.insert(0, videoEvent); // Add to beginning for chronological order
+            _addVideoWithPriority(videoEvent);
             
             // Keep only the most recent events to prevent memory issues
             if (_videoEvents.length > 500) {
@@ -337,7 +345,7 @@ class VideoEventService extends ChangeNotifier {
               }
             }
             
-            _videoEvents.insert(0, repostEvent);
+            _addVideoWithPriority(repostEvent);
             debugPrint('✅ Added repost event! Total: ${_videoEvents.length} events');
             notifyListeners();
           } else {
@@ -622,7 +630,7 @@ class VideoEventService extends ChangeNotifier {
                 }
                 
                 // Add to video events
-                _videoEvents.insert(0, repostVideoEvent);
+                _addVideoWithPriority(repostVideoEvent);
                 
                 // Keep list size manageable
                 if (_videoEvents.length > 500) {
@@ -766,6 +774,122 @@ class VideoEventService extends ChangeNotifier {
     // For now, default to processing all reposts to avoid missing content
     // This can be made more strict as we gather data on repost patterns
     return true;
+  }
+  
+  /// Ensure default content is available for new users
+  void _ensureDefaultContent() {
+    try {
+      final defaultVideos = DefaultContentService.getDefaultVideos();
+      
+      if (_videoEvents.isEmpty) {
+        // No videos at all - add default videos as initial content
+        debugPrint('📺 Adding default content for new users (empty feed)...');
+        
+        for (final video in defaultVideos) {
+          _videoEvents.add(video);
+          debugPrint('✅ Added default video: ${video.title ?? video.id.substring(0, 8)}');
+        }
+        
+        debugPrint('📺 Default content added. Total videos: ${_videoEvents.length}');
+        notifyListeners();
+        
+      } else {
+        // We have videos - ensure default video is first if not already present
+        final defaultVideoIds = defaultVideos.map((v) => v.id).toSet();
+        final hasDefaultVideo = _videoEvents.any((v) => defaultVideoIds.contains(v.id));
+        
+        if (!hasDefaultVideo) {
+          debugPrint('📺 Ensuring default video appears first in main feed...');
+          
+          // Add default videos at the beginning
+          for (int i = defaultVideos.length - 1; i >= 0; i--) {
+            final video = defaultVideos[i];
+            _videoEvents.insert(0, video);
+            debugPrint('✅ Inserted default video at position 0: ${video.title ?? video.id.substring(0, 8)}');
+          }
+          
+          debugPrint('📺 Default video now first in main feed. Total videos: ${_videoEvents.length}');
+          notifyListeners();
+          
+        } else {
+          // Default video exists - ensure it's first
+          _sortVideosByPriority();
+          debugPrint('📺 Default video already present, ensuring correct priority order');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure default content: $e');
+    }
+  }
+  
+  /// Sort videos to prioritize default/featured content for new users
+  void _sortVideosByPriority() {
+    _videoEvents.sort((a, b) {
+      final aPriority = DefaultContentService.getDefaultVideoPriority(a.id);
+      final bPriority = DefaultContentService.getDefaultVideoPriority(b.id);
+      
+      // If both are default videos or both are regular, sort by timestamp (newest first)
+      if (aPriority == bPriority) {
+        return b.timestamp.compareTo(a.timestamp);
+      }
+      
+      // Otherwise sort by priority (lower number = higher priority)
+      return aPriority.compareTo(bPriority);
+    });
+  }
+  
+  /// Add video maintaining priority order (default videos first, then by timestamp)
+  void _addVideoWithPriority(VideoEvent videoEvent) {
+    final videoPriority = DefaultContentService.getDefaultVideoPriority(videoEvent.id);
+    
+    // If it's a default video (priority 0), keep it at the top
+    if (videoPriority == 0) {
+      // Find position among other default videos (sorted by timestamp)
+      int insertIndex = 0;
+      for (int i = 0; i < _videoEvents.length; i++) {
+        final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
+        if (existingPriority != 0) {
+          // Found first non-default video, insert before it
+          break;
+        }
+        if (_videoEvents[i].timestamp.isBefore(videoEvent.timestamp)) {
+          // Found older default video, insert before it
+          break;
+        }
+        insertIndex = i + 1;
+      }
+      _videoEvents.insert(insertIndex, videoEvent);
+    } else {
+      // Regular video - add at beginning of non-default videos (chronological order)
+      int insertIndex = 0;
+      for (int i = 0; i < _videoEvents.length; i++) {
+        final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
+        if (existingPriority != 0) {
+          // Found first non-default video, this is where we insert
+          insertIndex = i;
+          break;
+        }
+      }
+      _videoEvents.insert(insertIndex, videoEvent);
+    }
+  }
+  
+  /// Log duplicate video events in an aggregated manner to reduce noise
+  void _logDuplicateVideoEventsAggregated() {
+    final now = DateTime.now();
+    
+    // Log aggregated duplicates every 30 seconds or every 25 duplicates
+    if (_lastDuplicateVideoLogTime == null || 
+        now.difference(_lastDuplicateVideoLogTime!).inSeconds >= 30 ||
+        _duplicateVideoEventCount % 25 == 0) {
+      
+      if (_duplicateVideoEventCount > 0) {
+        debugPrint('⏩ Skipped $_duplicateVideoEventCount duplicate video events in last ${_lastDuplicateVideoLogTime != null ? now.difference(_lastDuplicateVideoLogTime!).inSeconds : 0}s');
+      }
+      
+      _lastDuplicateVideoLogTime = now;
+      _duplicateVideoEventCount = 0;
+    }
   }
   
   @override

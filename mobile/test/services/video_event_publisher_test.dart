@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostrvine_app/services/video_event_publisher.dart';
 import 'package:nostrvine_app/services/upload_manager.dart';
 import 'package:nostrvine_app/services/nostr_service_interface.dart';
+import 'package:nostrvine_app/services/auth_service.dart';
 import 'package:nostrvine_app/models/ready_event_data.dart';
 import 'package:nostrvine_app/models/pending_upload.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -14,19 +15,28 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}
 class MockNostrService extends Mock implements INostrService {}
+class MockAuthService extends Mock implements AuthService {}
 class MockEvent extends Mock implements Event {}
 
 void main() {
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(MockEvent());
+  });
+
   group('VideoEventPublisher', () {
     late VideoEventPublisher publisher;
     late MockUploadManager mockUploadManager;
     late MockNostrService mockNostrService;
+    late MockAuthService mockAuthService;
     late List<ReadyEventData> mockReadyEvents;
     late Completer<List<ReadyEventData>> fetchCompleter;
 
     setUp(() {
       mockUploadManager = MockUploadManager();
       mockNostrService = MockNostrService();
+      mockAuthService = MockAuthService();
       mockReadyEvents = [];
       fetchCompleter = Completer<List<ReadyEventData>>();
 
@@ -35,6 +45,8 @@ void main() {
           .thenReturn(<PendingUpload>[]);
       when(() => mockUploadManager.getUpload(any()))
           .thenReturn(null);
+      when(() => mockUploadManager.addListener(any())).thenReturn(null);
+      when(() => mockUploadManager.removeListener(any())).thenReturn(null);
       when(() => mockNostrService.broadcastEvent(any()))
           .thenAnswer((_) async => NostrBroadcastResult(
             event: MockEvent(),
@@ -43,10 +55,17 @@ void main() {
             results: {'relay1': true},
             errors: {},
           ));
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.createAndSignEvent(
+        kind: any(named: 'kind'),
+        content: any(named: 'content'),
+        tags: any(named: 'tags'),
+      )).thenAnswer((_) async => MockEvent());
 
       publisher = VideoEventPublisher(
         uploadManager: mockUploadManager,
         nostrService: mockNostrService,
+        authService: mockAuthService,
         fetchReadyEvents: () => fetchCompleter.future,
         cleanupRemoteEvent: (publicId) async {
           // Mock cleanup
@@ -268,6 +287,7 @@ void main() {
         publisher = VideoEventPublisher(
           uploadManager: mockUploadManager,
           nostrService: mockNostrService,
+          authService: mockAuthService,
           fetchReadyEvents: () => newCompleter.future,
           cleanupRemoteEvent: (publicId) async {},
         );
@@ -278,6 +298,101 @@ void main() {
         
         // Assert - should complete without error
         await expectLater(forceCheckFuture, completes);
+      });
+    });
+
+    group('direct upload publishing', () {
+      test('should publish direct uploads when ready', () async {
+        // Arrange
+        final mockUpload = PendingUpload.create(
+          localVideoPath: '/path/to/video.mp4',
+          nostrPubkey: 'test-pubkey',
+          title: 'Test Video',
+          description: 'Test Description',
+          hashtags: ['test', 'video'],
+        );
+        
+        // Update the mock upload to have required fields
+        final readyUpload = mockUpload.copyWith(
+          status: UploadStatus.readyToPublish,
+          videoId: 'test-video-id',
+          cdnUrl: 'https://cdn.example.com/test-video.mp4',
+        );
+        
+        when(() => mockUploadManager.getUploadsByStatus(UploadStatus.readyToPublish))
+            .thenReturn([readyUpload]);
+        when(() => mockUploadManager.updateUploadStatus(
+          any(),
+          any(),
+          nostrEventId: any(named: 'nostrEventId'),
+        )).thenAnswer((_) async {});
+        
+        // Act
+        await publisher.publishDirectUpload(readyUpload);
+        
+        // Assert
+        verify(() => mockAuthService.createAndSignEvent(
+          kind: 22,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        )).called(1);
+        
+        verify(() => mockNostrService.broadcastEvent(any())).called(1);
+      });
+
+      test('should handle missing auth service gracefully', () async {
+        // Arrange
+        final publisherNoAuth = VideoEventPublisher(
+          uploadManager: mockUploadManager,
+          nostrService: mockNostrService,
+          authService: null, // No auth service
+          fetchReadyEvents: () => fetchCompleter.future,
+          cleanupRemoteEvent: (publicId) async {},
+        );
+        
+        final mockUpload = PendingUpload.create(
+          localVideoPath: '/path/to/video.mp4',
+          nostrPubkey: 'test-pubkey',
+        ).copyWith(
+          status: UploadStatus.readyToPublish,
+          videoId: 'test-video-id',
+          cdnUrl: 'https://cdn.example.com/test-video.mp4',
+        );
+        
+        // Act
+        final result = await publisherNoAuth.publishDirectUpload(mockUpload);
+        
+        // Assert
+        expect(result, false);
+        verifyNever(() => mockNostrService.broadcastEvent(any()));
+        
+        // Cleanup
+        publisherNoAuth.dispose();
+      });
+
+      test('should handle unauthenticated user gracefully', () async {
+        // Arrange
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        
+        final mockUpload = PendingUpload.create(
+          localVideoPath: '/path/to/video.mp4',
+          nostrPubkey: 'test-pubkey',
+        ).copyWith(
+          status: UploadStatus.readyToPublish,
+          videoId: 'test-video-id',
+          cdnUrl: 'https://cdn.example.com/test-video.mp4',
+        );
+        
+        // Act
+        final result = await publisher.publishDirectUpload(mockUpload);
+        
+        // Assert
+        expect(result, false);
+        verifyNever(() => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ));
       });
     });
 

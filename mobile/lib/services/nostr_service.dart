@@ -39,6 +39,10 @@ class NostrService extends ChangeNotifier implements INostrService {
   final LinkedHashSet<String> _seenEventIds = LinkedHashSet<String>();
   static const int _maxSeenEventIds = 5000; // Keep track of recent event IDs
   
+  // Duplicate event aggregation for logging
+  int _duplicateEventCount = 0;
+  DateTime? _lastDuplicateLogTime;
+  
   static const int _maxRetryAttempts = 8; // Increased to allow for longer backoff
   static const Duration _initialRetryDelay = Duration(seconds: 2);
   static const Duration _maxBackoffDuration = Duration(minutes: 30);
@@ -98,7 +102,6 @@ class NostrService extends ChangeNotifier implements INostrService {
       // Connect to each relay
       for (final relayUrl in relaysToConnect) {
         try {
-          debugPrint('🔌 Connecting to $relayUrl...');
           final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
           _webSockets[relayUrl] = webSocket;
           
@@ -108,28 +111,19 @@ class NostrService extends ChangeNotifier implements INostrService {
               notifyListeners();
             }
           }
-          debugPrint('✅ Connected to relay: $relayUrl (${_connectedRelays.length}/${relaysToConnect.length})');
           
           // Listen for incoming messages
           webSocket.stream.listen(
             (data) => _handleRelayMessage(relayUrl, data),
-            onError: (error) {
-              debugPrint('❌ WebSocket error for $relayUrl: $error');
-              _handleRelayDisconnection(relayUrl, error.toString());
-            },
-            onDone: () {
-              debugPrint('🔌 Disconnected from relay: $relayUrl');
-              _handleRelayDisconnection(relayUrl, 'Connection closed');
-            },
+            onError: (error) => _handleRelayDisconnection(relayUrl, error.toString()),
+            onDone: () => _handleRelayDisconnection(relayUrl, 'Connection closed'),
           );
           
         } catch (e) {
-          debugPrint('❌ Failed to connect to $relayUrl: $e');
           _relayRetryCount[relayUrl] = (_relayRetryCount[relayUrl] ?? 0) + 1;
           
           // Check if it's a connection issue
           if (_isConnectionError(e)) {
-            debugPrint('🌐 Connection error detected for $relayUrl, will retry with backoff');
             _handleRelayConnectionFailure(relayUrl, e);
           }
         }
@@ -137,14 +131,12 @@ class NostrService extends ChangeNotifier implements INostrService {
       
       // Give connections time to establish
       await Future.delayed(const Duration(seconds: 2));
-      debugPrint('📡 Relay initialization completed: ${_connectedRelays.length}/${relaysToConnect.length} connected');
       
       _isInitialized = true;
       if (!_isDisposed) {
         notifyListeners();
       }
       
-      debugPrint('✅ Nostr service initialized with ${_connectedRelays.length} relays');
       
       // Start automatic reconnection monitoring
       _startReconnectionMonitoring();
@@ -201,11 +193,10 @@ class NostrService extends ChangeNotifier implements INostrService {
   /// Handle incoming event message
   void _handleEventMessage(Event event) {
     try {
-      debugPrint('📥 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
-      
       // Check for duplicate events to prevent infinite rebuild loops
       if (_seenEventIds.contains(event.id)) {
-        debugPrint('⏩ Skipping duplicate event ${event.id.substring(0, 8)}...');
+        _duplicateEventCount++;
+        _logDuplicateEventsAggregated();
         return;
       }
       
@@ -216,8 +207,6 @@ class NostrService extends ChangeNotifier implements INostrService {
         _seenEventIds.remove(_seenEventIds.first);
       }
       
-      debugPrint('🎬 Processing new event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
-      
       // Forward to all active event controllers
       for (final controller in _eventControllers.values) {
         if (!controller.isClosed) {
@@ -226,6 +215,24 @@ class NostrService extends ChangeNotifier implements INostrService {
       }
     } catch (e) {
       debugPrint('⚠️ Error handling event: $e');
+    }
+  }
+  
+  /// Log duplicate events in an aggregated manner to reduce noise
+  void _logDuplicateEventsAggregated() {
+    final now = DateTime.now();
+    
+    // Log aggregated duplicates every 30 seconds or every 50 duplicates
+    if (_lastDuplicateLogTime == null || 
+        now.difference(_lastDuplicateLogTime!).inSeconds >= 30 ||
+        _duplicateEventCount % 50 == 0) {
+      
+      if (_duplicateEventCount > 0) {
+        debugPrint('⏩ Skipped $_duplicateEventCount duplicate events in last ${_lastDuplicateLogTime != null ? now.difference(_lastDuplicateLogTime!).inSeconds : 0}s');
+      }
+      
+      _lastDuplicateLogTime = now;
+      _duplicateEventCount = 0;
     }
   }
   
@@ -378,13 +385,46 @@ class NostrService extends ChangeNotifier implements INostrService {
     }
   }
   
-  /// Subscribe to events
+  // Subscription management for deduplication
+  final Map<String, StreamController<Event>> _sharedSubscriptions = {};
+  final Map<String, int> _subscriptionRefCounts = {};
+  
+  // Connection throttling to prevent relay overload
+  static const int _maxConcurrentSubscriptions = 15; // Increased for profile screens
+  static const Duration _subscriptionDelay = Duration(milliseconds: 100);
+  static const Duration _subscriptionTimeout = Duration(minutes: 5); // Shorter timeout for faster cleanup
+  
+  // Track subscription creation times for automatic cleanup
+  final Map<String, DateTime> _subscriptionTimes = {};
+  
+  /// Subscribe to events with automatic deduplication
   @override
   Stream<Event> subscribeToEvents({
     required List<Filter> filters,
   }) {
     if (!_isInitialized) {
       throw NostrServiceException('Nostr service not initialized');
+    }
+    
+    // Check current active subscriptions to prevent relay overload
+    if (_eventControllers.length >= _maxConcurrentSubscriptions) {
+      debugPrint('🚫 BLOCKING: Too many active subscriptions (${_eventControllers.length}/$_maxConcurrentSubscriptions)');
+      throw NostrServiceException('Too many concurrent subscriptions - relay protection active');
+    }
+    
+    if (_eventControllers.length >= (_maxConcurrentSubscriptions * 0.75)) {
+      debugPrint('⚠️ WARNING: ${_eventControllers.length}/$_maxConcurrentSubscriptions active subscriptions - approaching limit');
+      // Force cleanup when approaching limit
+      _cleanupOldSubscriptions();
+    }
+    
+    // Create filter signature for deduplication
+    final filterSignature = _createFilterSignature(filters);
+    
+    // Check if we already have a subscription for this exact filter
+    if (_sharedSubscriptions.containsKey(filterSignature)) {
+      _subscriptionRefCounts[filterSignature] = (_subscriptionRefCounts[filterSignature] ?? 0) + 1;
+      return _sharedSubscriptions[filterSignature]!.stream;
     }
     
     // Create a unique subscription ID with microseconds for uniqueness
@@ -394,35 +434,95 @@ class NostrService extends ChangeNotifier implements INostrService {
     // Create stream controller for this subscription
     final controller = StreamController<Event>.broadcast(
       onCancel: () {
-        // Send CLOSE message when subscription is cancelled
-        _closeSubscription(subscriptionId);
+        // Decrease reference count and close if no more references
+        _decreaseSubscriptionRef(filterSignature, subscriptionId);
       },
     );
+    
     _eventControllers[subscriptionId] = controller;
+    _sharedSubscriptions[filterSignature] = controller;
+    _subscriptionRefCounts[filterSignature] = 1;
+    _subscriptionTimes[subscriptionId] = DateTime.now();
+    
+    // Clean up old subscriptions periodically
+    _cleanupOldSubscriptions();
     
     // Send REQ message to all connected relays using manual JSON serialization
     final reqFilters = filters.map((f) => f.toJson()).toList();
     final reqMessage = jsonEncode(['REQ', subscriptionId, ...reqFilters]);
     
-    for (final relayUrl in _connectedRelays) {
-      try {
-        final webSocket = _webSockets[relayUrl];
-        if (webSocket != null) {
-          debugPrint('🔍 REQ message to $relayUrl: $reqMessage');
-          webSocket.sink.add(reqMessage);
-          debugPrint('📡 Sent subscription request to $relayUrl with ID: $subscriptionId');
-        }
-      } catch (e) {
-        debugPrint('❌ Failed to send subscription to $relayUrl: $e');
-      }
-    }
+    // Send requests with throttling to prevent overwhelming relays
+    _sendRequestsWithThrottling(reqMessage, subscriptionId);
+    
     
     return controller.stream;
   }
   
+  /// Create a unique signature for filter deduplication
+  String _createFilterSignature(List<Filter> filters) {
+    final signature = filters.map((f) => f.toJson().toString()).join('|');
+    return signature.hashCode.toString();
+  }
+  
+  /// Decrease subscription reference count and clean up if needed
+  void _decreaseSubscriptionRef(String filterSignature, String subscriptionId) {
+    final refCount = (_subscriptionRefCounts[filterSignature] ?? 1) - 1;
+    
+    if (refCount <= 0) {
+      debugPrint('🔐 Closing shared subscription: $filterSignature');
+      _closeSubscription(subscriptionId);
+      _sharedSubscriptions.remove(filterSignature);
+      _subscriptionRefCounts.remove(filterSignature);
+    } else {
+      _subscriptionRefCounts[filterSignature] = refCount;
+    }
+  }
+  
+  /// Clean up old subscriptions to prevent accumulation
+  void _cleanupOldSubscriptions() {
+    final now = DateTime.now();
+    final expiredSubscriptions = <String>[];
+    
+    for (final entry in _subscriptionTimes.entries) {
+      final subscriptionId = entry.key;
+      final createdAt = entry.value;
+      
+      if (now.difference(createdAt) > _subscriptionTimeout) {
+        expiredSubscriptions.add(subscriptionId);
+      }
+    }
+    
+    for (final subscriptionId in expiredSubscriptions) {
+      _closeSubscription(subscriptionId);
+      _subscriptionTimes.remove(subscriptionId);
+    }
+  }
+  
+  /// Send requests to relays with throttling to prevent overwhelming
+  void _sendRequestsWithThrottling(String reqMessage, String subscriptionId) {
+    int sentCount = 0;
+    
+    // Send to relays with staggered timing
+    for (int i = 0; i < _connectedRelays.length; i++) {
+      final relayUrl = _connectedRelays[i];
+      
+      // Use timer to stagger requests
+      Timer(Duration(milliseconds: i * _subscriptionDelay.inMilliseconds), () {
+        try {
+          final webSocket = _webSockets[relayUrl];
+          if (webSocket != null) {
+            webSocket.sink.add(reqMessage);
+            sentCount++;
+          }
+        } catch (e) {
+          debugPrint('❌ Failed to send subscription to $relayUrl: $e');
+        }
+      });
+    }
+  }
+  
   /// Close a specific subscription by sending CLOSE messages to all relays
   void _closeSubscription(String subscriptionId) {
-    debugPrint('🔐 Closing subscription: $subscriptionId');
     
     // Send CLOSE message to all connected relays using manual JSON serialization
     final closeMessage = jsonEncode(['CLOSE', subscriptionId]);
@@ -432,15 +532,15 @@ class NostrService extends ChangeNotifier implements INostrService {
         final webSocket = _webSockets[relayUrl];
         if (webSocket != null) {
           webSocket.sink.add(closeMessage);
-          debugPrint('📡 Sent CLOSE message to $relayUrl for subscription: $subscriptionId');
         }
       } catch (e) {
         debugPrint('❌ Failed to send CLOSE to $relayUrl: $e');
       }
     }
     
-    // Clean up the controller
+    // Clean up the controller and timing info
     _eventControllers.remove(subscriptionId);
+    _subscriptionTimes.remove(subscriptionId);
   }
   
   /// Add a new relay

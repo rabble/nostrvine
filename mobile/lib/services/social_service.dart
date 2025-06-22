@@ -778,12 +778,12 @@ class SocialService extends ChangeNotifier {
       final completer = Completer<int>();
       int videoCount = 0;
       
-      // Subscribe to user's video events (Kind 34550)
+      // Subscribe to user's video events (Kind 22 - NIP-71)
       final subscription = _nostrService.subscribeToEvents(
         filters: [
           Filter(
             authors: [pubkey],
-            kinds: [34550], // Video events
+            kinds: [22], // NIP-71 short video events
           ),
         ],
       );
@@ -835,7 +835,7 @@ class SocialService extends ChangeNotifier {
         filters: [
           Filter(
             authors: [pubkey],
-            kinds: [34550], // Video events
+            kinds: [22], // NIP-71 short video events
           ),
         ],
       );
@@ -1095,6 +1095,51 @@ class SocialService extends ChangeNotifier {
     }
   }
   
+  /// Publishes a NIP-62 "right to be forgotten" deletion request event
+  Future<void> publishRightToBeForgotten() async {
+    if (!_authService.isAuthenticated) {
+      debugPrint('❌ Cannot publish deletion request - user not authenticated');
+      throw Exception('User not authenticated');
+    }
+    
+    debugPrint('🗑️ Publishing NIP-62 right to be forgotten event...');
+    
+    try {
+      // Create NIP-62 deletion request event (Kind 5 with special formatting)
+      final event = await _authService.createAndSignEvent(
+        kind: 5,
+        content: 'REQUEST: Delete all data associated with this pubkey under right to be forgotten',
+        tags: [
+          ['p', _authService.currentPublicKeyHex!], // Reference to own pubkey
+          ['k', '0'], // Request deletion of Kind 0 (profile) events
+          ['k', '1'], // Request deletion of Kind 1 (text note) events  
+          ['k', '3'], // Request deletion of Kind 3 (contact list) events
+          ['k', '6'], // Request deletion of Kind 6 (repost) events
+          ['k', '7'], // Request deletion of Kind 7 (reaction) events
+          ['k', '22'], // Request deletion of Kind 22 (video) events
+        ],
+      );
+      
+      if (event == null) {
+        throw Exception('Failed to create deletion request event');
+      }
+      
+      // Broadcast the deletion request
+      final result = await _nostrService.broadcastEvent(event);
+      
+      if (!result.isSuccessful) {
+        final errorMessages = result.errors.values.join(', ');
+        throw Exception('Failed to broadcast deletion request: $errorMessages');
+      }
+      
+      debugPrint('✅ NIP-62 deletion request published: ${event.id.substring(0, 8)}...');
+      
+    } catch (e) {
+      debugPrint('❌ Error publishing deletion request: $e');
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     debugPrint('🗑️ Disposing SocialService');

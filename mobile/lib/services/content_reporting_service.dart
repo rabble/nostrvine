@@ -1,5 +1,5 @@
 // ABOUTME: Content reporting service for user-generated content violations
-// ABOUTME: Implements NIP-56 reporting events and community-driven moderation
+// ABOUTME: Implements NIP-56 reporting events (kind 1984) for Apple compliance and community-driven moderation
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -144,8 +144,8 @@ class ContentReportingService extends ChangeNotifier {
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
-      // Create NIP-56 reporting event
-      await _createReportingEvent(
+      // Create and broadcast NIP-56 reporting event (kind 1984)
+      final reportEvent = await _createReportingEvent(
         reportId: reportId,
         eventId: eventId,
         authorPubkey: authorPubkey,
@@ -155,16 +155,14 @@ class ContentReportingService extends ChangeNotifier {
         hashtags: hashtags,
       );
 
-      // Broadcast report to moderation relay
-      final broadcastResult = await _nostrService.publishFileMetadata(
-        metadata: _createReportMetadata(reportId, reason),
-        content: details,
-        hashtags: [...hashtags, 'report', 'moderation'],
-      );
-
-      if (!broadcastResult.isSuccessful) {
-        debugPrint('⚠️ Failed to broadcast report to relays');
-        // Still save locally even if broadcast fails
+      if (reportEvent != null) {
+        final broadcastResult = await _nostrService.broadcastEvent(reportEvent);
+        if (broadcastResult.successCount == 0) {
+          debugPrint('⚠️ Failed to broadcast report to relays');
+          // Still save locally even if broadcast fails
+        } else {
+          debugPrint('📡 Report broadcast to ${broadcastResult.successCount} relays');
+        }
       }
 
       // Save report to local history
@@ -286,8 +284,8 @@ class ContentReportingService extends ChangeNotifier {
     }
   }
 
-  /// Create NIP-56 reporting event
-  Future<Event> _createReportingEvent({
+  /// Create NIP-56 reporting event (kind 1984) for Apple compliance
+  Future<Event?> _createReportingEvent({
     required String reportId,
     required String eventId,
     required String authorPubkey,
@@ -296,28 +294,70 @@ class ContentReportingService extends ChangeNotifier {
     String? additionalContext,
     List<String> hashtags = const [],
   }) async {
-    // Build NIP-56 compliant tags
-    final tags = <List<String>>[
-      ['e', eventId], // Event being reported
-      ['p', authorPubkey], // Author of reported content
-      ['report', reason.name], // Report reason
-      ['client', 'nostrvine'], // Reporting client
-      ['reportId', reportId], // Our internal report ID
-    ];
+    try {
+      if (!_nostrService.hasKeys) {
+        debugPrint('❌ Cannot create report event: no keys available');
+        return null;
+      }
 
-    // Add hashtags
-    for (final hashtag in hashtags) {
-      tags.add(['t', hashtag]);
+      // Build NIP-56 compliant tags (kind 1984)
+      final tags = <List<String>>[
+        ['e', eventId], // Event being reported
+        ['p', authorPubkey], // Author of reported content
+        ['report', reason.name], // Report reason as per NIP-56
+        ['client', 'nostrvine'], // Reporting client
+      ];
+
+      // Add hashtags as 't' tags
+      for (final hashtag in hashtags) {
+        tags.add(['t', hashtag]);
+      }
+
+      // Add additional context as tags if provided
+      if (additionalContext != null) {
+        tags.add(['alt', additionalContext]); // Alternative description
+      }
+
+      // Create NIP-56 compliant content
+      final reportContent = _formatNip56ReportContent(reason, details, additionalContext);
+      
+      // Create kind 1984 event using nostr_sdk (same pattern as video events)
+      final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final event = Event(
+        _nostrService.keyManager.keyPair!.public,
+        1984, // NIP-56 reporting event kind
+        tags,
+        reportContent,
+        createdAt: createdAt,
+      );
+      
+      // Sign the event
+      event.sign(_nostrService.keyManager.keyPair!.private);
+      
+      debugPrint('📢 Created NIP-56 report event (kind 1984): ${event.id}');
+      debugPrint('🏷️ Tags: ${tags.length}, Content length: ${reportContent.length}');
+      debugPrint('🎯 Reporting: $eventId for $reason');
+      
+      return event;
+    } catch (e) {
+      debugPrint('❌ Failed to create NIP-56 report event: $e');
+      return null;
     }
+  }
 
-    // Add additional context as tags if provided
+  /// Format report content for NIP-56 compliance (kind 1984)
+  String _formatNip56ReportContent(ContentFilterReason reason, String details, String? additionalContext) {
+    final buffer = StringBuffer();
+    buffer.writeln('CONTENT REPORT - NIP-56');
+    buffer.writeln('Reason: ${reason.name}');
+    buffer.writeln('Details: $details');
+    
     if (additionalContext != null) {
-      tags.add(['context', additionalContext]);
+      buffer.writeln('Additional Context: $additionalContext');
     }
-
-    // This would create the actual Nostr event
-    // For now, return a placeholder structure
-    throw UnimplementedError('NIP-56 event creation not yet implemented');
+    
+    buffer.writeln('Reported via NostrVine for community safety and Apple App Store compliance');
+    return buffer.toString();
   }
 
   /// Create metadata for report (for our internal tracking)
