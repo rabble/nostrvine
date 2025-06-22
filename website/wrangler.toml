@@ -1,22 +1,20 @@
 name = "openvine-website"
 compatibility_date = "2024-06-01"
 
+# Static site configuration
+main = "src/index.js"
+
+[assets]
+directory = "."
+
 [env.production]
 name = "openvine-website"
-route = { pattern = "openvine.co/*", zone_name = "openvine.co" }
+routes = [
+  { pattern = "openvine.co/*", zone_name = "openvine.co" }
+]
 
 [env.staging]
 name = "openvine-website-staging"
-
-# Static site configuration
-main = "src/index.js"
-assets = { directory = ".", include = ["*.html", "*.css", "*.js", "*.ico", "*.png", "*.jpg", "*.gif", "*.svg"] }
-
-# Define routes for the website
-[[env.production.routes]]
-pattern = "openvine.co/*"
-zone_name = "openvine.co"
-
-[[env.staging.routes]]
-pattern = "staging.openvine.co/*"
-zone_name = "openvine.co"
+routes = [
+  { pattern = "staging.openvine.co/*", zone_name = "openvine.co" }
+]

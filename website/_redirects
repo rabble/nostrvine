@@ -1,14 +1,6 @@
 # OpenVine Website Redirects
 
 # Clean URLs - remove .html extensions
-/about.html /about 301
-/ios.html /ios 301
-/android.html /android 301
-
-# Redirect clean URLs to actual files
 /about /about.html 200
-/ios /ios.html 200
+/ios /ios.html 200  
 /android /android.html 200
-
-# Fallback to index for any unmatched routes
-/* /index.html 404
