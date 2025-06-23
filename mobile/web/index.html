@@ -20,6 +20,12 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="OpenVine - A decentralized vine-like video sharing app powered by Nostr">
+  
+  <!-- Performance optimizations -->
+  <link rel="dns-prefetch" href="https://api.openvine.co">
+  <link rel="preconnect" href="https://api.openvine.co" crossorigin>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -95,11 +101,27 @@
   <script src="flutter_bootstrap.js" async></script>
   
   <script>
+    // Register service worker for caching
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('SW registered: ', registration);
+          })
+          .catch(function(registrationError) {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+    
     // Hide loading indicator once Flutter app is ready
     window.addEventListener('flutter-first-frame', function() {
       const loader = document.getElementById('initial-loader');
       if (loader) {
-        loader.style.display = 'none';
+        loader.style.opacity = '0';
+        setTimeout(() => {
+          loader.style.display = 'none';
+        }, 300);
       }
     });
   </script>

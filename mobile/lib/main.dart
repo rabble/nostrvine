@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -169,26 +170,46 @@ class NostrVineApp extends StatelessWidget {
           ),
         ),
         
-        // Enhanced notification service with Nostr integration
+        // Enhanced notification service with Nostr integration (lazy loaded)
         ChangeNotifierProxyProvider3<INostrService, UserProfileService, VideoEventService, NotificationServiceEnhanced>(
           create: (context) {
             final service = NotificationServiceEnhanced();
-            final nostrService = context.read<INostrService>();
-            final profileService = context.read<UserProfileService>();
-            final videoService = context.read<VideoEventService>();
-            
-            // Initialize asynchronously after frame
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              try {
-                await service.initialize(
-                  nostrService: nostrService,
-                  profileService: profileService,
-                  videoService: videoService,
-                );
-              } catch (e) {
-                debugPrint('❌ Failed to initialize enhanced notification service: $e');
-              }
-            });
+            // Delay initialization until after critical path is loaded
+            if (!kIsWeb) {
+              // Initialize immediately on mobile
+              final nostrService = context.read<INostrService>();
+              final profileService = context.read<UserProfileService>();
+              final videoService = context.read<VideoEventService>();
+              
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                try {
+                  await service.initialize(
+                    nostrService: nostrService,
+                    profileService: profileService,
+                    videoService: videoService,
+                  );
+                } catch (e) {
+                  debugPrint('❌ Failed to initialize enhanced notification service: $e');
+                }
+              });
+            } else {
+              // On web, delay initialization by 3 seconds to allow main UI to load first
+              Timer(const Duration(seconds: 3), () async {
+                try {
+                  final nostrService = context.read<INostrService>();
+                  final profileService = context.read<UserProfileService>();
+                  final videoService = context.read<VideoEventService>();
+                  
+                  await service.initialize(
+                    nostrService: nostrService,
+                    profileService: profileService,
+                    videoService: videoService,
+                  );
+                } catch (e) {
+                  debugPrint('❌ Failed to initialize enhanced notification service: $e');
+                }
+              });
+            }
             
             return service;
           },

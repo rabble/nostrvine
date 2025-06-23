@@ -9,6 +9,8 @@ import 'package:camera/camera.dart';
 import 'package:camera_macos/camera_macos.dart' as macos;
 import 'package:path_provider/path_provider.dart';
 import 'web_camera_service.dart' if (dart.library.io) 'web_camera_service_stub.dart';
+// Import the blobUrlToBytes function for web
+import 'web_camera_service.dart' show blobUrlToBytes if (dart.library.io) '';
 
 /// Represents a single recording segment in the Vine-style recording
 class RecordingSegment {
@@ -520,8 +522,32 @@ class VineRecordingController extends ChangeNotifier {
         }
       }
       
+      // For web platform, handle blob URLs
+      if (kIsWeb && _segments.length == 1 && _segments.first.filePath != null) {
+        final filePath = _segments.first.filePath!;
+        if (filePath.startsWith('blob:')) {
+          // For web, we can't return a File object from blob URL
+          // Instead, we'll create a temporary file representation
+          try {
+            // Use the standalone blobUrlToBytes function
+            final bytes = await blobUrlToBytes(filePath);
+            if (bytes.isNotEmpty) {
+              // Create a temporary file with the blob data
+              final tempDir = await getTemporaryDirectory();
+              final tempFile = File('${tempDir.path}/web_recording_${DateTime.now().millisecondsSinceEpoch}.mp4');
+              await tempFile.writeAsBytes(bytes);
+              
+              _setState(VineRecordingState.completed);
+              return tempFile;
+            }
+          } catch (e) {
+            debugPrint('❌ Failed to convert blob to file: $e');
+          }
+        }
+      }
+      
       // For other platforms, handle segments
-      if (_segments.length == 1 && _segments.first.filePath != null) {
+      if (!kIsWeb && _segments.length == 1 && _segments.first.filePath != null) {
         final file = File(_segments.first.filePath!);
         if (await file.exists()) {
           _setState(VineRecordingState.completed);

@@ -14,6 +14,7 @@ import '../theme/vine_theme.dart';
 import '../utils/nostr_encoding.dart';
 import 'profile_setup_screen.dart';
 import 'debug_video_test.dart';
+import 'universal_camera_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? profilePubkey; // If null, shows current user's profile
@@ -1211,8 +1212,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _createNewVine() {
-    // TODO: Navigate to camera screen
-    Navigator.pushNamed(context, '/camera');
+    // Navigate to universal camera screen for recording a new vine
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UniversalCameraScreen(),
+      ),
+    );
   }
 
   void _showOptionsMenu() {
@@ -1233,14 +1239,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               },
             ),
             ListTile(
-              leading: const Icon(Icons.archive, color: Colors.white),
-              title: const Text('Archive', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code, color: Colors.white),
-              title: const Text('QR Code', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.edit, color: Colors.white),
+              title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _editProfile();
+              },
             ),
           ],
         ),
@@ -1777,5 +1781,109 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         );
       }
     }
+  }
+
+  void _showNsecBackupDialog() async {
+    final authService = context.read<AuthService>();
+    final nsec = await authService.exportNsec();
+    
+    if (nsec == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No private key available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const Icon(Icons.key, color: Colors.purple),
+            const SizedBox(width: 8),
+            const Text(
+              'Backup Private Key',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your private key (nsec) allows you to access your account from any Nostr app. Keep it safe and never share it publicly.',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.purple, width: 1),
+              ),
+              child: SelectableText(
+                nsec,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.yellow.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.yellow, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Store this safely! Anyone with this key can control your account.',
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: nsec));
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Private key copied to clipboard'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+            child: const Text('Copy to Clipboard'),
+          ),
+        ],
+      ),
+    );
   }
 }

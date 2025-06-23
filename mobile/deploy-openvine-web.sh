@@ -44,11 +44,17 @@ build_web() {
     # Get dependencies
     flutter pub get
     
-    # Build for web with production optimizations
+    # Build for web with aggressive optimizations
     flutter build web \
         --release \
+        --web-renderer=html \
+        --tree-shake-icons \
+        --split-debug-info=build/web/debug_symbols \
+        --obfuscate \
         --dart-define=BACKEND_URL=https://api.openvine.co \
-        --dart-define=ENVIRONMENT=production
+        --dart-define=ENVIRONMENT=production \
+        --dart-define=flutter.web.canvaskit=false \
+        --no-source-maps
     
     echo -e "${GREEN}✅ Web build complete${NC}"
 }
