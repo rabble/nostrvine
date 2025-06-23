@@ -8,9 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:camera_macos/camera_macos.dart' as macos;
 import 'package:path_provider/path_provider.dart';
-import 'web_camera_service.dart' if (dart.library.io) 'web_camera_service_stub.dart';
-// Import the blobUrlToBytes function for web
-import 'web_camera_service.dart' show blobUrlToBytes if (dart.library.io) '';
+import 'web_camera_service_stub.dart' if (dart.library.html) 'web_camera_service.dart';
+import 'web_camera_service_stub.dart' show blobUrlToBytes if (dart.library.html) 'web_camera_service.dart' show blobUrlToBytes;
 
 /// Represents a single recording segment in the Vine-style recording
 class RecordingSegment {

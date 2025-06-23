@@ -1,6 +1,7 @@
 // ABOUTME: Stub implementation for web camera service when not running on web platform
 // ABOUTME: Prevents import errors on non-web platforms while allowing conditional imports
 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 /// Stub for WebCameraService on non-web platforms
@@ -45,4 +46,9 @@ class WebCameraPreview extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Stub function for blobUrlToBytes on non-web platforms
+Future<Uint8List> blobUrlToBytes(String blobUrl) async {
+  throw UnsupportedError('blobUrlToBytes is only supported on web platform');
 }

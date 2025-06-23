@@ -1,2 +1,12 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+// Code signing configuration for distribution
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Developer ID Application: Verse Communications, Inc. (GZCZBKH7MY)
+DEVELOPMENT_TEAM = GZCZBKH7MY
+PROVISIONING_PROFILE_SPECIFIER = 
+
+// Enable hardened runtime for notarization
+ENABLE_HARDENED_RUNTIME = YES
+OTHER_CODE_SIGN_FLAGS = --timestamp --options=runtime
