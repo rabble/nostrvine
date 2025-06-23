@@ -7,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
-import 'package:nostrvine_app/services/direct_upload_service.dart';
-import 'package:nostrvine_app/services/nip98_auth_service.dart';
-import 'package:nostrvine_app/services/video_thumbnail_service.dart';
+import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:nostr_sdk/event.dart';
 
 @GenerateMocks([

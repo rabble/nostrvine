@@ -226,9 +226,9 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      // Default nostrvine tag
+                      // Default openvine tag
                       Chip(
-                        label: const Text('#nostrvine'),
+                        label: const Text('#openvine'),
                         backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
                         labelStyle: const TextStyle(color: VineTheme.vineGreen),
                       ),
@@ -321,7 +321,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   
   void _addHashtag() {
     final tag = _hashtagController.text.trim().replaceAll('#', '');
-    if (tag.isNotEmpty && !_hashtags.contains(tag) && tag != 'nostrvine') {
+    if (tag.isNotEmpty && !_hashtags.contains(tag) && tag != 'openvine') {
       setState(() {
         _hashtags.add(tag);
         _hashtagController.clear();
@@ -350,7 +350,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
         nostrPubkey: userPubkey,
         title: 'Untitled', // Placeholder title
         description: '',
-        hashtags: ['nostrvine'],
+        hashtags: ['openvine'],
       );
       
       setState(() {
@@ -375,8 +375,8 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
       return;
     }
     
-    // Always include nostrvine tag
-    final allHashtags = ['nostrvine', ..._hashtags];
+    // Always include openvine tag
+    final allHashtags = ['openvine', ..._hashtags];
     
     // TODO: Update the upload metadata with the final title/description
     // For now, the upload continues with the original metadata

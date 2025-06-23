@@ -1,16 +1,16 @@
 #!/bin/bash
-# ABOUTME: Script to notarize the NostrVine macOS app for distribution
+# ABOUTME: Script to notarize the OpenVine macOS app for distribution
 # ABOUTME: Run this after building to submit the DMG to Apple for notarization
 
 set -e
 
 # Configuration
-APP_DMG="/Users/rabble/code/experiments/nostrvine/mobile/build/macos/Build/Products/Release/NostrVine-1.0.0.dmg"
-BUNDLE_ID="com.nostrvine.app"
+APP_DMG="/Users/rabble/code/experiments/nostrvine/mobile/build/macos/Build/Products/Release/OpenVine-0.0.1.dmg"
+BUNDLE_ID="co.openvine.app"
 APPLE_ID="${APPLE_ID:-rabble@verse.app}"
 TEAM_ID="GZCZBKH7MY"
 
-echo "🍎 Starting notarization process for NostrVine..."
+echo "🍎 Starting notarization process for OpenVine..."
 
 # Check if DMG exists
 if [ ! -f "$APP_DMG" ]; then
@@ -52,4 +52,4 @@ echo ""
 echo "🔍 To verify notarization:"
 echo "   spctl -a -t open --context context:primary-signature \"$APP_DMG\""
 echo ""
-echo "📱 Users can now download and install NostrVine without security warnings!"
+echo "📱 Users can now download and install OpenVine without security warnings!"

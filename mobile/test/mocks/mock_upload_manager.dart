@@ -2,8 +2,8 @@
 // ABOUTME: Provides controllable upload states and progress simulation for UI testing
 
 import 'dart:io';
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/models/pending_upload.dart';
 
 class MockUploadManager implements UploadManager {
   final List<PendingUpload> _uploads = [];

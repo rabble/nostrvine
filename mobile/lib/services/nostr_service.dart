@@ -1,5 +1,5 @@
 // ABOUTME: Core Nostr service for event broadcasting and relay management
-// ABOUTME: Handles connection, authentication, and event publishing for NostrVine
+// ABOUTME: Handles connection, authentication, and event publishing for OpenVine
 
 import 'dart:async';
 import 'dart:convert';
@@ -356,7 +356,7 @@ class NostrService extends ChangeNotifier implements INostrService {
       }
       
       // Add client tag
-      tags.add(['client', 'nostrvine']);
+      tags.add(['client', 'openvine']);
       
       // Create the event using nostr_sdk Event constructor
       final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;

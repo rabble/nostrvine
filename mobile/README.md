@@ -1,4 +1,4 @@
-# NostrVine Mobile App
+# OpenVine Mobile App
 
 Flutter-based mobile application for capturing and sharing vine-like videos on the Nostr protocol.
 

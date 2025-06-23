@@ -4,12 +4,12 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostrvine_app/services/nostr_video_bridge.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/services/nostr_service_interface.dart';
-import 'package:nostrvine_app/services/seen_videos_service.dart';
-import 'package:nostrvine_app/services/connection_status_service.dart';
-import 'package:nostrvine_app/models/video_event.dart';
+import 'package:openvine/services/nostr_video_bridge.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/seen_videos_service.dart';
+import 'package:openvine/services/connection_status_service.dart';
+import 'package:openvine/models/video_event.dart';
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_video_manager.dart';
 

@@ -5,11 +5,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:nostrvine_app/main.dart' as app;
-import 'package:nostrvine_app/services/camera_service.dart';
-import 'package:nostrvine_app/services/video_thumbnail_service.dart';
-import 'package:nostrvine_app/services/direct_upload_service.dart';
-import 'package:nostrvine_app/services/upload_manager.dart';
+import 'package:openvine/main.dart' as app;
+import 'package:openvine/services/camera_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/services/upload_manager.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

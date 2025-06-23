@@ -88,7 +88,7 @@ class VideoSharingService extends ChangeNotifier {
       // Create NIP-04 encrypted DM (kind 4)
       final tags = <List<String>>[
         ['p', recipientPubkey], // Recipient
-        ['client', 'nostrvine'],
+        ['client', 'openvine'],
       ];
 
       // Add video reference as tag
@@ -207,7 +207,7 @@ class VideoSharingService extends ChangeNotifier {
       final hashtags = video.hashtags.map((tag) => '#$tag').join(' ');
       shareText += '\n\n$hashtags';
     }
-    shareText += '\n\nWatch on NostrVine: $url';
+    shareText += '\n\nWatch on OpenVine: $url';
     
     return shareText;
   }
@@ -262,7 +262,7 @@ class VideoSharingService extends ChangeNotifier {
     }
     
     buffer.writeln();
-    buffer.writeln('Shared via NostrVine 🍇');
+    buffer.writeln('Shared via OpenVine 🍇');
     
     return buffer.toString();
   }

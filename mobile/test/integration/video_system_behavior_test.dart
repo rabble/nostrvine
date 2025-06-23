@@ -2,9 +2,9 @@
 // ABOUTME: Tests complete video system flows, memory management, and error recovery scenarios
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/models/video_state.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/models/video_state.dart';
+import 'package:openvine/services/video_manager_interface.dart';
 import 'dart:math' as math;
 
 void main() {

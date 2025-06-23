@@ -1,9 +1,9 @@
 #!/bin/bash
-# NostrVine Deployment Script
+# OpenVine Deployment Script
 
 set -e
 
-echo "🚀 NostrVine Deployment Script"
+echo "🚀 OpenVine Deployment Script"
 echo "=============================="
 
 # Colors for output

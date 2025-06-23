@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:nostrvine_app/screens/camera_settings_screen.dart';
-import 'package:nostrvine_app/services/camera_service.dart';
+import 'package:openvine/screens/camera_settings_screen.dart';
+import 'package:openvine/services/camera_service.dart';
 
 void main() {
   group('CameraSettingsScreen', () {

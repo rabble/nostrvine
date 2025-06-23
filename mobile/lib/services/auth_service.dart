@@ -70,7 +70,7 @@ class UserProfile {
   }
 }
 
-/// Main authentication service for the NostrVine app
+/// Main authentication service for the OpenVine app
 class AuthService extends ChangeNotifier {
   final KeyStorageService _keyStorage;
   

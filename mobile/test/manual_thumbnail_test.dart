@@ -4,8 +4,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/video_thumbnail_service.dart';
-import 'package:nostrvine_app/services/direct_upload_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/services/direct_upload_service.dart';
 
 void main() {
   group('Manual Thumbnail Tests', () {

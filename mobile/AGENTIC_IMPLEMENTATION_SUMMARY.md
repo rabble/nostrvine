@@ -1,4 +1,4 @@
-# NostrVine Video Caching System - Agentic Implementation Summary
+# OpenVine Video Caching System - Agentic Implementation Summary
 
 ## Project Created
 

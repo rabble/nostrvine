@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import 'package:nostrvine_app/providers/profile_stats_provider.dart';
-import 'package:nostrvine_app/services/social_service.dart';
+import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:openvine/services/social_service.dart';
 
 // Generate mocks
 @GenerateMocks([SocialService])

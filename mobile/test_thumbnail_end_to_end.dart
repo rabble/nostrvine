@@ -5,10 +5,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/video_thumbnail_service.dart';
-import 'package:nostrvine_app/services/direct_upload_service.dart';
-import 'package:nostrvine_app/services/nip98_auth_service.dart';
-import 'package:nostrvine_app/services/video_event_publisher.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 
 void main() async {
   print('🎬 Starting end-to-end thumbnail test...');

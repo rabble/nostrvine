@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/widgets/video_player_widget.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/widgets/video_player_widget.dart';
 import '../../helpers/test_helpers.dart';
 
 // Mock classes for testing VideoPlayerWidget

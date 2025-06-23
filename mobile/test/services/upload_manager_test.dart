@@ -4,9 +4,9 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/cloudinary_upload_service.dart';
+import 'package:openvine/models/pending_upload.dart';
 
 // Mock classes
 class MockCloudinaryUploadService extends Mock implements CloudinaryUploadService {}

@@ -111,9 +111,9 @@ class ModerationResult {
 class ContentModerationService extends ChangeNotifier {
   final SharedPreferences _prefs;
   
-  // Default NostrVine moderation list
-  static const String defaultMuteListId = 'nostrvine-default-mutes-v1';
-  static const String defaultMuteListPubkey = 'npub1nostrvinemoderation'; // Placeholder
+  // Default OpenVine moderation list
+  static const String defaultMuteListId = 'openvine-default-mutes-v1';
+  static const String defaultMuteListPubkey = 'npub1openvinemoderation'; // Placeholder
   
   // Local storage keys
   static const String _localMuteListKey = 'content_moderation_local_mutes';
@@ -148,7 +148,7 @@ class ContentModerationService extends ChangeNotifier {
   /// Initialize content moderation
   Future<void> initialize() async {
     try {
-      // Subscribe to default NostrVine moderation list
+      // Subscribe to default OpenVine moderation list
       if (_enableDefaultModeration) {
         await _subscribeToDefaultList();
       }
@@ -330,10 +330,10 @@ class ContentModerationService extends ChangeNotifier {
     };
   }
 
-  /// Subscribe to default NostrVine moderation list
+  /// Subscribe to default OpenVine moderation list
   Future<void> _subscribeToDefaultList() async {
     try {
-      // This would subscribe to official NostrVine moderation list
+      // This would subscribe to official OpenVine moderation list
       // For now, create a basic default list
       final defaultEntries = [
         MuteListEntry(

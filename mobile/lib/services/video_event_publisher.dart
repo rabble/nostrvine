@@ -270,7 +270,7 @@ class VideoEventPublisher extends ChangeNotifier {
       }
       
       // Add client tag
-      videoTags.add(['client', 'nostrvine']);
+      videoTags.add(['client', 'openvine']);
       
       final event = await _authService!.createAndSignEvent(
         kind: 22, // NIP-71 short video
@@ -528,7 +528,7 @@ class VideoEventPublisher extends ChangeNotifier {
       }
       
       // Add client tag
-      tags.add(['client', 'nostrvine']);
+      tags.add(['client', 'openvine']);
       
       // Create the event content
       final content = upload.description ?? upload.title ?? '';

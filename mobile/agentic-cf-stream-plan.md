@@ -255,7 +255,7 @@ Add: lib/services/feature_flags.dart
 ### Deployment Strategy
 1. **Local Development**: Use miniflare for all testing
 2. **Staging Deploy**: Deploy to Cloudflare Workers staging
-3. **Internal Testing**: Test with actual NostrVine mobile app
+3. **Internal Testing**: Test with actual OpenVine mobile app
 4. **Gradual Rollout**: Start with 1% of users via feature flag
 
 ## Agentic Task Execution Strategy

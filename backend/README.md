@@ -1,4 +1,4 @@
-# NostrVine Backend
+# OpenVine Backend
 
 Cloudflare Workers-based serverless backend for processing image sequences into animated GIFs and videos.
 

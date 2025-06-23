@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 
 /// Native macOS camera interface using platform channels
 class NativeMacOSCamera {
-  static const MethodChannel _channel = MethodChannel('nostrvine/native_camera');
+  static const MethodChannel _channel = MethodChannel('openvine/native_camera');
   
   static StreamController<Uint8List>? _frameStreamController;
   static Stream<Uint8List>? _frameStream;

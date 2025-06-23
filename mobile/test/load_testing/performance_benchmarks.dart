@@ -4,9 +4,9 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/services/video_manager_service.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/services/video_manager_service.dart';
 import '../helpers/test_helpers.dart';
 
 /// Performance benchmarking suite for video system

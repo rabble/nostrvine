@@ -75,8 +75,8 @@ class KeyStorageService extends ChangeNotifier {
       preferencesKeyPrefix: 'nostr_',
     ),
     iOptions: IOSOptions(
-      groupId: 'group.nostrvine.keys',
-      accountName: 'NostrVine',
+      groupId: 'group.openvine.keys',
+      accountName: 'OpenVine',
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
   );

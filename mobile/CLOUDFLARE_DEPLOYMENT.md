@@ -1,6 +1,6 @@
-# NostrVine Web App Deployment Guide
+# OpenVine Web App Deployment Guide
 
-This guide explains how to deploy the NostrVine Flutter web app to Cloudflare Pages at app.openvine.co.
+This guide explains how to deploy the OpenVine Flutter web app to Cloudflare Pages at app.openvine.co.
 
 ## Prerequisites
 
@@ -121,4 +121,4 @@ For additional optimization:
 For issues specific to:
 - Flutter build: Check Flutter documentation
 - Cloudflare Pages: Check Cloudflare Pages documentation
-- NostrVine app: Create an issue in the repository
+- OpenVine app: Create an issue in the repository

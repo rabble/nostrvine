@@ -4,12 +4,12 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostrvine_app/services/video_event_publisher.dart';
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/nostr_service_interface.dart';
-import 'package:nostrvine_app/services/auth_service.dart';
-import 'package:nostrvine_app/models/ready_event_data.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
+import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/models/ready_event_data.dart';
+import 'package:openvine/models/pending_upload.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Mock classes

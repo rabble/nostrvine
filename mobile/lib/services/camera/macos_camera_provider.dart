@@ -404,7 +404,7 @@ class MacosCameraProvider implements CameraProvider {
       debugPrint('🎨 Captured ${_realtimeFrames.length} live frames');
       
       return CameraRecordingResult(
-        videoPath: videoPath ?? '/tmp/nostrvine_recording.mp4', // Provide fallback if null
+        videoPath: videoPath ?? '/tmp/openvine_recording.mp4', // Provide fallback if null
         liveFrames: List.from(_realtimeFrames), // Copy captured frames
         width: 1920, // HD resolution from native camera
         height: 1080,
@@ -523,7 +523,7 @@ class MacosCameraProvider implements CameraProvider {
     debugPrint('🎨 Captured ${_realtimeFrames.length} test frames');
     
     return CameraRecordingResult(
-      videoPath: '/dev/fallback/nostrvine_test_video.mp4',
+      videoPath: '/dev/fallback/openvine_test_video.mp4',
       liveFrames: List.from(_realtimeFrames),
       width: 640,
       height: 480,

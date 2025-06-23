@@ -8,14 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/direct_upload_service.dart';
-import 'package:nostrvine_app/services/video_event_publisher.dart';
-import 'package:nostrvine_app/services/api_service.dart';
-import 'package:nostrvine_app/services/notification_service.dart';
-import 'package:nostrvine_app/services/nostr_service_interface.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostrvine_app/models/ready_event_data.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/api_service.dart';
+import 'package:openvine/services/notification_service.dart';
+import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/ready_event_data.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Mock classes

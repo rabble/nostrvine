@@ -20,7 +20,7 @@ fi
 PROJECT_NAME="nostrvine-app"
 BRANCH="main"
 
-echo "🚀 Deploying NostrVine to Cloudflare Pages..."
+echo "🚀 Deploying OpenVine to Cloudflare Pages..."
 
 # Build the app first
 echo "🔨 Building Flutter web app..."
@@ -38,7 +38,7 @@ cd web-deploy
 wrangler pages deploy . \
     --project-name="$PROJECT_NAME" \
     --branch="$BRANCH" \
-    --commit-message="Deploy NostrVine web app"
+    --commit-message="Deploy OpenVine web app"
 
 echo "✅ Deployment complete!"
 echo "🌐 Your app will be available at:"

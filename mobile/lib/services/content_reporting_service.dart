@@ -92,7 +92,7 @@ class ContentReportingService extends ChangeNotifier {
   final INostrService _nostrService;
   final SharedPreferences _prefs;
   
-  // NostrVine moderation relay for reports
+  // OpenVine moderation relay for reports
   static const String moderationRelayUrl = 'wss://relay.openvine.co';
   static const String reportsStorageKey = 'content_reports_history';
   
@@ -305,7 +305,7 @@ class ContentReportingService extends ChangeNotifier {
         ['e', eventId], // Event being reported
         ['p', authorPubkey], // Author of reported content
         ['report', reason.name], // Report reason as per NIP-56
-        ['client', 'nostrvine'], // Reporting client
+        ['client', 'openvine'], // Reporting client
       ];
 
       // Add hashtags as 't' tags
@@ -356,7 +356,7 @@ class ContentReportingService extends ChangeNotifier {
       buffer.writeln('Additional Context: $additionalContext');
     }
     
-    buffer.writeln('Reported via NostrVine for community safety and Apple App Store compliance');
+    buffer.writeln('Reported via OpenVine for community safety and Apple App Store compliance');
     return buffer.toString();
   }
 

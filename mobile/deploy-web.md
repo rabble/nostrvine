@@ -1,4 +1,4 @@
-# NostrVine Web Deployment Guide
+# OpenVine Web Deployment Guide
 
 ## Current Status ✅
 - Backend: Fully configured for Cloudflare Workers

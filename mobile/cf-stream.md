@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-NostrVine currently streams videos directly from the open internet, causing:
+OpenVine currently streams videos directly from the open internet, causing:
 - Server configuration errors (CoreMediaErrorDomain -12939 - byte range issues)
 - Slow loading times and network timeouts  
 - Inconsistent video quality and formats
@@ -51,7 +51,7 @@ export default {
       headers: {
         ...request.headers,
         'Accept-Ranges': 'bytes',
-        'User-Agent': 'NostrVine/1.0',
+        'User-Agent': 'OpenVine/1.0',
       },
     });
     
@@ -390,7 +390,7 @@ export default {
         body: JSON.stringify({
           url: videoUrl,
           meta: {
-            name: `NostrVine Video`,
+            name: `OpenVine Video`,
           },
         }),
       });

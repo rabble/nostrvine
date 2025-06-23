@@ -8,7 +8,7 @@ Currently when users record videos, the title, description, and hashtags are har
 - Metadata is hardcoded at `camera_screen.dart:645-647`:
   ```dart
   title: 'Vine Video', // TODO: Allow user to set title
-  description: 'Created with NostrVine', // TODO: Allow user to set description
+  description: 'Created with OpenVine', // TODO: Allow user to set description
   hashtags: ['nostrvine', 'vine'], // TODO: Allow user to set hashtags
   ```
 

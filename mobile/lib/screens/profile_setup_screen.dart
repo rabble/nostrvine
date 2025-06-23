@@ -91,7 +91,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 children: [
                   Text(
                     widget.isNewUser 
-                        ? 'Welcome to NostrVine!'
+                        ? 'Welcome to OpenVine!'
                         : 'Update Your Profile',
                     style: const TextStyle(
                       fontSize: 28,
@@ -323,7 +323,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'NostrVine uses Nostr, a decentralized protocol where YOU own your identity and data. Unlike centralized platforms, no single company controls your account.',
+                          'OpenVine uses Nostr, a decentralized protocol where YOU own your identity and data. Unlike centralized platforms, no single company controls your account.',
                           style: TextStyle(
                             color: Colors.grey[300],
                             fontSize: 13,

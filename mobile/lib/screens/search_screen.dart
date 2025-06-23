@@ -1,4 +1,4 @@
-// ABOUTME: Search screen for finding videos, users, and hashtags in the NostrVine network
+// ABOUTME: Search screen for finding videos, users, and hashtags in the OpenVine network
 // ABOUTME: Provides real-time search functionality with filters and categories
 
 import 'package:flutter/material.dart';
@@ -171,7 +171,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           ),
           SizedBox(height: 16),
           Text(
-            'Search NostrVine',
+            'Search OpenVine',
             style: TextStyle(
               color: VineTheme.primaryText,
               fontSize: 18,

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to set up and use the A/B testing framework for NostrVine's video system migration. The framework enables controlled rollout from the legacy dual-list architecture to the new TDD-driven video management system.
+This guide explains how to set up and use the A/B testing framework for OpenVine's video system migration. The framework enables controlled rollout from the legacy dual-list architecture to the new TDD-driven video management system.
 
 ## Architecture
 
@@ -690,7 +690,7 @@ class PrivacyCompliantABTesting {
 
 ## Conclusion
 
-The A/B testing framework provides a safe, data-driven approach to migrating NostrVine's video system. It enables:
+The A/B testing framework provides a safe, data-driven approach to migrating OpenVine's video system. It enables:
 
 - **Controlled Rollout**: Gradual exposure to minimize risk
 - **Performance Monitoring**: Real-time tracking of key metrics

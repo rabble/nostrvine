@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚀 Building NostrVine Web App for deployment..."
+echo "🚀 Building OpenVine Web App for deployment..."
 
 # Clean previous builds
 echo "🧹 Cleaning previous builds..."

@@ -3,7 +3,7 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/cloudinary_upload_service.dart';
+import 'package:openvine/services/cloudinary_upload_service.dart';
 
 void main() {
   group('CloudinaryUploadService Memory Leak Tests', () {

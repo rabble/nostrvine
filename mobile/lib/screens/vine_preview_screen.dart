@@ -37,7 +37,7 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
   void initState() {
     super.initState();
     // Pre-populate with default hashtags
-    _hashtagsController.text = 'nostrvine vine';
+    _hashtagsController.text = 'openvine vine';
     _initializeVideoPlayer();
     
     // Start background upload while user enters metadata
@@ -483,8 +483,8 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
         videoFile: widget.videoFile,
         nostrPubkey: userPubkey,
         title: 'Vine Video', // Will be updated when user publishes
-        description: 'Created with NostrVine', // Will be updated when user publishes
-        hashtags: ['nostrvine'], // Will be updated when user publishes
+        description: 'Created with OpenVine', // Will be updated when user publishes
+        hashtags: ['openvine'], // Will be updated when user publishes
       );
       
       // Background upload started successfully

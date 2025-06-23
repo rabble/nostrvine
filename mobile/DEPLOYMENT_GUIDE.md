@@ -1,10 +1,10 @@
-# NostrVine Production Deployment Guide
+# OpenVine Production Deployment Guide
 
-This guide covers deploying the complete NostrVine video hosting infrastructure to production using Cloudflare services.
+This guide covers deploying the complete OpenVine video hosting infrastructure to production using Cloudflare services.
 
 ## Overview
 
-NostrVine uses:
+OpenVine uses:
 - **Cloudflare Workers** for the serverless backend API
 - **Cloudflare Stream** for video upload, processing, and CDN delivery
 - **R2 Object Storage** for media file storage

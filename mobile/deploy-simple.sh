@@ -1,9 +1,9 @@
 #!/bin/bash
-# NostrVine Simple Deployment Script
+# OpenVine Simple Deployment Script
 
 set -e
 
-echo "🚀 NostrVine Deployment Script"
+echo "🚀 OpenVine Deployment Script"
 echo "=============================="
 
 # Function to check command exists

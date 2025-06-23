@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostrvine_app/screens/universal_camera_screen.dart';
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/nostr_key_manager.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
-import 'package:nostrvine_app/main.dart';
+import 'package:openvine/screens/universal_camera_screen.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/nostr_key_manager.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/main.dart';
 
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}

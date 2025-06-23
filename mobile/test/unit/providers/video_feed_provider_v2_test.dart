@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/foundation.dart';
-import 'package:nostrvine_app/providers/video_feed_provider_v2.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/models/video_state.dart';
+import 'package:openvine/providers/video_feed_provider_v2.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/models/video_state.dart';
 import '../../mocks/mock_video_manager.dart';
 import '../../helpers/test_helpers.dart';
 

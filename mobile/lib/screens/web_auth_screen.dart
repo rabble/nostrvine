@@ -210,7 +210,7 @@ class _WebAuthScreenState extends State<WebAuthScreen> with TickerProviderStateM
                                 ),
                                 const SizedBox(height: 24),
                                 const Text(
-                                  'Connect to NostrVine',
+                                  'Connect to OpenVine',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 28,

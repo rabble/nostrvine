@@ -380,7 +380,7 @@ class CuratedListService extends ChangeNotifier {
       final tags = <List<String>>[
         ['d', list.id], // Identifier for replaceable event
         ['title', list.name],
-        ['client', 'nostrvine'],
+        ['client', 'openvine'],
       ];
 
       // Add description if present

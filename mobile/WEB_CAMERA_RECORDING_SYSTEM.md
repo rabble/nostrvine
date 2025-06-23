@@ -2,7 +2,7 @@
 
 ## Overview
 
-The NostrVine web camera recording system provides a seamless Vine-style recording experience in web browsers using native web APIs. It implements the same press-to-record, release-to-pause functionality as mobile platforms.
+The OpenVine web camera recording system provides a seamless Vine-style recording experience in web browsers using native web APIs. It implements the same press-to-record, release-to-pause functionality as mobile platforms.
 
 ## Architecture
 
@@ -217,9 +217,9 @@ class RecordingSegment {
 - Real-time duration calculation
 - Automatic stop at 6-second limit
 
-## Integration with NostrVine App
+## Integration with OpenVine App
 
-The web camera system is fully integrated into the main NostrVine app:
+The web camera system is fully integrated into the main OpenVine app:
 
 1. **UniversalCameraScreen** uses VineRecordingController
 2. **Platform detection** automatically selects WebCameraInterface on web

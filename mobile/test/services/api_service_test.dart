@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
-import 'package:nostrvine_app/services/api_service.dart';
+import 'package:openvine/services/api_service.dart';
 
 // Mock classes
 class MockHttpClient extends Mock implements http.Client {}
@@ -160,7 +160,7 @@ void main() {
 
         expect(captured['Content-Type'], 'application/json');
         expect(captured['Accept'], 'application/json');
-        expect(captured['User-Agent'], 'NostrVine-Mobile/1.0');
+        expect(captured['User-Agent'], 'OpenVine-Mobile/1.0');
         expect(captured['Authorization'], startsWith('Bearer '));
       });
     });

@@ -1,7 +1,7 @@
 // ABOUTME: Test helper utilities for creating mock data and testing video system
 // ABOUTME: Provides consistent test data generation and common testing patterns
 
-import 'package:nostrvine_app/models/video_event.dart';
+import 'package:openvine/models/video_event.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Test helper utilities for video system testing

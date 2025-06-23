@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/models/video_state.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/models/video_state.dart';
 import '../../helpers/test_helpers.dart';
 
 void main() {

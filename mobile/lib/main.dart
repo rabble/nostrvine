@@ -67,11 +67,11 @@ void main() async {
   // Initialize Hive for local data storage
   await Hive.initFlutter();
   
-  runApp(const NostrVineApp());
+  runApp(const OpenVineApp());
 }
 
-class NostrVineApp extends StatelessWidget {
-  const NostrVineApp({super.key});
+class OpenVineApp extends StatelessWidget {
+  const OpenVineApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -358,7 +358,7 @@ class NostrVineApp extends StatelessWidget {
         // Note: VinePublishingService removed - using video-based approach now
       ],
       child: MaterialApp(
-        title: 'NostrVine',
+        title: 'OpenVine',
         debugShowCheckedModeBanner: false,
         theme: VineTheme.theme,
         home: const ResponsiveWrapper(child: AppInitializer()),

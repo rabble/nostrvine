@@ -8,15 +8,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:nostrvine_app/main.dart';
+import 'package:openvine/main.dart';
 
 void main() {
-  testWidgets('NostrVine app smoke test', (WidgetTester tester) async {
+  testWidgets('OpenVine app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const NostrVineApp());
+    await tester.pumpWidget(const OpenVineApp());
 
     // Verify that the app loads with main navigation
-    expect(find.text('NostrVine'), findsOneWidget);
+    expect(find.text('OpenVine'), findsOneWidget);
     
     // Check for bottom navigation
     expect(find.byType(BottomNavigationBar), findsOneWidget);

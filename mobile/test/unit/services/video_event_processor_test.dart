@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostrvine_app/services/video_event_processor.dart';
-import 'package:nostrvine_app/models/video_event.dart';
+import 'package:openvine/services/video_event_processor.dart';
+import 'package:openvine/models/video_event.dart';
 import '../../helpers/test_helpers.dart';
 
 /// Tests for VideoEventProcessor that handles Nostr video event processing

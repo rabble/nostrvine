@@ -81,7 +81,7 @@ class ShareService {
       final shareText = generateShareText(video);
       await Share.share(
         shareText,
-        subject: 'Check out this video on NostrVine',
+        subject: 'Check out this video on OpenVine',
       );
     } catch (e) {
       debugPrint('Error sharing via sheet: $e');

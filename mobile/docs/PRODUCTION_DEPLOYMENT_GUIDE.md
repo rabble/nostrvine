@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides comprehensive optimization strategies for deploying the new TDD-driven video management system in NostrVine. The system has been rebuilt to address critical memory issues and provide reliable video playback.
+This guide provides comprehensive optimization strategies for deploying the new TDD-driven video management system in OpenVine. The system has been rebuilt to address critical memory issues and provide reliable video playback.
 
 ## System Architecture Changes
 

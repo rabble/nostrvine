@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Complete rebrand from NostrVine to OpenVine
+  - Updated all package imports from `nostrvine_app` to `openvine` (76+ files)
+  - Changed app title and branding throughout the application
+  - Updated all documentation files to reflect new branding
+  - Modified test files and deployment scripts
+  - Updated platform-specific configuration (iOS/Android/macOS)
+  - Changed all code comments and internal documentation
+  - Updated deployment and build scripts
+  - Changed macOS camera permission text
+  - Maintained Cloudflare infrastructure compatibility (no backend changes)
+
 ### Added  
 - **Flutter Web Performance Optimization**: Comprehensive performance improvements for web platform
   - Service worker with aggressive caching (cache-first for static assets, network-first for APIs)

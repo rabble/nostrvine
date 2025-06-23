@@ -3,9 +3,9 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/services/video_manager_service.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/services/video_manager_service.dart';
 
 // Helper function for creating test video events
 VideoEvent createTestVideoEvent({

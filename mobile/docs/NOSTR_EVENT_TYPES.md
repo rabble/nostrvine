@@ -1,6 +1,6 @@
-# NostrVine Event Types Documentation
+# OpenVine Event Types Documentation
 
-This document outlines the required Nostr event types (kinds) that NostrVine uses for proper functionality.
+This document outlines the required Nostr event types (kinds) that OpenVine uses for proper functionality.
 
 ## Core Event Types
 
@@ -208,7 +208,7 @@ The video feed requires both event types working together:
 
 ## Migration Notes
 
-If updating existing NostrVine installations:
+If updating existing OpenVine installations:
 1. Ensure VideoEventService filter includes Kind 6 events
 2. Update UI components to handle repost indicators
 3. Verify UserProfileService properly caches Kind 0 events

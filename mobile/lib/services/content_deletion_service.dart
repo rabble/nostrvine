@@ -227,7 +227,7 @@ class ContentDeletionService extends ChangeNotifier {
       // Build NIP-09 compliant tags (kind 5)
       final tags = <List<String>>[
         ['e', originalEventId], // Event being deleted
-        ['client', 'nostrvine'], // Deleting client
+        ['client', 'openvine'], // Deleting client
       ];
 
       // Add additional context as tags if provided
@@ -271,7 +271,7 @@ class ContentDeletionService extends ChangeNotifier {
       buffer.writeln('Additional Context: $additionalContext');
     }
     
-    buffer.writeln('Content deleted by author via NostrVine for Apple App Store compliance');
+    buffer.writeln('Content deleted by author via OpenVine for Apple App Store compliance');
     return buffer.toString();
   }
 

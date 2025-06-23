@@ -28,7 +28,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               const Text(
-                'Welcome to NostrVine',
+                'Welcome to OpenVine',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,

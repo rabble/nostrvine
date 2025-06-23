@@ -1,4 +1,4 @@
-# NostrVine Production Deployment Checklist
+# OpenVine Production Deployment Checklist
 
 ## 🚀 Quick Start
 

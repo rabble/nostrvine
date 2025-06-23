@@ -77,7 +77,7 @@ class BlurhashService {
   
   /// Generate a default blurhash for vine content
   static String getDefaultVineBlurhash() {
-    // Purple gradient for NostrVine branding
+    // Purple gradient for OpenVine branding
     return 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';
   }
   

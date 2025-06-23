@@ -2,7 +2,7 @@
 // ABOUTME: Tests duration clamping, FPS limits, and configuration management
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/camera_service.dart';
+import 'package:openvine/services/camera_service.dart';
 
 void main() {
   group('CameraConfiguration', () {

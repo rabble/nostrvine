@@ -145,13 +145,13 @@ class NotificationListItem extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: NostrVineTheme.primaryPurple.withValues(alpha: 0.2),
+        color: OpenVineTheme.primaryPurple.withValues(alpha: 0.2),
         shape: BoxShape.circle,
       ),
       child: Center(
         child: Icon(
           Icons.person,
-          color: NostrVineTheme.primaryPurple,
+          color: OpenVineTheme.primaryPurple,
           size: 24,
         ),
       ),
@@ -267,7 +267,7 @@ class NotificationListItem extends StatelessWidget {
       case NotificationType.comment:
         return Colors.blue;
       case NotificationType.follow:
-        return NostrVineTheme.primaryPurple;
+        return OpenVineTheme.primaryPurple;
       case NotificationType.mention:
         return Colors.orange;
       case NotificationType.repost:

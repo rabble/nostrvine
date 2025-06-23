@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to integrate and configure the video performance monitoring system for NostrVine. The monitoring system provides real-time analytics, alerting, and comprehensive performance insights for the TDD video management system.
+This guide explains how to integrate and configure the video performance monitoring system for OpenVine. The monitoring system provides real-time analytics, alerting, and comprehensive performance insights for the TDD video management system.
 
 ## Architecture
 

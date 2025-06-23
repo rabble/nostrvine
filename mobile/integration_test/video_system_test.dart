@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:nostrvine_app/models/video_state.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/services/video_manager_service.dart';
-import 'package:nostrvine_app/screens/feed_screen_v2.dart';
-import 'package:nostrvine_app/widgets/video_feed_item.dart';
+import 'package:openvine/models/video_state.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/services/video_manager_service.dart';
+import 'package:openvine/screens/feed_screen_v2.dart';
+import 'package:openvine/widgets/video_feed_item.dart';
 
 import '../test/helpers/test_helpers.dart';
 import '../test/mocks/mock_video_manager.dart';

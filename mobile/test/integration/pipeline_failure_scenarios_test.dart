@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
+import 'package:openvine/models/pending_upload.dart';
 import '../helpers/pipeline_test_factory.dart';
 
 void main() {

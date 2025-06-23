@@ -1,8 +1,8 @@
-# Operational Runbooks for NostrVine Video System
+# Operational Runbooks for OpenVine Video System
 
 ## Overview
 
-This document provides operational procedures and troubleshooting guides for maintaining the NostrVine video system in production. It covers incident response, performance monitoring, and maintenance procedures.
+This document provides operational procedures and troubleshooting guides for maintaining the OpenVine video system in production. It covers incident response, performance monitoring, and maintenance procedures.
 
 ## Table of Contents
 
@@ -452,7 +452,7 @@ class ProductionBenchmark {
 #!/bin/bash
 # daily_health_check.sh
 
-echo "=== NostrVine Video System Health Check ==="
+echo "=== OpenVine Video System Health Check ==="
 echo "Date: $(date)"
 
 # Check memory usage trends

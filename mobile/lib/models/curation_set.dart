@@ -128,7 +128,7 @@ class CurationSet {
   int get hashCode => Object.hash(id, curatorPubkey);
 }
 
-/// Predefined curation set types for NostrVine
+/// Predefined curation set types for OpenVine
 enum CurationSetType {
   editorsPicks('editors_picks', "Editor's Picks", "Videos selected by our team"),
   trending('trending', 'Trending Now', 'Popular videos right now'),
@@ -149,7 +149,7 @@ class SampleCurationSets {
   static final List<CurationSet> _sampleSets = [
     CurationSet(
       id: CurationSetType.editorsPicks.id,
-      curatorPubkey: 'nostrvine_editorial_team',
+      curatorPubkey: 'openvine_editorial_team',
       title: CurationSetType.editorsPicks.displayName,
       description: CurationSetType.editorsPicks.description,
       imageUrl: 'https://example.com/editors-picks.jpg',
@@ -158,7 +158,7 @@ class SampleCurationSets {
     ),
     CurationSet(
       id: CurationSetType.trending.id,
-      curatorPubkey: 'nostrvine_algorithm',
+      curatorPubkey: 'openvine_algorithm',
       title: CurationSetType.trending.displayName,
       description: CurationSetType.trending.description,
       videoIds: [], // Will be populated with trending video IDs
@@ -166,7 +166,7 @@ class SampleCurationSets {
     ),
     CurationSet(
       id: CurationSetType.featured.id,
-      curatorPubkey: 'nostrvine_editorial_team',
+      curatorPubkey: 'openvine_editorial_team',
       title: CurationSetType.featured.displayName,
       description: CurationSetType.featured.description,
       videoIds: [], // Will be populated with featured video IDs

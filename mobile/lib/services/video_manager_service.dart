@@ -462,7 +462,7 @@ class VideoManagerService implements IVideoManager {
       // Create controller with progressive loading (like TikTok/Instagram)
       final headers = <String, String>{
         'Cache-Control': 'no-cache',
-        'User-Agent': 'NostrVine/1.0',
+        'User-Agent': 'OpenVine/1.0',
       };
       
       // Platform-specific configuration for better compatibility
@@ -859,7 +859,7 @@ class VideoManagerService implements IVideoManager {
       // Download the video file
       final uri = Uri.parse(event.videoUrl!);
       final request = await client.getUrl(uri);
-      request.headers.set('User-Agent', 'NostrVine/1.0');
+      request.headers.set('User-Agent', 'OpenVine/1.0');
       
       final response = await request.close();
       
@@ -869,7 +869,7 @@ class VideoManagerService implements IVideoManager {
 
       // Get temporary directory for caching
       final tempDir = Directory.systemTemp;
-      final videoFile = File('${tempDir.path}/nostrvine_cache_$videoId.mp4');
+      final videoFile = File('${tempDir.path}/openvine_cache_$videoId.mp4');
       
       // Download and write to file
       final sink = videoFile.openWrite();
@@ -903,7 +903,7 @@ class VideoManagerService implements IVideoManager {
       // Clean up any partial downloads
       try {
         final tempDir = Directory.systemTemp;
-        final videoFile = File('${tempDir.path}/nostrvine_cache_$videoId.mp4');
+        final videoFile = File('${tempDir.path}/openvine_cache_$videoId.mp4');
         if (await videoFile.exists()) {
           await videoFile.delete();
         }

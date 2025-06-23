@@ -4,7 +4,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/video_thumbnail_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';

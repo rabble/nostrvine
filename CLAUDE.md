@@ -1,7 +1,7 @@
-# NostrVine Memory
+# OpenVine Memory
 
 ## Project Overview
-NostrVine is a Nostr-based vine-like video sharing application with:
+OpenVine is a decentralized vine-like video sharing application powered by Nostr with:
 - **Flutter Mobile App**: Cross-platform client for capturing and sharing short videos
 - **Cloudflare Workers Backend**: Serverless backend for GIF creation and media processing
 
@@ -15,7 +15,7 @@ NostrVine is a Nostr-based vine-like video sharing application with:
 - **Media Processing**: Real-time frame capture → GIF creation
 
 ## Nostr Event Requirements
-NostrVine requires specific Nostr event types for proper functionality:
+OpenVine requires specific Nostr event types for proper functionality:
 - **Kind 0**: User profiles (NIP-01) - Required for user display names and avatars
 - **Kind 6**: Reposts (NIP-18) - Required for video repost/reshare functionality  
 - **Kind 22**: Short videos (NIP-71) - Primary video content

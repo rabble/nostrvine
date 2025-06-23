@@ -39,7 +39,7 @@ class UnifiedLogger {
     if (kIsWeb) {
       developer.log(
         timestampedMessage,
-        name: name ?? 'NostrVine',
+        name: name ?? 'OpenVine',
         level: level,
         error: error,
         stackTrace: stackTrace,

@@ -1,4 +1,4 @@
-// ABOUTME: HTTP API service for communicating with the NostrVine backend
+// ABOUTME: HTTP API service for communicating with the OpenVine backend
 // ABOUTME: Handles ready events polling, authentication, and error handling
 
 import 'dart:async';
@@ -204,7 +204,7 @@ class ApiService extends ChangeNotifier {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'NostrVine-Mobile/1.0',
+      'User-Agent': 'OpenVine-Mobile/1.0',
     };
     
     // Add NIP-98 authentication if available

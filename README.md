@@ -1,8 +1,8 @@
-# NostrVine
+# OpenVine
 
-**A Nostr-based vine-like video sharing Flutter app.**
+**A decentralized vine-like video sharing app powered by Nostr.**
 
-A decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
+OpenVine is a decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
 
 ## App Screenshots
 

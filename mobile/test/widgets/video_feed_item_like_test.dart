@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:provider/provider.dart';
-import 'package:nostrvine_app/widgets/video_feed_item.dart';
-import 'package:nostrvine_app/services/social_service.dart';
-import 'package:nostrvine_app/services/video_manager_interface.dart';
-import 'package:nostrvine_app/models/video_event.dart';
-import 'package:nostrvine_app/models/video_state.dart';
+import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/services/social_service.dart';
+import 'package:openvine/services/video_manager_interface.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/models/video_state.dart';
 
 // Generate mocks
 @GenerateMocks([SocialService, IVideoManager])

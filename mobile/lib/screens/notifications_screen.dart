@@ -128,8 +128,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: NostrVineTheme.primaryPurple,
-          labelColor: NostrVineTheme.primaryPurple,
+          indicatorColor: OpenVineTheme.primaryPurple,
+          labelColor: OpenVineTheme.primaryPurple,
           unselectedLabelColor: isDarkMode ? Colors.grey : Colors.grey[600],
           onTap: (index) {
             setState(() {

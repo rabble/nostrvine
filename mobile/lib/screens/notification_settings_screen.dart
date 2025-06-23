@@ -103,7 +103,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           ),
           _buildNotificationCard(
             icon: Icons.person_add,
-            iconColor: NostrVineTheme.primaryPurple,
+            iconColor: OpenVineTheme.primaryPurple,
             title: 'Follows',
             subtitle: 'When someone follows you',
             value: _followsEnabled,
@@ -145,7 +145,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           const SizedBox(height: 8),
           _buildNotificationCard(
             icon: Icons.notifications,
-            iconColor: NostrVineTheme.primaryPurple,
+            iconColor: OpenVineTheme.primaryPurple,
             title: 'Push Notifications',
             subtitle: 'Receive notifications when app is closed',
             value: _pushNotificationsEnabled,
@@ -280,7 +280,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: NostrVineTheme.primaryPurple,
+          activeColor: OpenVineTheme.primaryPurple,
         ),
       ),
     );

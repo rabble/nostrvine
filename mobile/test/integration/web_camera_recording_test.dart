@@ -3,8 +3,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostrvine_app/services/vine_recording_controller.dart';
-import 'package:nostrvine_app/services/web_camera_service.dart';
+import 'package:openvine/services/vine_recording_controller.dart';
+import 'package:openvine/services/web_camera_service.dart';
 
 void main() {
   group('Web Camera Recording Integration Tests', () {

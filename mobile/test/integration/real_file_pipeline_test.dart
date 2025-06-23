@@ -7,9 +7,9 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path/path.dart' as path;
-import 'package:nostrvine_app/services/upload_manager.dart';
-import 'package:nostrvine_app/services/direct_upload_service.dart';
-import 'package:nostrvine_app/models/pending_upload.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/models/pending_upload.dart';
 
 /// Real file pipeline tests with actual I/O operations
 void main() {

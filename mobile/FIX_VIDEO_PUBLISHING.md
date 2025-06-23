@@ -1,4 +1,4 @@
-# Fix for Video Publishing in NostrVine
+# Fix for Video Publishing in OpenVine
 
 ## Problem Identified
 
