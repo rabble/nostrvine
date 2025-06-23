@@ -329,7 +329,11 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _buildBody(),
+      body: SafeArea(
+        top: true,
+        bottom: false, // Let videos extend to bottom for full screen
+        child: _buildBody(),
+      ),
     );
   }
 
