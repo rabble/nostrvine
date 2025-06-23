@@ -11,7 +11,8 @@ import '../models/curation_set.dart';
 import '../models/video_event.dart';
 import 'search_screen.dart';
 import 'hashtag_feed_screen.dart';
-import '../widgets/video_preview_tile.dart';
+import '../widgets/video_explore_tile.dart';
+import '../widgets/video_fullscreen_overlay.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -78,17 +79,52 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          _buildEditorsPicks(),
-          _buildPopularNow(),
-          _buildTrending(),
+          TabBarView(
+            controller: _tabController,
+            children: [
+              _buildEditorsPicks(),
+              _buildPopularNow(),
+              _buildTrending(),
+            ],
+          ),
+          // Overlay for expanded video
+          if (_playingVideoId != null)
+            _buildExpandedVideoOverlay(),
         ],
       ),
     );
   }
 
+  Widget _buildExpandedVideoOverlay() {
+    // Find the currently playing video
+    final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
+    final allVideos = [
+      ...exploreVideoManager.getVideosForType(CurationSetType.editorsPicks),
+      ...exploreVideoManager.getVideosForType(CurationSetType.trending),
+    ];
+    
+    // Also check recent videos if in trending tab
+    if (_tabController.index == 2) {
+      final videoService = Provider.of<VideoEventService>(context, listen: false);
+      allVideos.addAll(videoService.getRecentVideoEvents(hours: 24));
+    }
+    
+    final video = allVideos.firstWhere(
+      (v) => v.id == _playingVideoId,
+      orElse: () => allVideos.first,
+    );
+    
+    return VideoFullscreenOverlay(
+      video: video,
+      onClose: () {
+        setState(() {
+          _playingVideoId = null;
+        });
+      },
+    );
+  }
 
   Widget _buildEditorsPicks() {
     return Consumer2<ExploreVideoManager, HashtagService>(
@@ -202,7 +238,10 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                       itemCount: editorsPicks.length,
                       itemBuilder: (context, index) {
                         final video = editorsPicks[index];
-                        return _buildEditorsPickCard(video);
+                        return SizedBox(
+                          height: 250,
+                          child: _buildEditorsPickCard(video),
+                        );
                       },
                     );
                   } else {
@@ -214,7 +253,10 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                         final video = editorsPicks[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: _buildEditorsPickCard(video),
+                          child: SizedBox(
+                            height: 250,
+                            child: _buildEditorsPickCard(video),
+                          ),
                         );
                       },
                     );
@@ -233,96 +275,19 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
     
     debugPrint('🎬 Building editor\'s pick card: ${video.id.substring(0, 8)}..., isPlaying: $isPlaying, hasVideo: ${video.hasVideo}, thumbnailUrl: ${video.effectiveThumbnailUrl}');
     
-    return Container(
-      height: 250, // Increased height for better video display
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Use VideoPreviewTile for automatic playback
-                      VideoPreviewTile(
-                        video: video,
-                        isActive: isPlaying,
-                        onTap: () {
-                          setState(() {
-                            _playingVideoId = isPlaying ? null : video.id;
-                          });
-                        },
-                      ),
-                      // Info overlay
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.9),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star,
-                                    color: VineTheme.vineGreen,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    "EDITOR'S PICK",
-                                    style: TextStyle(
-                                      color: VineTheme.vineGreen,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              if (video.title != null)
-                                Text(
-                                  video.title!,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              if (video.hashtags.isNotEmpty)
-                                Text(
-                                  video.hashtags.map((tag) => '#$tag').join(' '),
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+    return VideoExploreTile(
+      video: video,
+      isActive: isPlaying,
+      onTap: () {
+        setState(() {
+          _playingVideoId = isPlaying ? null : video.id;
+        });
+      },
+      onClose: () {
+        setState(() {
+          _playingVideoId = null;
+        });
+      },
     );
   }
 
@@ -395,75 +360,19 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           itemCount: videos.length,
           itemBuilder: (context, index) {
             final video = videos[index];
-            return GestureDetector(
+            return VideoExploreTile(
+              video: video,
+              isActive: false, // Never active in grid - overlay handles playback
               onTap: () {
                 setState(() {
-                  _playingVideoId = _playingVideoId == video.id ? null : video.id;
+                  _playingVideoId = video.id;
                 });
               },
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    color: Colors.black,
-                    child: VideoPreviewTile(
-                      video: video,
-                      isActive: _playingVideoId == video.id,
-                      onTap: () {
-                        setState(() {
-                          _playingVideoId = _playingVideoId == video.id ? null : video.id;
-                        });
-                      },
-                    ),
-                  ),
-                  // Video info overlay
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.8),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (video.title != null)
-                            Text(
-                              video.title!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          if (video.hashtags.isNotEmpty)
-                            Text(
-                              video.hashtags.map((tag) => '#$tag').join(' '),
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              onClose: () {
+                setState(() {
+                  _playingVideoId = null;
+                });
+              },
             );
           },
         );
@@ -609,83 +518,21 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                         final video = videos[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _playingVideoId = _playingVideoId == video.id ? null : video.id;
-                              });
-                            },
-                            child: Container(
-                              height: 250,  // Increased height for better video display
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  // Use VideoPreviewTile for automatic playback
-                                  VideoPreviewTile(
-                                    video: video,
-                                    isActive: _playingVideoId == video.id,
-                                    onTap: () {
-                                      setState(() {
-                                        _playingVideoId = _playingVideoId == video.id ? null : video.id;
-                                      });
-                                    },
-                                  ),
-                                  // Video info overlay
-                                  Positioned(
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                        ),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.bottomCenter,
-                                          end: Alignment.topCenter,
-                                          colors: [
-                                            Colors.black.withValues(alpha: 0.9),
-                                            Colors.transparent,
-                                          ],
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (video.title != null)
-                                            Text(
-                                              video.title!,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          if (video.hashtags.isNotEmpty)
-                                            Text(
-                                              video.hashtags.map((tag) => '#$tag').join(' '),
-                                              style: const TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 12,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          child: SizedBox(
+                            height: 250,  // Increased height for better video display
+                            child: VideoExploreTile(
+                              video: video,
+                              isActive: false, // Never active in list - overlay handles playback
+                              onTap: () {
+                                setState(() {
+                                  _playingVideoId = video.id;
+                                });
+                              },
+                              onClose: () {
+                                setState(() {
+                                  _playingVideoId = null;
+                                });
+                              },
                             ),
                           ),
                         );

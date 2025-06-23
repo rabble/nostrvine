@@ -15,6 +15,7 @@ import '../widgets/share_video_menu.dart';
 import '../services/user_profile_service.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../screens/comments_screen.dart';
+import '../screens/profile_screen.dart';
 
 /// Individual video item widget implementing TDD specifications
 /// 
@@ -571,7 +572,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             
             // Video title
             if (widget.video.title?.isNotEmpty == true) ...[
-              Text(
+              SelectableText(
                 widget.video.title!,
                 style: const TextStyle(
                   color: Colors.white,
@@ -579,21 +580,19 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
             ],
             
             // Video content/description
             if (widget.video.content.isNotEmpty) ...[
-              Text(
+              SelectableText(
                 widget.video.content,
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
                 maxLines: 3,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
             ],
@@ -694,12 +693,25 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
               size: 16,
             ),
             const SizedBox(width: 6),
-            Text(
-              displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: () {
+                debugPrint('👤 Navigating to profile: ${widget.video.pubkey}');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(
+                      profilePubkey: widget.video.pubkey,
+                    ),
+                  ),
+                );
+              },
+              child: SelectableText(
+                displayName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -717,27 +729,49 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   Widget _buildRepostAttribution() {
-    final reposterName = widget.video.reposterPubkey != null 
-        ? '${widget.video.reposterPubkey!.substring(0, 8)}...'
-        : 'Someone';
+    return Consumer<UserProfileService>(
+      builder: (context, profileService, child) {
+        if (widget.video.reposterPubkey == null) {
+          return const SizedBox.shrink();
+        }
         
-    return Row(
-      children: [
-        const Icon(
-          Icons.repeat,
-          color: Colors.green,
-          size: 16,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'Reposted by $reposterName',
-          style: const TextStyle(
-            color: Colors.green,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+        final repostProfile = profileService.getCachedProfile(widget.video.reposterPubkey!);
+        final reposterName = repostProfile?.displayName ?? 
+                           repostProfile?.name ?? 
+                           '@${widget.video.reposterPubkey!.substring(0, 8)}...';
+        
+        return Row(
+          children: [
+            const Icon(
+              Icons.repeat,
+              color: Colors.green,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () {
+                debugPrint('👤 Navigating to reposter profile: ${widget.video.reposterPubkey}');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(
+                      profilePubkey: widget.video.reposterPubkey!,
+                    ),
+                  ),
+                );
+              },
+              child: SelectableText(
+                'Reposted by $reposterName',
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

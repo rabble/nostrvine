@@ -10,6 +10,7 @@ import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
 import 'seen_videos_service.dart';
 import 'default_content_service.dart';
+import 'content_blocklist_service.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
@@ -31,7 +32,16 @@ class VideoEventService extends ChangeNotifier {
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
   
+  // Optional blocklist service for filtering content
+  ContentBlocklistService? _blocklistService;
+  
   VideoEventService(this._nostrService, {SeenVideosService? seenVideosService});
+  
+  /// Set the blocklist service for content filtering
+  void setBlocklistService(ContentBlocklistService blocklistService) {
+    _blocklistService = blocklistService;
+    debugPrint('🚫 Blocklist service attached to VideoEventService');
+  }
   
   // Getters
   List<VideoEvent> get videoEvents => List.unmodifiable(_videoEvents);
@@ -218,6 +228,12 @@ class VideoEventService extends ChangeNotifier {
       if (_videoEvents.any((e) => e.id == event.id)) {
         _duplicateVideoEventCount++;
         _logDuplicateVideoEventsAggregated();
+        return;
+      }
+      
+      // Check if content is blocked
+      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+        debugPrint('🚫 Filtering blocked content from ${event.pubkey.substring(0, 8)}...');
         return;
       }
       
@@ -421,18 +437,23 @@ class VideoEventService extends ChangeNotifier {
 
   /// Load more historical events using one-shot query (not persistent subscription)
   Future<void> loadMoreEvents({int limit = 200}) async {
-    if (_videoEvents.isEmpty) return;
-    
     _isLoading = true;
     notifyListeners();
     
     try {
       debugPrint('📚 Loading more historical events...');
-      // Get events older than the oldest event we have
-      final oldestEvent = _videoEvents.last;
-      final until = oldestEvent.createdAt - 1; // One second before oldest event
       
-      debugPrint('📚 Requesting events older than ${DateTime.fromMillisecondsSinceEpoch(until * 1000)}');
+      int? until;
+      
+      // If we have events, get older ones
+      if (_videoEvents.isNotEmpty) {
+        final oldestEvent = _videoEvents.last;
+        until = oldestEvent.createdAt - 1; // One second before oldest event
+        debugPrint('📚 Requesting events older than ${DateTime.fromMillisecondsSinceEpoch(until * 1000)}');
+      } else {
+        // If no events yet, load without date constraints
+        debugPrint('📚 No existing events, loading fresh content without date constraints');
+      }
       
       // Use one-shot historical query - this will complete when EOSE is received
       await _queryHistoricalEvents(until: until, limit: limit);
@@ -457,13 +478,17 @@ class VideoEventService extends ChangeNotifier {
     }
     
     final completer = Completer<void>();
+    
+    // Create filter without restrictive date constraints
     final filter = Filter(
-      kinds: [22, 6], // Include reposts
-      until: until,
+      kinds: [22], // Focus on video events primarily
+      until: until, // Only use 'until' if we have existing events
       limit: limit,
+      // No 'since' filter to allow loading of all historical content
     );
     
     debugPrint('🔍 One-shot historical query: until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}, limit=$limit');
+    debugPrint('🔍 Filter: ${filter.toJson()}');
     
     final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
     late StreamSubscription subscription;
@@ -493,6 +518,67 @@ class VideoEventService extends ChangeNotifier {
     });
     
     return completer.future;
+  }
+  
+  /// Load more content without date restrictions - for when users reach end of feed
+  Future<void> loadMoreContentUnlimited({int limit = 300}) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      debugPrint('🌊 Loading unlimited content for end-of-feed...');
+      
+      // Create a broader query without date restrictions
+      final filter = Filter(
+        kinds: [22], // Video events
+        limit: limit,
+        // No date filters - let relays return their best content
+      );
+      
+      debugPrint('🔍 Unlimited content query: limit=$limit');
+      debugPrint('🔍 Filter: ${filter.toJson()}');
+      
+      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      late StreamSubscription subscription;
+      final completer = Completer<void>();
+      
+      subscription = eventStream.listen(
+        (event) {
+          _handleNewVideoEvent(event);
+        },
+        onError: (error) {
+          debugPrint('❌ Unlimited content query error: $error');
+          if (!completer.isCompleted) completer.completeError(error);
+        },
+        onDone: () {
+          debugPrint('✅ Unlimited content query completed (EOSE received)');
+          subscription.cancel();
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      
+      // Set timeout for the query
+      Timer(const Duration(seconds: 45), () {
+        if (!completer.isCompleted) {
+          debugPrint('⏰ Unlimited content query timed out after 45 seconds');
+          subscription.cancel();
+          completer.complete();
+        }
+      });
+      
+      await completer.future;
+      
+    } catch (e) {
+      _error = e.toString();
+      debugPrint('❌ Failed to load unlimited content: $e');
+      
+      if (_isConnectionError(e)) {
+        debugPrint('🌐 Unlimited content load failed due to connection error');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
   
   /// Get video event by ID

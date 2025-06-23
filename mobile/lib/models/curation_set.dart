@@ -130,7 +130,7 @@ class CurationSet {
 
 /// Predefined curation set types for OpenVine
 enum CurationSetType {
-  editorsPicks('editors_picks', "Editor's Picks", "Videos selected by our team"),
+  editorsPicks('editors_picks', "Editor's Picks", "Curated collection from OpenVine"),
   trending('trending', 'Trending Now', 'Popular videos right now'),
   featured('featured', 'Featured', 'Highlighted content'),
   topWeekly('top_weekly', 'Top This Week', 'Most popular videos this week'),
@@ -149,7 +149,7 @@ class SampleCurationSets {
   static final List<CurationSet> _sampleSets = [
     CurationSet(
       id: CurationSetType.editorsPicks.id,
-      curatorPubkey: 'openvine_editorial_team',
+      curatorPubkey: '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082',
       title: CurationSetType.editorsPicks.displayName,
       description: CurationSetType.editorsPicks.description,
       imageUrl: 'https://example.com/editors-picks.jpg',

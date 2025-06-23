@@ -125,8 +125,9 @@ class ProfileVideosProvider extends ChangeNotifier {
       );
 
       // Set timeout to avoid hanging indefinitely
-      Timer(const Duration(seconds: 10), () {
+      Timer(const Duration(seconds: 8), () {
         if (!completer.isCompleted) {
+          debugPrint('⏰ Video loading timeout reached for ${pubkey.substring(0, 8)}');
           completer.complete();
         }
       });
@@ -151,7 +152,10 @@ class ProfileVideosProvider extends ChangeNotifier {
       _cacheVideos(pubkey, _videos, _hasMore);
 
       _setLoadingState(ProfileVideosLoadingState.loaded);
-      debugPrint('✅ Loaded ${_videos.length} videos for user');
+      debugPrint('✅ Loaded ${_videos.length} videos for user ${pubkey.substring(0, 8)}...');
+      
+      // Force notification even if empty to ensure UI updates
+      notifyListeners();
 
     } catch (e) {
       _error = e.toString();

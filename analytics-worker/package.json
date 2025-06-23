@@ -1,0 +1,19 @@
+{
+  "name": "openvine-analytics-worker",
+  "version": "0.1.0",
+  "description": "Minimal analytics worker for OpenVine - tracks popular content without user data",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20250614.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "private": true
+}

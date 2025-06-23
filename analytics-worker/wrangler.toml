@@ -1,0 +1,25 @@
+name = "openvine-analytics"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+
+# KV namespace for view counts and trending data
+kv_namespaces = [
+  { binding = "ANALYTICS_KV", id = "YOUR_KV_NAMESPACE_ID", preview_id = "YOUR_PREVIEW_KV_ID" }
+]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+TRENDING_UPDATE_INTERVAL = "300" # 5 minutes in seconds
+MIN_VIEWS_FOR_TRENDING = "10"
+
+# Development environment
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# Production environment  
+[env.production]
+vars = { ENVIRONMENT = "production" }
+routes = [
+  { pattern = "analytics.openvine.co/*", zone_name = "openvine.co" }
+]

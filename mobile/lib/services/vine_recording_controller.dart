@@ -8,8 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:camera_macos/camera_macos.dart' as macos;
 import 'package:path_provider/path_provider.dart';
-import 'web_camera_service_stub.dart' if (dart.library.html) 'web_camera_service.dart';
-import 'web_camera_service_stub.dart' show blobUrlToBytes if (dart.library.html) 'web_camera_service.dart' show blobUrlToBytes;
+import 'web_camera_service_stub.dart' if (dart.library.html) 'web_camera_service.dart' as camera_service;
 
 /// Represents a single recording segment in the Vine-style recording
 class RecordingSegment {
@@ -254,7 +253,7 @@ class MacOSCameraInterface extends CameraPlatformInterface {
 
 /// Web camera implementation (using getUserMedia)
 class WebCameraInterface extends CameraPlatformInterface {
-  WebCameraService? _webCameraService;
+  camera_service.WebCameraService? _webCameraService;
   Widget? _previewWidget;
   
   @override
@@ -262,11 +261,11 @@ class WebCameraInterface extends CameraPlatformInterface {
     if (!kIsWeb) throw Exception('WebCameraInterface only works on web');
     
     try {
-      _webCameraService = WebCameraService();
+      _webCameraService = camera_service.WebCameraService();
       await _webCameraService!.initialize();
       
       // Create preview widget with the initialized camera service
-      _previewWidget = WebCameraPreview(cameraService: _webCameraService!);
+      _previewWidget = camera_service.WebCameraPreview(cameraService: _webCameraService!);
       
       debugPrint('📷 Web camera interface initialized successfully');
     } catch (e) {
@@ -315,7 +314,7 @@ class WebCameraInterface extends CameraPlatformInterface {
     if (kIsWeb && _webCameraService != null) {
       try {
         // Call the static method through the service
-        WebCameraService.revokeBlobUrl(blobUrl);
+        camera_service.WebCameraService.revokeBlobUrl(blobUrl);
       } catch (e) {
         debugPrint('⚠️ Error revoking blob URL: $e');
       }
@@ -529,7 +528,7 @@ class VineRecordingController extends ChangeNotifier {
           // Instead, we'll create a temporary file representation
           try {
             // Use the standalone blobUrlToBytes function
-            final bytes = await blobUrlToBytes(filePath);
+            final bytes = await camera_service.blobUrlToBytes(filePath);
             if (bytes.isNotEmpty) {
               // Create a temporary file with the blob data
               final tempDir = await getTemporaryDirectory();

@@ -213,6 +213,9 @@ class NostrViewer {
 
         console.log('🎬 Displaying video event:', this.videoEvent);
 
+        // Track view for analytics (anonymous, no user data)
+        this.trackView(this.videoEvent.id);
+
         // Hide loading, show viewer
         document.getElementById('loading').style.display = 'none';
         document.getElementById('viewer').style.display = 'block';
@@ -330,6 +333,42 @@ class NostrViewer {
         } else {
             statusElement.textContent = 'Disconnected';
             statusElement.className = 'metadata-value relay-status error';
+        }
+    }
+
+    async trackView(eventId) {
+        try {
+            // Track view anonymously for trending/popular content
+            const trackingData = {
+                eventId: eventId,
+                source: 'web'
+            };
+            
+            // Include creator pubkey if we have the video event
+            if (this.videoEvent && this.videoEvent.pubkey) {
+                trackingData.creatorPubkey = this.videoEvent.pubkey;
+            }
+            
+            const response = await fetch('https://analytics.openvine.co/analytics/view', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(trackingData)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📊 View tracked:', data.views, 'total views');
+                
+                // Could display view count in UI if desired
+                // document.getElementById('view-count').textContent = data.views;
+            } else {
+                console.warn('⚠️ Analytics tracking failed:', response.status);
+            }
+        } catch (error) {
+            console.warn('⚠️ Analytics tracking error:', error);
+            // Don't block video viewing if analytics fails
         }
     }
 

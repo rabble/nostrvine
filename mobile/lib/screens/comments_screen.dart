@@ -261,7 +261,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    SelectableText(
                       comment.content,
                       style: const TextStyle(color: Colors.white),
                     ),

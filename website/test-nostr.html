@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Nostr Feed Test</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="single-player-styles.css?v=2">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="OpenVine - Testing Nostr video feed">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-button">Home</a>
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="test-nostr.html" class="nav-button active">Nostr Test</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>Testing Nostr Video Feed</h2>
+            <p style="color: white; margin-top: 1rem;">
+                Loading videos from npub1wrkkc4kklv647yp2r6v9wsd4aejldt5lwuhq9zy5kvsmcay9gzpqsn8hzw
+            </p>
+        </section>
+
+        <div class="single-player-container">
+            <div id="loading-indicator" style="text-align: center; padding: 2rem;">
+                <p>Loading videos from Nostr...</p>
+                <div style="margin: 1rem 0;">🔄</div>
+            </div>
+
+            <div id="video-player-container" style="display: none;">
+                <div class="video-wrapper">
+                    <video 
+                        id="main-vine-player" 
+                        class="vine-video" 
+                        autoplay 
+                        playsinline
+                        poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+                    </video>
+                    
+                    <div class="video-overlay">
+                    </div>
+                    
+                    <div class="unmute-overlay" onclick="unmuteAndPlay()">
+                        <div class="unmute-content">
+                            <span class="unmute-icon">🔇</span>
+                            <p class="unmute-text">Tap to unmute</p>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn prev-btn" onclick="previousVideo()">‹</button>
+                    <button class="nav-btn next-btn" onclick="nextVideo()">›</button>
+                </div>
+                
+                <div class="video-info">
+                    <h3 id="video-count" style="text-align: center; margin-top: 1rem;">Videos loaded: 0</h3>
+                </div>
+            </div>
+
+            <div id="error-container" style="display: none; text-align: center; padding: 2rem;">
+                <p style="color: red;">Error loading videos from Nostr</p>
+                <div id="error-details" style="margin-top: 1rem; font-size: 0.9rem; color: #666;"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script src="nostr-video-player.js"></script>
+</body>
+</html>

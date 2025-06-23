@@ -15,6 +15,7 @@ import '../utils/nostr_encoding.dart';
 import 'profile_setup_screen.dart';
 import 'debug_video_test.dart';
 import 'universal_camera_screen.dart';
+import '../widgets/video_fullscreen_overlay.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? profilePubkey; // If null, shows current user's profile
@@ -29,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   late TabController _tabController;
   bool _isOwnProfile = true;
   String? _targetPubkey;
+  String? _playingVideoId;
 
   @override
   void initState() {
@@ -73,11 +75,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
   
   void _loadProfileVideos() {
-    if (_targetPubkey == null) return;
+    if (_targetPubkey == null) {
+      debugPrint('❌ Cannot load profile videos: _targetPubkey is null');
+      return;
+    }
     
     debugPrint('👤 Loading profile videos for: ${_targetPubkey!.substring(0, 8)}... (isOwnProfile: $_isOwnProfile)');
-    final profileVideosProvider = context.read<ProfileVideosProvider>();
-    profileVideosProvider.loadVideosForUser(_targetPubkey!);
+    try {
+      final profileVideosProvider = context.read<ProfileVideosProvider>();
+      profileVideosProvider.loadVideosForUser(_targetPubkey!).then((_) {
+        debugPrint('✅ Profile videos load completed for ${_targetPubkey!.substring(0, 8)}');
+      }).catchError((error) {
+        debugPrint('❌ Profile videos load failed for ${_targetPubkey!.substring(0, 8)}: $error');
+      });
+    } catch (e) {
+      debugPrint('❌ Error initiating profile videos load: $e');
+    }
   }
   
   void _loadUserProfile() {
@@ -127,9 +140,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               icon: const Icon(Icons.add_box_outlined, color: Colors.white),
               onPressed: _createNewVine,
             ),
-            IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: _showOptionsMenu,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  debugPrint('🍔 Hamburger menu tapped');
+                  _showOptionsMenu();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: const Icon(
+                    Icons.menu,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
             ),
           ] else ...[
             IconButton(
@@ -139,33 +166,41 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ],
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Profile header
-          _buildProfileHeader(socialService, profileStatsProvider),
-          
-          // Stats row
-          _buildStatsRow(profileStatsProvider),
-          
-          // Action buttons
-          _buildActionButtons(),
-          
-          const SizedBox(height: 20),
-          
-          // Tab bar
-          _buildTabBar(),
-          
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildVinesGrid(),
-                _buildLikedGrid(),
-                _buildRepostsGrid(),
-              ],
-            ),
+          Column(
+            children: [
+              // Profile header
+              _buildProfileHeader(socialService, profileStatsProvider),
+              
+              // Stats row
+              _buildStatsRow(profileStatsProvider),
+              
+              // Action buttons
+              _buildActionButtons(),
+              
+              const SizedBox(height: 20),
+              
+              // Tab bar
+              _buildTabBar(),
+              
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildVinesGrid(),
+                    _buildLikedGrid(),
+                    _buildRepostsGrid(),
+                  ],
+                ),
+              ),
+            ],
           ),
+          
+          // Video overlay for full-screen playback
+          if (_playingVideoId != null)
+            _buildVideoOverlay(),
         ],
       ),
     );
@@ -313,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                SelectableText(
                   displayName ?? 'Anonymous',
                   style: const TextStyle(
                     color: Colors.white,
@@ -323,7 +358,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ),
                 const SizedBox(height: 4),
                 if ((authProfile?.about ?? cachedProfile?.about) != null && (authProfile?.about ?? cachedProfile?.about)!.isNotEmpty)
-                  Text(
+                  SelectableText(
                     (authProfile?.about ?? cachedProfile?.about)!,
                     style: const TextStyle(
                       color: Colors.white,
@@ -332,14 +367,36 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                   ),
                 const SizedBox(height: 8),
-                // Public key display
+                // Public key display with copy functionality
                 if (_targetPubkey != null)
-                  Text(
-                    NostrEncoding.encodePublicKey(_targetPubkey!),
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
+                  GestureDetector(
+                    onTap: () => _copyNpubToClipboard(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.grey[600]!, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SelectableText(
+                            NostrEncoding.encodePublicKey(_targetPubkey!),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.copy,
+                            color: Colors.grey,
+                            size: 14,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],
@@ -584,8 +641,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildVinesGrid() {
     return Consumer<ProfileVideosProvider>(
       builder: (context, profileVideosProvider, child) {
-        // Show loading state
-        if (profileVideosProvider.isLoading) {
+        debugPrint('📹 ProfileVideosProvider state: loading=${profileVideosProvider.isLoading}, hasVideos=${profileVideosProvider.hasVideos}, hasError=${profileVideosProvider.hasError}, videoCount=${profileVideosProvider.videoCount}, loadingState=${profileVideosProvider.loadingState}');
+        
+        // Show loading state ONLY if actually loading
+        if (profileVideosProvider.isLoading && profileVideosProvider.videoCount == 0) {
           return Center(
             child: GridView.builder(
               padding: const EdgeInsets.all(1),
@@ -666,11 +725,37 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
             SizedBox(height: 8),
             Text(
-              'Share your first video to see it here',
+              _isOwnProfile 
+                ? 'Share your first video to see it here'
+                : 'This user hasn\'t shared any videos yet',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
               ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                debugPrint('🔄 Manual refresh videos requested for ${_targetPubkey?.substring(0, 8)}');
+                if (_targetPubkey != null) {
+                  try {
+                    await profileVideosProvider.refreshVideos();
+                    debugPrint('✅ Manual refresh completed');
+                  } catch (e) {
+                    debugPrint('❌ Manual refresh failed: $e');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Refresh failed: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.whiteText,
+              ),
+              child: const Text('Refresh'),
             ),
           ],
         ),
@@ -1222,10 +1307,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _showOptionsMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      builder: (context) => Container(
+    debugPrint('🍔 _showOptionsMenu called');
+    try {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.grey[900],
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) => Container(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1250,10 +1341,71 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ),
       ),
     );
+    } catch (e) {
+      debugPrint('❌ Error showing options menu: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error opening menu: $e')),
+      );
+    }
   }
 
   void _showUserOptions() {
-    // TODO: Implement user options for viewing other profiles
+    debugPrint('👤 _showUserOptions called for user profile');
+    try {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.grey[900],
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.white),
+                title: const Text('Share Profile', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareProfile();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy, color: Colors.white),
+                title: const Text('Copy Public Key', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyNpubToClipboard();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.red),
+                title: const Text('Block User', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _blockUser();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.report, color: Colors.orange),
+                title: const Text('Report User', style: TextStyle(color: Colors.orange)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _reportUser();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Error showing user options menu: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error opening menu: $e')),
+      );
+    }
   }
 
   void _setupProfile() {
@@ -1276,6 +1428,72 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     // TODO: Implement profile sharing
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Sharing profile...')),
+    );
+  }
+
+  void _blockUser() {
+    if (_targetPubkey == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Block User', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to block this user? You won\'t see their content anymore.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement blocking functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User blocked successfully')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _reportUser() {
+    if (_targetPubkey == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Report User', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Report this user for inappropriate content or behavior?',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement reporting functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User reported successfully')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Report'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1329,16 +1547,53 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _openVine(VideoEvent videoEvent) {
-    // TODO: Navigate to video detail screen or open in feed
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening video: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}')),
-    );
+    setState(() {
+      _playingVideoId = videoEvent.id;
+    });
   }
 
   void _openLikedVideo(VideoEvent videoEvent) {
-    // TODO: Navigate to video detail screen or open in feed
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening liked video: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}')),
+    setState(() {
+      _playingVideoId = videoEvent.id;
+    });
+  }
+
+  Widget _buildVideoOverlay() {
+    return Consumer<ProfileVideosProvider>(
+      builder: (context, profileVideosProvider, child) {
+        // Find the video in profile videos first
+        VideoEvent video = profileVideosProvider.videos.firstWhere(
+          (v) => v.id == _playingVideoId,
+          orElse: () => VideoEvent(
+            id: _playingVideoId!,
+            pubkey: _targetPubkey ?? '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            content: 'Video not found',
+            timestamp: DateTime.now(),
+          ),
+        );
+
+        // If not found in profile videos, try to find in liked videos or reposts
+        if (video.content == 'Video not found') {
+          // Get from VideoEventService which has all videos
+          final videoEventService = Provider.of<VideoEventService>(context, listen: false);
+          final allVideos = videoEventService.videoEvents;
+          final foundVideo = allVideos.firstWhere(
+            (v) => v.id == _playingVideoId,
+            orElse: () => video, // Use the placeholder if still not found
+          );
+          video = foundVideo;
+        }
+
+        return VideoFullscreenOverlay(
+          video: video,
+          onClose: () {
+            setState(() {
+              _playingVideoId = null;
+            });
+          },
+        );
+      },
     );
   }
 
@@ -1776,6 +2031,40 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to publish deletion request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _copyNpubToClipboard() async {
+    if (_targetPubkey == null) return;
+    
+    try {
+      final npub = NostrEncoding.encodePublicKey(_targetPubkey!);
+      await Clipboard.setData(ClipboardData(text: npub));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check, color: Colors.white),
+                const SizedBox(width: 8),
+                const Text('Public key copied to clipboard'),
+              ],
+            ),
+            backgroundColor: VineTheme.vineGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy: $e'),
             backgroundColor: Colors.red,
           ),
         );

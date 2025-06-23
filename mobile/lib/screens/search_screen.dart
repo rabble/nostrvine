@@ -399,7 +399,7 @@ class _VideoSearchResultCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (video.title?.isNotEmpty == true) ...[
-                        Text(
+                        SelectableText(
                           video.title!,
                           style: const TextStyle(
                             color: VineTheme.whiteText,
@@ -407,23 +407,21 @@ class _VideoSearchResultCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                       ],
                       if (video.content.isNotEmpty) ...[
-                        Text(
+                        SelectableText(
                           video.content,
                           style: const TextStyle(
                             color: VineTheme.secondaryText,
                             fontSize: 12,
                           ),
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                       ],
-                      Text(
+                      SelectableText(
                         'by ${video.displayPubkey} • ${video.relativeTime}',
                         style: const TextStyle(
                           color: VineTheme.secondaryText,
@@ -493,7 +491,7 @@ class _UserSearchResultCard extends StatelessWidget {
             size: 20,
           ),
         ),
-        title: Text(
+        title: SelectableText(
           profile?.displayName ?? 'Anonymous',
           style: const TextStyle(
             color: VineTheme.whiteText,

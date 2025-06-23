@@ -167,6 +167,13 @@ class VideoManagerService implements IVideoManager {
       return;
     }
     
+    // Web platform needs extra time for video player plugin initialization
+    // on the first video preload
+    if (kIsWeb && _controllers.isEmpty && _preloadCount == 0) {
+      developer.log('🌐 Web platform: Adding delay for first video initialization');
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    
     _activePreloads.add(videoId);
     _preloadCount++;
     

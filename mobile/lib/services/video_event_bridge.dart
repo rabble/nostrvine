@@ -34,8 +34,19 @@ class VideoEventBridge {
     debugPrint('🌉 Initializing VideoEventBridge...');
     
     try {
-      // Subscribe to video events first
+      // Subscribe to video events first - general feed
       await _videoEventService.subscribeToVideoFeed();
+      
+      // Also subscribe to editor's picks videos specifically
+      const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
+      debugPrint('🎯 Also subscribing to Editor\'s Picks videos from: $editorPubkey');
+      
+      // Create a separate subscription for the editor's videos
+      await _videoEventService.subscribeToVideoFeed(
+        authors: [editorPubkey],
+        limit: 100, // Get more videos from the editor
+        replace: false, // Don't replace the main subscription
+      );
       
       // Add initial events to VideoManager
       if (_videoEventService.hasEvents) {
@@ -92,6 +103,8 @@ class VideoEventBridge {
     // Start preloading if this was the first batch
     if (_videoManager.videos.isNotEmpty && existingIds.isEmpty) {
       debugPrint('⚡ First videos loaded - starting preload');
+      // Add a small delay to ensure video manager is fully ready
+      await Future.delayed(const Duration(milliseconds: 100));
       _videoManager.preloadAroundIndex(0);
     }
   }
@@ -103,9 +116,36 @@ class VideoEventBridge {
     });
   }
   
-  /// Load more historical events
+  /// Load more historical events - tries regular historical loading first, then unlimited
   Future<void> loadMoreEvents() async {
-    await _videoEventService.loadMoreEvents();
+    final eventCountBefore = _videoEventService.eventCount;
+    
+    try {
+      // First try regular historical loading
+      await _videoEventService.loadMoreEvents();
+      
+      final eventCountAfter = _videoEventService.eventCount;
+      final newEventsLoaded = eventCountAfter - eventCountBefore;
+      
+      debugPrint('📊 Regular load more: $newEventsLoaded new events loaded');
+      
+      // If we got very few new events (less than 10), try unlimited loading
+      // This suggests we might be hitting the end of chronological content
+      if (newEventsLoaded < 10) {
+        debugPrint('🌊 Few new events found, trying unlimited content loading...');
+        await _videoEventService.loadMoreContentUnlimited();
+        
+        final finalEventCount = _videoEventService.eventCount;
+        final totalNewEvents = finalEventCount - eventCountBefore;
+        debugPrint('📊 Total events loaded: $totalNewEvents');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Failed to load more events: $e');
+      // If regular loading fails, try unlimited as fallback
+      debugPrint('🔄 Falling back to unlimited content loading...');
+      await _videoEventService.loadMoreContentUnlimited();
+    }
   }
   
   /// Refresh the feed

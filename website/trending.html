@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Trending Videos</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="single-player-styles.css?v=3">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="OpenVine - Watch trending vine videos">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-button">Home</a>
+                    <a href="trending.html" class="nav-button active">Trending</a>
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open App</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>🔥 Trending Vines</h2>
+            <p style="color: white; margin-top: 1rem;">
+                Watch the hottest videos on OpenVine
+            </p>
+        </section>
+
+        <div class="single-player-container">
+            <div id="loading-indicator" style="text-align: center; padding: 2rem;">
+                <p>Loading trending videos...</p>
+                <div style="margin: 1rem 0;">🔄</div>
+            </div>
+
+            <div id="video-player-container" style="display: none;">
+                <div class="video-wrapper">
+                    <video 
+                        id="main-vine-player" 
+                        class="vine-video" 
+                        autoplay 
+                        playsinline
+                        poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+                    </video>
+                    
+                    <div class="video-overlay">
+                    </div>
+                    
+                    <div class="unmute-overlay" onclick="unmuteAndPlay()">
+                        <div class="unmute-content">
+                            <span class="unmute-icon">🔇</span>
+                            <p class="unmute-text">Tap to unmute</p>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn prev-btn" onclick="previousVideo()">‹</button>
+                    <button class="nav-btn next-btn" onclick="nextVideo()">›</button>
+                </div>
+                
+                <div class="video-info">
+                    <h3 id="video-title" style="text-align: center; margin-top: 1rem;">Loading...</h3>
+                    <p id="video-count" style="text-align: center; color: #666;">Video 1 of 1</p>
+                    <p id="view-count" style="text-align: center; color: #666; font-size: 0.9rem;">0 views</p>
+                </div>
+            </div>
+
+            <div id="error-container" style="display: none; text-align: center; padding: 2rem;">
+                <p style="color: red;">Error loading trending videos</p>
+                <div id="error-details" style="margin-top: 1rem; font-size: 0.9rem; color: #666;"></div>
+            </div>
+        </div>
+
+        <section class="trending-creators" style="margin-top: 3rem;">
+            <h3>🌟 Trending Creators</h3>
+            <div id="trending-creators-grid" class="viners-grid">
+                <!-- Creators will be loaded dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script src="trending-video-player.js"></script>
+    <script>
+        // Load trending creators
+        async function loadTrendingCreators() {
+            try {
+                const response = await fetch('https://analytics.openvine.co/analytics/trending/viners?limit=8');
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const grid = document.getElementById('trending-creators-grid');
+                
+                if (data.creators && data.creators.length > 0) {
+                    grid.innerHTML = data.creators.slice(0, 8).map((creator, index) => {
+                        const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#ff8cc8', '#6c5ce7', '#fd79a8', '#a29bfe'];
+                        const emojis = ['🎭', '🎨', '😎', '🌟', '🎬', '🎪', '🎯', '🎸'];
+                        
+                        return `
+                            <div class="viner-card">
+                                <div class="viner-avatar" style="background-color: ${colors[index % colors.length]};">
+                                    <span>${emojis[index % emojis.length]}</span>
+                                </div>
+                                <p class="viner-name">${creator.displayName || 'Creator'}</p>
+                                <p style="font-size: 0.8rem; color: #666;">${creator.totalViews.toLocaleString()} views</p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading trending creators:', error);
+            }
+        }
+        
+        // Load creators when page loads
+        document.addEventListener('DOMContentLoaded', loadTrendingCreators);
+    </script>
+</body>
+</html>

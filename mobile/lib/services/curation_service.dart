@@ -115,36 +115,44 @@ class CurationService extends ChangeNotifier {
     final picks = <VideoEvent>[];
     final seenIds = <String>{};
 
-    // ALWAYS include the default video first if it's not already in the video events
-    final defaultVideo = DefaultContentService.createDefaultVideo();
-    final hasDefaultVideo = _videoEventService.videoEvents.any((v) => v.id == defaultVideo.id);
+    // Editor's Pick: Only show videos from the specified curator pubkey
+    const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
     
-    if (!hasDefaultVideo) {
-      debugPrint('🎯 Adding default video "I\'m the bad guys" to Editor\'s Picks');
-      picks.add(defaultVideo);
-      seenIds.add(defaultVideo.id);
-    } else {
-      debugPrint('✅ Default video already exists in video events, prioritizing it');
-      // Find and prioritize the existing default video
-      final existingDefault = _videoEventService.videoEvents.firstWhere((v) => v.id == defaultVideo.id);
-      picks.add(existingDefault);
-      seenIds.add(existingDefault.id);
+    debugPrint('🎯 Filtering Editor\'s Picks to only show videos from pubkey: $editorPubkey');
+    
+    // Get all videos from the editor's pubkey
+    final editorVideos = _videoEventService.videoEvents
+        .where((video) => video.pubkey == editorPubkey)
+        .toList();
+    
+    debugPrint('📹 Found ${editorVideos.length} videos from editor\'s account');
+    
+    // Sort editor's videos by creation time (newest first)
+    editorVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    
+    // Add all editor's videos to picks
+    for (final video in editorVideos) {
+      picks.add(video);
+      seenIds.add(video.id);
     }
-
-    // Take top 5 most reacted videos (excluding default if already added)
-    for (final video in byReactions.take(5)) {
-      if (!seenIds.contains(video.id)) {
-        picks.add(video);
-        seenIds.add(video.id);
-      }
-    }
-
-    // Take 10 recent videos with some engagement (excluding already added)
-    for (final video in byTime.take(20)) {
-      if (!seenIds.contains(video.id) && (_socialService.getCachedLikeCount(video.id) ?? 0) > 0) {
-        picks.add(video);
-        seenIds.add(video.id);
-        if (picks.length >= 15) break;
+    
+    // If no videos from editor, show a message or default content
+    if (picks.isEmpty) {
+      debugPrint('⚠️ No videos found from editor\'s pubkey, checking for default video');
+      // ALWAYS include the default video if no editor videos found
+      final defaultVideo = DefaultContentService.createDefaultVideo();
+      final hasDefaultVideo = _videoEventService.videoEvents.any((v) => v.id == defaultVideo.id);
+      
+      if (!hasDefaultVideo) {
+        debugPrint('🎯 Adding default video "I\'m the bad guys" as fallback');
+        picks.add(defaultVideo);
+        seenIds.add(defaultVideo.id);
+      } else {
+        debugPrint('✅ Default video already exists in video events, using it as fallback');
+        // Find and use the existing default video
+        final existingDefault = _videoEventService.videoEvents.firstWhere((v) => v.id == defaultVideo.id);
+        picks.add(existingDefault);
+        seenIds.add(existingDefault.id);
       }
     }
 

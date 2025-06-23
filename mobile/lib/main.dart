@@ -40,6 +40,7 @@ import 'services/content_reporting_service.dart';
 import 'services/curated_list_service.dart';
 import 'services/video_sharing_service.dart';
 import 'services/content_deletion_service.dart';
+import 'services/content_blocklist_service.dart';
 import 'services/fake_shared_preferences.dart';
 // import 'providers/video_feed_provider.dart'; // Removed - FeedScreenV2 uses VideoManager directly
 import 'providers/profile_stats_provider.dart';
@@ -114,16 +115,31 @@ class OpenVineApp extends StatelessWidget {
         // Seen videos service for tracking viewed content
         ChangeNotifierProvider(create: (_) => SeenVideosService()),
         
-        // Video event service depends on Nostr and SeenVideos services
-        ChangeNotifierProxyProvider2<INostrService, SeenVideosService, VideoEventService>(
-          create: (context) => VideoEventService(
-            context.read<INostrService>(),
-            seenVideosService: context.read<SeenVideosService>(),
-          ),
-          update: (_, nostrService, seenVideosService, previous) => previous ?? VideoEventService(
-            nostrService,
-            seenVideosService: seenVideosService,
-          ),
+        // Content blocklist service for filtering unwanted content from feeds
+        ChangeNotifierProvider(create: (_) => ContentBlocklistService()),
+        
+        // Video event service depends on Nostr, SeenVideos, and Blocklist services
+        ChangeNotifierProxyProvider3<INostrService, SeenVideosService, ContentBlocklistService, VideoEventService>(
+          create: (context) {
+            final service = VideoEventService(
+              context.read<INostrService>(),
+              seenVideosService: context.read<SeenVideosService>(),
+            );
+            service.setBlocklistService(context.read<ContentBlocklistService>());
+            return service;
+          },
+          update: (_, nostrService, seenVideosService, blocklistService, previous) {
+            if (previous != null) {
+              previous.setBlocklistService(blocklistService);
+              return previous;
+            }
+            final service = VideoEventService(
+              nostrService,
+              seenVideosService: seenVideosService,
+            );
+            service.setBlocklistService(blocklistService);
+            return service;
+          },
         ),
         
         // Hashtag service depends on Video event service

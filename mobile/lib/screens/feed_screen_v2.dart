@@ -8,6 +8,7 @@ import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
+import 'search_screen.dart';
 
 /// Feed context for filtering videos
 enum FeedContext {
@@ -329,8 +330,33 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'OpenVine',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SearchScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
-        top: true,
+        top: false, // AppBar handles top safe area
         bottom: false, // Let videos extend to bottom for full screen
         child: _buildBody(),
       ),
