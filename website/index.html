@@ -27,23 +27,23 @@
                 <input type="text" class="vine-search-input" placeholder="Search" id="vineSearchInput" onkeypress="if(event.key==='Enter')searchVines()">
             </div>
             <div class="vine-app-buttons">
-                <a href="#" class="vine-app-btn vine-ios-btn">
+                <a href="open-source.html" class="vine-app-btn vine-ios-btn">
                     <span class="vine-app-icon">🍎</span>
                     <span>Get it on<br><strong>iOS</strong></span>
                 </a>
-                <a href="#" class="vine-app-btn vine-android-btn">
+                <a href="open-source.html" class="vine-app-btn vine-android-btn">
                     <span class="vine-app-icon">🤖</span>
                     <span>Get it on<br><strong>Android</strong></span>
                 </a>
-                <a href="#" class="vine-app-btn vine-windows-btn">
+                <a href="open-source.html" class="vine-app-btn vine-windows-btn">
                     <span class="vine-app-icon">🪟</span>
                     <span>Get it on<br><strong>Windows</strong></span>
                 </a>
-                <a href="#" class="vine-app-btn vine-mac-btn">
+                <a href="open-source.html" class="vine-app-btn vine-mac-btn">
                     <span class="vine-app-icon">💻</span>
                     <span>Get it on<br><strong>macOS</strong></span>
                 </a>
-                <a href="#" class="vine-app-btn vine-linux-btn">
+                <a href="open-source.html" class="vine-app-btn vine-linux-btn">
                     <span class="vine-app-icon">🐧</span>
                     <span>Get it on<br><strong>Linux</strong></span>
                 </a>
@@ -58,30 +58,45 @@
             <div class="vine-categories">
                 <h3>Channels</h3>
                 <div class="vine-category-grid">
-                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('editors-picks')" title="Editor's Picks">📝</div>
-                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('featured')" title="Featured">🏆</div>
+                    <!-- Row 1 -->
+                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('editors-picks')" title="Editor's Picks">📹</div>
+                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('featured')" title="Featured Viners">📹</div>
                     <div class="vine-category-item" onclick="filterByCategory('comedy')" title="Comedy">😂</div>
-                    <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports">🏀</div>
-                    <div class="vine-category-item" onclick="filterByCategory('music')" title="Music">🎵</div>
-                    <div class="vine-category-item" onclick="filterByCategory('art')" title="Art & Design">🎨</div>
-                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals">🐾</div>
-                    <div class="vine-category-item" onclick="filterByCategory('food')" title="Food">🍔</div>
-                    <div class="vine-category-item" onclick="filterByCategory('family')" title="Family">👨‍👩‍👧‍👦</div>
-                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion & Beauty">💄</div>
-                    <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature">🌿</div>
-                    <div class="vine-category-item" onclick="filterByCategory('news')" title="News & Politics">📰</div>
-                    <div class="vine-category-item" onclick="filterByCategory('scary')" title="Scary">👻</div>
-                    <div class="vine-category-item" onclick="filterByCategory('science')" title="Science & Tech">🔬</div>
+                    
+                    <!-- Row 2 -->
+                    <div class="vine-category-item" onclick="filterByCategory('cool')" title="Cool">😎</div>
+                    <div class="vine-category-item" onclick="filterByCategory('girls')" title="Girls">👧</div>
+                    <div class="vine-category-item" onclick="filterByCategory('guys')" title="Guys">🧔</div>
+                    
+                    <!-- Row 3 -->
                     <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming">🎮</div>
-                    <div class="vine-category-item" onclick="filterByCategory('health')" title="Health & Fitness">💪</div>
-                    <div class="vine-category-item" onclick="filterByCategory('dance')" title="Dance">🕺</div>
-                    <div class="vine-category-item" onclick="filterByCategory('places')" title="Places & Travel">✈️</div>
-                    <div class="vine-category-item" onclick="filterByCategory('vintage')" title="Vintage">📷</div>
-                    <div class="vine-category-item" onclick="filterByCategory('weird')" title="Weird">🤪</div>
-                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY">🔨</div>
+                    <div class="vine-category-item" onclick="filterByCategory('popnow')" title="Pop Now">💥</div>
+                    <div class="vine-category-item" onclick="filterByCategory('musicdance')" title="Music & Dance">🎵</div>
+                    
+                    <!-- Row 4 -->
+                    <div class="vine-category-item" onclick="filterByCategory('ideas')" title="Ideas">🎹</div>
+                    <div class="vine-category-item" onclick="filterByCategory('trending')" title="Trending">📊</div>
+                    <div class="vine-category-item" onclick="filterByCategory('special')" title="Special">⚡</div>
+                    
+                    <!-- Row 5 -->
+                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals">🦊</div>
+                    <div class="vine-category-item" onclick="filterByCategory('places')" title="Places & Travel">👁</div>
+                    <div class="vine-category-item" onclick="filterByCategory('family')" title="Family">🦉</div>
+                    
+                    <!-- Row 6 -->
+                    <div class="vine-category-item" onclick="filterByCategory('artdesign')" title="Art & Design">🎨</div>
+                    <div class="vine-category-item" onclick="filterByCategory('scary')" title="Scary">💀</div>
+                    <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports">🏃</div>
+                    
+                    <!-- Row 7 -->
                     <div class="vine-category-item" onclick="filterByCategory('cars')" title="Cars">🚗</div>
-                    <div class="vine-category-item" onclick="filterByCategory('lgbt')" title="LGBTQ+">🏳️‍🌈</div>
-                    <div class="vine-category-item" onclick="filterByCategory('latino')" title="Latino">🌎</div>
+                    <div class="vine-category-item" onclick="filterByCategory('food')" title="Food">🍔</div>
+                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY">🔨</div>
+                    
+                    <!-- Row 8 -->
+                    <div class="vine-category-item" onclick="filterByCategory('news')" title="News & Politics">📱</div>
+                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion & Beauty">💄</div>
+                    <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature">🏔️</div>
                 </div>
             </div>
         </aside>

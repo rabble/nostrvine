@@ -608,34 +608,46 @@ body {
     padding: 0;
 }
 
-/* Category colors to match original Vine design */
-/* Playlists - Editor's Picks and Featured */
+/* Category colors to match original Vine design exactly */
+/* Row 1 */
 .vine-category-item:nth-child(1) { background: #8B6639; } /* Editor's Picks - brown */
-.vine-category-item:nth-child(2) { background: #00CCA3; } /* Featured - teal/green */
+.vine-category-item:nth-child(2) { background: #4ECDC4; } /* Featured - teal */
+.vine-category-item:nth-child(3) { background: #E57373; } /* Comedy - coral */
 
-/* Main Categories */
-.vine-category-item:nth-child(3) { background: #FF6B9D; } /* Comedy - pink/coral */
-.vine-category-item:nth-child(4) { background: #4285F4; } /* Sports - blue */
-.vine-category-item:nth-child(5) { background: #E91E63; } /* Music - hot pink */
-.vine-category-item:nth-child(6) { background: #FF9800; } /* Art & Design - orange */
-.vine-category-item:nth-child(7) { background: #FFC107; } /* Animals - yellow */
-.vine-category-item:nth-child(8) { background: #673AB7; } /* Food - deep purple */
-.vine-category-item:nth-child(9) { background: #009688; } /* Family - teal */
-.vine-category-item:nth-child(10) { background: #9C27B0; } /* Fashion & Beauty - purple */
-.vine-category-item:nth-child(11) { background: #4CAF50; } /* Nature - green */
-.vine-category-item:nth-child(12) { background: #03A9F4; } /* News & Politics - light blue */
-.vine-category-item:nth-child(13) { background: #FF5722; } /* Scary - deep orange */
-.vine-category-item:nth-child(14) { background: #00BCD4; } /* Science & Tech - cyan */
-.vine-category-item:nth-child(15) { background: #8BC34A; } /* Gaming - light green */
-.vine-category-item:nth-child(16) { background: #CDDC39; } /* Health & Fitness - lime */
-.vine-category-item:nth-child(17) { background: #9E9E9E; } /* Dance - gray */
-.vine-category-item:nth-child(18) { background: #607D8B; } /* Places & Travel - blue gray */
-.vine-category-item:nth-child(19) { background: #795548; } /* Vintage - brown */
-.vine-category-item:nth-child(20) { background: #FF9800; } /* Weird - orange */
-.vine-category-item:nth-child(21) { background: #3F51B5; } /* DIY - indigo */
-.vine-category-item:nth-child(22) { background: #00E676; } /* Cars - green */
-.vine-category-item:nth-child(23) { background: #536DFE; } /* LGBTQ+ - indigo accent */
-.vine-category-item:nth-child(24) { background: #FF5252; } /* Latino - red */
+/* Row 2 */
+.vine-category-item:nth-child(4) { background: #5C6BC0; } /* Cool - indigo */
+.vine-category-item:nth-child(5) { background: #EC407A; } /* Girls - pink */
+.vine-category-item:nth-child(6) { background: #5E35B1; } /* Guys - deep purple */
+
+/* Row 3 */
+.vine-category-item:nth-child(7) { background: #FFB74D; } /* Gaming - orange */
+.vine-category-item:nth-child(8) { background: #3949AB; } /* Pop Now - dark blue */
+.vine-category-item:nth-child(9) { background: #536DFE; } /* Music & Dance - bright blue */
+
+/* Row 4 */
+.vine-category-item:nth-child(10) { background: #7E57C2; } /* Ideas - purple */
+.vine-category-item:nth-child(11) { background: #424242; } /* Trending - dark gray */
+.vine-category-item:nth-child(12) { background: #66BB6A; } /* Special - green */
+
+/* Row 5 */
+.vine-category-item:nth-child(13) { background: #64B5F6; } /* Animals - light blue */
+.vine-category-item:nth-child(14) { background: #81C784; } /* Places - light green */
+.vine-category-item:nth-child(15) { background: #FFB74D; } /* Family - orange */
+
+/* Row 6 */
+.vine-category-item:nth-child(16) { background: #90CAF9; } /* Art & Design - light blue */
+.vine-category-item:nth-child(17) { background: #424242; } /* Scary - black */
+.vine-category-item:nth-child(18) { background: #5C6BC0; } /* Sports - indigo */
+
+/* Row 7 */
+.vine-category-item:nth-child(19) { background: #6D4C41; } /* Cars - brown */
+.vine-category-item:nth-child(20) { background: #FF8A65; } /* Food - light orange */
+.vine-category-item:nth-child(21) { background: #4DB6AC; } /* DIY - teal */
+
+/* Row 8 */
+.vine-category-item:nth-child(22) { background: #66BB6A; } /* News - green */
+.vine-category-item:nth-child(23) { background: #BA68C8; } /* Fashion - purple */
+.vine-category-item:nth-child(24) { background: #4F6F52; } /* Nature - dark green */
 
 /* Special styling for playlist items */
 .vine-playlist {
