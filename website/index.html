@@ -3,1143 +3,708 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenVine - Explore Looping Videos</title>
-    <link rel="stylesheet" href="styles.css?v=4">
-    <link rel="stylesheet" href="single-player-styles.css?v=4">
+    <title>OpenVine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="vine-final-tweaks.css?v=3">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <meta name="description" content="OpenVine - Explore a world of beautiful, looping videos powered by Nostr">
-    <style>
-        /* Additional styles for the new design */
-        body {
-            background-color: #fff;
-        }
-        
-        .hero {
-            background: linear-gradient(135deg, #0ae68a 0%, #08b56a 100%);
-            padding: 3rem 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .hero::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="50" height="50" fill="rgba(255,255,255,0.03)"/><rect x="50" y="50" width="50" height="50" fill="rgba(255,255,255,0.03)"/></svg>');
-            animation: slide 20s linear infinite;
-            top: -50%;
-            left: -50%;
-        }
-        
-        @keyframes slide {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
-        
-        .hero h2 {
-            color: white;
-            font-size: 2rem;
-            font-weight: 400;
-            margin-bottom: 1rem;
-            position: relative;
-        }
-        
-        .hero p {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            position: relative;
-        }
-        
-        .search-container {
-            position: relative;
-            z-index: 10;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        }
-        
-        .search-button {
-            background-color: #333;
-        }
-        
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1.5rem;
-            position: relative;
-        }
-        
-        .quick-action {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            color: white;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        
-        .quick-action:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 250px 1fr 300px;
-            gap: 2rem;
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .channels {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        
-        .channels h3 {
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
-            margin-bottom: 1.5rem;
-        }
-        
-        .channel-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-        
-        .channel-item {
-            background: #f5f5f5;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            font-size: 2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .channel-item:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        /* Color palette for channels */
-        .channel-item:nth-child(1) { background: #f39c12; }
-        .channel-item:nth-child(2) { background: #e74c3c; }
-        .channel-item:nth-child(3) { background: #9b59b6; }
-        .channel-item:nth-child(4) { background: #e91e63; }
-        .channel-item:nth-child(5) { background: #3498db; }
-        .channel-item:nth-child(6) { background: #00bcd4; }
-        .channel-item:nth-child(7) { background: #1abc9c; }
-        .channel-item:nth-child(8) { background: #2ecc71; }
-        .channel-item:nth-child(9) { background: #f1c40f; }
-        .channel-item:nth-child(10) { background: #ff9800; }
-        .channel-item:nth-child(11) { background: #795548; }
-        .channel-item:nth-child(12) { background: #607d8b; }
-        
-        .vine-playlist {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        
-        .playlist-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-        
-        .playlist-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .video-player-container {
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-        
-        .video-meta {
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .video-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .video-stats {
-            display: flex;
-            gap: 1.5rem;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .video-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .video-list-item {
-            display: flex;
-            gap: 1rem;
-            padding: 0.75rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            border-radius: 8px;
-        }
-        
-        .video-list-item:hover {
-            background: #f5f5f5;
-        }
-        
-        .video-list-item.active {
-            background: #e8f5e9;
-        }
-        
-        .video-thumb {
-            width: 80px;
-            height: 80px;
-            background: #333;
-            border-radius: 8px;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        
-        .video-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .video-list-info h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.25rem;
-        }
-        
-        .video-list-info p {
-            font-size: 0.8rem;
-            color: #666;
-        }
-        
-        .featured-viners {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        
-        .featured-viners h3 {
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
-            margin-bottom: 1.5rem;
-        }
-        
-        .viner-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .viner-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-        
-        .viner-item:hover {
-            background: #f5f5f5;
-        }
-        
-        .viner-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-        
-        .viner-info h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.25rem;
-        }
-        
-        .viner-info p {
-            font-size: 0.8rem;
-            color: #666;
-        }
-        
-        .editor-pick {
-            background: #fef3c7;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
-        
-        .editor-pick h3 {
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #92400e;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .editor-pick-content {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-        
-        .editor-pick-thumb {
-            width: 100px;
-            height: 100px;
-            background: #333;
-            border-radius: 8px;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        
-        .editor-pick-info h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .editor-pick-info p {
-            font-size: 0.9rem;
-            color: #666;
-            line-height: 1.4;
-        }
-        
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 200px 1fr 250px;
-                gap: 1.5rem;
-                padding: 1.5rem;
-            }
-        }
-        
-        @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-            
-            .channels {
-                order: 2;
-            }
-            
-            .vine-playlist {
-                order: 1;
-            }
-            
-            .right-sidebar {
-                order: 3;
-            }
-            
-            .channel-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-        
-        @media (max-width: 600px) {
-            .quick-actions {
-                flex-wrap: wrap;
-            }
-            
-            .hero h2 {
-                font-size: 1.5rem;
-            }
-            
-            .channel-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-    </style>
+    <meta name="description" content="Watch and share 6-second looping videos">
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="nav-container">
-                <div class="logo">
-                    <h1>🍇 Vine</h1>
-                </div>
-                <div class="nav-links">
-                    <a href="#" class="nav-button active">Home</a>
-                    <a href="trending.html" class="nav-button">Trending</a>
-                    <a href="about.html" class="nav-button">About</a>
-                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open App</a>
-                </div>
+    <!-- Header -->
+    <header class="vine-header">
+        <div class="vine-header-bg"></div>
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">OpenVine</a>
+            <div class="vine-auth-buttons">
+                <a href="#" class="vine-auth-btn vine-login-btn">Log in</a>
             </div>
-        </nav>
+        </div>
+        <div class="vine-hero-section">
+            <h1 class="vine-tagline">Return to a world of beautiful, looping videos.</h1>
+            <div class="vine-search-container">
+                <input type="text" class="vine-search-input" placeholder="Search" id="vineSearchInput" onkeypress="if(event.key==='Enter')searchVines()">
+            </div>
+            <div class="vine-app-buttons">
+                <a href="#" class="vine-app-btn vine-ios-btn">
+                    <span class="vine-app-icon">🍎</span>
+                    <span>Get it on<br><strong>iOS</strong></span>
+                </a>
+                <a href="#" class="vine-app-btn vine-android-btn">
+                    <span class="vine-app-icon">🤖</span>
+                    <span>Get it on<br><strong>Android</strong></span>
+                </a>
+                <a href="#" class="vine-app-btn vine-windows-btn">
+                    <span class="vine-app-icon">🪟</span>
+                    <span>Get it on<br><strong>Windows</strong></span>
+                </a>
+                <a href="#" class="vine-app-btn vine-mac-btn">
+                    <span class="vine-app-icon">💻</span>
+                    <span>Get it on<br><strong>macOS</strong></span>
+                </a>
+                <a href="#" class="vine-app-btn vine-linux-btn">
+                    <span class="vine-app-icon">🐧</span>
+                    <span>Get it on<br><strong>Linux</strong></span>
+                </a>
+            </div>
+        </div>
     </header>
 
-    <section class="hero">
-        <h2>Explore a world of beautiful, looping videos.</h2>
-        <div class="search-container">
-            <input type="text" class="search-input" placeholder="Search for vines..." id="searchInput">
-            <button class="search-button" onclick="searchVines()">🔍</button>
-        </div>
-        <div class="quick-actions">
-            <a href="#" class="quick-action" onclick="loadIosApp()">Get it for iOS</a>
-            <a href="#" class="quick-action" onclick="loadAndroidApp()">Get it for Android</a>
-            <a href="#" class="quick-action" onclick="loadWindowsApp()">Get it for Windows</a>
-        </div>
-    </section>
-
-    <main>
-        <div class="main-content">
-            <!-- Left Sidebar - Channels -->
-            <aside class="channels">
+    <!-- Main Container -->
+    <div class="vine-main-container">
+        <!-- Left Sidebar - Categories -->
+        <aside class="vine-sidebar-left">
+            <div class="vine-categories">
                 <h3>Channels</h3>
-                <div class="channel-grid">
-                    <div class="channel-item" onclick="filterByCategory('music')">🎵</div>
-                    <div class="channel-item" onclick="filterByCategory('comedy')">😂</div>
-                    <div class="channel-item" onclick="filterByCategory('animals')">🐱</div>
-                    <div class="channel-item" onclick="filterByCategory('gaming')">🎮</div>
-                    <div class="channel-item" onclick="filterByCategory('art')">🎨</div>
-                    <div class="channel-item" onclick="filterByCategory('sports')">⚽</div>
-                    <div class="channel-item" onclick="filterByCategory('nature')">🌿</div>
-                    <div class="channel-item" onclick="filterByCategory('food')">🍔</div>
-                    <div class="channel-item" onclick="filterByCategory('tech')">💻</div>
-                    <div class="channel-item" onclick="filterByCategory('dance')">💃</div>
-                    <div class="channel-item" onclick="filterByCategory('travel')">✈️</div>
-                    <div class="channel-item" onclick="filterByCategory('diy')">🔨</div>
+                <div class="vine-category-grid">
+                    <div class="vine-category-item" onclick="filterByCategory('comedy')" title="Comedy"><i class="fas fa-laugh"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('music')" title="Music"><i class="fas fa-music"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals"><i class="fas fa-paw"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports"><i class="fas fa-basketball-ball"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming"><i class="fas fa-gamepad"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('food')" title="Food"><i class="fas fa-utensils"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('art')" title="Art"><i class="fas fa-palette"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('tech')" title="Tech"><i class="fas fa-laptop"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion"><i class="fas fa-tshirt"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('beauty')" title="Beauty"><i class="fas fa-spa"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('dance')" title="Dance"><i class="fas fa-music"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('fitness')" title="Fitness"><i class="fas fa-dumbbell"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY"><i class="fas fa-hammer"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('travel')" title="Travel"><i class="fas fa-plane"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature"><i class="fas fa-leaf"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('science')" title="Science"><i class="fas fa-flask"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('education')" title="Education"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('business')" title="Business"><i class="fas fa-briefcase"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('news')" title="News"><i class="fas fa-newspaper"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('entertainment')" title="Entertainment"><i class="fas fa-tv"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('automotive')" title="Automotive"><i class="fas fa-car"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('lifestyle')" title="Lifestyle"><i class="fas fa-home"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('health')" title="Health"><i class="fas fa-heart"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('kids')" title="Kids"><i class="fas fa-child"></i></div>
                 </div>
-            </aside>
+            </div>
+        </aside>
 
-            <!-- Center - Video Player and Playlist -->
-            <section class="vine-playlist">
-                <div class="playlist-header">
-                    <h3 class="playlist-title">📋 Vine Playlist</h3>
-                    <span id="video-count" style="color: #666; font-size: 0.9rem;">Loading...</span>
-                </div>
-
-                <!-- Video Player -->
-                <div class="video-player-container">
-                    <div class="video-wrapper">
-                        <video 
-                            id="main-vine-player" 
-                            class="vine-video" 
-                            autoplay 
-                            muted
-                            playsinline
-                            poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+        <!-- Main Content -->
+        <main class="vine-main-content">
+            <!-- Featured Video -->
+            <div class="vine-featured-video">
+                <div class="vine-video-player">
+                    <div class="vine-video-wrapper">
+                        <video id="vineFeaturedPlayer" autoplay muted loop playsinline controls>
+                            <source src="" type="video/mp4">
                         </video>
-                        
-                        <div class="unmute-overlay" id="unmute-overlay">
-                            <div class="unmute-content">
-                                <span class="unmute-icon">🔇</span>
-                                <p class="unmute-text">Tap to unmute</p>
+                        <div class="vine-unmute-overlay" id="vineUnmuteOverlay" style="display: none;">
+                            <button class="vine-unmute-btn">🔊 Click for sound</button>
+                        </div>
+                    </div>
+                    <div class="vine-video-info">
+                        <div class="vine-user-avatar" id="featuredAvatar">👤</div>
+                        <div class="vine-user-details">
+                            <div class="vine-username" id="featuredUsername">Loading...</div>
+                            <div class="vine-video-stats">
+                                <span class="vine-stat-item">❤️ <span id="featuredLikes">0</span></span>
+                                <span class="vine-stat-item">💬 <span id="featuredComments">0</span></span>
+                                <span class="vine-stat-item">🔄 <span id="featuredReposts">0</span></span>
                             </div>
                         </div>
-                        
-                        <button class="nav-btn prev-btn" onclick="previousVideo()">‹</button>
-                        <button class="nav-btn next-btn" onclick="nextVideo()">›</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Video Info -->
-                <div class="video-meta" id="video-meta">
-                    <h4 class="video-title" id="current-video-title">Loading...</h4>
-                    <div class="video-stats">
-                        <span>❤️ <span id="video-likes">0</span> Likes</span>
-                        <span>👁️ <span id="video-views">0</span> Views</span>
-                        <span>🔄 <span id="loop-count">0</span> Loops</span>
-                    </div>
+            <!-- Video Grid -->
+            <div class="vine-video-grid" id="vineVideoGrid">
+                <!-- Videos will be dynamically loaded here -->
+            </div>
+            
+            <!-- Featured Users Section -->
+            <div class="vine-featured-users-section">
+                <h3>Featured Users</h3>
+                <div class="vine-featured-users-grid" id="vineFeaturedUsers">
+                    <!-- Users will be dynamically loaded here -->
                 </div>
-
-                <!-- Video List -->
-                <div class="video-list" id="video-list">
-                    <!-- Videos will be loaded here -->
+            </div>
+            
+            <!-- Trending Section -->
+            <div class="vine-trending-section">
+                <h3>Trending Now</h3>
+                <div class="vine-trending-grid" id="vineTrendingGrid">
+                    <!-- Trending videos will be loaded here -->
                 </div>
-            </section>
-
-            <!-- Right Sidebar -->
-            <aside class="right-sidebar">
-                <!-- Featured Viners -->
-                <div class="featured-viners">
-                    <h3>⭐ Featured Viners</h3>
-                    <div class="viner-list" id="featured-viners-list">
-                        <!-- Viners will be loaded here -->
-                    </div>
-                </div>
-
-                <!-- Editor's Pick -->
-                <div class="editor-pick">
-                    <h3>📌 Editor's Pick</h3>
-                    <div class="editor-pick-content">
-                        <div class="editor-pick-thumb">
-                            <img src="" alt="Editor's pick" id="editor-pick-thumb">
-                        </div>
-                        <div class="editor-pick-info">
-                            <h4 id="editor-pick-title">Amazing Vine</h4>
-                            <p id="editor-pick-desc">Check out this incredible loop!</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </main>
-
-    <footer>
-        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
-        <p>We believe in the rights laid out in <a href="https://rights.social" target="_blank">rights.social</a></p>
-    </footer>
+            </div>
+        </main>
+    </div>
 
     <script>
-        // Constants
-        const ANALYTICS_API = 'https://analytics.openvine.co/analytics';
-        const VIEW_TRACKING_API = 'https://analytics.openvine.co/analytics/view';
-        const NOSTR_RELAYS = [
-            'wss://relay.damus.io',
-            'wss://nos.lol',
-            'wss://relay.nos.social',
-            'wss://relay.nostr.band',
-            'wss://cache2.primal.net/v1'
+        // Sample videos with working URLs - using various OpenVine media
+        const SAMPLE_VIDEOS = [
+            {
+                id: '1',
+                url: 'https://api.openvine.co/media/1750880785012-ad9a31c4',
+                thumbnail: 'https://api.openvine.co/media/1750880785012-ad9a31c4/thumb.jpg',
+                username: 'maka-senpai',
+                avatar: '🎭',
+                likes: 6900,
+                comments: 420,
+                reposts: 169,
+                category: 'comedy'
+            },
+            {
+                id: '2',
+                url: 'https://api.openvine.co/media/1750880795926-82a02417',
+                thumbnail: 'https://api.openvine.co/media/1750880795926-82a02417/thumb.jpg',
+                username: 'JEDRLEE',
+                avatar: '🎵',
+                likes: 4200,
+                comments: 210,
+                reposts: 84,
+                category: 'music'
+            },
+            {
+                id: '3',
+                url: 'https://api.openvine.co/media/1750880799493-b5f9ee23',
+                thumbnail: 'https://api.openvine.co/media/1750880799493-b5f9ee23/thumb.jpg',
+                username: 'earth-angel',
+                avatar: '🌟',
+                likes: 3500,
+                comments: 175,
+                reposts: 70,
+                category: 'music'
+            },
+            {
+                id: '4',
+                url: 'https://api.openvine.co/media/1750880839632-615418e7',
+                thumbnail: 'https://api.openvine.co/media/1750880839632-615418e7/thumb.jpg',
+                username: 'mysticalwanheda',
+                avatar: '🥒',
+                likes: 1234,
+                comments: 62,
+                reposts: 25,
+                category: 'food'
+            },
+            {
+                id: '5',
+                url: 'https://api.openvine.co/media/1750880828791-cd2ac64a',
+                thumbnail: 'https://api.openvine.co/media/1750880828791-cd2ac64a/thumb.jpg',
+                username: 'Kenneth-Udut',
+                avatar: '🎮',
+                likes: 2100,
+                comments: 105,
+                reposts: 42,
+                category: 'gaming'
+            },
+            {
+                id: '6',
+                url: 'https://api.openvine.co/media/1750880810482-bd49e1f2',
+                thumbnail: 'https://api.openvine.co/media/1750880810482-bd49e1f2/thumb.jpg',
+                username: 'MettaonDarling',
+                avatar: '😂',
+                likes: 2500,
+                comments: 125,
+                reposts: 50,
+                category: 'comedy'
+            },
+            {
+                id: '7',
+                url: 'https://api.openvine.co/media/1750880817654-0c307f02',
+                thumbnail: 'https://api.openvine.co/media/1750880817654-0c307f02/thumb.jpg',
+                username: 'Virtual',
+                avatar: '🎧',
+                likes: 1800,
+                comments: 90,
+                reposts: 36,
+                category: 'music'
+            },
+            {
+                id: '8',
+                url: 'https://api.openvine.co/media/1750880803099-6b22f0ac',
+                thumbnail: 'https://api.openvine.co/media/1750880803099-6b22f0ac/thumb.jpg',
+                username: 'lonelyaudios',
+                avatar: '🖤',
+                likes: 950,
+                comments: 48,
+                reposts: 19,
+                category: 'art'
+            },
+            {
+                id: '9',
+                url: 'https://api.openvine.co/media/1750880814035-8583318d',
+                thumbnail: 'https://api.openvine.co/media/1750880814035-8583318d/thumb.jpg',
+                username: 'Anim3-Bagel',
+                avatar: '⚡',
+                likes: 890,
+                comments: 45,
+                reposts: 18,
+                category: 'gaming'
+            },
+            // Additional working videos
+            {
+                id: '10',
+                url: 'https://api.openvine.co/media/1750880821277-b93f8f5b',
+                thumbnail: 'https://api.openvine.co/media/1750880821277-b93f8f5b/thumb.jpg',
+                username: 'shinyas-lattes',
+                avatar: '☕',
+                likes: 720,
+                comments: 36,
+                reposts: 14,
+                category: 'comedy'
+            },
+            {
+                id: '11',
+                url: 'https://api.openvine.co/media/1750880824877-ce853248',
+                thumbnail: 'https://api.openvine.co/media/1750880824877-ce853248/thumb.jpg',
+                username: 'filmmaker',
+                avatar: '🎥',
+                likes: 1650,
+                comments: 82,
+                reposts: 33,
+                category: 'art'
+            },
+            {
+                id: '12',
+                url: 'https://api.openvine.co/media/1750880832437-a8e54f83',
+                thumbnail: 'https://api.openvine.co/media/1750880832437-a8e54f83/thumb.jpg',
+                username: 'dancer',
+                avatar: '💃',
+                likes: 2100,
+                comments: 105,
+                reposts: 42,
+                category: 'dance'
+            }
+        ];
+
+        const FEATURED_USERS = [
+            { username: 'KingBach', avatar: '👑', followers: '16.2M' },
+            { username: 'Zach King', avatar: '🎩', followers: '14.7M' },
+            { username: 'Lele Pons', avatar: '💃', followers: '11.5M' },
+            { username: 'Logan Paul', avatar: '🥊', followers: '9.4M' },
+            { username: 'Brittany Furlan', avatar: '🌟', followers: '9.8M' }
         ];
 
         // State
-        let videos = [];
-        let currentVideoIndex = 0;
-        let loopCount = 0;
-        const MAX_LOOPS = 4;
-        let globalMuteState = true;
-        let nostrEventMap = new Map();
+        let currentVideos = [...SAMPLE_VIDEOS];
+        let featuredVideoIndex = 0;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadTrendingContent();
-            setupVideoPlayer();
+            loadFeaturedVideo();
+            loadVideoGrid();
+            loadFeaturedUsers();
+            loadTrendingVideos();
+            setupVideoAutoplay();
+            loadFromVineIntegration();
+            setupAudioControls();
+            
+            // Setup hover previews after grid is loaded
+            setTimeout(setupHoverPreviews, 500);
         });
 
-        // Load trending content from analytics API
-        async function loadTrendingContent() {
-            try {
-                // Load trending videos
-                const vinesResponse = await fetch(`${ANALYTICS_API}/trending/vines?limit=20`);
-                const vinesData = await vinesResponse.json();
+        // Setup audio controls
+        function setupAudioControls() {
+            const unmuteOverlay = document.getElementById('vineUnmuteOverlay');
+            const player = document.getElementById('vineFeaturedPlayer');
+            
+            if (unmuteOverlay && player) {
+                unmuteOverlay.addEventListener('click', () => {
+                    isMuted = false;
+                    player.muted = false;
+                    unmuteOverlay.style.display = 'none';
+                    player.play();
+                });
 
-                if (vinesData.vines && vinesData.vines.length > 0) {
-                    // Fetch actual video data from Nostr
-                    const eventIds = vinesData.vines.map(v => v.eventId);
-                    await fetchNostrEvents(eventIds);
-
-                    // Process videos
-                    videos = vinesData.vines.map(vine => {
-                        const nostrEvent = nostrEventMap.get(vine.eventId);
-                        return {
-                            id: vine.eventId,
-                            url: nostrEvent?.videoUrl,
-                            title: nostrEvent?.title || `Vine ${vine.eventId.substring(0, 8)}`,
-                            thumbnail: nostrEvent?.thumbnailUrl,
-                            creator: nostrEvent?.pubkey || vine.creatorPubkey,
-                            views: vine.views || 0,
-                            likes: Math.floor((vine.views || 0) * 0.1), // Estimate likes
-                            loops: Math.floor((vine.views || 0) * 1.5) // Estimate loops
-                        };
-                    }).filter(v => v.url); // Only keep videos with URLs
-
-                    // Update UI
-                    updateVideoList();
-                    if (videos.length > 0) {
-                        playVideo(0);
-                    }
-
-                    document.getElementById('video-count').textContent = `${videos.length} videos`;
+                // Hide controls after interaction
+                player.controls = false;
+                
+                // Show unmute overlay initially
+                if (isMuted) {
+                    unmuteOverlay.style.display = 'flex';
                 }
-
-                // Load trending viners
-                const vinersResponse = await fetch(`${ANALYTICS_API}/trending/viners?limit=5`);
-                const vinersData = await vinersResponse.json();
-
-                if (vinersData.viners && vinersData.viners.length > 0) {
-                    updateFeaturedViners(vinersData.viners);
-                }
-
-            } catch (error) {
-                console.error('Error loading trending content:', error);
-                document.getElementById('video-count').textContent = 'Error loading videos';
             }
         }
 
-        // Fetch Nostr events
-        async function fetchNostrEvents(eventIds) {
-            const promises = NOSTR_RELAYS.map(relay => fetchEventsFromRelay(relay, eventIds));
-            await Promise.allSettled(promises);
+        // Global mute state
+        let isMuted = true;
+
+        // Load featured video
+        function loadFeaturedVideo() {
+            if (currentVideos.length === 0) return;
+            
+            const video = currentVideos[featuredVideoIndex];
+            const player = document.getElementById('vineFeaturedPlayer');
+            const avatar = document.getElementById('featuredAvatar');
+            const username = document.getElementById('featuredUsername');
+            const likes = document.getElementById('featuredLikes');
+            const comments = document.getElementById('featuredComments');
+            const reposts = document.getElementById('featuredReposts');
+
+            if (player && video.url) {
+                player.src = video.url;
+                player.muted = isMuted;
+                player.load();
+                player.play().catch(e => {
+                    console.log('Autoplay prevented:', e);
+                    // Try playing muted if unmuted autoplay fails
+                    player.muted = true;
+                    player.play().catch(e2 => console.log('Even muted autoplay failed:', e2));
+                });
+            }
+            
+            if (avatar) avatar.textContent = video.avatar;
+            if (username) username.textContent = video.username;
+            if (likes) likes.textContent = video.likes.toLocaleString();
+            if (comments) comments.textContent = video.comments.toLocaleString();
+            if (reposts) reposts.textContent = video.reposts.toLocaleString();
         }
 
-        // Fetch from single relay
-        function fetchEventsFromRelay(relayUrl, eventIds) {
-            return new Promise((resolve) => {
-                try {
-                    const ws = new WebSocket(relayUrl);
-                    const subscriptionId = 'sub_' + Math.random().toString(36).substring(2);
+        // Load video grid
+        function loadVideoGrid() {
+            const grid = document.getElementById('vineVideoGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = currentVideos.map((video, index) => `
+                <div class="vine-grid-item" data-video-id="${video.id}" onclick="playVideo('${video.id}')">
+                    <div class="vine-grid-thumbnail" id="thumb-${video.id}">
+                        <canvas width="400" height="400" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></canvas>
+                        <div class="vine-grid-overlay">
+                            <div class="vine-grid-avatar">${video.avatar}</div>
+                            <span class="vine-grid-user">${video.username}</span>
+                        </div>
+                    </div>
+                    <div class="vine-grid-info">
+                        <div class="vine-grid-avatar" style="width: 20px; height: 20px; font-size: 10px;">${video.avatar}</div>
+                        <span style="font-size: 11px; color: #333;">${video.username}</span>
+                        <div class="vine-grid-stats">
+                            <span>❤️ ${video.likes}</span>
+                            <span>💬 ${video.comments}</span>
+                            <span>🔄 ${video.reposts}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add placeholder for empty slots to maintain grid
+            const remainingSlots = 9 - (currentVideos.length % 9);
+            if (remainingSlots < 9) {
+                for (let i = 0; i < remainingSlots; i++) {
+                    grid.innerHTML += '<div class="vine-grid-placeholder"></div>';
+                }
+            }
+            
+            // Generate thumbnails after grid is loaded
+            setTimeout(() => generateThumbnails(), 100);
+        }
+
+        // Load featured users
+        function loadFeaturedUsers() {
+            const userGrid = document.getElementById('vineFeaturedUsers');
+            if (!userGrid) return;
+            
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff8cc8', '#95e1d3'];
+            
+            userGrid.innerHTML = FEATURED_USERS.map((user, index) => `
+                <div class="vine-user-item" onclick="viewProfile('${user.username}')">
+                    <div class="vine-user-avatar-large" style="background: ${colors[index % colors.length]}">
+                        ${user.avatar}
+                    </div>
+                    <div class="vine-user-info">
+                        <h4>${user.username}</h4>
+                        <p>${user.followers} followers</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load trending videos
+        function loadTrendingVideos() {
+            const trendingGrid = document.getElementById('vineTrendingGrid');
+            if (!trendingGrid) return;
+            
+            const trendingVideos = currentVideos.slice(3, 9);
+            
+            trendingGrid.innerHTML = trendingVideos.map((video, index) => `
+                <div class="vine-grid-item" onclick="playVideo('${video.id}')">
+                    <div class="vine-grid-thumbnail" id="trending-thumb-${video.id}">
+                        <canvas width="400" height="400" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></canvas>
+                        <div class="vine-grid-overlay">
+                            <div class="vine-grid-avatar">${video.avatar}</div>
+                            <span class="vine-grid-user">${video.username}</span>
+                        </div>
+                    </div>
+                    <div class="vine-grid-info">
+                        <div class="vine-grid-avatar" style="width: 20px; height: 20px; font-size: 10px;">${video.avatar}</div>
+                        <span style="font-size: 11px; color: #333;">${video.username}</span>
+                        <div class="vine-grid-stats">
+                            <span>❤️ ${video.likes}</span>
+                            <span>💬 ${video.comments}</span>
+                            <span>🔄 ${video.reposts}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Generate trending thumbnails
+            setTimeout(() => {
+                trendingVideos.forEach((video, index) => {
+                    const canvas = document.querySelector(`#trending-thumb-${video.id} canvas`);
+                    if (!canvas) return;
                     
-                    ws.onopen = () => {
-                        const filter = { kinds: [22], ids: eventIds };
-                        ws.send(JSON.stringify(['REQ', subscriptionId, filter]));
-                    };
+                    const ctx = canvas.getContext('2d');
+                    const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff8cc8', '#95e1d3'];
                     
-                    ws.onmessage = (event) => {
+                    // Generate thumbnails same as main grid
+                    const tempVideo = document.createElement('video');
+                    tempVideo.src = video.url;
+                    tempVideo.muted = true;
+                    tempVideo.crossOrigin = 'anonymous';
+                    
+                    tempVideo.addEventListener('loadeddata', () => {
+                        tempVideo.currentTime = Math.min(1, tempVideo.duration * 0.1);
+                    });
+                    
+                    tempVideo.addEventListener('seeked', () => {
                         try {
-                            const message = JSON.parse(event.data);
-                            if (message[0] === 'EVENT' && message[2]?.kind === 22) {
-                                const parsed = parseVideoEvent(message[2]);
-                                if (parsed?.videoUrl) {
-                                    nostrEventMap.set(message[2].id, parsed);
-                                }
-                            } else if (message[0] === 'EOSE') {
-                                ws.send(JSON.stringify(['CLOSE', subscriptionId]));
-                                setTimeout(() => ws.close(), 100);
-                            }
-                        } catch (err) {
-                            console.error('Parse error:', err);
+                            ctx.drawImage(tempVideo, 0, 0, 400, 400);
+                        } catch (e) {
+                            ctx.fillStyle = colors[index % colors.length];
+                            ctx.fillRect(0, 0, 400, 400);
+                            ctx.fillStyle = 'white';
+                            ctx.font = '120px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(video.avatar, 200, 200);
                         }
-                    };
+                        tempVideo.remove();
+                    });
                     
-                    ws.onerror = () => resolve();
-                    ws.onclose = () => resolve();
+                    tempVideo.addEventListener('error', () => {
+                        ctx.fillStyle = colors[index % colors.length];
+                        ctx.fillRect(0, 0, 400, 400);
+                        ctx.fillStyle = 'white';
+                        ctx.font = '120px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(video.avatar, 200, 200);
+                        tempVideo.remove();
+                    });
                     
-                    setTimeout(() => {
-                        if (ws.readyState === WebSocket.OPEN) ws.close();
-                        resolve();
-                    }, 5000);
-                } catch (error) {
-                    resolve();
-                }
-            });
+                    tempVideo.load();
+                });
+            }, 100);
         }
 
-        // Parse video event
-        function parseVideoEvent(event) {
-            const data = {
-                id: event.id,
-                pubkey: event.pubkey,
-                content: event.content,
-                videoUrl: null,
-                title: null,
-                thumbnailUrl: null
-            };
-            
-            for (const tag of event.tags || []) {
-                if (!tag || tag.length < 2) continue;
-                
-                switch (tag[0]) {
-                    case 'url':
-                        data.videoUrl = tag[1].replace('apt.openvine.co', 'api.openvine.co');
-                        break;
-                    case 'title':
-                        data.title = tag[1];
-                        break;
-                    case 'thumb':
-                        data.thumbnailUrl = tag[1];
-                        break;
-                    case 'imeta':
-                        parseImetaTag(tag, data);
-                        break;
-                }
-            }
-            
-            return data;
+        // Setup video autoplay
+        function setupVideoAutoplay() {
+            setInterval(() => {
+                featuredVideoIndex = (featuredVideoIndex + 1) % currentVideos.length;
+                loadFeaturedVideo();
+            }, 6000);
         }
 
-        // Parse imeta tag
-        function parseImetaTag(tag, data) {
-            for (let i = 1; i < tag.length; i++) {
-                const part = tag[i];
-                if (part.includes(' ')) {
-                    const [key, ...valueParts] = part.split(' ');
-                    const value = valueParts.join(' ');
-                    
-                    if (key === 'url' && !data.videoUrl) {
-                        data.videoUrl = value.replace('apt.openvine.co', 'api.openvine.co');
-                    } else if (key === 'blurhash') {
-                        data.blurhash = value;
+        // Click to toggle play/pause
+        document.addEventListener('DOMContentLoaded', () => {
+            const player = document.getElementById('vineFeaturedPlayer');
+            if (player) {
+                player.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (player.paused) {
+                        player.play();
+                    } else {
+                        player.pause();
                     }
-                }
+                });
             }
-        }
-
-        // Setup video player
-        function setupVideoPlayer() {
-            const video = document.getElementById('main-vine-player');
-            if (!video) return;
-
-            video.removeAttribute('controls');
-            video.muted = globalMuteState;
-            video.loop = false;
-
-            video.addEventListener('ended', () => {
-                loopCount++;
-                document.getElementById('loop-count').textContent = loopCount;
-                
-                if (loopCount >= MAX_LOOPS) {
-                    loopCount = 0;
-                    nextVideo();
-                } else {
-                    video.play();
-                }
-            });
-
-            video.addEventListener('click', () => {
-                if (video.paused) {
-                    video.play();
-                } else {
-                    video.pause();
-                }
-            });
-
-            // Unmute overlay
-            const unmuteOverlay = document.getElementById('unmute-overlay');
-            unmuteOverlay.addEventListener('click', () => {
-                globalMuteState = false;
-                video.muted = false;
-                unmuteOverlay.classList.add('hidden');
-                video.play();
-            });
-        }
+        });
 
         // Play video
-        function playVideo(index) {
-            if (index < 0 || index >= videos.length) return;
-
-            currentVideoIndex = index;
-            loopCount = 0;
-
-            const video = document.getElementById('main-vine-player');
-            const videoData = videos[index];
-
-            // Update video
-            video.src = videoData.url;
-            video.load();
-            video.muted = globalMuteState;
-
-            // Update UI
-            document.getElementById('current-video-title').textContent = videoData.title;
-            document.getElementById('video-likes').textContent = videoData.likes.toLocaleString();
-            document.getElementById('video-views').textContent = videoData.views.toLocaleString();
-            document.getElementById('loop-count').textContent = '0';
-
-            // Update active state in list
-            document.querySelectorAll('.video-list-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
-
-            // Track view
-            trackVideoView(videoData);
-
-            video.play().catch(console.log);
-        }
-
-        // Navigation
-        function nextVideo() {
-            playVideo((currentVideoIndex + 1) % videos.length);
-        }
-
-        function previousVideo() {
-            playVideo((currentVideoIndex - 1 + videos.length) % videos.length);
-        }
-
-        // Update video list UI
-        function updateVideoList() {
-            const listContainer = document.getElementById('video-list');
-            listContainer.innerHTML = videos.map((video, index) => `
-                <div class="video-list-item ${index === 0 ? 'active' : ''}" onclick="playVideo(${index})">
-                    <div class="video-thumb">
-                        ${video.thumbnail ? 
-                            `<img src="${video.thumbnail}" alt="${video.title}">` : 
-                            `<div style="background: #333; width: 100%; height: 100%;"></div>`
-                        }
-                    </div>
-                    <div class="video-list-info">
-                        <h4>${video.title}</h4>
-                        <p>${video.views.toLocaleString()} views</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Update featured viners
-        function updateFeaturedViners(viners) {
-            const container = document.getElementById('featured-viners-list');
-            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#ff8cc8'];
-            
-            container.innerHTML = viners.slice(0, 5).map((viner, index) => `
-                <div class="viner-item">
-                    <div class="viner-avatar" style="background: ${colors[index % colors.length]};">
-                        ${['🎭', '🎨', '🎬', '🎪', '🌟'][index % 5]}
-                    </div>
-                    <div class="viner-info">
-                        <h4>Creator #${index + 1}</h4>
-                        <p>${viner.totalViews.toLocaleString()} total views</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Track video view
-        async function trackVideoView(video) {
-            try {
-                await fetch(VIEW_TRACKING_API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        eventId: video.id,
-                        source: 'website',
-                        creatorPubkey: video.creator
-                    })
-                });
-            } catch (error) {
-                console.error('Error tracking view:', error);
+        function playVideo(videoId) {
+            const videoIndex = currentVideos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                featuredVideoIndex = videoIndex;
+                loadFeaturedVideo();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+        }
+
+        // Setup hover preview for grid items
+        function setupHoverPreviews() {
+            const gridItems = document.querySelectorAll('.vine-grid-item');
+            
+            gridItems.forEach((item, index) => {
+                const thumbnail = item.querySelector('.vine-grid-thumbnail');
+                if (!thumbnail || !currentVideos[index]) return;
+                
+                let previewVideo = null;
+                let hoverTimeout = null;
+                
+                item.addEventListener('mouseenter', () => {
+                    // Delay preview to avoid accidental hovers
+                    hoverTimeout = setTimeout(() => {
+                        const video = currentVideos[index];
+                        if (!video.url) return;
+                        
+                        // Create preview video element
+                        previewVideo = document.createElement('video');
+                        previewVideo.src = video.url;
+                        previewVideo.muted = true;
+                        previewVideo.loop = true;
+                        previewVideo.style.position = 'absolute';
+                        previewVideo.style.top = '0';
+                        previewVideo.style.left = '0';
+                        previewVideo.style.width = '100%';
+                        previewVideo.style.height = '100%';
+                        previewVideo.style.objectFit = 'cover';
+                        previewVideo.style.zIndex = '5';
+                        
+                        thumbnail.appendChild(previewVideo);
+                        previewVideo.play().catch(e => console.log('Preview play failed:', e));
+                    }, 300); // 300ms delay before preview starts
+                });
+                
+                item.addEventListener('mouseleave', () => {
+                    // Clear timeout if mouse leaves before preview starts
+                    if (hoverTimeout) {
+                        clearTimeout(hoverTimeout);
+                        hoverTimeout = null;
+                    }
+                    
+                    // Remove preview video
+                    if (previewVideo) {
+                        previewVideo.pause();
+                        previewVideo.remove();
+                        previewVideo = null;
+                    }
+                });
+            });
         }
 
         // Search functionality
-        async function searchVines() {
-            const query = document.getElementById('searchInput').value.trim();
+        function searchVines() {
+            const query = document.getElementById('vineSearchInput').value.trim();
             if (!query) return;
             
             console.log('Searching for:', query);
+            const filtered = SAMPLE_VIDEOS.filter(v => 
+                v.username.toLowerCase().includes(query.toLowerCase()) ||
+                v.category.toLowerCase().includes(query.toLowerCase())
+            );
             
-            // Update UI to show searching state
-            document.getElementById('video-count').textContent = 'Searching...';
-            document.getElementById('video-list').innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Searching Nostr relays...</div>';
-            
-            // Clear current videos
-            videos = [];
-            nostrEventMap.clear();
-            
-            // Search Nostr relays
-            await searchNostrRelays(query);
-            
-            // Update UI with results
-            if (videos.length > 0) {
-                document.getElementById('video-count').textContent = `Found ${videos.length} videos`;
-                updateVideoList();
-                playVideo(0);
+            if (filtered.length > 0) {
+                currentVideos = filtered;
+                loadVideoGrid();
+                loadFeaturedVideo();
+                setTimeout(setupHoverPreviews, 100);
             } else {
-                document.getElementById('video-count').textContent = 'No results found';
-                document.getElementById('video-list').innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No videos found matching your search.</div>';
+                alert('No vines found for: ' + query);
             }
         }
-        
-        // Search Nostr relays for Kind 22 events
-        async function searchNostrRelays(query) {
-            const promises = NOSTR_RELAYS.map(relay => searchRelay(relay, query));
-            await Promise.allSettled(promises);
+
+        // Filter by category
+        function filterByCategory(category) {
+            console.log('Filtering by:', category);
+            const filtered = SAMPLE_VIDEOS.filter(v => v.category === category);
             
-            // Process found events into videos
-            const eventIds = Array.from(nostrEventMap.keys());
-            videos = eventIds.map(id => {
-                const event = nostrEventMap.get(id);
-                return {
-                    id: id,
-                    url: event.videoUrl,
-                    title: event.title || event.content || `Video ${id.substring(0, 8)}`,
-                    thumbnail: event.thumbnailUrl,
-                    creator: event.pubkey,
-                    views: 0,
-                    likes: 0,
-                    loops: 0,
-                    tags: event.tags || []
-                };
-            }).filter(v => v.url);
-        }
-        
-        // Search a single relay
-        function searchRelay(relayUrl, query) {
-            return new Promise((resolve) => {
-                try {
-                    const ws = new WebSocket(relayUrl);
-                    const subscriptionId = 'search_' + Math.random().toString(36).substring(2);
-                    let receivedEvents = 0;
-                    
-                    ws.onopen = () => {
-                        console.log(`Searching ${relayUrl} for: ${query}`);
-                        
-                        // Create filters for search
-                        const filters = [];
-                        
-                        // Check if query looks like a hashtag
-                        if (query.startsWith('#')) {
-                            // Search by hashtag
-                            const tag = query.substring(1).toLowerCase();
-                            filters.push({
-                                kinds: [22],
-                                "#t": [tag],
-                                limit: 50
-                            });
-                        } else {
-                            // Search in content and tags
-                            // Note: Most relays don't support content search, but we'll try
-                            filters.push({
-                                kinds: [22],
-                                limit: 100
-                            });
-                        }
-                        
-                        // Send subscription
-                        const reqMessage = JSON.stringify(['REQ', subscriptionId, ...filters]);
-                        ws.send(reqMessage);
-                    };
-                    
-                    ws.onmessage = (event) => {
-                        try {
-                            const message = JSON.parse(event.data);
-                            
-                            if (message[0] === 'EVENT' && message[2]?.kind === 22) {
-                                const nostrEvent = message[2];
-                                
-                                // Check if event matches search query
-                                if (eventMatchesQuery(nostrEvent, query)) {
-                                    const parsed = parseVideoEvent(nostrEvent);
-                                    if (parsed?.videoUrl && !nostrEventMap.has(nostrEvent.id)) {
-                                        nostrEventMap.set(nostrEvent.id, parsed);
-                                        receivedEvents++;
-                                        console.log(`Found matching video: ${parsed.title || nostrEvent.id.substring(0, 8)}`);
-                                    }
-                                }
-                            } else if (message[0] === 'EOSE') {
-                                console.log(`Search complete on ${relayUrl}: ${receivedEvents} events found`);
-                                ws.send(JSON.stringify(['CLOSE', subscriptionId]));
-                                setTimeout(() => ws.close(), 100);
-                            }
-                        } catch (err) {
-                            console.error('Parse error:', err);
-                        }
-                    };
-                    
-                    ws.onerror = () => resolve();
-                    ws.onclose = () => resolve();
-                    
-                    // Timeout after 10 seconds for search
-                    setTimeout(() => {
-                        if (ws.readyState === WebSocket.OPEN) ws.close();
-                        resolve();
-                    }, 10000);
-                } catch (error) {
-                    console.error(`Failed to search ${relayUrl}:`, error);
-                    resolve();
-                }
-            });
-        }
-        
-        // Check if event matches search query
-        function eventMatchesQuery(event, query) {
-            const searchTerm = query.toLowerCase();
-            
-            // If searching by hashtag
-            if (query.startsWith('#')) {
-                const tag = searchTerm.substring(1);
-                // Check if event has this hashtag
-                return event.tags?.some(t => 
-                    t[0] === 't' && t[1]?.toLowerCase() === tag
-                );
+            if (filtered.length > 0) {
+                currentVideos = filtered;
+                loadVideoGrid();
+                loadFeaturedVideo();
+                setTimeout(setupHoverPreviews, 100);
+            } else {
+                currentVideos = [...SAMPLE_VIDEOS];
+                loadVideoGrid();
+                setTimeout(setupHoverPreviews, 100);
+                alert(`No ${category} vines found`);
             }
-            
-            // Search in content
-            if (event.content?.toLowerCase().includes(searchTerm)) {
-                return true;
-            }
-            
-            // Search in tags
-            for (const tag of event.tags || []) {
-                // Check title tag
-                if (tag[0] === 'title' && tag[1]?.toLowerCase().includes(searchTerm)) {
-                    return true;
-                }
-                // Check hashtags
-                if (tag[0] === 't' && tag[1]?.toLowerCase().includes(searchTerm)) {
-                    return true;
-                }
-            }
-            
-            return false;
         }
-        
-        // Handle enter key in search input
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                searchVines();
+
+        // View profile
+        function viewProfile(username) {
+            console.log('Viewing profile:', username);
+            window.location.href = `https://app.openvine.co/profile/${username}`;
+        }
+
+        // Handle enter key in search
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('vineSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        searchVines();
+                    }
+                });
             }
         });
 
-        // Category filtering
-        async function filterByCategory(category) {
-            console.log('Filtering by category:', category);
-            
-            // Map categories to common hashtags
-            const categoryTags = {
-                'music': ['music', 'song', 'beats', 'musician'],
-                'comedy': ['comedy', 'funny', 'humor', 'lol'],
-                'animals': ['animals', 'pets', 'dogs', 'cats', 'wildlife'],
-                'gaming': ['gaming', 'games', 'gamer', 'gameplay'],
-                'art': ['art', 'artist', 'drawing', 'painting', 'creative'],
-                'sports': ['sports', 'fitness', 'workout', 'athlete'],
-                'nature': ['nature', 'outdoors', 'landscape', 'environment'],
-                'food': ['food', 'cooking', 'recipe', 'foodie'],
-                'tech': ['tech', 'technology', 'coding', 'developer'],
-                'dance': ['dance', 'dancing', 'dancer', 'choreography'],
-                'travel': ['travel', 'adventure', 'explore', 'wanderlust'],
-                'diy': ['diy', 'howto', 'tutorial', 'crafts']
-            };
-            
-            const tags = categoryTags[category] || [category];
-            
-            // Update UI
-            document.getElementById('video-count').textContent = `Searching ${category}...`;
-            document.getElementById('video-list').innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Loading category videos...</div>';
-            
-            // Clear current videos
-            videos = [];
-            nostrEventMap.clear();
-            
-            // Search for videos with these tags
-            await searchMultipleTags(tags);
-            
-            // Update UI with results
-            if (videos.length > 0) {
-                document.getElementById('video-count').textContent = `${videos.length} ${category} videos`;
-                updateVideoList();
-                playVideo(0);
-            } else {
-                document.getElementById('video-count').textContent = `No ${category} videos found`;
-                document.getElementById('video-list').innerHTML = `<div style="text-align: center; padding: 2rem; color: #666;">No ${category} videos found. Try searching for specific hashtags!</div>`;
+        // Try to load from vine-integration.js if available
+        function loadFromVineIntegration() {
+            // This will integrate with the vine-integration.js file if it loads
+            if (typeof window.VineState !== 'undefined' && window.VineState.videos.length > 0) {
+                currentVideos = window.VineState.videos;
+                loadVideoGrid();
+                loadFeaturedVideo();
+                setTimeout(setupHoverPreviews, 100);
             }
         }
-        
-        // Search for multiple tags
-        async function searchMultipleTags(tags) {
-            const promises = [];
-            
-            // Search each relay for each tag
-            for (const relay of NOSTR_RELAYS) {
-                for (const tag of tags) {
-                    promises.push(searchRelayForTag(relay, tag));
-                }
-            }
-            
-            await Promise.allSettled(promises);
-            
-            // Process found events into videos
-            const eventIds = Array.from(nostrEventMap.keys());
-            videos = eventIds.map(id => {
-                const event = nostrEventMap.get(id);
-                return {
-                    id: id,
-                    url: event.videoUrl,
-                    title: event.title || event.content || `Video ${id.substring(0, 8)}`,
-                    thumbnail: event.thumbnailUrl,
-                    creator: event.pubkey,
-                    views: Math.floor(Math.random() * 10000), // Random for now
-                    likes: Math.floor(Math.random() * 1000),
-                    loops: Math.floor(Math.random() * 5000),
-                    tags: event.tags || []
-                };
-            }).filter(v => v.url);
-            
-            // Sort by "popularity" (random for now)
-            videos.sort((a, b) => b.views - a.views);
-        }
-        
-        // Search relay for specific tag
-        function searchRelayForTag(relayUrl, tag) {
-            return new Promise((resolve) => {
-                try {
-                    const ws = new WebSocket(relayUrl);
-                    const subscriptionId = 'tag_' + Math.random().toString(36).substring(2);
+
+        // Generate video thumbnails dynamically
+        function generateThumbnails() {
+            currentVideos.forEach((video, index) => {
+                const thumbnailContainer = document.getElementById(`thumb-${video.id}`);
+                if (!thumbnailContainer) return;
+                
+                const canvas = thumbnailContainer.querySelector('canvas');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff8cc8', '#95e1d3'];
+                
+                // Create a temporary video element to extract frame
+                const tempVideo = document.createElement('video');
+                tempVideo.src = video.url;
+                tempVideo.muted = true;
+                tempVideo.crossOrigin = 'anonymous';
+                
+                tempVideo.addEventListener('loadeddata', () => {
+                    // Seek to 1 second or 10% of video duration
+                    tempVideo.currentTime = Math.min(1, tempVideo.duration * 0.1);
+                });
+                
+                tempVideo.addEventListener('seeked', () => {
+                    try {
+                        // Draw the video frame to canvas
+                        ctx.drawImage(tempVideo, 0, 0, 400, 400);
+                    } catch (e) {
+                        // If video can't be drawn (CORS, etc), create colorful placeholder
+                        ctx.fillStyle = colors[index % colors.length];
+                        ctx.fillRect(0, 0, 400, 400);
+                        ctx.fillStyle = 'white';
+                        ctx.font = '120px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(video.avatar, 200, 200);
+                    }
                     
-                    ws.onopen = () => {
-                        const filter = {
-                            kinds: [22],
-                            "#t": [tag.toLowerCase()],
-                            limit: 20
-                        };
-                        
-                        ws.send(JSON.stringify(['REQ', subscriptionId, filter]));
-                    };
+                    // Clean up
+                    tempVideo.remove();
+                });
+                
+                tempVideo.addEventListener('error', () => {
+                    // Create colorful placeholder on error
+                    ctx.fillStyle = colors[index % colors.length];
+                    ctx.fillRect(0, 0, 400, 400);
+                    ctx.fillStyle = 'white';
+                    ctx.font = '120px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(video.avatar, 200, 200);
                     
-                    ws.onmessage = (event) => {
-                        try {
-                            const message = JSON.parse(event.data);
-                            
-                            if (message[0] === 'EVENT' && message[2]?.kind === 22) {
-                                const parsed = parseVideoEvent(message[2]);
-                                if (parsed?.videoUrl && !nostrEventMap.has(message[2].id)) {
-                                    nostrEventMap.set(message[2].id, parsed);
-                                }
-                            } else if (message[0] === 'EOSE') {
-                                ws.send(JSON.stringify(['CLOSE', subscriptionId]));
-                                setTimeout(() => ws.close(), 100);
-                            }
-                        } catch (err) {
-                            console.error('Parse error:', err);
-                        }
-                    };
-                    
-                    ws.onerror = () => resolve();
-                    ws.onclose = () => resolve();
-                    
-                    setTimeout(() => {
-                        if (ws.readyState === WebSocket.OPEN) ws.close();
-                        resolve();
-                    }, 5000);
-                } catch (error) {
-                    resolve();
-                }
+                    tempVideo.remove();
+                });
+                
+                // Start loading
+                tempVideo.load();
             });
-        }
-
-        // App download handlers
-        function loadIosApp() {
-            window.open('https://apps.apple.com/app/openvine', '_blank');
-        }
-
-        function loadAndroidApp() {
-            window.open('https://play.google.com/store/apps/details?id=co.openvine', '_blank');
-        }
-
-        function loadWindowsApp() {
-            window.open('https://openvine.co/download/windows', '_blank');
         }
     </script>
 </body>

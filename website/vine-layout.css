@@ -1,0 +1,554 @@
+/* ABOUTME: Vine-inspired layout CSS for OpenVine homepage redesign
+   ABOUTME: Implements classic three-column layout with modern responsive features */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+    line-height: 1.5;
+}
+
+/* Header - Vine Classic Style */
+.vine-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e1e8ed;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: 100px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.vine-header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.vine-logo {
+    font-family: 'Pacifico', cursive;
+    font-size: 32px;
+    font-weight: 400;
+    color: #00bf8f;
+    text-decoration: none;
+    margin-bottom: 12px;
+    letter-spacing: normal;
+}
+
+.vine-search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f5f8fa;
+    border-radius: 20px;
+    width: 500px;
+    max-width: 90%;
+    padding: 10px 20px;
+    border: 1px solid #e1e8ed;
+}
+
+.vine-search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    outline: none;
+    font-size: 14px;
+    color: #333;
+}
+
+.vine-search-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    padding: 0 4px;
+}
+
+.vine-auth-buttons {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 10px;
+}
+
+.vine-auth-btn {
+    padding: 6px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.vine-signup-btn {
+    background-color: #00bf8f;
+    color: white;
+}
+
+.vine-signup-btn:hover {
+    background-color: #00a77d;
+}
+
+.vine-login-btn {
+    background-color: #f5f8fa;
+    color: #333;
+}
+
+.vine-login-btn:hover {
+    background-color: #e1e8ed;
+}
+
+/* Main Layout - Two Column Grid */
+.vine-main-container {
+    max-width: 1200px;
+    margin: 20px auto 0;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-areas: "sidebar main";
+    gap: 30px;
+    min-height: calc(100vh - 100px);
+}
+
+/* Left Sidebar - Categories */
+.vine-sidebar-left {
+    grid-area: sidebar;
+}
+
+.vine-categories {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 120px;
+}
+
+.vine-categories h3 {
+    font-size: 16px;
+    text-transform: none;
+    color: #333;
+    margin-bottom: 16px;
+    letter-spacing: 0;
+    font-weight: 500;
+}
+
+.vine-category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 2px;
+    row-gap: 2px;
+}
+
+.vine-category-item {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: none;
+    width: 100%;
+    height: auto;
+}
+
+.vine-category-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Category Colors - matching the reference image */
+.vine-category-item:nth-child(1) { background: #D2691E; } /* Brown */
+.vine-category-item:nth-child(2) { background: #4ECDC4; } /* Teal */
+.vine-category-item:nth-child(3) { background: #FF6B6B; } /* Coral */
+.vine-category-item:nth-child(4) { background: #4E89FF; } /* Blue */
+.vine-category-item:nth-child(5) { background: #BD5FFF; } /* Purple */
+.vine-category-item:nth-child(6) { background: #FFB347; } /* Orange */
+.vine-category-item:nth-child(7) { background: #FFD93D; } /* Yellow */
+.vine-category-item:nth-child(8) { background: #2B4C8C; } /* Dark Blue */
+.vine-category-item:nth-child(9) { background: #5B5FFF; } /* Indigo */
+.vine-category-item:nth-child(10) { background: #6C63FF; } /* Purple Blue */
+.vine-category-item:nth-child(11) { background: #FF8C42; } /* Orange */
+.vine-category-item:nth-child(12) { background: #B8E986; } /* Lime */
+.vine-category-item:nth-child(13) { background: #64B5F6; } /* Light Blue */
+.vine-category-item:nth-child(14) { background: #4ECDC4; } /* Teal */
+.vine-category-item:nth-child(15) { background: #FFB6C1; } /* Pink */
+.vine-category-item:nth-child(16) { background: #424242; } /* Dark Gray */
+.vine-category-item:nth-child(17) { background: #8B4513; } /* Brown */
+.vine-category-item:nth-child(18) { background: #FF6347; } /* Tomato */
+.vine-category-item:nth-child(19) { background: #4682B4; } /* Steel Blue */
+.vine-category-item:nth-child(20) { background: #696969; } /* Dim Gray */
+.vine-category-item:nth-child(21) { background: #FFA500; } /* Orange */
+.vine-category-item:nth-child(22) { background: #40E0D0; } /* Turquoise */
+.vine-category-item:nth-child(23) { background: #9ACD32; } /* Yellow Green */
+.vine-category-item:nth-child(24) { background: #FF69B4; } /* Hot Pink */
+
+/* Main Content Area */
+.vine-main-content {
+    grid-area: main;
+}
+
+/* Featured Video Player */
+.vine-featured-video {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.vine-video-player {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.vine-video-wrapper {
+    position: relative;
+    padding-bottom: 100%; /* Square aspect ratio */
+    background: #000;
+    overflow: hidden;
+}
+
+.vine-video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.vine-video-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: white;
+    border-top: 1px solid #e1e8ed;
+}
+
+.vine-user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f5f8fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.vine-user-details {
+    flex: 1;
+}
+
+.vine-username {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.vine-video-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 14px;
+    color: #666;
+}
+
+.vine-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Video Grid */
+.vine-video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.vine-grid-item {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.vine-grid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.vine-grid-thumbnail {
+    position: relative;
+    padding-bottom: 100%;
+    background: #f5f8fa;
+}
+
+.vine-grid-thumbnail img,
+.vine-grid-thumbnail video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vine-grid-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vine-grid-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.vine-grid-user {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Right Sidebar - Remove from grid */
+.vine-sidebar-right {
+    display: none;
+}
+
+/* Featured Users */
+.vine-featured-users {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+    position: sticky;
+    top: 120px;
+}
+
+.vine-featured-users h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #8899a6;
+    margin-bottom: 20px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+}
+
+.vine-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vine-user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.vine-user-item:hover {
+    background: #f5f8fa;
+}
+
+.vine-user-avatar-large {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.vine-user-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.vine-user-info p {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Additional Featured Content */
+.vine-more-content {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.vine-more-content h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .vine-main-container {
+        grid-template-columns: 180px 1fr;
+        gap: 20px;
+        padding: 16px;
+    }
+    
+    .vine-category-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .vine-video-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .vine-header {
+        height: 60px;
+    }
+    
+    .vine-main-container {
+        margin-top: 100px;
+        grid-template-columns: 1fr;
+        grid-template-areas: "main";
+    }
+    
+    .vine-auth-buttons {
+        display: none;
+    }
+    
+    .vine-search-bar {
+        width: 300px;
+    }
+    
+    .vine-sidebar-left {
+        display: none; /* Hidden by default on mobile */
+    }
+    
+    .vine-category-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    .vine-video-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vine-video-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .vine-category-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Utility Classes */
+.vine-show-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .vine-show-mobile {
+        display: block;
+    }
+}
+
+/* Animations */
+@keyframes vineSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vine-grid-item {
+    animation: vineSlideIn 0.3s ease-out;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body.vine-dark-mode {
+        background-color: #1a1a1a;
+        color: #e1e8ed;
+    }
+    
+    body.vine-dark-mode .vine-header,
+    body.vine-dark-mode .vine-categories,
+    body.vine-dark-mode .vine-featured-video,
+    body.vine-dark-mode .vine-grid-item,
+    body.vine-dark-mode .vine-featured-users,
+    body.vine-dark-mode .vine-more-content {
+        background-color: #2a2a2a;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    
+    body.vine-dark-mode .vine-header {
+        border-bottom-color: #3a3a3a;
+    }
+    
+    body.vine-dark-mode .vine-search-bar {
+        background-color: #3a3a3a;
+    }
+    
+    body.vine-dark-mode .vine-search-input {
+        color: #e1e8ed;
+    }
+    
+    body.vine-dark-mode .vine-login-btn {
+        background-color: #3a3a3a;
+        color: #e1e8ed;
+    }
+}

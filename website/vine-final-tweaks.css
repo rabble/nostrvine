@@ -1,0 +1,744 @@
+/* ABOUTME: Final CSS tweaks to match original Vine design exactly
+   ABOUTME: Includes proper spacing, shadows, and component styling */
+
+/* Import the base vine layout */
+@import url('vine-layout.css');
+
+/* Additional tweaks for exact Vine match */
+
+/* Make the header match exactly */
+.vine-header {
+    height: auto;
+    padding: 0;
+    box-shadow: none;
+    border-bottom: none;
+    position: relative;
+    background: white;
+}
+
+.vine-header-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 350px;
+    background: 
+        radial-gradient(ellipse at top left, rgba(0, 191, 143, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at top right, rgba(0, 214, 125, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(0, 191, 143, 0.05) 0%, transparent 70%);
+    z-index: 0;
+}
+
+.vine-header-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(0, 191, 143, 0.03) 35px, rgba(0, 191, 143, 0.03) 70px);
+    z-index: 1;
+}
+
+.vine-header-content {
+    position: relative;
+    padding: 15px 20px;
+    gap: 15px;
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+}
+
+.vine-logo {
+    font-family: 'Pacifico', cursive;
+    font-size: 32px;
+    margin-bottom: 0;
+    position: static;
+    transform: none;
+    font-weight: 400;
+    letter-spacing: normal;
+}
+
+/* Hero section */
+.vine-hero-section {
+    text-align: center;
+    padding: 40px 20px 60px;
+    position: relative;
+    z-index: 10;
+}
+
+.vine-tagline {
+    font-size: 28px;
+    font-weight: 300;
+    color: #333;
+    margin: 0 0 30px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* App download buttons */
+.vine-app-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+}
+
+.vine-app-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: #00bf8f;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: left;
+    transition: all 0.2s ease;
+    border: 1px solid #00bf8f;
+}
+
+.vine-app-btn:hover {
+    background: #00a77d;
+    border-color: #00a77d;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,191,143,0.2);
+}
+
+.vine-app-icon {
+    font-size: 20px;
+}
+
+.vine-app-btn strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Search container */
+.vine-search-container {
+    margin: 0 auto 25px;
+    text-align: center;
+}
+
+.vine-search-input {
+    width: 500px;
+    max-width: 90%;
+    padding: 12px 20px;
+    background: white;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    font-size: 16px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.vine-search-input:focus {
+    border-color: #00bf8f;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 3px rgba(0,191,143,0.1);
+}
+
+.vine-search-input::placeholder {
+    color: #aaa;
+    font-weight: 300;
+}
+
+/* Fix the layout spacing */
+.vine-main-container {
+    margin-top: 100px;
+    padding: 20px;
+    gap: 30px;
+    max-width: 1200px;
+}
+
+/* Channels section exact match */
+.vine-categories {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.vine-categories h3 {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 12px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.vine-category-grid {
+    gap: 4px;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.vine-category-item {
+    font-size: 24px;
+    border-radius: 3px;
+    transition: transform 0.15s ease;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    box-shadow: none;
+    color: white;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.vine-category-item i {
+    font-size: 24px;
+    color: white;
+}
+
+/* Video player section */
+.vine-featured-video {
+    box-shadow: none;
+    border: 1px solid #e1e8ed;
+    background: #f5f5f5;
+}
+
+.vine-video-player {
+    max-width: 100%;
+}
+
+.vine-video-wrapper {
+    background: #000;
+}
+
+.vine-video-info {
+    padding: 10px;
+    background: white;
+}
+
+.vine-user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    background: #e1e8ed;
+}
+
+.vine-username {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.vine-video-stats {
+    font-size: 12px;
+    color: #999;
+}
+
+.vine-stat-item {
+    font-size: 11px;
+}
+
+/* Video grid adjustments */
+.vine-video-grid {
+    gap: 12px;
+}
+
+.vine-grid-item {
+    box-shadow: none;
+    border: 1px solid #e1e8ed;
+    border-radius: 3px;
+    overflow: hidden;
+    background: white;
+}
+
+.vine-grid-item:hover {
+    transform: scale(1.01);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-color: #ccc;
+}
+
+.vine-grid-thumbnail img {
+    transition: transform 0.2s ease;
+}
+
+.vine-grid-item:hover .vine-grid-thumbnail img {
+    transform: scale(1.05);
+}
+
+.vine-grid-overlay {
+    padding: 8px;
+    font-size: 11px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+
+.vine-grid-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.8);
+    background: rgba(0,0,0,0.3);
+}
+
+.vine-grid-user {
+    font-size: 11px;
+    font-weight: 400;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Featured users section */
+.vine-featured-users {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    position: static;
+}
+
+.vine-featured-users h3 {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 12px;
+    font-weight: 400;
+}
+
+.vine-user-item {
+    padding: 8px;
+    margin: 0 -8px;
+}
+
+.vine-user-item:hover {
+    background: #f7f9fa;
+    border-radius: 6px;
+}
+
+.vine-user-avatar-large {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 3px;
+}
+
+.vine-user-info h4 {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vine-user-info p {
+    font-size: 11px;
+    color: #999;
+}
+
+/* Trending section */
+.vine-more-content {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    margin-top: 30px;
+}
+
+.vine-more-content h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    font-weight: 400;
+}
+
+/* Remove sticky positioning */
+.vine-categories,
+.vine-featured-users {
+    position: static;
+}
+
+/* Auth buttons positioning */
+.vine-auth-buttons {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.vine-auth-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.vine-signup-btn {
+    background-color: #00bf8f;
+    border: 1px solid #00bf8f;
+}
+
+.vine-login-btn {
+    background-color: transparent;
+    color: #00bf8f;
+    border: 1px solid #00bf8f;
+    padding: 6px 16px;
+    font-size: 13px;
+}
+
+.vine-login-btn:hover {
+    background-color: #00bf8f;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .vine-main-container {
+        grid-template-columns: 240px 1fr 280px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .vine-main-container {
+        grid-template-columns: 200px 1fr 240px;
+    }
+    
+    .vine-search-bar {
+        width: 350px;
+    }
+}
+
+@media (max-width: 768px) {
+    .vine-hero-section {
+        padding: 30px 15px 40px;
+    }
+    
+    .vine-tagline {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+    
+    .vine-app-buttons {
+        gap: 8px;
+    }
+    
+    .vine-app-btn {
+        padding: 10px 15px;
+        font-size: 11px;
+    }
+    
+    .vine-app-icon {
+        font-size: 20px;
+    }
+    
+    .vine-main-container {
+        margin-top: 10px;
+        grid-template-columns: 1fr;
+    }
+    
+    .vine-header-content {
+        padding: 10px 15px;
+    }
+    
+    .vine-logo {
+        font-size: 28px;
+    }
+    
+    .vine-search-bar {
+        width: 300px;
+        padding: 8px 14px;
+    }
+    
+    .vine-sidebar-left {
+        display: none;
+    }
+    
+    .vine-video-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Fix video aspect ratio */
+.vine-video-wrapper video {
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* Remove video controls */
+.vine-video-wrapper video::-webkit-media-controls {
+    display: none !important;
+}
+
+/* Unmute overlay */
+.vine-unmute-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.vine-unmute-btn {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.vine-unmute-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.05);
+}
+
+/* Grid placeholder for empty slots */
+.vine-grid-placeholder {
+    visibility: hidden;
+}
+
+/* Ensure video player is properly positioned */
+.vine-video-player {
+    position: relative;
+}
+
+/* Video hover state */
+.vine-video-wrapper:hover video {
+    opacity: 0.95;
+}
+
+/* Loading state for videos */
+.vine-grid-thumbnail {
+    background: #f5f5f5;
+    position: relative;
+    min-height: 200px;
+}
+
+.vine-grid-thumbnail img,
+.vine-grid-thumbnail canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Ensure canvas renders properly */
+.vine-grid-thumbnail canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* Active category styling */
+.vine-category-item.active {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 2px solid #00bf8f;
+}
+
+/* Video title on hover */
+.vine-grid-item:hover .vine-grid-overlay {
+    background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.3));
+}
+
+/* Improve trending list */
+.vine-trending-list .vine-user-item {
+    border-bottom: 1px solid #e1e8ed;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+.vine-trending-list .vine-user-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+/* Subtle fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.vine-grid-item {
+    animation: fadeIn 0.2s ease-out;
+    animation-fill-mode: both;
+}
+
+/* Grid thumbnail info bar */
+.vine-grid-info {
+    background: white;
+    padding: 8px;
+    border-top: 1px solid #e1e8ed;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vine-grid-stats {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: #999;
+    margin-left: auto;
+}
+
+/* Additional refinements for exact match */
+body {
+    background: #f5f5f5;
+}
+
+.vine-main-container {
+    background: white;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.vine-sidebar-left {
+    padding: 0;
+}
+
+.vine-main-content {
+    padding: 0;
+}
+
+/* Category colors to match original Vine design */
+.vine-category-item:nth-child(1) { background: #FF6B6B; } /* Nature - coral red */
+.vine-category-item:nth-child(2) { background: #4ECDC4; } /* Tech - teal */
+.vine-category-item:nth-child(3) { background: #FFD93D; } /* Gaming - yellow */
+.vine-category-item:nth-child(4) { background: #FF9F40; } /* Sports - orange */
+.vine-category-item:nth-child(5) { background: #A8E6CF; } /* People - mint green */
+.vine-category-item:nth-child(6) { background: #FF8CC8; } /* Selfie - pink */
+.vine-category-item:nth-child(7) { background: #95E1D3; } /* Controller - light teal */
+.vine-category-item:nth-child(8) { background: #F38181; } /* Star - salmon */
+.vine-category-item:nth-child(9) { background: #786FA6; } /* Person - purple */
+.vine-category-item:nth-child(10) { background: #FDA7DF; } /* Piano - light pink */
+.vine-category-item:nth-child(11) { background: #4A69BD; } /* Music - blue */
+.vine-category-item:nth-child(12) { background: #6C5CE7; } /* Copyright - violet */
+.vine-category-item:nth-child(13) { background: #FD79A8; } /* Fox - rose */
+.vine-category-item:nth-child(14) { background: #FDCB6E; } /* Eye - mustard */
+.vine-category-item:nth-child(15) { background: #A29BFE; } /* Owl - lavender */
+.vine-category-item:nth-child(16) { background: #FD79A8; } /* Dance - pink */
+.vine-category-item:nth-child(17) { background: #636E72; } /* Skull - dark gray */
+.vine-category-item:nth-child(18) { background: #00B894; } /* Plane - emerald */
+.vine-category-item:nth-child(19) { background: #E17055; } /* Car - terracotta */
+.vine-category-item:nth-child(20) { background: #FDCB6E; } /* Food - golden */
+.vine-category-item:nth-child(21) { background: #74B9FF; } /* Hammer - sky blue */
+.vine-category-item:nth-child(22) { background: #00CEC9; } /* Phone - cyan */
+.vine-category-item:nth-child(23) { background: #FF6348; } /* Fire - tomato */
+.vine-category-item:nth-child(24) { background: #81ECEC; } /* Mountain - light cyan */
+
+/* Remove border radius from video player */
+.vine-featured-video {
+    border-radius: 3px;
+}
+
+/* Adjust user item hover */
+.vine-user-item:hover {
+    background: #f9f9f9;
+}
+
+/* Adjust main container top margin */
+.vine-main-container {
+    margin-top: 20px;
+    max-width: 940px;
+}
+
+/* Remove rounded avatars in featured users */
+.vine-user-avatar-large {
+    border-radius: 3px;
+}
+
+/* Trending video thumbnails */
+.vine-trending-list .vine-grid-thumbnail {
+    float: left;
+    margin-right: 10px;
+}
+
+/* Featured Users Section in Main Content */
+.vine-featured-users-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e1e8ed;
+}
+
+.vine-featured-users-section h3 {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 15px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vine-featured-users-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+}
+
+.vine-featured-users-grid .vine-user-item {
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.vine-featured-users-grid .vine-user-item:hover {
+    background: none;
+}
+
+.vine-featured-users-grid .vine-user-avatar-large {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 8px;
+    font-size: 40px;
+    background: #f5f5f5;
+    border: 1px solid #e1e8ed;
+}
+
+.vine-featured-users-grid .vine-user-info h4 {
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.vine-featured-users-grid .vine-user-info p {
+    font-size: 11px;
+}
+
+/* Trending Section in Main Content */
+.vine-trending-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e1e8ed;
+}
+
+.vine-trending-section h3 {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 15px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vine-trending-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+/* Hide right sidebar */
+.vine-sidebar-right {
+    display: none;
+}
