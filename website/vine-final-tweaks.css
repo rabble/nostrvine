@@ -180,24 +180,19 @@
 }
 
 .vine-category-item {
-    font-size: 24px;
+    font-size: 32px;
     border-radius: 3px;
     transition: transform 0.15s ease;
     width: 100%;
     height: auto;
     aspect-ratio: 1;
     box-shadow: none;
-    color: white;
     font-weight: normal;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-}
-
-.vine-category-item i {
-    font-size: 24px;
-    color: white;
+    line-height: 1;
 }
 
 /* Video player section */
