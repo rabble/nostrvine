@@ -59,30 +59,30 @@
             <div class="vine-categories">
                 <h3>Channels</h3>
                 <div class="vine-category-grid">
+                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('editors-picks')" title="Editor's Picks"><i class="fas fa-star"></i></div>
+                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('featured')" title="Featured"><i class="fas fa-trophy"></i></div>
                     <div class="vine-category-item" onclick="filterByCategory('comedy')" title="Comedy"><i class="fas fa-laugh"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('music')" title="Music"><i class="fas fa-music"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals"><i class="fas fa-paw"></i></div>
                     <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports"><i class="fas fa-basketball-ball"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming"><i class="fas fa-gamepad"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('music')" title="Music"><i class="fas fa-music"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('art')" title="Art & Design"><i class="fas fa-palette"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals"><i class="fas fa-paw"></i></div>
                     <div class="vine-category-item" onclick="filterByCategory('food')" title="Food"><i class="fas fa-utensils"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('art')" title="Art"><i class="fas fa-palette"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('tech')" title="Tech"><i class="fas fa-laptop"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion"><i class="fas fa-tshirt"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('beauty')" title="Beauty"><i class="fas fa-spa"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('dance')" title="Dance"><i class="fas fa-music"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('fitness')" title="Fitness"><i class="fas fa-dumbbell"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY"><i class="fas fa-hammer"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('travel')" title="Travel"><i class="fas fa-plane"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('family')" title="Family"><i class="fas fa-users"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion & Beauty"><i class="fas fa-tshirt"></i></div>
                     <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature"><i class="fas fa-leaf"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('science')" title="Science"><i class="fas fa-flask"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('education')" title="Education"><i class="fas fa-graduation-cap"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('business')" title="Business"><i class="fas fa-briefcase"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('news')" title="News"><i class="fas fa-newspaper"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('entertainment')" title="Entertainment"><i class="fas fa-tv"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('automotive')" title="Automotive"><i class="fas fa-car"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('lifestyle')" title="Lifestyle"><i class="fas fa-home"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('health')" title="Health"><i class="fas fa-heart"></i></div>
-                    <div class="vine-category-item" onclick="filterByCategory('kids')" title="Kids"><i class="fas fa-child"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('news')" title="News & Politics"><i class="fas fa-newspaper"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('scary')" title="Scary"><i class="fas fa-ghost"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('science')" title="Science & Tech"><i class="fas fa-flask"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming"><i class="fas fa-gamepad"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('health')" title="Health & Fitness"><i class="fas fa-heartbeat"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('dance')" title="Dance"><i class="fas fa-music"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('places')" title="Places & Travel"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('vintage')" title="Vintage"><i class="fas fa-camera-retro"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('weird')" title="Weird"><i class="fas fa-question"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY"><i class="fas fa-hammer"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('cars')" title="Cars"><i class="fas fa-car"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('lgbt')" title="LGBTQ+"><i class="fas fa-rainbow"></i></div>
+                    <div class="vine-category-item" onclick="filterByCategory('latino')" title="Latino"><i class="fas fa-globe-americas"></i></div>
                 </div>
             </div>
         </aside>
@@ -622,6 +622,27 @@
         function viewProfile(username) {
             console.log('Viewing profile:', username);
             window.location.href = `https://app.openvine.co/profile/${username}`;
+        }
+
+        // Show playlist
+        function showPlaylist(playlistType) {
+            console.log('Showing playlist:', playlistType);
+            
+            if (playlistType === 'editors-picks') {
+                // Show curated editor's picks
+                currentVideos = SAMPLE_VIDEOS.filter((v, i) => i % 2 === 0); // Even indexed videos
+                loadVideoGrid();
+                loadFeaturedVideo();
+                alert("Editor's Picks - Curated selection of the best vines!");
+            } else if (playlistType === 'featured') {
+                // Show featured viners' videos
+                currentVideos = SAMPLE_VIDEOS.filter((v, i) => i % 2 === 1); // Odd indexed videos
+                loadVideoGrid();
+                loadFeaturedVideo();
+                alert("Featured Viners - Trending creators and their best content!");
+            }
+            
+            setTimeout(setupHoverPreviews, 100);
         }
 
         // Handle enter key in search

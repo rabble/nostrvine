@@ -614,30 +614,49 @@ body {
 }
 
 /* Category colors to match original Vine design */
-.vine-category-item:nth-child(1) { background: #FF6B6B; } /* Nature - coral red */
-.vine-category-item:nth-child(2) { background: #4ECDC4; } /* Tech - teal */
-.vine-category-item:nth-child(3) { background: #FFD93D; } /* Gaming - yellow */
-.vine-category-item:nth-child(4) { background: #FF9F40; } /* Sports - orange */
-.vine-category-item:nth-child(5) { background: #A8E6CF; } /* People - mint green */
-.vine-category-item:nth-child(6) { background: #FF8CC8; } /* Selfie - pink */
-.vine-category-item:nth-child(7) { background: #95E1D3; } /* Controller - light teal */
-.vine-category-item:nth-child(8) { background: #F38181; } /* Star - salmon */
-.vine-category-item:nth-child(9) { background: #786FA6; } /* Person - purple */
-.vine-category-item:nth-child(10) { background: #FDA7DF; } /* Piano - light pink */
-.vine-category-item:nth-child(11) { background: #4A69BD; } /* Music - blue */
-.vine-category-item:nth-child(12) { background: #6C5CE7; } /* Copyright - violet */
-.vine-category-item:nth-child(13) { background: #FD79A8; } /* Fox - rose */
-.vine-category-item:nth-child(14) { background: #FDCB6E; } /* Eye - mustard */
-.vine-category-item:nth-child(15) { background: #A29BFE; } /* Owl - lavender */
-.vine-category-item:nth-child(16) { background: #FD79A8; } /* Dance - pink */
-.vine-category-item:nth-child(17) { background: #636E72; } /* Skull - dark gray */
-.vine-category-item:nth-child(18) { background: #00B894; } /* Plane - emerald */
-.vine-category-item:nth-child(19) { background: #E17055; } /* Car - terracotta */
-.vine-category-item:nth-child(20) { background: #FDCB6E; } /* Food - golden */
-.vine-category-item:nth-child(21) { background: #74B9FF; } /* Hammer - sky blue */
-.vine-category-item:nth-child(22) { background: #00CEC9; } /* Phone - cyan */
-.vine-category-item:nth-child(23) { background: #FF6348; } /* Fire - tomato */
-.vine-category-item:nth-child(24) { background: #81ECEC; } /* Mountain - light cyan */
+/* Playlists - Editor's Picks and Featured */
+.vine-category-item:nth-child(1) { background: #8B6639; } /* Editor's Picks - brown */
+.vine-category-item:nth-child(2) { background: #00CCA3; } /* Featured - teal/green */
+
+/* Main Categories */
+.vine-category-item:nth-child(3) { background: #FF6B9D; } /* Comedy - pink/coral */
+.vine-category-item:nth-child(4) { background: #4285F4; } /* Sports - blue */
+.vine-category-item:nth-child(5) { background: #E91E63; } /* Music - hot pink */
+.vine-category-item:nth-child(6) { background: #FF9800; } /* Art & Design - orange */
+.vine-category-item:nth-child(7) { background: #FFC107; } /* Animals - yellow */
+.vine-category-item:nth-child(8) { background: #673AB7; } /* Food - deep purple */
+.vine-category-item:nth-child(9) { background: #009688; } /* Family - teal */
+.vine-category-item:nth-child(10) { background: #9C27B0; } /* Fashion & Beauty - purple */
+.vine-category-item:nth-child(11) { background: #4CAF50; } /* Nature - green */
+.vine-category-item:nth-child(12) { background: #03A9F4; } /* News & Politics - light blue */
+.vine-category-item:nth-child(13) { background: #FF5722; } /* Scary - deep orange */
+.vine-category-item:nth-child(14) { background: #00BCD4; } /* Science & Tech - cyan */
+.vine-category-item:nth-child(15) { background: #8BC34A; } /* Gaming - light green */
+.vine-category-item:nth-child(16) { background: #CDDC39; } /* Health & Fitness - lime */
+.vine-category-item:nth-child(17) { background: #9E9E9E; } /* Dance - gray */
+.vine-category-item:nth-child(18) { background: #607D8B; } /* Places & Travel - blue gray */
+.vine-category-item:nth-child(19) { background: #795548; } /* Vintage - brown */
+.vine-category-item:nth-child(20) { background: #FF9800; } /* Weird - orange */
+.vine-category-item:nth-child(21) { background: #3F51B5; } /* DIY - indigo */
+.vine-category-item:nth-child(22) { background: #00E676; } /* Cars - green */
+.vine-category-item:nth-child(23) { background: #536DFE; } /* LGBTQ+ - indigo accent */
+.vine-category-item:nth-child(24) { background: #FF5252; } /* Latino - red */
+
+/* Special styling for playlist items */
+.vine-playlist {
+    position: relative;
+}
+
+.vine-playlist::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+}
 
 /* Remove border radius from video player */
 .vine-featured-video {
