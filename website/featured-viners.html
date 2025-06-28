@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Featured Viners - OpenVine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css?v=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="vine-header">
+        <div class="vine-header-bg"></div>
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">OpenVine</a>
+            <div class="vine-auth-buttons">
+                <a href="https://app.openvine.co" class="vine-auth-btn vine-login-btn">Log in</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="vine-restoration-container">
+        <div class="vine-restoration-content">
+            <h1>🌱 Bringing Back Your Favorite Viners</h1>
+            
+            <div class="vine-restoration-message">
+                <p class="vine-main-text">
+                    We're working hard to restore the magic of Vine! Our team is in the process of:
+                </p>
+                
+                <ul class="vine-restoration-list">
+                    <li>📦 <strong>Archiving classic Vines</strong> - We're loading up as much of the back archive as we can find</li>
+                    <li>👤 <strong>Restoring creator accounts</strong> - Original Viners can reclaim their usernames and content</li>
+                    <li>🔄 <strong>Preserving loops</strong> - Every view, like, and loop count is being carefully preserved</li>
+                    <li>🎬 <strong>Rebuilding communities</strong> - Reconnecting creators with their audiences</li>
+                </ul>
+
+                <div class="vine-progress-section">
+                    <h2>Current Progress</h2>
+                    <div class="vine-progress-bar">
+                        <div class="vine-progress-fill" style="width: 0.1%"></div>
+                    </div>
+                    <p class="vine-progress-text">0.1% of archive restored - just getting started!</p>
+                </div>
+
+                <div class="vine-cta-section">
+                    <h3>Were you a Viner?</h3>
+                    <p>If you had a Vine account, you can reclaim your username and help us restore your content!</p>
+                    <a href="https://app.openvine.co" class="vine-cta-button">Reclaim Your Account</a>
+                </div>
+
+                <div class="vine-updates-section">
+                    <h3>Stay Updated</h3>
+                    <p>Follow our progress as we bring back millions of loops and thousands of creators.</p>
+                    <div class="vine-social-links">
+                        <a href="https://github.com/rabble/nostrvine" target="_blank">GitHub</a>
+                        <a href="about.html">About OpenVine</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .vine-restoration-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .vine-restoration-content {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .vine-restoration-content h1 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #333;
+        }
+
+        .vine-main-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .vine-restoration-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 40px 0;
+        }
+
+        .vine-restoration-list li {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .vine-restoration-list li:last-child {
+            border-bottom: none;
+        }
+
+        .vine-progress-section {
+            background: #f8f8f8;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .vine-progress-section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .vine-progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .vine-progress-fill {
+            height: 100%;
+            background: #00bf8f;
+            transition: width 0.3s ease;
+        }
+
+        .vine-progress-text {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .vine-cta-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: #f0f9f7;
+            border-radius: 8px;
+        }
+
+        .vine-cta-section h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .vine-cta-section p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .vine-cta-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #00bf8f;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .vine-cta-button:hover {
+            background: #00a077;
+        }
+
+        .vine-updates-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .vine-updates-section h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .vine-social-links {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .vine-social-links a {
+            color: #00bf8f;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .vine-social-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <footer>
+        <div class="footer-content">
+            <p>Made with 💚 by <a href="https://rabblelabs.com" target="_blank">Rabble Labs</a> | 
+            Built on <a href="https://nostr.com" target="_blank">Nostr Protocol</a> | 
+            <a href="about.html">About OpenVine</a> | 
+            <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code</a></p>
+            <p class="footer-mission">🌱 Liberating Vine, one loop at a time | Building a social media ecosystem where users have <a href="https://rights.social" target="_blank">rights</a></p>
+        </div>
+    </footer>
+</body>
+</html>

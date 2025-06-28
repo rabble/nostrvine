@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import 'video_event_service.dart';
 import 'video_manager_interface.dart';
+import 'video_manager_service.dart';
 import 'user_profile_service.dart';
 import 'social_service.dart';
 
@@ -23,6 +24,10 @@ class VideoEventBridge {
   StreamSubscription? _eventSubscription;
   final Set<String> _processedEventIds = {};
   
+  // Following feed loading state
+  bool _discoveryFeedLoaded = false;
+  Set<String> _followingPubkeys = {};
+  
   VideoEventBridge({
     required VideoEventService videoEventService,
     required IVideoManager videoManager,
@@ -38,46 +43,34 @@ class VideoEventBridge {
     debugPrint('🌉 Initializing VideoEventBridge...');
     
     try {
-      // FIRST PRIORITY: Load classic vines from the special account
+      // Set up proper social feed priority in VideoManager
+      final followingPubkeys = _socialService?.followingPubkeys ?? <String>{};
+      
+      // For now, include classic vines in following to test the system
       const classicVinesPubkey = '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856';
-      debugPrint('🎬 Loading 95 classic vines FIRST from: $classicVinesPubkey');
-      await _videoEventService.subscribeToVideoFeed(
-        authors: [classicVinesPubkey],
-        limit: 100, // Get all 95 classic vines
-        replace: true, // Start fresh with classic vines
-      );
+      final priorityPubkeys = {...followingPubkeys, classicVinesPubkey};
       
-      // Wait a moment to ensure classic vines are loaded first
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // THEN load the open feed - show ALL videos from the relay
-      debugPrint('🌍 Loading open feed (ALL videos from relay) AFTER classic vines');
-      await _videoEventService.subscribeToVideoFeed(
-        limit: 300, // Get additional videos for discovery
-        replace: false, // Keep classic vines AND add open feed
-      );
-      
-      // Check if user is following anyone for additional personalized content
-      final hasFollows = _socialService != null && _socialService!.followingPubkeys.isNotEmpty;
-      
-      if (hasFollows) {
-        // User has follows - ADD their personalized content to the mix
-        debugPrint('👥 User is following ${_socialService!.followingPubkeys.length} people - adding personalized content');
-        await _videoEventService.subscribeToVideoFeed(
-          authors: _socialService!.followingPubkeys,
-          limit: 100, // Additional content from follows
-          replace: false, // Keep everything AND add personalized content
-        );
+      // Update VideoManager with following list for proper prioritization
+      if (_videoManager is VideoManagerService) {
+        (_videoManager as VideoManagerService).updateFollowingList(priorityPubkeys);
       }
       
-      // Also add editor's picks to the mix (but don't let it dominate)
-      const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
-      debugPrint('🎯 Adding Editor\'s Picks to the mix from: $editorPubkey');
-      await _videoEventService.subscribeToVideoFeed(
-        authors: [editorPubkey],
-        limit: 50, // Smaller amount so it doesn't dominate
-        replace: false, // Keep everything else AND add editor's picks
-      );
+      // FIRST PRIORITY: Load content from people you follow (including classic vines for now)
+      if (priorityPubkeys.isNotEmpty) {
+        debugPrint('👥 Loading following feed FIRST from ${priorityPubkeys.length} accounts');
+        await _videoEventService.subscribeToVideoFeed(
+          authors: priorityPubkeys.toList(),
+          limit: 200, // Get plenty of following content
+          replace: true, // Start fresh with following content
+        );
+        
+        // Set up listener to trigger discovery feed once we get following content
+        _setupFollowingListener(priorityPubkeys);
+      } else {
+        // No follows, just load discovery feed
+        debugPrint('🌍 No following list, loading discovery feed directly');
+        await _loadDiscoveryFeed();
+      }
       
       // Add initial events to VideoManager IMMEDIATELY
       if (_videoEventService.hasEvents) {
@@ -135,6 +128,9 @@ class VideoEventBridge {
         debugPrint('📢 Additional videos - async sync');
         _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
       }
+      
+      // Check if we should trigger discovery feed after following content arrives
+      _checkAndLoadDiscoveryFeed();
     }
   }
   
@@ -248,6 +244,52 @@ class VideoEventBridge {
     await _videoEventService.refreshVideoFeed();
   }
   
+  /// Set up listener to trigger discovery feed once following content arrives
+  void _setupFollowingListener(Set<String> followingPubkeys) {
+    _followingPubkeys = followingPubkeys;
+    // The existing _onVideoEventServiceChanged will handle this
+  }
+  
+  /// Check if we should load discovery feed after following content arrives
+  void _checkAndLoadDiscoveryFeed() {
+    if (_discoveryFeedLoaded || _followingPubkeys.isEmpty) return;
+    
+    // Count videos from people you follow
+    final followingVideosCount = _videoEventService.videoEvents
+        .where((event) => _followingPubkeys.contains(event.pubkey))
+        .length;
+    
+    // Trigger discovery feed once we have some following content (threshold: 5+)
+    if (followingVideosCount >= 5) {
+      _discoveryFeedLoaded = true;
+      debugPrint('🎉 Following content milestone reached: $followingVideosCount videos - loading discovery feed');
+      _loadDiscoveryFeed();
+    }
+  }
+  
+  /// Load the discovery feed after following content is established
+  Future<void> _loadDiscoveryFeed() async {
+    try {
+      // Load discovery content from everyone else
+      debugPrint('🌍 Loading discovery feed (general content) AFTER following content');
+      await _videoEventService.subscribeToVideoFeed(
+        limit: 300, // Get plenty of discovery content
+        replace: false, // Keep following content AND add discovery
+      );
+      
+      // Also add editor's picks to discovery mix
+      const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
+      debugPrint('🎯 Adding Editor\'s Picks to discovery feed from: $editorPubkey');
+      await _videoEventService.subscribeToVideoFeed(
+        authors: [editorPubkey],
+        limit: 50, // Smaller amount so it doesn't dominate
+        replace: false, // Keep everything else AND add editor's picks
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to load discovery feed: $e');
+    }
+  }
+
   /// Dispose resources
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);

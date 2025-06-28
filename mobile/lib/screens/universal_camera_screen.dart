@@ -110,8 +110,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
             hashtags: result['hashtags'] ?? [],
           );
 
-          // Reset recording controller for next use
-          _recordingController.reset();
+          // Don't reset here - let files persist until next recording session
           
           // Navigate back to the main feed immediately after starting upload
           // The upload will continue in the background
@@ -127,8 +126,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
     } catch (e) {
       debugPrint('Error processing recording: $e');
       
-      // Clean up on error
-      _recordingController.reset();
+      // Don't reset here on error - let files persist until next recording session
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -145,8 +143,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
   }
 
   void _onCancel() {
-    // Clean up any recordings when canceling
-    _recordingController.reset();
+    // Just navigate back - keep recordings for potential retry
     Navigator.of(context).pop();
   }
 

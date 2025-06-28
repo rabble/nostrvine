@@ -11,6 +11,7 @@ import 'package:nostr_sdk/relay/relay_status.dart';
 import 'package:nostr_sdk/relay/event_filter.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import '../models/nip94_metadata.dart';
+import '../utils/unified_logger.dart';
 import 'nostr_key_manager.dart';
 import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
@@ -71,7 +72,7 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
   @override
   Future<void> initialize({List<String>? customRelays}) async {
     if (_isInitialized) {
-      debugPrint('⚠️ NostrService already initialized');
+      Log.warning('⚠️ NostrService already initialized', category: LogCategory.relay);
       return;
     }
     
@@ -81,7 +82,7 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
       
       // Check connectivity
       if (!_connectionService.isOnline) {
-        debugPrint('⚠️ Device appears to be offline');
+        Log.warning('⚠️ Device appears to be offline', category: LogCategory.relay);
         throw NostrServiceException('Device is offline');
       }
       
@@ -92,7 +93,7 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
       
       // Ensure we have keys
       if (!_keyManager.hasKeys) {
-        debugPrint('🔑 No keys found, generating new identity...');
+        Log.info('🔑 No keys found, generating new identity...', category: LogCategory.auth);
         await _keyManager.generateKeys();
       }
       
@@ -122,7 +123,7 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
         eventFilters,
         (relayUrl) => RelayBase(relayUrl, RelayStatus(relayUrl)),
         onNotice: (relayUrl, notice) {
-          debugPrint('📢 Notice from $relayUrl: $notice');
+          Log.info('📢 Notice from $relayUrl: $notice', category: LogCategory.relay);
         },
       );
       
@@ -136,10 +137,10 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
           final success = await _nostrClient!.addRelay(relay, autoSubscribe: true);
           if (success) {
             _connectedRelays.add(relayUrl);
-            debugPrint('✅ Connected to relay: $relayUrl');
-            debugPrint('  - Status: ${relay.relayStatus.connected}');
-            debugPrint('  - Read access: ${relay.relayStatus.readAccess}');
-            debugPrint('  - Write access: ${relay.relayStatus.writeAccess}');
+            Log.info('✅ Connected to relay: $relayUrl', category: LogCategory.relay);
+            Log.debug('  - Status: ${relay.relayStatus.connected}', category: LogCategory.relay);
+            Log.debug('  - Read access: ${relay.relayStatus.readAccess}', category: LogCategory.relay);
+            Log.debug('  - Write access: ${relay.relayStatus.writeAccess}', category: LogCategory.relay);
           } else {
             debugPrint('❌ Failed to connect to relay: $relayUrl');
           }

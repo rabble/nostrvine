@@ -754,14 +754,14 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalKey<State<FeedScreenV2>> _feedScreenKey = GlobalKey<State<FeedScreenV2>>();
-  VideoEvent? _lastFeedVideo; // Track the last viewed video for position preservation
   
-  late List<Widget> _screens; // Mutable to allow feed screen recreation
+  late List<Widget> _screens; // Created once to preserve state
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialTabIndex ?? 0;
+    // Create screens once - IndexedStack will preserve their state
     _screens = [
       FeedScreenV2(
         key: _feedScreenKey,
@@ -777,10 +777,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Pause videos when leaving any tab that has video playback
     if (_currentIndex != index) {
       if (_currentIndex == 0) {
-        // Leaving feed screen - capture current video position
+        // Leaving feed screen
         _pauseFeedVideos();
-        _lastFeedVideo = FeedScreenV2.getCurrentVideo(_feedScreenKey);
-        debugPrint('💾 Captured current feed position: ${_lastFeedVideo?.id.substring(0, 8) ?? 'none'}');
       } else if (_currentIndex == 2) {
         // Leaving explore screen
         _pauseExploreVideos();
@@ -790,12 +788,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Resume videos when returning to a tab with video playback
     if (_currentIndex != index) {
       if (index == 0) {
-        // Returning to feed screen - recreate if we have a position to restore
-        if (_lastFeedVideo != null) {
-          _recreateFeedScreen();
-        } else {
-          _resumeFeedVideos();
-        }
+        // Returning to feed screen - just resume, state is preserved by IndexedStack
+        _resumeFeedVideos();
       }
       // Note: Explore screen handles its own resume logic
     }
@@ -838,33 +832,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       debugPrint('⚠️ Error pausing explore videos: $e');
     }
   }
-  
-  void _recreateFeedScreen() {
-    try {
-      debugPrint('🔄 Recreating feed screen with starting video: ${_lastFeedVideo?.id.substring(0, 8) ?? 'none'}');
-      
-      // Update the feed screen in the screens list with the new starting video
-      _screens[0] = FeedScreenV2(
-        key: _feedScreenKey,
-        startingVideo: _lastFeedVideo,
-      );
-      
-      // Force a rebuild to apply the new feed screen
-      setState(() {});
-      
-      // Clear the captured video since we've used it
-      _lastFeedVideo = null;
-    } catch (e) {
-      debugPrint('⚠️ Error recreating feed screen: $e');
-      // Fallback to just resuming videos
-      _resumeFeedVideos();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => _onTabTapped(index),
@@ -913,10 +888,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               await ageVerificationService.setAgeVerified(true);
               if (mounted) {
                 // Use universal camera screen that works on all platforms
-                Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
                 );
+                
+                // After returning from camera, refresh profile if on profile tab
+                if (mounted && _currentIndex == 3) {
+                  debugPrint('🔄 Refreshing profile after camera return');
+                  final profileVideosProvider = context.read<ProfileVideosProvider>();
+                  profileVideosProvider.refreshVideos();
+                }
               }
             } else {
               // User is under 16 or declined
@@ -931,10 +913,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             }
           } else if (mounted) {
             // Already verified, go to camera
-            Navigator.push(
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
             );
+            
+            // After returning from camera, refresh profile if on profile tab
+            if (mounted && _currentIndex == 3) {
+              debugPrint('🔄 Refreshing profile after camera return');
+              final profileVideosProvider = context.read<ProfileVideosProvider>();
+              profileVideosProvider.refreshVideos();
+            }
           }
         },
         backgroundColor: VineTheme.vineGreen,

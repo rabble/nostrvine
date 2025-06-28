@@ -28,6 +28,9 @@ class VideoEventService extends ChangeNotifier {
   List<String>? _activeHashtagFilter;
   String? _activeGroupFilter;
   
+  // Track active subscription parameters to properly detect duplicates
+  final Map<String, dynamic> _currentSubscriptionParams = {};
+  
   // Duplicate event aggregation for logging
   int _duplicateVideoEventCount = 0;
   DateTime? _lastDuplicateVideoLogTime;
@@ -90,8 +93,8 @@ class VideoEventService extends ChangeNotifier {
       return;
     }
     
-    // Prevent duplicate subscriptions if already subscribed and no parameters changed
-    if (_isSubscribed && authors == null && hashtags == null && since == null && until == null) {
+    // Check if this is a duplicate subscription by comparing parameters
+    if (_isSubscribed && _isDuplicateSubscription(authors, hashtags, group, limit, since, until)) {
       debugPrint('🎥 Subscription request ignored, already subscribed with same parameters.');
       return;
     }
@@ -230,6 +233,15 @@ class VideoEventService extends ChangeNotifier {
       }
       
       _isSubscribed = true;
+      
+      // Store current subscription parameters for duplicate detection
+      _currentSubscriptionParams.clear();
+      _currentSubscriptionParams['authors'] = authors;
+      _currentSubscriptionParams['hashtags'] = hashtags;
+      _currentSubscriptionParams['group'] = group;
+      _currentSubscriptionParams['since'] = since;
+      _currentSubscriptionParams['until'] = until;
+      _currentSubscriptionParams['limit'] = limit;
       
       debugPrint('✅ Video event subscription established successfully!');
       
@@ -839,6 +851,7 @@ class VideoEventService extends ChangeNotifier {
     try {
       await _cancelExistingSubscriptions();
       _isSubscribed = false;
+      _currentSubscriptionParams.clear();
       
       debugPrint('✅ Successfully unsubscribed from all video events');
     } catch (e) {
@@ -1247,6 +1260,48 @@ class VideoEventService extends ChangeNotifier {
       _lastDuplicateVideoLogTime = now;
       _duplicateVideoEventCount = 0;
     }
+  }
+  
+  /// Check if the given subscription parameters match the current active subscription
+  bool _isDuplicateSubscription(
+    List<String>? authors,
+    List<String>? hashtags,
+    String? group,
+    int limit,
+    int? since,
+    int? until,
+  ) {
+    // If no active subscriptions, it's not a duplicate
+    if (_subscriptions.isEmpty && _activeSubscriptionIds.isEmpty) {
+      return false;
+    }
+    
+    // Compare with stored subscription parameters
+    final currentAuthors = _currentSubscriptionParams['authors'] as List<String>?;
+    final currentHashtags = _currentSubscriptionParams['hashtags'] as List<String>?;
+    final currentGroup = _currentSubscriptionParams['group'] as String?;
+    final currentSince = _currentSubscriptionParams['since'] as int?;
+    final currentUntil = _currentSubscriptionParams['until'] as int?;
+    final currentLimit = _currentSubscriptionParams['limit'] as int?;
+    
+    // Check if parameters match
+    return _listEquals(authors, currentAuthors) &&
+           _listEquals(hashtags, currentHashtags) &&
+           group == currentGroup &&
+           since == currentSince &&
+           until == currentUntil &&
+           limit == currentLimit;
+  }
+  
+  /// Helper to compare two lists for equality
+  bool _listEquals<T>(List<T>? a, List<T>? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
   
   @override

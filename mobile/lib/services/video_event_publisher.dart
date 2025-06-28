@@ -493,6 +493,23 @@ class VideoEventPublisher extends ChangeNotifier {
     }
   }
   
+  /// Publish a video event with custom metadata
+  Future<bool> publishVideoEvent({
+    required PendingUpload upload,
+    String? title,
+    String? description,
+    List<String>? hashtags,
+  }) async {
+    // Create a temporary upload with updated metadata
+    final updatedUpload = upload.copyWith(
+      title: title ?? upload.title,
+      description: description ?? upload.description,
+      hashtags: hashtags ?? upload.hashtags,
+    );
+    
+    return publishDirectUpload(updatedUpload);
+  }
+  
   /// Publish a video directly without polling (for direct upload)
   Future<bool> publishDirectUpload(PendingUpload upload) async {
     if (upload.videoId == null || upload.cdnUrl == null) {

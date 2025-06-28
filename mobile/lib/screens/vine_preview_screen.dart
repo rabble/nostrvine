@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../services/upload_manager.dart';
 import '../services/auth_service.dart';
+import '../services/video_event_publisher.dart';
+import '../models/pending_upload.dart';
 import '../theme/vine_theme.dart';
 
 class VinePreviewScreen extends StatefulWidget {
@@ -527,22 +529,35 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
           .where((tag) => tag.isNotEmpty)
           .toList();
       
-      // For now, start a new upload with the correct metadata
-      // TODO: Implement updateUploadMetadata in UploadManager to optimize this
-      await uploadManager.startUpload(
-        videoFile: widget.videoFile,
-        nostrPubkey: userPubkey,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        hashtags: hashtags,
-      );
+      // Find the existing upload by file path
+      final existingUpload = uploadManager.getUploadByFilePath(widget.videoFile.path);
       
-      debugPrint('✅ Started upload with user metadata');
+      if (existingUpload != null && existingUpload.status == UploadStatus.readyToPublish) {
+        // Use the existing upload data to publish directly
+        debugPrint('📤 Publishing existing upload: ${existingUpload.id}');
+        debugPrint('🔗 CDN URL: ${existingUpload.cdnUrl}');
+        
+        // Get the video event publisher
+        final videoEventPublisher = context.read<VideoEventPublisher>();
+        
+        // Create and publish the Nostr event with user's metadata
+        await videoEventPublisher.publishVideoEvent(
+          upload: existingUpload,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          hashtags: hashtags,
+        );
+        
+        debugPrint('✅ Published video with user metadata');
+      } else {
+        // Fallback: if upload not found or not ready, show error
+        throw Exception('Upload not ready. Please wait for upload to complete.');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🚀 Vine is being published to Nostr...'),
+            content: Text('🚀 Vine published successfully!'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
           ),

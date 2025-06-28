@@ -73,7 +73,7 @@ class FeedScreenV2 extends StatefulWidget {
   }
 }
 
-class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver {
+class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   IVideoManager? _videoManager;
   VideoEventBridge? _videoEventBridge;
@@ -84,6 +84,9 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   bool _isUserScrolling = false; // Track if user is actively scrolling
   bool _isLoadingMore = false; // Track if we're currently loading more videos
   DateTime? _lastPaginationRequest; // Prevent too frequent pagination requests
+
+  @override
+  bool get wantKeepAlive => true; // Keep state alive when using IndexedStack
 
   @override
   void initState() {
@@ -395,6 +398,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

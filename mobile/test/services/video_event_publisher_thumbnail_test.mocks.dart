@@ -133,6 +133,13 @@ class MockUploadManager extends _i1.Mock implements _i6.UploadManager {
       )) as _i2.PendingUpload?);
 
   @override
+  _i2.PendingUpload? getUploadByFilePath(String? filePath) =>
+      (super.noSuchMethod(Invocation.method(
+        #getUploadByFilePath,
+        [filePath],
+      )) as _i2.PendingUpload?);
+
+  @override
   _i7.Future<void> markUploadPublished(
     String? uploadId,
     String? nostrEventId,

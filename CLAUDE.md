@@ -68,6 +68,55 @@ npm test                           # Run backend tests
 
 **Never** mark a Flutter task as complete without running analysis and addressing all issues.
 
+### Asynchronous Programming Standards
+**CRITICAL RULE**: NEVER use arbitrary delays or `Future.delayed()` as a solution to timing issues. This is crude, unreliable, and unprofessional.
+
+**ALWAYS use proper asynchronous patterns instead**:
+- **Callbacks**: Use proper event callbacks and listeners
+- **Completers**: Use `Completer<T>` for custom async operations
+- **Streams**: Use `Stream` and `StreamController` for event sequences  
+- **Future chaining**: Use `then()`, `catchError()`, and `whenComplete()`
+- **State management**: Use proper state change notifications
+- **Platform channels**: Use method channels with proper completion handling
+
+**Examples of FORBIDDEN patterns**:
+```dart
+// ❌ NEVER DO THIS
+await Future.delayed(Duration(milliseconds: 500));
+await Future.delayed(Duration(seconds: 2));
+Timer(Duration(milliseconds: 100), () => checkAgain());
+```
+
+**Examples of CORRECT patterns**:
+```dart
+// ✅ Use callbacks and completers
+final completer = Completer<String>();
+controller.onInitialized = () => completer.complete('ready');
+return completer.future;
+
+// ✅ Use streams for events
+final controller = StreamController<CameraEvent>();
+await controller.stream.where((e) => e.type == 'initialized').first;
+
+// ✅ Use proper state notifications
+class Controller extends ChangeNotifier {
+  bool _initialized = false;
+  bool get isInitialized => _initialized;
+  Future<void> waitForInitialization() async {
+    if (_initialized) return;
+    final completer = Completer<void>();
+    void listener() {
+      if (_initialized) {
+        removeListener(listener);
+        completer.complete();
+      }
+    }
+    addListener(listener);
+    return completer.future;
+  }
+}
+```
+
 ## Key Files
 - `mobile/lib/services/camera_service.dart` - Hybrid frame capture implementation
 - `mobile/lib/screens/camera_screen.dart` - Camera UI with real preview

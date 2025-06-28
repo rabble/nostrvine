@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/pending_upload.dart';
+import '../utils/async_utils.dart';
 import 'direct_upload_service.dart';
 import 'circuit_breaker_service.dart';
 
@@ -122,6 +123,17 @@ class UploadManager extends ChangeNotifier {
   PendingUpload? getUpload(String id) {
     return _uploadsBox?.get(id);
   }
+  
+  /// Get an upload by file path
+  PendingUpload? getUploadByFilePath(String filePath) {
+    try {
+      return pendingUploads.firstWhere(
+        (upload) => upload.localVideoPath == filePath,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 
   /// Update an upload's status to published with Nostr event ID
   Future<void> markUploadPublished(String uploadId, String nostrEventId) async {
@@ -210,73 +222,50 @@ class UploadManager extends ChangeNotifier {
     }
   }
 
-  /// Perform upload with exponential backoff retry
+  /// Perform upload with exponential backoff retry using proper async patterns
   Future<void> _performUploadWithRetry(PendingUpload upload, File videoFile) async {
-    int currentRetry = upload.retryCount ?? 0;
-    Duration currentDelay = _retryConfig.initialDelay;
-    
-    while (currentRetry <= _retryConfig.maxRetries) {
-      try {
-        // Check circuit breaker state
-        if (!_circuitBreaker.allowRequests) {
-          throw Exception('Circuit breaker is open - service unavailable');
-        }
-        
-        debugPrint('🚀 Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}');
-        
-        // Update status
-        await _updateUpload(upload.copyWith(
-          status: currentRetry == 0 ? UploadStatus.uploading : UploadStatus.retrying,
-          retryCount: currentRetry,
-        ));
-        
-        // Validate file still exists
-        if (!videoFile.existsSync()) {
-          throw Exception('Video file not found: ${upload.localVideoPath}');
-        }
-        
-        // Execute upload with timeout
-        final result = await _executeUploadWithTimeout(upload, videoFile);
-        
-        // Success - record metrics and complete
-        await _handleUploadSuccess(upload, result);
-        _circuitBreaker.recordSuccess(upload.localVideoPath);
-        return;
-        
-      } catch (e) {
-        debugPrint('❌ Upload attempt ${currentRetry + 1} failed: $e');
-        _circuitBreaker.recordFailure(upload.localVideoPath, e.toString());
-        
-        // Check if we should retry
-        if (currentRetry >= _retryConfig.maxRetries) {
-          throw Exception('Upload failed after ${_retryConfig.maxRetries + 1} attempts: $e');
-        }
-        
-        // Check if error is retriable
-        if (!_isRetriableError(e)) {
-          throw Exception('Non-retriable error: $e');
-        }
-        
-        // Wait before retry with exponential backoff
-        debugPrint('⏳ Waiting ${currentDelay.inSeconds}s before retry...');
-        await Future.delayed(currentDelay);
-        
-        // Calculate next delay with jitter
-        currentDelay = Duration(
-          milliseconds: min(
-            (currentDelay.inMilliseconds * _retryConfig.backoffMultiplier).round(),
-            _retryConfig.maxDelay.inMilliseconds,
-          ),
-        );
-        
-        // Add jitter to prevent thundering herd
-        final jitter = Random().nextDouble() * 0.1; // 0-10% jitter
-        currentDelay = Duration(
-          milliseconds: (currentDelay.inMilliseconds * (1 + jitter)).round(),
-        );
-        
-        currentRetry++;
-      }
+    try {
+      await AsyncUtils.retryWithBackoff(
+        operation: () async {
+          // Check circuit breaker state
+          if (!_circuitBreaker.allowRequests) {
+            throw Exception('Circuit breaker is open - service unavailable');
+          }
+          
+          // Update status based on current retry count
+          final currentRetry = upload.retryCount ?? 0;
+          debugPrint('🚀 Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}');
+          
+          await _updateUpload(upload.copyWith(
+            status: currentRetry == 0 ? UploadStatus.uploading : UploadStatus.retrying,
+            retryCount: currentRetry,
+          ));
+          
+          // Validate file still exists
+          if (!videoFile.existsSync()) {
+            throw Exception('Video file not found: ${upload.localVideoPath}');
+          }
+          
+          // Execute upload with timeout
+          final result = await _executeUploadWithTimeout(upload, videoFile);
+          
+          // Success - record metrics and complete
+          await _handleUploadSuccess(upload, result);
+          _circuitBreaker.recordSuccess(upload.localVideoPath);
+        },
+        maxRetries: _retryConfig.maxRetries,
+        baseDelay: _retryConfig.initialDelay,
+        maxDelay: _retryConfig.maxDelay,
+        backoffMultiplier: _retryConfig.backoffMultiplier,
+        retryWhen: (error) {
+          _circuitBreaker.recordFailure(upload.localVideoPath, error.toString());
+          return _isRetriableError(error);
+        },
+        debugName: 'Upload-${upload.id}',
+      );
+    } catch (e) {
+      debugPrint('❌ Upload failed after all retries: $e');
+      rethrow;
     }
   }
 

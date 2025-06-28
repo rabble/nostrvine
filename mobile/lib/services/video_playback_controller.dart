@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../utils/unified_logger.dart';
+import '../utils/async_utils.dart';
 
 /// Configuration for video playback behavior
 class VideoPlaybackConfig {
@@ -289,19 +290,30 @@ class VideoPlaybackController extends ChangeNotifier with WidgetsBindingObserver
       return;
     }
 
-    _retryCount++;
-    UnifiedLogger.info('Retrying video (attempt $_retryCount): ${video.id.substring(0, 8)}...', 
-        name: 'VideoPlaybackController');
-
     // Clean up current controller
     await _disposeController();
     
-    // Wait before retrying
-    await Future.delayed(config.retryDelay);
-    
-    // Reset state and retry
-    _state = VideoPlaybackState.notInitialized;
-    await initialize();
+    // Use proper exponential backoff instead of fixed delay
+    try {
+      await AsyncUtils.retryWithBackoff(
+        operation: () async {
+          _retryCount++;
+          UnifiedLogger.info('Retrying video (attempt $_retryCount): ${video.id.substring(0, 8)}...', 
+              name: 'VideoPlaybackController');
+          
+          // Reset state and retry
+          _state = VideoPlaybackState.notInitialized;
+          await initialize();
+        },
+        maxRetries: config.maxRetries - _retryCount,
+        baseDelay: config.retryDelay,
+        debugName: 'VideoPlayback-${video.id.substring(0, 8)}',
+      );
+    } catch (e) {
+      UnifiedLogger.warning('Retry failed for video: ${video.id.substring(0, 8)}... - $e', 
+          name: 'VideoPlaybackController');
+      _setState(VideoPlaybackState.error);
+    }
   }
 
   /// Navigation helper for consistent pause/resume behavior

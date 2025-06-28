@@ -59,6 +59,9 @@ class VideoManagerService implements IVideoManager {
   /// Service for filtering blocked content
   final ContentBlocklistService? _blocklistService;
   
+  /// Set of pubkeys that the user follows - for feed priority
+  Set<String> _followingPubkeys = {};
+  
   /// Main video list - single source of truth
   final List<VideoEvent> _videos = [];
   
@@ -92,6 +95,12 @@ class VideoManagerService implements IVideoManager {
   }) : _config = config ?? const VideoManagerConfig(),
        _seenVideosService = seenVideosService,
        _blocklistService = blocklistService;
+  
+  /// Update the list of pubkeys the user is following for feed prioritization
+  void updateFollowingList(Set<String> followingPubkeys) {
+    _followingPubkeys = Set.from(followingPubkeys);
+    Log.info('Updated following list: ${_followingPubkeys.length} accounts', name: 'VideoManager');
+  }
   
   @override
   List<VideoEvent> get videos => List.unmodifiable(_videos);
@@ -132,7 +141,7 @@ class VideoManagerService implements IVideoManager {
     
     // Check blocklist - filter out blocked content
     if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
-      Log.info('🚫 Blocked video from ${event.pubkey.substring(0, 8)}... filtered out', name: 'VideoManager');
+      Log.info('🚫 Blocked video from ${event.pubkey.substring(0, 8)}... filtered out', name: 'VideoManager', category: LogCategory.video);
       return;
     }
     
@@ -142,10 +151,18 @@ class VideoManagerService implements IVideoManager {
       return;
     }
     
-    // Always append videos to the end to prevent index misalignment during playback
-    // TODO: Implement proper priority ordering that doesn't disrupt active user interaction
-    _videos.add(event);
-    Log.info('Added video to end: ${event.id}', name: 'VideoManager');
+    // Priority insertion: Following feed goes to front, discovery feed goes to back
+    if (_followingPubkeys.contains(event.pubkey)) {
+      // Videos from people you follow get inserted at the front of their section
+      final lastFollowingIndex = _videos.lastIndexWhere((v) => _followingPubkeys.contains(v.pubkey));
+      final insertIndex = lastFollowingIndex == -1 ? 0 : lastFollowingIndex + 1;
+      _videos.insert(insertIndex, event);
+      Log.info('Added following video to front at index $insertIndex: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
+    } else {
+      // Discovery videos (randoms) go to the end
+      _videos.add(event);
+      Log.info('Added discovery video to end: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
+    }
     
     // Initialize state
     _videoStates[event.id] = VideoState(event: event);
@@ -226,7 +243,7 @@ class VideoManagerService implements IVideoManager {
     final start = (currentIndex - _config.preloadBehind).clamp(0, _videos.length - 1);
     final end = (currentIndex + range).clamp(0, _videos.length - 1);
     
-    Log.info('🚀 Preloading around index $currentIndex (range: $start-$end), total videos: ${_videos.length}', name: 'VideoManager');
+    Log.info('🚀 Preloading around index $currentIndex (range: $start-$end), total videos: ${_videos.length}', name: 'VideoManager', category: LogCategory.video);
     
     // Dispose controllers for videos outside the viewing window
     _disposeUnusedControllers(currentIndex);
@@ -234,25 +251,25 @@ class VideoManagerService implements IVideoManager {
     // Preload in priority order: current, next, previous, then expanding range
     final priorityOrder = _calculatePreloadPriority(currentIndex, start, end);
     
-    Log.debug('📋 Checking ${priorityOrder.length} videos for preloading...', name: 'VideoManager');
+    Log.debug('📋 Checking ${priorityOrder.length} videos for preloading...', name: 'VideoManager', category: LogCategory.video);
     for (final index in priorityOrder) {
       if (index < _videos.length) {
         final videoId = _videos[index].id;
         final state = getVideoState(videoId);
         
         final shortId = videoId.length >= 8 ? videoId.substring(0, 8) : videoId;
-        Log.verbose('🔍 Video $index: $shortId - state: ${state?.loadingState}, active: ${_activePreloads.contains(videoId)}', name: 'VideoManager');
+        Log.verbose('🔍 Video $index: $shortId - state: ${state?.loadingState}, active: ${_activePreloads.contains(videoId)}', name: 'VideoManager', category: LogCategory.video);
         
         if (state != null && 
             state.loadingState == VideoLoadingState.notLoaded && 
             !_activePreloads.contains(videoId)) {
-          Log.info('▶️ Starting preload for video $index: ${videoId.substring(0, 8)}', name: 'VideoManager');
+          Log.info('▶️ Starting preload for video $index: ${videoId.substring(0, 8)}', name: 'VideoManager', category: LogCategory.video);
           // Fire and forget - don't await to avoid blocking
           preloadVideo(videoId).catchError((e) {
             Log.error('❌ Background preload failed for ${videoId.substring(0, 8)}: $e', name: 'VideoManager', error: e);
           });
         } else {
-          Log.verbose('⏭️ Skipping video $index: ${videoId.substring(0, 8)} (state: ${state?.loadingState})', name: 'VideoManager');
+          Log.verbose('⏭️ Skipping video $index: ${videoId.substring(0, 8)} (state: ${state?.loadingState})', name: 'VideoManager', category: LogCategory.video);
         }
       }
     }

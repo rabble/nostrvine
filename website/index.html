@@ -59,121 +59,63 @@
                 <h3>Channels</h3>
                 <div class="vine-category-grid">
                     <!-- Row 1 -->
-                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('editors-picks')" title="Editor's Picks">📹</div>
-                    <div class="vine-category-item vine-playlist" onclick="showPlaylist('featured')" title="Featured Viners">📹</div>
+                    <div class="vine-category-item" onclick="showPlaylist('editors-picks')" title="Editor's Picks">📹</div>
+                    <div class="vine-category-item" onclick="showPlaylist('featured')" title="Featured Viners">⭐</div>
                     <div class="vine-category-item" onclick="filterByCategory('comedy')" title="Comedy">😂</div>
+                    <div class="vine-category-item" onclick="filterByCategory('cool')" title="Cool">😎</div>
                     
                     <!-- Row 2 -->
-                    <div class="vine-category-item" onclick="filterByCategory('cool')" title="Cool">😎</div>
                     <div class="vine-category-item" onclick="filterByCategory('girls')" title="Girls">👧</div>
                     <div class="vine-category-item" onclick="filterByCategory('guys')" title="Guys">🧔</div>
-                    
-                    <!-- Row 3 -->
                     <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming">🎮</div>
                     <div class="vine-category-item" onclick="filterByCategory('popnow')" title="Pop Now">💥</div>
-                    <div class="vine-category-item" onclick="filterByCategory('musicdance')" title="Music & Dance">🎵</div>
                     
-                    <!-- Row 4 -->
-                    <div class="vine-category-item" onclick="filterByCategory('ideas')" title="Ideas">🎹</div>
+                    <!-- Row 3 -->
+                    <div class="vine-category-item" onclick="filterByCategory('musicdance')" title="Music & Dance">🎵</div>
+                    <div class="vine-category-item" onclick="filterByCategory('ideas')" title="Ideas">💡</div>
                     <div class="vine-category-item" onclick="filterByCategory('trending')" title="Trending">📊</div>
                     <div class="vine-category-item" onclick="filterByCategory('special')" title="Special">⚡</div>
                     
-                    <!-- Row 5 -->
+                    <!-- Row 4 -->
                     <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals">🦊</div>
-                    <div class="vine-category-item" onclick="filterByCategory('places')" title="Places & Travel">👁</div>
-                    <div class="vine-category-item" onclick="filterByCategory('family')" title="Family">🦉</div>
-                    
-                    <!-- Row 6 -->
+                    <div class="vine-category-item" onclick="filterByCategory('places')" title="Places & Travel">🗺️</div>
+                    <div class="vine-category-item" onclick="filterByCategory('family')" title="Family">👨‍👩‍👧‍👦</div>
                     <div class="vine-category-item" onclick="filterByCategory('artdesign')" title="Art & Design">🎨</div>
+                    
+                    <!-- Row 5 -->
                     <div class="vine-category-item" onclick="filterByCategory('scary')" title="Scary">💀</div>
                     <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports">🏃</div>
-                    
-                    <!-- Row 7 -->
                     <div class="vine-category-item" onclick="filterByCategory('cars')" title="Cars">🚗</div>
                     <div class="vine-category-item" onclick="filterByCategory('food')" title="Food">🍔</div>
-                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY">🔨</div>
                     
-                    <!-- Row 8 -->
+                    <!-- Row 6 -->
+                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY">🔨</div>
                     <div class="vine-category-item" onclick="filterByCategory('news')" title="News & Politics">📱</div>
                     <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion & Beauty">💄</div>
                     <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature">🏔️</div>
                 </div>
             </div>
+            
+            <!-- Editor's Pick -->
+            <!-- <div class="vine-editors-pick">
+                <h3>Editor's Pick</h3>
+                <div class="vine-editors-video" id="editorsPickVideo">
+                </div>
+            </div> -->
+            
+            <!-- About OpenVine -->
+            <div class="vine-about-section">
+                <h3>Welcome back</h3>
+                <p>OpenVine brings back 6-second looping videos. No algorithms. No filters. Just pure, authentic creativity.</p>
+                <a href="about.html" class="vine-about-link">Our story →</a>
+            </div>
         </aside>
 
         <!-- Main Content -->
         <main class="vine-main-content">
-            <!-- Playlist Container -->
-            <div class="vine-playlist-container">
-                <!-- Playlist Header -->
-                <div class="vine-playlist-header">
-                    <h2>Vine Playlist</h2>
-                </div>
-                
-                <!-- Main Playlist Video -->
-                <div class="vine-playlist-video">
-                    <div class="vine-video-wrapper">
-                        <video id="vinePlaylistPlayer" autoplay muted loop playsinline>
-                        </video>
-                    </div>
-                    <div class="vine-playlist-info">
-                        <h3 id="playlistVideoTitle">Loading...</h3>
-                        <p class="vine-playlist-counter">
-                            <span id="currentVideoIndex">1</span> of <span id="totalVideos">20</span>
-                        </p>
-                        <div class="vine-playlist-actions">
-                            <button class="vine-action-btn" onclick="previousVideo()" title="Previous">
-                                <span style="font-size: 18px;">‹</span>
-                            </button>
-                            <button class="vine-action-btn" onclick="nextVideo()" title="Next">
-                                <span style="font-size: 18px;">›</span>
-                            </button>
-                            <button class="vine-action-btn" onclick="shareVideo()">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                                    <polyline points="16 6 12 2 8 6"></polyline>
-                                    <line x1="12" y1="2" x2="12" y2="15"></line>
-                                </svg>
-                            </button>
-                            <button class="vine-action-btn" onclick="likeVideo()">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="vine-loop-count"><span id="loopCount">0</span> Loops</p>
-                    </div>
-                </div>
-                
-                <!-- Featured in Category Section -->
-                <div class="vine-featured-section">
-                    <h3 class="vine-section-title">
-                        <span class="vine-category-icon">😂</span>
-                        Featured in Comedy
-                    </h3>
-                    <div class="vine-featured-grid" id="featuredCategoryGrid">
-                        <!-- Featured videos will be loaded here -->
-                    </div>
-                </div>
-                
-                <!-- Featured Viners Section -->
-                <div class="vine-featured-viners">
-                    <h3>Featured Viners</h3>
-                    <div class="vine-viners-row" id="featuredVinersRow">
-                        <!-- Featured viners will be loaded here -->
-                    </div>
-                </div>
-                
-                <!-- Editor's Pick Section -->
-                <div class="vine-editors-pick">
-                    <h3 class="vine-section-title">
-                        <span class="vine-category-icon">⭐</span>
-                        Editor's Pick
-                    </h3>
-                    <div class="vine-editors-video" id="editorsPickVideo">
-                        <!-- Editor's pick video will be loaded here -->
-                    </div>
-                </div>
+            <!-- Video Feed Container -->
+            <div class="vine-video-feed" id="vineVideoFeed">
+                <!-- Videos will be dynamically loaded here -->
             </div>
         </main>
     </div>
@@ -193,84 +135,6 @@
                 reposts: Math.floor(Math.random() * 100),
                 loops: 0,
                 category: 'editors-picks'
-            },
-            {
-                id: '5002Pdq9gIQ',
-                url: 'https://api.openvine.co/media/1751108565064-82a02417',
-                thumbnail: 'https://api.openvine.co/media/1751108567985-717489e4',
-                username: 'Unknown',
-                title: 'My "miss you"s were misused. I never missed you. I just missed your boobs. #tb',
-                avatar: '💔',
-                likes: Math.floor(64407 * 0.1),
-                comments: Math.floor(64407 * 0.05),
-                reposts: Math.floor(64407 * 0.02),
-                loops: 64407,
-                category: 'trending'
-            },
-            {
-                id: '5000hh3phKM',
-                url: 'https://api.openvine.co/media/1751108573465-ad9a31c4',
-                thumbnail: 'https://api.openvine.co/media/1751108576206-8ce7582d',
-                username: 'Unknown',
-                title: 'MY DICK FELL OFF',
-                avatar: '😂',
-                likes: Math.floor(42078 * 0.1),
-                comments: Math.floor(42078 * 0.05),
-                reposts: Math.floor(42078 * 0.02),
-                loops: 42078,
-                category: 'trending'
-            },
-            {
-                id: '5001pYJahie',
-                url: 'https://api.openvine.co/media/1751108580795-d49105d2',
-                thumbnail: 'https://api.openvine.co/media/1751108583804-34fc2ece',
-                username: 'Unknown',
-                title: 'الحمدلله الي ماشفتها لايف ، منيف يقوله سالم قريت الكتاب قال سالم لا 😷😆😆😩',
-                avatar: '🌍',
-                likes: Math.floor(23661 * 0.1),
-                comments: Math.floor(23661 * 0.05),
-                reposts: Math.floor(23661 * 0.02),
-                loops: 23661,
-                category: 'trending'
-            },
-            {
-                id: '5003EnYImK7',
-                url: 'https://api.openvine.co/media/1751108588762-615418e7',
-                thumbnail: 'https://api.openvine.co/media/1751108592461-c1dbc31c',
-                username: 'Unknown',
-                title: '"Want my pickle?"\ncc : vahan bio\nI miss him',
-                avatar: '🥒',
-                likes: Math.floor(18547 * 0.1),
-                comments: Math.floor(18547 * 0.05),
-                reposts: Math.floor(18547 * 0.02),
-                loops: 18547,
-                category: 'trending'
-            },
-            {
-                id: '5000ttzmxAg',
-                url: 'https://api.openvine.co/media/1751108597066-8c6e87f5',
-                thumbnail: 'https://api.openvine.co/media/1751108600526-0861f454',
-                username: 'Unknown',
-                title: '桐山さんお疲れ様です②（私もその1人ですごめんなさい）',
-                avatar: '🌸',
-                likes: Math.floor(3647 * 0.1),
-                comments: Math.floor(3647 * 0.05),
-                reposts: Math.floor(3647 * 0.02),
-                loops: 3647,
-                category: 'special'
-            },
-            {
-                id: '5000IAezU99',
-                url: 'https://api.openvine.co/media/1751108612675-a475b5f8',
-                thumbnail: 'https://api.openvine.co/media/1751108615363-96ee0b38',
-                username: 'Unknown',
-                title: '桐山さんお疲れ様です①',
-                avatar: '🌸',
-                likes: Math.floor(1764 * 0.1),
-                comments: Math.floor(1764 * 0.05),
-                reposts: Math.floor(1764 * 0.02),
-                loops: 1764,
-                category: 'special'
             },
             {
                 id: '5003PhXAQFz',
@@ -338,19 +202,6 @@
                 category: 'animals'
             },
             {
-                id: '5003T5TrJLv',
-                url: 'https://api.openvine.co/media/1751108658022-b2a34869',
-                thumbnail: 'https://api.openvine.co/media/1751108660681-8938f3df',
-                username: 'Unknown',
-                title: '#モニタリング #登坂広臣 #臣 #広臣 #三代目 #クリスマス 🎅💜 🎄 #プレゼント  🎁 #直人 さんのむちゃぶりに #たじたじ 💘😹笑',
-                avatar: '🎄',
-                likes: Math.floor(560 * 0.1),
-                comments: Math.floor(560 * 0.05),
-                reposts: Math.floor(560 * 0.02),
-                loops: 560,
-                category: 'special'
-            },
-            {
                 id: 'MKAExjBYQ0Z',
                 url: 'https://api.openvine.co/media/1751108665248-352c2d1e',
                 thumbnail: 'https://api.openvine.co/media/1751108669004-0bb5f787',
@@ -388,19 +239,6 @@
                 reposts: Math.floor(215 * 0.02),
                 loops: 215,
                 category: 'special'
-            },
-            {
-                id: '5001m79xqaI',
-                url: 'https://api.openvine.co/media/1751108691447-b1cb958c',
-                thumbnail: 'https://api.openvine.co/media/1751108695171-7bbead0a',
-                username: 'Unknown',
-                title: 'なんだなんだキムテヒョンｗｗｗ付き合ってんの？ｗｗｗ#BTS #防弾少年団 #kimtaehyung #テテ',
-                avatar: '🎵',
-                likes: Math.floor(327 * 0.1),
-                comments: Math.floor(327 * 0.05),
-                reposts: Math.floor(327 * 0.02),
-                loops: 327,
-                category: 'musicdance'
             },
             {
                 id: 'MTx9LF1PdbB',
@@ -507,19 +345,6 @@
                 category: 'ideas'
             },
             {
-                id: '5001t9jpiTB',
-                url: 'https://api.openvine.co/media/1751108745166-b93f8f5b',
-                thumbnail: 'https://api.openvine.co/media/1751108747813-742a2e62',
-                username: 'Unknown',
-                title: 'I👏🏽love👏🏽my👏🏽bois👏🏽',
-                avatar: '👏',
-                likes: Math.floor(607 * 0.1),
-                comments: Math.floor(607 * 0.05),
-                reposts: Math.floor(607 * 0.02),
-                loops: 607,
-                category: 'special'
-            },
-            {
                 id: '5002wXwQOKX',
                 url: 'https://api.openvine.co/media/1751108751373-97ae67a3',
                 thumbnail: 'https://api.openvine.co/media/1751108754194-19544847',
@@ -561,16 +386,10 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadPlaylistVideo();
-            loadFeaturedCategoryVideos();
-            loadFeaturedVinersRow();
-            loadEditorsPickVideo();
-            setupPlaylistNavigation();
+            loadVideoFeed();
+            // loadEditorsPickVideo(); // Commented out for now
             // Load vine integration but it won't overwrite our featured content
             loadFromVineIntegration();
-            
-            // Auto-advance playlist
-            setInterval(advancePlaylist, 6000);
         });
 
         // Setup audio controls
@@ -598,6 +417,71 @@
 
         // Global mute state
         let isMuted = true;
+
+        // Load video feed
+        function loadVideoFeed() {
+            const feed = document.getElementById('vineVideoFeed');
+            if (!feed) return;
+            
+            // Clear existing content
+            feed.innerHTML = '';
+            
+            // Create video feed items
+            currentVideos.forEach((video, index) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'vine-video-feed-item';
+                videoItem.innerHTML = `
+                    <div class="vine-video-header">
+                        <div class="vine-user-avatar">${video.avatar}</div>
+                        <div class="vine-user-info">
+                            <div class="vine-username">${video.username}</div>
+                            <div class="vine-timestamp">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="vine-video-container">
+                        <video src="${video.url}" 
+                               id="video-${video.id}"
+                               loop 
+                               ${isMuted ? 'muted' : ''}
+                               playsinline
+                               onclick="toggleVideoPlay('${video.id}')"
+                               onmouseover="this.play()" 
+                               onmouseout="this.pause()">
+                        </video>
+                    </div>
+                    <div class="vine-video-footer">
+                        <div class="vine-video-caption">${video.title}</div>
+                        <div class="vine-video-stats">
+                            <span>❤️ ${video.likes.toLocaleString()}</span>
+                            <span>💬 ${video.comments.toLocaleString()}</span>
+                            <span>🔄 ${video.reposts.toLocaleString()}</span>
+                            <span>👁️ ${video.loops.toLocaleString()} loops</span>
+                        </div>
+                    </div>
+                `;
+                feed.appendChild(videoItem);
+            });
+        }
+        
+        // Toggle video play/pause and global mute
+        function toggleVideoPlay(videoId) {
+            const clickedVideo = document.getElementById(`video-${videoId}`);
+            if (!clickedVideo) return;
+            
+            if (clickedVideo.paused) {
+                // If unmuting for the first time, unmute all videos globally
+                if (isMuted) {
+                    isMuted = false;
+                    // Unmute all videos
+                    document.querySelectorAll('video').forEach(video => {
+                        video.muted = false;
+                    });
+                }
+                clickedVideo.play();
+            } else {
+                clickedVideo.pause();
+            }
+        }
 
         // Load playlist video
         function loadPlaylistVideo() {
@@ -702,21 +586,21 @@
             setTimeout(() => generateThumbnails(), 100);
         }
 
-        // Load featured users
-        function loadFeaturedUsers() {
-            const userGrid = document.getElementById('vineFeaturedUsers');
-            if (!userGrid) return;
+        // Load featured viners
+        function loadFeaturedViners() {
+            const vinersList = document.getElementById('featuredVinersList');
+            if (!vinersList) return;
             
             const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff8cc8', '#95e1d3'];
             
-            userGrid.innerHTML = FEATURED_USERS.map((user, index) => `
-                <div class="vine-user-item" onclick="viewProfile('${user.username}')">
-                    <div class="vine-user-avatar-large" style="background: ${colors[index % colors.length]}">
+            vinersList.innerHTML = FEATURED_USERS.map((user, index) => `
+                <div class="vine-viner-item" onclick="window.location.href='featured-viners.html'">
+                    <div class="vine-viner-avatar" style="background: ${colors[index % colors.length]}">
                         ${user.avatar}
                     </div>
-                    <div class="vine-user-info">
-                        <h4>${user.username}</h4>
-                        <p>${user.followers} followers</p>
+                    <div class="vine-viner-info">
+                        <div class="vine-viner-name">${user.username}</div>
+                        <div class="vine-viner-followers">${user.followers} followers</div>
                     </div>
                 </div>
             `).join('');
@@ -1075,14 +959,36 @@
             const editorsPick = currentVideos[Math.floor(Math.random() * currentVideos.length)];
             
             container.innerHTML = `
-                <div class="vine-editors-pick-thumb" onclick="playFromPlaylist('${editorsPick.id}')">
-                    <video src="${editorsPick.url}" muted preload="metadata" onloadedmetadata="this.currentTime = 1"></video>
-                    <div class="vine-editors-overlay">
-                        <h4>${editorsPick.username}</h4>
-                        <p>Editor's Pick of the Day</p>
-                    </div>
-                </div>
+                <video src="${editorsPick.url}" 
+                       id="editors-pick-video"
+                       ${isMuted ? 'muted' : ''}
+                       loop
+                       playsinline
+                       onclick="toggleEditorsPickVideo()"
+                       onmouseover="this.play()" 
+                       onmouseout="this.pause()">
+                </video>
             `;
+        }
+        
+        // Toggle editor's pick video
+        function toggleEditorsPickVideo() {
+            const video = document.getElementById('editors-pick-video');
+            if (!video) return;
+            
+            if (video.paused) {
+                // If unmuting for the first time, unmute all videos globally
+                if (isMuted) {
+                    isMuted = false;
+                    // Unmute all videos
+                    document.querySelectorAll('video').forEach(v => {
+                        v.muted = false;
+                    });
+                }
+                video.play();
+            } else {
+                video.pause();
+            }
         }
         
         // Setup playlist navigation
@@ -1213,23 +1119,14 @@
             
             if (filtered.length > 0) {
                 currentVideos = filtered;
-                featuredVideoIndex = 0; // Reset to first video
-                loadPlaylistVideo();
-                loadFeaturedCategoryVideos(category); // Update featured section
-                setTimeout(setupHoverPreviews, 100);
-                
-                // Update the playlist counter
-                const totalElement = document.getElementById('totalVideos');
-                if (totalElement) {
-                    totalElement.textContent = filtered.length;
-                }
-                
-                // Scroll to playlist
-                document.querySelector('.vine-playlist-container').scrollIntoView({ behavior: 'smooth' });
+                loadVideoFeed(); // Reload the feed with filtered videos
                 
                 console.log(`Filtered to ${filtered.length} videos in category: ${category}`);
             } else {
-                console.log(`No videos found for category: ${category}`);
+                // Reset to all videos if no matches
+                currentVideos = [...HOMEPAGE_VIDEOS];
+                loadVideoFeed();
+                console.log(`No videos found for category: ${category}, showing all videos`);
             }
         }
 
