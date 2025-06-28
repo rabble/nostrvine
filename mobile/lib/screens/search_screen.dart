@@ -144,6 +144,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         title: TextField(
           controller: _searchController,
           autofocus: true,
+          enableInteractiveSelection: true,
           style: const TextStyle(color: VineTheme.whiteText),
           decoration: const InputDecoration(
             hintText: 'Search videos, users, npub, hashtags...',

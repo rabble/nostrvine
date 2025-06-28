@@ -116,9 +116,18 @@ class UserProfileService extends ChangeNotifier {
     }
     
     // Return cached profile if available and not forcing refresh
-    if (!forceRefresh && _profileCache.containsKey(pubkey)) {
+    if (!forceRefresh && hasProfile(pubkey)) {
+      final cachedProfile = getCachedProfile(pubkey);
+      
+      // Check if we should do a soft refresh (background update)
+      if (cachedProfile != null && _persistentCache?.shouldRefreshProfile(pubkey) == true) {
+        debugPrint('🔄 Profile cached but stale for ${pubkey.substring(0, 8)}... - will refresh in background');
+        // Do a background refresh without blocking the UI
+        Future.microtask(() => _backgroundRefreshProfile(pubkey));
+      }
+      
       debugPrint('👤 Returning cached profile for ${pubkey.substring(0, 8)}...');
-      return _profileCache[pubkey];
+      return cachedProfile;
     }
     
     // Check if already requesting this profile - STOP HERE, don't create duplicate subscriptions
@@ -335,6 +344,23 @@ class UserProfileService extends ChangeNotifier {
     if (_profileCache.remove(pubkey) != null) {
       notifyListeners();
       debugPrint('🗑️ Removed profile from cache: ${pubkey.substring(0, 8)}...');
+    }
+  }
+  
+  /// Background refresh for stale profiles
+  Future<void> _backgroundRefreshProfile(String pubkey) async {
+    // Don't refresh if already pending
+    if (_pendingRequests.contains(pubkey) || 
+        _profileSubscriptions.containsKey(pubkey) || 
+        _activeSubscriptionIds.containsKey(pubkey)) {
+      return;
+    }
+    
+    try {
+      debugPrint('🔄 Background refresh for stale profile ${pubkey.substring(0, 8)}...');
+      await fetchProfile(pubkey, forceRefresh: true);
+    } catch (e) {
+      debugPrint('⚠️ Background refresh failed for ${pubkey.substring(0, 8)}: $e');
     }
   }
   

@@ -313,6 +313,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           Expanded(
             child: TextField(
               controller: controller,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'Write a reply...',
@@ -359,6 +360,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           Expanded(
             child: TextField(
               controller: _commentController,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'Add a comment...',

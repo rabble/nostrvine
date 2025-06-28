@@ -464,6 +464,7 @@ class _WebAuthScreenState extends State<WebAuthScreen> with TickerProviderStateM
             TextField(
               controller: _bunkerUriController,
               enabled: !_isAuthenticating,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'bunker://pubkey?relay=wss://relay.example.com',

@@ -190,10 +190,10 @@ class NostrServiceV2 extends ChangeNotifier implements INostrService {
     // Create stream controller for this subscription
     final controller = StreamController<Event>.broadcast();
     
-    // Generate unique subscription ID
-    final subscriptionId = '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
+    // Generate unique subscription ID with more entropy to prevent collisions
+    final subscriptionId = '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${Object().hashCode}';
     
-    debugPrint('📡 Creating subscription with filters:');
+    debugPrint('📡 Creating subscription $subscriptionId with filters:');
     for (final filter in sdkFilters) {
       debugPrint('  - Filter: $filter');
     }

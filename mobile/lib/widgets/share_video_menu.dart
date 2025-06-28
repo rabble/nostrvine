@@ -587,6 +587,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
           children: [
             TextField(
               controller: _searchController,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: VineTheme.whiteText),
               decoration: const InputDecoration(
                 hintText: 'Search by name, npub, or pubkey...',
@@ -598,6 +599,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _messageController,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: VineTheme.whiteText),
               decoration: const InputDecoration(
                 hintText: 'Add a personal message (optional)',
@@ -897,6 +899,7 @@ class _CreateListDialogState extends State<_CreateListDialog> {
         children: [
           TextField(
             controller: _nameController,
+            enableInteractiveSelection: true,
             style: const TextStyle(color: VineTheme.whiteText),
             decoration: const InputDecoration(
               labelText: 'List Name',
@@ -906,6 +909,7 @@ class _CreateListDialogState extends State<_CreateListDialog> {
           const SizedBox(height: 16),
           TextField(
             controller: _descriptionController,
+            enableInteractiveSelection: true,
             style: const TextStyle(color: VineTheme.whiteText),
             decoration: const InputDecoration(
               labelText: 'Description (optional)',
@@ -1109,6 +1113,7 @@ class _ReportContentDialogState extends State<_ReportContentDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _detailsController,
+              enableInteractiveSelection: true,
               style: const TextStyle(color: VineTheme.whiteText),
               decoration: const InputDecoration(
                 labelText: 'Additional details (optional)',

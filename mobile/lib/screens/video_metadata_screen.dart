@@ -156,6 +156,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                   // Title
                   TextField(
                     controller: _titleController,
+                    enableInteractiveSelection: true,
                     style: const TextStyle(color: VineTheme.primaryText),
                     decoration: InputDecoration(
                       labelText: 'Title',
@@ -177,6 +178,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                   // Description
                   TextField(
                     controller: _descriptionController,
+                    enableInteractiveSelection: true,
                     style: const TextStyle(color: VineTheme.primaryText),
                     decoration: InputDecoration(
                       labelText: 'Description (optional)',
@@ -199,6 +201,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
                   // Hashtags
                   TextField(
                     controller: _hashtagController,
+                    enableInteractiveSelection: true,
                     style: const TextStyle(color: VineTheme.primaryText),
                     decoration: InputDecoration(
                       labelText: 'Add hashtags',

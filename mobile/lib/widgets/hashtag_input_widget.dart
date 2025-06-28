@@ -50,6 +50,7 @@ class _HashtagInputWidgetState extends State<HashtagInputWidget> {
       children: [
         TextField(
           controller: _controller,
+          enableInteractiveSelection: true,
           decoration: InputDecoration(
             hintText: 'Add hashtags... #vine #nostr',
             border: const OutlineInputBorder(),

@@ -180,6 +180,23 @@ class TestVideoManager implements IVideoManager {
   }
 
   @override
+  void stopAllVideos() {
+    // Stop and dispose all controllers
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    _controllers.clear();
+    
+    // Reset all video states to not loaded
+    for (final videoId in _videoStates.keys) {
+      final state = _videoStates[videoId];
+      if (state != null && !state.isDisposed) {
+        _videoStates[videoId] = VideoState(event: state.event);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     for (final controller in _controllers.values) {
       controller.dispose();

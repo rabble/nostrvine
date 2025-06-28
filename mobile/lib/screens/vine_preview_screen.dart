@@ -282,6 +282,7 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
                           ),
                         ),
                         maxLength: 100,
+                        enableInteractiveSelection: true,
                       ),
                       const SizedBox(height: 16),
 
@@ -314,6 +315,7 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
                         ),
                         maxLines: 3,
                         maxLength: 280,
+                        enableInteractiveSelection: true,
                       ),
                       const SizedBox(height: 16),
 
@@ -346,6 +348,7 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
                           prefixText: '#',
                           prefixStyle: const TextStyle(color: VineTheme.vineGreen),
                         ),
+                        enableInteractiveSelection: true,
                       ),
                     ],
                   ),

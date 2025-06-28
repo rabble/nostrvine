@@ -38,10 +38,23 @@ class VideoEventBridge {
     debugPrint('🌉 Initializing VideoEventBridge...');
     
     try {
-      // ALWAYS start with an open feed - show ALL videos from the relay
-      debugPrint('🌍 Loading open feed (ALL videos from relay)');
+      // FIRST PRIORITY: Load classic vines from the special account
+      const classicVinesPubkey = '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856';
+      debugPrint('🎬 Loading 95 classic vines FIRST from: $classicVinesPubkey');
       await _videoEventService.subscribeToVideoFeed(
-        limit: 500, // Get lots of videos for discovery
+        authors: [classicVinesPubkey],
+        limit: 100, // Get all 95 classic vines
+        replace: true, // Start fresh with classic vines
+      );
+      
+      // Wait a moment to ensure classic vines are loaded first
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // THEN load the open feed - show ALL videos from the relay
+      debugPrint('🌍 Loading open feed (ALL videos from relay) AFTER classic vines');
+      await _videoEventService.subscribeToVideoFeed(
+        limit: 300, // Get additional videos for discovery
+        replace: false, // Keep classic vines AND add open feed
       );
       
       // Check if user is following anyone for additional personalized content
@@ -53,7 +66,7 @@ class VideoEventBridge {
         await _videoEventService.subscribeToVideoFeed(
           authors: _socialService!.followingPubkeys,
           limit: 100, // Additional content from follows
-          replace: false, // Keep the open feed AND add personalized content
+          replace: false, // Keep everything AND add personalized content
         );
       }
       
@@ -128,27 +141,53 @@ class VideoEventBridge {
   /// Add events to VideoManager (sync version for initialization)
   Future<void> _addEventsToVideoManager(List<VideoEvent> events) async {
     final existingIds = _videoManager.videos.map((v) => v.id).toSet();
-    final newEvents = events.where((event) => !existingIds.contains(event.id)).toList();
+    // Also check our own processed events to prevent double processing
+    final newEvents = events.where((event) => 
+      !existingIds.contains(event.id) && !_processedEventIds.contains(event.id)
+    ).toList();
     
-    debugPrint('📋 Adding ${newEvents.length} new events to VideoManager');
+    if (newEvents.isEmpty) {
+      debugPrint('📋 No new events to add (${events.length} events already processed)');
+      return;
+    }
+    
+    debugPrint('📋 Adding ${newEvents.length} new events to VideoManager (${events.length} total provided, ${events.length - newEvents.length} already processed)');
+    
+    // Track unique pubkeys for batch profile fetching
+    final newPubkeys = <String>{};
     
     for (final event in newEvents) {
       try {
         await _videoManager.addVideoEvent(event);
         _processedEventIds.add(event.id);
         
-        // Fetch profile immediately for first videos, async for others
+        // Collect unique pubkeys for profile fetching
         if (!_userProfileService.hasProfile(event.pubkey)) {
-          if (existingIds.isEmpty && newEvents.indexOf(event) < 3) {
-            // First 3 videos get immediate profile fetching for fast username display
-            _userProfileService.fetchProfile(event.pubkey);
-          } else {
-            // Other videos get async profile fetching to not block UI
-            Future.microtask(() => _userProfileService.fetchProfile(event.pubkey));
-          }
+          newPubkeys.add(event.pubkey);
         }
       } catch (e) {
         debugPrint('⚠️ Failed to add video ${event.id}: $e');
+      }
+    }
+    
+    // Batch fetch profiles for unique pubkeys only
+    if (newPubkeys.isNotEmpty) {
+      debugPrint('👤 Fetching profiles for ${newPubkeys.length} unique users');
+      
+      if (existingIds.isEmpty) {
+        // First batch - fetch immediately for fast display
+        for (final pubkey in newPubkeys.take(3)) {
+          _userProfileService.fetchProfile(pubkey);
+        }
+        // Fetch remaining async
+        for (final pubkey in newPubkeys.skip(3)) {
+          Future.microtask(() => _userProfileService.fetchProfile(pubkey));
+        }
+      } else {
+        // Subsequent batches - all async to not block UI
+        for (final pubkey in newPubkeys) {
+          Future.microtask(() => _userProfileService.fetchProfile(pubkey));
+        }
       }
     }
     

@@ -10,8 +10,10 @@ class ProfileCacheService extends ChangeNotifier {
   static const String _boxName = 'user_profiles';
   static const int _maxCacheSize = 1000; // Maximum number of profiles to cache
   static const Duration _cacheExpiry = Duration(days: 7); // Cache profiles for 7 days
+  static const Duration _refreshInterval = Duration(hours: 24); // Check for updates after 24 hours
   
   Box<UserProfile>? _profileBox;
+  Box<DateTime>? _fetchTimestamps; // Track when each profile was last fetched
   bool _isInitialized = false;
   
   /// Check if the cache service is initialized
@@ -29,6 +31,10 @@ class ProfileCacheService extends ChangeNotifier {
       
       // Open the profiles box
       _profileBox = await Hive.openBox<UserProfile>(_boxName);
+      
+      // Open the timestamps box
+      _fetchTimestamps = await Hive.openBox<DateTime>('profile_fetch_timestamps');
+      
       _isInitialized = true;
       
       debugPrint('✅ ProfileCacheService initialized with ${_profileBox!.length} cached profiles');
@@ -51,10 +57,14 @@ class ProfileCacheService extends ChangeNotifier {
       
       if (profile == null) return null;
       
-      // Check if profile is expired
-      if (_isProfileExpired(profile)) {
-        debugPrint('🗑️ Removing expired profile for ${pubkey.substring(0, 8)}...');
+      // Check when this profile was last fetched
+      final lastFetched = _fetchTimestamps?.get(pubkey);
+      
+      // If we have no fetch timestamp or it's older than 7 days, consider it expired
+      if (lastFetched == null || DateTime.now().difference(lastFetched) > _cacheExpiry) {
+        debugPrint('🗑️ Removing expired profile for ${pubkey.substring(0, 8)}... (last fetched: ${lastFetched ?? 'never'})');
         _profileBox!.delete(pubkey);
+        _fetchTimestamps?.delete(pubkey);
         return null;
       }
       
@@ -65,6 +75,16 @@ class ProfileCacheService extends ChangeNotifier {
       debugPrint('❌ Error retrieving cached profile for $pubkey: $e');
       return null;
     }
+  }
+  
+  /// Check if a profile should be refreshed (soft expiry)
+  bool shouldRefreshProfile(String pubkey) {
+    if (!_isInitialized || _fetchTimestamps == null) return true;
+    
+    final lastFetched = _fetchTimestamps!.get(pubkey);
+    if (lastFetched == null) return true;
+    
+    return DateTime.now().difference(lastFetched) > _refreshInterval;
   }
   
   /// Cache a profile
@@ -81,6 +101,10 @@ class ProfileCacheService extends ChangeNotifier {
       }
       
       await _profileBox!.put(profile.pubkey, profile);
+      
+      // Track when this profile was fetched
+      await _fetchTimestamps?.put(profile.pubkey, DateTime.now());
+      
       debugPrint('💾 Cached profile for ${profile.pubkey.substring(0, 8)}... (${profile.bestDisplayName})');
       
       notifyListeners();
@@ -164,10 +188,14 @@ class ProfileCacheService extends ChangeNotifier {
     }
   }
   
-  /// Check if a profile is expired
+  /// Check if a profile is expired based on fetch timestamp
   bool _isProfileExpired(UserProfile profile) {
-    final now = DateTime.now();
-    return now.difference(profile.createdAt) > _cacheExpiry;
+    if (_fetchTimestamps == null) return true;
+    
+    final lastFetched = _fetchTimestamps!.get(profile.pubkey);
+    if (lastFetched == null) return true;
+    
+    return DateTime.now().difference(lastFetched) > _cacheExpiry;
   }
   
   /// Clean up expired profiles

@@ -1150,15 +1150,53 @@ class VideoEventService extends ChangeNotifier {
     });
   }
   
-  /// Add video maintaining priority order (default videos first, then by timestamp)
+  /// Add video maintaining priority order (classic vines first, then default videos, then by timestamp)
   void _addVideoWithPriority(VideoEvent videoEvent) {
+    // Check for duplicates - CRITICAL to prevent the same event being added multiple times
+    final existingIndex = _videoEvents.indexWhere((existing) => existing.id == videoEvent.id);
+    if (existingIndex != -1) {
+      _duplicateVideoEventCount++;
+      _logDuplicateVideoEventsAggregated();
+      return; // Don't add duplicate events
+    }
+    
+    // Classic Vines account has HIGHEST priority
+    const classicVinesPubkey = '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856';
+    final isClassicVine = videoEvent.pubkey == classicVinesPubkey;
+    
     final videoPriority = DefaultContentService.getDefaultVideoPriority(videoEvent.id);
     
-    // If it's a default video (priority 0), keep it at the top
-    if (videoPriority == 0) {
-      // Find position among other default videos (sorted by timestamp)
+    // Priority order: 1) Classic Vines, 2) Default videos, 3) Everything else
+    if (isClassicVine) {
+      // Classic vine - keep at the very top
       int insertIndex = 0;
       for (int i = 0; i < _videoEvents.length; i++) {
+        if (_videoEvents[i].pubkey == classicVinesPubkey) {
+          // Found another classic vine, sort by timestamp (newest first)
+          if (_videoEvents[i].timestamp.isBefore(videoEvent.timestamp)) {
+            break;
+          }
+          insertIndex = i + 1;
+        } else {
+          // Found non-classic vine, insert before it
+          break;
+        }
+      }
+      _videoEvents.insert(insertIndex, videoEvent);
+      debugPrint('🎬 Added CLASSIC VINE at position $insertIndex: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}');
+    } else if (videoPriority == 0) {
+      // Default video - keep after classic vines but before regular videos
+      int insertIndex = 0;
+      // Skip past classic vines
+      for (int i = 0; i < _videoEvents.length; i++) {
+        if (_videoEvents[i].pubkey == classicVinesPubkey) {
+          insertIndex = i + 1;
+        } else {
+          break;
+        }
+      }
+      // Now find position among default videos
+      for (int i = insertIndex; i < _videoEvents.length; i++) {
         final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
         if (existingPriority != 0) {
           // Found first non-default video, insert before it
@@ -1172,42 +1210,23 @@ class VideoEventService extends ChangeNotifier {
       }
       _videoEvents.insert(insertIndex, videoEvent);
     } else {
-      // Regular video - sorting depends on whether this is a following feed
-      if (!_isFollowingFeed) {
-        // Not following anyone - insert at random position among non-default videos
-        int defaultCount = 0;
-        for (int i = 0; i < _videoEvents.length; i++) {
-          final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
-          if (existingPriority == 0) {
-            defaultCount++;
-          } else {
-            break;
-          }
-        }
-        
-        // Calculate random position among non-default videos
-        final nonDefaultCount = _videoEvents.length - defaultCount;
-        if (nonDefaultCount > 0) {
-          // Random position between 0 and nonDefaultCount (inclusive)
-          final randomOffset = DateTime.now().microsecondsSinceEpoch % (nonDefaultCount + 1);
-          final insertIndex = defaultCount + randomOffset;
-          _videoEvents.insert(insertIndex, videoEvent);
+      // Regular video - insert after classic vines and default videos
+      int insertIndex = 0;
+      // Skip past classic vines and default videos
+      for (int i = 0; i < _videoEvents.length; i++) {
+        if (_videoEvents[i].pubkey == classicVinesPubkey || 
+            DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id) == 0) {
+          insertIndex = i + 1;
         } else {
-          // No non-default videos yet, just add after defaults
-          _videoEvents.add(videoEvent);
+          break;
         }
-      } else {
-        // Following feed - maintain chronological order
-        int insertIndex = 0;
-        for (int i = 0; i < _videoEvents.length; i++) {
-          final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
-          if (existingPriority != 0) {
-            // Found first non-default video, this is where we insert
-            insertIndex = i;
-            break;
-          }
-        }
+      }
+      
+      // Insert at the calculated position (after all priority content)
+      if (insertIndex < _videoEvents.length) {
         _videoEvents.insert(insertIndex, videoEvent);
+      } else {
+        _videoEvents.add(videoEvent);
       }
     }
   }

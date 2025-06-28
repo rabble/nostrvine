@@ -106,7 +106,12 @@ class ProfileVideosProvider extends ChangeNotifier {
           _setLoadingState(ProfileVideosLoadingState.loaded);
           _cacheVideos(pubkey, _videos, _hasMore);
           notifyListeners();
-          return;
+          
+          // TODO: Background refresh if cache is stale
+          // This would check ProfileCacheService.shouldRefreshProfile()
+          // and create a background subscription if needed
+          
+          return; // Exit early - no subscription needed
         } else {
           debugPrint('⚠️ No videos found in cache for ${pubkey.substring(0, 8)}, fetching from relays...');
         }
