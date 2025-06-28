@@ -38,36 +38,32 @@ class VideoEventBridge {
     debugPrint('🌉 Initializing VideoEventBridge...');
     
     try {
-      // Check if user is following anyone
+      // ALWAYS start with an open feed - show ALL videos from the relay
+      debugPrint('🌍 Loading open feed (ALL videos from relay)');
+      await _videoEventService.subscribeToVideoFeed(
+        limit: 500, // Get lots of videos for discovery
+      );
+      
+      // Check if user is following anyone for additional personalized content
       final hasFollows = _socialService != null && _socialService!.followingPubkeys.isNotEmpty;
       
       if (hasFollows) {
-        // User has follows - load their personalized feed
-        debugPrint('👥 User is following ${_socialService!.followingPubkeys.length} people - loading following feed');
+        // User has follows - ADD their personalized content to the mix
+        debugPrint('👥 User is following ${_socialService!.followingPubkeys.length} people - adding personalized content');
         await _videoEventService.subscribeToVideoFeed(
           authors: _socialService!.followingPubkeys,
-          limit: 200,
+          limit: 100, // Additional content from follows
+          replace: false, // Keep the open feed AND add personalized content
         );
-      } else {
-        // User has no follows - load general discovery feed
-        debugPrint('🌍 User has no follows - loading discovery feed with random sorting');
-        await _videoEventService.subscribeToVideoFeed(
-          limit: 300, // Get more videos for discovery
-        );
-        
-        // Shuffle the videos for a random experience
-        _videoEventService.shuffleForDiscovery();
       }
       
-      // Also subscribe to editor's picks videos specifically
+      // Also add editor's picks to the mix (but don't let it dominate)
       const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
-      debugPrint('🎯 Also subscribing to Editor\'s Picks videos from: $editorPubkey');
-      
-      // Create a separate subscription for the editor's videos
+      debugPrint('🎯 Adding Editor\'s Picks to the mix from: $editorPubkey');
       await _videoEventService.subscribeToVideoFeed(
         authors: [editorPubkey],
-        limit: 100, // Get more videos from the editor
-        replace: false, // Don't replace the main subscription
+        limit: 50, // Smaller amount so it doesn't dominate
+        replace: false, // Keep everything else AND add editor's picks
       );
       
       // Add initial events to VideoManager IMMEDIATELY

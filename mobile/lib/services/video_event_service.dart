@@ -122,8 +122,13 @@ class VideoEventService extends ChangeNotifier {
       debugPrint('⚠️ WARNING: No relays connected - subscription will likely fail');
     }
     
-    // Always close existing subscriptions to prevent leaks
-    await _cancelExistingSubscriptions();
+    // Only close existing subscriptions if replace=true
+    if (replace) {
+      debugPrint('🔄 Cancelling existing subscriptions (replace=true)');
+      await _cancelExistingSubscriptions();
+    } else {
+      debugPrint('➕ Keeping existing subscriptions (replace=false)');
+    }
     
     try {
       debugPrint('🔍 Creating filter for kind 22 video events...');

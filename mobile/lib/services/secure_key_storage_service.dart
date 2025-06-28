@@ -270,14 +270,15 @@ class SecureKeyStorageService extends ChangeNotifier {
   }) async {
     await _ensureInitialized();
     
-    // Check cache first
-    if (_cachedKeyContainer != null && !_cachedKeyContainer!.isDisposed && _isCacheValid()) {
+    // Check cache first - if valid, always return the cached container
+    if (_cachedKeyContainer != null && !_cachedKeyContainer!.isDisposed) {
       await _updateLastAccess();
+      debugPrint('✅ Returning cached secure key container');
       return _cachedKeyContainer;
     }
     
     try {
-      debugPrint('🔓 Retrieving secure key container');
+      debugPrint('🔓 Retrieving secure key container from storage');
       
       final keyContainer = await _platformStorage.retrieveKey(
         keyId: _primaryKeyId,
@@ -289,12 +290,12 @@ class SecureKeyStorageService extends ChangeNotifier {
         return null;
       }
       
-      // Update cache
+      // Update cache - this container will now be kept alive until explicitly disposed
       _updateCache(keyContainer);
       
       await _updateLastAccess();
       
-      debugPrint('✅ Retrieved secure key container');
+      debugPrint('✅ Retrieved and cached secure key container');
       return keyContainer;
       
     } catch (e) {
@@ -404,6 +405,9 @@ class SecureKeyStorageService extends ChangeNotifier {
       if (!success) {
         debugPrint('⚠️ Platform key deletion may have failed');
       }
+      
+      // Dispose cached container before clearing cache (this is the proper place to dispose)
+      _cachedKeyContainer?.dispose();
       
       // Clear cache
       _clearCache();
@@ -526,20 +530,17 @@ class SecureKeyStorageService extends ChangeNotifier {
   
   /// Update the in-memory cache with a new key container
   void _updateCache(SecureKeyContainer keyContainer) {
-    // Dispose old cached container
-    _clearCache();
-    
-    // Set new cache
+    // Don't dispose old cached container immediately - let it be garbage collected
+    // to avoid disposing containers that might still be in use by calling code
     _cachedKeyContainer = keyContainer;
     _cacheTimestamp = DateTime.now();
   }
   
-  /// Clear the in-memory cache
+  /// Clear the in-memory cache (without disposing - only clear reference)
   void _clearCache() {
-    _cachedKeyContainer?.dispose();
     _cachedKeyContainer = null;
     _cacheTimestamp = null;
-    debugPrint('🧹 Secure key cache cleared');
+    debugPrint('🧹 Secure key cache cleared (reference only)');
   }
   
   /// Public method to clear cache (for compatibility)
@@ -593,6 +594,8 @@ class SecureKeyStorageService extends ChangeNotifier {
   @override
   void dispose() {
     debugPrint('🗑️ Disposing SecureKeyStorageService');
+    // Dispose cached container when service is disposed (app shutdown)
+    _cachedKeyContainer?.dispose();
     _clearCache();
     super.dispose();
   }
