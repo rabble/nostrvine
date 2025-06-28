@@ -85,10 +85,18 @@ class ExploreVideoManager extends ChangeNotifier {
             // Add video to VideoManager
             await _videoManager.addVideoEvent(video);
             debugPrint('📋 Added curated video ${video.id.substring(0, 8)}... to VideoManager');
+            
+            // Double-check that it was actually added successfully
+            final newVideoState = _videoManager.getVideoState(video.id);
+            if (newVideoState != null) {
+              availableVideos.add(video);
+            } else {
+              debugPrint('⚠️ Video ${video.id.substring(0, 8)}... failed to register in VideoManager');
+            }
+          } else {
+            // Video is already available
+            availableVideos.add(video);
           }
-          
-          // Video is now available
-          availableVideos.add(video);
           
         } catch (e) {
           debugPrint('⚠️ Failed to register curated video ${video.id}: $e');
@@ -97,7 +105,7 @@ class ExploreVideoManager extends ChangeNotifier {
       }
       
       _availableCollections[type] = availableVideos;
-      debugPrint('✅ Synced ${availableVideos.length} videos for ${type.name}');
+      debugPrint('✅ Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}');
       
     } catch (e) {
       debugPrint('❌ Failed to sync collection ${type.name}: $e');
@@ -123,7 +131,13 @@ class ExploreVideoManager extends ChangeNotifier {
       final preloadEnd = (startIndex + 3).clamp(0, videos.length);
       
       for (int i = preloadStart; i < preloadEnd; i++) {
-        videoManager.preloadVideo(videos[i].id);
+        // Check if video exists in VideoManager before attempting to preload
+        final videoState = videoManager.getVideoState(videos[i].id);
+        if (videoState != null) {
+          videoManager.preloadVideo(videos[i].id);
+        } else {
+          debugPrint('⚠️ Skipping preload for video ${videos[i].id.substring(0, 8)}... - not in VideoManager');
+        }
       }
       
       debugPrint('⚡ Preloading ${type.name} collection around index $startIndex');

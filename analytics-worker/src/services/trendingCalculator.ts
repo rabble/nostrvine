@@ -3,6 +3,12 @@
 
 import { ViewData, TrendingVideo, TrendingData, AnalyticsEnv } from '../types/analytics';
 
+// Calculate trending score for a video based on views and time decay
+export function calculateTrendingScore(viewData: ViewData, currentTime: number): number {
+  const ageHours = (currentTime - viewData.lastUpdate) / (1000 * 60 * 60);
+  return viewData.count / (ageHours + 1);
+}
+
 export async function calculateTrending(env: AnalyticsEnv): Promise<TrendingData> {
   const minViews = parseInt(env.MIN_VIEWS_FOR_TRENDING || '10');
   const videos: TrendingVideo[] = [];
@@ -20,14 +26,8 @@ export async function calculateTrending(env: AnalyticsEnv): Promise<TrendingData
         continue;
       }
       
-      // Calculate simple trending score
-      // Future: could use time decay, velocity, engagement metrics
-      const age = Date.now() - viewData.lastUpdate;
-      const ageHours = age / (1000 * 60 * 60);
-      
-      // Simple score: views divided by age in hours (plus 1 to avoid division by zero)
-      // This favors recent popular videos
-      const score = viewData.count / (ageHours + 1);
+      // Calculate trending score using the exported function
+      const score = calculateTrendingScore(viewData, Date.now());
       
       videos.push({
         eventId,

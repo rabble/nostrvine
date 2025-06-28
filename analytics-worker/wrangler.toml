@@ -1,10 +1,15 @@
 name = "openvine-analytics"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
 
 # KV namespace for view counts and trending data
 kv_namespaces = [
-  { binding = "ANALYTICS_KV", id = "YOUR_KV_NAMESPACE_ID", preview_id = "YOUR_PREVIEW_KV_ID" }
+  { binding = "ANALYTICS_KV", id = "136757026e7b487ab79ff8bb611dcb18", preview_id = "6c6b2c0330384061a3987efc5e564de5" }
 ]
 
 # Environment variables
@@ -19,7 +24,18 @@ vars = { ENVIRONMENT = "development" }
 
 # Production environment  
 [env.production]
-vars = { ENVIRONMENT = "production" }
-routes = [
-  { pattern = "analytics.openvine.co/*", zone_name = "openvine.co" }
-]
+[env.production.vars]
+ENVIRONMENT = "production"
+TRENDING_UPDATE_INTERVAL = "300"
+MIN_VIEWS_FOR_TRENDING = "10"
+
+# Production KV namespaces
+[[env.production.kv_namespaces]]
+binding = "ANALYTICS_KV"
+id = "136757026e7b487ab79ff8bb611dcb18"
+preview_id = "6c6b2c0330384061a3987efc5e564de5"
+
+# Custom domain routing
+[[env.production.routes]]
+pattern = "analytics.openvine.co/*"
+zone_name = "openvine.co"

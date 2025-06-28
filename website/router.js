@@ -12,6 +12,7 @@ class OpenVineRouter {
         // Define our routes
         this.routes.set('/', () => this.showHomePage());
         this.routes.set('/watch/:eventId', (params) => this.showWatchPage(params.eventId));
+        this.routes.set('/:username', (params) => this.showProfilePage(params.username));
     }
 
     init() {
@@ -168,6 +169,55 @@ class OpenVineRouter {
                 <a href="/" style="background: #00D4AA; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold;">← Back to Home</a>
             </div>
         `;
+    }
+
+    async showProfilePage(username) {
+        console.log('👤 Showing profile page for:', username);
+        
+        // Validate username format (alphanumeric, dash, underscore, dot)
+        if (!/^[a-z0-9\-_.]+$/i.test(username)) {
+            console.error('❌ Invalid username format:', username);
+            this.show404();
+            return;
+        }
+
+        // Load the profile page content
+        this.loadProfilePage(username);
+    }
+
+    async loadProfilePage(username) {
+        try {
+            // Load the profile page HTML
+            console.log('📄 Loading profile page...');
+            const response = await fetch('/profile.html');
+            if (!response.ok) {
+                throw new Error('Failed to load profile page');
+            }
+            
+            const html = await response.text();
+            document.body.innerHTML = html;
+            
+            // Load the CSS if not already loaded
+            if (!document.querySelector('link[href="profile-styles.css"]')) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'profile-styles.css';
+                document.head.appendChild(link);
+            }
+            
+            // Load the NostrProfileViewer script if not already loaded
+            if (!window.NostrProfileViewer) {
+                await this.loadScript('/nostr-profile-viewer.js');
+            }
+            
+            // Re-run DOMContentLoaded event for profile viewer initialization
+            const event = new Event('DOMContentLoaded');
+            document.dispatchEvent(event);
+            
+        } catch (error) {
+            console.error('❌ Failed to load profile page:', error);
+            this.showError('Failed to load profile page: ' + error.message);
+        }
     }
 
     loadScript(src) {

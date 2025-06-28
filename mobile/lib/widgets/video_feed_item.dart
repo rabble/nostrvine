@@ -59,6 +59,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     );
     _initializeVideoManager();
     _loadUserProfile();
+    
+    // Handle initial activation state
+    if (widget.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleActivationChange();
+      });
+    }
   }
 
   @override

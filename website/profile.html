@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - User Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile-styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="OpenVine Profile">
+    <meta property="og:description" content="View user profile on OpenVine">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="OpenVine">
+    
+    <!-- Nostr NIP-05 verification -->
+    <meta name="nostr" content="">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/">OpenVine</a>
+            </div>
+            <div class="nav-links">
+                <a href="/about.html">About</a>
+                <a href="/trending.html">Trending</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="profile-container">
+        <div id="profile-loading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading profile...</p>
+        </div>
+
+        <div id="profile-error" class="error-container" style="display: none;">
+            <h2>Profile Not Found</h2>
+            <p>This user profile doesn't exist or hasn't been verified yet.</p>
+            <a href="/" class="btn-primary">Back to Home</a>
+        </div>
+
+        <div id="profile-content" style="display: none;">
+            <section class="profile-header">
+                <div class="profile-avatar">
+                    <img id="user-avatar" src="" alt="User avatar">
+                </div>
+                <div class="profile-info">
+                    <h1 id="user-display-name"></h1>
+                    <div class="profile-username">
+                        <span id="user-nip05" class="nip05-badge"></span>
+                        <span class="verified-badge" title="NIP-05 Verified">✓</span>
+                    </div>
+                    <p id="user-bio" class="profile-bio"></p>
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <span class="stat-number" id="video-count">0</span>
+                            <span class="stat-label">Videos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="follower-count">0</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="following-count">0</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-tabs">
+                <button class="tab-button active" data-tab="videos">Videos</button>
+                <button class="tab-button" data-tab="reposts">Reposts</button>
+                <button class="tab-button" data-tab="likes">Likes</button>
+            </section>
+
+            <section class="profile-content-grid">
+                <div id="videos-grid" class="content-grid active"></div>
+                <div id="reposts-grid" class="content-grid" style="display: none;"></div>
+                <div id="likes-grid" class="content-grid" style="display: none;"></div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="about.html">About OpenVine</a> | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+        <p>🌱 Liberating Vine, one loop at a time | Building a social media ecosystem where users have <a href="https://rights.social" target="_blank">rights</a></p>
+    </footer>
+
+    <script src="nostr-profile-viewer.js"></script>
+</body>
+</html>

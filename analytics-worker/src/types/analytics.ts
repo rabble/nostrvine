@@ -24,7 +24,24 @@ export interface TrendingData {
 export interface ViewRequest {
   eventId: string;
   source?: 'web' | 'mobile' | 'api';
+  creatorPubkey?: string; // Optional: track creator metrics
   // Future: could add optional userId for opt-in personalization
+}
+
+export interface CreatorData {
+  totalViews: number;
+  videoCount: number;
+  lastUpdate: number;
+  // Future: could add follower count, engagement metrics
+}
+
+export interface TrendingCreator {
+  pubkey: string;
+  displayName?: string;
+  totalViews: number;
+  videoCount: number;
+  score: number; // calculated trending score
+  avgViewsPerVideo: number;
 }
 
 export interface AnalyticsEnv {

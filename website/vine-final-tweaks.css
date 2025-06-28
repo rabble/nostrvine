@@ -6,6 +6,328 @@
 
 /* Additional tweaks for exact Vine match */
 
+/* Playlist Container Styles */
+.vine-playlist-container {
+    background: transparent;
+    padding: 0;
+}
+
+.vine-playlist-header {
+    margin-bottom: 16px;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.vine-playlist-header h2 {
+    font-size: 16px;
+    font-weight: 400;
+    color: #999;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Main Playlist Video */
+.vine-playlist-video {
+    margin-bottom: 30px;
+    background: white;
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    display: flex;
+    flex-wrap: nowrap;
+    position: relative;
+    height: 450px; /* Slightly taller for better video display */
+    overflow: hidden;
+}
+
+.vine-playlist-video .vine-video-wrapper {
+    flex: 0 0 65%; /* Give more space to video - 65% instead of 50% */
+    height: 450px; /* Match container height */
+    background: #000;
+    overflow: hidden;
+    position: relative;
+}
+
+
+.vine-playlist-info {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.vine-playlist-info h3 {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.vine-playlist-counter {
+    font-size: 13px;
+    color: #999;
+    margin: 5px 0 20px 0;
+}
+
+.vine-playlist-actions {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.vine-action-btn {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.vine-action-btn:hover {
+    color: #333;
+}
+
+.vine-action-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.vine-loop-count {
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+}
+
+/* Featured Section */
+.vine-featured-section {
+    margin-bottom: 30px;
+    background: transparent;
+    padding: 0;
+}
+
+.vine-section-title {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 20px 0;
+    box-shadow: none;
+    border: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.vine-category-icon {
+    width: 24px;
+    height: 24px;
+    background: #ff6363;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.vine-featured-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.vine-featured-item {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.vine-featured-item:hover {
+    transform: translateY(-2px);
+}
+
+.vine-featured-thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.vine-featured-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vine-featured-info {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.vine-featured-user {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.vine-user-avatar-small {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #e1e8ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    border: 1px solid #ddd;
+}
+
+.vine-username-small {
+    font-weight: 600;
+    color: #333;
+    font-size: 13px;
+}
+
+.vine-featured-caption {
+    color: #666;
+    margin: 6px 0;
+    line-height: 1.4;
+    font-size: 13px;
+}
+
+.vine-loop-count-small {
+    color: #999;
+    font-size: 12px;
+    margin: 4px 0 0 0;
+}
+
+/* Featured Viners */
+.vine-featured-viners {
+    margin-bottom: 20px;
+    background: transparent;
+    padding: 0;
+}
+
+.vine-featured-viners h3 {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 20px 0;
+    box-shadow: none;
+    border: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.vine-viners-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.vine-viner-circle {
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.vine-viner-circle:hover {
+    transform: scale(1.05);
+}
+
+.vine-viner-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.vine-viner-name {
+    font-size: 11px;
+    color: #666;
+    margin: 0;
+    max-width: 80px;
+}
+
+/* Editor's Pick */
+.vine-editors-pick {
+    margin-top: 20px;
+    background: transparent;
+    padding: 0;
+}
+
+.vine-editors-pick .vine-section-title .vine-category-icon {
+    background: #FFB74D; /* Different color for Editor's Pick */
+}
+
+.vine-editors-pick-thumb {
+    width: 100%;
+    aspect-ratio: 2/1;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-top: 15px;
+}
+
+.vine-editors-pick-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vine-editors-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    color: white;
+}
+
+.vine-editors-overlay h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+}
+
+.vine-editors-overlay p {
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.8;
+}
+
 /* Make the header match exactly */
 .vine-header {
     height: auto;
@@ -166,12 +488,12 @@
 }
 
 .vine-categories h3 {
-    font-size: 11px;
+    font-size: 16px;
     color: #999;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .vine-category-grid {
@@ -180,7 +502,7 @@
 }
 
 .vine-category-item {
-    font-size: 32px;
+    font-size: 48px;
     border-radius: 3px;
     transition: transform 0.15s ease;
     width: 100%;
@@ -452,7 +774,7 @@
 
 /* Fix video aspect ratio */
 .vine-video-wrapper video {
-    object-fit: cover;
+    object-fit: contain;
     cursor: pointer;
 }
 
@@ -595,7 +917,7 @@ body {
 }
 
 .vine-main-container {
-    background: white;
+    background: transparent;
     border-radius: 0;
     box-shadow: none;
 }
@@ -606,6 +928,15 @@ body {
 
 .vine-main-content {
     padding: 0;
+    background: transparent !important;
+}
+
+/* Remove any white backgrounds from old elements */
+.vine-featured-video,
+.vine-video-grid,
+.vine-featured-users-section,
+.vine-trending-section {
+    background: transparent !important;
 }
 
 /* Category colors to match original Vine design exactly */
@@ -767,4 +1098,64 @@ body {
 /* Hide right sidebar */
 .vine-sidebar-right {
     display: none;
+}
+
+/* Footer Styling */
+footer {
+    background-color: #ffffff;
+    border-top: 1px solid #e1e8ed;
+    padding: 3rem 0 2rem;
+    margin-top: 80px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+footer p {
+    margin: 0;
+    color: #536471;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+footer p:first-child {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eff3f4;
+}
+
+.footer-mission {
+    color: #0f1419;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+footer a {
+    color: #0ae68a;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 2px 0;
+    border-bottom: 2px solid transparent;
+}
+
+footer a:hover {
+    color: #08c271;
+    border-bottom-color: #0ae68a;
+}
+
+/* Add some spacing between pipe separators */
+footer p:first-child {
+    word-spacing: 0.3em;
+}
+
+/* Make the mission statement stand out */
+.footer-mission {
+    margin-top: 16px !important;
+    font-style: italic;
 }

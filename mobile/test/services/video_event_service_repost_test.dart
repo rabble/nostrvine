@@ -73,31 +73,31 @@ void main() {
     test('should process Kind 6 repost event with cached original', () async {
       // Create original video event
       final originalEvent = Event(
-        'original123',
-        'author456',
-        1000,
-        22,
+        'author456', // pubkey
+        22, // kind
         [
           ['url', 'https://example.com/video.mp4'],
           ['title', 'Original Video'],
-        ],
-        'Original video content',
-        'sig1',
+        ], // tags
+        'Original video content', // content
+        createdAt: 1000, // optional createdAt
       );
+      // Manually set id for testing
+      originalEvent.id = 'original123';
 
       // Create repost event
       final repostEvent = Event(
-        'repost789',
-        'reposter101',
-        2000,
-        6,
+        'reposter101', // pubkey
+        6, // kind
         [
           ['e', 'original123'],
           ['p', 'author456'],
-        ],
-        '',
-        'sig2',
+        ], // tags
+        '', // content
+        createdAt: 2000, // optional createdAt
       );
+      // Manually set id for testing
+      repostEvent.id = 'repost789';
 
       // Subscribe and add events
       await videoEventService.subscribeToVideoFeed();
@@ -137,17 +137,17 @@ void main() {
     test('should fetch original event for Kind 6 repost when not cached', () async {
       // Create repost event without original being cached
       final repostEvent = Event(
-        'repost789',
-        'reposter101',
-        2000,
-        6,
+        'reposter101', // pubkey
+        6, // kind
         [
           ['e', 'original123'],
           ['p', 'author456'],
-        ],
-        '',
-        'sig2',
+        ], // tags
+        '', // content
+        createdAt: 2000, // optional createdAt
       );
+      // Manually set id for testing
+      repostEvent.id = 'repost789';
 
       // Subscribe and add repost event
       await videoEventService.subscribeToVideoFeed();
@@ -175,16 +175,16 @@ void main() {
     test('should skip Kind 6 repost without e tag', () async {
       // Create invalid repost event without e tag
       final invalidRepostEvent = Event(
-        'repost789',
-        'reposter101',
-        2000,
-        6,
+        'reposter101', // pubkey
+        6, // kind
         [
           ['p', 'author456'], // Only p tag, no e tag
-        ],
-        '',
-        'sig2',
+        ], // tags
+        '', // content
+        createdAt: 2000, // optional createdAt
       );
+      // Manually set id for testing
+      invalidRepostEvent.id = 'repost789';
 
       // Subscribe and add event
       await videoEventService.subscribeToVideoFeed();
@@ -200,28 +200,28 @@ void main() {
     test('should handle Kind 6 repost when original is not a video', () async {
       // Create a non-video event (e.g., a text note)
       final nonVideoEvent = Event(
-        'text123',
-        'author456',
-        1000,
-        1, // Kind 1 is a text note
-        [],
-        'This is a text note',
-        'sig1',
+        'author456', // pubkey
+        1, // kind - Kind 1 is a text note
+        [], // tags
+        'This is a text note', // content
+        createdAt: 1000, // optional createdAt
       );
+      // Manually set id for testing
+      nonVideoEvent.id = 'text123';
 
       // Create repost of non-video
       final repostEvent = Event(
-        'repost789',
-        'reposter101',
-        2000,
-        6,
+        'reposter101', // pubkey
+        6, // kind
         [
           ['e', 'text123'],
           ['p', 'author456'],
-        ],
-        '',
-        'sig2',
+        ], // tags
+        '', // content
+        createdAt: 2000, // optional createdAt
       );
+      // Manually set id for testing
+      repostEvent.id = 'repost789';
 
       // Setup a separate stream for fetching original
       final fetchStreamController = StreamController<Event>.broadcast();
@@ -256,32 +256,32 @@ void main() {
     test('should apply hashtag filter to Kind 6 reposts', () async {
       // Create original video with hashtags
       final originalEvent = Event(
-        'original123',
-        'author456',
-        1000,
-        22,
+        'author456', // pubkey
+        22, // kind
         [
           ['url', 'https://example.com/video.mp4'],
           ['t', 'nostr'],
           ['t', 'video'],
-        ],
-        'Video about nostr',
-        'sig1',
+        ], // tags
+        'Video about nostr', // content
+        createdAt: 1000, // optional createdAt
       );
+      // Manually set id for testing
+      originalEvent.id = 'original123';
 
       // Create repost
       final repostEvent = Event(
-        'repost789',
-        'reposter101',
-        2000,
-        6,
+        'reposter101', // pubkey
+        6, // kind
         [
           ['e', 'original123'],
           ['p', 'author456'],
-        ],
-        '',
-        'sig2',
+        ], // tags
+        '', // content
+        createdAt: 2000, // optional createdAt
       );
+      // Manually set id for testing
+      repostEvent.id = 'repost789';
 
       // Subscribe with hashtag filter
       await videoEventService.subscribeToVideoFeed(hashtags: ['bitcoin']);

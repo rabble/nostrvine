@@ -1,6 +1,31 @@
 /* ABOUTME: OpenVine landing page styles with Vine-inspired design
    ABOUTME: Includes responsive grid layouts, animations, and brand colors */
 
+/* Hero subtitle styling */
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 1rem 0 2rem 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
+/* Rights section styling */
+.rights-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.rights-list li {
+    margin: 0.8rem 0;
+    padding-left: 1rem;
+    position: relative;
+}
+
+
 * {
     margin: 0;
     padding: 0;
@@ -32,10 +57,11 @@ header {
 }
 
 .logo h1 {
+    font-family: 'Pacifico', cursive;
     color: #0ae68a;
     font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -2px;
+    font-weight: 400;
+    letter-spacing: -1px;
 }
 
 .nav-links {
@@ -378,6 +404,12 @@ main {
     border-radius: 8px;
     object-fit: cover;
     display: block;
+}
+
+/* Override for playlist videos to show full content */
+.vine-playlist .vine-video {
+    aspect-ratio: auto;
+    object-fit: contain;
 }
 
 /* Hide all browser video controls */

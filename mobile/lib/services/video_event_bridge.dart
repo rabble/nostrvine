@@ -70,26 +70,27 @@ class VideoEventBridge {
         replace: false, // Don't replace the main subscription
       );
       
-      // Add initial events to VideoManager
+      // Add initial events to VideoManager IMMEDIATELY
       if (_videoEventService.hasEvents) {
         await _addEventsToVideoManager(_videoEventService.videoEvents);
+        debugPrint('🚀 Initial videos loaded immediately');
       } else {
-        // For new users, wait a bit for default content to be added
-        debugPrint('⏳ No initial videos found, waiting for default content...');
+        // Don't wait! Start listening immediately and add videos as they arrive
+        debugPrint('📡 No cached videos - will add videos as they stream in from relay');
         
-        // Give VideoEventService time to add default content
+        // Give just a tiny window for very fast responses
         int waitAttempts = 0;
-        while (!_videoEventService.hasEvents && waitAttempts < 10) {
-          await Future.delayed(const Duration(milliseconds: 100));
+        while (!_videoEventService.hasEvents && waitAttempts < 3) { // Reduced from 10 to 3
+          await Future.delayed(const Duration(milliseconds: 50)); // Reduced from 100ms
           waitAttempts++;
         }
         
-        // Add any videos that arrived
+        // Add any videos that arrived quickly
         if (_videoEventService.hasEvents) {
-          debugPrint('✅ Default content arrived after ${waitAttempts * 100}ms');
           await _addEventsToVideoManager(_videoEventService.videoEvents);
+          debugPrint('⚡ Fast initial videos loaded in ${waitAttempts * 50}ms');
         } else {
-          debugPrint('⚠️ No videos available after waiting 1 second');
+          debugPrint('🌊 Videos will stream in as they arrive from relay');
         }
       }
       
@@ -114,8 +115,17 @@ class VideoEventBridge {
   /// Handle changes from video event service
   void _onVideoEventServiceChanged() {
     if (_videoEventService.hasEvents) {
-      debugPrint('📢 VideoEventService changed - syncing to VideoManager...');
-      _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
+      final currentVideoCount = _videoManager.videos.length;
+      
+      if (currentVideoCount == 0) {
+        // FIRST VIDEO - highest priority, immediate sync
+        debugPrint('🚀 FIRST VIDEO ARRIVING - immediate sync for fastest display!');
+        _addEventsToVideoManager(_videoEventService.videoEvents);
+      } else {
+        // Subsequent videos - async to not block UI
+        debugPrint('📢 Additional videos - async sync');
+        _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
+      }
     }
   }
   
@@ -131,21 +141,31 @@ class VideoEventBridge {
         await _videoManager.addVideoEvent(event);
         _processedEventIds.add(event.id);
         
-        // Fetch profile if needed
+        // Fetch profile immediately for first videos, async for others
         if (!_userProfileService.hasProfile(event.pubkey)) {
-          _userProfileService.fetchProfile(event.pubkey);
+          if (existingIds.isEmpty && newEvents.indexOf(event) < 3) {
+            // First 3 videos get immediate profile fetching for fast username display
+            _userProfileService.fetchProfile(event.pubkey);
+          } else {
+            // Other videos get async profile fetching to not block UI
+            Future.microtask(() => _userProfileService.fetchProfile(event.pubkey));
+          }
         }
       } catch (e) {
         debugPrint('⚠️ Failed to add video ${event.id}: $e');
       }
     }
     
-    // Start preloading if this was the first batch
+    // Start preloading IMMEDIATELY if this was the first batch
     if (_videoManager.videos.isNotEmpty && existingIds.isEmpty) {
-      debugPrint('⚡ First videos loaded - starting preload');
-      // Add a small delay to ensure video manager is fully ready
-      await Future.delayed(const Duration(milliseconds: 100));
+      debugPrint('🚀 FIRST VIDEOS LOADED - immediate preload for fastest display!');
+      // NO DELAY! Start preloading immediately for fastest first video display
       _videoManager.preloadAroundIndex(0);
+      
+      // Also immediately preload the next video for smooth scrolling
+      if (_videoManager.videos.length > 1) {
+        Future.microtask(() => _videoManager.preloadVideo(_videoManager.videos[1].id));
+      }
     }
   }
   

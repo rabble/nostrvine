@@ -34,6 +34,10 @@ class VideoEvent {
   final String? reposterPubkey;
   final DateTime? repostedAt;
   
+  // Content moderation fields
+  final bool isFlaggedContent; // Content flagged as potentially adult/inappropriate
+  final String? moderationStatus; // approved, flagged, etc.
+  
   const VideoEvent({
     required this.id,
     required this.pubkey,
@@ -58,6 +62,8 @@ class VideoEvent {
     this.reposterId,
     this.reposterPubkey,
     this.repostedAt,
+    this.isFlaggedContent = false,
+    this.moderationStatus,
   });
   
   /// Create VideoEvent from Nostr event
@@ -67,6 +73,8 @@ class VideoEvent {
     }
     
     developer.log('🔍 DEBUG: Parsing Kind 22 event ${event.id.substring(0, 8)}...', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: Event has ${event.tags.length} tags', name: 'VideoEvent');
+    developer.log('🔍 DEBUG: Event content: ${event.content.length > 100 ? "${event.content.substring(0, 100)}..." : event.content}', name: 'VideoEvent');
     
     final tags = <String, String>{};
     final hashtags = <String>[];
@@ -85,7 +93,8 @@ class VideoEvent {
     
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic> from different nostr implementations
-    for (final tagRaw in event.tags) {
+    for (int i = 0; i < event.tags.length; i++) {
+      final tagRaw = event.tags[i];
       if (tagRaw.isEmpty) continue;
       
       // Convert List<dynamic> to List<String> safely
@@ -94,17 +103,22 @@ class VideoEvent {
       final tagName = tag[0];
       final tagValue = tag.length > 1 ? tag[1] : '';
       
+      developer.log('🔍 DEBUG: Tag [$i]: $tagName = "$tagValue" (${tag.length} elements)', name: 'VideoEvent');
+      
       switch (tagName) {
         case 'url':
           developer.log('🔍 DEBUG: Found url tag with value: $tagValue', name: 'VideoEvent');
-          // Skip broken apt.openvine.co URLs as they don't exist
-          if (tagValue.contains('apt.openvine.co')) {
-            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co URL: $tagValue', name: 'VideoEvent');
-            // Use fallback default video URL instead
-            videoUrl = 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4';
-            developer.log('🔧 FIXED: Using fallback video URL: $videoUrl', name: 'VideoEvent');
+          // Check if this is a valid video URL
+          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            if (tagValue.contains('apt.openvine.co')) {
+              developer.log('⚠️ WARNING: Found broken apt.openvine.co URL, will use fallback if no other URL found: $tagValue', name: 'VideoEvent');
+              // Don't set videoUrl yet, try to find a better one first
+            } else {
+              videoUrl = tagValue;
+              developer.log('✅ Set videoUrl from url tag: $videoUrl', name: 'VideoEvent');
+            }
           } else {
-            videoUrl = tagValue;
+            developer.log('⚠️ WARNING: Invalid URL in url tag: $tagValue', name: 'VideoEvent');
           }
           break;
         case 'imeta':
@@ -117,17 +131,17 @@ class VideoEvent {
             switch (key) {
               case 'url':
                 developer.log('🔍 DEBUG: imeta URL value: $value', name: 'VideoEvent');
-                // Skip broken apt.openvine.co URLs as they don't exist
-                if (value.contains('apt.openvine.co')) {
-                  developer.log('⚠️ WARNING: Skipping broken apt.openvine.co URL in imeta: $value', name: 'VideoEvent');
-                  // Use fallback default video URL instead
-                  if (videoUrl == null) {
-                    videoUrl = 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4';
-                    developer.log('🔧 FIXED: Using fallback video URL from imeta: $videoUrl', name: 'VideoEvent');
+                // Check if this is a valid video URL and prefer it over existing URL if better
+                if (value.isNotEmpty && _isValidVideoUrl(value)) {
+                  if (value.contains('apt.openvine.co')) {
+                    developer.log('⚠️ WARNING: Found broken apt.openvine.co URL in imeta: $value', name: 'VideoEvent');
+                    // Don't override good URL with bad one
+                  } else {
+                    videoUrl ??= value; // Only set if not already set
+                    developer.log('✅ Set videoUrl from imeta: $value', name: 'VideoEvent');
                   }
                 } else {
-                  videoUrl ??= value; // Only set if not already set
-                  developer.log('🔍 DEBUG: Set videoUrl from imeta to: $value', name: 'VideoEvent');
+                  developer.log('⚠️ WARNING: Invalid URL in imeta: $value', name: 'VideoEvent');
                 }
                 break;
               case 'm':
@@ -210,6 +224,34 @@ class VideoEvent {
             hashtags.add(tagValue);
           }
           break;
+        case 'r':
+          // NIP-25 reference - might contain media URLs
+          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            videoUrl ??= tagValue;
+            developer.log('✅ Found video URL in r tag: $tagValue', name: 'VideoEvent');
+          }
+          break;
+        case 'e':
+          // Event reference - check if it's a media URL in disguise
+          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            videoUrl ??= tagValue;
+            developer.log('✅ Found video URL in e tag: $tagValue', name: 'VideoEvent');
+          }
+          break;
+        case 'i':
+          // External identity - sometimes used for media
+          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            videoUrl ??= tagValue;
+            developer.log('✅ Found video URL in i tag: $tagValue', name: 'VideoEvent');
+          }
+          break;
+        default:
+          // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
+          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            videoUrl ??= tagValue;
+            developer.log('✅ Found video URL in unknown tag "$tagName": $tagValue', name: 'VideoEvent');
+          }
+          break;
       }
       
       // Store all tags for potential future use
@@ -222,14 +264,35 @@ class VideoEvent {
     
     developer.log('🔍 DEBUG: Final parsing results:', name: 'VideoEvent');
     developer.log('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent');
-    developer.log('🔍 DEBUG: hasVideo = ${videoUrl != null && videoUrl!.isNotEmpty}', name: 'VideoEvent');
     developer.log('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent');
     developer.log('🔍 DEBUG: duration = $duration', name: 'VideoEvent');
     
-    // Final check for apt.openvine.co URLs
-    if (videoUrl != null && videoUrl!.contains('apt.openvine.co')) {
-      developer.log('🚨 FINAL WARNING: VideoEvent ${event.id.substring(0, 8)} has apt.openvine.co URL: $videoUrl', name: 'VideoEvent');
+    // POSTEL'S LAW: Be liberal in what you accept
+    // Apply comprehensive fallback logic to find video URLs
+    if (videoUrl == null || videoUrl!.isEmpty) {
+      developer.log('🔧 FALLBACK: No video URL found in tags, searching content...', name: 'VideoEvent');
+      videoUrl = _extractVideoUrlFromContent(event.content);
+      if (videoUrl != null) {
+        developer.log('✅ FALLBACK: Found video URL in content: $videoUrl', name: 'VideoEvent');
+      }
     }
+    
+    // If still no URL, try to find any URL that might be a video
+    if (videoUrl == null || videoUrl!.isEmpty) {
+      developer.log('🔧 FALLBACK: Searching all tags for any potential video URL...', name: 'VideoEvent');
+      videoUrl = _findAnyVideoUrlInTags(event.tags);
+      if (videoUrl != null) {
+        developer.log('✅ FALLBACK: Found potential video URL in tags: $videoUrl', name: 'VideoEvent');
+      }
+    }
+    
+    // If we have a broken apt.openvine.co URL but no alternative, use fallback
+    if (videoUrl != null && videoUrl!.contains('apt.openvine.co')) {
+      developer.log('🔧 FALLBACK: Replacing broken apt.openvine.co URL with working fallback', name: 'VideoEvent');
+      videoUrl = 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4';
+    }
+    
+    developer.log('🔍 DEBUG: hasVideo = ${videoUrl != null && videoUrl!.isNotEmpty}', name: 'VideoEvent');
     
     return VideoEvent(
       id: event.id,
@@ -461,6 +524,86 @@ class VideoEvent {
       reposterPubkey: reposterPubkey,
       repostedAt: repostedAt,
     );
+  }
+  
+  /// Check if a URL is a valid video URL
+  static bool _isValidVideoUrl(String url) {
+    if (url.isEmpty) return false;
+    
+    try {
+      final uri = Uri.parse(url);
+      
+      // Must be HTTP or HTTPS
+      if (!['http', 'https'].contains(uri.scheme.toLowerCase())) {
+        return false;
+      }
+      
+      // Must have a valid host
+      if (uri.host.isEmpty) return false;
+      
+      // Check for video file extensions or known video hosting domains
+      final path = uri.path.toLowerCase();
+      final host = uri.host.toLowerCase();
+      
+      // Known video file extensions
+      if (path.endsWith('.mp4') || 
+          path.endsWith('.webm') || 
+          path.endsWith('.mov') || 
+          path.endsWith('.avi') || 
+          path.endsWith('.gif')) {
+        return true;
+      }
+      
+      // Known video hosting domains
+      if (host.contains('blossom.primal.net') ||
+          host.contains('nostr.build') ||
+          host.contains('primal.net') ||
+          host.contains('void.cat') ||
+          host.contains('nostpic.com') ||
+          host.contains('openvine.co') ||
+          host.contains('satellite.earth')) {
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Extract video URL from event content text (fallback strategy)
+  static String? _extractVideoUrlFromContent(String content) {
+    // Look for URLs in the content using regex
+    final urlRegex = RegExp(r'https?://[^\s]+');
+    final matches = urlRegex.allMatches(content);
+    
+    for (final match in matches) {
+      final url = match.group(0);
+      if (url != null && _isValidVideoUrl(url)) {
+        return url;
+      }
+    }
+    
+    return null;
+  }
+  
+  /// Find any potential video URL in all tags (aggressive fallback)
+  static String? _findAnyVideoUrlInTags(List<dynamic> tags) {
+    for (final tagRaw in tags) {
+      if (tagRaw is! List || tagRaw.isEmpty) continue;
+      
+      final tag = tagRaw.map((e) => e.toString()).toList();
+      
+      // Check all tag values for potential URLs
+      for (int i = 1; i < tag.length; i++) {
+        final value = tag[i];
+        if (value.isNotEmpty && _isValidVideoUrl(value)) {
+          return value;
+        }
+      }
+    }
+    
+    return null;
   }
 }
 

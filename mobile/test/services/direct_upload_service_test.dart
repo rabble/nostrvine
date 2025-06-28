@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:openvine/services/direct_upload_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:nostr_sdk/event.dart';
 
 @GenerateMocks([
   http.Client,
@@ -44,11 +45,11 @@ void main() {
       when(mockAuthService.createAuthToken(
         url: anyNamed('url'),
         method: anyNamed('method'),
-      )).thenAnswer((_) async => const Nip98AuthToken(
-        authorizationHeader: 'Nostr test_token',
-        createdAt: 0,
-        url: 'test_url',
-        method: HttpMethod.post,
+      )).thenAnswer((_) async => Nip98Token(
+        token: 'Nostr test_token',
+        signedEvent: Event('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 27235, [], '', createdAt: 0),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(60000),
       ));
     });
 

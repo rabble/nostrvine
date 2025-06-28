@@ -98,7 +98,9 @@ export async function handleCloudinarySignedUpload(
       // Notification URL for webhook
       notification_url: `${new URL(request.url).origin}/v1/media/webhook`,
       // Resource type
-      resource_type: 'auto'
+      resource_type: 'auto',
+      // Enable Google AI video moderation for adult content detection
+      moderation: 'google_video_moderation'
     };
 
     // Generate signature using Web Crypto API

@@ -6,11 +6,9 @@ echo "Building optimized Flutter web app..."
 # Clean previous build
 flutter clean
 
-# Build with specific optimizations
+# Build with specific optimizations for modern Flutter
 flutter build web \
   --release \
-  --web-renderer canvaskit \
-  --dart-define=FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/8cd19e509d6bece8ccd74aef027c4ca947363095/ \
   --tree-shake-icons \
   --pwa-strategy=offline-first
 

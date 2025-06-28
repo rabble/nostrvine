@@ -13,7 +13,6 @@ import 'search_screen.dart';
 import 'hashtag_feed_screen.dart';
 import '../widgets/video_explore_tile.dart';
 import '../widgets/video_feed_item.dart';
-import '../widgets/video_fullscreen_overlay.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -128,43 +127,85 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
-        elevation: 0,
-        title: const Text(
-          'Explore',
-          style: TextStyle(
-            color: VineTheme.whiteText,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: VineTheme.whiteText),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SearchScreen(),
+      appBar: _isInFeedMode 
+          ? AppBar(
+              backgroundColor: VineTheme.vineGreen,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+                onPressed: _exitFeedMode,
+              ),
+              title: const Text(
+                'Explore',
+                style: TextStyle(
+                  color: VineTheme.whiteText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
-              );
-            },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: VineTheme.whiteText,
-          indicatorWeight: 2,
-          labelColor: VineTheme.whiteText,
-          unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
-          labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: "EDITOR'S PICKS"),
-            Tab(text: 'POPULAR NOW'),
-            Tab(text: 'TRENDING'),
-          ],
-        ),
-      ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.search, color: VineTheme.whiteText),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SearchScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              bottom: TabBar(
+                controller: _tabController,
+                indicatorColor: VineTheme.whiteText,
+                indicatorWeight: 2,
+                labelColor: VineTheme.whiteText,
+                unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
+                labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                tabs: const [
+                  Tab(text: "EDITOR'S PICKS"),
+                  Tab(text: 'POPULAR NOW'),
+                  Tab(text: 'TRENDING'),
+                ],
+              ),
+            )
+          : AppBar(
+              backgroundColor: VineTheme.vineGreen,
+              elevation: 0,
+              title: const Text(
+                'Explore',
+                style: TextStyle(
+                  color: VineTheme.whiteText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.search, color: VineTheme.whiteText),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SearchScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              bottom: TabBar(
+                controller: _tabController,
+                indicatorColor: VineTheme.whiteText,
+                indicatorWeight: 2,
+                labelColor: VineTheme.whiteText,
+                unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
+                labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                tabs: const [
+                  Tab(text: "EDITOR'S PICKS"),
+                  Tab(text: 'POPULAR NOW'),
+                  Tab(text: 'TRENDING'),
+                ],
+              ),
+            ),
       body: Stack(
         children: [
           TabBarView(
@@ -175,81 +216,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               _buildTrending(),
             ],
           ),
-          // Overlay for expanded video (not for Editor's Picks which uses PageView)
-          if (_playingVideoId != null && _tabController.index != 0)
-            _buildExpandedVideoOverlay(),
+          // No overlay needed - feed mode handles video playback directly
         ],
       ),
     );
   }
 
-  Widget _buildExpandedVideoOverlay() {
-    // Get videos for current tab
-    final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
-    List<VideoEvent> tabVideos = [];
-    
-    switch (_tabController.index) {
-      case 0: // Editor's Picks
-        tabVideos = exploreVideoManager.getVideosForType(CurationSetType.editorsPicks);
-        break;
-      case 1: // Popular Now
-        tabVideos = exploreVideoManager.getVideosForType(CurationSetType.trending);
-        break;
-      case 2: // Trending
-        if (_selectedHashtag != null) {
-          final hashtagService = Provider.of<HashtagService>(context, listen: false);
-          tabVideos = hashtagService.getVideosByHashtags([_selectedHashtag!]);
-        } else {
-          final trendingVideos = exploreVideoManager.getVideosForType(CurationSetType.trending);
-          if (trendingVideos.isNotEmpty) {
-            tabVideos = trendingVideos;
-          } else {
-            final videoService = Provider.of<VideoEventService>(context, listen: false);
-            tabVideos = videoService.getRecentVideoEvents(hours: 24);
-          }
-        }
-        break;
-    }
-    
-    // Update current tab videos if they've changed
-    if (_currentTabVideos != tabVideos) {
-      _currentTabVideos = tabVideos;
-      // Find current video index
-      _currentVideoIndex = _currentTabVideos.indexWhere((v) => v.id == _playingVideoId);
-      if (_currentVideoIndex == -1) _currentVideoIndex = 0;
-    }
-    
-    if (_currentTabVideos.isEmpty) {
-      return Container(); // No videos to show
-    }
-    
-    // Ensure current index is valid
-    _currentVideoIndex = _currentVideoIndex.clamp(0, _currentTabVideos.length - 1);
-    final video = _currentTabVideos[_currentVideoIndex];
-    
-    return VideoFullscreenOverlay(
-      video: video,
-      onClose: () {
-        setState(() {
-          _playingVideoId = null;
-          _currentVideoIndex = 0;
-          _currentTabVideos = [];
-        });
-      },
-      onSwipeNext: _currentVideoIndex < _currentTabVideos.length - 1 ? () {
-        setState(() {
-          _currentVideoIndex++;
-          _playingVideoId = _currentTabVideos[_currentVideoIndex].id;
-        });
-      } : null,
-      onSwipePrevious: _currentVideoIndex > 0 ? () {
-        setState(() {
-          _currentVideoIndex--;
-          _playingVideoId = _currentTabVideos[_currentVideoIndex].id;
-        });
-      } : null,
-    );
-  }
 
   Widget _buildEditorsPicks() {
     return Consumer2<ExploreVideoManager, HashtagService>(
@@ -342,31 +314,59 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               const Divider(color: VineTheme.secondaryText, height: 1),
             ],
             
-            // Full-screen video feed like main feed
+            // Video content - either grid or feed mode
             Expanded(
-              child: PageView.builder(
-                scrollDirection: Axis.vertical,
-                itemCount: editorsPicks.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentVideoIndex = index;
-                  });
-                  
-                  // Preload videos around current position
-                  final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
-                  exploreVideoManager.preloadCollection(CurationSetType.editorsPicks, startIndex: index);
-                },
-                itemBuilder: (context, index) {
-                  final video = editorsPicks[index];
-                  final isActive = index == _currentVideoIndex && _tabController.index == 0;
-                  
-                  return VideoFeedItem(
-                    key: ValueKey(video.id),
-                    video: video,
-                    isActive: isActive,
-                  );
-                },
-              ),
+              child: _isInFeedMode 
+                  ? PageView.builder(
+                      scrollDirection: Axis.vertical,
+                      itemCount: _currentTabVideos.length,
+                      controller: PageController(initialPage: _currentVideoIndex),
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentVideoIndex = index;
+                          _playingVideoId = _currentTabVideos[index].id;
+                        });
+                        
+                        // Preload videos around current position
+                        final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
+                        exploreVideoManager.preloadCollection(CurationSetType.editorsPicks, startIndex: index);
+                      },
+                      itemBuilder: (context, index) {
+                        final video = _currentTabVideos[index];
+                        final isActive = index == _currentVideoIndex;
+                        
+                        return VideoFeedItem(
+                          key: ValueKey(video.id),
+                          video: video,
+                          isActive: isActive,
+                        );
+                      },
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(1),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: MediaQuery.of(context).size.width < 600 ? 3 : 
+                                       MediaQuery.of(context).size.width < 900 ? 4 : 
+                                       MediaQuery.of(context).size.width < 1200 ? 5 : 6,
+                        crossAxisSpacing: 1,
+                        mainAxisSpacing: 1,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: editorsPicks.length,
+                      itemBuilder: (context, index) {
+                        final video = editorsPicks[index];
+                        return VideoExploreTile(
+                          video: video,
+                          isActive: false,
+                          onTap: () {
+                            _enterFeedMode(editorsPicks, index);
+                          },
+                          onClose: () {
+                            _exitFeedMode();
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         );
@@ -424,27 +424,24 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           );
         }
         
-        // For mobile devices, show a button to enter swipeable video feed
-        // For larger screens, keep the grid layout
-        final screenWidth = MediaQuery.of(context).size.width;
-        final isMobile = screenWidth < 600;
-        
-        if (isMobile) {
-          // Mobile: Show videos in a swipeable PageView directly
+        // Check if we should show feed mode or grid mode
+        if (_isInFeedMode) {
+          // Full-screen video feed mode
           return PageView.builder(
             scrollDirection: Axis.vertical,
-            itemCount: videos.length,
+            itemCount: _currentTabVideos.length,
+            controller: PageController(initialPage: _currentVideoIndex),
             onPageChanged: (index) {
               setState(() {
                 _currentVideoIndex = index;
+                _playingVideoId = _currentTabVideos[index].id;
               });
               
               // Preload videos around current position
-              final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
               exploreVideoManager.preloadCollection(CurationSetType.trending, startIndex: index);
             },
             itemBuilder: (context, index) {
-              final video = videos[index];
+              final video = _currentTabVideos[index];
               final isActive = index == _currentVideoIndex;
               
               return VideoFeedItem(
@@ -455,10 +452,11 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
             },
           );
         } else {
-          // Desktop/Tablet: Keep existing grid with overlay
-          final crossAxisCount = screenWidth < 900 ? 3 : 
-                                 screenWidth < 1200 ? 4 : 
-                                 screenWidth < 1600 ? 5 : 6;
+          // Grid view mode
+          final screenWidth = MediaQuery.of(context).size.width;
+          final crossAxisCount = screenWidth < 600 ? 3 : 
+                                 screenWidth < 900 ? 4 : 
+                                 screenWidth < 1200 ? 5 : 6;
           
           return GridView.builder(
             padding: const EdgeInsets.all(1),
@@ -473,19 +471,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               final video = videos[index];
               return VideoExploreTile(
                 video: video,
-                isActive: false, // Never active in grid - overlay handles playback
+                isActive: false, // Never active in grid - feed mode handles playback
                 onTap: () {
-                  setState(() {
-                    _playingVideoId = video.id;
-                    // We'll let the overlay update the index when it rebuilds
-                  });
+                  _enterFeedMode(videos, index);
                 },
                 onClose: () {
-                  setState(() {
-                    _playingVideoId = null;
-                    _currentVideoIndex = 0;
-                    _currentTabVideos = [];
-                  });
+                  _exitFeedMode();
                 },
               );
             },
@@ -626,36 +617,51 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: videos.length,
-                      itemBuilder: (context, index) {
-                        final video = videos[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: SizedBox(
-                            height: 250,  // Increased height for better video display
-                            child: VideoExploreTile(
+                  : _isInFeedMode 
+                      ? PageView.builder(
+                          scrollDirection: Axis.vertical,
+                          itemCount: _currentTabVideos.length,
+                          controller: PageController(initialPage: _currentVideoIndex),
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentVideoIndex = index;
+                              _playingVideoId = _currentTabVideos[index].id;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final video = _currentTabVideos[index];
+                            final isActive = index == _currentVideoIndex;
+                            
+                            return VideoFeedItem(
+                              key: ValueKey(video.id),
                               video: video,
-                              isActive: false, // Never active in list - overlay handles playback
-                              onTap: () {
-                                setState(() {
-                                  _playingVideoId = video.id;
-                                  // We'll let the overlay update the index when it rebuilds
-                                });
-                              },
-                              onClose: () {
-                                setState(() {
-                                  _playingVideoId = null;
-                                  _currentVideoIndex = 0;
-                                  _currentTabVideos = [];
-                                });
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              isActive: isActive,
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: videos.length,
+                          itemBuilder: (context, index) {
+                            final video = videos[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: SizedBox(
+                                height: 250,  // Increased height for better video display
+                                child: VideoExploreTile(
+                                  video: video,
+                                  isActive: false, // Never active in list - feed mode handles playback
+                                  onTap: () {
+                                    _enterFeedMode(videos, index);
+                                  },
+                                  onClose: () {
+                                    _exitFeedMode();
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         );

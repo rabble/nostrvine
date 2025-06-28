@@ -142,16 +142,10 @@ class VideoManagerService implements IVideoManager {
       return;
     }
     
-    // Smart insertion: prioritize unseen videos over seen ones
-    if (_seenVideosService?.hasSeenVideo(event.id) == true) {
-      // Seen videos go to end of list (lower priority)
-      _videos.add(event);
-      Log.info('Added seen video to end: ${event.id}', name: 'VideoManager');
-    } else {
-      // Unseen videos go to beginning (higher priority)
-      _videos.insert(0, event);
-      Log.info('Added unseen video to beginning: ${event.id}', name: 'VideoManager');
-    }
+    // Always append videos to the end to prevent index misalignment during playback
+    // TODO: Implement proper priority ordering that doesn't disrupt active user interaction
+    _videos.add(event);
+    Log.info('Added video to end: ${event.id}', name: 'VideoManager');
     
     // Initialize state
     _videoStates[event.id] = VideoState(event: event);

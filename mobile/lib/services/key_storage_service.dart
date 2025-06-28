@@ -1,5 +1,14 @@
-// ABOUTME: Secure storage service for Nostr private keys and user credentials  
-// ABOUTME: Handles encrypted key storage, key generation, and secure access patterns
+// ABOUTME: DEPRECATED - Legacy key storage service with security vulnerabilities
+// ABOUTME: Use SecureKeyStorageService instead for production applications
+
+// SECURITY WARNING: This implementation has critical vulnerabilities:
+// 1. Private keys stored as plain strings in memory
+// 2. Insecure SharedPreferences fallback for web platform  
+// 3. No hardware-backed security utilization
+// 4. Memory not securely wiped after operations
+//
+// This service is maintained only for migration purposes.
+// All new code should use SecureKeyStorageService.
 
 import 'dart:async';
 import 'dart:convert';
@@ -77,7 +86,11 @@ class NostrKeyPair {
   String toString() => 'NostrKeyPair(npub: ${NostrEncoding.maskKey(npub)})';
 }
 
-/// Service for secure storage and management of Nostr keys
+/// DEPRECATED: Legacy service for storage and management of Nostr keys
+/// 
+/// WARNING: This service has critical security vulnerabilities and should not be used
+/// in production. Use SecureKeyStorageService instead.
+@Deprecated('Use SecureKeyStorageService for secure key storage')
 class KeyStorageService extends ChangeNotifier {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(

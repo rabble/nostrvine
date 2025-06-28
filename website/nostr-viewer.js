@@ -22,13 +22,26 @@ class NostrViewer {
         this.fetchTimeout = 15000; // 15 seconds for event fetching
     }
 
-    async initialize(eventId) {
-        this.eventId = eventId;
-        console.log('🔍 Initializing Nostr viewer for event:', eventId);
+    async initialize(id) {
+        // Determine if this is a Nostr event ID (64 hex chars) or a Vine ID
+        const isNostrId = /^[a-f0-9]{64}$/i.test(id);
+        
+        if (isNostrId) {
+            this.eventId = id;
+            console.log('🔍 Initializing Nostr viewer for event ID:', id);
+        } else {
+            this.vineId = id;
+            console.log('🔍 Initializing Nostr viewer for Vine ID:', id);
+        }
         
         try {
             await this.connectToRelays();
-            await this.fetchEventAndProfile();
+            
+            if (isNostrId) {
+                await this.fetchEventAndProfile();
+            } else {
+                await this.findEventByVineId();
+            }
         } catch (error) {
             console.error('❌ Failed to initialize viewer:', error);
             this.showError('Failed to connect to Nostr network: ' + error.message);
@@ -126,15 +139,32 @@ class NostrViewer {
 
             console.log('📨 Received event:', eventData.kind, eventData.id.substring(0, 8));
 
-            if (eventData.kind === 22 && eventData.id === this.eventId) {
-                // This is our target video event
-                console.log('🎬 Found target video event!');
-                this.videoEvent = eventData;
-                this.displayVideoEvent();
+            if (eventData.kind === 22) {
+                // Check if this is our target video event (either by ID or vine_id tag)
+                let isTargetVideo = false;
                 
-                // Now fetch the author's profile
-                if (eventData.pubkey) {
-                    this.fetchAuthorProfile(eventData.pubkey);
+                // Check by event ID if we have one
+                if (this.eventId && eventData.id === this.eventId) {
+                    isTargetVideo = true;
+                }
+                
+                // Check by d tag (NIP-33) if we have a Vine ID
+                if (this.vineId && eventData.tags) {
+                    const dTag = eventData.tags.find(tag => tag[0] === 'd' && tag[1] === this.vineId);
+                    if (dTag) {
+                        isTargetVideo = true;
+                    }
+                }
+                
+                if (isTargetVideo) {
+                    console.log('🎬 Found target video event!');
+                    this.videoEvent = eventData;
+                    this.displayVideoEvent();
+                    
+                    // Now fetch the author's profile
+                    if (eventData.pubkey) {
+                        this.fetchAuthorProfile(eventData.pubkey);
+                    }
                 }
             } else if (eventData.kind === 0 && this.videoEvent && eventData.pubkey === this.videoEvent.pubkey) {
                 // This is the author's profile
@@ -153,11 +183,45 @@ class NostrViewer {
                 reject(new Error('Timeout waiting for video event'));
             }, this.fetchTimeout);
 
-            // Subscribe to the specific event by ID
+            // Subscribe to the specific event by ID with vine group filter
             const subscription1 = this.subscribeToEvents([{
                 ids: [this.eventId],
-                kinds: [22]
+                kinds: [22],
+                "#h": ["vine"]
             }], 'video-event');
+
+            // Wait for video event to be found, then resolve
+            const checkComplete = () => {
+                if (this.videoEvent) {
+                    clearTimeout(timeoutId);
+                    resolve();
+                }
+            };
+
+            // Check periodically if we have the video event
+            const checkInterval = setInterval(() => {
+                checkComplete();
+                if (this.videoEvent) {
+                    clearInterval(checkInterval);
+                }
+            }, 500);
+        });
+    }
+
+    async findEventByVineId() {
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                reject(new Error('Timeout waiting for video event with vine_id: ' + this.vineId));
+            }, this.fetchTimeout);
+
+            console.log('🔍 Searching for event with Vine ID (d tag):', this.vineId);
+            
+            // Subscribe to kind 22 events with d tag (NIP-33) and vine group tag
+            const subscription = this.subscribeToEvents([{
+                kinds: [22],
+                "#d": [this.vineId],
+                "#h": ["vine"]
+            }], 'vine-search');
 
             // Wait for video event to be found, then resolve
             const checkComplete = () => {
@@ -399,25 +463,25 @@ class NostrViewer {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 NostrViewer initializing...');
     
-    // Extract event ID from URL
+    // Extract ID from URL path (Vine-style: /v/id)
     const path = window.location.pathname;
-    const eventIdMatch = path.match(/\/watch\/([a-f0-9]{64})/);
+    const match = path.match(/^\/v\/([a-zA-Z0-9]+)$/);
     
-    if (!eventIdMatch) {
-        console.error('❌ No valid event ID found in URL');
+    if (!match || !match[1]) {
+        console.error('❌ No valid ID found in URL');
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'block';
         document.getElementById('error-message').textContent = 
-            'Invalid video URL. Event ID not found.';
+            'Invalid video URL. Video ID not found.';
         return;
     }
     
-    const eventId = eventIdMatch[1];
-    console.log('🎯 Target event ID:', eventId);
+    const id = match[1];
+    console.log('🎯 Target ID:', id);
     
     // Create and initialize viewer
     const viewer = new NostrViewer();
-    viewer.initialize(eventId);
+    viewer.initialize(id);
     
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {

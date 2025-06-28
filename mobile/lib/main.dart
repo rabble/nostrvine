@@ -11,8 +11,10 @@ import 'screens/explore_screen.dart';
 import 'screens/web_auth_screen.dart';
 import 'widgets/age_verification_dialog.dart';
 import 'services/nostr_service.dart';
+import 'services/nostr_service_v2.dart';
 import 'services/auth_service.dart';
 import 'services/key_storage_service.dart';
+import 'services/secure_key_storage_service.dart';
 import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
@@ -116,16 +118,19 @@ class OpenVineApp extends StatelessWidget {
           return service;
         }),
         
-        // Key storage service (foundational service)
+        // Secure key storage service (foundational service)
+        ChangeNotifierProvider(create: (_) => SecureKeyStorageService()),
+        
+        // Legacy key storage service (for migration only)
         ChangeNotifierProvider(create: (_) => KeyStorageService()),
         
         // Web authentication service (for web platform only)
         ChangeNotifierProvider(create: (_) => WebAuthService()),
         
-        // Authentication service depends on key storage
-        ChangeNotifierProxyProvider<KeyStorageService, AuthService>(
-          create: (context) => AuthService(keyStorage: context.read<KeyStorageService>()),
-          update: (_, keyStorageService, previous) => previous ?? AuthService(keyStorage: keyStorageService),
+        // Authentication service depends on secure key storage
+        ChangeNotifierProxyProvider<SecureKeyStorageService, AuthService>(
+          create: (context) => AuthService(keyStorage: context.read<SecureKeyStorageService>()),
+          update: (_, secureKeyStorageService, previous) => previous ?? AuthService(keyStorage: secureKeyStorageService),
         ),
         
         // Nostr key manager
@@ -135,22 +140,49 @@ class OpenVineApp extends StatelessWidget {
         ChangeNotifierProxyProvider<NostrKeyManager, INostrService>(
           create: (context) {
             final keyManager = context.read<NostrKeyManager>();
-            // Always use regular NostrService for now
-            Log.debug('Creating NostrService for platform', name: 'Main');
-            return NostrService(keyManager);
+            // Use v2 service with nostr_sdk RelayPool
+            const useV2 = true; // Set to false to use old implementation
+            if (useV2) {
+              Log.debug('Creating NostrService v2 with nostr_sdk RelayPool', name: 'Main');
+              return NostrServiceV2(keyManager);
+            } else {
+              Log.debug('Creating NostrService v1 with custom WebSocket', name: 'Main');
+              return NostrService(keyManager);
+            }
           },
           update: (_, keyManager, previous) {
             if (previous != null) return previous;
-            // Always use regular NostrService for now
-            Log.debug('Creating NostrService for platform', name: 'Main');
-            return NostrService(keyManager);
+            // Use v2 service with nostr_sdk RelayPool
+            const useV2 = true; // Set to false to use old implementation
+            if (useV2) {
+              Log.debug('Creating NostrService v2 with nostr_sdk RelayPool', name: 'Main');
+              return NostrServiceV2(keyManager);
+            } else {
+              Log.debug('Creating NostrService v1 with custom WebSocket', name: 'Main');
+              return NostrService(keyManager);
+            }
           },
         ),
         
-        // Subscription manager for managing Nostr subscriptions
-        ChangeNotifierProxyProvider<INostrService, SubscriptionManager>(
-          create: (context) => SubscriptionManager(context.read<INostrService>()),
-          update: (_, nostrService, previous) => previous ?? SubscriptionManager(nostrService),
+        // Subscription manager for managing Nostr subscriptions (only for v1)
+        ChangeNotifierProxyProvider<INostrService, SubscriptionManager?>(
+          create: (context) {
+            const useV2 = true; // Must match the setting above
+            if (useV2) {
+              // V2 doesn't need SubscriptionManager
+              return null;
+            } else {
+              return SubscriptionManager(context.read<INostrService>());
+            }
+          },
+          update: (_, nostrService, previous) {
+            const useV2 = true; // Must match the setting above
+            if (useV2) {
+              return null;
+            } else {
+              return previous ?? SubscriptionManager(nostrService);
+            }
+          },
         ),
         
         // Profile cache service for persistent profile storage
@@ -172,12 +204,12 @@ class OpenVineApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContentBlocklistService()),
         
         // Video event service depends on Nostr, SeenVideos, Blocklist, and SubscriptionManager services
-        ChangeNotifierProxyProvider4<INostrService, SeenVideosService, ContentBlocklistService, SubscriptionManager, VideoEventService>(
+        ChangeNotifierProxyProvider4<INostrService, SeenVideosService, ContentBlocklistService, SubscriptionManager?, VideoEventService>(
           create: (context) {
             final service = VideoEventService(
               context.read<INostrService>(),
               seenVideosService: context.read<SeenVideosService>(),
-              subscriptionManager: context.read<SubscriptionManager>(),
+              subscriptionManager: context.read<SubscriptionManager?>(),
             );
             service.setBlocklistService(context.read<ContentBlocklistService>());
             return service;
@@ -185,7 +217,9 @@ class OpenVineApp extends StatelessWidget {
           update: (_, nostrService, seenVideosService, blocklistService, subscriptionManager, previous) {
             if (previous != null) {
               previous.setBlocklistService(blocklistService);
-              previous.setSubscriptionManager(subscriptionManager);
+              if (subscriptionManager != null) {
+                previous.setSubscriptionManager(subscriptionManager);
+              }
               return previous;
             }
             final service = VideoEventService(
@@ -205,21 +239,28 @@ class OpenVineApp extends StatelessWidget {
         ),
         
         // User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
-        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager, ProfileCacheService, UserProfileService>(
+        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager?, ProfileCacheService, UserProfileService>(
           create: (context) {
             final service = UserProfileService(context.read<INostrService>());
-            service.setSubscriptionManager(context.read<SubscriptionManager>());
+            final subscriptionManager = context.read<SubscriptionManager?>();
+            if (subscriptionManager != null) {
+              service.setSubscriptionManager(subscriptionManager);
+            }
             service.setPersistentCache(context.read<ProfileCacheService>());
             return service;
           },
           update: (_, nostrService, subscriptionManager, profileCache, previous) {
             if (previous != null) {
-              previous.setSubscriptionManager(subscriptionManager);
+              if (subscriptionManager != null) {
+                previous.setSubscriptionManager(subscriptionManager);
+              }
               previous.setPersistentCache(profileCache);
               return previous;
             }
             final service = UserProfileService(nostrService);
-            service.setSubscriptionManager(subscriptionManager);
+            if (subscriptionManager != null) {
+              service.setSubscriptionManager(subscriptionManager);
+            }
             service.setPersistentCache(profileCache);
             return service;
           },
@@ -251,23 +292,30 @@ class OpenVineApp extends StatelessWidget {
         ),
         
         // Profile videos provider depends on Nostr service, SubscriptionManager, and VideoEventService
-        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager, VideoEventService, ProfileVideosProvider>(
+        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager?, VideoEventService, ProfileVideosProvider>(
           create: (context) {
             final provider = ProfileVideosProvider(
               context.read<INostrService>(),
             );
-            provider.setSubscriptionManager(context.read<SubscriptionManager>());
+            final subscriptionManager = context.read<SubscriptionManager?>();
+            if (subscriptionManager != null) {
+              provider.setSubscriptionManager(subscriptionManager);
+            }
             provider.setVideoEventService(context.read<VideoEventService>());
             return provider;
           },
           update: (_, nostrService, subscriptionManager, videoEventService, previous) {
             if (previous != null) {
-              previous.setSubscriptionManager(subscriptionManager);
+              if (subscriptionManager != null) {
+                previous.setSubscriptionManager(subscriptionManager);
+              }
               previous.setVideoEventService(videoEventService);
               return previous;
             }
             final provider = ProfileVideosProvider(nostrService);
-            provider.setSubscriptionManager(subscriptionManager);
+            if (subscriptionManager != null) {
+              provider.setSubscriptionManager(subscriptionManager);
+            }
             provider.setVideoEventService(videoEventService);
             return provider;
           },
@@ -369,8 +417,11 @@ class OpenVineApp extends StatelessWidget {
           update: (_, uploadService, previous) => previous ?? UploadManager(uploadService: uploadService),
         ),
         
-        // API service
-        ChangeNotifierProvider(create: (_) => ApiService()),
+        // API service depends on auth service
+        ChangeNotifierProxyProvider<Nip98AuthService, ApiService>(
+          create: (context) => ApiService(authService: context.read<Nip98AuthService>()),
+          update: (_, authService, previous) => previous ?? ApiService(authService: authService),
+        ),
         
         // Video event publisher depends on multiple services
         ChangeNotifierProxyProvider4<UploadManager, INostrService, ApiService, AuthService, VideoEventPublisher>(
@@ -703,8 +754,9 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalKey<State<FeedScreenV2>> _feedScreenKey = GlobalKey<State<FeedScreenV2>>();
+  VideoEvent? _lastFeedVideo; // Track the last viewed video for position preservation
   
-  late final List<Widget> _screens;
+  late List<Widget> _screens; // Mutable to allow feed screen recreation
 
   @override
   void initState() {
@@ -725,8 +777,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Pause videos when leaving any tab that has video playback
     if (_currentIndex != index) {
       if (_currentIndex == 0) {
-        // Leaving feed screen
+        // Leaving feed screen - capture current video position
         _pauseFeedVideos();
+        _lastFeedVideo = FeedScreenV2.getCurrentVideo(_feedScreenKey);
+        debugPrint('💾 Captured current feed position: ${_lastFeedVideo?.id.substring(0, 8) ?? 'none'}');
       } else if (_currentIndex == 2) {
         // Leaving explore screen
         _pauseExploreVideos();
@@ -736,8 +790,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Resume videos when returning to a tab with video playback
     if (_currentIndex != index) {
       if (index == 0) {
-        // Returning to feed screen
-        _resumeFeedVideos();
+        // Returning to feed screen - recreate if we have a position to restore
+        if (_lastFeedVideo != null) {
+          _recreateFeedScreen();
+        } else {
+          _resumeFeedVideos();
+        }
       }
       // Note: Explore screen handles its own resume logic
     }
@@ -778,6 +836,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }
     } catch (e) {
       debugPrint('⚠️ Error pausing explore videos: $e');
+    }
+  }
+  
+  void _recreateFeedScreen() {
+    try {
+      debugPrint('🔄 Recreating feed screen with starting video: ${_lastFeedVideo?.id.substring(0, 8) ?? 'none'}');
+      
+      // Update the feed screen in the screens list with the new starting video
+      _screens[0] = FeedScreenV2(
+        key: _feedScreenKey,
+        startingVideo: _lastFeedVideo,
+      );
+      
+      // Force a rebuild to apply the new feed screen
+      setState(() {});
+      
+      // Clear the captured video since we've used it
+      _lastFeedVideo = null;
+    } catch (e) {
+      debugPrint('⚠️ Error recreating feed screen: $e');
+      // Fallback to just resuming videos
+      _resumeFeedVideos();
     }
   }
 

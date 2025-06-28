@@ -18,6 +18,10 @@ class WebCameraService {
     throw UnsupportedError('WebCameraService is only supported on web platform');
   }
   
+  Future<void> switchCamera() async {
+    throw UnsupportedError('WebCameraService is only supported on web platform');
+  }
+  
   void dispose() {}
   
   static void revokeBlobUrl(String blobUrl) {

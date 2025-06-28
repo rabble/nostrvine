@@ -491,18 +491,19 @@ class NostrService extends ChangeNotifier implements INostrService {
   @override
   Stream<Event> subscribeToEvents({
     required List<Filter> filters,
+    bool bypassLimits = false, // Allow SubscriptionManager to bypass limits
   }) {
     if (!_isInitialized) {
       throw NostrServiceException('Nostr service not initialized');
     }
     
-    // Check current active subscriptions to prevent relay overload
-    if (_eventControllers.length >= _maxConcurrentSubscriptions) {
+    // Check current active subscriptions to prevent relay overload (unless bypassed by SubscriptionManager)
+    if (!bypassLimits && _eventControllers.length >= _maxConcurrentSubscriptions) {
       debugPrint('🚫 BLOCKING: Too many active subscriptions (${_eventControllers.length}/$_maxConcurrentSubscriptions)');
       throw NostrServiceException('Too many concurrent subscriptions - relay protection active');
     }
     
-    if (_eventControllers.length >= (_maxConcurrentSubscriptions * 0.75)) {
+    if (!bypassLimits && _eventControllers.length >= (_maxConcurrentSubscriptions * 0.75)) {
       debugPrint('⚠️ WARNING: ${_eventControllers.length}/$_maxConcurrentSubscriptions active subscriptions - approaching limit');
       // Force cleanup when approaching limit
       _cleanupOldSubscriptions();

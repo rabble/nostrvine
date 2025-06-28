@@ -4,7 +4,9 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:nostr_sdk/event.dart';
-import 'key_storage_service.dart';
+import 'secure_key_storage_service.dart';
+import 'key_migration_service.dart';
+import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';
 
 /// Authentication state for the user
@@ -23,16 +25,16 @@ enum AuthState {
 class AuthResult {
   final bool success;
   final String? errorMessage;
-  final NostrKeyPair? keyPair;
+  final SecureKeyContainer? keyContainer;
   
   const AuthResult({
     required this.success,
     this.errorMessage,
-    this.keyPair,
+    this.keyContainer,
   });
   
-  factory AuthResult.success(NostrKeyPair keyPair) {
-    return AuthResult(success: true, keyPair: keyPair);
+  factory AuthResult.success(SecureKeyContainer keyContainer) {
+    return AuthResult(success: true, keyContainer: keyContainer);
   }
   
   factory AuthResult.failure(String errorMessage) {
@@ -62,24 +64,26 @@ class UserProfile {
     this.nip05,
   });
   
-  /// Create minimal profile from key pair
-  factory UserProfile.fromKeyPair(NostrKeyPair keyPair) {
+  /// Create minimal profile from secure key container
+  factory UserProfile.fromSecureContainer(SecureKeyContainer keyContainer) {
     return UserProfile(
-      npub: keyPair.npub,
-      publicKeyHex: keyPair.publicKeyHex,
-      displayName: NostrEncoding.maskKey(keyPair.npub),
+      npub: keyContainer.npub,
+      publicKeyHex: keyContainer.publicKeyHex,
+      displayName: NostrEncoding.maskKey(keyContainer.npub),
     );
   }
 }
 
 /// Main authentication service for the OpenVine app
 class AuthService extends ChangeNotifier {
-  final KeyStorageService _keyStorage;
+  final SecureKeyStorageService _keyStorage;
+  final KeyMigrationService _migrationService;
   
   AuthState _authState = AuthState.checking;
-  NostrKeyPair? _currentKeyPair;
+  SecureKeyContainer? _currentKeyContainer;
   UserProfile? _currentProfile;
   String? _lastError;
+  bool _migrationRequired = false;
   
   // Streaming controllers for reactive auth state
   final StreamController<AuthState> _authStateController = 
@@ -87,8 +91,9 @@ class AuthService extends ChangeNotifier {
   final StreamController<UserProfile?> _profileController = 
       StreamController<UserProfile?>.broadcast();
       
-  AuthService({KeyStorageService? keyStorage}) 
-      : _keyStorage = keyStorage ?? KeyStorageService();
+  AuthService({SecureKeyStorageService? keyStorage}) 
+      : _keyStorage = keyStorage ?? SecureKeyStorageService(),
+        _migrationService = KeyMigrationService();
   
   /// Current authentication state
   AuthState get authState => _authState;
@@ -103,10 +108,13 @@ class AuthService extends ChangeNotifier {
   Stream<UserProfile?> get profileStream => _profileController.stream;
   
   /// Current public key (npub format)
-  String? get currentNpub => _currentKeyPair?.npub;
+  String? get currentNpub => _currentKeyContainer?.npub;
   
   /// Current public key (hex format)
-  String? get currentPublicKeyHex => _currentKeyPair?.publicKeyHex;
+  String? get currentPublicKeyHex => _currentKeyContainer?.publicKeyHex;
+  
+  /// Check if migration is required
+  bool get migrationRequired => _migrationRequired;
   
   /// Check if user is authenticated
   bool get isAuthenticated => _authState == AuthState.authenticated;
@@ -114,9 +122,40 @@ class AuthService extends ChangeNotifier {
   /// Last authentication error
   String? get lastError => _lastError;
   
+  /// Perform migration from legacy storage if needed
+  Future<bool> performMigrationIfNeeded({String? biometricPrompt}) async {
+    if (!_migrationRequired) return true;
+    
+    debugPrint('🔄 Performing key migration to secure storage');
+    
+    try {
+      final result = await _migrationService.performMigration(
+        biometricPrompt: biometricPrompt,
+        deleteAfterMigration: true,
+      );
+      
+      if (result.isSuccess) {
+        _migrationRequired = false;
+        debugPrint('✅ Migration completed successfully');
+        
+        // Re-check auth after migration
+        await _checkExistingAuth();
+        return true;
+      } else {
+        debugPrint('❌ Migration failed: ${result.error}');
+        _lastError = 'Migration failed: ${result.error}';
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Migration error: $e');
+      _lastError = 'Migration error: $e';
+      return false;
+    }
+  }
+  
   /// Initialize the authentication service
   Future<void> initialize() async {
-    debugPrint('🔐 Initializing AuthService');
+    debugPrint('🔐 Initializing SecureAuthService');
     
     // Defer state changes to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -124,16 +163,19 @@ class AuthService extends ChangeNotifier {
     });
     
     try {
-      // Initialize key storage
+      // Initialize secure key storage
       await _keyStorage.initialize();
+      
+      // Check if migration is needed
+      await _checkMigrationStatus();
       
       // Check for existing keys
       await _checkExistingAuth();
       
-      debugPrint('✅ AuthService initialized');
+      debugPrint('✅ SecureAuthService initialized');
       
     } catch (e) {
-      debugPrint('❌ AuthService initialization failed: $e');
+      debugPrint('❌ SecureAuthService initialization failed: $e');
       _lastError = 'Failed to initialize auth: $e';
       
       // Defer state change to avoid setState during build
@@ -144,26 +186,28 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Create a new Nostr identity
-  Future<AuthResult> createNewIdentity() async {
-    debugPrint('🆕 Creating new Nostr identity');
+  Future<AuthResult> createNewIdentity({String? biometricPrompt}) async {
+    debugPrint('🆕 Creating new secure Nostr identity');
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
     
     try {
-      // Generate new key pair
-      final keyPair = await _keyStorage.generateAndStoreKeys();
+      // Generate new secure key container
+      final keyContainer = await _keyStorage.generateAndStoreKeys(
+        biometricPrompt: biometricPrompt,
+      );
       
       // Set up user session
-      await _setupUserSession(keyPair);
+      await _setupUserSession(keyContainer);
       
-      debugPrint('✅ New identity created successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyPair.npub)}');
+      debugPrint('✅ New secure identity created successfully');
+      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
       
-      return AuthResult.success(keyPair);
+      return AuthResult.success(keyContainer);
       
     } catch (e) {
-      debugPrint('❌ Failed to create identity: $e');
+      debugPrint('❌ Failed to create secure identity: $e');
       _lastError = 'Failed to create identity: $e';
       _setAuthState(AuthState.unauthenticated);
       
@@ -172,8 +216,8 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Import identity from nsec (bech32 private key)
-  Future<AuthResult> importFromNsec(String nsec) async {
-    debugPrint('📥 Importing identity from nsec');
+  Future<AuthResult> importFromNsec(String nsec, {String? biometricPrompt}) async {
+    debugPrint('📥 Importing identity from nsec to secure storage');
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
@@ -184,16 +228,19 @@ class AuthService extends ChangeNotifier {
         throw Exception('Invalid nsec format');
       }
       
-      // Import keys
-      final keyPair = await _keyStorage.importFromNsec(nsec);
+      // Import keys into secure storage
+      final keyContainer = await _keyStorage.importFromNsec(
+        nsec,
+        biometricPrompt: biometricPrompt,
+      );
       
       // Set up user session
-      await _setupUserSession(keyPair);
+      await _setupUserSession(keyContainer);
       
-      debugPrint('✅ Identity imported successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyPair.npub)}');
+      debugPrint('✅ Identity imported to secure storage successfully');
+      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
       
-      return AuthResult.success(keyPair);
+      return AuthResult.success(keyContainer);
       
     } catch (e) {
       debugPrint('❌ Failed to import identity: $e');
@@ -205,8 +252,8 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Import identity from hex private key
-  Future<AuthResult> importFromHex(String privateKeyHex) async {
-    debugPrint('📥 Importing identity from hex');
+  Future<AuthResult> importFromHex(String privateKeyHex, {String? biometricPrompt}) async {
+    debugPrint('📥 Importing identity from hex to secure storage');
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
@@ -217,20 +264,23 @@ class AuthService extends ChangeNotifier {
         throw Exception('Invalid private key format');
       }
       
-      // Import keys
-      final keyPair = await _keyStorage.importFromHex(privateKeyHex);
+      // Import keys into secure storage
+      final keyContainer = await _keyStorage.importFromHex(
+        privateKeyHex,
+        biometricPrompt: biometricPrompt,
+      );
       
       // Set up user session
-      await _setupUserSession(keyPair);
+      await _setupUserSession(keyContainer);
       
-      debugPrint('✅ Identity imported successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyPair.npub)}');
+      debugPrint('✅ Identity imported from hex to secure storage successfully');
+      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
       
-      return AuthResult.success(keyPair);
+      return AuthResult.success(keyContainer);
       
     } catch (e) {
-      debugPrint('❌ Failed to import identity: $e');
-      _lastError = 'Failed to import identity: $e';
+      debugPrint('❌ Failed to import from hex: $e');
+      _lastError = 'Failed to import from hex: $e';
       _setAuthState(AuthState.unauthenticated);
       
       return AuthResult.failure(_lastError!);
@@ -251,7 +301,8 @@ class AuthService extends ChangeNotifier {
       }
       
       // Clear session
-      _currentKeyPair = null;
+      _currentKeyContainer?.dispose();
+      _currentKeyContainer = null;
       _currentProfile = null;
       _lastError = null;
       
@@ -266,11 +317,14 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Get the private key for signing operations
-  Future<String?> getPrivateKeyForSigning() async {
+  Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) async {
     if (!isAuthenticated) return null;
     
     try {
-      return await _keyStorage.getPrivateKeyForSigning();
+      return await _keyStorage.withPrivateKey<String?>(
+        (privateKeyHex) => privateKeyHex,
+        biometricPrompt: biometricPrompt,
+      );
     } catch (e) {
       debugPrint('❌ Failed to get private key: $e');
       return null;
@@ -278,12 +332,12 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Export nsec for backup purposes
-  Future<String?> exportNsec() async {
+  Future<String?> exportNsec({String? biometricPrompt}) async {
     if (!isAuthenticated) return null;
     
     try {
       debugPrint('⚠️ Exporting nsec - ensure secure handling');
-      return await _keyStorage.exportNsec();
+      return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
     } catch (e) {
       debugPrint('❌ Failed to export nsec: $e');
       return null;
@@ -295,28 +349,28 @@ class AuthService extends ChangeNotifier {
     required int kind,
     required String content,
     List<List<String>>? tags,
+    String? biometricPrompt,
   }) async {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || _currentKeyContainer == null) {
       debugPrint('❌ Cannot sign event - user not authenticated');
       return null;
     }
     
     try {
-      final privateKey = await getPrivateKeyForSigning();
-      if (privateKey == null) return null;
-      
-      // Create event with current user's public key
-      final event = Event(
-        _currentKeyPair!.publicKeyHex,
-        kind,
-        tags ?? [],
-        content,
-      );
-      
-      // Sign the event
-      event.sign(privateKey);
-      
-      return event;
+      return await _keyStorage.withPrivateKey<Event?>((privateKey) {
+        // Create event with current user's public key
+        final event = Event(
+          _currentKeyContainer!.publicKeyHex,
+          kind,
+          tags ?? [],
+          content,
+        );
+        
+        // Sign the event
+        event.sign(privateKey);
+        
+        return event;
+      }, biometricPrompt: biometricPrompt);
       
     } catch (e) {
       debugPrint('❌ Failed to create event: $e');
@@ -330,19 +384,19 @@ class AuthService extends ChangeNotifier {
       final hasKeys = await _keyStorage.hasKeys();
       
       if (hasKeys) {
-        debugPrint('🔍 Found existing keys, loading saved identity...');
+        debugPrint('🔍 Found existing secure keys, loading saved identity...');
         
-        final keyPair = await _keyStorage.getKeyPair();
-        if (keyPair != null) {
-          debugPrint('✅ Loaded existing identity: ${NostrEncoding.maskKey(keyPair.npub)}');
-          await _setupUserSession(keyPair);
+        final keyContainer = await _keyStorage.getKeyContainer();
+        if (keyContainer != null) {
+          debugPrint('✅ Loaded existing secure identity: ${NostrEncoding.maskKey(keyContainer.npub)}');
+          await _setupUserSession(keyContainer);
           return;
         } else {
-          debugPrint('⚠️ Has keys flag set but could not load key pair');
+          debugPrint('⚠️ Has keys flag set but could not load secure key container');
         }
       }
       
-      debugPrint('📭 No existing keys found, creating new identity automatically...');
+      debugPrint('📭 No existing secure keys found, creating new identity automatically...');
       
       // Auto-create identity like TikTok - seamless onboarding
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -350,9 +404,9 @@ class AuthService extends ChangeNotifier {
       });
       
       final result = await createNewIdentity();
-      if (result.success) {
-        debugPrint('✅ Auto-created NEW Nostr identity: ${NostrEncoding.maskKey(result.keyPair!.npub)}');
-        debugPrint('🔐 This identity is now saved and will be reused on next launch');
+      if (result.success && result.keyContainer != null) {
+        debugPrint('✅ Auto-created NEW secure Nostr identity: ${NostrEncoding.maskKey(result.keyContainer!.npub)}');
+        debugPrint('🔐 This identity is now securely saved and will be reused on next launch');
       } else {
         debugPrint('❌ Failed to auto-create identity: ${result.errorMessage}');
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -369,85 +423,59 @@ class AuthService extends ChangeNotifier {
   }
   
   /// Set up user session after successful authentication
-  Future<void> _setupUserSession(NostrKeyPair keyPair) async {
-    _currentKeyPair = keyPair;
+  Future<void> _setupUserSession(SecureKeyContainer keyContainer) async {
+    _currentKeyContainer = keyContainer;
     
-    // Create user profile
-    _currentProfile = UserProfile.fromKeyPair(keyPair);
+    // Create user profile from secure container
+    _currentProfile = UserProfile(
+      npub: keyContainer.npub,
+      publicKeyHex: keyContainer.publicKeyHex,
+      displayName: NostrEncoding.maskKey(keyContainer.npub),
+    );
     
-    // Add timestamps if available
-    final createdAt = await _keyStorage.getKeyCreationTime();
-    final lastAccess = await _keyStorage.getLastAccessTime();
-    
-    if (createdAt != null || lastAccess != null) {
-      _currentProfile = UserProfile(
-        npub: _currentProfile!.npub,
-        publicKeyHex: _currentProfile!.publicKeyHex,
-        keyCreatedAt: createdAt,
-        lastAccessAt: lastAccess,
-        displayName: _currentProfile!.displayName,
-        about: _currentProfile!.about,
-        picture: _currentProfile!.picture,
-        nip05: _currentProfile!.nip05,
-      );
-    }
+    // TODO: Add secure metadata tracking for timestamps
+    // final createdAt = await _keyStorage.getKeyCreationTime();
+    // final lastAccess = await _keyStorage.getLastAccessTime();
     
     _setAuthState(AuthState.authenticated);
     _profileController.add(_currentProfile);
     
-    debugPrint('✅ User session established');
+    debugPrint('✅ Secure user session established');
     debugPrint('👤 Profile: ${_currentProfile!.displayName}');
+    debugPrint('🔒 Security: Hardware-backed storage active');
   }
   
-  /// Set web authentication key (for NIP-07 and bunker authentication)
-  Future<void> setWebAuthenticationKey(String publicKeyHex) async {
-    debugPrint('🌐 Setting web authentication key');
-    
-    _setAuthState(AuthState.authenticating);
-    _lastError = null;
-    
+  /// Check if migration from legacy storage is needed
+  Future<void> _checkMigrationStatus() async {
     try {
-      // Validate hex format
-      if (!NostrEncoding.isValidHexKey(publicKeyHex)) {
-        throw Exception('Invalid public key format');
+      final migrationStatus = await _migrationService.checkMigrationStatus();
+      
+      _migrationRequired = migrationStatus.status == MigrationStatus.pending;
+      
+      if (_migrationRequired) {
+        debugPrint('⚠️ Legacy keys found - migration required for security');
+      } else if (migrationStatus.status == MigrationStatus.failed) {
+        debugPrint('❌ Migration check failed: ${migrationStatus.error}');
       }
-      
-      // Create a NostrKeyPair with only the public key (no private key for web auth)
-      final npub = NostrEncoding.encodePublicKey(publicKeyHex);
-      final keyPair = NostrKeyPair(
-        privateKeyHex: '', // Empty for web auth - signing handled by external services
-        publicKeyHex: publicKeyHex,
-        npub: npub,
-        nsec: '', // Empty for web auth
-      );
-      
-      // Set up user session without storing keys (web auth is session-only)
-      await _setupWebUserSession(keyPair);
-      
-      debugPrint('✅ Web authentication key set successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(npub)}');
-      
     } catch (e) {
-      debugPrint('❌ Failed to set web authentication key: $e');
-      _lastError = 'Failed to set web authentication: $e';
-      _setAuthState(AuthState.unauthenticated);
-      rethrow;
+      debugPrint('⚠️ Migration status check failed: $e');
+      _migrationRequired = false;
     }
   }
   
-  /// Set up user session for web authentication (no key storage)
-  Future<void> _setupWebUserSession(NostrKeyPair keyPair) async {
-    _currentKeyPair = keyPair;
+  /// Web authentication is not supported with secure storage
+  /// Use mobile platforms for secure key management
+  @Deprecated('Web authentication not supported in secure mode')
+  Future<void> setWebAuthenticationKey(String publicKeyHex) async {
+    debugPrint('❌ Web authentication not supported with secure storage');
     
-    // Create user profile
-    _currentProfile = UserProfile.fromKeyPair(keyPair);
+    _lastError = 'Web authentication not supported in secure mode. Please use mobile app for secure key management.';
+    _setAuthState(AuthState.unauthenticated);
     
-    // Mark as authenticated
-    _setAuthState(AuthState.authenticated);
-    _profileController.add(_currentProfile);
-    
-    debugPrint('✅ Web user session established');
-    debugPrint('👤 Profile: ${_currentProfile!.displayName}');
+    throw const SecureKeyStorageException(
+      'Web platform not supported for secure key storage',
+      code: 'web_not_supported',
+    );
   }
 
   /// Update authentication state and notify listeners
@@ -476,7 +504,11 @@ class AuthService extends ChangeNotifier {
   
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing AuthService');
+    debugPrint('🗑️ Disposing SecureAuthService');
+    
+    // Securely dispose of key container
+    _currentKeyContainer?.dispose();
+    _currentKeyContainer = null;
     
     _authStateController.close();
     _profileController.close();

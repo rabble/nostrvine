@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **NIP-05 Username Registration**: Complete NIP-05 verification system with username availability checking
+  - Username registration service with backend integration
+  - Real-time availability checking and validation
+  - Profile setup screen integration with username selection
+  - Reserved username protection and error handling
+- **Analytics Service**: Comprehensive analytics tracking for user interactions and video engagement
+  - Video view tracking with unique session management
+  - User interaction analytics (likes, follows, shares)
+  - Analytics service with privacy-focused data collection
+  - Performance metrics and user engagement tracking
+- **Identity Management**: Advanced identity switching and management capabilities
+  - Multiple identity storage and switching functionality
+  - Identity manager service for seamless account transitions
+  - Secure identity persistence and recovery
+  - Enhanced authentication flows with identity validation
+- **Age Verification System**: COPPA-compliant age verification for user onboarding
+  - Age verification dialog with proper validation
+  - Compliance with child protection regulations
+  - User-friendly age verification flow
+  - Privacy-focused age checking without data retention
+- **Subscription Management**: Centralized subscription management for Nostr connections
+  - Unified subscription manager for efficient relay management
+  - Connection pooling and optimization
+  - Automatic retry and failover mechanisms
+  - Enhanced connection stability and performance
+- **Profile Cache Service**: Advanced caching system for user profiles and metadata
+  - Intelligent profile caching with TTL management
+  - Background profile updates and synchronization
+  - Memory-efficient cache implementation
+  - Improved profile loading performance
+- **Logging Configuration**: Centralized logging system with configurable levels
+  - Structured logging with multiple output formats
+  - Configurable log levels for different environments
+  - Performance-optimized logging for production use
+  - Debug and development logging capabilities
+- **Video Playback Controller**: Enhanced video playback with advanced controls
+  - Video playback widget with gesture controls
+  - Playback state management and synchronization
+  - Performance-optimized video rendering
+  - Cross-platform video playback consistency
+- **Relay Settings Screen**: User interface for managing Nostr relay connections
+  - Visual relay management with connection status
+  - Add/remove relay functionality
+  - Connection health monitoring and diagnostics
+  - User-friendly relay configuration
+
 ### Changed
 - **BREAKING**: Complete rebrand from NostrVine to OpenVine
   - Updated all package imports from `nostrvine_app` to `openvine` (76+ files)
@@ -53,6 +100,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance**: Optimized video loading and error handling
 - **Logging**: Added comprehensive debug logging for troubleshooting video issues
 - **Architecture**: Improved separation of concerns between UI and business logic
+- **iOS Keychain Access**: Fixed iOS keychain access errors by implementing direct flutter_secure_storage integration
+  - Resolved MissingPluginException for custom MethodChannel 'openvine.secure_storage'
+  - Fixed NIP-42 authentication failures that prevented video event reception
+  - Eliminated -34018 keychain access errors through proper iOS platform integration
+  - Improved app stability and authentication reliability on iOS devices
 
 ---
 

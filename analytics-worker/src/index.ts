@@ -4,6 +4,8 @@
 import { AnalyticsEnv } from './types/analytics';
 import { handleViewTracking } from './handlers/viewTracking';
 import { handleTrending, handleVideoStats } from './handlers/trending';
+import { handleTrendingVines } from './handlers/trendingVines';
+import { handleTrendingViners } from './handlers/trendingViners';
 
 export default {
   async fetch(
@@ -33,9 +35,19 @@ export default {
         return handleViewTracking(request, env);
       }
 
-      // GET /analytics/trending/videos - Get trending videos
+      // GET /analytics/trending/videos - Get trending videos (legacy endpoint)
       if (path === '/analytics/trending/videos' && request.method === 'GET') {
         return handleTrending(request, env);
+      }
+
+      // GET /analytics/trending/vines - Get trending vines (videos)
+      if (path === '/analytics/trending/vines' && request.method === 'GET') {
+        return handleTrendingVines(request, env);
+      }
+
+      // GET /analytics/trending/viners - Get trending viners (creators)
+      if (path === '/analytics/trending/viners' && request.method === 'GET') {
+        return handleTrendingViners(request, env);
       }
 
       // GET /analytics/video/:eventId/stats - Get video statistics

@@ -234,13 +234,18 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
       ) as _i5.Future<_i3.NostrBroadcastResult>);
 
   @override
-  _i5.Stream<_i6.Event> subscribeToEvents(
-          {required List<_i8.Filter>? filters}) =>
+  _i5.Stream<_i6.Event> subscribeToEvents({
+    required List<_i8.Filter>? filters,
+    bool? bypassLimits = false,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #subscribeToEvents,
           [],
-          {#filters: filters},
+          {
+            #filters: filters,
+            #bypassLimits: bypassLimits,
+          },
         ),
         returnValue: _i5.Stream<_i6.Event>.empty(),
       ) as _i5.Stream<_i6.Event>);

@@ -5,15 +5,21 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "deploy": "wrangler deploy", 
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "test:unit": "vitest run --reporter=verbose test/unit",
+    "test:integration": "vitest run --reporter=verbose test/integration",
+    "test:e2e": "vitest run --reporter=verbose test/e2e"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250614.0"
   },
   "devDependencies": {
     "wrangler": "^3.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "1.3.0",
+    "@cloudflare/vitest-pool-workers": "^0.1.0"
   },
   "private": true
 }

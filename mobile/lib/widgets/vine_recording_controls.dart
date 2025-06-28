@@ -1,7 +1,6 @@
 // ABOUTME: Universal Vine recording UI controls that work across all platforms
 // ABOUTME: Provides press-to-record button, progress bar, and recording state feedback
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../services/vine_recording_controller.dart';
@@ -115,6 +114,14 @@ class _VineRecordButtonState extends State<VineRecordButton>
 
   void _onTapDown(TapDownDetails details) {
     debugPrint('🎬 Record button tap down - canRecord: ${widget.controller.canRecord}, state: ${widget.controller.state}');
+    
+    // If in error state, try to reset first
+    if (widget.controller.state == VineRecordingState.error) {
+      debugPrint('🔄 Resetting from error state before recording');
+      widget.controller.reset();
+      return;
+    }
+    
     if (!widget.controller.canRecord) return;
     
     setState(() => _isPressed = true);
@@ -298,7 +305,7 @@ class VineRecordingInstructions extends StatelessWidget {
       case VineRecordingState.processing:
         return 'Compiling your vine...';
       case VineRecordingState.error:
-        return 'Something went wrong. Try again.';
+        return 'Something went wrong. Tap button to retry.';
       default:
         return 'Press and hold to record, release to pause';
     }
@@ -325,8 +332,42 @@ class VineRecordingUI extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Progress bar at top
-            VineRecordingProgressBar(controller: controller),
+            // Top controls: progress bar and camera switch
+            Row(
+              children: [
+                // Camera switch button (only show when not recording)
+                if (controller.state != VineRecordingState.recording)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: GestureDetector(
+                      onTap: () => controller.switchCamera(),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black54,
+                          border: Border.all(color: Colors.white54, width: 1),
+                        ),
+                        child: const Icon(
+                          Icons.flip_camera_ios,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                
+                // Progress bar (takes remaining space)
+                Expanded(
+                  child: VineRecordingProgressBar(controller: controller),
+                ),
+                
+                // Spacer to balance the camera switch button
+                if (controller.state != VineRecordingState.recording)
+                  const SizedBox(width: 56), // Same width as button + padding
+              ],
+            ),
             
             const Spacer(),
             

@@ -100,7 +100,7 @@ class UnifiedLogger {
     if (kIsWeb) {
       developer.log(
         timestampedMessage,
-        name: name ?? 'OpenVine',
+        name: name ?? 'OpenVines',
         level: level.value,
         error: error,
         stackTrace: stackTrace,

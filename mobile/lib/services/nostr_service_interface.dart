@@ -57,7 +57,7 @@ abstract class INostrService extends ChangeNotifier {
   
   // Methods
   Future<void> initialize({List<String>? customRelays});
-  Stream<Event> subscribeToEvents({required List<Filter> filters});
+  Stream<Event> subscribeToEvents({required List<Filter> filters, bool bypassLimits = false});
   Future<NostrBroadcastResult> broadcastEvent(Event event);
   Future<NostrBroadcastResult> publishFileMetadata({
     required NIP94Metadata metadata,

@@ -27,6 +27,7 @@ import {
   reportCSAMToAuthorities,
   ContentSafetyResult 
 } from './csam-detection';
+import { MetadataStore } from '../services/metadata-store';
 
 /**
  * Handle NIP-96 file upload requests
@@ -374,7 +375,37 @@ async function processDirectUpload(
   try {
     console.log('🚀 Starting direct upload process...');
     
-    // Store file in R2
+    // Check for duplicates using SHA256 hash
+    if (env?.METADATA_CACHE) {
+      const metadataStore = new MetadataStore(env.METADATA_CACHE);
+      const duplicateCheck = await metadataStore.checkDuplicateBySha256(sha256Hash);
+      
+      if (duplicateCheck?.exists && duplicateCheck.url) {
+        console.log(`✅ Duplicate detected for SHA256 ${sha256Hash}, returning existing URL`);
+        
+        // Return the existing file URL instead of uploading
+        const response = {
+          status: 'success',
+          message: 'File already exists (deduplication)',
+          url: duplicateCheck.url,
+          download_url: duplicateCheck.url,
+          sha256: sha256Hash,
+          size: file.size,
+          type: file.type,
+          dimensions: file.type.startsWith('video/') ? '640x640' : null
+        };
+        
+        return new Response(JSON.stringify(response), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+    }
+    
+    // No duplicate found, proceed with upload
     const fileName = `${fileId}.mp4`; // Use consistent naming
     const r2Key = `uploads/${fileName}`;
     
@@ -422,6 +453,18 @@ async function processDirectUpload(
     };
     
     console.log('📋 Generated metadata:', JSON.stringify(metadata, null, 2));
+
+    // Store SHA256 mapping for deduplication
+    if (env?.METADATA_CACHE) {
+      const metadataStore = new MetadataStore(env.METADATA_CACHE);
+      try {
+        await metadataStore.setFileIdBySha256(sha256Hash, fileId);
+        console.log(`✅ SHA256 mapping stored for deduplication: ${sha256Hash} -> ${fileId}`);
+      } catch (error) {
+        console.error('Failed to store SHA256 mapping:', error);
+        // Continue even if mapping fails - upload was successful
+      }
+    }
 
     // Return proper NIP-96 response with file metadata
     console.log('📤 Preparing NIP-96 response...');

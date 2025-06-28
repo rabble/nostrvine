@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fallback - OpenVine</title>
+</head>
+<body>
+    <h1>Fallback Video Test</h1>
+    <p>To test the fallback functionality:</p>
+    <ol>
+        <li>Open the browser developer console (F12)</li>
+        <li>Go to Network tab</li>
+        <li>Right-click on the analytics API request and block the domain</li>
+        <li>Or temporarily modify the API URL in trending-video-player.js</li>
+        <li>Refresh the trending page</li>
+    </ol>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li>✓ No error messages displayed to users</li>
+        <li>✓ 15 fallback videos play smoothly</li>
+        <li>✓ "📡 Showing popular videos" indicator appears</li>
+        <li>✓ "Try Nostr Direct →" link is available</li>
+        <li>✓ Console shows retry attempts every 30 seconds</li>
+        <li>✓ All player controls work (play/pause/next/prev)</li>
+        <li>✓ Videos loop 4 times before auto-advancing</li>
+        <li>✓ Swipe gestures work on mobile</li>
+    </ul>
+    
+    <p><a href="trending.html">Go to Trending Page →</a></p>
+</body>
+</html>

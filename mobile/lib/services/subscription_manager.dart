@@ -51,7 +51,7 @@ class SubscriptionManager extends ChangeNotifier {
     debugPrint('   - Active subscriptions: ${_activeSubscriptions.length}/$_maxConcurrentSubscriptions');
     
     try {
-      final eventStream = _nostrService.subscribeToEvents(filters: optimizedFilters);
+      final eventStream = _nostrService.subscribeToEvents(filters: optimizedFilters, bypassLimits: true);
       
       late StreamSubscription streamSubscription;
       streamSubscription = eventStream.listen(

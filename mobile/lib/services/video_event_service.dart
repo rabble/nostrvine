@@ -200,13 +200,24 @@ class VideoEventService extends ChangeNotifier {
         debugPrint('✅ Managed subscription created with ID: $subscriptionId');
       } else {
         debugPrint('📡 Creating direct subscription via nostr_sdk...');
+        debugPrint('🎯 iOS DEBUG: Subscription filters: ${filters.map((f) => f.toJson()).toList()}');
+        debugPrint('🎯 iOS DEBUG: NostrService relay count: ${_nostrService.connectedRelayCount}');
         final eventStream = _nostrService.subscribeToEvents(filters: filters);
         
         final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
         final subscription = eventStream.listen(
-          (event) => _handleNewVideoEvent(event),
-          onError: (error) => _handleSubscriptionError(error),
-          onDone: () => _handleSubscriptionComplete(),
+          (event) {
+            debugPrint('🎯 iOS DEBUG: Stream event received!');
+            _handleNewVideoEvent(event);
+          },
+          onError: (error) {
+            debugPrint('🎯 iOS DEBUG: Stream error: $error');
+            _handleSubscriptionError(error);
+          },
+          onDone: () {
+            debugPrint('🎯 iOS DEBUG: Stream done!');
+            _handleSubscriptionComplete();
+          },
         );
         
         _subscriptions[subscriptionKey] = subscription;
@@ -242,7 +253,8 @@ class VideoEventService extends ChangeNotifier {
   void _handleNewVideoEvent(dynamic eventData) {
     try {
       // First log the raw event data to understand what we're receiving
-      debugPrint('🔍 Event data type: ${eventData.runtimeType}');
+      debugPrint('🎯 iOS DEBUG: Event received! Type: ${eventData.runtimeType}');
+      debugPrint('🎯 iOS DEBUG: Event string: ${eventData.toString()}');
       
       // The event should already be an Event object from NostrService
       if (eventData is! Event) {
@@ -525,11 +537,16 @@ class VideoEventService extends ChangeNotifier {
       
       int? until;
       
-      // If we have events, get older ones
+      // If we have events, get older ones by finding the oldest timestamp
       if (_videoEvents.isNotEmpty) {
-        final oldestEvent = _videoEvents.last;
+        // Sort events by timestamp to find the actual oldest
+        final sortedEvents = List<VideoEvent>.from(_videoEvents)
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        
+        final oldestEvent = sortedEvents.first;
         until = oldestEvent.createdAt - 1; // One second before oldest event
         debugPrint('📚 Requesting events older than ${DateTime.fromMillisecondsSinceEpoch(until * 1000)}');
+        debugPrint('📚 Current oldest event: ${oldestEvent.title ?? oldestEvent.id.substring(0, 8)} at ${DateTime.fromMillisecondsSinceEpoch(oldestEvent.createdAt * 1000)}');
       } else {
         // If no events yet, load without date constraints
         debugPrint('📚 No existing events, loading fresh content without date constraints');
@@ -537,6 +554,8 @@ class VideoEventService extends ChangeNotifier {
       
       // Use one-shot historical query - this will complete when EOSE is received
       await _queryHistoricalEvents(until: until, limit: limit);
+      
+      debugPrint('✅ Historical events loaded. Total events: ${_videoEvents.length}');
       
     } catch (e) {
       _error = e.toString();

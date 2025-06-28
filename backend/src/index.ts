@@ -44,6 +44,16 @@ import {
   handleModerationOptions 
 } from './handlers/moderation-api';
 
+// NIP-05 Verification
+import {
+  handleNIP05Verification,
+  handleNIP05Registration,
+  handleNIP05Options
+} from './handlers/nip05-verification';
+
+// Cleanup script
+import { handleCleanupRequest } from './scripts/cleanup-duplicates';
+
 // Export Durable Object
 export { UploadJobManager } from './services/upload-job-manager';
 
@@ -72,6 +82,20 @@ export default {
 			// NIP-96 server information endpoint
 			if (pathname === '/.well-known/nostr/nip96.json' && method === 'GET') {
 				return wrapResponse(handleNIP96Info(request, env));
+			}
+
+			// NIP-05 verification endpoint
+			if (pathname === '/.well-known/nostr.json' && method === 'GET') {
+				return wrapResponse(handleNIP05Verification(request, env));
+			}
+
+			// NIP-05 registration endpoint
+			if (pathname === '/api/nip05/register' && method === 'POST') {
+				return wrapResponse(handleNIP05Registration(request, env));
+			}
+
+			if ((pathname === '/.well-known/nostr.json' || pathname === '/api/nip05/register') && method === 'OPTIONS') {
+				return wrapResponse(Promise.resolve(handleNIP05Options()));
 			}
 
 			// Cloudflare Stream upload request endpoint (CDN implementation)
@@ -286,6 +310,11 @@ export default {
 				return handleJobStatus(jobId, env);
 			}
 
+			// Cleanup duplicates endpoint (admin only)
+			if (pathname === '/admin/cleanup-duplicates' && method === 'POST') {
+				return wrapResponse(handleCleanupRequest(request, env));
+			}
+
 			// Health check endpoint with analytics
 			if (pathname === '/health' && method === 'GET') {
 				const analytics = new VideoAnalyticsService(env, ctx);
@@ -356,6 +385,8 @@ export default {
 				message: `Endpoint ${pathname} not found`,
 				available_endpoints: [
 					'/.well-known/nostr/nip96.json',
+					'/.well-known/nostr.json?name=username (NIP-05 verification)',
+					'/api/nip05/register (NIP-05 username registration)',
 					'/v1/media/request-upload (Stream CDN)',
 					'/v1/webhooks/stream-complete',
 					'/v1/media/status/{videoId}',

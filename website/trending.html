@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenVine - Trending Videos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=3">
     <link rel="stylesheet" href="single-player-styles.css?v=3">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -36,46 +39,40 @@
             </p>
         </section>
 
-        <div class="single-player-container">
+        <div class="trending-videos-container">
             <div id="loading-indicator" style="text-align: center; padding: 2rem;">
                 <p>Loading trending videos...</p>
                 <div style="margin: 1rem 0;">🔄</div>
             </div>
 
-            <div id="video-player-container" style="display: none;">
-                <div class="video-wrapper">
-                    <video 
-                        id="main-vine-player" 
-                        class="vine-video" 
-                        autoplay 
-                        playsinline
-                        poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
-                    </video>
-                    
-                    <div class="video-overlay">
-                    </div>
-                    
-                    <div class="unmute-overlay" onclick="unmuteAndPlay()">
-                        <div class="unmute-content">
-                            <span class="unmute-icon">🔇</span>
-                            <p class="unmute-text">Tap to unmute</p>
-                        </div>
-                    </div>
-                    
-                    <button class="nav-btn prev-btn" onclick="previousVideo()">‹</button>
-                    <button class="nav-btn next-btn" onclick="nextVideo()">›</button>
-                </div>
-                
-                <div class="video-info">
-                    <h3 id="video-title" style="text-align: center; margin-top: 1rem;">Loading...</h3>
-                    <p id="video-count" style="text-align: center; color: #666;">Video 1 of 1</p>
-                    <p id="view-count" style="text-align: center; color: #666; font-size: 0.9rem;">0 views</p>
-                </div>
+            <div id="videos-grid" class="videos-grid" style="display: none;">
+                <!-- Video cards will be dynamically inserted here -->
             </div>
 
             <div id="error-container" style="display: none; text-align: center; padding: 2rem;">
                 <p style="color: red;">Error loading trending videos</p>
                 <div id="error-details" style="margin-top: 1rem; font-size: 0.9rem; color: #666;"></div>
+            </div>
+        </div>
+
+        <!-- Modal for video playback -->
+        <div id="video-modal" class="video-modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeVideoModal()">&times;</span>
+                <div class="modal-video-wrapper">
+                    <video 
+                        id="modal-video-player" 
+                        class="modal-video" 
+                        controls
+                        autoplay 
+                        playsinline>
+                    </video>
+                </div>
+                <div class="modal-video-info">
+                    <h3 id="modal-video-title"></h3>
+                    <p id="modal-video-creator"></p>
+                    <p id="modal-video-views"></p>
+                </div>
             </div>
         </div>
 
@@ -88,39 +85,38 @@
     </main>
 
     <footer>
-        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="about.html">About OpenVine</a> | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+        <p>🌱 Liberating Vine, one loop at a time | Building a social media ecosystem where users have <a href="https://rights.social" target="_blank">rights</a></p>
     </footer>
 
-    <script src="trending-video-player.js"></script>
+    <script src="trending-video-player.js?v=3"></script>
     <script>
         // Load trending creators
         async function loadTrendingCreators() {
-            try {
-                const response = await fetch('https://analytics.openvine.co/analytics/trending/viners?limit=8');
-                if (!response.ok) return;
-                
-                const data = await response.json();
-                const grid = document.getElementById('trending-creators-grid');
-                
-                if (data.creators && data.creators.length > 0) {
-                    grid.innerHTML = data.creators.slice(0, 8).map((creator, index) => {
-                        const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#ff8cc8', '#6c5ce7', '#fd79a8', '#a29bfe'];
-                        const emojis = ['🎭', '🎨', '😎', '🌟', '🎬', '🎪', '🎯', '🎸'];
-                        
-                        return `
-                            <div class="viner-card">
-                                <div class="viner-avatar" style="background-color: ${colors[index % colors.length]};">
-                                    <span>${emojis[index % emojis.length]}</span>
-                                </div>
-                                <p class="viner-name">${creator.displayName || 'Creator'}</p>
-                                <p style="font-size: 0.8rem; color: #666;">${creator.totalViews.toLocaleString()} views</p>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            } catch (error) {
-                console.error('Error loading trending creators:', error);
-            }
+            const grid = document.getElementById('trending-creators-grid');
+            const creators = [
+                { name: 'maka-senpai', views: 42069 },
+                { name: 'JEDRLEE', views: 31337 },
+                { name: 'earth-angel', views: 28420 },
+                { name: 'MettaonDarling', views: 19885 },
+                { name: 'Virtual', views: 15234 },
+                { name: 'Kenneth-Udut', views: 12456 },
+                { name: 'mysticalwanheda', views: 9876 },
+                { name: 'lonelyaudios', views: 8765 }
+            ];
+            
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#ff8cc8', '#6c5ce7', '#fd79a8', '#a29bfe'];
+            const emojis = ['🎭', '🎨', '😎', '🌟', '🎬', '🎪', '🎯', '🎸'];
+            
+            grid.innerHTML = creators.map((creator, index) => `
+                <div class="viner-card" onclick="window.location.href='/${encodeURIComponent(creator.name)}'" style="cursor: pointer;">
+                    <div class="viner-avatar" style="background-color: ${colors[index % colors.length]};">
+                        <span>${emojis[index % emojis.length]}</span>
+                    </div>
+                    <p class="viner-name">${creator.name}</p>
+                    <p style="font-size: 0.8rem; color: #666;">${creator.views.toLocaleString()} views</p>
+                </div>
+            `).join('');
         }
         
         // Load creators when page loads

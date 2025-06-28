@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/video_manager_interface.dart';
+import '../services/video_event_bridge.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
+import '../theme/vine_theme.dart';
 import 'search_screen.dart';
 
 /// Feed context for filtering videos
@@ -60,15 +62,28 @@ class FeedScreenV2 extends StatefulWidget {
       state.resumeVideos();
     }
   }
+  
+  /// Static method to get current video - called from external components
+  static VideoEvent? getCurrentVideo(GlobalKey<State<FeedScreenV2>> key) {
+    final state = key.currentState;
+    if (state is _FeedScreenV2State) {
+      return state.getCurrentVideo();
+    }
+    return null;
+  }
 }
 
 class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver {
   late PageController _pageController;
   IVideoManager? _videoManager;
+  VideoEventBridge? _videoEventBridge;
   int _currentIndex = 0;
   bool _isInitialized = false;
   StreamSubscription? _stateChangeSubscription;
   Timer? _debounceTimer;
+  bool _isUserScrolling = false; // Track if user is actively scrolling
+  bool _isLoadingMore = false; // Track if we're currently loading more videos
+  DateTime? _lastPaginationRequest; // Prevent too frequent pagination requests
 
   @override
   void initState() {
@@ -123,6 +138,15 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   void _initializeVideoManager() {
     try {
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
+      
+      // Try to get the video event bridge for pagination
+      try {
+        _videoEventBridge = Provider.of<VideoEventBridge>(context, listen: false);
+        debugPrint('✅ VideoEventBridge found for pagination support');
+      } catch (e) {
+        debugPrint('⚠️ VideoEventBridge not found - pagination will be limited: $e');
+      }
+      
       _isInitialized = true;
       
       // Apply context filtering if needed
@@ -133,23 +157,41 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       
       // Listen to state changes with debouncing to prevent UI flashing
       _stateChangeSubscription = _videoManager!.stateChanges.listen((_) {
+        // Don't rebuild during user scrolling to prevent index misalignment
+        if (_isUserScrolling) {
+          debugPrint('🚫 Skipping state update during user scrolling');
+          return;
+        }
+        
         // Debounce rapid state changes to prevent flashing during video loading
         _debounceTimer?.cancel();
-        // Use shorter delay for initial load when no videos are shown yet
-        final debounceDelay = _videoManager!.videos.isEmpty 
-            ? const Duration(milliseconds: 50)  // Fast update for initial content
-            : const Duration(milliseconds: 500); // Normal debounce for updates
+        
+        // Get current video count for optimization
+        final currentVideoCount = _videoManager!.videos.length;
+        final hadNoVideos = currentVideoCount == 0;
+        
+        // Use aggressive optimization for first video
+        final debounceDelay = hadNoVideos
+            ? const Duration(milliseconds: 0)   // IMMEDIATE update for first video
+            : currentVideoCount < 3
+              ? const Duration(milliseconds: 50)  // Fast for first few videos
+              : const Duration(milliseconds: 200); // Reduced for subsequent videos
+        
         _debounceTimer = Timer(debounceDelay, () {
-          if (mounted) {
-            final hadNoVideos = _videoManager!.videos.isEmpty;
+          if (mounted && !_isUserScrolling) { // Double-check user isn't scrolling
+            final wasEmpty = hadNoVideos;
             setState(() {});
             
-            // If we just got our first videos, trigger preload after render
-            if (hadNoVideos && _videoManager!.videos.isNotEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                debugPrint('🎬 First videos arrived - triggering preload for index $_currentIndex');
-                _videoManager!.preloadAroundIndex(_currentIndex);
-              });
+            // Aggressive preloading for first videos
+            if (wasEmpty && _videoManager!.videos.isNotEmpty) {
+              debugPrint('🚀 FIRST VIDEO ARRIVED - immediate render and preload!');
+              // Start preloading immediately, don't wait for render
+              _videoManager!.preloadAroundIndex(_currentIndex);
+              
+              // Also preload the next video immediately for faster scrolling
+              if (_videoManager!.videos.length > 1) {
+                _videoManager!.preloadVideo(_videoManager!.videos[1].id);
+              }
             }
           }
         });
@@ -339,17 +381,28 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _playVideo(currentVideo.id);
     }
   }
+  
+  /// Get the currently displayed video
+  VideoEvent? getCurrentVideo() {
+    if (!_isInitialized || _videoManager == null) return null;
+    
+    final videos = _videoManager!.videos;
+    if (_currentIndex >= 0 && _currentIndex < videos.length) {
+      return videos[_currentIndex];
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.vineGreen,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          'OpenVine',
+          'OpenVines',
           style: GoogleFonts.pacifico(
             color: Colors.white,
             fontSize: 24,
@@ -371,7 +424,45 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       body: SafeArea(
         top: false, // AppBar handles top safe area
         bottom: false, // Let videos extend to bottom for full screen
-        child: _buildBody(),
+        child: Stack(
+          children: [
+            _buildBody(),
+            // Show loading indicator when paginating
+            if (_isLoadingMore)
+              Positioned(
+                bottom: 100,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Loading more...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -446,24 +537,40 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   Widget _buildVideoFeed(List<VideoEvent> videos) {
     return Semantics(
       label: 'Video feed',
-      child: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        onPageChanged: _onPageChanged,
-        itemCount: videos.length,
-        pageSnapping: true,
-        itemBuilder: (context, index) {
-          // Bounds checking
-          if (index < 0 || index >= videos.length) {
-            return _buildErrorItem('Index out of bounds');
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) {
+          // Track user scrolling to prevent rebuilds during interaction
+          if (notification is ScrollStartNotification) {
+            _isUserScrolling = true;
+            debugPrint('🏃 User started scrolling');
+          } else if (notification is ScrollEndNotification) {
+            _isUserScrolling = false;
+            debugPrint('🛑 User stopped scrolling');
           }
-
-          final video = videos[index];
-          final isActive = index == _currentIndex;
-
-          // Error boundary for individual videos
-          return _buildVideoItemWithErrorBoundary(video, isActive);
+          return false;
         },
+        child: PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          onPageChanged: _onPageChanged,
+          itemCount: videos.length,
+          pageSnapping: true,
+          itemBuilder: (context, index) {
+            // Bounds checking
+            if (index < 0 || index >= videos.length) {
+              return _buildErrorItem('Index out of bounds');
+            }
+
+            final video = videos[index];
+            final isActive = index == _currentIndex;
+
+            // Check if we're near the end and should load more videos
+            _checkForPagination(index, videos.length);
+
+            // Error boundary for individual videos
+            return _buildVideoItemWithErrorBoundary(video, isActive);
+          },
+        ),
       ),
     );
   }
@@ -535,6 +642,67 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     debugPrint('FeedScreenV2: Video error for $videoId: $error');
     // Error handling would be implemented here
     // For now, just log the error
+  }
+
+  /// Check if we're near the end of the video list and should load more content
+  void _checkForPagination(int currentIndex, int totalVideos) {
+    // Only trigger pagination if we have a video event bridge
+    if (_videoEventBridge == null || _isLoadingMore) return;
+    
+    // Check if we're near the end (within 5 videos)
+    const paginationThreshold = 5;
+    final isNearEnd = (totalVideos - currentIndex) <= paginationThreshold;
+    
+    if (!isNearEnd) return;
+    
+    // Prevent too frequent requests (minimum 3 seconds between requests)
+    final now = DateTime.now();
+    if (_lastPaginationRequest != null && 
+        now.difference(_lastPaginationRequest!).inSeconds < 3) {
+      return;
+    }
+    
+    debugPrint('📜 Near end of feed (${totalVideos - currentIndex} videos left), loading more...');
+    _loadMoreVideos();
+  }
+  
+  /// Load more videos from the backend
+  Future<void> _loadMoreVideos() async {
+    if (_isLoadingMore) return;
+    
+    // Defer setState to avoid calling during build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = true;
+        });
+      }
+    });
+    
+    _lastPaginationRequest = DateTime.now();
+    
+    try {
+      await _videoEventBridge!.loadMoreEvents();
+      debugPrint('✅ Successfully loaded more videos');
+    } catch (e) {
+      debugPrint('❌ Failed to load more videos: $e');
+      // Show a subtle error indicator to the user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to load more videos'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.grey[800],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
   }
 
   // Note: Keyboard navigation methods removed to avoid unused warnings

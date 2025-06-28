@@ -3,313 +3,800 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenVine - Explore a world of beautiful, looping videos.</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="vine-styles.css">
+    <title>Vine</title>
+    <link rel="stylesheet" href="vine-layout.css?v=1">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <meta name="description" content="OpenVine - The decentralized vine-like video sharing platform powered by Nostr">
+    <meta name="description" content="Watch and share 6-second looping videos">
+    <style>
+        /* Legacy styles kept for compatibility */
+        body {
+            background-color: #fff;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #0ae68a 0%, #08b56a 100%);
+            padding: 3rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="50" height="50" fill="rgba(255,255,255,0.03)"/><rect x="50" y="50" width="50" height="50" fill="rgba(255,255,255,0.03)"/></svg>');
+            animation: slide 20s linear infinite;
+            top: -50%;
+            left: -50%;
+        }
+        
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .hero h2 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        .hero p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .search-container {
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .search-button {
+            background-color: #333;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            position: relative;
+        }
+        
+        .quick-action {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .quick-action:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .channels {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .channels h3 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .channel-item {
+            background: #f5f5f5;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .channel-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* Color palette for channels */
+        .channel-item:nth-child(1) { background: #f39c12; }
+        .channel-item:nth-child(2) { background: #e74c3c; }
+        .channel-item:nth-child(3) { background: #9b59b6; }
+        .channel-item:nth-child(4) { background: #e91e63; }
+        .channel-item:nth-child(5) { background: #3498db; }
+        .channel-item:nth-child(6) { background: #00bcd4; }
+        .channel-item:nth-child(7) { background: #1abc9c; }
+        .channel-item:nth-child(8) { background: #2ecc71; }
+        .channel-item:nth-child(9) { background: #f1c40f; }
+        .channel-item:nth-child(10) { background: #ff9800; }
+        .channel-item:nth-child(11) { background: #795548; }
+        .channel-item:nth-child(12) { background: #607d8b; }
+        
+        .vine-playlist {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .playlist-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        
+        .playlist-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .video-player-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        }
+        
+        .video-wrapper video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Changed from cover to contain */
+            background: #000;
+            aspect-ratio: auto !important; /* Override the square aspect ratio */
+        }
+        
+        #main-vine-player {
+            aspect-ratio: auto !important;
+        }
+        
+        
+        .video-meta {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .video-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .video-stats {
+            display: flex;
+            gap: 1.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .video-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .video-list-item {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-radius: 8px;
+        }
+        
+        .video-list-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .video-list-item.active {
+            background: #e8f5e9;
+        }
+        
+        .video-thumb {
+            width: 80px;
+            height: 80px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .video-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-list-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .video-list-info p {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .featured-viners {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .featured-viners h3 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        
+        .viner-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .viner-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .viner-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .viner-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .viner-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .viner-info p {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .editor-pick {
+            background: #fef3c7;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .editor-pick h3 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #92400e;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .editor-pick-content {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .editor-pick-thumb {
+            width: 100px;
+            height: 100px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .editor-pick-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .editor-pick-info p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 200px 1fr 250px;
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .channels {
+                order: 2;
+            }
+            
+            .vine-playlist {
+                order: 1;
+            }
+            
+            .right-sidebar {
+                order: 3;
+            }
+            
+            .channel-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .quick-actions {
+                flex-wrap: wrap;
+            }
+            
+            .hero h2 {
+                font-size: 1.5rem;
+            }
+            
+            .channel-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="nav-container">
-                <div class="logo">
-                    <h1>OpenVine</h1>
-                </div>
-                <div class="nav-links">
-                    <a href="about.html" class="nav-button">About</a>
-                    <a href="#" class="nav-button active" data-platform="ios">Get it for iOS</a>
-                    <a href="#" class="nav-button" data-platform="android">Get it for Android</a>
-                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
-                </div>
+    <!-- Header -->
+    <header class="vine-header">
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">Vine</a>
+            <div class="vine-search-bar">
+                <input type="text" class="vine-search-input" placeholder="Search" id="vineSearchInput">
+                <button class="vine-search-btn" onclick="searchVines()">🔍</button>
             </div>
-        </nav>
+            <div class="vine-auth-buttons">
+                <a href="#" class="vine-auth-btn vine-signup-btn">Sign up</a>
+                <a href="#" class="vine-auth-btn vine-login-btn">Log in</a>
+            </div>
+        </div>
     </header>
 
-    <main>
-        <section class="hero">
-            <h2>Explore a world of beautiful, looping videos.</h2>
-            <div class="search-container">
-                <input type="text" placeholder="Search" class="search-input">
-                <button class="search-button">🔍</button>
-            </div>
-            <div class="app-buttons">
-                <a href="ios.html" class="app-button ios">
-                    <span class="app-icon">🍎</span>
-                    <div class="app-text">
-                        <span class="get-it">Get it for</span>
-                        <span class="platform">iOS</span>
-                    </div>
-                </a>
-                <a href="android.html" class="app-button android">
-                    <span class="app-icon">🤖</span>
-                    <div class="app-text">
-                        <span class="get-it">Get it for</span>
-                        <span class="platform">Android</span>
-                    </div>
-                </a>
-                <a href="#" class="app-button windows">
-                    <span class="app-icon">🪟</span>
-                    <div class="app-text">
-                        <span class="get-it">Get it for</span>
-                        <span class="platform">Windows</span>
-                    </div>
-                </a>
-            </div>
-        </section>
 
-        <section class="main-content">
-            <div class="left-sidebar">
-                <div class="channels">
-                    <h3>Channels</h3>
-                    <div class="channel-grid">
-                        <div class="channel-item" style="background-color: #0ae68a;">
-                            <span class="channel-icon">🎬</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #a03a1a;">
-                            <span class="channel-icon">🎵</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ea5959;">
-                            <span class="channel-icon">😄</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #3561f3;">
-                            <span class="channel-icon">🌟</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #f43ce1;">
-                            <span class="channel-icon">🎨</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ff6700;">
-                            <span class="channel-icon">🔥</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #f6a734;">
-                            <span class="channel-icon">🎮</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #7e5cf6;">
-                            <span class="channel-icon">💥</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #0ae68a;">
-                            <span class="channel-icon">🌈</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #141414;">
-                            <span class="channel-icon">🎯</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #9ddaf3;">
-                            <span class="channel-icon">⚡</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #f6a734;">
-                            <span class="channel-icon">🎭</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #08a0cf;">
-                            <span class="channel-icon">🏀</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ff6700;">
-                            <span class="channel-icon">🍕</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #141414;">
-                            <span class="channel-icon">🎸</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ea5959;">
-                            <span class="channel-icon">🚗</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ff3434;">
-                            <span class="channel-icon">🍔</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #ffd640;">
-                            <span class="channel-icon">🌮</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #0ae68a;">
-                            <span class="channel-icon">💚</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #f43ce1;">
-                            <span class="channel-icon">🎪</span>
-                        </div>
-                        <div class="channel-item" style="background-color: #edb92e;">
-                            <span class="channel-icon">⚠️</span>
+    <!-- Main Container -->
+    <div class="vine-main-container">
+        <!-- Left Sidebar - Categories -->
+        <aside class="vine-sidebar-left">
+            <div class="vine-categories">
+                <h3>Channels</h3>
+                <div class="vine-category-grid">
+                    <div class="vine-category-item" onclick="filterByCategory('comedy')" title="Comedy">😂</div>
+                    <div class="vine-category-item" onclick="filterByCategory('music')" title="Music">🎵</div>
+                    <div class="vine-category-item" onclick="filterByCategory('animals')" title="Animals">🐾</div>
+                    <div class="vine-category-item" onclick="filterByCategory('sports')" title="Sports">⚽</div>
+                    <div class="vine-category-item" onclick="filterByCategory('gaming')" title="Gaming">🎮</div>
+                    <div class="vine-category-item" onclick="filterByCategory('food')" title="Food">🍔</div>
+                    <div class="vine-category-item" onclick="filterByCategory('art')" title="Art">🎨</div>
+                    <div class="vine-category-item" onclick="filterByCategory('tech')" title="Tech">💻</div>
+                    <div class="vine-category-item" onclick="filterByCategory('nature')" title="Nature">🌿</div>
+                    <div class="vine-category-item" onclick="filterByCategory('dance')" title="Dance">💃</div>
+                    <div class="vine-category-item" onclick="filterByCategory('fashion')" title="Fashion">👗</div>
+                    <div class="vine-category-item" onclick="filterByCategory('travel')" title="Travel">✈️</div>
+                    <div class="vine-category-item" onclick="filterByCategory('diy')" title="DIY">🔨</div>
+                    <div class="vine-category-item" onclick="filterByCategory('fitness')" title="Fitness">💪</div>
+                    <div class="vine-category-item" onclick="filterByCategory('cars')" title="Cars">🚗</div>
+                    <div class="vine-category-item" onclick="filterByCategory('weird')" title="Weird">🤪</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="vine-main-content">
+            <!-- Featured Video -->
+            <div class="vine-featured-video">
+                <div class="vine-video-player">
+                    <div class="vine-video-wrapper">
+                        <video id="vineFeaturedPlayer" autoplay muted loop playsinline>
+                            <source src="" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="vine-video-info">
+                        <div class="vine-user-avatar" id="featuredAvatar">👤</div>
+                        <div class="vine-user-details">
+                            <div class="vine-username" id="featuredUsername">Loading...</div>
+                            <div class="vine-video-stats">
+                                <span class="vine-stat-item">❤️ <span id="featuredLikes">0</span></span>
+                                <span class="vine-stat-item">💬 <span id="featuredComments">0</span></span>
+                                <span class="vine-stat-item">🔄 <span id="featuredReposts">0</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="center-content">
-                <h3>🎬 Vine Playlist</h3>
-                <div class="vine-playlist-grid">
-                    <div class="vine-item active" data-video="0" onclick="playVideo(0)">
-                        <div class="vine-thumbnail">
-                            <video 
-                                id="main-vine-player" 
-                                class="vine-video main-video" 
-                                autoplay 
-                                loop 
-                                playsinline
-                                poster="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3C/svg%3E">
-                                <source src="https://res.cloudinary.com/dswu0ugmo/video/upload/v1750583297/5eM6tu9HFIu_20250622_162133_lm26h7.mp4" type="video/mp4">
-                            </video>
-                        </div>
-                        <h4>Pokemon Go</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 250.5K views</span>
-                        </div>
-                    </div>
-                    
-                    <div class="vine-item" data-video="1" onclick="playVideo(1)">
-                        <div class="vine-thumbnail">
-                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23444'/%3E%3C/svg%3E" alt="Video thumbnail">
-                        </div>
-                        <h4>Creative Content</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 189.2K views</span>
-                        </div>
-                    </div>
-                    
-                    <div class="vine-item" data-video="2" onclick="playVideo(2)">
-                        <div class="vine-thumbnail">
-                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23555'/%3E%3C/svg%3E" alt="Video thumbnail">
-                        </div>
-                        <h4>Camp Unplug</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 324.1K views</span>
-                        </div>
-                    </div>
-                    
-                    <div class="vine-item" data-video="3" onclick="playVideo(3)">
-                        <div class="vine-thumbnail">
-                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23666'/%3E%3C/svg%3E" alt="Video thumbnail">
-                        </div>
-                        <h4>2016 iHeartRadio MMVAs</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 89.2K views</span>
-                        </div>
-                    </div>
-                    
-                    <div class="vine-item" data-video="4" onclick="playVideo(4)">
-                        <div class="vine-thumbnail">
-                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23777'/%3E%3C/svg%3E" alt="Video thumbnail">
-                        </div>
-                        <h4>Beach Vibes</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 423.9K views</span>
-                        </div>
-                    </div>
-                    
-                    <div class="vine-item" data-video="5" onclick="playVideo(5)">
-                        <div class="vine-thumbnail">
-                            <img src="data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23888'/%3E%3C/svg%3E" alt="Video thumbnail">
-                        </div>
-                        <h4>Viral Content</h4>
-                        <div class="vine-stats">
-                            <span class="likes">❤️ 1</span>
-                            <span class="views">👁️ 156.7K views</span>
-                        </div>
-                    </div>
+            <!-- Video Grid -->
+            <div class="vine-video-grid" id="vineVideoGrid">
+                <!-- Videos will be dynamically loaded here -->
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="vine-sidebar-right">
+            <!-- Featured Users -->
+            <div class="vine-featured-users">
+                <h3>Featured Users</h3>
+                <div class="vine-user-list" id="vineFeaturedUsers">
+                    <!-- Users will be dynamically loaded here -->
                 </div>
             </div>
 
-            <div class="right-sidebar">
-                <div class="featured-viners">
-                    <h3>👥 Featured Viners</h3>
-                    <div class="viner-list">
-                        <div class="viner-profile">
-                            <div class="viner-avatar">
-                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23333'/%3E%3C/svg%3E" alt="Avatar">
-                            </div>
-                            <div class="viner-info">
-                                <h4>Justin J Ruane</h4>
-                            </div>
-                        </div>
-                        <div class="viner-profile">
-                            <div class="viner-avatar">
-                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23444'/%3E%3C/svg%3E" alt="Avatar">
-                            </div>
-                            <div class="viner-info">
-                                <h4>Mario Jones</h4>
-                            </div>
-                        </div>
-                        <div class="viner-profile">
-                            <div class="viner-avatar">
-                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23555'/%3E%3C/svg%3E" alt="Avatar">
-                            </div>
-                            <div class="viner-info">
-                                <h4>Val</h4>
-                            </div>
-                        </div>
-                        <div class="viner-profile">
-                            <div class="viner-avatar">
-                                <img src="data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='50' height='50' fill='%23666'/%3E%3C/svg%3E" alt="Avatar">
-                            </div>
-                            <div class="viner-info">
-                                <h4>@IREMFORASEC</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="popular-now-small">
-                    <h3>📈 Popular Now</h3>
-                    <div class="popular-small-list">
-                        <div class="popular-small-item">
-                            <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%23333'/%3E%3C/svg%3E" alt="Thumbnail">
-                            <div>
-                                <p class="pop-title">Thomas Sand...</p>
-                                <p class="pop-subtitle">It Never Ends ∞</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="trending-tags">
-                    <h3>🏷️ Trending Tags</h3>
-                    <div class="tag-list">
-                        <span class="tag">#funny</span>
-                        <span class="tag">#vibes</span>
-                        <span class="tag">#comedy</span>
-                        <span class="tag">#viral</span>
-                    </div>
+            <!-- More Featured Videos -->
+            <div class="vine-more-content">
+                <h3>Trending Now</h3>
+                <div class="vine-trending-list" id="vineTrendingList">
+                    <!-- Trending videos will be loaded here -->
                 </div>
             </div>
+        </aside>
+    </div>
 
-        </section>
 
-        <section class="featured-viners">
-            <h3>🌟 Featured Viners</h3>
-            <div class="viners-grid">
-                <div class="viner-card">
-                    <div class="viner-avatar" style="background-color: #ff6b6b;">
-                        <span>🎭</span>
-                    </div>
-                    <p class="viner-name">Insta: mason.chill</p>
-                </div>
-                <div class="viner-card">
-                    <div class="viner-avatar" style="background-color: #4ecdc4;">
-                        <span>🎨</span>
-                    </div>
-                    <p class="viner-name">@AliciaHerber (IG)</p>
-                </div>
-                <div class="viner-card">
-                    <div class="viner-avatar" style="background-color: #ffe66d;">
-                        <span>😎</span>
-                    </div>
-                    <p class="viner-name">OMG its Richley</p>
-                </div>
-                <div class="viner-card">
-                    <div class="viner-avatar" style="background-color: #95e1d3;">
-                        <span>🌟</span>
-                    </div>
-                    <p class="viner-name">Ryan Gordon</p>
-                </div>
-            </div>
-        </section>
-    </main>
+    <script src="vine-integration.js"></script>
+    <script>
+        // Initialize featured users
+        const FEATURED_USERS = [
+            { username: 'KingBach', avatar: '👑', followers: '16.2M' },
+            { username: 'Zach King', avatar: '🎩', followers: '14.7M' },
+            { username: 'Lele Pons', avatar: '💃', followers: '11.5M' },
+            { username: 'Logan Paul', avatar: '🥊', followers: '9.4M' },
+            { username: 'Brittany Furlan', avatar: '🌟', followers: '9.8M' }
+        ];
 
-    <footer>
-        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
-    </footer>
+        // Load featured users on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFeaturedUsers();
+        });
 
-    <script src="vine-player.js"></script>
-    <script src="script.js"></script>
+        // Load featured users
+        function loadFeaturedUsers() {
+            const userList = document.getElementById('vineFeaturedUsers');
+            if (!userList) return;
+            
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff8cc8', '#95e1d3'];
+            
+            userList.innerHTML = FEATURED_USERS.map((user, index) => `
+                <div class="vine-user-item" onclick="viewProfile('${user.username}')">
+                    <div class="vine-user-avatar-large" style="background: ${colors[index % colors.length]}">
+                        ${user.avatar}
+                    </div>
+                    <div class="vine-user-info">
+                        <h4>${user.username}</h4>
+                        <p>${user.followers} followers</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Legacy video data for compatibility
+        const FALLBACK_VIDEOS = [
+            {
+                id: '5000hh3phKM',
+                url: 'https://api.openvine.co/media/1750880785012-ad9a31c4',
+                title: 'MY DICK FELL OFF',
+                thumbnail: 'https://api.openvine.co/media/1750880785012-ad9a31c4/thumb.jpg',
+                creator: 'maka-senpai',
+                views: 42069,
+                likes: 6900,
+                loops: 0,
+                tags: ['comedy', 'funny'],
+                category: 'comedy'
+            },
+            {
+                id: '5002Pdq9gIQ',
+                url: 'https://api.openvine.co/media/1750880795926-82a02417',
+                title: 'My "miss you"s were misused',
+                thumbnail: 'https://api.openvine.co/media/1750880795926-82a02417/thumb.jpg',
+                creator: 'JEDRLEE',
+                views: 31337,
+                likes: 4200,
+                loops: 0,
+                tags: ['music', 'sad'],
+                category: 'music'
+            },
+            {
+                id: '50021KzJ99l',
+                url: 'https://api.openvine.co/media/1750880799493-b5f9ee23',
+                title: 'Don\'t wanna sleep, don\'t wanna die',
+                thumbnail: 'https://api.openvine.co/media/1750880799493-b5f9ee23/thumb.jpg',
+                creator: 'earth-angel',
+                views: 28420,
+                likes: 3500,
+                loops: 0,
+                tags: ['music', 'emotional'],
+                category: 'music'
+            },
+            {
+                id: '5003EnYImK7',
+                url: 'https://api.openvine.co/media/1750880839632-615418e7',
+                title: 'Want my pickle?',
+                thumbnail: 'https://api.openvine.co/media/1750880839632-615418e7/thumb.jpg',
+                creator: 'mysticalwanheda',
+                views: 9876,
+                likes: 1234,
+                loops: 0,
+                tags: ['comedy', 'food'],
+                category: 'food'
+            },
+            {
+                id: '5003PhXAQFz',
+                url: 'https://api.openvine.co/media/1750880828791-cd2ac64a',
+                title: 'Roblox Death Sound',
+                thumbnail: 'https://api.openvine.co/media/1750880828791-cd2ac64a/thumb.jpg',
+                creator: 'Kenneth-Udut',
+                views: 12456,
+                likes: 2100,
+                loops: 0,
+                tags: ['gaming', 'comedy'],
+                category: 'gaming'
+            },
+            {
+                id: '5000uxQrIiI',
+                url: 'https://api.openvine.co/media/1750880810482-bd49e1f2',
+                title: 'Plot twist XD',
+                thumbnail: 'https://api.openvine.co/media/1750880810482-bd49e1f2/thumb.jpg',
+                creator: 'MettaonDarling',
+                views: 19885,
+                likes: 2500,
+                loops: 0,
+                tags: ['comedy', 'surprise'],
+                category: 'comedy'
+            },
+            {
+                id: '500311lva0g',
+                url: 'https://api.openvine.co/media/1750880817654-0c307f02',
+                title: 'Afterlife Remix',
+                thumbnail: 'https://api.openvine.co/media/1750880817654-0c307f02/thumb.jpg',
+                creator: 'Virtual',
+                views: 15234,
+                likes: 1800,
+                loops: 0,
+                tags: ['music', 'remix'],
+                category: 'music'
+            },
+            {
+                id: '5001wzqP32g',
+                url: 'https://api.openvine.co/media/1750880803099-6b22f0ac',
+                title: 'Tokyo Ghoul Turned Me Emo',
+                thumbnail: 'https://api.openvine.co/media/1750880803099-6b22f0ac/thumb.jpg',
+                creator: 'lonelyaudios',
+                views: 8765,
+                likes: 950,
+                loops: 0,
+                tags: ['music', 'anime'],
+                category: 'art'
+            },
+            {
+                id: '5002Tj1jxaH',
+                url: 'https://api.openvine.co/media/1750880814035-8583318d',
+                title: 'Goku vs Beerus',
+                thumbnail: 'https://api.openvine.co/media/1750880814035-8583318d/thumb.jpg',
+                creator: 'Anim3-Bagel',
+                views: 7654,
+                likes: 890,
+                loops: 0,
+                tags: ['anime', 'gaming'],
+                category: 'gaming'
+            },
+            {
+                id: '5001t9jpiTB',
+                url: 'https://api.openvine.co/media/1750880821277-b93f8f5b',
+                title: 'I love my bois',
+                thumbnail: 'https://api.openvine.co/media/1750880821277-b93f8f5b/thumb.jpg',
+                creator: 'shinyas-lattes',
+                views: 6543,
+                likes: 720,
+                loops: 0,
+                tags: ['friends', 'comedy'],
+                category: 'comedy'
+            },
+            // Add more videos to have at least 20
+            {
+                id: 'vid11',
+                url: 'https://api.openvine.co/media/1750880785012-ad9a31c4',
+                title: 'Puppy Compilation',
+                thumbnail: 'https://api.openvine.co/media/1750880785012-ad9a31c4/thumb.jpg',
+                creator: 'animalover',
+                views: 5432,
+                likes: 650,
+                loops: 0,
+                tags: ['animals', 'cute'],
+                category: 'animals'
+            },
+            {
+                id: 'vid12',
+                url: 'https://api.openvine.co/media/1750880795926-82a02417',
+                title: 'Basketball Trick Shot',
+                thumbnail: 'https://api.openvine.co/media/1750880795926-82a02417/thumb.jpg',
+                creator: 'sportsfan',
+                views: 4321,
+                likes: 420,
+                loops: 0,
+                tags: ['sports', 'basketball'],
+                category: 'sports'
+            },
+            {
+                id: 'vid13',
+                url: 'https://api.openvine.co/media/1750880799493-b5f9ee23',
+                title: 'Beautiful Sunset',
+                thumbnail: 'https://api.openvine.co/media/1750880799493-b5f9ee23/thumb.jpg',
+                creator: 'naturelover',
+                views: 3210,
+                likes: 380,
+                loops: 0,
+                tags: ['nature', 'sunset'],
+                category: 'nature'
+            },
+            {
+                id: 'vid14',
+                url: 'https://api.openvine.co/media/1750880839632-615418e7',
+                title: 'DIY Phone Stand',
+                thumbnail: 'https://api.openvine.co/media/1750880839632-615418e7/thumb.jpg',
+                creator: 'craftmaster',
+                views: 2109,
+                likes: 250,
+                loops: 0,
+                tags: ['diy', 'tech'],
+                category: 'diy'
+            },
+            {
+                id: 'vid15',
+                url: 'https://api.openvine.co/media/1750880828791-cd2ac64a',
+                title: 'Epic Dance Moves',
+                thumbnail: 'https://api.openvine.co/media/1750880828791-cd2ac64a/thumb.jpg',
+                creator: 'dancer123',
+                views: 1998,
+                likes: 220,
+                loops: 0,
+                tags: ['dance', 'music'],
+                category: 'dance'
+            },
+            {
+                id: 'vid16',
+                url: 'https://api.openvine.co/media/1750880810482-bd49e1f2',
+                title: 'Coding Tutorial',
+                thumbnail: 'https://api.openvine.co/media/1750880810482-bd49e1f2/thumb.jpg',
+                creator: 'techguru',
+                views: 1887,
+                likes: 190,
+                loops: 0,
+                tags: ['tech', 'coding'],
+                category: 'tech'
+            },
+            {
+                id: 'vid17',
+                url: 'https://api.openvine.co/media/1750880817654-0c307f02',
+                title: 'Travel Vlog Paris',
+                thumbnail: 'https://api.openvine.co/media/1750880817654-0c307f02/thumb.jpg',
+                creator: 'wanderlust',
+                views: 1776,
+                likes: 180,
+                loops: 0,
+                tags: ['travel', 'paris'],
+                category: 'travel'
+            },
+            {
+                id: 'vid18',
+                url: 'https://api.openvine.co/media/1750880803099-6b22f0ac',
+                title: 'Digital Art Process',
+                thumbnail: 'https://api.openvine.co/media/1750880803099-6b22f0ac/thumb.jpg',
+                creator: 'artistpro',
+                views: 1665,
+                likes: 170,
+                loops: 0,
+                tags: ['art', 'digital'],
+                category: 'art'
+            },
+            {
+                id: 'vid19',
+                url: 'https://api.openvine.co/media/1750880814035-8583318d',
+                title: 'Cooking Quick Recipe',
+                thumbnail: 'https://api.openvine.co/media/1750880814035-8583318d/thumb.jpg',
+                creator: 'cheflife',
+                views: 1554,
+                likes: 160,
+                loops: 0,
+                tags: ['food', 'cooking'],
+                category: 'food'
+            },
+            {
+                id: 'vid20',
+                url: 'https://api.openvine.co/media/1750880821277-b93f8f5b',
+                title: 'Cat Being Silly',
+                thumbnail: 'https://api.openvine.co/media/1750880821277-b93f8f5b/thumb.jpg',
+                creator: 'catlady',
+                views: 1443,
+                likes: 150,
+                loops: 0,
+                tags: ['animals', 'cats'],
+                category: 'animals'
+            }
+        ];
+
+
+
+    </script>
 </body>
 </html>

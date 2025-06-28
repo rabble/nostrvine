@@ -2,17 +2,25 @@
 // ABOUTME: Stores verification status using SharedPreferences for persistence
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/age_verification_dialog.dart';
 
 class AgeVerificationService extends ChangeNotifier {
   static const String _ageVerifiedKey = 'age_verified';
   static const String _verificationDateKey = 'age_verification_date';
+  static const String _adultContentVerifiedKey = 'adult_content_verified';
+  static const String _adultContentVerificationDateKey = 'adult_content_verification_date';
   
   bool? _isAgeVerified;
   DateTime? _verificationDate;
+  bool? _isAdultContentVerified;
+  DateTime? _adultContentVerificationDate;
   
   bool get isAgeVerified => _isAgeVerified ?? false;
   DateTime? get verificationDate => _verificationDate;
+  bool get isAdultContentVerified => _isAdultContentVerified ?? false;
+  DateTime? get adultContentVerificationDate => _adultContentVerificationDate;
   
   Future<void> initialize() async {
     await _loadVerificationStatus();
@@ -22,10 +30,16 @@ class AgeVerificationService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isAgeVerified = prefs.getBool(_ageVerifiedKey);
+      _isAdultContentVerified = prefs.getBool(_adultContentVerifiedKey);
       
       final dateMillis = prefs.getInt(_verificationDateKey);
       if (dateMillis != null) {
         _verificationDate = DateTime.fromMillisecondsSinceEpoch(dateMillis);
+      }
+      
+      final adultDateMillis = prefs.getInt(_adultContentVerificationDateKey);
+      if (adultDateMillis != null) {
+        _adultContentVerificationDate = DateTime.fromMillisecondsSinceEpoch(adultDateMillis);
       }
       
       notifyListeners();
@@ -66,14 +80,71 @@ class AgeVerificationService extends ChangeNotifier {
     return isAgeVerified;
   }
   
+  Future<void> setAdultContentVerified(bool verified) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      await prefs.setBool(_adultContentVerifiedKey, verified);
+      
+      if (verified) {
+        final now = DateTime.now();
+        await prefs.setInt(_adultContentVerificationDateKey, now.millisecondsSinceEpoch);
+        _adultContentVerificationDate = now;
+      } else {
+        await prefs.remove(_adultContentVerificationDateKey);
+        _adultContentVerificationDate = null;
+      }
+      
+      _isAdultContentVerified = verified;
+      notifyListeners();
+      
+      debugPrint('Adult content verification status updated: $verified');
+    } catch (e) {
+      debugPrint('Error saving adult content verification status: $e');
+      rethrow;
+    }
+  }
+  
+  Future<bool> checkAdultContentVerification() async {
+    if (_isAdultContentVerified == null) {
+      await _loadVerificationStatus();
+    }
+    return isAdultContentVerified;
+  }
+  
+  /// Check if user can view adult content, showing verification dialog if needed
+  Future<bool> verifyAdultContentAccess(BuildContext context) async {
+    // First check if already verified
+    if (await checkAdultContentVerification()) {
+      return true;
+    }
+    
+    // Show verification dialog
+    final verified = await AgeVerificationDialog.show(
+      context,
+      type: AgeVerificationType.adultContent,
+    );
+    
+    if (verified) {
+      await setAdultContentVerified(true);
+      return true;
+    }
+    
+    return false;
+  }
+  
   Future<void> clearVerificationStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_ageVerifiedKey);
       await prefs.remove(_verificationDateKey);
+      await prefs.remove(_adultContentVerifiedKey);
+      await prefs.remove(_adultContentVerificationDateKey);
       
       _isAgeVerified = null;
       _verificationDate = null;
+      _isAdultContentVerified = null;
+      _adultContentVerificationDate = null;
       notifyListeners();
       
       debugPrint('Age verification status cleared');

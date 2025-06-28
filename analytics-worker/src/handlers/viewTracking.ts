@@ -1,7 +1,7 @@
 // ABOUTME: Minimal view tracking handler - increments counters without user data
 // ABOUTME: Foundation for future opt-in personalization features
 
-import { ViewData, ViewRequest, AnalyticsEnv } from '../types/analytics';
+import { ViewData, ViewRequest, AnalyticsEnv, CreatorData } from '../types/analytics';
 
 export async function handleViewTracking(
   request: Request,
@@ -10,7 +10,7 @@ export async function handleViewTracking(
   try {
     // Parse request body
     const body = await request.json() as ViewRequest;
-    const { eventId, source = 'web' } = body;
+    const { eventId, source = 'web', creatorPubkey } = body;
 
     // Validate event ID (64 char hex string)
     if (!eventId || !/^[a-f0-9]{64}$/i.test(eventId)) {
@@ -20,45 +20,7 @@ export async function handleViewTracking(
       );
     }
 
-    // Simple rate limiting by IP (anonymous)
-    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimitKey = `rate:${hashIP(clientIP)}`;
-    const rateLimitData = await env.ANALYTICS_KV.get(rateLimitKey);
-    
-    if (rateLimitData) {
-      const { count, windowStart } = JSON.parse(rateLimitData);
-      const now = Date.now();
-      const windowAge = now - windowStart;
-      
-      // 5 views per minute per IP
-      if (windowAge < 60000 && count >= 5) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded' }),
-          { status: 429, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Reset window if expired
-      if (windowAge >= 60000) {
-        await env.ANALYTICS_KV.put(
-          rateLimitKey,
-          JSON.stringify({ count: 1, windowStart: now }),
-          { expirationTtl: 120 } // 2 minute TTL
-        );
-      } else {
-        await env.ANALYTICS_KV.put(
-          rateLimitKey,
-          JSON.stringify({ count: count + 1, windowStart }),
-          { expirationTtl: 120 }
-        );
-      }
-    } else {
-      await env.ANALYTICS_KV.put(
-        rateLimitKey,
-        JSON.stringify({ count: 1, windowStart: Date.now() }),
-        { expirationTtl: 120 }
-      );
-    }
+    // NO RATE LIMITING - We want to track ALL usage of our app!
 
     // Get current view count
     const viewKey = `views:${eventId}`;
@@ -73,6 +35,11 @@ export async function handleViewTracking(
 
     // Store updated count
     await env.ANALYTICS_KV.put(viewKey, JSON.stringify(viewData));
+
+    // Track creator metrics if provided
+    if (creatorPubkey && /^[a-f0-9]{64}$/i.test(creatorPubkey)) {
+      await updateCreatorMetrics(env, creatorPubkey, eventId);
+    }
 
     // Log to console for debugging (no user data)
     console.log(`View recorded: ${eventId} from ${source}, total views: ${newCount}`);
@@ -104,14 +71,37 @@ export async function handleViewTracking(
   }
 }
 
-// Simple IP hashing for rate limiting (not stored permanently)
-function hashIP(ip: string): string {
-  // Simple hash to anonymize IP for rate limiting
-  let hash = 0;
-  for (let i = 0; i < ip.length; i++) {
-    const char = ip.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+
+// Update creator metrics when their video gets a view
+async function updateCreatorMetrics(env: AnalyticsEnv, creatorPubkey: string, eventId: string): Promise<void> {
+  try {
+    const creatorKey = `creator:${creatorPubkey}`;
+    const currentData = await env.ANALYTICS_KV.get<CreatorData>(creatorKey, 'json');
+    
+    // Track unique videos this creator has had views on
+    const videoSetKey = `creator-videos:${creatorPubkey}`;
+    const existingVideos = await env.ANALYTICS_KV.get(videoSetKey);
+    let videoIds: string[] = existingVideos ? JSON.parse(existingVideos) : [];
+    
+    // Add this video if not already tracked
+    const isNewVideo = !videoIds.includes(eventId);
+    if (isNewVideo) {
+      videoIds.push(eventId);
+      await env.ANALYTICS_KV.put(videoSetKey, JSON.stringify(videoIds));
+    }
+    
+    // Update creator metrics
+    const creatorData: CreatorData = {
+      totalViews: (currentData?.totalViews || 0) + 1,
+      videoCount: videoIds.length,
+      lastUpdate: Date.now()
+    };
+    
+    await env.ANALYTICS_KV.put(creatorKey, JSON.stringify(creatorData));
+    
+    console.log(`Creator metrics updated: ${creatorPubkey.substring(0, 8)}... - ${creatorData.totalViews} total views, ${creatorData.videoCount} videos`);
+  } catch (error) {
+    console.error('Failed to update creator metrics:', error);
+    // Don't fail the whole request if creator tracking fails
   }
-  return Math.abs(hash).toString(36);
 }

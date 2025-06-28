@@ -163,6 +163,65 @@ export class MetadataStore {
   }
 
   /**
+   * Get file ID by SHA256 hash for deduplication
+   */
+  async getFileIdBySha256(sha256: string): Promise<string | null> {
+    try {
+      const key = `sha256:${sha256}`;
+      const fileId = await this.kv.get(key, 'text');
+      return fileId;
+    } catch (error) {
+      console.error(`Failed to get fileId for SHA256 ${sha256}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Set file ID by SHA256 hash for deduplication
+   */
+  async setFileIdBySha256(sha256: string, fileId: string): Promise<void> {
+    try {
+      const key = `sha256:${sha256}`;
+      await this.kv.put(key, fileId, {
+        expirationTtl: 60 * 60 * 24 * 365 // 1 year
+      });
+    } catch (error) {
+      console.error(`Failed to set fileId for SHA256 ${sha256}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if file exists and get its metadata by SHA256
+   */
+  async checkDuplicateBySha256(sha256: string): Promise<{ exists: boolean; fileId?: string; url?: string } | null> {
+    try {
+      const existingFileId = await this.getFileIdBySha256(sha256);
+      if (!existingFileId) {
+        return { exists: false };
+      }
+
+      // Verify the file still exists in R2 by checking metadata
+      const metadata = await this.getVideoMetadata(existingFileId);
+      if (!metadata) {
+        // File was deleted, remove the SHA256 mapping
+        const key = `sha256:${sha256}`;
+        await this.kv.delete(key);
+        return { exists: false };
+      }
+
+      return {
+        exists: true,
+        fileId: existingFileId,
+        url: `https://api.openvine.co/media/${existingFileId}`
+      };
+    } catch (error) {
+      console.error(`Failed to check duplicate for SHA256 ${sha256}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Clear request cache (call at end of request)
    */
   static clearRequestCache(): void {

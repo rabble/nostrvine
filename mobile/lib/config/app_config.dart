@@ -38,7 +38,7 @@ class AppConfig {
   static String get videoListUrl => '$backendBaseUrl/v1/media/list';
   
   // App configuration
-  static const String appName = 'OpenVine';
+  static const String appName = 'OpenVines';
   static const String appVersion = '1.0.0';
   
   // Nostr configuration

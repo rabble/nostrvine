@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine - Nostr Content Test</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="single-player-styles.css?v=3">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .api-section {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .api-section h3 {
+            color: #10b77f;
+            margin-bottom: 1rem;
+        }
+        
+        .api-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            margin-left: 1rem;
+        }
+        
+        .status-loading {
+            background: #666;
+            color: white;
+        }
+        
+        .status-success {
+            background: #10b77f;
+            color: white;
+        }
+        
+        .status-error {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .vine-card, .viner-card {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .vine-card:hover, .viner-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .vine-card h4, .viner-card h4 {
+            color: #fff;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .vine-stats, .viner-stats {
+            color: #999;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        
+        .json-preview {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: #ccc;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .refresh-btn {
+            background: #10b77f;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 1rem;
+        }
+        
+        .refresh-btn:hover {
+            background: #0e9968;
+        }
+        
+        .refresh-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .vine-card {
+            cursor: pointer;
+        }
+        
+        .vine-card.playing {
+            background: #3a3a3a;
+            border: 2px solid #10b77f;
+        }
+        
+        .play-button {
+            background: #10b77f;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            transition: background 0.2s;
+        }
+        
+        .play-button:hover {
+            background: #0e9968;
+        }
+        
+        #video-player-section {
+            display: none;
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit;">
+                        <h1>OpenVine</h1>
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-button">Home</a>
+                    <a href="trending.html" class="nav-button">Trending</a>
+                    <a href="about.html" class="nav-button">About</a>
+                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open App</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>🧪 Nostr Content Test Page</h2>
+            <p style="color: white; margin-top: 1rem;">
+                Testing analytics API endpoints for trending content
+            </p>
+        </section>
+
+        <div class="test-container">
+            <!-- Video Player Section -->
+            <div id="video-player-section">
+                <h3 style="color: #10b77f; margin-bottom: 1rem;">🎬 Now Playing</h3>
+                <div class="single-player-container">
+                    <div class="video-wrapper">
+                        <video 
+                            id="test-vine-player" 
+                            class="vine-video" 
+                            autoplay 
+                            playsinline
+                            poster="data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3C/svg%3E">
+                        </video>
+                        
+                        <div class="video-overlay"></div>
+                        
+                        <div class="unmute-overlay" id="unmute-overlay">
+                            <div class="unmute-content">
+                                <span class="unmute-icon">🔇</span>
+                                <p class="unmute-text">Tap to unmute</p>
+                            </div>
+                        </div>
+                        
+                        <button class="nav-btn prev-btn" id="prev-btn">‹</button>
+                        <button class="nav-btn next-btn" id="next-btn">›</button>
+                    </div>
+                    
+                    <div class="video-info">
+                        <h3 id="playing-video-title" style="text-align: center; margin-top: 1rem;">Loading...</h3>
+                        <p id="playing-video-count" style="text-align: center; color: #666;">Video 1 of 1</p>
+                        <p id="playing-view-count" style="text-align: center; color: #666; font-size: 0.9rem;">0 views</p>
+                        <button class="refresh-btn" onclick="closeVideoPlayer()" style="margin: 1rem auto; display: block;">Close Player</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trending Vines Section -->
+            <div class="api-section">
+                <h3>
+                    📹 Trending Vines (Videos)
+                    <span id="vines-status" class="api-status status-loading">Loading...</span>
+                    <button class="refresh-btn" onclick="loadTrendingVines()" id="vines-refresh">Refresh</button>
+                </h3>
+                
+                <div id="vines-content">
+                    <p>Fetching trending vines from analytics.openvine.co...</p>
+                </div>
+                
+                <details>
+                    <summary style="cursor: pointer; color: #10b77f; margin-top: 1rem;">View Raw JSON Response</summary>
+                    <div class="json-preview" id="vines-json"></div>
+                </details>
+            </div>
+
+            <!-- Trending Viners Section -->
+            <div class="api-section">
+                <h3>
+                    👥 Popular Viners (Creators)
+                    <span id="viners-status" class="api-status status-loading">Loading...</span>
+                    <button class="refresh-btn" onclick="loadTrendingViners()" id="viners-refresh">Refresh</button>
+                </h3>
+                
+                <div id="viners-content">
+                    <p>Fetching popular viners from analytics.openvine.co...</p>
+                </div>
+                
+                <details>
+                    <summary style="cursor: pointer; color: #10b77f; margin-top: 1rem;">View Raw JSON Response</summary>
+                    <div class="json-preview" id="viners-json"></div>
+                </details>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Powered by Nostr Protocol | OpenVine 2024 | <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script>
+        const ANALYTICS_API = 'https://analytics.openvine.co/analytics';
+        const VIEW_TRACKING_API = 'https://analytics.openvine.co/analytics/view';
+        
+        // Nostr relays
+        const NOSTR_RELAYS = [
+            'wss://relay.damus.io',
+            'wss://nos.lol',
+            'wss://relay.nos.social',
+            'wss://relay.nostr.band',
+            'wss://cache2.primal.net/v1'
+        ];
+        
+        // Video player state
+        let loadedVideos = [];
+        let currentVideoIndex = 0;
+        let loopCount = 0;
+        const MAX_LOOPS = 4;
+        let globalMuteState = true;
+        let nostrEventMap = new Map();
+        
+        // Load trending vines
+        async function loadTrendingVines() {
+            const statusEl = document.getElementById('vines-status');
+            const contentEl = document.getElementById('vines-content');
+            const jsonEl = document.getElementById('vines-json');
+            const refreshBtn = document.getElementById('vines-refresh');
+            
+            statusEl.className = 'api-status status-loading';
+            statusEl.textContent = 'Loading...';
+            refreshBtn.disabled = true;
+            contentEl.innerHTML = '<p>Fetching trending vines...</p>';
+            
+            try {
+                console.log('Fetching trending vines...');
+                const response = await fetch(`${ANALYTICS_API}/trending/vines?limit=12`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                
+                // Update status
+                statusEl.className = 'api-status status-success';
+                statusEl.textContent = 'Success';
+                
+                // Display raw JSON
+                jsonEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Display formatted data
+                if (data.vines && data.vines.length > 0) {
+                    // Fetch actual video events from Nostr
+                    const eventIds = data.vines.map(v => v.eventId);
+                    await fetchNostrEvents(eventIds);
+                    
+                    // Store videos for playback
+                    loadedVideos = data.vines.map(vine => {
+                        const nostrEvent = nostrEventMap.get(vine.eventId);
+                        return {
+                            url: nostrEvent?.videoUrl || vine.videoUrl,
+                            title: nostrEvent?.title || vine.title || `Vine ${vine.eventId.substring(0, 8)}`,
+                            eventId: vine.eventId,
+                            creatorPubkey: vine.creatorPubkey,
+                            viewCount: vine.views || vine.viewCount || 0,
+                            score: vine.score
+                        };
+                    });
+                    
+                    // Show initial loading state
+                    contentEl.innerHTML = `
+                        <p style="color: #999; margin-bottom: 1rem;">
+                            Found ${data.vines.length} trending vines out of ${data.totalVines} total
+                            <br>Algorithm: ${data.algorithm} | Period: ${data.period}
+                            <br><span style="color: #10b77f;">Fetching video data from Nostr relays...</span>
+                        </p>
+                        <div class="data-grid" id="vines-grid">
+                            ${data.vines.map((vine, index) => `
+                                <div class="vine-card" id="vine-card-${index}">
+                                    <h4>Vine #${index + 1}</h4>
+                                    <div class="vine-stats">
+                                        <strong>Event ID:</strong> ${vine.eventId}<br>
+                                        <strong>Views:</strong> ${vine.views?.toLocaleString() || 0}<br>
+                                        <strong>Score:</strong> ${vine.score?.toFixed(2) || 0}<br>
+                                        <span style="color: #666;">Loading video data...</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    // After fetching, update the cards with video data
+                    setTimeout(() => {
+                        updateVineCards();
+                    }, 100);
+                } else if (data.videos && data.videos.length > 0) {
+                    // Handle the format from trending-video-player.js
+                    loadedVideos = data.videos.map(video => ({
+                        url: video.videoUrl,
+                        title: video.title || 'Trending Vine',
+                        eventId: video.eventId,
+                        creatorPubkey: video.creatorPubkey,
+                        viewCount: video.viewCount || 0,
+                        timestamp: video.lastViewed
+                    }));
+                    
+                    const vinesHtml = `
+                        <p style="color: #999; margin-bottom: 1rem;">
+                            Found ${data.videos.length} trending videos
+                        </p>
+                        <div class="data-grid">
+                            ${data.videos.map((video, index) => `
+                                <div class="vine-card" id="vine-card-${index}" onclick="playVideoAtIndex(${index})">
+                                    <h4>${video.title || `Video #${index + 1}`}</h4>
+                                    <div class="vine-stats">
+                                        <strong>Views:</strong> ${video.viewCount?.toLocaleString() || 0}<br>
+                                        ${video.creatorPubkey ? `<strong>Creator:</strong> ${video.creatorPubkey.substring(0, 16)}...<br>` : ''}
+                                        <button class="play-button" onclick="event.stopPropagation(); playVideoAtIndex(${index})">▶️ Play Video</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    contentEl.innerHTML = vinesHtml;
+                } else {
+                    contentEl.innerHTML = '<p style="color: #ff6b6b;">No trending vines found</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading trending vines:', error);
+                statusEl.className = 'api-status status-error';
+                statusEl.textContent = 'Error';
+                contentEl.innerHTML = `
+                    <div class="error-message">
+                        <strong>Error:</strong> ${error.message}
+                        <br><br>
+                        <small>Check console for more details</small>
+                    </div>
+                `;
+                jsonEl.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Load trending viners
+        async function loadTrendingViners() {
+            const statusEl = document.getElementById('viners-status');
+            const contentEl = document.getElementById('viners-content');
+            const jsonEl = document.getElementById('viners-json');
+            const refreshBtn = document.getElementById('viners-refresh');
+            
+            statusEl.className = 'api-status status-loading';
+            statusEl.textContent = 'Loading...';
+            refreshBtn.disabled = true;
+            contentEl.innerHTML = '<p>Fetching popular viners...</p>';
+            
+            try {
+                console.log('Fetching trending viners...');
+                const response = await fetch(`${ANALYTICS_API}/trending/viners?limit=12`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                
+                // Update status
+                statusEl.className = 'api-status status-success';
+                statusEl.textContent = 'Success';
+                
+                // Display raw JSON
+                jsonEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Display formatted data
+                if (data.viners && data.viners.length > 0) {
+                    const vinersHtml = `
+                        <p style="color: #999; margin-bottom: 1rem;">
+                            Found ${data.viners.length} trending creators out of ${data.totalViners} total
+                            <br>Algorithm: ${data.algorithm} | Min views: ${data.metrics?.minViews || 'N/A'}
+                            <br>Avg videos per creator: ${data.metrics?.avgVideosPerCreator || 'N/A'}
+                        </p>
+                        <div class="data-grid">
+                            ${data.viners.map((viner, index) => `
+                                <div class="viner-card">
+                                    <h4>Creator #${index + 1}</h4>
+                                    <div class="viner-stats">
+                                        <strong>Pubkey:</strong> ${viner.pubkey.substring(0, 16)}...<br>
+                                        <strong>Total Views:</strong> ${viner.totalViews?.toLocaleString() || 0}<br>
+                                        <strong>Video Count:</strong> ${viner.videoCount || 0}<br>
+                                        <strong>Avg Views/Video:</strong> ${viner.avgViewsPerVideo?.toFixed(0) || 0}<br>
+                                        <strong>Score:</strong> ${viner.score?.toFixed(2) || 0}<br>
+                                        ${viner.displayName ? `<strong>Name:</strong> ${viner.displayName}<br>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    contentEl.innerHTML = vinersHtml;
+                } else if (data.creators && data.creators.length > 0) {
+                    // Handle old format from the current trending page
+                    const vinersHtml = `
+                        <p style="color: #999; margin-bottom: 1rem;">
+                            Found ${data.creators.length} trending creators (legacy format)
+                        </p>
+                        <div class="data-grid">
+                            ${data.creators.map((creator, index) => `
+                                <div class="viner-card">
+                                    <h4>${creator.displayName || `Creator #${index + 1}`}</h4>
+                                    <div class="viner-stats">
+                                        <strong>Total Views:</strong> ${creator.totalViews?.toLocaleString() || 0}<br>
+                                        ${creator.pubkey ? `<strong>Pubkey:</strong> ${creator.pubkey.substring(0, 16)}...<br>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    contentEl.innerHTML = vinersHtml;
+                } else {
+                    contentEl.innerHTML = '<p style="color: #ff6b6b;">No trending viners found</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading trending viners:', error);
+                statusEl.className = 'api-status status-error';
+                statusEl.textContent = 'Error';
+                contentEl.innerHTML = `
+                    <div class="error-message">
+                        <strong>Error:</strong> ${error.message}
+                        <br><br>
+                        <small>Check console for more details</small>
+                    </div>
+                `;
+                jsonEl.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Video player functions
+        function playVideoAtIndex(index) {
+            if (!loadedVideos[index] || !loadedVideos[index].url) {
+                alert('No video URL available for this vine');
+                return;
+            }
+            
+            currentVideoIndex = index;
+            const playerSection = document.getElementById('video-player-section');
+            playerSection.style.display = 'block';
+            
+            // Scroll to player
+            playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Update all vine cards to show which is playing
+            document.querySelectorAll('.vine-card').forEach((card, i) => {
+                if (i === index) {
+                    card.classList.add('playing');
+                } else {
+                    card.classList.remove('playing');
+                }
+            });
+            
+            // Initialize video player
+            setupVideoPlayer();
+            playVideo(index);
+        }
+        
+        function setupVideoPlayer() {
+            const video = document.getElementById('test-vine-player');
+            if (!video) return;
+            
+            // Set up video element
+            video.removeAttribute('controls');
+            video.controls = false;
+            video.muted = globalMuteState;
+            video.loop = false;
+            video.playsInline = true;
+            video.autoplay = true;
+            
+            // Video ended event
+            video.addEventListener('ended', () => {
+                loopCount++;
+                if (loopCount >= MAX_LOOPS) {
+                    loopCount = 0;
+                    nextVideo();
+                } else {
+                    video.play();
+                }
+            });
+            
+            // Handle video clicks for play/pause
+            video.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+            
+            // Unmute overlay
+            const unmuteOverlay = document.getElementById('unmute-overlay');
+            unmuteOverlay.addEventListener('click', () => {
+                globalMuteState = false;
+                video.muted = false;
+                unmuteOverlay.classList.add('hidden');
+                video.play();
+            });
+            
+            // Navigation buttons
+            document.getElementById('prev-btn').onclick = previousVideo;
+            document.getElementById('next-btn').onclick = nextVideo;
+        }
+        
+        function playVideo(index) {
+            if (index < 0 || index >= loadedVideos.length) return;
+            
+            currentVideoIndex = index;
+            loopCount = 0;
+            const video = document.getElementById('test-vine-player');
+            const videoData = loadedVideos[index];
+            
+            console.log(`Playing video ${index + 1}/${loadedVideos.length}: ${videoData.title}`);
+            
+            // Update video info
+            document.getElementById('playing-video-title').textContent = videoData.title;
+            document.getElementById('playing-video-count').textContent = `Video ${currentVideoIndex + 1} of ${loadedVideos.length}`;
+            document.getElementById('playing-view-count').textContent = `${videoData.viewCount.toLocaleString()} views`;
+            
+            // Update video source
+            video.src = videoData.url;
+            video.load();
+            
+            // Set mute state
+            video.muted = globalMuteState;
+            
+            // Track view
+            if (videoData.eventId) {
+                trackVideoView(videoData);
+            }
+            
+            // Try to play
+            video.play().catch((error) => {
+                console.log('Autoplay failed:', error);
+            });
+            
+            // Update playing card highlight
+            document.querySelectorAll('.vine-card').forEach((card, i) => {
+                if (i === index) {
+                    card.classList.add('playing');
+                } else {
+                    card.classList.remove('playing');
+                }
+            });
+        }
+        
+        function nextVideo() {
+            loopCount = 0;
+            currentVideoIndex = (currentVideoIndex + 1) % loadedVideos.length;
+            playVideo(currentVideoIndex);
+        }
+        
+        function previousVideo() {
+            loopCount = 0;
+            currentVideoIndex = (currentVideoIndex - 1 + loadedVideos.length) % loadedVideos.length;
+            playVideo(currentVideoIndex);
+        }
+        
+        function closeVideoPlayer() {
+            const playerSection = document.getElementById('video-player-section');
+            const video = document.getElementById('test-vine-player');
+            
+            playerSection.style.display = 'none';
+            video.pause();
+            video.src = '';
+            
+            // Remove all playing highlights
+            document.querySelectorAll('.vine-card').forEach(card => {
+                card.classList.remove('playing');
+            });
+        }
+        
+        // Track video view
+        async function trackVideoView(video) {
+            try {
+                const viewData = {
+                    eventId: video.eventId,
+                    source: 'website-test',
+                    creatorPubkey: video.creatorPubkey
+                };
+                
+                await fetch(VIEW_TRACKING_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(viewData)
+                });
+                
+                console.log(`Tracked view for video ${video.eventId}`);
+            } catch (error) {
+                console.error('Error tracking view:', error);
+            }
+        }
+        
+        // Fetch Nostr events by IDs
+        async function fetchNostrEvents(eventIds) {
+            console.log(`Fetching ${eventIds.length} events from Nostr relays...`);
+            
+            const promises = [];
+            
+            for (const relay of NOSTR_RELAYS) {
+                promises.push(fetchEventsFromRelay(relay, eventIds));
+            }
+            
+            // Wait for all relay connections
+            await Promise.allSettled(promises);
+            console.log(`Fetched ${nostrEventMap.size} events from Nostr`);
+        }
+        
+        // Fetch events from a single relay
+        function fetchEventsFromRelay(relayUrl, eventIds) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const ws = new WebSocket(relayUrl);
+                    const subscriptionId = 'sub_' + Math.random().toString(36).substring(2);
+                    let receivedEOSE = false;
+                    
+                    ws.onopen = () => {
+                        console.log(`Connected to ${relayUrl}`);
+                        
+                        // Send REQ message for Kind 22 events with specific IDs
+                        const filter = {
+                            kinds: [22],
+                            ids: eventIds
+                        };
+                        
+                        const reqMessage = JSON.stringify(['REQ', subscriptionId, filter]);
+                        ws.send(reqMessage);
+                    };
+                    
+                    ws.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            const messageType = message[0];
+                            
+                            if (messageType === 'EVENT' && message.length >= 3) {
+                                const nostrEvent = message[2];
+                                if (nostrEvent.kind === 22) {
+                                    const parsedEvent = parseVideoEvent(nostrEvent);
+                                    if (parsedEvent && parsedEvent.videoUrl) {
+                                        nostrEventMap.set(nostrEvent.id, parsedEvent);
+                                        console.log(`Found video event ${nostrEvent.id.substring(0, 8)} with URL: ${parsedEvent.videoUrl}`);
+                                    }
+                                }
+                            } else if (messageType === 'EOSE') {
+                                // End of stored events
+                                receivedEOSE = true;
+                                console.log(`EOSE received from ${relayUrl}`);
+                                
+                                // Close subscription
+                                const closeMessage = JSON.stringify(['CLOSE', subscriptionId]);
+                                ws.send(closeMessage);
+                                
+                                // Close connection after a short delay
+                                setTimeout(() => {
+                                    ws.close();
+                                    resolve();
+                                }, 100);
+                            }
+                        } catch (err) {
+                            console.error('Error parsing message:', err);
+                        }
+                    };
+                    
+                    ws.onerror = (error) => {
+                        console.error(`WebSocket error for ${relayUrl}:`, error);
+                        reject(error);
+                    };
+                    
+                    ws.onclose = () => {
+                        console.log(`Disconnected from ${relayUrl}`);
+                        if (!receivedEOSE) {
+                            resolve(); // Resolve even if we didn't get EOSE
+                        }
+                    };
+                    
+                    // Timeout after 5 seconds
+                    setTimeout(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.close();
+                        }
+                        resolve();
+                    }, 5000);
+                    
+                } catch (error) {
+                    console.error(`Failed to connect to ${relayUrl}:`, error);
+                    reject(error);
+                }
+            });
+        }
+        
+        // Parse Kind 22 video event
+        function parseVideoEvent(event) {
+            const videoData = {
+                id: event.id,
+                pubkey: event.pubkey,
+                content: event.content,
+                createdAt: event.created_at,
+                videoUrl: null,
+                title: null,
+                thumbnailUrl: null,
+                duration: null
+            };
+            
+            // Parse tags according to NIP-71
+            for (const tag of event.tags) {
+                if (!tag || tag.length < 2) continue;
+                
+                const tagName = tag[0];
+                const tagValue = tag[1];
+                
+                switch (tagName) {
+                    case 'url':
+                        // Fix common typo in domain
+                        videoData.videoUrl = tagValue.replace('apt.openvine.co', 'api.openvine.co');
+                        break;
+                    case 'title':
+                        videoData.title = tagValue;
+                        break;
+                    case 'thumb':
+                        videoData.thumbnailUrl = tagValue;
+                        break;
+                    case 'duration':
+                        videoData.duration = parseInt(tagValue);
+                        break;
+                    case 'imeta':
+                        // Parse imeta tag for additional metadata
+                        parseImetaTag(tag, videoData);
+                        break;
+                }
+            }
+            
+            return videoData;
+        }
+        
+        // Parse imeta tag for video metadata
+        function parseImetaTag(tag, videoData) {
+            // imeta tags contain space-separated key-value pairs
+            for (let i = 1; i < tag.length; i++) {
+                const part = tag[i];
+                if (part.includes(' ')) {
+                    const [key, ...valueParts] = part.split(' ');
+                    const value = valueParts.join(' ');
+                    
+                    switch (key) {
+                        case 'url':
+                            if (!videoData.videoUrl) {
+                                videoData.videoUrl = value.replace('apt.openvine.co', 'api.openvine.co');
+                            }
+                            break;
+                        case 'blurhash':
+                            videoData.blurhash = value;
+                            break;
+                        case 'dim':
+                            videoData.dimensions = value;
+                            break;
+                        case 'm':
+                            videoData.mimeType = value;
+                            break;
+                    }
+                }
+            }
+        }
+        
+        // Update vine cards after fetching Nostr events
+        function updateVineCards() {
+            loadedVideos.forEach((video, index) => {
+                const card = document.getElementById(`vine-card-${index}`);
+                if (card) {
+                    const statsDiv = card.querySelector('.vine-stats');
+                    if (statsDiv) {
+                        statsDiv.innerHTML = `
+                            <strong>Event ID:</strong> ${video.eventId}<br>
+                            <strong>Views:</strong> ${video.viewCount.toLocaleString()}<br>
+                            <strong>Score:</strong> ${video.score?.toFixed(2) || 0}<br>
+                            ${video.title ? `<strong>Title:</strong> ${video.title}<br>` : ''}
+                            ${video.url ? `<button class="play-button" onclick="event.stopPropagation(); playVideoAtIndex(${index})">▶️ Play Video</button>` : '<span style="color: #666;">No video URL found</span>'}
+                        `;
+                    }
+                    
+                    // Add click handler if video has URL
+                    if (video.url) {
+                        card.onclick = () => playVideoAtIndex(index);
+                        card.style.cursor = 'pointer';
+                    }
+                }
+            });
+            
+            // Update status message
+            const statusMsg = document.querySelector('#vines-content > p > span');
+            if (statusMsg) {
+                const videosWithUrls = loadedVideos.filter(v => v.url).length;
+                statusMsg.textContent = `Found ${videosWithUrls} videos with playable content`;
+                statusMsg.style.color = videosWithUrls > 0 ? '#10b77f' : '#ff6b6b';
+            }
+        }
+        
+        // Load both on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTrendingVines();
+            loadTrendingViners();
+        });
+    </script>
+</body>
+</html>

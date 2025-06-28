@@ -64,6 +64,10 @@
 		{
 			"binding": "METADATA_CACHE",
 			"id": "45b500d029d24315bb447a066fe9e9df"
+		},
+		{
+			"binding": "NIP05_STORE",
+			"id": "267e3d46ecd94bea87f51fe03a098c0f"
 		}
 	],
 

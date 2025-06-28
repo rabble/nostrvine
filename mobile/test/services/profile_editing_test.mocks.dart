@@ -137,13 +137,18 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Stream<_i6.Event> subscribeToEvents(
-          {required List<_i7.Filter>? filters}) =>
+  _i5.Stream<_i6.Event> subscribeToEvents({
+    required List<_i7.Filter>? filters,
+    bool? bypassLimits = false,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #subscribeToEvents,
           [],
-          {#filters: filters},
+          {
+            #filters: filters,
+            #bypassLimits: bypassLimits,
+          },
         ),
         returnValue: _i5.Stream<_i6.Event>.empty(),
       ) as _i5.Stream<_i6.Event>);
@@ -312,6 +317,12 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       ) as _i5.Stream<_i4.UserProfile?>);
 
   @override
+  bool get migrationRequired => (super.noSuchMethod(
+        Invocation.getter(#migrationRequired),
+        returnValue: false,
+      ) as bool);
+
+  @override
   bool get isAuthenticated => (super.noSuchMethod(
         Invocation.getter(#isAuthenticated),
         returnValue: false,
@@ -330,6 +341,17 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       ) as bool);
 
   @override
+  _i5.Future<bool> performMigrationIfNeeded({String? biometricPrompt}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #performMigrationIfNeeded,
+          [],
+          {#biometricPrompt: biometricPrompt},
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
   _i5.Future<void> initialize() => (super.noSuchMethod(
         Invocation.method(
           #initialize,
@@ -340,48 +362,61 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<_i4.AuthResult> createNewIdentity() => (super.noSuchMethod(
+  _i5.Future<_i4.AuthResult> createNewIdentity({String? biometricPrompt}) =>
+      (super.noSuchMethod(
         Invocation.method(
           #createNewIdentity,
           [],
+          {#biometricPrompt: biometricPrompt},
         ),
         returnValue: _i5.Future<_i4.AuthResult>.value(_FakeAuthResult_2(
           this,
           Invocation.method(
             #createNewIdentity,
             [],
+            {#biometricPrompt: biometricPrompt},
           ),
         )),
       ) as _i5.Future<_i4.AuthResult>);
 
   @override
-  _i5.Future<_i4.AuthResult> importFromNsec(String? nsec) =>
+  _i5.Future<_i4.AuthResult> importFromNsec(
+    String? nsec, {
+    String? biometricPrompt,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #importFromNsec,
           [nsec],
+          {#biometricPrompt: biometricPrompt},
         ),
         returnValue: _i5.Future<_i4.AuthResult>.value(_FakeAuthResult_2(
           this,
           Invocation.method(
             #importFromNsec,
             [nsec],
+            {#biometricPrompt: biometricPrompt},
           ),
         )),
       ) as _i5.Future<_i4.AuthResult>);
 
   @override
-  _i5.Future<_i4.AuthResult> importFromHex(String? privateKeyHex) =>
+  _i5.Future<_i4.AuthResult> importFromHex(
+    String? privateKeyHex, {
+    String? biometricPrompt,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #importFromHex,
           [privateKeyHex],
+          {#biometricPrompt: biometricPrompt},
         ),
         returnValue: _i5.Future<_i4.AuthResult>.value(_FakeAuthResult_2(
           this,
           Invocation.method(
             #importFromHex,
             [privateKeyHex],
+            {#biometricPrompt: biometricPrompt},
           ),
         )),
       ) as _i5.Future<_i4.AuthResult>);
@@ -398,19 +433,23 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<String?> getPrivateKeyForSigning() => (super.noSuchMethod(
+  _i5.Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) =>
+      (super.noSuchMethod(
         Invocation.method(
           #getPrivateKeyForSigning,
           [],
+          {#biometricPrompt: biometricPrompt},
         ),
         returnValue: _i5.Future<String?>.value(),
       ) as _i5.Future<String?>);
 
   @override
-  _i5.Future<String?> exportNsec() => (super.noSuchMethod(
+  _i5.Future<String?> exportNsec({String? biometricPrompt}) =>
+      (super.noSuchMethod(
         Invocation.method(
           #exportNsec,
           [],
+          {#biometricPrompt: biometricPrompt},
         ),
         returnValue: _i5.Future<String?>.value(),
       ) as _i5.Future<String?>);
@@ -420,6 +459,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
     required int? kind,
     required String? content,
     List<List<String>>? tags,
+    String? biometricPrompt,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -429,6 +469,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
             #kind: kind,
             #content: content,
             #tags: tags,
+            #biometricPrompt: biometricPrompt,
           },
         ),
         returnValue: _i5.Future<_i6.Event?>.value(),

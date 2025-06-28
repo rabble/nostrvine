@@ -45,6 +45,7 @@ abstract class CameraPlatformInterface {
   Future<void> initialize();
   Future<void> startRecordingSegment(String filePath);
   Future<String?> stopRecordingSegment();
+  Future<void> switchCamera();
   Widget get previewWidget;
   void dispose();
 }
@@ -52,19 +53,40 @@ abstract class CameraPlatformInterface {
 /// Mobile camera implementation (iOS/Android)
 class MobileCameraInterface extends CameraPlatformInterface {
   CameraController? _controller;
+  List<CameraDescription> _availableCameras = [];
+  int _currentCameraIndex = 0;
+  bool _isRecording = false;
   
   @override
   Future<void> initialize() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) {
+    _availableCameras = await availableCameras();
+    if (_availableCameras.isEmpty) {
       throw Exception('No cameras available');
     }
     
-    final camera = cameras.firstWhere(
+    // Default to back camera if available
+    _currentCameraIndex = _availableCameras.indexWhere(
       (cam) => cam.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
     );
+    if (_currentCameraIndex == -1) {
+      _currentCameraIndex = 0;
+    }
     
+    await _initializeCurrentCamera();
+  }
+  
+  Future<void> _initializeCurrentCamera() async {
+    _controller?.dispose();
+    
+    final camera = _availableCameras[_currentCameraIndex];
+    _controller = CameraController(camera, ResolutionPreset.high, enableAudio: true);
+    await _controller!.initialize();
+    await _controller!.prepareForVideoRecording();
+  }
+  
+  Future<void> _initializeNewCamera() async {
+    // Initialize new camera without disposing (disposal handled separately)
+    final camera = _availableCameras[_currentCameraIndex];
     _controller = CameraController(camera, ResolutionPreset.high, enableAudio: true);
     await _controller!.initialize();
     await _controller!.prepareForVideoRecording();
@@ -72,20 +94,116 @@ class MobileCameraInterface extends CameraPlatformInterface {
   
   @override
   Future<void> startRecordingSegment(String filePath) async {
-    await _controller!.startVideoRecording();
+    if (_controller == null) {
+      throw Exception('Camera controller not initialized');
+    }
+    
+    // Check if already recording to prevent double-start
+    if (_isRecording) {
+      debugPrint('⚠️ Already recording, skipping startVideoRecording');
+      return;
+    }
+    
+    try {
+      await _controller!.startVideoRecording();
+      _isRecording = true;
+      debugPrint('✅ Started mobile camera recording');
+    } catch (e) {
+      debugPrint('❌ Failed to start mobile camera recording: $e');
+      rethrow;
+    }
   }
   
   @override
   Future<String?> stopRecordingSegment() async {
-    final xFile = await _controller!.stopVideoRecording();
-    return xFile.path;
+    if (_controller == null) {
+      throw Exception('Camera controller not initialized');
+    }
+    
+    // Check if not recording to prevent double-stop
+    if (!_isRecording) {
+      debugPrint('⚠️ Not currently recording, skipping stopVideoRecording');
+      return null;
+    }
+    
+    try {
+      final xFile = await _controller!.stopVideoRecording();
+      _isRecording = false;
+      debugPrint('✅ Stopped mobile camera recording: ${xFile.path}');
+      return xFile.path;
+    } catch (e) {
+      _isRecording = false; // Reset state even on error
+      debugPrint('❌ Failed to stop mobile camera recording: $e');
+      rethrow;
+    }
   }
   
   @override
-  Widget get previewWidget => _controller != null ? CameraPreview(_controller!) : Container();
+  Future<void> switchCamera() async {
+    if (_availableCameras.length <= 1) return; // No other cameras to switch to
+    
+    // Don't switch if controller is not properly initialized
+    if (_controller == null || !_controller!.value.isInitialized) {
+      debugPrint('⚠️ Cannot switch camera - controller not initialized');
+      return;
+    }
+    
+    // Stop any active recording before switching
+    if (_isRecording) {
+      try {
+        await _controller?.stopVideoRecording();
+      } catch (e) {
+        debugPrint('⚠️ Error stopping recording during camera switch: $e');
+      }
+      _isRecording = false;
+    }
+    
+    // Store old controller reference for safe disposal
+    final oldController = _controller;
+    _controller = null; // Clear reference to prevent access during switch
+    
+    try {
+      // Switch to the next camera
+      _currentCameraIndex = (_currentCameraIndex + 1) % _availableCameras.length;
+      await _initializeNewCamera();
+      
+      // Safely dispose old controller after new one is ready
+      await oldController?.dispose();
+      
+      debugPrint('📷 Successfully switched to camera $_currentCameraIndex');
+    } catch (e) {
+      // If switching fails, restore old controller
+      _controller = oldController;
+      debugPrint('❌ Camera switch failed, restored previous camera: $e');
+      rethrow;
+    }
+  }
+  
+  @override
+  Widget get previewWidget {
+    final controller = _controller;
+    if (controller != null && controller.value.isInitialized) {
+      return CameraPreview(controller);
+    }
+    return Container(
+      color: Colors.black,
+      child: const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+  }
   
   @override
   void dispose() {
+    // Stop any active recording before disposal
+    if (_isRecording) {
+      try {
+        _controller?.stopVideoRecording();
+      } catch (e) {
+        debugPrint('⚠️ Error stopping recording during disposal: $e');
+      }
+      _isRecording = false;
+    }
     _controller?.dispose();
   }
 }
@@ -225,6 +343,12 @@ class MacOSCameraInterface extends CameraPlatformInterface {
   }
   
   @override
+  Future<void> switchCamera() async {
+    // TODO: Implement camera switching for macOS if multiple cameras are available
+    debugPrint('📷 Camera switching not yet implemented for macOS');
+  }
+  
+  @override
   void dispose() {
     // Stop any active recording
     if (_isRecording) {
@@ -300,6 +424,21 @@ class WebCameraInterface extends CameraPlatformInterface {
   }
   
   @override
+  Future<void> switchCamera() async {
+    if (_webCameraService == null) {
+      debugPrint('⚠️ Web camera service not initialized');
+      return;
+    }
+    
+    try {
+      await _webCameraService!.switchCamera();
+      debugPrint('📷 Web camera switched successfully');
+    } catch (e) {
+      debugPrint('⚠️ Camera switching failed on web: $e');
+    }
+  }
+  
+  @override
   Widget get previewWidget => _previewWidget ?? Container(
     color: Colors.black,
     child: const Center(
@@ -358,6 +497,21 @@ class VineRecordingController extends ChangeNotifier {
   bool get hasSegments => _segments.isNotEmpty;
   Widget get cameraPreview => _cameraInterface.previewWidget;
   
+  /// Switch between front and rear cameras
+  Future<void> switchCamera() async {
+    if (_state == VineRecordingState.recording) {
+      debugPrint('⚠️ Cannot switch camera while recording');
+      return;
+    }
+    
+    try {
+      await _cameraInterface.switchCamera();
+      debugPrint('📷 Camera switched successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to switch camera: $e');
+    }
+  }
+  
   /// Initialize the recording controller for the current platform
   Future<void> initialize() async {
     try {
@@ -392,7 +546,13 @@ class VineRecordingController extends ChangeNotifier {
   
   /// Start recording a new segment (press down)
   Future<void> startRecording() async {
-    if (!canRecord || _state == VineRecordingState.recording) return;
+    if (!canRecord) return;
+    
+    // Prevent starting if already recording
+    if (_state == VineRecordingState.recording) {
+      debugPrint('⚠️ Already recording, ignoring start request');
+      return;
+    }
     
     // On web, prevent multiple segments until compilation is implemented
     if (kIsWeb && _segments.isNotEmpty) {
@@ -416,15 +576,22 @@ class VineRecordingController extends ChangeNotifier {
       
       debugPrint('🎬 Started recording segment ${_segments.length + 1}');
     } catch (e) {
+      // Reset state and clean up on error
+      _currentSegmentStartTime = null;
+      _stopProgressTimer();
+      _stopMaxDurationTimer();
       _setState(VineRecordingState.error);
       debugPrint('❌ Failed to start recording: $e');
-      rethrow;
+      // Don't rethrow - handle gracefully in UI
     }
   }
   
   /// Stop recording current segment (release)
   Future<void> stopRecording() async {
-    if (_state != VineRecordingState.recording || _currentSegmentStartTime == null) return;
+    if (_state != VineRecordingState.recording || _currentSegmentStartTime == null) {
+      debugPrint('⚠️ Not recording or no start time, ignoring stop request');
+      return;
+    }
     
     try {
       final segmentEndTime = DateTime.now();
@@ -452,17 +619,21 @@ class VineRecordingController extends ChangeNotifier {
           // Normal segment recording for other platforms
           final filePath = await _cameraInterface.stopRecordingSegment();
           
-          final segment = RecordingSegment(
-            startTime: _currentSegmentStartTime!,
-            endTime: segmentEndTime,
-            duration: segmentDuration,
-            filePath: filePath,
-          );
-          
-          _segments.add(segment);
-          _totalRecordedDuration += segmentDuration;
-          
-          debugPrint('✅ Completed segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms');
+          if (filePath != null) {
+            final segment = RecordingSegment(
+              startTime: _currentSegmentStartTime!,
+              endTime: segmentEndTime,
+              duration: segmentDuration,
+              filePath: filePath,
+            );
+            
+            _segments.add(segment);
+            _totalRecordedDuration += segmentDuration;
+            
+            debugPrint('✅ Completed segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms');
+          } else {
+            debugPrint('⚠️ No file path returned from camera interface');
+          }
         }
       }
       
@@ -485,9 +656,13 @@ class VineRecordingController extends ChangeNotifier {
       }
       
     } catch (e) {
+      // Reset state and clean up on error
+      _currentSegmentStartTime = null;
+      _stopProgressTimer();
+      _stopMaxDurationTimer();
       _setState(VineRecordingState.error);
       debugPrint('❌ Failed to stop recording: $e');
-      rethrow;
+      // Don't rethrow - handle gracefully in UI
     }
   }
   
