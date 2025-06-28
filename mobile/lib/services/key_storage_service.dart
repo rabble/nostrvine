@@ -2,6 +2,8 @@
 // ABOUTME: Handles encrypted key storage, key generation, and secure access patterns
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,10 +58,19 @@ class NostrKeyPair {
     return NostrKeyPair.fromPrivateKey(privateKeyHex);
   }
   
-  /// Generate a new random key pair
+  /// Generate a new random key pair with timeout for iOS safety
   factory NostrKeyPair.generate() {
-    final privateKeyHex = generatePrivateKey();
-    return NostrKeyPair.fromPrivateKey(privateKeyHex);
+    try {
+      debugPrint('🔧 Starting key generation...');
+      final privateKeyHex = generatePrivateKey();
+      debugPrint('✅ Private key generated successfully');
+      final keyPair = NostrKeyPair.fromPrivateKey(privateKeyHex);
+      debugPrint('✅ Key pair created successfully');
+      return keyPair;
+    } catch (e) {
+      debugPrint('❌ Key generation failed: $e');
+      rethrow;
+    }
   }
   
   @override
@@ -89,6 +100,9 @@ class KeyStorageService extends ChangeNotifier {
   static const String _hasKeysKey = 'has_nostr_keys';
   static const String _keyCreatedAtKey = 'key_created_at';
   static const String _lastAccessKey = 'last_key_access';
+  
+  // Multiple identity storage keys
+  static const String _savedKeysPrefix = 'saved_identity_';
   
   // In-memory cache for performance
   NostrKeyPair? _cachedKeyPair;
@@ -204,13 +218,19 @@ class KeyStorageService extends ChangeNotifier {
     debugPrint('🔧 Generating new Nostr key pair');
     
     try {
-      final keyPair = NostrKeyPair.generate();
+      // Add timeout for iOS safety - key generation can sometimes hang
+      final keyPair = await Future.any([
+        Future(() => NostrKeyPair.generate()),
+        Future.delayed(const Duration(seconds: 10), () => throw TimeoutException('Key generation timed out', const Duration(seconds: 10))),
+      ]);
+      
       await storeKeyPair(keyPair);
       
       debugPrint('✅ Generated and stored new key pair');
       return keyPair;
       
     } catch (e) {
+      debugPrint('❌ Key generation error: $e');
       throw KeyStorageException('Failed to generate keys: $e');
     }
   }
@@ -426,6 +446,114 @@ class KeyStorageService extends ChangeNotifier {
     }
   }
   
+  /// Store a key pair for a specific identity (for multi-account support)
+  Future<void> storeIdentityKeyPair(String npub, NostrKeyPair keyPair) async {
+    await _ensureInitialized();
+    
+    try {
+      debugPrint('🔐 Storing identity key pair for ${NostrEncoding.maskKey(npub)}');
+      
+      final identityKey = '$_savedKeysPrefix$npub';
+      
+      // Store as JSON for the saved identity
+      final identityData = {
+        'privateKeyHex': keyPair.privateKeyHex,
+        'publicKeyHex': keyPair.publicKeyHex,
+        'npub': keyPair.npub,
+        'nsec': keyPair.nsec,
+        'savedAt': DateTime.now().toIso8601String(),
+      };
+      
+      if (_useSecureStorage) {
+        try {
+          await _secureStorage.write(
+            key: identityKey,
+            value: jsonEncode(identityData),
+          );
+          debugPrint('✅ Identity stored in secure storage');
+        } catch (e) {
+          debugPrint('⚠️ Secure storage failed, using SharedPreferences: $e');
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('dev_$identityKey', jsonEncode(identityData));
+        }
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(identityKey, jsonEncode(identityData));
+      }
+      
+      debugPrint('✅ Stored identity for ${NostrEncoding.maskKey(npub)}');
+    } catch (e) {
+      throw KeyStorageException('Failed to store identity: $e');
+    }
+  }
+  
+  /// Retrieve a key pair for a specific identity
+  Future<NostrKeyPair?> getIdentityKeyPair(String npub) async {
+    await _ensureInitialized();
+    
+    try {
+      final identityKey = '$_savedKeysPrefix$npub';
+      String? identityJson;
+      
+      if (_useSecureStorage) {
+        try {
+          identityJson = await _secureStorage.read(key: identityKey);
+        } catch (e) {
+          debugPrint('⚠️ Secure storage read failed, checking SharedPreferences: $e');
+          final prefs = await SharedPreferences.getInstance();
+          identityJson = prefs.getString('dev_$identityKey');
+        }
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        identityJson = prefs.getString(identityKey);
+      }
+      
+      if (identityJson == null) {
+        debugPrint('⚠️ No saved identity found for ${NostrEncoding.maskKey(npub)}');
+        return null;
+      }
+      
+      final identityData = jsonDecode(identityJson) as Map<String, dynamic>;
+      
+      return NostrKeyPair(
+        publicKeyHex: identityData['publicKeyHex'] as String,
+        privateKeyHex: identityData['privateKeyHex'] as String,
+        npub: identityData['npub'] as String,
+        nsec: identityData['nsec'] as String,
+      );
+    } catch (e) {
+      debugPrint('❌ Error retrieving identity: $e');
+      return null;
+    }
+  }
+  
+  /// Switch to a different identity
+  Future<bool> switchToIdentity(String npub) async {
+    try {
+      // First, save the current identity
+      final currentKeyPair = await getKeyPair();
+      if (currentKeyPair != null) {
+        await storeIdentityKeyPair(currentKeyPair.npub, currentKeyPair);
+      }
+      
+      // Get the target identity
+      final targetKeyPair = await getIdentityKeyPair(npub);
+      if (targetKeyPair == null) {
+        debugPrint('❌ Target identity not found');
+        return false;
+      }
+      
+      // Store as the active identity
+      await storeKeyPair(targetKeyPair);
+      
+      debugPrint('✅ Switched to identity: ${NostrEncoding.maskKey(npub)}');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error switching identity: $e');
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     debugPrint('🗑️ Disposing KeyStorageService');

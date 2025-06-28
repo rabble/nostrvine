@@ -23,6 +23,11 @@ class VideoEvent {
   final String? publishedAt;
   final Map<String, String> rawTags;
   
+  // Vine-specific fields from KIND22 spec
+  final String? vineId; // 'd' tag - original vine ID for replaceable events
+  final String? group; // 'h' tag - group/community identification
+  final String? altText; // 'alt' tag - accessibility text
+  
   // Repost metadata fields
   final bool isRepost;
   final String? reposterId;
@@ -46,6 +51,9 @@ class VideoEvent {
     this.hashtags = const [],
     this.publishedAt,
     this.rawTags = const {},
+    this.vineId,
+    this.group,
+    this.altText,
     this.isRepost = false,
     this.reposterId,
     this.reposterPubkey,
@@ -71,6 +79,9 @@ class VideoEvent {
     String? sha256;
     int? fileSize;
     String? publishedAt;
+    String? vineId;
+    String? group;
+    String? altText;
     
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic> from different nostr implementations
@@ -85,11 +96,15 @@ class VideoEvent {
       
       switch (tagName) {
         case 'url':
-          // Fix incorrect apt.openvine.co domain to api.openvine.co
-          videoUrl = tagValue.replaceAll('apt.openvine.co', 'api.openvine.co');
           developer.log('🔍 DEBUG: Found url tag with value: $tagValue', name: 'VideoEvent');
+          // Skip broken apt.openvine.co URLs as they don't exist
           if (tagValue.contains('apt.openvine.co')) {
-            developer.log('🔧 FIXED: Corrected apt.openvine.co to api.openvine.co in URL', name: 'VideoEvent');
+            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co URL: $tagValue', name: 'VideoEvent');
+            // Use fallback default video URL instead
+            videoUrl = 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4';
+            developer.log('🔧 FIXED: Using fallback video URL: $videoUrl', name: 'VideoEvent');
+          } else {
+            videoUrl = tagValue;
           }
           break;
         case 'imeta':
@@ -101,12 +116,18 @@ class VideoEvent {
             developer.log('🔍 DEBUG: imeta key="$key" value="$value"', name: 'VideoEvent');
             switch (key) {
               case 'url':
-                // Fix incorrect apt.openvine.co domain to api.openvine.co
-                final correctedUrl = value.replaceAll('apt.openvine.co', 'api.openvine.co');
-                videoUrl ??= correctedUrl; // Only set if not already set
-                developer.log('🔍 DEBUG: Set videoUrl from imeta to: $value', name: 'VideoEvent');
+                developer.log('🔍 DEBUG: imeta URL value: $value', name: 'VideoEvent');
+                // Skip broken apt.openvine.co URLs as they don't exist
                 if (value.contains('apt.openvine.co')) {
-                  developer.log('🔧 FIXED: Corrected apt.openvine.co to api.openvine.co in imeta URL', name: 'VideoEvent');
+                  developer.log('⚠️ WARNING: Skipping broken apt.openvine.co URL in imeta: $value', name: 'VideoEvent');
+                  // Use fallback default video URL instead
+                  if (videoUrl == null) {
+                    videoUrl = 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4';
+                    developer.log('🔧 FIXED: Using fallback video URL from imeta: $videoUrl', name: 'VideoEvent');
+                  }
+                } else {
+                  videoUrl ??= value; // Only set if not already set
+                  developer.log('🔍 DEBUG: Set videoUrl from imeta to: $value', name: 'VideoEvent');
                 }
                 break;
               case 'm':
@@ -122,8 +143,12 @@ class VideoEvent {
                 dimensions ??= value;
                 break;
               case 'thumb':
-                // Fix incorrect apt.openvine.co domain to api.openvine.co
-                thumbnailUrl ??= value.replaceAll('apt.openvine.co', 'api.openvine.co');
+                // Skip broken apt.openvine.co URLs as they don't exist
+                if (!value.contains('apt.openvine.co')) {
+                  thumbnailUrl ??= value;
+                } else {
+                  developer.log('⚠️ WARNING: Skipping broken apt.openvine.co thumbnail URL: $value', name: 'VideoEvent');
+                }
                 break;
               case 'duration':
                 duration ??= double.tryParse(value)?.round();
@@ -153,8 +178,32 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
           break;
         case 'thumb':
-          // Fix incorrect apt.openvine.co domain to api.openvine.co
-          thumbnailUrl = tagValue.replaceAll('apt.openvine.co', 'api.openvine.co');
+          // Skip broken apt.openvine.co URLs as they don't exist
+          if (!tagValue.contains('apt.openvine.co')) {
+            thumbnailUrl = tagValue;
+          } else {
+            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co thumbnail URL: $tagValue', name: 'VideoEvent');
+          }
+          break;
+        case 'image':
+          // Alternative to 'thumb' tag - some clients use 'image' instead
+          if (!tagValue.contains('apt.openvine.co')) {
+            thumbnailUrl ??= tagValue;
+          } else {
+            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co image URL: $tagValue', name: 'VideoEvent');
+          }
+          break;
+        case 'd':
+          // Replaceable event ID - original vine ID
+          vineId = tagValue;
+          break;
+        case 'h':
+          // Group/community tag
+          group = tagValue;
+          break;
+        case 'alt':
+          // Accessibility text
+          altText = tagValue;
           break;
         case 't':
           if (tagValue.isNotEmpty) {
@@ -199,6 +248,9 @@ class VideoEvent {
       hashtags: hashtags,
       publishedAt: publishedAt,
       rawTags: tags,
+      vineId: vineId,
+      group: group,
+      altText: altText,
       isRepost: false,
       reposterId: null,
       reposterPubkey: null,
@@ -340,6 +392,9 @@ class VideoEvent {
     DateTime? timestamp,
     String? publishedAt,
     Map<String, String>? rawTags,
+    String? vineId,
+    String? group,
+    String? altText,
     bool? isRepost,
     String? reposterId,
     String? reposterPubkey,
@@ -362,6 +417,9 @@ class VideoEvent {
       timestamp: timestamp ?? this.timestamp,
       publishedAt: publishedAt ?? this.publishedAt,
       rawTags: rawTags ?? this.rawTags,
+      vineId: vineId ?? this.vineId,
+      group: group ?? this.group,
+      altText: altText ?? this.altText,
       isRepost: isRepost ?? this.isRepost,
       reposterId: reposterId ?? this.reposterId,
       reposterPubkey: reposterPubkey ?? this.reposterPubkey,

@@ -10,6 +10,8 @@ import '../models/video_event.dart';
 import '../models/video_state.dart';
 import '../utils/unified_logger.dart';
 import 'video_manager_interface.dart';
+import 'seen_videos_service.dart';
+import 'content_blocklist_service.dart';
 
 /// Production implementation of IVideoManager providing comprehensive video lifecycle management
 /// 
@@ -51,6 +53,12 @@ class VideoManagerService implements IVideoManager {
   /// Configuration for manager behavior
   final VideoManagerConfig _config;
   
+  /// Service for tracking seen videos to prioritize new content
+  final SeenVideosService? _seenVideosService;
+  
+  /// Service for filtering blocked content
+  final ContentBlocklistService? _blocklistService;
+  
   /// Main video list - single source of truth
   final List<VideoEvent> _videos = [];
   
@@ -79,7 +87,11 @@ class VideoManagerService implements IVideoManager {
   /// Creates a VideoManagerService with the specified configuration
   VideoManagerService({
     VideoManagerConfig? config,
-  }) : _config = config ?? const VideoManagerConfig();
+    SeenVideosService? seenVideosService,
+    ContentBlocklistService? blocklistService,
+  }) : _config = config ?? const VideoManagerConfig(),
+       _seenVideosService = seenVideosService,
+       _blocklistService = blocklistService;
   
   @override
   List<VideoEvent> get videos => List.unmodifiable(_videos);
@@ -118,14 +130,28 @@ class VideoManagerService implements IVideoManager {
       throw VideoManagerException('Video event must have a valid ID');
     }
     
+    // Check blocklist - filter out blocked content
+    if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      Log.info('🚫 Blocked video from ${event.pubkey.substring(0, 8)}... filtered out', name: 'VideoManager');
+      return;
+    }
+    
     // Check for duplicates
     if (_videos.any((v) => v.id == event.id)) {
       developer.log('Duplicate video event ignored: ${event.id}');
       return;
     }
     
-    // Add to newest-first list
-    _videos.insert(0, event);
+    // Smart insertion: prioritize unseen videos over seen ones
+    if (_seenVideosService?.hasSeenVideo(event.id) == true) {
+      // Seen videos go to end of list (lower priority)
+      _videos.add(event);
+      Log.info('Added seen video to end: ${event.id}', name: 'VideoManager');
+    } else {
+      // Unseen videos go to beginning (higher priority)
+      _videos.insert(0, event);
+      Log.info('Added unseen video to beginning: ${event.id}', name: 'VideoManager');
+    }
     
     // Initialize state
     _videoStates[event.id] = VideoState(event: event);
@@ -407,6 +433,41 @@ class VideoManagerService implements IVideoManager {
         'lastCleanupTime': _lastCleanupTime?.toIso8601String(),
       },
     };
+  }
+  
+  /// Filter existing videos to remove blocked content
+  void filterExistingVideos() {
+    if (_blocklistService == null || _videos.isEmpty) return;
+    
+    final initialCount = _videos.length;
+    final blockedVideos = <VideoEvent>[];
+    
+    // Find all blocked videos
+    for (final video in _videos) {
+      if (_blocklistService!.shouldFilterFromFeeds(video.pubkey)) {
+        blockedVideos.add(video);
+      }
+    }
+    
+    if (blockedVideos.isEmpty) return;
+    
+    // Remove blocked videos and their associated state
+    for (final video in blockedVideos) {
+      _videos.remove(video);
+      _videoStates.remove(video.id);
+      
+      // Dispose controller if exists
+      final controller = _controllers[video.id];
+      if (controller != null) {
+        controller.dispose();
+        _controllers.remove(video.id);
+      }
+    }
+    
+    Log.info('🚫 Filtered ${blockedVideos.length} blocked videos from feed (${initialCount} -> ${_videos.length})', name: 'VideoManager');
+    
+    // Notify listeners of change
+    _notifyStateChange();
   }
   
   @override

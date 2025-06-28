@@ -26,6 +26,8 @@
   <link rel="preconnect" href="https://api.openvine.co" crossorigin>
   <link rel="dns-prefetch" href="https://fonts.googleapis.com">
   <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -44,6 +46,13 @@
 
   <title>OpenVine - Decentralized Video Sharing</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="flutter_bootstrap.js" as="script">
+  <link rel="preload" href="main.dart.js" as="script">
+  <link rel="preload" href="flutter.js" as="script">
+  <link rel="preload" href="assets/FontManifest.json" as="fetch" crossorigin>
+  <link rel="preload" href="assets/AssetManifest.json" as="fetch" crossorigin>
   
   <style>
     /* Ensure Material Icons load properly */
@@ -98,24 +107,34 @@
     <div class="loading-spinner"></div>
   </div>
   
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Register service worker early
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW registration failed:', e));
+    }
+  </script>
+  
+  <script src="flutter_bootstrap.js" defer></script>
   
   <script>
-    // Register service worker for caching
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-          .then(function(registration) {
-            console.log('SW registered: ', registration);
-          })
-          .catch(function(registrationError) {
-            console.log('SW registration failed: ', registrationError);
-          });
+    // Performance monitoring
+    const perfData = {
+      start: performance.now(),
+      events: []
+    };
+    
+    // Track key events
+    ['DOMContentLoaded', 'load'].forEach(event => {
+      window.addEventListener(event, () => {
+        perfData.events.push({event, time: performance.now() - perfData.start});
       });
-    }
+    });
     
     // Hide loading indicator once Flutter app is ready
     window.addEventListener('flutter-first-frame', function() {
+      perfData.events.push({event: 'flutter-first-frame', time: performance.now() - perfData.start});
+      console.log('Performance timeline:', perfData.events);
+      
       const loader = document.getElementById('initial-loader');
       if (loader) {
         loader.style.opacity = '0';
@@ -124,6 +143,15 @@
         }, 300);
       }
     });
+    
+    // Report Web Vitals
+    if ('PerformanceObserver' in window) {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.log(`${entry.name}: ${entry.value}ms`);
+        }
+      }).observe({entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift']});
+    }
   </script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import '../models/video_event.dart';
 import 'video_event_service.dart';
 import 'video_manager_interface.dart';
 import 'user_profile_service.dart';
+import 'social_service.dart';
 
 /// Minimal bridge to feed Nostr video events into VideoManager
 /// 
@@ -16,6 +17,7 @@ class VideoEventBridge {
   final VideoEventService _videoEventService;
   final IVideoManager _videoManager;
   final UserProfileService _userProfileService;
+  final SocialService? _socialService;
   int _initRetryCount = 0;
   
   StreamSubscription? _eventSubscription;
@@ -25,17 +27,37 @@ class VideoEventBridge {
     required VideoEventService videoEventService,
     required IVideoManager videoManager,
     required UserProfileService userProfileService,
+    SocialService? socialService,
   }) : _videoEventService = videoEventService,
        _videoManager = videoManager,
-       _userProfileService = userProfileService;
+       _userProfileService = userProfileService,
+       _socialService = socialService;
   
   /// Initialize the bridge and start syncing events
   Future<void> initialize() async {
     debugPrint('🌉 Initializing VideoEventBridge...');
     
     try {
-      // Subscribe to video events first - general feed
-      await _videoEventService.subscribeToVideoFeed();
+      // Check if user is following anyone
+      final hasFollows = _socialService != null && _socialService!.followingPubkeys.isNotEmpty;
+      
+      if (hasFollows) {
+        // User has follows - load their personalized feed
+        debugPrint('👥 User is following ${_socialService!.followingPubkeys.length} people - loading following feed');
+        await _videoEventService.subscribeToVideoFeed(
+          authors: _socialService!.followingPubkeys,
+          limit: 200,
+        );
+      } else {
+        // User has no follows - load general discovery feed
+        debugPrint('🌍 User has no follows - loading discovery feed with random sorting');
+        await _videoEventService.subscribeToVideoFeed(
+          limit: 300, // Get more videos for discovery
+        );
+        
+        // Shuffle the videos for a random experience
+        _videoEventService.shuffleForDiscovery();
+      }
       
       // Also subscribe to editor's picks videos specifically
       const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
@@ -51,12 +73,30 @@ class VideoEventBridge {
       // Add initial events to VideoManager
       if (_videoEventService.hasEvents) {
         await _addEventsToVideoManager(_videoEventService.videoEvents);
+      } else {
+        // For new users, wait a bit for default content to be added
+        debugPrint('⏳ No initial videos found, waiting for default content...');
+        
+        // Give VideoEventService time to add default content
+        int waitAttempts = 0;
+        while (!_videoEventService.hasEvents && waitAttempts < 10) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          waitAttempts++;
+        }
+        
+        // Add any videos that arrived
+        if (_videoEventService.hasEvents) {
+          debugPrint('✅ Default content arrived after ${waitAttempts * 100}ms');
+          await _addEventsToVideoManager(_videoEventService.videoEvents);
+        } else {
+          debugPrint('⚠️ No videos available after waiting 1 second');
+        }
       }
       
       // Listen for new events
       _videoEventService.addListener(_onVideoEventServiceChanged);
       
-      debugPrint('✅ VideoEventBridge initialized');
+      debugPrint('✅ VideoEventBridge initialized with ${_videoManager.videos.length} videos');
     } catch (e) {
       if (e.toString().contains('Nostr service not initialized') && _initRetryCount < 3) {
         _initRetryCount++;

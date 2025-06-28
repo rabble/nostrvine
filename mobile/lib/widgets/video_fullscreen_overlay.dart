@@ -11,17 +11,23 @@ import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../screens/comments_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/hashtag_feed_screen.dart';
 import '../widgets/share_video_menu.dart';
 
 /// Full-screen overlay that displays video with proper scaling and interactions
 class VideoFullscreenOverlay extends StatefulWidget {
   final VideoEvent video;
   final VoidCallback onClose;
+  final VoidCallback? onSwipeNext;
+  final VoidCallback? onSwipePrevious;
 
   const VideoFullscreenOverlay({
     super.key,
     required this.video,
     required this.onClose,
+    this.onSwipeNext,
+    this.onSwipePrevious,
   });
 
   @override
@@ -34,6 +40,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
   bool _hasError = false;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  String? _currentVideoId;
 
   @override
   void initState() {
@@ -47,8 +54,27 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
       curve: Curves.easeInOut,
     );
     
+    _currentVideoId = widget.video.id;
     _fadeController.forward();
     _initializeVideo();
+  }
+  
+  @override
+  void didUpdateWidget(VideoFullscreenOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if video has changed
+    if (widget.video.id != _currentVideoId) {
+      debugPrint('🔄 Video changed from ${_currentVideoId?.substring(0, 8)} to ${widget.video.id.substring(0, 8)}');
+      _currentVideoId = widget.video.id;
+      
+      // Dispose old video and initialize new one
+      _disposeVideo();
+      setState(() {
+        _hasError = false;
+      });
+      _initializeVideo();
+    }
   }
 
   @override
@@ -59,7 +85,17 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
   }
 
   Future<void> _initializeVideo() async {
-    if (_isInitializing || _controller != null || !widget.video.hasVideo) return;
+    // More detailed debug logging
+    debugPrint('🎬 _initializeVideo called for ${widget.video.id.substring(0, 8)}...');
+    debugPrint('   - hasVideo: ${widget.video.hasVideo}');
+    debugPrint('   - videoUrl: ${widget.video.videoUrl}');
+    debugPrint('   - _isInitializing: $_isInitializing');
+    debugPrint('   - _controller: $_controller');
+    
+    if (_isInitializing || _controller != null || !widget.video.hasVideo) {
+      debugPrint('⚠️ Skipping initialization - conditions not met');
+      return;
+    }
 
     setState(() {
       _isInitializing = true;
@@ -67,7 +103,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
     });
 
     try {
-      debugPrint('🎬 Initializing fullscreen video for ${widget.video.id.substring(0, 8)}...');
+      debugPrint('🎬 Creating VideoPlayerController for URL: ${widget.video.videoUrl}');
       
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.video.videoUrl!),
@@ -75,7 +111,9 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
       
       _controller = controller;
       
+      debugPrint('⏳ Initializing video controller...');
       await controller.initialize();
+      debugPrint('✅ Video controller initialized successfully');
       
       if (mounted) {
         await controller.setLooping(true);
@@ -87,9 +125,22 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
         });
         
         debugPrint('✅ Fullscreen video playing with audio for ${widget.video.id.substring(0, 8)}');
+        debugPrint('   - Duration: ${controller.value.duration}');
+        debugPrint('   - Size: ${controller.value.size}');
+        debugPrint('   - AspectRatio: ${controller.value.aspectRatio}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Fullscreen video initialization failed: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      
+      // Check if it's a CORS or network issue
+      final errorMessage = e.toString().toLowerCase();
+      if (errorMessage.contains('cors') || errorMessage.contains('access-control') || 
+          errorMessage.contains('cross-origin') || errorMessage.contains('network')) {
+        debugPrint('🌐 This appears to be a CORS or network error');
+        debugPrint('   Check if the video URL is accessible and CORS headers are properly set');
+      }
+      
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -134,10 +185,34 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Video player - fills width
+                // Video player - fills width with swipe support
                 if (_controller != null && _controller!.value.isInitialized)
                   GestureDetector(
                     onTap: _togglePlayPause,
+                    onHorizontalDragEnd: (details) {
+                      // Handle horizontal swipes
+                      if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 300) {
+                        if (details.primaryVelocity! > 0) {
+                          // Swiping right (previous video)
+                          widget.onSwipePrevious?.call();
+                        } else {
+                          // Swiping left (next video)
+                          widget.onSwipeNext?.call();
+                        }
+                      }
+                    },
+                    onVerticalDragEnd: (details) {
+                      // Handle vertical swipes
+                      if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 300) {
+                        if (details.primaryVelocity! > 0) {
+                          // Swiping down (previous video)
+                          widget.onSwipePrevious?.call();
+                        } else {
+                          // Swiping up (next video)
+                          widget.onSwipeNext?.call();
+                        }
+                      }
+                    },
                     child: Center(
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width,
@@ -281,12 +356,16 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
               Wrap(
                 spacing: 8,
                 children: widget.video.hashtags.take(3).map((hashtag) {
-                  return Text(
-                    '#$hashtag',
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                  return GestureDetector(
+                    onTap: () => _navigateToHashtagFeed(hashtag),
+                    child: Text(
+                      '#$hashtag',
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -326,25 +405,90 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
               ),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SelectableText(
-                  displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  debugPrint('👤 Navigating to profile: ${widget.video.pubkey}');
+                  // Pause video before navigating away
+                  if (_controller != null && _controller!.value.isPlaying) {
+                    _controller!.pause();
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProfileScreen(
+                        profilePubkey: widget.video.pubkey,
+                      ),
+                    ),
+                  ).then((_) {
+                    // Resume video when returning
+                    if (_controller != null && mounted) {
+                      _controller!.play();
+                    }
+                  });
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: SelectableText(
+                            displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        if (profile?.nip05 != null && profile!.nip05!.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 10,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      _formatTimestamp(widget.video.timestamp),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  _formatTimestamp(widget.video.timestamp),
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
+              ),
+            ),
+            
+            // Follow button
+            Consumer<SocialService>(
+              builder: (context, socialService, child) {
+                final isFollowing = socialService.isFollowing(widget.video.pubkey);
+                return ElevatedButton(
+                  onPressed: () => _handleFollow(context, socialService),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isFollowing ? Colors.grey[700] : Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    minimumSize: const Size(80, 32),
                   ),
-                ),
-              ],
+                  child: Text(
+                    isFollowing ? 'Following' : 'Follow',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                );
+              },
             ),
           ],
         );
@@ -396,9 +540,10 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
           // Repost button
           Consumer<SocialService>(
             builder: (context, socialService, child) {
+              final hasReposted = socialService.hasReposted(widget.video.id);
               return _buildActionButton(
                 icon: Icons.repeat,
-                color: Colors.green,
+                color: hasReposted ? Colors.green : Colors.white,
                 onPressed: () => _handleRepost(context, socialService),
               );
             },
@@ -654,6 +799,65 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
       return '${(count / 1000).toStringAsFixed(1)}K';
     } else {
       return count.toString();
+    }
+  }
+
+  void _navigateToHashtagFeed(String hashtag) {
+    debugPrint('🔗 Navigating to hashtag feed: #$hashtag');
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => HashtagFeedScreen(hashtag: hashtag),
+      ),
+    );
+  }
+
+  void _handleFollow(BuildContext context, SocialService socialService) async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (!authService.isAuthenticated) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please log in to follow users'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final isFollowing = socialService.isFollowing(widget.video.pubkey);
+      if (isFollowing) {
+        await socialService.unfollowUser(widget.video.pubkey);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User unfollowed'),
+              backgroundColor: Colors.grey,
+            ),
+          );
+        }
+      } else {
+        await socialService.followUser(widget.video.pubkey);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User followed successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to follow/unfollow user: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

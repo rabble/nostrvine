@@ -49,6 +49,7 @@ class UserProfile {
   final String displayName;
   final String? about;
   final String? picture;
+  final String? nip05;
   
   const UserProfile({
     required this.npub,
@@ -58,6 +59,7 @@ class UserProfile {
     required this.displayName,
     this.about,
     this.picture,
+    this.nip05,
   });
   
   /// Create minimal profile from key pair
@@ -328,16 +330,19 @@ class AuthService extends ChangeNotifier {
       final hasKeys = await _keyStorage.hasKeys();
       
       if (hasKeys) {
-        debugPrint('🔍 Found existing keys, loading session');
+        debugPrint('🔍 Found existing keys, loading saved identity...');
         
         final keyPair = await _keyStorage.getKeyPair();
         if (keyPair != null) {
+          debugPrint('✅ Loaded existing identity: ${NostrEncoding.maskKey(keyPair.npub)}');
           await _setupUserSession(keyPair);
           return;
+        } else {
+          debugPrint('⚠️ Has keys flag set but could not load key pair');
         }
       }
       
-      debugPrint('📭 No existing authentication found, creating new identity automatically');
+      debugPrint('📭 No existing keys found, creating new identity automatically...');
       
       // Auto-create identity like TikTok - seamless onboarding
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -346,7 +351,8 @@ class AuthService extends ChangeNotifier {
       
       final result = await createNewIdentity();
       if (result.success) {
-        debugPrint('✅ Auto-created new Nostr identity for seamless onboarding');
+        debugPrint('✅ Auto-created NEW Nostr identity: ${NostrEncoding.maskKey(result.keyPair!.npub)}');
+        debugPrint('🔐 This identity is now saved and will be reused on next launch');
       } else {
         debugPrint('❌ Failed to auto-create identity: ${result.errorMessage}');
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -382,6 +388,7 @@ class AuthService extends ChangeNotifier {
         displayName: _currentProfile!.displayName,
         about: _currentProfile!.about,
         picture: _currentProfile!.picture,
+        nip05: _currentProfile!.nip05,
       );
     }
     

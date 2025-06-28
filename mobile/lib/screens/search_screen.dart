@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
 import '../services/video_event_service.dart';
 import '../services/user_profile_service.dart';
 import '../models/video_event.dart';
@@ -60,9 +61,27 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
     try {
       final videoEventService = context.read<VideoEventService>();
+      
+      // Check if query is an npub identifier
+      String? searchPubkey;
+      if (query.startsWith('npub') && query.length > 50) {
+        try {
+          // Convert npub to hex pubkey
+          searchPubkey = Nip19.decode(query);
+          debugPrint('🔑 Decoded npub to pubkey: $searchPubkey');
+        } catch (e) {
+          debugPrint('⚠️ Failed to decode npub: $e');
+        }
+      }
 
-      // Search videos by title, content, and hashtags
+      // Search videos by title, content, hashtags, and author pubkey
       final videoResults = videoEventService.videoEvents.where((video) {
+        // If we have a decoded npub, search by author
+        if (searchPubkey != null) {
+          return video.pubkey == searchPubkey;
+        }
+        
+        // Otherwise search by content
         final titleMatch = video.title?.toLowerCase().contains(query.toLowerCase()) ?? false;
         final contentMatch = video.content.toLowerCase().contains(query.toLowerCase());
         final hashtagMatch = video.hashtags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
@@ -76,15 +95,20 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           .toList();
 
       // Get unique authors from video results for user search
-      final userResults = videoResults
-          .map((video) => video.pubkey)
-          .toSet()
-          .toList();
-
+      final userResults = <String>{};
+      
+      // If we decoded an npub, add that user to results
+      if (searchPubkey != null) {
+        userResults.add(searchPubkey);
+      }
+      
+      // Add authors from video results
+      userResults.addAll(videoResults.map((video) => video.pubkey));
+      
       setState(() {
         _videoResults = videoResults;
         _hashtagResults = hashtagResults;
-        _userResults = userResults;
+        _userResults = userResults.toList();
         _isSearching = false;
       });
 
@@ -122,7 +146,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           autofocus: true,
           style: const TextStyle(color: VineTheme.whiteText),
           decoration: const InputDecoration(
-            hintText: 'Search videos, users, hashtags...',
+            hintText: 'Search videos, users, npub, hashtags...',
             hintStyle: TextStyle(color: VineTheme.whiteText),
             border: InputBorder.none,
             suffixIcon: Icon(Icons.search, color: VineTheme.whiteText),

@@ -11,6 +11,7 @@ import '../models/video_state.dart';
 import '../services/video_manager_interface.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../widgets/share_video_menu.dart';
 import '../services/user_profile_service.dart';
 import '../screens/hashtag_feed_screen.dart';
@@ -86,8 +87,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       if (widget.isActive) {
         _videoManager.preloadVideo(widget.video.id);
         
-        // Check if controller is already available and auto-play
-        _updateController();
+        // Schedule controller update after current frame to ensure proper initialization
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _updateController();
+        });
       }
     } catch (e) {
       debugPrint('VideoFeedItem: VideoManager not found: $e');
@@ -114,9 +117,20 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       _videoManager.preloadVideo(widget.video.id);
       _updateController();
       
-      // Auto-play if controller is ready
+      // Auto-play if controller is ready and initialized
       if (_controller != null) {
-        _playVideo();
+        if (_controller!.value.isInitialized) {
+          _playVideo();
+        } else {
+          // Add listener to play when initialized
+          void onInitialized() {
+            if (_controller!.value.isInitialized && widget.isActive) {
+              _playVideo();
+              _controller!.removeListener(onInitialized);
+            }
+          }
+          _controller!.addListener(onInitialized);
+        }
       }
     } else {
       // Video became inactive - pause and disable looping
@@ -145,7 +159,19 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       
       // Auto-play video when controller becomes available and video is active
       if (newController != null && widget.isActive) {
-        _playVideo();
+        // Check if already initialized
+        if (newController.value.isInitialized) {
+          _playVideo();
+        } else {
+          // Add listener to play when initialized
+          void onInitialized() {
+            if (newController.value.isInitialized && widget.isActive) {
+              _playVideo();
+              newController.removeListener(onInitialized);
+            }
+          }
+          newController.addListener(onInitialized);
+        }
       }
     }
   }
@@ -165,6 +191,19 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       _controller!.play();
       // Only loop when the video is active (not in background/comments)
       _controller!.setLooping(widget.isActive);
+      
+      // Track video view if analytics is enabled
+      _trackVideoView();
+    }
+  }
+  
+  void _trackVideoView() {
+    try {
+      final analyticsService = Provider.of<AnalyticsService>(context, listen: false);
+      analyticsService.trackVideoView(widget.video);
+    } catch (e) {
+      // Analytics is optional - don't crash if service is not available
+      debugPrint('⚠️ Analytics service not available: $e');
     }
   }
 
@@ -221,12 +260,20 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void _navigateToHashtagFeed(String hashtag) {
     debugPrint('🔗 Navigating to hashtag feed: #$hashtag');
     
+    // Pause video before navigating away
+    _pauseVideo();
+    
     // Get the root navigator to ensure we have access to all providers
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => HashtagFeedScreen(hashtag: hashtag),
       ),
-    );
+    ).then((_) {
+      // Resume video when returning (only if still active)
+      if (widget.isActive && _controller != null) {
+        _playVideo();
+      }
+    });
   }
 
   @override
@@ -254,6 +301,40 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   Widget _buildVideoContent(VideoState videoState) {
+    // Check if video is square (aspect ratio close to 1:1) and ready
+    final isSquare = _controller != null && 
+                    _controller!.value.isInitialized && 
+                    _controller!.value.aspectRatio > 0.9 && 
+                    _controller!.value.aspectRatio < 1.1;
+    
+    // For square videos, use column layout instead of stack
+    if (isSquare && videoState.loadingState == VideoLoadingState.ready) {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.black,
+        child: Column(
+          children: [
+            // Video player at top
+            Flexible(
+              child: Stack(
+                children: [
+                  _buildMainContent(videoState),
+                  // Loading indicator (when loading but not showing loading state)
+                  if (videoState.isLoading && videoState.loadingState != VideoLoadingState.loading) _buildLoadingOverlay(),
+                  // Play/Pause icon overlay (when tapped and video is ready)
+                  if (_showPlayPauseIcon && !videoState.isLoading) _buildPlayPauseIconOverlay(),
+                ],
+              ),
+            ),
+            // Info below video
+            _buildVideoInfoBelow(),
+          ],
+        ),
+      );
+    }
+    
+    // For non-square videos, use overlay layout
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -374,9 +455,14 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return _buildNotLoadedState();
     }
 
+    // Check if video is square (aspect ratio close to 1:1)
+    final aspectRatio = _controller!.value.aspectRatio;
+    final isSquare = aspectRatio > 0.9 && aspectRatio < 1.1;
+
     // Web platform needs special handling for video tap events
     if (kIsWeb) {
-      return Center(
+      return Align(
+        alignment: isSquare ? Alignment.topCenter : Alignment.center,
         child: AspectRatio(
           aspectRatio: _controller!.value.aspectRatio,
           child: MouseRegion(
@@ -409,7 +495,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     }
 
     // Native platform (mobile) - original implementation
-    return Center(
+    return Align(
+      alignment: isSquare ? Alignment.topCenter : Alignment.center,
       child: AspectRatio(
         aspectRatio: _controller!.value.aspectRatio,
         child: GestureDetector(
@@ -452,7 +539,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             const SizedBox(height: 8),
             if (videoState.errorMessage != null) ...[
               Text(
-                videoState.errorMessage!,
+                _getUserFriendlyErrorMessage(videoState.errorMessage!),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -526,7 +613,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              _getUserFriendlyErrorMessage(message),
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
@@ -627,6 +714,80 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     );
   }
 
+  Widget _buildVideoInfoBelow() {
+    return Container(
+      color: Colors.black,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Username/Creator info
+          _buildCreatorInfo(),
+          const SizedBox(height: 8),
+          
+          // Repost attribution (if this is a repost)
+          if (widget.video.isRepost) ...[
+            _buildRepostAttribution(),
+            const SizedBox(height: 8),
+          ],
+          
+          // Video title
+          if (widget.video.title?.isNotEmpty == true) ...[
+            SelectableText(
+              widget.video.title!,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 8),
+          ],
+          
+          // Video content/description
+          if (widget.video.content.isNotEmpty) ...[
+            SelectableText(
+              widget.video.content,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8),
+          ],
+          
+          // Hashtags
+          if (widget.video.hashtags.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              children: widget.video.hashtags.take(3).map((hashtag) {
+                return GestureDetector(
+                  onTap: () => _navigateToHashtagFeed(hashtag),
+                  child: Text(
+                    '#$hashtag',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+          ],
+          
+          // Social action buttons
+          _buildSocialActions(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingOverlay() {
     return Container(
       color: Colors.black.withValues(alpha: 0.3),
@@ -678,12 +839,15 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   Widget _buildCreatorInfo() {
-    return Consumer<UserProfileService>(
-      builder: (context, profileService, child) {
+    return Consumer2<UserProfileService, AuthService>(
+      builder: (context, profileService, authService, child) {
         final profile = profileService.getCachedProfile(widget.video.pubkey);
         final displayName = profile?.displayName ?? 
                            profile?.name ?? 
                            '@${widget.video.pubkey.substring(0, 8)}...';
+        
+        // Check if this is the current user's video
+        final isOwnVideo = authService.currentPublicKeyHex == widget.video.pubkey;
         
         return Row(
           children: [
@@ -696,22 +860,49 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             GestureDetector(
               onTap: () {
                 debugPrint('👤 Navigating to profile: ${widget.video.pubkey}');
+                // Pause video before navigating away
+                _pauseVideo();
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => ProfileScreen(
                       profilePubkey: widget.video.pubkey,
                     ),
                   ),
-                );
+                ).then((_) {
+                  // Resume video when returning (only if still active)
+                  if (widget.isActive && _controller != null) {
+                    _playVideo();
+                  }
+                });
               },
-              child: SelectableText(
-                displayName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    displayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  // Add NIP-05 verification badge if verified
+                  if (profile?.nip05 != null && profile!.nip05!.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 10,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(width: 8),
@@ -722,6 +913,31 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
                 fontSize: 12,
               ),
             ),
+            // Add follow button if not own video
+            if (!isOwnVideo) ...[
+              const SizedBox(width: 12),
+              Consumer<SocialService>(
+                builder: (context, socialService, child) {
+                  final isFollowing = socialService.isFollowing(widget.video.pubkey);
+                  return ElevatedButton(
+                    onPressed: () => _handleFollow(context, socialService),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isFollowing ? Colors.grey[700] : Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      minimumSize: const Size(60, 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isFollowing ? 'Following' : 'Follow',
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         );
       },
@@ -751,15 +967,22 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             GestureDetector(
               onTap: () {
                 debugPrint('👤 Navigating to reposter profile: ${widget.video.reposterPubkey}');
+                // Pause video before navigating away
+                _pauseVideo();
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => ProfileScreen(
                       profilePubkey: widget.video.reposterPubkey!,
                     ),
                   ),
-                );
+                ).then((_) {
+                  // Resume video when returning (only if still active)
+                  if (widget.isActive && _controller != null) {
+                    _playVideo();
+                  }
+                });
               },
-              child: SelectableText(
+              child: Text(
                 'Reposted by $reposterName',
                 style: const TextStyle(
                   color: Colors.green,
@@ -840,9 +1063,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
           // Repost button
           Consumer<SocialService>(
             builder: (context, socialService, child) {
+              final hasReposted = socialService.hasReposted(widget.video.id);
               return _buildActionButton(
                 icon: Icons.repeat,
-                color: Colors.green,
+                color: hasReposted ? Colors.green : Colors.white,
                 onPressed: () => _handleRepost(context, socialService),
               );
             },
@@ -1086,6 +1310,55 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     );
   }
 
+  void _handleFollow(BuildContext context, SocialService socialService) async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (!authService.isAuthenticated) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please log in to follow users'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final isFollowing = socialService.isFollowing(widget.video.pubkey);
+      if (isFollowing) {
+        await socialService.unfollowUser(widget.video.pubkey);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User unfollowed'),
+              backgroundColor: Colors.grey,
+            ),
+          );
+        }
+      } else {
+        await socialService.followUser(widget.video.pubkey);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User followed successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to follow/unfollow user: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
@@ -1100,6 +1373,25 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return '${diff.inMinutes}m ago';
     } else {
       return 'now';
+    }
+  }
+
+  /// Convert technical error messages to user-friendly messages
+  String _getUserFriendlyErrorMessage(String errorMessage) {
+    final lowerError = errorMessage.toLowerCase();
+    
+    if (lowerError.contains('404') || lowerError.contains('not found')) {
+      return 'Video not found';
+    } else if (lowerError.contains('network') || lowerError.contains('connection')) {
+      return 'Check your internet connection';
+    } else if (lowerError.contains('timeout')) {
+      return 'Loading timed out';
+    } else if (lowerError.contains('format') || lowerError.contains('codec')) {
+      return 'Video format not supported';
+    } else if (lowerError.contains('permission') || lowerError.contains('unauthorized')) {
+      return 'Access denied';
+    } else {
+      return 'Unable to play video';
     }
   }
 

@@ -8,31 +8,86 @@ import 'package:nostr_sdk/filter.dart';
 import '../models/user_profile.dart';
 import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
+import 'subscription_manager.dart';
+import 'profile_cache_service.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
 class UserProfileService extends ChangeNotifier {
   final INostrService _nostrService;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   
-  final Map<String, UserProfile> _profileCache = {};
+  final Map<String, UserProfile> _profileCache = {}; // In-memory cache for fast access
   final Map<String, StreamSubscription> _profileSubscriptions = {};
+  final Map<String, String> _activeSubscriptionIds = {}; // pubkey -> subscription ID
   final Set<String> _pendingRequests = {};
   bool _isInitialized = false;
   
+  SubscriptionManager? _subscriptionManager;
+  ProfileCacheService? _persistentCache;
+  
   UserProfileService(this._nostrService);
+  
+  /// Set subscription manager for optimized profile fetching
+  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
+    _subscriptionManager = subscriptionManager;
+    debugPrint('📡 SubscriptionManager attached to UserProfileService');
+  }
+  
+  /// Set persistent cache service for profile storage
+  void setPersistentCache(ProfileCacheService cacheService) {
+    _persistentCache = cacheService;
+    debugPrint('💾 ProfileCacheService attached to UserProfileService');
+  }
   
   /// Get cached profile for a user
   UserProfile? getCachedProfile(String pubkey) {
-    return _profileCache[pubkey];
+    // First check in-memory cache
+    var profile = _profileCache[pubkey];
+    if (profile != null) {
+      return profile;
+    }
+    
+    // If not in memory, check persistent cache
+    if (_persistentCache?.isInitialized == true) {
+      profile = _persistentCache!.getCachedProfile(pubkey);
+      if (profile != null) {
+        // Load into memory cache for faster access
+        _profileCache[pubkey] = profile;
+        return profile;
+      }
+    }
+    
+    return null;
   }
   
   /// Check if profile is cached
   bool hasProfile(String pubkey) {
-    return _profileCache.containsKey(pubkey);
+    if (_profileCache.containsKey(pubkey)) return true;
+    
+    // Also check persistent cache
+    if (_persistentCache?.isInitialized == true) {
+      return _persistentCache!.getCachedProfile(pubkey) != null;
+    }
+    
+    return false;
   }
   
   /// Get all cached profiles
   Map<String, UserProfile> get allProfiles => Map.unmodifiable(_profileCache);
+  
+  /// Update a cached profile (e.g., after editing)
+  Future<void> updateCachedProfile(UserProfile profile) async {
+    // Update in-memory cache
+    _profileCache[profile.pubkey] = profile;
+    
+    // Update persistent cache
+    if (_persistentCache?.isInitialized == true) {
+      await _persistentCache!.updateCachedProfile(profile);
+    }
+    
+    debugPrint('🔄 Updated cached profile for ${profile.pubkey.substring(0, 8)}: ${profile.bestDisplayName}');
+    notifyListeners();
+  }
   
   /// Initialize the profile service
   Future<void> initialize() async {
@@ -73,7 +128,7 @@ class UserProfileService extends ChangeNotifier {
     }
     
     // Check if we already have an active subscription for this pubkey
-    if (_profileSubscriptions.containsKey(pubkey)) {
+    if (_profileSubscriptions.containsKey(pubkey) || _activeSubscriptionIds.containsKey(pubkey)) {
       debugPrint('🔄 Active subscription already exists for ${pubkey.substring(0, 8)}... (skipping duplicate)');
       return null;
     }
@@ -95,23 +150,38 @@ class UserProfileService extends ChangeNotifier {
         limit: 1, // Only need the most recent profile
       );
       
-      // Subscribe to profile events
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-      final subscription = eventStream.listen(
-        (event) => _handleProfileEvent(event),
-        onError: (error) => _handleProfileError(pubkey, error),
-        onDone: () => _handleProfileComplete(pubkey),
-      );
-      
-      _profileSubscriptions[pubkey] = subscription;
-      
-      // Set timeout for profile fetch
-      Timer(const Duration(seconds: 10), () {
-        if (_pendingRequests.contains(pubkey)) {
-          debugPrint('⏰ Profile fetch timeout for ${pubkey.substring(0, 8)}...');
-          _cleanupProfileRequest(pubkey);
-        }
-      });
+      // Use managed subscription if available
+      if (_subscriptionManager != null) {
+        final subscriptionId = await _subscriptionManager!.createSubscription(
+          name: 'profile_${pubkey.substring(0, 8)}',
+          filters: [filter],
+          onEvent: (event) => _handleProfileEvent(event),
+          onError: (error) => _handleProfileError(pubkey, error),
+          onComplete: () => _handleProfileComplete(pubkey),
+          timeout: const Duration(seconds: 10),
+          priority: 2, // High priority for profile fetches (user-facing)
+        );
+        
+        _activeSubscriptionIds[pubkey] = subscriptionId;
+      } else {
+        // Fall back to direct subscription
+        final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+        final subscription = eventStream.listen(
+          (event) => _handleProfileEvent(event),
+          onError: (error) => _handleProfileError(pubkey, error),
+          onDone: () => _handleProfileComplete(pubkey),
+        );
+        
+        _profileSubscriptions[pubkey] = subscription;
+        
+        // Set timeout for profile fetch
+        Timer(const Duration(seconds: 10), () {
+          if (_pendingRequests.contains(pubkey)) {
+            debugPrint('⏰ Profile fetch timeout for ${pubkey.substring(0, 8)}...');
+            _cleanupProfileRequest(pubkey);
+          }
+        });
+      }
       
       return null; // Profile will be available in cache once loaded
     } catch (e) {
@@ -131,11 +201,17 @@ class UserProfileService extends ChangeNotifier {
       // Parse profile data from event content
       final profile = UserProfile.fromNostrEvent(event);
       
-      // Cache the profile
+      // Cache the profile in memory
       _profileCache[event.pubkey] = profile;
+      
+      // Also save to persistent cache
+      if (_persistentCache?.isInitialized == true) {
+        _persistentCache!.cacheProfile(profile);
+      }
+      
       _cleanupProfileRequest(event.pubkey);
       
-      debugPrint('✅ Cached profile for ${event.pubkey.substring(0, 8)}: ${profile.displayName}');
+      debugPrint('✅ Cached profile for ${event.pubkey.substring(0, 8)}: ${profile.bestDisplayName}');
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Error parsing profile event: $e');
@@ -157,6 +233,14 @@ class UserProfileService extends ChangeNotifier {
   /// Cleanup profile request
   void _cleanupProfileRequest(String pubkey) {
     _pendingRequests.remove(pubkey);
+    
+    // Clean up managed subscription
+    final subscriptionId = _activeSubscriptionIds.remove(pubkey);
+    if (subscriptionId != null && _subscriptionManager != null) {
+      _subscriptionManager!.cancelSubscription(subscriptionId);
+    }
+    
+    // Clean up direct subscription
     final subscription = _profileSubscriptions.remove(pubkey);
     subscription?.cancel();
   }

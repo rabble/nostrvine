@@ -1,13 +1,18 @@
 // ABOUTME: Profile setup screen for new users to configure their display name, bio, and avatar
 // ABOUTME: Publishes initial profile metadata to Nostr after setup is complete
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/nostr_service_interface.dart';
+import '../services/direct_upload_service.dart';
+import '../services/nip05_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final bool isNewUser;
@@ -26,8 +31,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _pictureController = TextEditingController();
+  final _nip05Controller = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
   
   bool _isPublishing = false;
+  bool _isUploadingImage = false;
+  bool _isCheckingUsername = false;
+  bool? _usernameAvailable;
+  String? _usernameError;
+  File? _selectedImage;
+  String? _uploadedImageUrl;
 
   @override
   void initState() {
@@ -40,6 +53,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _nameController.dispose();
     _bioController.dispose();
     _pictureController.dispose();
+    _nip05Controller.dispose();
     super.dispose();
   }
 
@@ -57,6 +71,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               _nameController.text = profile.displayName ?? '';
               _bioController.text = profile.about ?? '';
               _pictureController.text = profile.picture ?? '';
+              
+              // Extract username from NIP-05 if present
+              if (profile.nip05 != null && profile.nip05!.endsWith('@openvine.co')) {
+                final username = profile.nip05!.split('@')[0];
+                _nip05Controller.text = username;
+                _usernameAvailable = true; // Already registered
+              }
             });
           }
         }
@@ -181,14 +202,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Profile Picture URL
+                // NIP-05 Username (optional)
                 TextFormField(
-                  controller: _pictureController,
+                  controller: _nip05Controller,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: 'Profile Picture URL (Optional)',
+                    labelText: 'Username (Optional)',
                     labelStyle: const TextStyle(color: Colors.grey),
-                    hintText: 'https://example.com/your-avatar.jpg',
+                    hintText: 'username',
                     hintStyle: TextStyle(color: Colors.grey[600]),
                     filled: true,
                     fillColor: Colors.grey[900],
@@ -204,21 +225,206 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Colors.purple, width: 2),
                     ),
-                    prefixIcon: const Icon(Icons.image, color: Colors.grey),
+                    prefixIcon: const Icon(Icons.verified_user, color: Colors.grey),
+                    suffixText: '@openvine.co',
+                    suffixStyle: TextStyle(color: Colors.grey[500]),
+                    errorMaxLines: 2,
                   ),
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _publishProfile(),
-                  keyboardType: TextInputType.url,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onChanged: _onUsernameChanged,
                   validator: (value) {
-                    if (value != null && value.trim().isNotEmpty) {
-                      // Basic URL validation
-                      final uri = Uri.tryParse(value.trim());
-                      if (uri == null || !uri.hasAbsolutePath) {
-                        return 'Please enter a valid URL';
-                      }
+                    if (value == null || value.isEmpty) return null; // Optional field
+                    
+                    final regex = RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);
+                    if (!regex.hasMatch(value)) {
+                      return 'Username can only contain letters, numbers, dash, underscore, and dot';
+                    }
+                    if (value.length < 3) {
+                      return 'Username must be at least 3 characters';
+                    }
+                    if (value.length > 20) {
+                      return 'Username must be 20 characters or less';
+                    }
+                    if (_usernameError != null) {
+                      return _usernameError;
                     }
                     return null;
                   },
+                ),
+                if (_isCheckingUsername)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Checking availability...',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_usernameAvailable == true && !_isCheckingUsername && _nip05Controller.text.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Username available!',
+                          style: TextStyle(color: Colors.green[400], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // Profile Picture Section
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profile Picture (Optional)',
+                      style: TextStyle(
+                        color: Colors.grey[300],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Stack(
+                        children: [
+                          // Profile picture preview
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey[800],
+                              border: Border.all(
+                                color: _selectedImage != null || _uploadedImageUrl != null || _pictureController.text.isNotEmpty
+                                    ? Colors.purple
+                                    : Colors.grey[700]!,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: _buildProfilePicturePreview(),
+                            ),
+                          ),
+                          // Upload progress indicator
+                          if (_isUploadingImage)
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.purple,
+                                    strokeWidth: 3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Image source buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _isUploadingImage ? null : () => _pickImage(ImageSource.camera),
+                          icon: const Icon(Icons.camera_alt, size: 20),
+                          label: const Text('Camera'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.grey[700]!),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: _isUploadingImage ? null : () => _pickImage(ImageSource.gallery),
+                          icon: const Icon(Icons.photo_library, size: 20),
+                          label: const Text('Gallery'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.grey[700]!),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // URL input option
+                    ExpansionTile(
+                      title: Text(
+                        'Or paste image URL',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                      tilePadding: EdgeInsets.zero,
+                      children: [
+                        TextFormField(
+                          controller: _pictureController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'https://example.com/your-avatar.jpg',
+                            hintStyle: TextStyle(color: Colors.grey[600]),
+                            filled: true,
+                            fillColor: Colors.grey[900],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.purple, width: 2),
+                            ),
+                            prefixIcon: const Icon(Icons.link, color: Colors.grey),
+                          ),
+                          textInputAction: TextInputAction.done,
+                          onChanged: (_) => setState(() {}), // Update preview
+                          onFieldSubmitted: (_) => _publishProfile(),
+                          keyboardType: TextInputType.url,
+                          validator: (value) {
+                            if (value != null && value.trim().isNotEmpty) {
+                              // Basic URL validation
+                              final uri = Uri.tryParse(value.trim());
+                              if (uri == null || !uri.hasAbsolutePath) {
+                                return 'Please enter a valid URL';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
 
@@ -431,6 +637,31 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (_pictureController.text.trim().isNotEmpty) {
         profileData['picture'] = _pictureController.text.trim();
       }
+      
+      // Handle NIP-05 registration if username provided
+      String? nip05Identifier;
+      if (_nip05Controller.text.trim().isNotEmpty && _usernameAvailable == true) {
+        try {
+          final nip05Service = Nip05Service();
+          final username = _nip05Controller.text.trim();
+          final nostrService = context.read<INostrService>();
+          final relays = nostrService.connectedRelays.toList();
+          
+          final registered = await nip05Service.registerUsername(
+            username,
+            authService.currentPublicKeyHex!,
+            relays,
+          );
+          
+          if (registered) {
+            nip05Identifier = '$username@openvine.co';
+            profileData['nip05'] = nip05Identifier;
+          }
+        } catch (e) {
+          debugPrint('Failed to register NIP-05: $e');
+          // Continue with profile creation even if NIP-05 fails
+        }
+      }
 
       // Create NIP-01 kind 0 profile event
       final event = await authService.createAndSignEvent(
@@ -446,13 +677,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       final result = await nostrService.broadcastEvent(event);
       final success = result.isSuccessful;
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile published successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (success) {
+        // Force refresh the user's profile in auth service
+        if (mounted) {
+          final userProfileService = context.read<UserProfileService>();
+          await userProfileService.fetchProfile(authService.currentPublicKeyHex!);
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile published successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
         
         // Navigate back or to main app
         if (widget.isNewUser) {
@@ -464,7 +703,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             Navigator.of(context).popUntil((route) => route.isFirst);
           }
         } else {
-          Navigator.of(context).pop();
+          if (mounted) {
+            Navigator.of(context).pop(true); // Return true to indicate success
+          }
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -500,6 +741,186 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     } else {
       // For existing users, just go back to previous screen
       Navigator.of(context).pop();
+    }
+  }
+  
+  Widget _buildProfilePicturePreview() {
+    // Priority: selected image > uploaded URL > manual URL > placeholder
+    if (_selectedImage != null) {
+      return Image.file(
+        _selectedImage!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    } else if (_uploadedImageUrl != null) {
+      return Image.network(
+        _uploadedImageUrl!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(Icons.person, color: Colors.grey, size: 50);
+        },
+      );
+    } else if (_pictureController.text.isNotEmpty) {
+      return Image.network(
+        _pictureController.text,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(Icons.person, color: Colors.grey, size: 50);
+        },
+      );
+    } else {
+      return const Icon(Icons.person, color: Colors.grey, size: 50);
+    }
+  }
+  
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _uploadedImageUrl = null; // Clear previous upload
+          _pictureController.clear(); // Clear manual URL
+        });
+        
+        // Upload the image
+        await _uploadImage();
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _uploadImage() async {
+    if (_selectedImage == null) return;
+    
+    setState(() {
+      _isUploadingImage = true;
+    });
+    
+    try {
+      final authService = context.read<AuthService>();
+      final uploadService = DirectUploadService();
+      
+      if (authService.currentPublicKeyHex == null) {
+        throw Exception('No public key available');
+      }
+      
+      final result = await uploadService.uploadProfilePicture(
+        imageFile: _selectedImage!,
+        nostrPubkey: authService.currentPublicKeyHex!,
+        onProgress: (progress) {
+          debugPrint('Upload progress: ${(progress * 100).toStringAsFixed(0)}%');
+        },
+      );
+      
+      if (result.success && result.cdnUrl != null) {
+        setState(() {
+          _uploadedImageUrl = result.cdnUrl;
+          _pictureController.text = result.cdnUrl!;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture uploaded successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        throw Exception(result.errorMessage ?? 'Upload failed');
+      }
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
+    }
+  }
+
+  Timer? _usernameCheckTimer;
+
+  void _onUsernameChanged(String value) {
+    // Cancel any existing timer
+    _usernameCheckTimer?.cancel();
+    
+    // Reset state
+    setState(() {
+      _usernameAvailable = null;
+      _usernameError = null;
+    });
+    
+    // Don't check if empty or too short
+    if (value.isEmpty || value.length < 3) {
+      return;
+    }
+    
+    // Validate format locally first
+    final regex = RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);
+    if (!regex.hasMatch(value)) {
+      return;
+    }
+    
+    // Debounce the check
+    _usernameCheckTimer = Timer(const Duration(milliseconds: 500), () {
+      _checkUsernameAvailability(value);
+    });
+  }
+  
+  Future<void> _checkUsernameAvailability(String username) async {
+    setState(() {
+      _isCheckingUsername = true;
+    });
+    
+    try {
+      final nip05Service = Nip05Service();
+      final isAvailable = await nip05Service.checkUsernameAvailability(username);
+      
+      if (mounted) {
+        setState(() {
+          _usernameAvailable = isAvailable;
+          _usernameError = isAvailable ? null : 'Username already taken';
+          _isCheckingUsername = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _usernameError = 'Failed to check username';
+          _isCheckingUsername = false;
+        });
+      }
     }
   }
 }

@@ -43,11 +43,7 @@ class AppConfig {
   
   // Nostr configuration
   static const List<String> defaultNostrRelays = [
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-    'wss://relay.nos.social',
-    'wss://relay.nostr.band',
-    'wss://cache2.primal.net/v1',
+    'wss://vine.hol.is',
   ];
   
   // Debugging

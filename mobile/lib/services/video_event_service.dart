@@ -11,19 +11,22 @@ import 'connection_status_service.dart';
 import 'seen_videos_service.dart';
 import 'default_content_service.dart';
 import 'content_blocklist_service.dart';
+import 'subscription_manager.dart';
 
 /// Service for handling NIP-71 kind 22 video events
 class VideoEventService extends ChangeNotifier {
   final INostrService _nostrService;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   final List<VideoEvent> _videoEvents = [];
-  final Map<String, StreamSubscription> _subscriptions = {};
+  final Map<String, StreamSubscription> _subscriptions = {}; // Direct subscriptions fallback
+  final List<String> _activeSubscriptionIds = []; // Managed subscription IDs
   bool _isSubscribed = false;
   bool _isLoading = false;
   String? _error;
   Timer? _retryTimer;
   int _retryAttempts = 0;
   List<String>? _activeHashtagFilter;
+  String? _activeGroupFilter;
   
   // Duplicate event aggregation for logging
   int _duplicateVideoEventCount = 0;
@@ -32,15 +35,29 @@ class VideoEventService extends ChangeNotifier {
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
   
-  // Optional blocklist service for filtering content
+  // Optional services for enhanced functionality
   ContentBlocklistService? _blocklistService;
+  SubscriptionManager? _subscriptionManager;
   
-  VideoEventService(this._nostrService, {SeenVideosService? seenVideosService});
+  // Track if current subscription is for following list or general feed
+  bool _isFollowingFeed = false;
+  
+  VideoEventService(
+    this._nostrService, {
+    SeenVideosService? seenVideosService,
+    SubscriptionManager? subscriptionManager,
+  }) : _subscriptionManager = subscriptionManager;
   
   /// Set the blocklist service for content filtering
   void setBlocklistService(ContentBlocklistService blocklistService) {
     _blocklistService = blocklistService;
     debugPrint('🚫 Blocklist service attached to VideoEventService');
+  }
+  
+  /// Set the subscription manager for centralized subscription management
+  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
+    _subscriptionManager = subscriptionManager;
+    debugPrint('📡 SubscriptionManager attached to VideoEventService');
   }
   
   // Getters
@@ -51,10 +68,16 @@ class VideoEventService extends ChangeNotifier {
   bool get hasEvents => _videoEvents.isNotEmpty;
   int get eventCount => _videoEvents.length;
   
+  /// Get videos by a specific author from the existing cache
+  List<VideoEvent> getVideosByAuthor(String pubkey) {
+    return _videoEvents.where((video) => video.pubkey == pubkey).toList();
+  }
+  
   /// Subscribe to kind 22 video events from all connected relays
   Future<void> subscribeToVideoFeed({
     List<String>? authors,
     List<String>? hashtags,
+    String? group, // Support filtering by group ('h' tag)
     int? since,
     int? until,
     int limit = 50, // Start with smaller limit for fast initial load
@@ -100,19 +123,21 @@ class VideoEventService extends ChangeNotifier {
     }
     
     // Always close existing subscriptions to prevent leaks
-    if (_subscriptions.isNotEmpty) {
-      debugPrint('🔄 Closing ${_subscriptions.length} existing subscriptions before creating new one...');
-      await unsubscribeFromVideoFeed();
-    }
+    await _cancelExistingSubscriptions();
     
     try {
       debugPrint('🔍 Creating filter for kind 22 video events...');
       debugPrint('  - Authors: ${authors?.length ?? 'all'}');
       debugPrint('  - Hashtags: ${hashtags?.join(', ') ?? 'none'}');
+      debugPrint('  - Group: ${group ?? 'none'}');
       debugPrint('  - Since: ${since != null ? DateTime.fromMillisecondsSinceEpoch(since * 1000) : 'none'}');
       debugPrint('  - Until: ${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}');
       debugPrint('  - Limit: $limit');
       debugPrint('  - Replace existing: $replace');
+      
+      // Track if this is a following feed (has specific authors)
+      _isFollowingFeed = authors != null && authors.isNotEmpty;
+      debugPrint('  - Is following feed: $_isFollowingFeed');
       
       // Create filter for kind 22 events
       // No artificial date constraints - let relays return their best content
@@ -132,6 +157,9 @@ class VideoEventService extends ChangeNotifier {
         until: effectiveUntil,
         limit: limit, // Use full limit for video events
       );
+      
+      // Store group for client-side filtering
+      _activeGroupFilter = group;
       
       List<Filter> filters = [videoFilter];
       
@@ -153,28 +181,39 @@ class VideoEventService extends ChangeNotifier {
         debugPrint('  - Video filter ($limit limit): ${videoFilter.toJson()}');
       }
       
-      // Use nostr_sdk's optimized subscription management
-      debugPrint('📡 Creating optimized subscription via nostr_sdk...');
-      final eventStream = _nostrService.subscribeToEvents(filters: filters);
-      debugPrint('📡 Event stream created, setting up efficient event handling...');
-      
       // Store hashtag filter for event processing
       _activeHashtagFilter = hashtags;
       
-      // Use a unique subscription key to avoid conflicts
-      final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('🔑 Creating subscription with key: $subscriptionKey');
+      // Use managed subscription if available, otherwise fall back to direct subscription
+      if (_subscriptionManager != null) {
+        debugPrint('📡 Creating managed subscription via SubscriptionManager...');
+        final subscriptionId = await _subscriptionManager!.createSubscription(
+          name: 'video_feed',
+          filters: filters,
+          onEvent: (event) => _handleNewVideoEvent(event),
+          onError: (error) => _handleSubscriptionError(error),
+          onComplete: () => _handleSubscriptionComplete(),
+          priority: _isFollowingFeed ? 1 : 3, // Higher priority for following feed
+        );
+        
+        _activeSubscriptionIds.add(subscriptionId);
+        debugPrint('✅ Managed subscription created with ID: $subscriptionId');
+      } else {
+        debugPrint('📡 Creating direct subscription via nostr_sdk...');
+        final eventStream = _nostrService.subscribeToEvents(filters: filters);
+        
+        final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
+        final subscription = eventStream.listen(
+          (event) => _handleNewVideoEvent(event),
+          onError: (error) => _handleSubscriptionError(error),
+          onDone: () => _handleSubscriptionComplete(),
+        );
+        
+        _subscriptions[subscriptionKey] = subscription;
+        debugPrint('✅ Direct subscription created with key: $subscriptionKey');
+      }
       
-      final subscription = eventStream.listen(
-        (event) => _handleNewVideoEvent(event),
-        onError: (error) => _handleSubscriptionError(error),
-        onDone: () => _handleSubscriptionComplete(),
-      );
-      
-      _subscriptions[subscriptionKey] = subscription;
       _isSubscribed = true;
-      
-      debugPrint('📋 Active subscriptions after creation: ${_subscriptions.keys.toList()}');
       
       debugPrint('✅ Video event subscription established successfully!');
       
@@ -182,7 +221,8 @@ class VideoEventService extends ChangeNotifier {
       _ensureDefaultContent();
       
       // Progressive loading removed - let UI trigger loadMore as needed
-      debugPrint('📊 Subscription status: active=${_subscriptions.length} subscriptions');
+      final totalSubs = _subscriptions.length + _activeSubscriptionIds.length;
+      debugPrint('📊 Subscription status: active=$totalSubs subscriptions (${_activeSubscriptionIds.length} managed, ${_subscriptions.length} direct)');
     } catch (e) {
       _error = e.toString();
       debugPrint('❌ Failed to subscribe to video events: $e');
@@ -279,6 +319,12 @@ class VideoEventService extends ChangeNotifier {
               debugPrint('⏩ Skipping video without required hashtags: $_activeHashtagFilter');
               return;
             }
+          }
+          
+          // Check group filter if active
+          if (_activeGroupFilter != null && videoEvent.group != _activeGroupFilter) {
+            debugPrint('⏩ Skipping video from different group: ${videoEvent.group} (want: $_activeGroupFilter)');
+            return;
           }
           
           // Only add events with video URLs
@@ -380,7 +426,8 @@ class VideoEventService extends ChangeNotifier {
   void _handleSubscriptionError(dynamic error) {
     _error = error.toString();
     debugPrint('❌ Video subscription error: $error');
-    debugPrint('📊 Current state: events=${_videoEvents.length}, subscriptions=${_subscriptions.length}');
+    final totalSubs = _subscriptions.length + _activeSubscriptionIds.length;
+    debugPrint('📊 Current state: events=${_videoEvents.length}, subscriptions=$totalSubs');
     
     // Check if it's a connection error and schedule retry
     if (_isConnectionError(error)) {
@@ -394,7 +441,8 @@ class VideoEventService extends ChangeNotifier {
   /// Handle subscription completion
   void _handleSubscriptionComplete() {
     debugPrint('🏁 Video subscription completed');
-    debugPrint('📊 Final state: events=${_videoEvents.length}, subscriptions=${_subscriptions.length}');
+    final totalSubs = _subscriptions.length + _activeSubscriptionIds.length;
+    debugPrint('📊 Final state: events=${_videoEvents.length}, subscriptions=$totalSubs');
   }
   
   /// Subscribe to specific user's video events
@@ -411,6 +459,38 @@ class VideoEventService extends ChangeNotifier {
       hashtags: hashtags,
       limit: limit,
     );
+  }
+  
+  /// Subscribe to videos from a specific group (using 'h' tag)
+  Future<void> subscribeToGroupVideos(String group, {
+    List<String>? authors,
+    int? since,
+    int? until,
+    int limit = 50,
+  }) async {
+    if (!_nostrService.isInitialized) {
+      throw VideoEventServiceException('Nostr service not initialized');
+    }
+    
+    debugPrint('🔍 Subscribing to videos from group: $group');
+    
+    // Note: Nostr SDK Filter doesn't support custom tags directly,
+    // so we'll rely on client-side filtering for group 'h' tags
+    debugPrint('🔍 Subscribing to group: $group (will filter client-side)');
+    
+    // Use existing subscription infrastructure with group parameter
+    return subscribeToVideoFeed(
+      authors: authors,
+      group: group,
+      since: since,
+      until: until,
+      limit: limit,
+    );
+  }
+  
+  /// Get video events by group from cache
+  List<VideoEvent> getVideoEventsByGroup(String group) {
+    return _videoEvents.where((event) => event.group == group).toList();
   }
   
   /// Refresh video feed by fetching recent events with expanded timeframe
@@ -490,32 +570,57 @@ class VideoEventService extends ChangeNotifier {
     debugPrint('🔍 One-shot historical query: until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}, limit=$limit');
     debugPrint('🔍 Filter: ${filter.toJson()}');
     
-    final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-    late StreamSubscription subscription;
-    
-    subscription = eventStream.listen(
-      (event) {
-        _handleNewVideoEvent(event);
-      },
-      onError: (error) {
-        debugPrint('❌ Historical query error: $error');
-        if (!completer.isCompleted) completer.completeError(error);
-      },
-      onDone: () {
-        debugPrint('✅ Historical query completed (EOSE received)');
-        subscription.cancel();
-        if (!completer.isCompleted) completer.complete();
-      },
-    );
-    
-    // Set timeout for the query
-    Timer(const Duration(seconds: 30), () {
-      if (!completer.isCompleted) {
-        debugPrint('⏰ Historical query timed out after 30 seconds');
-        subscription.cancel();
-        completer.complete();
-      }
-    });
+    // Use managed subscription if available
+    if (_subscriptionManager != null) {
+      final subscriptionId = await _subscriptionManager!.createSubscription(
+        name: 'historical_query',
+        filters: [filter],
+        onEvent: (event) => _handleNewVideoEvent(event),
+        onError: (error) {
+          debugPrint('❌ Historical query error: $error');
+          if (!completer.isCompleted) completer.completeError(error);
+        },
+        onComplete: () {
+          debugPrint('✅ Historical query completed (EOSE received)');
+          if (!completer.isCompleted) completer.complete();
+        },
+        timeout: const Duration(seconds: 30),
+        priority: 5, // Medium priority for historical queries
+      );
+      
+      // Clean up subscription when done
+      completer.future.whenComplete(() {
+        _subscriptionManager!.cancelSubscription(subscriptionId);
+      });
+    } else {
+      // Fall back to direct subscription
+      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      late StreamSubscription subscription;
+      
+      subscription = eventStream.listen(
+        (event) {
+          _handleNewVideoEvent(event);
+        },
+        onError: (error) {
+          debugPrint('❌ Historical query error: $error');
+          if (!completer.isCompleted) completer.completeError(error);
+        },
+        onDone: () {
+          debugPrint('✅ Historical query completed (EOSE received)');
+          subscription.cancel();
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      
+      // Set timeout for the query
+      Timer(const Duration(seconds: 30), () {
+        if (!completer.isCompleted) {
+          debugPrint('⏰ Historical query timed out after 30 seconds');
+          subscription.cancel();
+          completer.complete();
+        }
+      });
+    }
     
     return completer.future;
   }
@@ -590,6 +695,82 @@ class VideoEventService extends ChangeNotifier {
     }
   }
   
+  /// Get video event by vine ID (using 'd' tag)
+  VideoEvent? getVideoEventByVineId(String vineId) {
+    try {
+      return _videoEvents.firstWhere((event) => event.vineId == vineId);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Query video events by vine ID from relays
+  Future<VideoEvent?> queryVideoByVineId(String vineId) async {
+    if (!_nostrService.isInitialized) {
+      throw VideoEventServiceException('Nostr service not initialized');
+    }
+    
+    debugPrint('🔍 Querying for video with vine ID: $vineId');
+    
+    final completer = Completer<VideoEvent?>();
+    VideoEvent? foundEvent;
+    
+    // Note: Since Filter doesn't support custom tags, we'll fetch recent videos
+    // and filter client-side for the specific vine ID
+    final filter = Filter(
+      kinds: [22],
+      limit: 100, // Fetch more to increase chance of finding the video
+    );
+    
+    debugPrint('🔍 Querying for videos, will filter for vine ID: $vineId');
+    
+    final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+    late StreamSubscription subscription;
+    
+    subscription = eventStream.listen(
+      (event) {
+        try {
+          final videoEvent = VideoEvent.fromNostrEvent(event);
+          // Check if this video has the vine ID we're looking for
+          if (videoEvent.vineId == vineId) {
+            debugPrint('📥 Found video event for vine ID $vineId: ${event.id.substring(0, 8)}...');
+            foundEvent = videoEvent;
+            if (!completer.isCompleted) {
+              completer.complete(foundEvent);
+            }
+            subscription.cancel();
+          }
+        } catch (e) {
+          debugPrint('❌ Error parsing video event: $e');
+        }
+      },
+      onError: (error) {
+        debugPrint('❌ Error querying video by vine ID: $error');
+        if (!completer.isCompleted) {
+          completer.completeError(error);
+        }
+        subscription.cancel();
+      },
+      onDone: () {
+        debugPrint('🏁 Vine ID query completed');
+        if (!completer.isCompleted) {
+          completer.complete(foundEvent);
+        }
+      },
+    );
+    
+    // Set timeout
+    Timer(const Duration(seconds: 10), () {
+      if (!completer.isCompleted) {
+        debugPrint('⏰ Vine ID query timed out');
+        subscription.cancel();
+        completer.complete(null);
+      }
+    });
+    
+    return completer.future;
+  }
+  
   /// Get video events by author
   List<VideoEvent> getVideoEventsByAuthor(String pubkey) {
     return _videoEvents.where((event) => event.pubkey == pubkey).toList();
@@ -608,17 +789,31 @@ class VideoEventService extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// Unsubscribe from all video event subscriptions
-  Future<void> unsubscribeFromVideoFeed() async {
-    try {
-      debugPrint('🔔 Unsubscribing from ${_subscriptions.length} video event subscriptions...');
-      debugPrint('📋 Subscription keys being cancelled: ${_subscriptions.keys.toList()}');
-      
+  /// Cancel all existing subscriptions
+  Future<void> _cancelExistingSubscriptions() async {
+    // Cancel managed subscriptions
+    if (_subscriptionManager != null && _activeSubscriptionIds.isNotEmpty) {
+      debugPrint('🔄 Cancelling ${_activeSubscriptionIds.length} managed subscriptions...');
+      for (final subscriptionId in _activeSubscriptionIds) {
+        await _subscriptionManager!.cancelSubscription(subscriptionId);
+      }
+      _activeSubscriptionIds.clear();
+    }
+    
+    // Cancel direct subscriptions
+    if (_subscriptions.isNotEmpty) {
+      debugPrint('🔄 Cancelling ${_subscriptions.length} direct subscriptions...');
       for (final entry in _subscriptions.entries) {
-        debugPrint('🗑️ Cancelling subscription: ${entry.key}');
         await entry.value.cancel();
       }
       _subscriptions.clear();
+    }
+  }
+
+  /// Unsubscribe from all video event subscriptions
+  Future<void> unsubscribeFromVideoFeed() async {
+    try {
+      await _cancelExistingSubscriptions();
       _isSubscribed = false;
       
       debugPrint('✅ Successfully unsubscribed from all video events');
@@ -864,6 +1059,12 @@ class VideoEventService extends ChangeNotifier {
   
   /// Ensure default content is available for new users
   void _ensureDefaultContent() {
+    // DISABLED: Default video system disabled due to loading issues
+    // The default video was not loading properly and causing user experience issues
+    debugPrint('⚠️ Default video system is disabled - users will see real content only');
+    return;
+    
+    /* COMMENTED OUT - DEFAULT VIDEO SYSTEM
     try {
       final defaultVideos = DefaultContentService.getDefaultVideos();
       
@@ -906,6 +1107,7 @@ class VideoEventService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Failed to ensure default content: $e');
     }
+    */
   }
   
   /// Sort videos to prioritize default/featured content for new users
@@ -946,17 +1148,43 @@ class VideoEventService extends ChangeNotifier {
       }
       _videoEvents.insert(insertIndex, videoEvent);
     } else {
-      // Regular video - add at beginning of non-default videos (chronological order)
-      int insertIndex = 0;
-      for (int i = 0; i < _videoEvents.length; i++) {
-        final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
-        if (existingPriority != 0) {
-          // Found first non-default video, this is where we insert
-          insertIndex = i;
-          break;
+      // Regular video - sorting depends on whether this is a following feed
+      if (!_isFollowingFeed) {
+        // Not following anyone - insert at random position among non-default videos
+        int defaultCount = 0;
+        for (int i = 0; i < _videoEvents.length; i++) {
+          final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
+          if (existingPriority == 0) {
+            defaultCount++;
+          } else {
+            break;
+          }
         }
+        
+        // Calculate random position among non-default videos
+        final nonDefaultCount = _videoEvents.length - defaultCount;
+        if (nonDefaultCount > 0) {
+          // Random position between 0 and nonDefaultCount (inclusive)
+          final randomOffset = DateTime.now().microsecondsSinceEpoch % (nonDefaultCount + 1);
+          final insertIndex = defaultCount + randomOffset;
+          _videoEvents.insert(insertIndex, videoEvent);
+        } else {
+          // No non-default videos yet, just add after defaults
+          _videoEvents.add(videoEvent);
+        }
+      } else {
+        // Following feed - maintain chronological order
+        int insertIndex = 0;
+        for (int i = 0; i < _videoEvents.length; i++) {
+          final existingPriority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
+          if (existingPriority != 0) {
+            // Found first non-default video, this is where we insert
+            insertIndex = i;
+            break;
+          }
+        }
+        _videoEvents.insert(insertIndex, videoEvent);
       }
-      _videoEvents.insert(insertIndex, videoEvent);
     }
   }
   
@@ -983,6 +1211,41 @@ class VideoEventService extends ChangeNotifier {
     _retryTimer?.cancel();
     unsubscribeFromVideoFeed();
     super.dispose();
+  }
+  
+  /// Shuffle non-default videos for users not following anyone
+  void shuffleForDiscovery() {
+    if (!_isFollowingFeed && _videoEvents.isNotEmpty) {
+      debugPrint('🎲 Shuffling videos for discovery mode...');
+      
+      // Find where non-default videos start
+      int defaultCount = 0;
+      for (int i = 0; i < _videoEvents.length; i++) {
+        final priority = DefaultContentService.getDefaultVideoPriority(_videoEvents[i].id);
+        if (priority == 0) {
+          defaultCount++;
+        } else {
+          break;
+        }
+      }
+      
+      // Extract non-default videos
+      if (defaultCount < _videoEvents.length) {
+        final nonDefaultVideos = _videoEvents.sublist(defaultCount);
+        
+        // Shuffle them
+        nonDefaultVideos.shuffle();
+        
+        // Remove old non-default videos
+        _videoEvents.removeRange(defaultCount, _videoEvents.length);
+        
+        // Add shuffled videos back
+        _videoEvents.addAll(nonDefaultVideos);
+        
+        debugPrint('✅ Shuffled ${nonDefaultVideos.length} videos for discovery');
+        notifyListeners();
+      }
+    }
   }
 }
 

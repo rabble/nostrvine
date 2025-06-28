@@ -53,6 +53,7 @@ dependencies:
   chewie: ^1.8.3  # Better video player with format support
   image: ^4.1.7  # Image processing for GIF generation
   video_thumbnail: ^0.5.3  # Extract thumbnails from videos
+  image_picker: ^1.0.7  # For selecting images from gallery or camera
   
   # Cloud services
   cloudinary_public: ^0.21.0
@@ -82,6 +83,7 @@ dependencies:
   animations: ^2.0.11
   cached_network_image: ^3.3.1
   share_plus: ^10.1.2  # Cross-platform sharing
+  google_fonts: ^6.2.1  # For using Google Fonts including Pacifico
   # Using nostr_sdk from local development - more feature complete and less buggy
   nostr_sdk:
     path: ../nostr_sdk

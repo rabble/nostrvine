@@ -52,7 +52,7 @@ class DirectUploadResult {
   }
 }
 
-/// Service for uploading videos directly to CF Workers
+/// Service for uploading videos and images directly to CF Workers
 class DirectUploadService extends ChangeNotifier {
   static String get _baseUrl => AppConfig.backendBaseUrl;
   
@@ -299,6 +299,133 @@ class DirectUploadService extends ChangeNotifier {
     return _progressControllers.containsKey(videoId);
   }
   
+  /// Upload a profile picture image directly to CF Workers
+  Future<DirectUploadResult> uploadProfilePicture({
+    required File imageFile,
+    required String nostrPubkey,
+    void Function(double progress)? onProgress,
+  }) async {
+    debugPrint('🔄 Starting profile picture upload for: ${imageFile.path}');
+    
+    String? uploadId;
+    
+    try {
+      // Generate a temporary ID for progress tracking
+      uploadId = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      // Setup progress tracking
+      final progressController = StreamController<double>.broadcast();
+      _progressControllers[uploadId] = progressController;
+      
+      if (onProgress != null) {
+        final subscription = progressController.stream.listen(onProgress);
+        _progressSubscriptions[uploadId] = subscription;
+      }
+      
+      // Create multipart request for image upload (using same endpoint as videos)
+      final url = '$_baseUrl/api/upload';
+      final uri = Uri.parse(url);
+      
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add authorization headers
+      final headers = await _getAuthHeaders(url);
+      request.headers.addAll(headers);
+      
+      // Add image file with progress tracking
+      final fileLength = await imageFile.length();
+      final stream = imageFile.openRead();
+      
+      // Create a progress-tracking stream
+      int bytesUploaded = 0;
+      final progressStream = stream.transform(
+        StreamTransformer<List<int>, List<int>>.fromHandlers(
+          handleData: (data, sink) {
+            bytesUploaded += data.length;
+            final progress = bytesUploaded / fileLength;
+            progressController.add(progress * 0.9); // 0-90% for upload
+            sink.add(data);
+          },
+        ),
+      );
+      
+      final filename = imageFile.path.split('/').last;
+      final contentType = _getImageContentType(filename);
+      
+      final multipartFile = http.MultipartFile(
+        'file',
+        progressStream,
+        fileLength,
+        filename: filename,
+        contentType: contentType,
+      );
+      request.files.add(multipartFile);
+      
+      // Add metadata
+      request.fields['type'] = 'profile_picture';
+      request.fields['pubkey'] = nostrPubkey;
+      
+      // Send request
+      progressController.add(0.10); // 10% - Starting upload
+      
+      final streamedResponse = await request.send();
+      
+      progressController.add(0.95); // Upload complete, processing response
+      
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      progressController.add(1.0); // Complete
+      
+      // Cleanup progress controller and subscription
+      _progressControllers.remove(uploadId);
+      final subscription = _progressSubscriptions.remove(uploadId);
+      await subscription?.cancel();
+      await progressController.close();
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint('✅ Profile picture upload successful');
+        debugPrint('📄 Response: $data');
+        
+        if (data['status'] == 'success') {
+          final cdnUrl = data['url'] ?? data['download_url'];
+          
+          return DirectUploadResult.success(
+            videoId: uploadId,
+            cdnUrl: cdnUrl,
+            metadata: data,
+          );
+        } else {
+          throw DirectUploadException(
+            'Upload failed: ${data['message'] ?? 'Unknown error'}',
+            code: 'UPLOAD_FAILED',
+          );
+        }
+      } else {
+        throw DirectUploadException(
+          'HTTP ${response.statusCode}: ${response.body}',
+          code: 'HTTP_ERROR_${response.statusCode}',
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('❌ Profile picture upload error: $e');
+      debugPrint('Stack trace: $stack');
+      
+      // Cleanup on error
+      if (uploadId != null) {
+        _progressControllers.remove(uploadId);
+        final subscription = _progressSubscriptions.remove(uploadId);
+        await subscription?.cancel();
+      }
+      
+      if (e is DirectUploadException) {
+        rethrow;
+      }
+      
+      return DirectUploadResult.failure(e.toString());
+    }
+  }
+  
   /// Get current uploads in progress
   List<String> get activeUploads => _progressControllers.keys.toList();
   
@@ -323,6 +450,30 @@ class DirectUploadService extends ChangeNotifier {
         // Default to mp4 for unknown video files
         debugPrint('⚠️ Unknown video file extension: $extension, defaulting to mp4');
         return MediaType('video', 'mp4');
+    }
+  }
+  
+  /// Determine image content type based on file extension
+  MediaType _getImageContentType(String filename) {
+    final extension = filename.toLowerCase().split('.').last;
+    
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'heic':
+      case 'heif':
+        return MediaType('image', 'heic');
+      default:
+        // Default to jpeg for unknown image files
+        debugPrint('⚠️ Unknown image file extension: $extension, defaulting to jpeg');
+        return MediaType('image', 'jpeg');
     }
   }
   

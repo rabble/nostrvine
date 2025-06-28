@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/web_auth_service.dart';
 import '../services/auth_service.dart';
 
@@ -209,12 +210,11 @@ class _WebAuthScreenState extends State<WebAuthScreen> with TickerProviderStateM
                                   color: Colors.purple,
                                 ),
                                 const SizedBox(height: 24),
-                                const Text(
+                                Text(
                                   'Connect to OpenVine',
-                                  style: TextStyle(
+                                  style: GoogleFonts.pacifico(
                                     color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 32,
                                   ),
                                 ),
                                 const SizedBox(height: 8),

@@ -22,6 +22,12 @@ class SocialService extends ChangeNotifier {
   // Cache mapping liked event IDs to their reaction event IDs (needed for deletion)
   final Map<String, String> _likeEventIdToReactionId = <String, String>{};
   
+  // Cache for UI state - reposted events by current user
+  final Set<String> _repostedEventIds = <String>{};
+  
+  // Cache mapping reposted event IDs to their repost event IDs (needed for deletion)
+  final Map<String, String> _repostEventIdToRepostId = <String, String>{};
+  
   // Cache for following list (NIP-02 contact list)
   List<String> _followingPubkeys = <String>[];
   
@@ -37,6 +43,9 @@ class SocialService extends ChangeNotifier {
   // Subscription for real-time follow list updates
   StreamSubscription<Event>? _followSubscription;
   
+  // Subscription for real-time repost updates
+  StreamSubscription<Event>? _repostSubscription;
+  
   SocialService(this._nostrService, this._authService) {
     _initialize();
   }
@@ -49,6 +58,7 @@ class SocialService extends ChangeNotifier {
       // Initialize current user's social data if authenticated
       if (_authService.isAuthenticated) {
         await _loadUserLikedEvents();
+        await _loadUserRepostedEvents();
         await fetchCurrentUserFollowList();
       }
       
@@ -64,6 +74,11 @@ class SocialService extends ChangeNotifier {
   /// Check if current user has liked an event
   bool isLiked(String eventId) {
     return _likedEventIds.contains(eventId);
+  }
+  
+  /// Check if current user has reposted an event
+  bool hasReposted(String eventId) {
+    return _repostedEventIds.contains(eventId);
   }
   
   /// Get cached like count for an event
@@ -354,6 +369,52 @@ class SocialService extends ChangeNotifier {
       
     } catch (e) {
       debugPrint('❌ Error loading user liked events: $e');
+    }
+  }
+  
+  /// Loads current user's reposted events from their repost history
+  Future<void> _loadUserRepostedEvents() async {
+    if (!_authService.isAuthenticated) return;
+    
+    try {
+      final currentUserPubkey = _authService.currentPublicKeyHex;
+      if (currentUserPubkey == null) return;
+      
+      debugPrint('📥 Loading user reposted events for: ${currentUserPubkey.substring(0, 8)}...');
+      
+      // Subscribe to current user's reposts (Kind 6)
+      final subscription = _nostrService.subscribeToEvents(
+        filters: [
+          Filter(
+            authors: [currentUserPubkey],
+            kinds: [6],
+          ),
+        ],
+      );
+      
+      // Process user's repost events
+      subscription.listen(
+        (event) {
+          // Extract the reposted event ID from 'e' tags
+          for (final tag in event.tags) {
+            if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+              final repostedEventId = tag[1];
+              _repostedEventIds.add(repostedEventId);
+              // Store the repost event ID for future deletion
+              _repostEventIdToRepostId[repostedEventId] = event.id;
+              debugPrint('📄 Cached user repost: ${repostedEventId.substring(0, 8)}... (repost: ${event.id.substring(0, 8)}...)');
+              break;
+            }
+          }
+          notifyListeners(); // Notify UI of repost changes
+        },
+        onError: (error) {
+          debugPrint('❌ Error loading user reposts: $error');
+        },
+      );
+      
+    } catch (e) {
+      debugPrint('❌ Error loading user reposted events: $e');
     }
   }
   
@@ -1086,6 +1147,10 @@ class SocialService extends ChangeNotifier {
         throw Exception('Failed to broadcast repost: $errorMessages');
       }
       
+      // Track the repost locally
+      _repostedEventIds.add(eventToRepost.id);
+      _repostEventIdToRepostId[eventToRepost.id] = event.id;
+      
       debugPrint('✅ Event reposted successfully: ${event.id.substring(0, 8)}...');
       notifyListeners(); // Notify UI of the change
       
@@ -1145,6 +1210,7 @@ class SocialService extends ChangeNotifier {
     debugPrint('🗑️ Disposing SocialService');
     _likeSubscription?.cancel();
     _followSubscription?.cancel();
+    _repostSubscription?.cancel();
     super.dispose();
   }
 }

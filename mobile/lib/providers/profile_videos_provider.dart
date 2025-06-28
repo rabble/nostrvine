@@ -3,10 +3,11 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import '../models/video_event.dart';
 import '../services/nostr_service_interface.dart';
+import '../services/subscription_manager.dart';
+import '../services/video_event_service.dart';
 
 /// Loading state for user videos
 enum ProfileVideosLoadingState {
@@ -20,6 +21,8 @@ enum ProfileVideosLoadingState {
 /// Provider for managing user-specific video fetching with pagination
 class ProfileVideosProvider extends ChangeNotifier {
   final INostrService _nostrService;
+  SubscriptionManager? _subscriptionManager;
+  VideoEventService? _videoEventService;
 
   // State management
   ProfileVideosLoadingState _loadingState = ProfileVideosLoadingState.idle;
@@ -39,9 +42,19 @@ class ProfileVideosProvider extends ChangeNotifier {
   static const int _pageSize = 20;
 
   // Subscription management
-  StreamSubscription<Event>? _subscription;
+  String? _currentSubscriptionId;
 
   ProfileVideosProvider(this._nostrService);
+
+  /// Set the subscription manager for proper subscription handling
+  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
+    _subscriptionManager = subscriptionManager;
+  }
+  
+  /// Set the video event service for accessing cached videos
+  void setVideoEventService(VideoEventService videoEventService) {
+    _videoEventService = videoEventService;
+  }
 
   // Getters
   ProfileVideosLoadingState get loadingState => _loadingState;
@@ -82,9 +95,33 @@ class ProfileVideosProvider extends ChangeNotifier {
 
     try {
       debugPrint('📹 Loading videos for user: ${pubkey.substring(0, 8)}...');
+      
+      // First check if we have videos in the VideoEventService cache
+      if (_videoEventService != null) {
+        final cachedVideos = _videoEventService!.getVideosByAuthor(pubkey);
+        if (cachedVideos.isNotEmpty) {
+          debugPrint('✅ Found ${cachedVideos.length} videos in cache for ${pubkey.substring(0, 8)}');
+          _videos = cachedVideos;
+          _hasMore = false; // We have all videos from cache
+          _setLoadingState(ProfileVideosLoadingState.loaded);
+          _cacheVideos(pubkey, _videos, _hasMore);
+          notifyListeners();
+          return;
+        } else {
+          debugPrint('⚠️ No videos found in cache for ${pubkey.substring(0, 8)}, fetching from relays...');
+        }
+      }
 
-      // Cancel existing subscription
-      await _subscription?.cancel();
+      // Cancel existing subscription if any
+      if (_currentSubscriptionId != null && _subscriptionManager != null) {
+        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
+        _currentSubscriptionId = null;
+      }
+
+      // Check if we have subscription manager
+      if (_subscriptionManager == null) {
+        throw Exception('SubscriptionManager not available - cannot load profile videos');
+      }
 
       // Create filter for user's Kind 22 video events
       final filter = Filter(
@@ -93,19 +130,31 @@ class ProfileVideosProvider extends ChangeNotifier {
         limit: _pageSize,
       );
 
+      debugPrint('🔍 Creating filter for profile videos:');
+      debugPrint('  - Author: $pubkey');
+      debugPrint('  - Kinds: [22]');
+      debugPrint('  - Limit: $_pageSize');
+
       final completer = Completer<void>();
       final receivedVideos = <VideoEvent>[];
 
-      // Subscribe to video events
-      _subscription = _nostrService.subscribeToEvents(filters: [filter]).listen(
-        (event) {
+      // Subscribe to video events using SubscriptionManager
+      _currentSubscriptionId = await _subscriptionManager!.createSubscription(
+        name: 'profile_videos_${_currentPubkey!.substring(0, 8)}',
+        filters: [filter],
+        onEvent: (event) {
+          debugPrint('📨 Received event in profile videos: ${event.id.substring(0, 8)}, kind: ${event.kind}, author: ${event.pubkey.substring(0, 8)}');
           try {
-            final videoEvent = VideoEvent.fromNostrEvent(event);
-            
-            // Avoid duplicates
-            if (!receivedVideos.any((v) => v.id == videoEvent.id)) {
-              receivedVideos.add(videoEvent);
-              debugPrint('📹 Received video: ${videoEvent.id.substring(0, 8)} (${videoEvent.title ?? 'No title'})');
+            if (event.kind == 22) {
+              final videoEvent = VideoEvent.fromNostrEvent(event);
+              
+              // Avoid duplicates
+              if (!receivedVideos.any((v) => v.id == videoEvent.id)) {
+                receivedVideos.add(videoEvent);
+                debugPrint('📹 Received video: ${videoEvent.id.substring(0, 8)} (${videoEvent.title ?? 'No title'})');
+              }
+            } else {
+              debugPrint('⚠️ Received non-video event, kind: ${event.kind}');
             }
           } catch (e) {
             debugPrint('⚠️ Error parsing video event: $e');
@@ -117,11 +166,12 @@ class ProfileVideosProvider extends ChangeNotifier {
             completer.completeError(error);
           }
         },
-        onDone: () {
+        onComplete: () {
           if (!completer.isCompleted) {
             completer.complete();
           }
         },
+        priority: 2, // High priority for profile videos (user-facing)
       );
 
       // Set timeout to avoid hanging indefinitely
@@ -134,9 +184,17 @@ class ProfileVideosProvider extends ChangeNotifier {
 
       await completer.future;
 
-      // Cancel the subscription after data fetch to prevent resource leak
-      await _subscription?.cancel();
-      _subscription = null;
+      debugPrint('📊 Profile video subscription completed:');
+      debugPrint('  - Received ${receivedVideos.length} videos for author $pubkey');
+      if (receivedVideos.isNotEmpty) {
+        debugPrint('  - First video: ${receivedVideos.first.id.substring(0, 8)} (${receivedVideos.first.title ?? 'No title'})');
+      }
+
+      // Close the subscription after data fetch
+      if (_currentSubscriptionId != null && _subscriptionManager != null) {
+        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
+        _currentSubscriptionId = null;
+      }
 
       // Sort videos by creation time (newest first)
       receivedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -175,8 +233,16 @@ class ProfileVideosProvider extends ChangeNotifier {
     try {
       debugPrint('📹 Loading more videos for user: ${_currentPubkey!.substring(0, 8)}...');
 
-      // Cancel existing subscription
-      await _subscription?.cancel();
+      // Check if we have subscription manager
+      if (_subscriptionManager == null) {
+        throw Exception('SubscriptionManager not available - cannot load more profile videos');
+      }
+
+      // Cancel existing subscription if any
+      if (_currentSubscriptionId != null) {
+        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
+        _currentSubscriptionId = null;
+      }
 
       // Create filter for next page
       final filter = Filter(
@@ -189,9 +255,11 @@ class ProfileVideosProvider extends ChangeNotifier {
       final completer = Completer<void>();
       final receivedVideos = <VideoEvent>[];
 
-      // Subscribe to more video events
-      _subscription = _nostrService.subscribeToEvents(filters: [filter]).listen(
-        (event) {
+      // Subscribe to more video events using SubscriptionManager
+      _currentSubscriptionId = await _subscriptionManager!.createSubscription(
+        name: 'profile_videos_more_${_currentPubkey!.substring(0, 8)}',
+        filters: [filter],
+        onEvent: (event) {
           try {
             final videoEvent = VideoEvent.fromNostrEvent(event);
             
@@ -211,11 +279,12 @@ class ProfileVideosProvider extends ChangeNotifier {
             completer.completeError(error);
           }
         },
-        onDone: () {
+        onComplete: () {
           if (!completer.isCompleted) {
             completer.complete();
           }
         },
+        priority: 5, // Medium priority for load more videos
       );
 
       // Set timeout
@@ -228,8 +297,10 @@ class ProfileVideosProvider extends ChangeNotifier {
       await completer.future;
 
       // Cancel the subscription after data fetch to prevent resource leak  
-      await _subscription?.cancel();
-      _subscription = null;
+      if (_currentSubscriptionId != null && _subscriptionManager != null) {
+        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
+        _currentSubscriptionId = null;
+      }
 
       // Sort new videos by creation time
       receivedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -314,7 +385,13 @@ class ProfileVideosProvider extends ChangeNotifier {
   @override
   void dispose() {
     debugPrint('🗑️ Disposing ProfileVideosProvider');
-    _subscription?.cancel();
+    
+    // Close subscription using SubscriptionManager if available
+    if (_currentSubscriptionId != null && _subscriptionManager != null) {
+      _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
+      _currentSubscriptionId = null;
+    }
+    
     super.dispose();
   }
 }

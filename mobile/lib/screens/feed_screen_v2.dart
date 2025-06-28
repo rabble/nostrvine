@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
@@ -134,9 +135,22 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _stateChangeSubscription = _videoManager!.stateChanges.listen((_) {
         // Debounce rapid state changes to prevent flashing during video loading
         _debounceTimer?.cancel();
-        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+        // Use shorter delay for initial load when no videos are shown yet
+        final debounceDelay = _videoManager!.videos.isEmpty 
+            ? const Duration(milliseconds: 50)  // Fast update for initial content
+            : const Duration(milliseconds: 500); // Normal debounce for updates
+        _debounceTimer = Timer(debounceDelay, () {
           if (mounted) {
+            final hadNoVideos = _videoManager!.videos.isEmpty;
             setState(() {});
+            
+            // If we just got our first videos, trigger preload after render
+            if (hadNoVideos && _videoManager!.videos.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                debugPrint('🎬 First videos arrived - triggering preload for index $_currentIndex');
+                _videoManager!.preloadAroundIndex(_currentIndex);
+              });
+            }
           }
         });
       });
@@ -334,12 +348,11 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'OpenVine',
-          style: TextStyle(
+          style: GoogleFonts.pacifico(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 24,
           ),
         ),
         actions: [

@@ -7,6 +7,8 @@ import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/social_service.dart';
 import '../services/video_event_service.dart';
+import '../services/key_storage_service.dart';
+import '../services/analytics_service.dart';
 import '../providers/profile_stats_provider.dart';
 import '../providers/profile_videos_provider.dart';
 import '../models/video_event.dart';
@@ -15,7 +17,10 @@ import '../utils/nostr_encoding.dart';
 import 'profile_setup_screen.dart';
 import 'debug_video_test.dart';
 import 'universal_camera_screen.dart';
+import 'key_import_screen.dart';
+import 'relay_settings_screen.dart';
 import '../widgets/video_fullscreen_overlay.dart';
+import '../main.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? profilePubkey; // If null, shows current user's profile
@@ -348,14 +353,46 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SelectableText(
-                  displayName ?? 'Anonymous',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                Row(
+                  children: [
+                    SelectableText(
+                      displayName ?? 'Anonymous',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    // Add NIP-05 verification badge if verified
+                    if ((authProfile?.nip05 ?? cachedProfile?.nip05) != null && 
+                        (authProfile?.nip05 ?? cachedProfile?.nip05)!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+                const SizedBox(height: 4),
+                // Show NIP-05 identifier if present
+                if ((authProfile?.nip05 ?? cachedProfile?.nip05) != null && 
+                    (authProfile?.nip05 ?? cachedProfile?.nip05)!.isNotEmpty)
+                  Text(
+                    authProfile?.nip05 ?? cachedProfile?.nip05 ?? '',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 13,
+                    ),
+                  ),
                 const SizedBox(height: 4),
                 if ((authProfile?.about ?? cachedProfile?.about) != null && (authProfile?.about ?? cachedProfile?.about)!.isNotEmpty)
                   SelectableText(
@@ -708,56 +745,63 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
     // Show empty state
     if (!profileVideosProvider.hasVideos) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
-            SizedBox(height: 16),
-            Text(
-              'No Videos Yet',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 80), // Add padding to avoid FAB overlap
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
+              SizedBox(height: 16),
+              Text(
+                'No Videos Yet',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              _isOwnProfile 
-                ? 'Share your first video to see it here'
-                : 'This user hasn\'t shared any videos yet',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
+              SizedBox(height: 8),
+              Text(
+                _isOwnProfile 
+                  ? 'Share your first video to see it here'
+                  : 'This user hasn\'t shared any videos yet',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                debugPrint('🔄 Manual refresh videos requested for ${_targetPubkey?.substring(0, 8)}');
-                if (_targetPubkey != null) {
-                  try {
-                    await profileVideosProvider.refreshVideos();
-                    debugPrint('✅ Manual refresh completed');
-                  } catch (e) {
-                    debugPrint('❌ Manual refresh failed: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Refresh failed: $e')),
-                      );
-                    }
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.whiteText,
+              const SizedBox(height: 32), // Increased spacing
+              // Changed from centered button to an icon button in the top corner
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: IconButton(
+                    onPressed: () async {
+                      debugPrint('🔄 Manual refresh videos requested for ${_targetPubkey?.substring(0, 8)}');
+                      if (_targetPubkey != null) {
+                        try {
+                          await profileVideosProvider.refreshVideos();
+                          debugPrint('✅ Manual refresh completed');
+                        } catch (e) {
+                          debugPrint('❌ Manual refresh failed: $e');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Refresh failed: $e')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.refresh, color: VineTheme.vineGreen, size: 28),
+                    tooltip: 'Refresh',
+                  ),
+                ),
               ),
-              child: const Text('Refresh'),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -1408,20 +1452,56 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     }
   }
 
-  void _setupProfile() {
-    Navigator.of(context).push(
+  void _setupProfile() async {
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ProfileSetupScreen(isNewUser: true),
       ),
     );
+    
+    // Refresh profile data when returning from setup
+    if (result == true && mounted) {
+      setState(() {
+        // Trigger rebuild to show updated profile
+      });
+      
+      // Refresh profile data
+      final authService = context.read<AuthService>();
+      final userProfileService = context.read<UserProfileService>();
+      if (authService.currentPublicKeyHex != null) {
+        userProfileService.fetchProfile(authService.currentPublicKeyHex!);
+      }
+      
+      // Reload profile stats and videos
+      _loadProfileStats();
+      _loadProfileVideos();
+    }
   }
 
-  void _editProfile() {
-    Navigator.of(context).push(
+  void _editProfile() async {
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ProfileSetupScreen(isNewUser: false),
       ),
     );
+    
+    // Refresh profile data when returning from edit
+    if (result == true && mounted) {
+      setState(() {
+        // Trigger rebuild to show updated profile
+      });
+      
+      // Refresh profile data
+      final authService = context.read<AuthService>();
+      final userProfileService = context.read<UserProfileService>();
+      if (authService.currentPublicKeyHex != null) {
+        userProfileService.fetchProfile(authService.currentPublicKeyHex!);
+      }
+      
+      // Reload profile stats and videos
+      _loadProfileStats();
+      _loadProfileVideos();
+    }
   }
 
   void _shareProfile() {
@@ -1626,6 +1706,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 _openPrivacySettings();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.cloud, color: Colors.white),
+              title: const Text('Relay Settings', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Manage Nostr relays', style: TextStyle(color: Colors.grey)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RelaySettingsScreen(),
+                  ),
+                );
+              },
+            ),
             const Divider(color: Colors.grey),
             ListTile(
               leading: const Icon(Icons.bug_report, color: Colors.orange),
@@ -1671,9 +1765,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               subtitle: const Text('Check connection to Nostr relays', style: TextStyle(color: Colors.grey)),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Show relay status
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Relay status coming soon')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RelaySettingsScreen(),
+                  ),
                 );
               },
             ),
@@ -1746,6 +1842,49 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       onTap: () {
                         Navigator.pop(context);
                         _showNsecBackupDialog();
+                      },
+                    ),
+                    
+                    const Divider(color: Colors.grey),
+                    
+                    // Import Different Identity Section
+                    ListTile(
+                      leading: const Icon(Icons.login, color: Colors.green),
+                      title: const Text('Switch Identity', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Import a different Nostr identity using nsec', style: TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSwitchIdentityDialog();
+                      },
+                    ),
+                    
+                    const Divider(color: Colors.grey),
+                    
+                    // Analytics Opt-Out Section
+                    Consumer<AnalyticsService>(
+                      builder: (context, analyticsService, child) {
+                        return ListTile(
+                          leading: const Icon(Icons.analytics_outlined, color: Colors.orange),
+                          title: const Text('Analytics', style: TextStyle(color: Colors.white)),
+                          subtitle: const Text('Help improve OpenVine by sharing anonymous usage data', style: TextStyle(color: Colors.grey)),
+                          trailing: Switch(
+                            value: analyticsService.analyticsEnabled,
+                            onChanged: (value) async {
+                              await analyticsService.setAnalyticsEnabled(value);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(value 
+                                      ? 'Analytics enabled - Thank you for helping improve OpenVine!' 
+                                      : 'Analytics disabled - Your privacy is respected'),
+                                    backgroundColor: value ? Colors.green : Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
+                            activeColor: VineTheme.vineGreen,
+                          ),
+                        );
                       },
                     ),
                     
@@ -2170,6 +2309,85 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
             child: const Text('Copy to Clipboard'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSwitchIdentityDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const Icon(Icons.swap_horiz, color: Colors.green),
+            const SizedBox(width: 8),
+            const Text(
+              'Switch Identity',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will sign you out of your current identity and allow you to import a different one.',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Make sure you have backed up your current nsec before switching!',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // Sign out current user (without deleting keys)
+              final authService = context.read<AuthService>();
+              await authService.signOut(deleteKeys: false);
+              
+              // Navigate to key import screen
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const KeyImportScreen(),
+                  ),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Continue'),
           ),
         ],
       ),

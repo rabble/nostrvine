@@ -9,12 +9,15 @@ import 'screens/profile_screen.dart';
 import 'screens/activity_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/web_auth_screen.dart';
+import 'widgets/age_verification_dialog.dart';
 import 'services/nostr_service.dart';
 import 'services/auth_service.dart';
 import 'services/key_storage_service.dart';
 import 'services/nostr_service_interface.dart';
 import 'services/nostr_key_manager.dart';
 import 'services/video_event_service.dart';
+import 'services/logging_config_service.dart';
+import 'utils/unified_logger.dart';
 // import 'services/vine_publishing_service.dart'; // Removed - using video-based approach
 // import 'services/gif_service.dart'; // Removed - using video-based approach
 // import 'services/video_cache_service.dart'; // Removed - using VideoManager instead
@@ -42,6 +45,11 @@ import 'services/video_sharing_service.dart';
 import 'services/content_deletion_service.dart';
 import 'services/content_blocklist_service.dart';
 import 'services/fake_shared_preferences.dart';
+import 'services/analytics_service.dart';
+import 'services/subscription_manager.dart';
+import 'services/profile_cache_service.dart';
+import 'services/nip05_service.dart';
+import 'services/age_verification_service.dart';
 // import 'providers/video_feed_provider.dart'; // Removed - FeedScreenV2 uses VideoManager directly
 import 'providers/profile_stats_provider.dart';
 import 'providers/profile_videos_provider.dart';
@@ -49,12 +57,25 @@ import 'models/video_event.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
+  // Ensure bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize logging configuration first
+  await LoggingConfigService.instance.initialize();
+  
+  // Set default log level based on build mode if not already configured
+  if (const String.fromEnvironment('LOG_LEVEL').isEmpty) {
+    // For release builds, default to INFO to reduce log spam
+    // For debug builds, default to DEBUG for development
+    UnifiedLogger.setLogLevel(kReleaseMode ? LogLevel.info : LogLevel.debug);
+  }
+  
   // Handle Flutter framework errors more gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
     // Log the error but don't crash the app for known framework issues
     if (details.exception.toString().contains('KeyDownEvent') ||
         details.exception.toString().contains('HardwareKeyboard')) {
-      debugPrint('⚠️ Known Flutter framework keyboard issue (ignoring): ${details.exception}');
+      Log.warning('Known Flutter framework keyboard issue (ignoring): ${details.exception}', name: 'Main');
       return;
     }
     
@@ -62,11 +83,11 @@ void main() async {
     FlutterError.presentError(details);
   };
   
-  // Ensure bindings are initialized
-  WidgetsFlutterBinding.ensureInitialized();
-  
   // Initialize Hive for local data storage
   await Hive.initFlutter();
+  
+  Log.info('🚀 OpenVine starting...', name: 'Main');
+  Log.info('📊 Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
   
   runApp(const OpenVineApp());
 }
@@ -80,6 +101,20 @@ class OpenVineApp extends StatelessWidget {
       providers: [
         // Connection status service
         ChangeNotifierProvider(create: (_) => ConnectionStatusService()),
+        
+        // Analytics service (with opt-out support)
+        ChangeNotifierProvider(create: (_) {
+          final service = AnalyticsService();
+          service.initialize(); // Initialize asynchronously
+          return service;
+        }),
+        
+        // Age verification service
+        ChangeNotifierProvider(create: (_) {
+          final service = AgeVerificationService();
+          service.initialize(); // Initialize asynchronously
+          return service;
+        }),
         
         // Key storage service (foundational service)
         ChangeNotifierProvider(create: (_) => KeyStorageService()),
@@ -101,14 +136,32 @@ class OpenVineApp extends StatelessWidget {
           create: (context) {
             final keyManager = context.read<NostrKeyManager>();
             // Always use regular NostrService for now
-            debugPrint('📱 Creating NostrService for platform');
+            Log.debug('Creating NostrService for platform', name: 'Main');
             return NostrService(keyManager);
           },
           update: (_, keyManager, previous) {
             if (previous != null) return previous;
             // Always use regular NostrService for now
-            debugPrint('📱 Creating NostrService for platform');
+            Log.debug('Creating NostrService for platform', name: 'Main');
             return NostrService(keyManager);
+          },
+        ),
+        
+        // Subscription manager for managing Nostr subscriptions
+        ChangeNotifierProxyProvider<INostrService, SubscriptionManager>(
+          create: (context) => SubscriptionManager(context.read<INostrService>()),
+          update: (_, nostrService, previous) => previous ?? SubscriptionManager(nostrService),
+        ),
+        
+        // Profile cache service for persistent profile storage
+        ChangeNotifierProvider(
+          create: (_) {
+            final service = ProfileCacheService();
+            // Initialize asynchronously to avoid blocking UI
+            service.initialize().catchError((e) {
+              Log.error('Failed to initialize ProfileCacheService', name: 'Main', error: e);
+            });
+            return service;
           },
         ),
         
@@ -118,24 +171,27 @@ class OpenVineApp extends StatelessWidget {
         // Content blocklist service for filtering unwanted content from feeds
         ChangeNotifierProvider(create: (_) => ContentBlocklistService()),
         
-        // Video event service depends on Nostr, SeenVideos, and Blocklist services
-        ChangeNotifierProxyProvider3<INostrService, SeenVideosService, ContentBlocklistService, VideoEventService>(
+        // Video event service depends on Nostr, SeenVideos, Blocklist, and SubscriptionManager services
+        ChangeNotifierProxyProvider4<INostrService, SeenVideosService, ContentBlocklistService, SubscriptionManager, VideoEventService>(
           create: (context) {
             final service = VideoEventService(
               context.read<INostrService>(),
               seenVideosService: context.read<SeenVideosService>(),
+              subscriptionManager: context.read<SubscriptionManager>(),
             );
             service.setBlocklistService(context.read<ContentBlocklistService>());
             return service;
           },
-          update: (_, nostrService, seenVideosService, blocklistService, previous) {
+          update: (_, nostrService, seenVideosService, blocklistService, subscriptionManager, previous) {
             if (previous != null) {
               previous.setBlocklistService(blocklistService);
+              previous.setSubscriptionManager(subscriptionManager);
               return previous;
             }
             final service = VideoEventService(
               nostrService,
               seenVideosService: seenVideosService,
+              subscriptionManager: subscriptionManager,
             );
             service.setBlocklistService(blocklistService);
             return service;
@@ -148,11 +204,29 @@ class OpenVineApp extends StatelessWidget {
           update: (_, videoService, previous) => previous ?? HashtagService(videoService),
         ),
         
-        // User profile service depends on Nostr service
-        ChangeNotifierProxyProvider<INostrService, UserProfileService>(
-          create: (context) => UserProfileService(context.read<INostrService>()),
-          update: (_, nostrService, previous) => previous ?? UserProfileService(nostrService),
+        // User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
+        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager, ProfileCacheService, UserProfileService>(
+          create: (context) {
+            final service = UserProfileService(context.read<INostrService>());
+            service.setSubscriptionManager(context.read<SubscriptionManager>());
+            service.setPersistentCache(context.read<ProfileCacheService>());
+            return service;
+          },
+          update: (_, nostrService, subscriptionManager, profileCache, previous) {
+            if (previous != null) {
+              previous.setSubscriptionManager(subscriptionManager);
+              previous.setPersistentCache(profileCache);
+              return previous;
+            }
+            final service = UserProfileService(nostrService);
+            service.setSubscriptionManager(subscriptionManager);
+            service.setPersistentCache(profileCache);
+            return service;
+          },
         ),
+        
+        // NIP-05 service for username registration and verification
+        ChangeNotifierProvider(create: (_) => Nip05Service()),
         
         // Social service depends on Nostr service and Auth service
         ChangeNotifierProxyProvider2<INostrService, AuthService, SocialService>(
@@ -176,14 +250,27 @@ class OpenVineApp extends StatelessWidget {
           ),
         ),
         
-        // Profile videos provider depends on Nostr service
-        ChangeNotifierProxyProvider<INostrService, ProfileVideosProvider>(
-          create: (context) => ProfileVideosProvider(
-            context.read<INostrService>(),
-          ),
-          update: (_, nostrService, previous) => previous ?? ProfileVideosProvider(
-            nostrService,
-          ),
+        // Profile videos provider depends on Nostr service, SubscriptionManager, and VideoEventService
+        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager, VideoEventService, ProfileVideosProvider>(
+          create: (context) {
+            final provider = ProfileVideosProvider(
+              context.read<INostrService>(),
+            );
+            provider.setSubscriptionManager(context.read<SubscriptionManager>());
+            provider.setVideoEventService(context.read<VideoEventService>());
+            return provider;
+          },
+          update: (_, nostrService, subscriptionManager, videoEventService, previous) {
+            if (previous != null) {
+              previous.setSubscriptionManager(subscriptionManager);
+              previous.setVideoEventService(videoEventService);
+              return previous;
+            }
+            final provider = ProfileVideosProvider(nostrService);
+            provider.setSubscriptionManager(subscriptionManager);
+            provider.setVideoEventService(videoEventService);
+            return provider;
+          },
         ),
         
         // Enhanced notification service with Nostr integration (lazy loaded)
@@ -232,11 +319,32 @@ class OpenVineApp extends StatelessWidget {
           update: (_, nostrService, profileService, videoService, previous) => previous ?? NotificationServiceEnhanced(),
         ),
         
-        // Video Manager Service - single source of truth for video state
-        Provider<IVideoManager>(
-          create: (_) => VideoManagerService(
-            config: VideoManagerConfig.wifi(), // Default to WiFi optimized
-          ),
+        // Video Manager Service - single source of truth for video state with smart ordering
+        ProxyProvider2<SeenVideosService, ContentBlocklistService, IVideoManager>(
+          create: (context) {
+            final videoManager = VideoManagerService(
+              config: VideoManagerConfig.wifi(), // Default to WiFi optimized
+              seenVideosService: context.read<SeenVideosService>(),
+              blocklistService: context.read<ContentBlocklistService>(),
+            );
+            // Filter any existing videos that might have been loaded before blocklist
+            videoManager.filterExistingVideos();
+            return videoManager;
+          },
+          update: (_, seenVideosService, blocklistService, previous) {
+            if (previous is VideoManagerService) {
+              // If blocklist changed, filter existing videos
+              previous.filterExistingVideos();
+              return previous;
+            }
+            final videoManager = VideoManagerService(
+              config: VideoManagerConfig.wifi(),
+              seenVideosService: seenVideosService,
+              blocklistService: blocklistService,
+            );
+            videoManager.filterExistingVideos();
+            return videoManager;
+          },
           dispose: (_, videoManager) => videoManager.dispose(),
         ),
         
@@ -288,6 +396,7 @@ class OpenVineApp extends StatelessWidget {
             videoEventService: context.read<VideoEventService>(),
             videoManager: context.read<IVideoManager>(),
             userProfileService: context.read<UserProfileService>(),
+            socialService: context.read<SocialService>(),
           ),
           dispose: (_, bridge) => bridge.dispose(),
         ),
@@ -613,14 +722,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onTabTapped(int index) {
-    // If leaving the feed screen (index 0), pause all videos
-    if (_currentIndex == 0 && index != 0) {
-      _pauseFeedVideos();
+    // Pause videos when leaving any tab that has video playback
+    if (_currentIndex != index) {
+      if (_currentIndex == 0) {
+        // Leaving feed screen
+        _pauseFeedVideos();
+      } else if (_currentIndex == 2) {
+        // Leaving explore screen
+        _pauseExploreVideos();
+      }
     }
     
-    // If returning to the feed screen (index 0), resume videos
-    if (_currentIndex != 0 && index == 0) {
-      _resumeFeedVideos();
+    // Resume videos when returning to a tab with video playback
+    if (_currentIndex != index) {
+      if (index == 0) {
+        // Returning to feed screen
+        _resumeFeedVideos();
+      }
+      // Note: Explore screen handles its own resume logic
     }
     
     setState(() {
@@ -643,6 +762,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       debugPrint('▶️ Resumed feed videos when returning to feed');
     } catch (e) {
       debugPrint('⚠️ Error resuming feed videos: $e');
+    }
+  }
+  
+  void _pauseExploreVideos() {
+    try {
+      // Access the explore screen through the screens list
+      final exploreScreen = _screens[2];
+      if (exploreScreen is ExploreScreen) {
+        // The ExploreScreen already handles pausing in its dispose method,
+        // but we can force pause all videos here for immediate effect
+        final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
+        exploreVideoManager.pauseAllVideos();
+        debugPrint('🎬 Paused explore videos when navigating away');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error pausing explore videos: $e');
     }
   }
 
@@ -678,16 +813,49 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Pause feed videos before opening camera
+        onPressed: () async {
+          // Pause videos from any tab before opening camera
           if (_currentIndex == 0) {
             _pauseFeedVideos();
+          } else if (_currentIndex == 2) {
+            _pauseExploreVideos();
           }
-          // Use universal camera screen that works on all platforms
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
-          );
+          
+          // Check age verification before opening camera
+          final ageVerificationService = context.read<AgeVerificationService>();
+          final isVerified = await ageVerificationService.checkAgeVerification();
+          
+          if (!isVerified && mounted) {
+            // Show age verification dialog
+            final result = await AgeVerificationDialog.show(context);
+            if (result) {
+              // User confirmed they are 16+
+              await ageVerificationService.setAgeVerified(true);
+              if (mounted) {
+                // Use universal camera screen that works on all platforms
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
+                );
+              }
+            } else {
+              // User is under 16 or declined
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('You must be 16 or older to create content'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          } else if (mounted) {
+            // Already verified, go to camera
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
+            );
+          }
         },
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: VineTheme.whiteText,
@@ -729,9 +897,6 @@ class _ResponsiveWrapperState extends State<ResponsiveWrapper> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      // Use MediaQuery to get real-time screen dimensions
-      final mediaQuery = MediaQuery.of(context);
-      
       // For web, use full width without constraints for a proper web experience
       return Container(
         color: Colors.black,

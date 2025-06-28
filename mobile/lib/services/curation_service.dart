@@ -132,6 +132,11 @@ class CurationService extends ChangeNotifier {
     
     // Add all editor's videos to picks
     for (final video in editorVideos) {
+      debugPrint('📹 Editor\'s video ${video.id.substring(0, 8)}:');
+      debugPrint('   - Title: ${video.title}');
+      debugPrint('   - hasVideo: ${video.hasVideo}');
+      debugPrint('   - videoUrl: ${video.videoUrl}');
+      debugPrint('   - thumbnailUrl: ${video.effectiveThumbnailUrl}');
       picks.add(video);
       seenIds.add(video.id);
     }
@@ -268,6 +273,12 @@ class CurationService extends ChangeNotifier {
       eventStream.listen(
         (event) {
           try {
+            // Debug: Check what kind of event we're receiving
+            if (event.kind != 30005) {
+              debugPrint('⚠️ Received unexpected event kind ${event.kind} in curation subscription (expected 30005)');
+              return;
+            }
+            
             final curationSet = CurationSet.fromNostrEvent(event);
             _curationSets[curationSet.id] = curationSet;
             debugPrint('📝 Received curation set: ${curationSet.title} (${curationSet.videoIds.length} videos)');

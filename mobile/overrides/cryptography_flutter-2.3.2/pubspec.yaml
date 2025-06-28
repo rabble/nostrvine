@@ -1,0 +1,28 @@
+name: cryptography_flutter
+description: Flutter implementation of cryptography algorithms.
+repository: https://github.com/todd-sundsted/cryptography
+version: 2.3.2
+
+environment:
+  flutter: '>=2.8.0'
+  sdk: '>=2.15.0 <4.0.0'
+
+dependencies:
+  cryptography: ^2.3.0
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.github.todd_sundsted.cryptography_flutter
+        pluginClass: CryptographyFlutterPlugin
+      ios:
+        pluginClass: CryptographyFlutterPlugin
+      linux:
+        pluginClass: CryptographyFlutterPlugin
+      macos:
+        pluginClass: CryptographyFlutterPlugin
+      windows:
+        pluginClass: CryptographyFlutterPlugin

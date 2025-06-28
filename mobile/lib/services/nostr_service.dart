@@ -8,26 +8,30 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/nip94_metadata.dart';
 import 'nostr_key_manager.dart';
 import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
 
+/// Relay connection status
+enum RelayStatus { connected, connecting, disconnected }
+
 /// Core service for Nostr protocol integration
 class NostrService extends ChangeNotifier implements INostrService {
   static const List<String> defaultRelays = [
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-    'wss://relay.nos.social',
-    'wss://relay.nostr.band',
-    'wss://cache2.primal.net/v1',
+    'wss://vine.hol.is',
   ];
+  
+  static const String _relaysPrefsKey = 'custom_relays';
   
   final NostrKeyManager _keyManager;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   bool _isInitialized = false;
   bool _isDisposed = false;
   final List<String> _connectedRelays = [];
+  final List<String> _relays = []; // All configured relays
+  final Map<String, RelayStatus> _relayStatuses = {}; // Status tracking
   final Map<String, WebSocketChannel> _webSockets = {};
   final Map<String, StreamController<Event>> _eventControllers = {};
   final Map<String, int> _relayRetryCount = {};
@@ -57,6 +61,8 @@ class NostrService extends ChangeNotifier implements INostrService {
   bool get isDisposed => _isDisposed;
   @override
   List<String> get connectedRelays => List.unmodifiable(_connectedRelays);
+  List<String> get relays => List.unmodifiable(_relays);
+  Map<String, RelayStatus> get relayStatuses => Map.unmodifiable(_relayStatuses);
   @override
   String? get publicKey => _isDisposed ? null : _keyManager.publicKey;
   @override
@@ -95,18 +101,34 @@ class NostrService extends ChangeNotifier implements INostrService {
         await _keyManager.generateKeys();
       }
       
-      // Connect to relays using web-compatible nostr package
-      final relaysToConnect = customRelays ?? defaultRelays;
+      // Load saved relays from preferences
+      final prefs = await SharedPreferences.getInstance();
+      final savedRelays = prefs.getStringList(_relaysPrefsKey);
+      
+      // Use saved relays, custom relays, or default relays (in that order)
+      final relaysToConnect = savedRelays ?? customRelays ?? defaultRelays;
+      _relays.clear();
+      _relays.addAll(relaysToConnect);
+      
+      // Initialize relay statuses
+      for (final relay in _relays) {
+        _relayStatuses[relay] = RelayStatus.disconnected;
+      }
+      
       debugPrint('📡 Attempting to connect to ${relaysToConnect.length} relays using web-compatible nostr package...');
       
       // Connect to each relay
       for (final relayUrl in relaysToConnect) {
         try {
+          _relayStatuses[relayUrl] = RelayStatus.connecting;
+          notifyListeners();
+          
           final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
           _webSockets[relayUrl] = webSocket;
           
           if (!_connectedRelays.contains(relayUrl)) {
             _connectedRelays.add(relayUrl);
+            _relayStatuses[relayUrl] = RelayStatus.connected;
             if (!_isDisposed) {
               notifyListeners();
             }
@@ -183,6 +205,14 @@ class NostrService extends ChangeNotifier implements INostrService {
           final noticeMessage = jsonData.length > 1 ? jsonData[1] : 'Unknown notice';
           debugPrint('📢 Notice from $relayUrl: $noticeMessage');
           break;
+        case 'auth':
+          // Handle NIP-42 AUTH challenge: ["AUTH", challenge]
+          if (jsonData.length >= 2) {
+            final challenge = jsonData[1] as String;
+            debugPrint('🔐 AUTH challenge from $relayUrl: $challenge');
+            _handleAuthChallenge(relayUrl, challenge);
+          }
+          break;
       }
       }
     } catch (e) {
@@ -215,6 +245,66 @@ class NostrService extends ChangeNotifier implements INostrService {
       }
     } catch (e) {
       debugPrint('⚠️ Error handling event: $e');
+    }
+  }
+  
+  /// Handle NIP-42 AUTH challenge from relay
+  void _handleAuthChallenge(String relayUrl, String challenge) async {
+    try {
+      if (!_keyManager.hasKeys) {
+        debugPrint('❌ Cannot authenticate - no keys available');
+        return;
+      }
+      
+      // Create AUTH event (kind 22242) according to NIP-42
+      final authEvent = await _createAuthEvent(relayUrl, challenge);
+      
+      if (authEvent != null) {
+        // Send AUTH response to the specific relay
+        final authMessage = jsonEncode(['AUTH', authEvent.toJson()]);
+        final webSocket = _webSockets[relayUrl];
+        
+        if (webSocket != null) {
+          webSocket.sink.add(authMessage);
+          debugPrint('🔐 Sent AUTH response to $relayUrl');
+        } else {
+          debugPrint('❌ WebSocket not available for AUTH response to $relayUrl');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error handling AUTH challenge: $e');
+    }
+  }
+  
+  /// Create NIP-42 AUTH event
+  Future<Event?> _createAuthEvent(String relayUrl, String challenge) async {
+    try {
+      if (!_keyManager.hasKeys || _keyManager.keyPair == null) {
+        return null;
+      }
+      
+      // Create AUTH event according to NIP-42
+      final tags = [
+        ['relay', relayUrl],
+        ['challenge', challenge],
+      ];
+      
+      // Create the event with kind 22242 (AUTH)
+      final event = Event(
+        _keyManager.publicKey!, // public key
+        22242, // NIP-42 AUTH event kind
+        tags,
+        '', // empty content for AUTH events
+      );
+      
+      // Sign the event with private key
+      event.sign(_keyManager.keyPair!.private);
+      
+      debugPrint('🔐 Created AUTH event for $relayUrl');
+      return event;
+    } catch (e) {
+      debugPrint('❌ Error creating AUTH event: $e');
+      return null;
     }
   }
   
@@ -500,7 +590,6 @@ class NostrService extends ChangeNotifier implements INostrService {
   
   /// Send requests to relays with throttling to prevent overwhelming
   void _sendRequestsWithThrottling(String reqMessage, String subscriptionId) {
-    int sentCount = 0;
     
     // Send to relays with staggered timing
     for (int i = 0; i < _connectedRelays.length; i++) {
@@ -512,7 +601,6 @@ class NostrService extends ChangeNotifier implements INostrService {
           final webSocket = _webSockets[relayUrl];
           if (webSocket != null) {
             webSocket.sink.add(reqMessage);
-            sentCount++;
           }
         } catch (e) {
           debugPrint('❌ Failed to send subscription to $relayUrl: $e');
@@ -545,16 +633,26 @@ class NostrService extends ChangeNotifier implements INostrService {
   
   /// Add a new relay
   Future<bool> addRelay(String relayUrl) async {
-    if (_connectedRelays.contains(relayUrl)) {
-      return true; // Already connected
+    if (_relays.contains(relayUrl)) {
+      return true; // Already in list
     }
     
     try {
       debugPrint('🔌 Adding new relay: $relayUrl');
+      
+      // Add to relay list and save
+      _relays.add(relayUrl);
+      await _saveRelays();
+      
+      // Initialize status and try to connect
+      _relayStatuses[relayUrl] = RelayStatus.connecting;
+      notifyListeners();
+      
       final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
       _webSockets[relayUrl] = webSocket;
       
       _connectedRelays.add(relayUrl);
+      _relayStatuses[relayUrl] = RelayStatus.connected;
       if (!_isDisposed) {
         notifyListeners();
       }
@@ -566,6 +664,7 @@ class NostrService extends ChangeNotifier implements INostrService {
           debugPrint('❌ WebSocket error for $relayUrl: $error');
           _connectedRelays.remove(relayUrl);
           _webSockets.remove(relayUrl);
+          _relayStatuses[relayUrl] = RelayStatus.disconnected;
           if (!_isDisposed) {
             notifyListeners();
           }
@@ -574,6 +673,7 @@ class NostrService extends ChangeNotifier implements INostrService {
           debugPrint('🔌 Disconnected from relay: $relayUrl');
           _connectedRelays.remove(relayUrl);
           _webSockets.remove(relayUrl);
+          _relayStatuses[relayUrl] = RelayStatus.disconnected;
           if (!_isDisposed) {
             notifyListeners();
           }
@@ -583,6 +683,8 @@ class NostrService extends ChangeNotifier implements INostrService {
       return true;
     } catch (e) {
       debugPrint('⚠️ Failed to add relay $relayUrl: $e');
+      _relayStatuses[relayUrl] = RelayStatus.disconnected;
+      notifyListeners();
       return false;
     }
   }
@@ -596,6 +698,12 @@ class NostrService extends ChangeNotifier implements INostrService {
         _webSockets.remove(relayUrl);
       }
       _connectedRelays.remove(relayUrl);
+      _relays.remove(relayUrl);
+      _relayStatuses.remove(relayUrl);
+      
+      // Save updated relay list
+      await _saveRelays();
+      
       if (!_isDisposed) {
         notifyListeners();
       }
@@ -614,35 +722,12 @@ class NostrService extends ChangeNotifier implements INostrService {
     return status;
   }
   
-  /// Reconnect to all relays
-  Future<void> reconnectAll() async {
-    try {
-      final relaysToReconnect = _connectedRelays.toList();
-      
-      // Close existing connections
-      for (final webSocket in _webSockets.values) {
-        try {
-          await webSocket.sink.close();
-        } catch (e) {
-          debugPrint('⚠️ Error closing websocket: $e');
-        }
-      }
-      
-      _connectedRelays.clear();
-      _webSockets.clear();
-      
-      // Reconnect to all relays
-      await initialize(customRelays: relaysToReconnect);
-    } catch (e) {
-      debugPrint('⚠️ Error during reconnection: $e');
-    }
-  }
-  
   /// Dispose service and close all connections
   /// Handle relay disconnection with retry logic
   void _handleRelayDisconnection(String relayUrl, String reason) {
     _connectedRelays.remove(relayUrl);
     _webSockets.remove(relayUrl);
+    _relayStatuses[relayUrl] = RelayStatus.disconnected;
     
     final retryCount = _relayRetryCount[relayUrl] ?? 0;
     _relayLastFailureTime[relayUrl] = DateTime.now();
@@ -773,6 +858,12 @@ class NostrService extends ChangeNotifier implements INostrService {
       
       debugPrint('✅ Connected to relay: $relayUrl');
       
+      // For vine.hol.is, proactively send client info for smoother auth
+      if (relayUrl.contains('vine.hol.is')) {
+        debugPrint('🔐 Preparing for potential AUTH with vine.hol.is');
+        // The relay will send an AUTH challenge if needed
+      }
+      
       // Listen for incoming messages
       webSocket.stream.listen(
         (data) => _handleRelayMessage(relayUrl, data),
@@ -874,6 +965,65 @@ class NostrService extends ChangeNotifier implements INostrService {
     };
   }
   
+  /// Save relay list to preferences
+  Future<void> _saveRelays() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_relaysPrefsKey, _relays);
+      debugPrint('💾 Saved ${_relays.length} relays to preferences');
+    } catch (e) {
+      debugPrint('❌ Failed to save relays: $e');
+    }
+  }
+  
+  /// Reconnect to all configured relays
+  Future<void> reconnectAll() async {
+    debugPrint('🔄 Reconnecting to all relays...');
+    
+    // Close existing connections
+    for (final relayUrl in List<String>.from(_connectedRelays)) {
+      try {
+        final webSocket = _webSockets[relayUrl];
+        if (webSocket != null) {
+          await webSocket.sink.close();
+        }
+        _webSockets.remove(relayUrl);
+        _connectedRelays.remove(relayUrl);
+        _relayStatuses[relayUrl] = RelayStatus.disconnected;
+      } catch (e) {
+        debugPrint('⚠️ Error closing connection to $relayUrl: $e');
+      }
+    }
+    
+    notifyListeners();
+    
+    // Reconnect to all relays
+    for (final relayUrl in _relays) {
+      try {
+        _relayStatuses[relayUrl] = RelayStatus.connecting;
+        notifyListeners();
+        
+        final webSocket = WebSocketChannel.connect(Uri.parse(relayUrl));
+        _webSockets[relayUrl] = webSocket;
+        
+        _connectedRelays.add(relayUrl);
+        _relayStatuses[relayUrl] = RelayStatus.connected;
+        notifyListeners();
+        
+        // Listen for incoming messages
+        webSocket.stream.listen(
+          (data) => _handleRelayMessage(relayUrl, data),
+          onError: (error) => _handleRelayDisconnection(relayUrl, error.toString()),
+          onDone: () => _handleRelayDisconnection(relayUrl, 'Connection closed'),
+        );
+      } catch (e) {
+        debugPrint('❌ Failed to reconnect to $relayUrl: $e');
+        _relayStatuses[relayUrl] = RelayStatus.disconnected;
+        _handleRelayConnectionFailure(relayUrl, e);
+      }
+    }
+  }
+  
   @override
   void dispose() {
     if (_isDisposed) return;
@@ -903,6 +1053,8 @@ class NostrService extends ChangeNotifier implements INostrService {
       _webSockets.clear();
       _eventControllers.clear();
       _connectedRelays.clear();
+      _relays.clear();
+      _relayStatuses.clear();
       _relayRetryCount.clear();
       _relayLastFailureTime.clear();
       _relayBackoffDuration.clear();

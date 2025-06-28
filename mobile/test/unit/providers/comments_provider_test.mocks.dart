@@ -71,6 +71,15 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
       ) as bool);
 
   @override
+  bool hasReposted(String? eventId) => (super.noSuchMethod(
+        Invocation.method(
+          #hasReposted,
+          [eventId],
+        ),
+        returnValue: false,
+      ) as bool);
+
+  @override
   int? getCachedLikeCount(String? eventId) =>
       (super.noSuchMethod(Invocation.method(
         #getCachedLikeCount,
@@ -238,6 +247,16 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
         Invocation.method(
           #repostEvent,
           [eventToRepost],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> publishRightToBeForgotten() => (super.noSuchMethod(
+        Invocation.method(
+          #publishRightToBeForgotten,
+          [],
         ),
         returnValue: _i4.Future<void>.value(),
         returnValueForMissingStub: _i4.Future<void>.value(),

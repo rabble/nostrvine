@@ -9,7 +9,10 @@ import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/video_manager_interface.dart';
 import '../services/video_event_service.dart';
+import '../services/notification_service_enhanced.dart';
 import '../models/video_event.dart';
+import '../models/notification_model.dart';
+import '../models/user_profile.dart' as models;
 import 'profile_screen.dart';
 import 'explore_video_screen.dart';
 
@@ -134,9 +137,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
   Widget _buildAllActivity() {
     return Consumer3<IVideoManager, VideoEventService, SocialService>(
       builder: (context, videoManager, videoEventService, socialService, child) {
-        final activities = _generateMockActivities(videoEventService, socialService);
+        final notificationService = Provider.of<NotificationServiceEnhanced>(context, listen: false);
+        final notifications = notificationService.notifications;
         
-        if (activities.isEmpty) {
+        if (notifications.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -171,13 +175,11 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: activities.length,
+          itemCount: notifications.length,
           itemBuilder: (context, index) {
-            return _ActivityItem(
-              activity: activities[index],
-              onVideoTap: activities[index].targetVideo != null 
-                ? () => _openVideo(activities[index].targetVideo!, videoEventService)
-                : null,
+            return _NotificationItem(
+              notification: notifications[index],
+              onTap: () => _handleNotificationTap(notifications[index]),
             );
           },
         );
@@ -300,37 +302,20 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     );
   }
 
-  List<ActivityData> _generateMockActivities(VideoEventService videoEventService, SocialService socialService) {
-    final activities = <ActivityData>[];
-    
-    // Add recent follows
-    final following = socialService.followingPubkeys;
-    for (int i = 0; i < following.length && i < 3; i++) {
-      activities.add(ActivityData(
-        type: ActivityType.follow,
-        actorPubkey: following[i],
-        timestamp: DateTime.now().subtract(Duration(hours: i + 1)),
-        message: 'You followed this user',
-      ));
+  void _handleNotificationTap(NotificationModel notification) {
+    if (notification.targetEventId != null) {
+      // Find the video and navigate to it
+      final videoEventService = Provider.of<VideoEventService>(context, listen: false);
+      final video = videoEventService.getVideoEventById(notification.targetEventId!);
+      if (video != null) {
+        _openVideo(video, videoEventService);
+      }
+    } else {
+      // Navigate to user profile
+      _openUserProfile(notification.actorPubkey);
     }
-
-    // Add sample likes (mock data since we don't have real notification system yet)
-    final recentVideos = videoEventService.videoEvents.take(3).toList();
-    for (int i = 0; i < recentVideos.length; i++) {
-      activities.add(ActivityData(
-        type: ActivityType.like,
-        actorPubkey: recentVideos[i].pubkey,
-        targetVideo: recentVideos[i],
-        timestamp: DateTime.now().subtract(Duration(hours: i * 2 + 2)),
-        message: 'liked your video',
-      ));
-    }
-
-    // Sort by timestamp (most recent first)
-    activities.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    
-    return activities;
   }
+
 
   void _openUserProfile(String pubkey) {
     Navigator.of(context).push(
@@ -372,84 +357,91 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
   }
 }
 
-enum ActivityType { like, follow, comment, repost }
 
-class ActivityData {
-  final ActivityType type;
-  final String actorPubkey;
-  final VideoEvent? targetVideo;
-  final DateTime timestamp;
-  final String message;
+class _NotificationItem extends StatelessWidget {
+  final NotificationModel notification;
+  final VoidCallback onTap;
 
-  ActivityData({
-    required this.type,
-    required this.actorPubkey,
-    this.targetVideo,
-    required this.timestamp,
-    required this.message,
-  });
-}
-
-class _ActivityItem extends StatelessWidget {
-  final ActivityData activity;
-  final VoidCallback? onVideoTap;
-
-  const _ActivityItem({
-    required this.activity,
-    this.onVideoTap,
+  const _NotificationItem({
+    required this.notification,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<UserProfileService>(
       builder: (context, userProfileService, child) {
-        final profile = userProfileService.getCachedProfile(activity.actorPubkey);
-        final userName = profile?.displayName ?? 'Anonymous';
+        final profile = userProfileService.getCachedProfile(notification.actorPubkey);
+        final userName = profile?.bestDisplayName ?? 'Unknown User';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           child: Card(
             color: Colors.grey[900],
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Activity icon
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _getActivityColor(activity.type),
-                    ),
-                    child: Icon(
-                      _getActivityIcon(activity.type),
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundImage: profile?.picture != null && profile!.picture!.isNotEmpty
+                        ? NetworkImage(profile.picture!)
+                        : null,
+                    backgroundColor: VineTheme.vineGreen,
+                    child: profile?.picture == null || profile!.picture!.isEmpty
+                        ? Icon(
+                            _getNotificationIcon(),
+                            color: VineTheme.whiteText,
+                            size: 20,
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 12),
-                  
-                  // Activity content
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(color: VineTheme.primaryText, fontSize: 14),
-                            children: [
-                              TextSpan(
-                                text: userName,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                userName,
+                                style: const TextStyle(
+                                  color: VineTheme.whiteText,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              TextSpan(text: ' ${activity.message}'),
+                            ),
+                            if (profile?.nip05 != null && profile!.nip05!.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 10,
+                                ),
+                              ),
                             ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          notification.message,
+                          style: const TextStyle(
+                            color: VineTheme.secondaryText,
+                            fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _formatTimestamp(activity.timestamp),
+                          _formatTimestamp(notification.timestamp),
                           style: const TextStyle(
                             color: VineTheme.secondaryText,
                             fontSize: 12,
@@ -458,27 +450,15 @@ class _ActivityItem extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
-                  // Video thumbnail if applicable
-                  if (activity.targetVideo != null) ...[
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: onVideoTap,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: VineTheme.vineGreen,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                  if (notification.targetEventId != null)
+                    IconButton(
+                      onPressed: onTap,
+                      icon: const Icon(
+                        Icons.play_arrow,
+                        color: VineTheme.vineGreen,
+                        size: 24,
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
@@ -488,29 +468,18 @@ class _ActivityItem extends StatelessWidget {
     );
   }
 
-  Color _getActivityColor(ActivityType type) {
-    switch (type) {
-      case ActivityType.like:
-        return Colors.red;
-      case ActivityType.follow:
-        return VineTheme.vineGreen;
-      case ActivityType.comment:
-        return Colors.blue;
-      case ActivityType.repost:
-        return Colors.orange;
-    }
-  }
-
-  IconData _getActivityIcon(ActivityType type) {
-    switch (type) {
-      case ActivityType.like:
+  IconData _getNotificationIcon() {
+    switch (notification.type) {
+      case NotificationType.like:
         return Icons.favorite;
-      case ActivityType.follow:
+      case NotificationType.follow:
         return Icons.person_add;
-      case ActivityType.comment:
-        return Icons.chat_bubble;
-      case ActivityType.repost:
+      case NotificationType.repost:
         return Icons.repeat;
+      case NotificationType.mention:
+        return Icons.alternate_email;
+      default:
+        return Icons.notifications;
     }
   }
 
@@ -519,7 +488,7 @@ class _ActivityItem extends StatelessWidget {
     final difference = now.difference(timestamp);
 
     if (difference.inMinutes < 1) {
-      return 'now';
+      return 'Just now';
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -527,73 +496,82 @@ class _ActivityItem extends StatelessWidget {
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
     } else {
-      return '${difference.inDays ~/ 7}w ago';
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
 }
 
 class _FollowingItem extends StatelessWidget {
   final String pubkey;
-  final dynamic profile;
+  final models.UserProfile? profile;
   final VoidCallback onTap;
 
   const _FollowingItem({
     required this.pubkey,
-    required this.profile,
+    this.profile,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Card(
-        color: Colors.grey[900],
-        child: ListTile(
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: VineTheme.vineGreen,
-              border: Border.all(color: Colors.white, width: 1),
-            ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          title: Text(
-            profile?.displayName ?? 'Anonymous',
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          subtitle: Text(
-            '@${pubkey.substring(0, 8)}...',
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: VineTheme.vineGreen,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'Following',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+    return Card(
+      color: Colors.grey[900],
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundImage: profile?.picture != null && profile!.picture!.isNotEmpty
+              ? NetworkImage(profile!.picture!)
+              : null,
+          backgroundColor: VineTheme.vineGreen,
+          child: profile?.picture == null || profile!.picture!.isEmpty
+              ? const Icon(Icons.person, color: VineTheme.whiteText)
+              : null,
+        ),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(
+                profile?.displayName ?? 'Unknown User',
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-          onTap: onTap,
+            if (profile?.nip05 != null && profile!.nip05!.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 10,
+                ),
+              ),
+            ],
+          ],
+        ),
+        subtitle: profile?.about != null && profile!.about!.isNotEmpty
+            ? Text(
+                profile!.about!,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: VineTheme.secondaryText,
+          size: 16,
         ),
       ),
     );
@@ -602,27 +580,25 @@ class _FollowingItem extends StatelessWidget {
 
 class _PersonalVideoItem extends StatelessWidget {
   final VideoEvent video;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const _PersonalVideoItem({
     required this.video,
-    this.onTap,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        color: Colors.grey[900],
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+    return Card(
+      color: Colors.grey[900],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
             children: [
-              // Video thumbnail
+              // Video thumbnail placeholder
               Container(
                 width: 60,
                 height: 60,
@@ -633,57 +609,65 @@ class _PersonalVideoItem extends StatelessWidget {
                 child: const Icon(
                   Icons.play_arrow,
                   color: Colors.white,
-                  size: 24,
+                  size: 30,
                 ),
               ),
               const SizedBox(width: 12),
               
-              // Video info
+              // Video details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (video.title?.isNotEmpty == true) ...[
-                      Text(
-                        video.title!,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                    ],
                     Text(
-                      video.relativeTime,
+                      (video.title?.isNotEmpty == true) ? video.title! : 'Untitled Video',
+                      style: const TextStyle(
+                        color: VineTheme.whiteText,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTimestamp(DateTime.fromMillisecondsSinceEpoch(video.createdAt * 1000)),
                       style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Consumer<SocialService>(
-                      builder: (context, socialService, child) {
-                        final likeCount = socialService.getCachedLikeCount(video.id) ?? 0;
-                        return Text(
-                          '$likeCount likes',
-                          style: const TextStyle(
-                            color: VineTheme.secondaryText,
-                            fontSize: 12,
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
               ),
+              
+              // Arrow indicator
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: VineTheme.secondaryText,
+                size: 16,
+              ),
             ],
-            ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
   }
 }

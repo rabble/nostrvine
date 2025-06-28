@@ -14,19 +14,21 @@ void main() {
     });
 
     test('should block specified npubs', () {
-      // The service should have blocked the specified users (2 npubs)
-      expect(service.totalBlockedCount, equals(2));
+      // The service should have blocked the specified users (3 npubs)
+      expect(service.totalBlockedCount, equals(3));
       
-      // Verify the specific hex keys are blocked (from mapping table)
-      const expectedHex1 = 'e6e7a2c0e18b0a0c2b1a5f5e9b0c8d5a6f1e8c7b4d9a2f5e8c7b6d3a0e1f4c9b5';
-      const expectedHex2 = '2bfdb6eb6bd4debd24ad568fe9e8e835e76de1b5f73e7b6d5fc85fa373d0a029';
+      // Verify the specific hex keys are blocked (correct values from bech32 decoding)
+      const expectedHex1 = '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
+      const expectedHex2 = '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f';
+      const expectedHex3 = '5943c88f3c60cd9edb125a668e2911ad419fc04e94549ed96a721901dd958372';
       
       expect(service.isBlocked(expectedHex1), isTrue);
       expect(service.isBlocked(expectedHex2), isTrue);
+      expect(service.isBlocked(expectedHex3), isTrue);
     });
 
     test('should filter blocked content from feeds', () {
-      const blockedPubkey = 'e6e7a2c0e18b0a0c2b1a5f5e9b0c8d5a6f1e8c7b4d9a2f5e8c7b6d3a0e1f4c9b5';
+      const blockedPubkey = '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
       const allowedPubkey = 'allowed_user_pubkey';
       
       expect(service.shouldFilterFromFeeds(blockedPubkey), isTrue);
@@ -50,9 +52,9 @@ void main() {
 
     test('should filter content list correctly', () {
       final testItems = [
-        {'pubkey': 'e6e7a2c0e18b0a0c2b1a5f5e9b0c8d5a6f1e8c7b4d9a2f5e8c7b6d3a0e1f4c9b5', 'content': 'blocked'},
+        {'pubkey': '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb', 'content': 'blocked'},
         {'pubkey': 'allowed_user', 'content': 'allowed'},
-        {'pubkey': '2bfdb6eb6bd4debd24ad568fe9e8e835e76de1b5f73e7b6d5fc85fa373d0a029', 'content': 'blocked2'},
+        {'pubkey': '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f', 'content': 'blocked2'},
       ];
 
       final filtered = service.filterContent(testItems, (item) => item['pubkey'] as String);
