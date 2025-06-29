@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'nip07_interop.dart' as nip07;
+import '../utils/unified_logger.dart';
 
 /// Authentication result from NIP-07 extension
 class Nip07AuthResult {
@@ -114,7 +115,7 @@ class Nip07Service extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔐 Attempting NIP-07 authentication...');
+      Log.debug('� Attempting NIP-07 authentication...', name: 'Nip07Service', category: LogCategory.system);
       
       // Request public key from extension
       final pubkey = await nip07.safeNip07Call(
@@ -137,23 +138,23 @@ class Nip07Service extends ChangeNotifier {
       try {
         final relaysMethod = nip07.nostr!.getRelays;
         _userRelays = await relaysMethod();
-        debugPrint('📡 Retrieved ${_userRelays?.length ?? 0} relays from extension');
+        Log.debug('Retrieved ${_userRelays?.length ?? 0} relays from extension', name: 'Nip07Service', category: LogCategory.system);
       } catch (e) {
-        debugPrint('⚠️ Extension does not support getRelays: $e');
+        Log.warning('Extension does not support getRelays: $e', name: 'Nip07Service', category: LogCategory.system);
         // Not a critical error, continue without relays
       }
 
-      debugPrint('✅ NIP-07 authentication successful');
-      debugPrint('👤 Public key: ${pubkey.substring(0, 16)}...');
+      Log.info('NIP-07 authentication successful', name: 'Nip07Service', category: LogCategory.system);
+      Log.verbose('Public key: ${pubkey.substring(0, 16)}...', name: 'Nip07Service', category: LogCategory.system);
       
       notifyListeners();
       return Nip07AuthResult.success(pubkey);
 
     } on nip07.Nip07Exception catch (e) {
-      debugPrint('❌ NIP-07 authentication failed: ${e.message}');
+      Log.error('NIP-07 authentication failed: ${e.message}', name: 'Nip07Service', category: LogCategory.system);
       return Nip07AuthResult.failure(e.message, code: e.code);
     } catch (e) {
-      debugPrint('❌ Unexpected NIP-07 error: $e');
+      Log.error('Unexpected NIP-07 error: $e', name: 'Nip07Service', category: LogCategory.system);
       return Nip07AuthResult.failure(
         'Unexpected error during authentication: ${e.toString()}',
         code: 'UNEXPECTED_ERROR',
@@ -171,7 +172,7 @@ class Nip07Service extends ChangeNotifier {
     }
 
     try {
-      debugPrint('📝 Signing event with NIP-07 extension...');
+      Log.verbose('Signing event with NIP-07 extension...', name: 'Nip07Service', category: LogCategory.system);
       
       // Convert Dart event to JavaScript format
       final jsEvent = nip07.dartEventToJs(unsignedEvent);
@@ -193,16 +194,16 @@ class Nip07Service extends ChangeNotifier {
         );
       }
 
-      debugPrint('✅ Event signed successfully');
+      Log.info('Event signed successfully', name: 'Nip07Service', category: LogCategory.system);
       debugPrint('📋 Event ID: ${signedEvent['id']}');
       
       return Nip07SignResult.success(signedEvent);
 
     } on nip07.Nip07Exception catch (e) {
-      debugPrint('❌ Event signing failed: ${e.message}');
+      Log.error('Event signing failed: ${e.message}', name: 'Nip07Service', category: LogCategory.system);
       return Nip07SignResult.failure(e.message, code: e.code);
     } catch (e) {
-      debugPrint('❌ Unexpected signing error: $e');
+      Log.error('Unexpected signing error: $e', name: 'Nip07Service', category: LogCategory.system);
       return Nip07SignResult.failure(
         'Unexpected error during event signing: ${e.toString()}',
         code: 'UNEXPECTED_ERROR',
@@ -219,7 +220,7 @@ class Nip07Service extends ChangeNotifier {
     try {
       return await nip07.nostr!.nip04!.encrypt(recipientPubkey, message);
     } catch (e) {
-      debugPrint('⚠️ NIP-04 encryption failed: $e');
+      Log.error('NIP-04 encryption failed: $e', name: 'Nip07Service', category: LogCategory.system);
       return null;
     }
   }
@@ -233,7 +234,7 @@ class Nip07Service extends ChangeNotifier {
     try {
       return await nip07.nostr!.nip04!.decrypt(senderPubkey, encryptedMessage);
     } catch (e) {
-      debugPrint('⚠️ NIP-04 decryption failed: $e');
+      Log.error('NIP-04 decryption failed: $e', name: 'Nip07Service', category: LogCategory.system);
       return null;
     }
   }
@@ -244,7 +245,7 @@ class Nip07Service extends ChangeNotifier {
     _isConnected = false;
     _userRelays = null;
     
-    debugPrint('🔓 Disconnected from NIP-07 extension');
+    Log.info('� Disconnected from NIP-07 extension', name: 'Nip07Service', category: LogCategory.system);
     notifyListeners();
   }
 

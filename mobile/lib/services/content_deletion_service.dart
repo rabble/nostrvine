@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nostr_sdk/event.dart';
 import 'nostr_service_interface.dart';
 import '../models/video_event.dart';
+import '../utils/unified_logger.dart';
 
 /// Delete request result
 class DeleteResult {
@@ -98,14 +99,14 @@ class ContentDeletionService extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       if (!_nostrService.isInitialized) {
-        debugPrint('⚠️ Nostr service not initialized, cannot setup content deletion');
+        Log.warning('Nostr service not initialized, cannot setup content deletion', name: 'ContentDeletionService', category: LogCategory.system);
         return;
       }
 
       _isInitialized = true;
-      debugPrint('✅ Content deletion service initialized');
+      Log.info('Content deletion service initialized', name: 'ContentDeletionService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Failed to initialize content deletion: $e');
+      Log.error('Failed to initialize content deletion: $e', name: 'ContentDeletionService', category: LogCategory.system);
     }
   }
 
@@ -135,10 +136,10 @@ class ContentDeletionService extends ChangeNotifier {
       if (deleteEvent != null) {
         final broadcastResult = await _nostrService.broadcastEvent(deleteEvent);
         if (broadcastResult.successCount == 0) {
-          debugPrint('⚠️ Failed to broadcast delete request to relays');
+          Log.error('Failed to broadcast delete request to relays', name: 'ContentDeletionService', category: LogCategory.system);
           // Still save locally even if broadcast fails
         } else {
-          debugPrint('📡 Delete request broadcast to ${broadcastResult.successCount} relays');
+          Log.info('Delete request broadcast to ${broadcastResult.successCount} relays', name: 'ContentDeletionService', category: LogCategory.system);
         }
 
         // Save deletion to local history
@@ -154,14 +155,14 @@ class ContentDeletionService extends ChangeNotifier {
         await _saveDeletionHistory();
         notifyListeners();
 
-        debugPrint('🗑️ Content deletion request submitted: ${deleteEvent.id}');
+        Log.debug('�️ Content deletion request submitted: ${deleteEvent.id}', name: 'ContentDeletionService', category: LogCategory.system);
         return DeleteResult.createSuccess(deleteEvent.id);
       } else {
         return DeleteResult.failure('Failed to create delete event');
       }
 
     } catch (e) {
-      debugPrint('❌ Failed to delete content: $e');
+      Log.error('Failed to delete content: $e', name: 'ContentDeletionService', category: LogCategory.system);
       return DeleteResult.failure('Failed to delete content: $e');
     }
   }
@@ -208,7 +209,7 @@ class ContentDeletionService extends ChangeNotifier {
       notifyListeners();
       
       final removedCount = initialCount - _deletionHistory.length;
-      debugPrint('🧹 Cleared $removedCount old deletion records');
+      Log.debug('🧹 Cleared $removedCount old deletion records', name: 'ContentDeletionService', category: LogCategory.system);
     }
   }
 
@@ -220,7 +221,7 @@ class ContentDeletionService extends ChangeNotifier {
   }) async {
     try {
       if (!_nostrService.hasKeys) {
-        debugPrint('❌ Cannot create delete event: no keys available');
+        Log.error('Cannot create delete event: no keys available', name: 'ContentDeletionService', category: LogCategory.system);
         return null;
       }
 
@@ -251,12 +252,12 @@ class ContentDeletionService extends ChangeNotifier {
       // Sign the event
       event.sign(_nostrService.keyManager.keyPair!.private);
       
-      debugPrint('🗑️ Created NIP-09 delete event (kind 5): ${event.id}');
-      debugPrint('🎯 Deleting: $originalEventId for reason: $reason');
+      Log.info('�️ Created NIP-09 delete event (kind 5): ${event.id}', name: 'ContentDeletionService', category: LogCategory.system);
+      Log.debug('Deleting: $originalEventId for reason: $reason', name: 'ContentDeletionService', category: LogCategory.system);
       
       return event;
     } catch (e) {
-      debugPrint('❌ Failed to create NIP-09 delete event: $e');
+      Log.error('Failed to create NIP-09 delete event: $e', name: 'ContentDeletionService', category: LogCategory.system);
       return null;
     }
   }
@@ -311,9 +312,9 @@ class ContentDeletionService extends ChangeNotifier {
         _deletionHistory.addAll(
           deletionsJson.map((json) => ContentDeletion.fromJson(json))
         );
-        debugPrint('📁 Loaded ${_deletionHistory.length} deletions from history');
+        Log.debug('� Loaded ${_deletionHistory.length} deletions from history', name: 'ContentDeletionService', category: LogCategory.system);
       } catch (e) {
-        debugPrint('⚠️ Failed to load deletion history: $e');
+        Log.error('Failed to load deletion history: $e', name: 'ContentDeletionService', category: LogCategory.system);
       }
     }
   }
@@ -326,7 +327,7 @@ class ContentDeletionService extends ChangeNotifier {
           .toList();
       await _prefs.setString(deletionsStorageKey, jsonEncode(deletionsJson));
     } catch (e) {
-      debugPrint('⚠️ Failed to save deletion history: $e');
+      Log.error('Failed to save deletion history: $e', name: 'ContentDeletionService', category: LogCategory.system);
     }
   }
 

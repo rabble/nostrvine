@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Exception thrown by secure key operations
 class SecureKeyException implements Exception {
@@ -60,7 +61,7 @@ class SecureKeyContainer {
       _finalizer.attach(this, _privateKeyBytes);
       _finalizer.attach(this, _publicKeyBytes);
       
-      debugPrint('🔐 SecureKeyContainer created for ${NostrEncoding.maskKey(_npub)}');
+      Log.info('� SecureKeyContainer created for ${NostrEncoding.maskKey(_npub)}', name: 'SecureKeyContainer', category: LogCategory.system);
       
     } catch (e) {
       // Clean up any allocated memory on error
@@ -77,17 +78,17 @@ class SecureKeyContainer {
   /// Generate a new secure container with a random private key
   factory SecureKeyContainer.generate() {
     try {
-      debugPrint('🔧 Generating new secure key container...');
+      Log.debug('Generating new secure key container...', name: 'SecureKeyContainer', category: LogCategory.system);
       
       // Import the nostr_sdk function for key generation
       // This will be replaced with platform-specific secure generation
       final privateKeyHex = _generateSecurePrivateKey();
       
-      debugPrint('✅ Secure key generated successfully');
+      Log.info('Secure key generated successfully', name: 'SecureKeyContainer', category: LogCategory.system);
       return SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
       
     } catch (e) {
-      debugPrint('❌ Secure key generation failed: $e');
+      Log.error('Secure key generation failed: $e', name: 'SecureKeyContainer', category: LogCategory.system);
       rethrow;
     }
   }
@@ -115,7 +116,7 @@ class SecureKeyContainer {
       // Convert bytes to hex only for the duration of the operation
       final privateKeyHex = _bytesToHex(_privateKeyBytes);
       
-      debugPrint('🔓 Private key temporarily exposed for operation');
+      Log.debug('� Private key temporarily exposed for operation', name: 'SecureKeyContainer', category: LogCategory.system);
       
       // Execute the operation with the private key
       final result = operation(privateKeyHex);
@@ -127,7 +128,7 @@ class SecureKeyContainer {
       return result;
       
     } catch (e) {
-      debugPrint('❌ Error in private key operation: $e');
+      Log.error('Error in private key operation: $e', name: 'SecureKeyContainer', category: LogCategory.system);
       rethrow;
     }
   }
@@ -142,14 +143,14 @@ class SecureKeyContainer {
       final privateKeyHex = _bytesToHex(_privateKeyBytes);
       final nsec = NostrEncoding.encodePrivateKey(privateKeyHex);
       
-      debugPrint('⚠️ NSEC temporarily exposed - ensure secure handling');
+      Log.warning('NSEC temporarily exposed - ensure secure handling', name: 'SecureKeyContainer', category: LogCategory.system);
       
       final result = operation(nsec);
       
       return result;
       
     } catch (e) {
-      debugPrint('❌ Error in NSEC operation: $e');
+      Log.error('Error in NSEC operation: $e', name: 'SecureKeyContainer', category: LogCategory.system);
       rethrow;
     }
   }
@@ -169,7 +170,7 @@ class SecureKeyContainer {
   void dispose() {
     if (_isDisposed) return;
     
-    debugPrint('🗑️ Disposing SecureKeyContainer');
+    Log.debug('�️ Disposing SecureKeyContainer', name: 'SecureKeyContainer', category: LogCategory.system);
     
     // Securely wipe key material
     _secureWipe(_privateKeyBytes);
@@ -177,7 +178,7 @@ class SecureKeyContainer {
     
     _isDisposed = true;
     
-    debugPrint('✅ SecureKeyContainer disposed and wiped');
+    Log.info('SecureKeyContainer disposed and wiped', name: 'SecureKeyContainer', category: LogCategory.system);
   }
   
   /// Ensure the container hasn't been disposed

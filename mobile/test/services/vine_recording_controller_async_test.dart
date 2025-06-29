@@ -3,9 +3,7 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:openvine/services/vine_recording_controller.dart';
 

@@ -8,6 +8,7 @@ import 'package:openvine/services/nostr_key_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +67,7 @@ void main() {
       await subscription.take(1).timeout(
         const Duration(seconds: 5),
         onTimeout: (sink) {
-          print('Timeout waiting for events - possibly AUTH required');
+          Log.debug('Timeout waiting for events - possibly AUTH required');
         },
       ).forEach((event) {
         events.add(event);
@@ -74,7 +75,7 @@ void main() {
       
       // If we got no events, it might be due to AUTH requirement
       if (events.isEmpty) {
-        print('No events received - relay may require authentication');
+        Log.debug('No events received - relay may require authentication');
       }
     });
 
@@ -88,23 +89,20 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
       
       // Check if we have any videos
-      print('Video events loaded: ${videoService.eventCount}');
-      print('Is subscribed: ${videoService.isSubscribed}');
-      print('Has error: ${videoService.error}');
+      Log.debug('Video events loaded: ${videoService.eventCount}');
+      Log.debug('Is subscribed: ${videoService.isSubscribed}');
+      Log.debug('Has error: ${videoService.error}');
       
       // We expect to have some videos if AUTH is working
       expect(videoService.isSubscribed, true);
       
       if (videoService.eventCount == 0) {
-        print('No videos loaded - AUTH may be failing');
-        print('Error: ${videoService.error}');
+        Log.debug('No videos loaded - AUTH may be failing');
+        Log.debug('Error: ${videoService.error}');
       }
     });
 
     test('should receive AUTH challenge message from relay', () async {
-      // Track all messages from relay
-      final messages = <String>[];
-      
       // We need to modify the nostr service to expose raw messages
       // For now, let's just test the connection
       await nostrService.initialize(customRelays: ['wss://vine.hol.is']);
@@ -124,11 +122,11 @@ void main() {
         await stream.take(1).timeout(
           const Duration(seconds: 3),
           onTimeout: (sink) {
-            print('Timeout - no events received');
+            Log.debug('Timeout - no events received');
           },
         ).toList();
       } catch (e) {
-        print('Error during subscription: $e');
+        Log.debug('Error during subscription: $e');
       }
     });
 
@@ -137,10 +135,10 @@ void main() {
       
       // Access the relay pool through the nostr client
       // This is a diagnostic test to understand relay state
-      print('\nRelay Connection Diagnostics:');
-      print('- Public key: ${nostrService.publicKey}');
-      print('- Connected relays: ${nostrService.connectedRelays}');
-      print('- Relay count: ${nostrService.relayCount}');
+      Log.debug('\nRelay Connection Diagnostics:');
+      Log.debug('- Public key: ${nostrService.publicKey}');
+      Log.debug('- Connected relays: ${nostrService.connectedRelays}');
+      Log.debug('- Relay count: ${nostrService.relayCount}');
       
       // Try a simple query
       final testFilters = [
@@ -158,7 +156,7 @@ void main() {
         onTimeout: (sink) {},
       ).toList();
       
-      print('- Self metadata query result: ${events.length} events');
+      Log.debug('- Self metadata query result: ${events.length} events');
     });
   });
 }

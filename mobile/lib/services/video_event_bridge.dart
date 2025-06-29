@@ -2,13 +2,15 @@
 // ABOUTME: Replaces the complex VideoFeedProvider with minimal bridging logic
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/video_event.dart';
 import 'video_event_service.dart';
 import 'video_manager_interface.dart';
 import 'video_manager_service.dart';
 import 'user_profile_service.dart';
 import 'social_service.dart';
+import 'curation_service.dart';
+import '../utils/unified_logger.dart';
+import '../constants/app_constants.dart';
 
 /// Minimal bridge to feed Nostr video events into VideoManager
 /// 
@@ -19,6 +21,8 @@ class VideoEventBridge {
   final IVideoManager _videoManager;
   final UserProfileService _userProfileService;
   final SocialService? _socialService;
+  // ignore: unused_field
+  final CurationService? _curationService;
   int _initRetryCount = 0;
   
   StreamSubscription? _eventSubscription;
@@ -26,6 +30,8 @@ class VideoEventBridge {
   
   // Following feed loading state
   bool _discoveryFeedLoaded = false;
+  // ignore: unused_field
+  bool _curationSynced = false;
   Set<String> _followingPubkeys = {};
   
   VideoEventBridge({
@@ -33,31 +39,38 @@ class VideoEventBridge {
     required IVideoManager videoManager,
     required UserProfileService userProfileService,
     SocialService? socialService,
+    CurationService? curationService,
   }) : _videoEventService = videoEventService,
        _videoManager = videoManager,
        _userProfileService = userProfileService,
-       _socialService = socialService;
+       _socialService = socialService,
+       _curationService = curationService;
   
   /// Initialize the bridge and start syncing events
   Future<void> initialize() async {
-    debugPrint('🌉 Initializing VideoEventBridge...');
+    Log.debug('� Initializing VideoEventBridge...', name: 'VideoEventBridge', category: LogCategory.video);
     
     try {
       // Set up proper social feed priority in VideoManager
       final followingPubkeys = _socialService?.followingPubkeys ?? <String>{};
       
-      // For now, include classic vines in following to test the system
-      const classicVinesPubkey = '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856';
-      final priorityPubkeys = {...followingPubkeys, classicVinesPubkey};
+      // If user has following list, use that. Otherwise fall back to classic vines
+      final Set<String> priorityPubkeys = followingPubkeys.isNotEmpty 
+          ? followingPubkeys.toSet() 
+          : {AppConstants.classicVinesPubkey};
+      
+      Log.debug('FOLLOWING_DEBUG: User following=${followingPubkeys.length}, Priority=${priorityPubkeys.length} (${followingPubkeys.isEmpty ? "classic vines fallback" : "user follows"})', name: 'VideoEventBridge', category: LogCategory.video);
       
       // Update VideoManager with following list for proper prioritization
       if (_videoManager is VideoManagerService) {
         (_videoManager as VideoManagerService).updateFollowingList(priorityPubkeys);
+      } else {
+        Log.debug('FOLLOWING_DEBUG: VideoManager is not VideoManagerService type!', name: 'VideoEventBridge', category: LogCategory.video);
       }
       
-      // FIRST PRIORITY: Load content from people you follow (including classic vines for now)
+      // FIRST PRIORITY: Load content from priority accounts (either user follows or classic vines fallback)
       if (priorityPubkeys.isNotEmpty) {
-        debugPrint('👥 Loading following feed FIRST from ${priorityPubkeys.length} accounts');
+        Log.debug('� Loading following feed FIRST from ${priorityPubkeys.length} accounts', name: 'VideoEventBridge', category: LogCategory.video);
         await _videoEventService.subscribeToVideoFeed(
           authors: priorityPubkeys.toList(),
           limit: 200, // Get plenty of following content
@@ -68,17 +81,17 @@ class VideoEventBridge {
         _setupFollowingListener(priorityPubkeys);
       } else {
         // No follows, just load discovery feed
-        debugPrint('🌍 No following list, loading discovery feed directly');
+        Log.debug('� No following list, loading discovery feed directly', name: 'VideoEventBridge', category: LogCategory.video);
         await _loadDiscoveryFeed();
       }
       
       // Add initial events to VideoManager IMMEDIATELY
       if (_videoEventService.hasEvents) {
         await _addEventsToVideoManager(_videoEventService.videoEvents);
-        debugPrint('🚀 Initial videos loaded immediately');
+        Log.debug('Initial videos loaded immediately', name: 'VideoEventBridge', category: LogCategory.video);
       } else {
         // Don't wait! Start listening immediately and add videos as they arrive
-        debugPrint('📡 No cached videos - will add videos as they stream in from relay');
+        Log.debug('No cached videos - will add videos as they stream in from relay', name: 'VideoEventBridge', category: LogCategory.video);
         
         // Give just a tiny window for very fast responses
         int waitAttempts = 0;
@@ -90,25 +103,25 @@ class VideoEventBridge {
         // Add any videos that arrived quickly
         if (_videoEventService.hasEvents) {
           await _addEventsToVideoManager(_videoEventService.videoEvents);
-          debugPrint('⚡ Fast initial videos loaded in ${waitAttempts * 50}ms');
+          Log.debug('⚡ Fast initial videos loaded in ${waitAttempts * 50}ms', name: 'VideoEventBridge', category: LogCategory.video);
         } else {
-          debugPrint('🌊 Videos will stream in as they arrive from relay');
+          Log.debug('� Videos will stream in as they arrive from relay', name: 'VideoEventBridge', category: LogCategory.video);
         }
       }
       
       // Listen for new events
       _videoEventService.addListener(_onVideoEventServiceChanged);
       
-      debugPrint('✅ VideoEventBridge initialized with ${_videoManager.videos.length} videos');
+      Log.info('VideoEventBridge initialized with ${_videoManager.videos.length} videos', name: 'VideoEventBridge', category: LogCategory.video);
     } catch (e) {
       if (e.toString().contains('Nostr service not initialized') && _initRetryCount < 3) {
         _initRetryCount++;
-        debugPrint('⏳ Nostr service not ready yet, waiting before retry ($_initRetryCount/3)...');
+        Log.warning('⏳ Nostr service not ready yet, waiting before retry ($_initRetryCount/3)...', name: 'VideoEventBridge', category: LogCategory.video);
         // Retry after a short delay to allow Nostr service to initialize
         await Future.delayed(const Duration(milliseconds: 500));
         return initialize(); // Recursive retry with limit
       } else {
-        debugPrint('❌ VideoEventBridge initialization failed: $e');
+        Log.error('VideoEventBridge initialization failed: $e', name: 'VideoEventBridge', category: LogCategory.video);
         rethrow;
       }
     }
@@ -121,11 +134,11 @@ class VideoEventBridge {
       
       if (currentVideoCount == 0) {
         // FIRST VIDEO - highest priority, immediate sync
-        debugPrint('🚀 FIRST VIDEO ARRIVING - immediate sync for fastest display!');
+        Log.debug('FIRST VIDEO ARRIVING - immediate sync for fastest display!', name: 'VideoEventBridge', category: LogCategory.video);
         _addEventsToVideoManager(_videoEventService.videoEvents);
       } else {
         // Subsequent videos - async to not block UI
-        debugPrint('📢 Additional videos - async sync');
+        Log.debug('Additional videos - async sync', name: 'VideoEventBridge', category: LogCategory.video);
         _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
       }
       
@@ -143,11 +156,11 @@ class VideoEventBridge {
     ).toList();
     
     if (newEvents.isEmpty) {
-      debugPrint('📋 No new events to add (${events.length} events already processed)');
+      Log.debug('No new events to add (${events.length} events already processed)', name: 'VideoEventBridge', category: LogCategory.video);
       return;
     }
     
-    debugPrint('📋 Adding ${newEvents.length} new events to VideoManager (${events.length} total provided, ${events.length - newEvents.length} already processed)');
+    Log.debug('Adding ${newEvents.length} new events to VideoManager (${events.length} total provided, ${events.length - newEvents.length} already processed)', name: 'VideoEventBridge', category: LogCategory.video);
     
     // Track unique pubkeys for batch profile fetching
     final newPubkeys = <String>{};
@@ -162,13 +175,13 @@ class VideoEventBridge {
           newPubkeys.add(event.pubkey);
         }
       } catch (e) {
-        debugPrint('⚠️ Failed to add video ${event.id}: $e');
+        Log.error('Failed to add video ${event.id}: $e', name: 'VideoEventBridge', category: LogCategory.video);
       }
     }
     
     // Batch fetch profiles for unique pubkeys only
     if (newPubkeys.isNotEmpty) {
-      debugPrint('👤 Fetching profiles for ${newPubkeys.length} unique users');
+      Log.verbose('Fetching profiles for ${newPubkeys.length} unique users', name: 'VideoEventBridge', category: LogCategory.video);
       
       if (existingIds.isEmpty) {
         // First batch - fetch immediately for fast display
@@ -189,7 +202,7 @@ class VideoEventBridge {
     
     // Start preloading IMMEDIATELY if this was the first batch
     if (_videoManager.videos.isNotEmpty && existingIds.isEmpty) {
-      debugPrint('🚀 FIRST VIDEOS LOADED - immediate preload for fastest display!');
+      Log.debug('FIRST VIDEOS LOADED - immediate preload for fastest display!', name: 'VideoEventBridge', category: LogCategory.video);
       // NO DELAY! Start preloading immediately for fastest first video display
       _videoManager.preloadAroundIndex(0);
       
@@ -218,23 +231,23 @@ class VideoEventBridge {
       final eventCountAfter = _videoEventService.eventCount;
       final newEventsLoaded = eventCountAfter - eventCountBefore;
       
-      debugPrint('📊 Regular load more: $newEventsLoaded new events loaded');
+      Log.debug('Regular load more: $newEventsLoaded new events loaded', name: 'VideoEventBridge', category: LogCategory.video);
       
       // If we got very few new events (less than 10), try unlimited loading
       // This suggests we might be hitting the end of chronological content
       if (newEventsLoaded < 10) {
-        debugPrint('🌊 Few new events found, trying unlimited content loading...');
+        Log.info('� Few new events found, trying unlimited content loading...', name: 'VideoEventBridge', category: LogCategory.video);
         await _videoEventService.loadMoreContentUnlimited();
         
         final finalEventCount = _videoEventService.eventCount;
         final totalNewEvents = finalEventCount - eventCountBefore;
-        debugPrint('📊 Total events loaded: $totalNewEvents');
+        Log.debug('Total events loaded: $totalNewEvents', name: 'VideoEventBridge', category: LogCategory.video);
       }
       
     } catch (e) {
-      debugPrint('❌ Failed to load more events: $e');
+      Log.error('Failed to load more events: $e', name: 'VideoEventBridge', category: LogCategory.video);
       // If regular loading fails, try unlimited as fallback
-      debugPrint('🔄 Falling back to unlimited content loading...');
+      Log.debug('Falling back to unlimited content loading...', name: 'VideoEventBridge', category: LogCategory.video);
       await _videoEventService.loadMoreContentUnlimited();
     }
   }
@@ -262,7 +275,7 @@ class VideoEventBridge {
     // Trigger discovery feed once we have some following content (threshold: 5+)
     if (followingVideosCount >= 5) {
       _discoveryFeedLoaded = true;
-      debugPrint('🎉 Following content milestone reached: $followingVideosCount videos - loading discovery feed');
+      Log.debug('� Following content milestone reached: $followingVideosCount videos - loading discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
       _loadDiscoveryFeed();
     }
   }
@@ -271,22 +284,15 @@ class VideoEventBridge {
   Future<void> _loadDiscoveryFeed() async {
     try {
       // Load discovery content from everyone else
-      debugPrint('🌍 Loading discovery feed (general content) AFTER following content');
+      Log.debug('� Loading discovery feed (general content) AFTER following content', name: 'VideoEventBridge', category: LogCategory.video);
       await _videoEventService.subscribeToVideoFeed(
         limit: 300, // Get plenty of discovery content
         replace: false, // Keep following content AND add discovery
       );
       
-      // Also add editor's picks to discovery mix
-      const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
-      debugPrint('🎯 Adding Editor\'s Picks to discovery feed from: $editorPubkey');
-      await _videoEventService.subscribeToVideoFeed(
-        authors: [editorPubkey],
-        limit: 50, // Smaller amount so it doesn't dominate
-        replace: false, // Keep everything else AND add editor's picks
-      );
+      // Classic vines are already included in following list above, no need to add editor picks separately
     } catch (e) {
-      debugPrint('❌ Failed to load discovery feed: $e');
+      Log.error('Failed to load discovery feed: $e', name: 'VideoEventBridge', category: LogCategory.video);
     }
   }
 

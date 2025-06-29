@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/video_manager_interface.dart';
 import 'package:openvine/services/video_manager_service.dart';
 import '../helpers/test_helpers.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Performance benchmarking suite for video system
 /// 
@@ -40,12 +40,12 @@ void main() {
           
           final results = benchmark.getResults();
           
-          print('Video Addition Throughput Results:');
-          print('  Operations/second: ${results.operationsPerSecond.toStringAsFixed(2)}');
-          print('  Total operations: ${results.totalOperations}');
-          print('  Average latency: ${results.averageLatency.inMilliseconds}ms');
-          print('  95th percentile: ${results.p95Latency.inMilliseconds}ms');
-          print('  99th percentile: ${results.p99Latency.inMilliseconds}ms');
+          Log.debug('Video Addition Throughput Results:');
+          Log.debug('  Operations/second: ${results.operationsPerSecond.toStringAsFixed(2)}');
+          Log.debug('  Total operations: ${results.totalOperations}');
+          Log.debug('  Average latency: ${results.averageLatency.inMilliseconds}ms');
+          Log.debug('  95th percentile: ${results.p95Latency.inMilliseconds}ms');
+          Log.debug('  99th percentile: ${results.p99Latency.inMilliseconds}ms');
           
           // Performance targets
           expect(results.operationsPerSecond, greaterThan(100), 
@@ -86,10 +86,10 @@ void main() {
           
           final results = benchmark.getResults();
           
-          print('Concurrent Preload Throughput Results:');
-          print('  Operations/second: ${results.operationsPerSecond.toStringAsFixed(2)}');
-          print('  Total operations: ${results.totalOperations}');
-          print('  Average latency: ${results.averageLatency.inMilliseconds}ms');
+          Log.debug('Concurrent Preload Throughput Results:');
+          Log.debug('  Operations/second: ${results.operationsPerSecond.toStringAsFixed(2)}');
+          Log.debug('  Total operations: ${results.totalOperations}');
+          Log.debug('  Average latency: ${results.averageLatency.inMilliseconds}ms');
           
           // Preload throughput should be reasonable
           expect(results.operationsPerSecond, greaterThan(10), 
@@ -130,13 +130,13 @@ void main() {
           
           final results = benchmark.getResults();
           
-          print('Video State Access Latency Results:');
-          print('  Samples: ${results.sampleCount}');
-          print('  Average: ${results.average.inMicroseconds}μs');
-          print('  Median: ${results.median.inMicroseconds}μs');
-          print('  95th percentile: ${results.p95.inMicroseconds}μs');
-          print('  99th percentile: ${results.p99.inMicroseconds}μs');
-          print('  Max: ${results.max.inMicroseconds}μs');
+          Log.debug('Video State Access Latency Results:');
+          Log.debug('  Samples: ${results.sampleCount}');
+          Log.debug('  Average: ${results.average.inMicroseconds}μs');
+          Log.debug('  Median: ${results.median.inMicroseconds}μs');
+          Log.debug('  95th percentile: ${results.p95.inMicroseconds}μs');
+          Log.debug('  99th percentile: ${results.p99.inMicroseconds}μs');
+          Log.debug('  Max: ${results.max.inMicroseconds}μs');
           
           // State access should be very fast
           expect(results.p95.inMicroseconds, lessThan(1000), 
@@ -177,9 +177,9 @@ void main() {
           
           final results = benchmark.getResults();
           
-          print('Preload Around Index Latency Results:');
-          print('  Average: ${results.average.inMicroseconds}μs');
-          print('  95th percentile: ${results.p95.inMicroseconds}μs');
+          Log.debug('Preload Around Index Latency Results:');
+          Log.debug('  Average: ${results.average.inMicroseconds}μs');
+          Log.debug('  95th percentile: ${results.p95.inMicroseconds}μs');
           
           // Preload scheduling should be fast
           expect(results.p95.inMilliseconds, lessThan(10), 
@@ -232,11 +232,11 @@ void main() {
           
           final profile = memoryProfiler.getProfile();
           
-          print('Memory Usage Profile:');
-          print('  Peak memory: ${profile.peakMemoryMB}MB');
-          print('  Average memory: ${profile.averageMemoryMB.toStringAsFixed(1)}MB');
-          print('  Memory growth rate: ${profile.growthRateMBPerSecond.toStringAsFixed(2)}MB/s');
-          print('  Samples: ${profile.sampleCount}');
+          Log.debug('Memory Usage Profile:');
+          Log.debug('  Peak memory: ${profile.peakMemoryMB}MB');
+          Log.debug('  Average memory: ${profile.averageMemoryMB.toStringAsFixed(1)}MB');
+          Log.debug('  Memory growth rate: ${profile.growthRateMBPerSecond.toStringAsFixed(2)}MB/s');
+          Log.debug('  Samples: ${profile.sampleCount}');
           
           // Memory should stay within bounds
           expect(profile.peakMemoryMB, lessThan(500), 
@@ -275,7 +275,7 @@ void main() {
           final memoryBefore = beforeCleanup['estimatedMemoryMB'] as int;
           final controllersBefore = beforeCleanup['activeControllers'] as int;
           
-          print('Before cleanup: ${memoryBefore}MB, $controllersBefore controllers');
+          Log.debug('Before cleanup: ${memoryBefore}MB, $controllersBefore controllers');
           
           // Trigger memory cleanup
           await videoManager.handleMemoryPressure();
@@ -284,13 +284,13 @@ void main() {
           final memoryAfter = afterCleanup['estimatedMemoryMB'] as int;
           final controllersAfter = afterCleanup['activeControllers'] as int;
           
-          print('After cleanup: ${memoryAfter}MB, $controllersAfter controllers');
+          Log.debug('After cleanup: ${memoryAfter}MB, $controllersAfter controllers');
           
           final memoryReduction = memoryBefore - memoryAfter;
           final controllerReduction = controllersBefore - controllersAfter;
           
-          print('Memory reduction: ${memoryReduction}MB');
-          print('Controller reduction: $controllerReduction');
+          Log.debug('Memory reduction: ${memoryReduction}MB');
+          Log.debug('Controller reduction: $controllerReduction');
           
           // Cleanup should be effective
           expect(memoryReduction, greaterThan(0), 
@@ -357,15 +357,15 @@ void main() {
         }
         
         // Analyze scalability
-        print('\nScalability Analysis:');
-        print('Videos | Add(ms) | Access(μs) | Preload(μs) | Memory(MB)');
-        print('-------|---------|------------|-------------|----------');
+        Log.debug('\nScalability Analysis:');
+        Log.debug('Videos | Add(ms) | Access(μs) | Preload(μs) | Memory(MB)');
+        Log.debug('-------|---------|------------|-------------|----------');
         
         for (final entry in scalabilityResults.entries) {
           final count = entry.key;
           final metrics = entry.value;
           
-          print('${count.toString().padLeft(6)} | '
+          Log.debug('${count.toString().padLeft(6)} | '
               '${metrics.addTimePerVideo.inMilliseconds.toString().padLeft(7)} | '
               '${metrics.accessTimePerOperation.inMicroseconds.toString().padLeft(10)} | '
               '${metrics.preloadTimePerOperation.inMicroseconds.toString().padLeft(11)} | '

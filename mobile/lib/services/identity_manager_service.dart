@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'key_storage_service.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Represents a saved Nostr identity
 class SavedIdentity {
@@ -81,9 +82,9 @@ class IdentityManagerService extends ChangeNotifier {
       _activeIdentityNpub = prefs.getString(_activeIdentityKey);
       
       notifyListeners();
-      debugPrint('📱 Loaded ${_savedIdentities.length} saved identities');
+      Log.debug('� Loaded ${_savedIdentities.length} saved identities', name: 'IdentityManagerService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error loading saved identities: $e');
+      Log.error('Error loading saved identities: $e', name: 'IdentityManagerService', category: LogCategory.system);
     }
   }
 
@@ -92,7 +93,7 @@ class IdentityManagerService extends ChangeNotifier {
     try {
       final currentKeyPair = await _keyStorage.getKeyPair();
       if (currentKeyPair == null) {
-        debugPrint('⚠️ No current identity to save');
+        Log.warning('No current identity to save', name: 'IdentityManagerService', category: LogCategory.system);
         return;
       }
 
@@ -112,7 +113,7 @@ class IdentityManagerService extends ChangeNotifier {
           lastUsedAt: DateTime.now(),
           isActive: true,
         );
-        debugPrint('📝 Updated existing identity: $displayName');
+        Log.verbose('Updated existing identity: $displayName', name: 'IdentityManagerService', category: LogCategory.system);
       } else {
         // Add new identity
         _savedIdentities.add(SavedIdentity(
@@ -122,7 +123,7 @@ class IdentityManagerService extends ChangeNotifier {
           lastUsedAt: DateTime.now(),
           isActive: true,
         ));
-        debugPrint('💾 Saved new identity: $displayName');
+        Log.debug('� Saved new identity: $displayName', name: 'IdentityManagerService', category: LogCategory.system);
       }
 
       // Mark all other identities as inactive
@@ -141,7 +142,7 @@ class IdentityManagerService extends ChangeNotifier {
       _activeIdentityNpub = currentKeyPair.npub;
       await _persistIdentities();
     } catch (e) {
-      debugPrint('❌ Error saving current identity: $e');
+      Log.error('Error saving current identity: $e', name: 'IdentityManagerService', category: LogCategory.system);
     }
   }
 
@@ -161,7 +162,7 @@ class IdentityManagerService extends ChangeNotifier {
       // For now, this is a limitation - we can only switch to identities
       // that were imported during this app's lifetime
       
-      debugPrint('🔄 Switching to identity: ${identity.displayName}');
+      Log.debug('Switching to identity: ${identity.displayName}', name: 'IdentityManagerService', category: LogCategory.system);
       
       // Update the active identity
       _activeIdentityNpub = npub;
@@ -182,7 +183,7 @@ class IdentityManagerService extends ChangeNotifier {
       await _persistIdentities();
       return true;
     } catch (e) {
-      debugPrint('❌ Error switching identity: $e');
+      Log.error('Error switching identity: $e', name: 'IdentityManagerService', category: LogCategory.system);
       return false;
     }
   }
@@ -197,9 +198,9 @@ class IdentityManagerService extends ChangeNotifier {
       }
       
       await _persistIdentities();
-      debugPrint('🗑️ Removed identity with npub: ${NostrEncoding.maskKey(npub)}');
+      Log.debug('�️ Removed identity with npub: ${NostrEncoding.maskKey(npub)}', name: 'IdentityManagerService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error removing identity: $e');
+      Log.error('Error removing identity: $e', name: 'IdentityManagerService', category: LogCategory.system);
     }
   }
 
@@ -222,7 +223,7 @@ class IdentityManagerService extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error persisting identities: $e');
+      Log.error('Error persisting identities: $e', name: 'IdentityManagerService', category: LogCategory.system);
     }
   }
 
@@ -237,9 +238,9 @@ class IdentityManagerService extends ChangeNotifier {
       _activeIdentityNpub = null;
       
       notifyListeners();
-      debugPrint('🗑️ Cleared all saved identities');
+      Log.debug('�️ Cleared all saved identities', name: 'IdentityManagerService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error clearing identities: $e');
+      Log.error('Error clearing identities: $e', name: 'IdentityManagerService', category: LogCategory.system);
     }
   }
 }

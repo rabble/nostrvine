@@ -54,6 +54,7 @@ class VideoManagerService implements IVideoManager {
   final VideoManagerConfig _config;
   
   /// Service for tracking seen videos to prioritize new content
+  // ignore: unused_field
   final SeenVideosService? _seenVideosService;
   
   /// Service for filtering blocked content
@@ -62,8 +63,11 @@ class VideoManagerService implements IVideoManager {
   /// Set of pubkeys that the user follows - for feed priority
   Set<String> _followingPubkeys = {};
   
-  /// Main video list - single source of truth
-  final List<VideoEvent> _videos = [];
+  /// Primary video list - videos from accounts the user follows
+  final List<VideoEvent> _primaryVideos = [];
+  
+  /// Discovery video list - videos from accounts the user doesn't follow
+  final List<VideoEvent> _discoveryVideos = [];
   
   /// Video state tracking
   final Map<String, VideoState> _videoStates = {};
@@ -99,15 +103,39 @@ class VideoManagerService implements IVideoManager {
   /// Update the list of pubkeys the user is following for feed prioritization
   void updateFollowingList(Set<String> followingPubkeys) {
     _followingPubkeys = Set.from(followingPubkeys);
-    Log.info('Updated following list: ${_followingPubkeys.length} accounts', name: 'VideoManager');
+    Log.debug('FOLLOWING_DEBUG: VideoManager updated with ${_followingPubkeys.length} accounts', name: 'VideoManagerService', category: LogCategory.video);
   }
   
+  /// Get video at specific index from the merged feed
+  VideoEvent? _getVideoAtIndex(int index) {
+    final allVideos = [..._primaryVideos, ..._discoveryVideos];
+    if (index < 0 || index >= allVideos.length) return null;
+    return allVideos[index];
+  }
+  
+  /// Get total video count
+  int get _totalVideoCount => _primaryVideos.length + _discoveryVideos.length;
+  
+  /// Check if the given index is at the boundary between primary and discovery feeds
+  bool isAtFeedBoundary(int index) {
+    // Boundary is after the last primary video, before the first discovery video
+    return _primaryVideos.isNotEmpty && 
+           _discoveryVideos.isNotEmpty && 
+           index == _primaryVideos.length - 1;
+  }
+  
+  /// Get the number of primary (following) videos
+  int get primaryVideoCount => _primaryVideos.length;
+  
+  /// Get the number of discovery videos  
+  int get discoveryVideoCount => _discoveryVideos.length;
+  
   @override
-  List<VideoEvent> get videos => List.unmodifiable(_videos);
+  List<VideoEvent> get videos => List.unmodifiable([..._primaryVideos, ..._discoveryVideos]);
   
   @override
   List<VideoEvent> get readyVideos {
-    return _videos
+    return videos
         .where((video) => getVideoState(video.id)?.isReady == true)
         .toList();
   }
@@ -145,23 +173,20 @@ class VideoManagerService implements IVideoManager {
       return;
     }
     
-    // Check for duplicates
-    if (_videos.any((v) => v.id == event.id)) {
+    // Check for duplicates in both arrays
+    if (_primaryVideos.any((v) => v.id == event.id) || 
+        _discoveryVideos.any((v) => v.id == event.id)) {
       developer.log('Duplicate video event ignored: ${event.id}');
       return;
     }
     
-    // Priority insertion: Following feed goes to front, discovery feed goes to back
+    // Sort videos into appropriate array based on following status
     if (_followingPubkeys.contains(event.pubkey)) {
-      // Videos from people you follow get inserted at the front of their section
-      final lastFollowingIndex = _videos.lastIndexWhere((v) => _followingPubkeys.contains(v.pubkey));
-      final insertIndex = lastFollowingIndex == -1 ? 0 : lastFollowingIndex + 1;
-      _videos.insert(insertIndex, event);
-      Log.info('Added following video to front at index $insertIndex: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
+      _primaryVideos.add(event);
+      Log.info('Added following video to primary feed: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
     } else {
-      // Discovery videos (randoms) go to the end
-      _videos.add(event);
-      Log.info('Added discovery video to end: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
+      _discoveryVideos.add(event);
+      Log.info('Added video to discovery feed: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
     }
     
     // Initialize state
@@ -173,7 +198,7 @@ class VideoManagerService implements IVideoManager {
     // Notify listeners
     _notifyStateChange();
     
-    Log.info('Added video event: ${event.id}, total videos: ${_videos.length}', name: 'VideoManager');
+    Log.info('Added video event: ${event.id}, primary: ${_primaryVideos.length}, discovery: ${_discoveryVideos.length}', name: 'VideoManager');
   }
   
   @override
@@ -234,16 +259,16 @@ class VideoManagerService implements IVideoManager {
   void preloadAroundIndex(int currentIndex, {int? preloadRange}) {
     if (_disposed) return;
     
-    if (_videos.isEmpty) {
+    if (_totalVideoCount == 0) {
       developer.log('⚠️ preloadAroundIndex called but no videos available');
       return;
     }
     
     final range = preloadRange ?? _config.preloadAhead;
-    final start = (currentIndex - _config.preloadBehind).clamp(0, _videos.length - 1);
-    final end = (currentIndex + range).clamp(0, _videos.length - 1);
+    final start = (currentIndex - _config.preloadBehind).clamp(0, _totalVideoCount - 1);
+    final end = (currentIndex + range).clamp(0, _totalVideoCount - 1);
     
-    Log.info('🚀 Preloading around index $currentIndex (range: $start-$end), total videos: ${_videos.length}', name: 'VideoManager', category: LogCategory.video);
+    Log.info('🚀 Preloading around index $currentIndex (range: $start-$end), total videos: ${_totalVideoCount}', name: 'VideoManager', category: LogCategory.video);
     
     // Dispose controllers for videos outside the viewing window
     _disposeUnusedControllers(currentIndex);
@@ -253,8 +278,9 @@ class VideoManagerService implements IVideoManager {
     
     Log.debug('📋 Checking ${priorityOrder.length} videos for preloading...', name: 'VideoManager', category: LogCategory.video);
     for (final index in priorityOrder) {
-      if (index < _videos.length) {
-        final videoId = _videos[index].id;
+      final video = _getVideoAtIndex(index);
+      if (video != null) {
+        final videoId = video.id;
         final state = getVideoState(videoId);
         
         final shortId = videoId.length >= 8 ? videoId.substring(0, 8) : videoId;
@@ -283,9 +309,9 @@ class VideoManagerService implements IVideoManager {
     if (controller != null && controller.value.isInitialized && controller.value.isPlaying) {
       try {
         controller.pause();
-        debugPrint('⏸️ Paused video: ${videoId.substring(0, 8)}...');
+        Log.debug('Paused video: ${videoId.substring(0, 8)}...', name: 'VideoManagerService', category: LogCategory.video);
       } catch (e) {
-        debugPrint('⚠️ Error pausing video $videoId: $e');
+        Log.error('Error pausing video $videoId: $e', name: 'VideoManagerService', category: LogCategory.video);
       }
     }
   }
@@ -302,13 +328,13 @@ class VideoManagerService implements IVideoManager {
           controller.pause();
           pausedCount++;
         } catch (e) {
-          debugPrint('⚠️ Error pausing video ${entry.key}: $e');
+          Log.error('Error pausing video ${entry.key}: $e', name: 'VideoManagerService', category: LogCategory.video);
         }
       }
     }
     
     if (pausedCount > 0) {
-      debugPrint('⏸️ Paused $pausedCount videos');
+      Log.debug('Paused $pausedCount videos', name: 'VideoManagerService', category: LogCategory.video);
     }
   }
   
@@ -342,12 +368,12 @@ class VideoManagerService implements IVideoManager {
         }
         
       } catch (e) {
-        debugPrint('⚠️ Error stopping video $videoId: $e');
+        Log.error('Error stopping video $videoId: $e', name: 'VideoManagerService', category: LogCategory.video);
       }
     }
     
     if (stoppedCount > 0) {
-      debugPrint('🛑 Stopped $stoppedCount videos for camera mode (reset to notLoaded for reload)');
+      Log.info('� Stopped $stoppedCount videos for camera mode (reset to notLoaded for reload)', name: 'VideoManagerService', category: LogCategory.video);
     }
     
     // Notify listeners of state changes
@@ -362,9 +388,9 @@ class VideoManagerService implements IVideoManager {
     if (controller != null && controller.value.isInitialized && !controller.value.isPlaying) {
       try {
         controller.play();
-        debugPrint('▶️ Resumed video: ${videoId.substring(0, 8)}...');
+        Log.debug('▶️ Resumed video: ${videoId.substring(0, 8)}...', name: 'VideoManagerService', category: LogCategory.video);
       } catch (e) {
-        debugPrint('⚠️ Error resuming video $videoId: $e');
+        Log.error('Error resuming video $videoId: $e', name: 'VideoManagerService', category: LogCategory.video);
       }
     }
   }
@@ -398,11 +424,13 @@ class VideoManagerService implements IVideoManager {
     
     // Keep only recent videos based on configuration
     final keepCount = (_config.maxVideos * 0.7).floor(); // Keep 70% when under pressure
-    final videosToRemove = _videos.skip(keepCount).toList();
+    final allVideos = [..._primaryVideos, ..._discoveryVideos];
+    final videosToRemove = allVideos.skip(keepCount).toList();
     
     for (final video in videosToRemove) {
       disposeVideo(video.id);
-      _videos.remove(video);
+      _primaryVideos.remove(video);
+      _discoveryVideos.remove(video);
       _videoStates.remove(video.id);
     }
     
@@ -416,7 +444,9 @@ class VideoManagerService implements IVideoManager {
     final estimatedMemoryMB = _controllers.length * memoryPerControllerMB;
     
     return {
-      'totalVideos': _videos.length,
+      'totalVideos': _totalVideoCount,
+      'primaryVideos': _primaryVideos.length,
+      'discoveryVideos': _discoveryVideos.length,
       'readyVideos': readyVideos.length,
       'loadingVideos': loadingCount,
       'failedVideos': failedCount,
@@ -448,13 +478,13 @@ class VideoManagerService implements IVideoManager {
   
   /// Filter existing videos to remove blocked content
   void filterExistingVideos() {
-    if (_blocklistService == null || _videos.isEmpty) return;
+    if (_blocklistService == null || _totalVideoCount == 0) return;
     
-    final initialCount = _videos.length;
+    final initialCount = _totalVideoCount;
     final blockedVideos = <VideoEvent>[];
     
-    // Find all blocked videos
-    for (final video in _videos) {
+    // Find all blocked videos in both arrays
+    for (final video in [..._primaryVideos, ..._discoveryVideos]) {
       if (_blocklistService!.shouldFilterFromFeeds(video.pubkey)) {
         blockedVideos.add(video);
       }
@@ -464,7 +494,8 @@ class VideoManagerService implements IVideoManager {
     
     // Remove blocked videos and their associated state
     for (final video in blockedVideos) {
-      _videos.remove(video);
+      _primaryVideos.remove(video);
+      _discoveryVideos.remove(video);
       _videoStates.remove(video.id);
       
       // Dispose controller if exists
@@ -475,7 +506,7 @@ class VideoManagerService implements IVideoManager {
       }
     }
     
-    Log.info('🚫 Filtered ${blockedVideos.length} blocked videos from feed (${initialCount} -> ${_videos.length})', name: 'VideoManager');
+    Log.info('🚫 Filtered ${blockedVideos.length} blocked videos from feed (${initialCount} -> ${_totalVideoCount})', name: 'VideoManager');
     
     // Notify listeners of change
     _notifyStateChange();
@@ -498,7 +529,8 @@ class VideoManagerService implements IVideoManager {
     
     // Clear all state
     _videoStates.clear();
-    _videos.clear();
+    _primaryVideos.clear();
+    _discoveryVideos.clear();
     
     // Close stream controller
     _stateChangesController.close();
@@ -643,7 +675,7 @@ class VideoManagerService implements IVideoManager {
     for (int offset = 1; offset <= (end - start); offset++) {
       // Next videos (higher priority)
       final nextIndex = currentIndex + offset;
-      if (nextIndex <= end && nextIndex < _videos.length && !priorities.contains(nextIndex)) {
+      if (nextIndex <= end && nextIndex < _totalVideoCount && !priorities.contains(nextIndex)) {
         priorities.add(nextIndex);
       }
       
@@ -661,13 +693,15 @@ class VideoManagerService implements IVideoManager {
   Future<void> _enforceMemoryLimits() async {
     if (!_config.enableMemoryManagement) return;
     
-    if (_videos.length > _config.maxVideos) {
-      final excessCount = _videos.length - _config.maxVideos;
-      final videosToRemove = _videos.skip(_config.maxVideos).take(excessCount).toList();
+    if (_totalVideoCount > _config.maxVideos) {
+      final excessCount = _totalVideoCount - _config.maxVideos;
+      final allVideos = [..._primaryVideos, ..._discoveryVideos];
+      final videosToRemove = allVideos.skip(_config.maxVideos).take(excessCount).toList();
       
       for (final video in videosToRemove) {
         disposeVideo(video.id);
-        _videos.remove(video);
+        _primaryVideos.remove(video);
+        _discoveryVideos.remove(video);
         _videoStates.remove(video.id);
       }
       
@@ -690,13 +724,15 @@ class VideoManagerService implements IVideoManager {
     if (!_config.enableMemoryManagement) return;
     
     final keepRange = _config.preloadAhead + _config.preloadBehind + 2; // Extra buffer
-    final start = (currentIndex - keepRange).clamp(0, _videos.length - 1);
-    final end = (currentIndex + keepRange).clamp(0, _videos.length - 1);
+    final start = (currentIndex - keepRange).clamp(0, _totalVideoCount - 1);
+    final end = (currentIndex + keepRange).clamp(0, _totalVideoCount - 1);
     
     // Dispose controllers for videos outside the keep range
-    for (int i = 0; i < _videos.length; i++) {
+    for (int i = 0; i < _totalVideoCount; i++) {
       if (i < start || i > end) {
-        final videoId = _videos[i].id;
+        final video = _getVideoAtIndex(i);
+        if (video == null) continue;
+        final videoId = video.id;
         final controller = _controllers[videoId];
         if (controller != null) {
           controller.dispose();
@@ -743,7 +779,8 @@ class VideoManagerService implements IVideoManager {
     developer.log('Enforcing controller limit: disposing $controllersToDispose controllers');
     
     // Get video IDs sorted by most recently added (newest first)
-    final videoIds = _videos.map((v) => v.id).toList();
+    final allVideos = [..._primaryVideos, ..._discoveryVideos];
+    final videoIds = allVideos.map((v) => v.id).toList();
     final controllerIds = _controllers.keys.toList();
     
     // Sort controller IDs by video order (newest videos first, so dispose oldest)

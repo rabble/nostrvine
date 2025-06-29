@@ -8,6 +8,7 @@ import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
 import '../models/curation_set.dart';
+import '../utils/unified_logger.dart';
 
 /// Video feed screen for explore content using VideoManager pipeline
 /// 
@@ -106,10 +107,10 @@ class _ExploreVideoFeedScreenState extends State<ExploreVideoFeedScreen>
       _isInitialized = true;
       setState(() {});
       
-      debugPrint('✅ ExploreVideoFeedScreen initialized with ${_videos.length} videos');
+      Log.info('ExploreVideoFeedScreen initialized with ${_videos.length} videos', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
       
     } catch (e) {
-      debugPrint('❌ Failed to initialize ExploreVideoFeedScreen: $e');
+      Log.error('Failed to initialize ExploreVideoFeedScreen: $e', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
       _isInitialized = true; // Mark as initialized to show error state
       setState(() {});
     }
@@ -125,7 +126,7 @@ class _ExploreVideoFeedScreenState extends State<ExploreVideoFeedScreen>
         _videos = newVideos;
       });
       
-      debugPrint('📺 Explore videos updated: ${_videos.length} videos available');
+      Log.debug('� Explore videos updated: ${_videos.length} videos available', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
     }
   }
 
@@ -162,9 +163,9 @@ class _ExploreVideoFeedScreenState extends State<ExploreVideoFeedScreen>
     
     try {
       _videoManager!.pauseVideo(videoId);
-      debugPrint('⏸️ Paused explore video: ${videoId.substring(0, 8)}...');
+      Log.debug('Paused explore video: ${videoId.substring(0, 8)}...', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('⚠️ Error pausing explore video $videoId: $e');
+      Log.error('Error pausing explore video $videoId: $e', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
     }
   }
 
@@ -274,7 +275,7 @@ class _ExploreVideoFeedScreenState extends State<ExploreVideoFeedScreen>
           video: video,
           isActive: isActive,
           onVideoError: (videoId) {
-            debugPrint('⚠️ Error in explore video $videoId');
+            Log.error('Error in explore video $videoId', name: 'ExploreVideoFeedScreen', category: LogCategory.ui);
           },
         );
       },

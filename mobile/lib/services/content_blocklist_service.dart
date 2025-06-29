@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for managing content blocklist
 /// 
@@ -23,7 +24,7 @@ class ContentBlocklistService extends ChangeNotifier {
   ContentBlocklistService() {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
-    debugPrint('🚫 ContentBlocklistService initialized with $totalBlockedCount blocked accounts');
+    Log.info('ContentBlocklistService initialized with $totalBlockedCount blocked accounts', name: 'ContentBlocklistService', category: LogCategory.system);
   }
   
   void _addInitialBlockedContent() {
@@ -38,7 +39,7 @@ class ContentBlocklistService extends ChangeNotifier {
       final hexPubkey = _npubToHex(npub);
       if (hexPubkey != null) {
         _runtimeBlocklist.add(hexPubkey);
-        debugPrint('🚫 Added to blocklist: ${npub.substring(0, 16)}... -> ${hexPubkey.substring(0, 8)}...');
+        Log.debug('Added to blocklist: ${npub.substring(0, 16)}... -> ${hexPubkey.substring(0, 8)}...', name: 'ContentBlocklistService', category: LogCategory.system);
       }
     }
   }
@@ -49,7 +50,7 @@ class ContentBlocklistService extends ChangeNotifier {
       // Use proper bech32 decoding
       return NostrEncoding.decodePublicKey(npub);
     } catch (e) {
-      debugPrint('⚠️ Failed to decode npub $npub: $e');
+      Log.error('Failed to decode npub $npub: $e', name: 'ContentBlocklistService', category: LogCategory.system);
       return null;
     }
   }
@@ -70,7 +71,7 @@ class ContentBlocklistService extends ChangeNotifier {
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
       notifyListeners();
-      debugPrint('🚫 Added user to blocklist: ${pubkey.substring(0, 8)}...');
+      Log.debug('Added user to blocklist: ${pubkey.substring(0, 8)}...', name: 'ContentBlocklistService', category: LogCategory.system);
     }
   }
   
@@ -80,9 +81,9 @@ class ContentBlocklistService extends ChangeNotifier {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       notifyListeners();
-      debugPrint('✅ Removed user from blocklist: ${pubkey.substring(0, 8)}...');
+      Log.info('Removed user from blocklist: ${pubkey.substring(0, 8)}...', name: 'ContentBlocklistService', category: LogCategory.system);
     } else if (_internalBlocklist.contains(pubkey)) {
-      debugPrint('⚠️ Cannot unblock user from internal blocklist: ${pubkey.substring(0, 8)}...');
+      Log.warning('Cannot unblock user from internal blocklist: ${pubkey.substring(0, 8)}...', name: 'ContentBlocklistService', category: LogCategory.system);
     }
   }
   
@@ -110,7 +111,7 @@ class ContentBlocklistService extends ChangeNotifier {
     if (_runtimeBlocklist.isNotEmpty) {
       _runtimeBlocklist.clear();
       notifyListeners();
-      debugPrint('🧹 Cleared all runtime blocks');
+      Log.debug('🧹 Cleared all runtime blocks', name: 'ContentBlocklistService', category: LogCategory.system);
     }
   }
   

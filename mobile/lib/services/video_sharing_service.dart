@@ -3,11 +3,11 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
 import 'auth_service.dart';
 import 'user_profile_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Represents a user that can receive shared videos
 class ShareableUser {
@@ -76,7 +76,7 @@ class VideoSharingService extends ChangeNotifier {
     String? personalMessage,
   }) async {
     try {
-      debugPrint('📤 Sharing video with user: ${recipientPubkey.substring(0, 8)}...');
+      Log.debug('� Sharing video with user: ${recipientPubkey.substring(0, 8)}...', name: 'VideoSharingService', category: LogCategory.video);
 
       if (!_authService.isAuthenticated) {
         return ShareResult.failure('User not authenticated');
@@ -112,7 +112,7 @@ class VideoSharingService extends ChangeNotifier {
         _shareHistory[recipientPubkey] = DateTime.now();
         await _updateRecentlySharedWith(recipientPubkey);
         
-        debugPrint('✅ Video shared successfully: ${event.id}');
+        Log.info('Video shared successfully: ${event.id}', name: 'VideoSharingService', category: LogCategory.video);
         notifyListeners();
         return ShareResult.createSuccess(event.id);
       } else {
@@ -120,7 +120,7 @@ class VideoSharingService extends ChangeNotifier {
       }
 
     } catch (e) {
-      debugPrint('❌ Error sharing video: $e');
+      Log.error('Error sharing video: $e', name: 'VideoSharingService', category: LogCategory.video);
       return ShareResult.failure('Error sharing video: $e');
     }
   }
@@ -156,10 +156,10 @@ class VideoSharingService extends ChangeNotifier {
       // TODO: Add followers and following when social service integration is complete
       // For now, return recent users
       
-      debugPrint('📋 Found ${shareableUsers.length} shareable users');
+      Log.info('Found ${shareableUsers.length} shareable users', name: 'VideoSharingService', category: LogCategory.video);
       return shareableUsers.take(limit).toList();
     } catch (e) {
-      debugPrint('❌ Error getting shareable users: $e');
+      Log.error('Error getting shareable users: $e', name: 'VideoSharingService', category: LogCategory.video);
       return [];
     }
   }
@@ -182,10 +182,10 @@ class VideoSharingService extends ChangeNotifier {
         ];
       }
 
-      debugPrint('🔍 User search not yet implemented for: $query');
+      Log.debug('User search not yet implemented for: $query', name: 'VideoSharingService', category: LogCategory.video);
       return [];
     } catch (e) {
-      debugPrint('❌ Error searching users: $e');
+      Log.error('Error searching users: $e', name: 'VideoSharingService', category: LogCategory.video);
       return [];
     }
   }
@@ -289,7 +289,7 @@ class VideoSharingService extends ChangeNotifier {
       }
       
     } catch (e) {
-      debugPrint('⚠️ Failed to update recently shared with: $e');
+      Log.error('Failed to update recently shared with: $e', name: 'VideoSharingService', category: LogCategory.video);
     }
   }
 
@@ -298,6 +298,6 @@ class VideoSharingService extends ChangeNotifier {
     _shareHistory.clear();
     _recentlySharedWith.clear();
     notifyListeners();
-    debugPrint('🧹 Cleared sharing history');
+    Log.debug('🧹 Cleared sharing history', name: 'VideoSharingService', category: LogCategory.video);
   }
 }

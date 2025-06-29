@@ -13,6 +13,7 @@ import '../models/pending_upload.dart';
 import '../widgets/upload_progress_indicator.dart';
 import '../theme/vine_theme.dart';
 import 'video_metadata_screen.dart';
+import '../utils/unified_logger.dart';
 
 /// Represents a single recording segment in the Vine-style recording
 class RecordingSegment {
@@ -88,15 +89,16 @@ class _MacOSCameraScreenState extends State<MacOSCameraScreen> {
       _isInitialized = true;
       _errorMessage = null;
     });
-    debugPrint('📷 macOS Camera initialized successfully');
+    Log.info('� macOS Camera initialized successfully', name: 'MacosCameraScreen', category: LogCategory.ui);
   }
 
+  // ignore: unused_element
   void _onCameraError(String error) {
     setState(() {
       _errorMessage = 'Camera error: $error';
       _isInitialized = false;
     });
-    debugPrint('❌ macOS Camera error: $error');
+    Log.error('macOS Camera error: $error', name: 'MacosCameraScreen', category: LogCategory.ui);
   }
 
   Future<void> _startRecording() async {
@@ -123,14 +125,14 @@ class _MacOSCameraScreenState extends State<MacOSCameraScreen> {
         },
       );
 
-      debugPrint('🎬 Started macOS vine recording (${_maxRecordingDuration.inSeconds}s max)');
+      Log.info('Started macOS vine recording (${_maxRecordingDuration.inSeconds}s max)', name: 'MacosCameraScreen', category: LogCategory.ui);
     } catch (e) {
       setState(() {
         _isRecording = false;
         _recordingStartTime = null;
         _errorMessage = 'Failed to start recording: $e';
       });
-      debugPrint('❌ Failed to start macOS recording: $e');
+      Log.error('Failed to start macOS recording: $e', name: 'MacosCameraScreen', category: LogCategory.ui);
     }
   }
 
@@ -145,9 +147,9 @@ class _MacOSCameraScreenState extends State<MacOSCameraScreen> {
         _isRecording = false;
         _recordingStartTime = null;
       });
-      debugPrint('🛑 Stopped macOS recording - waiting for callback');
+      Log.info('� Stopped macOS recording - waiting for callback', name: 'MacosCameraScreen', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('❌ Error stopping recording: $e');
+      Log.error('Error stopping recording: $e', name: 'MacosCameraScreen', category: LogCategory.ui);
     }
   }
 
@@ -161,7 +163,7 @@ class _MacOSCameraScreenState extends State<MacOSCameraScreen> {
       setState(() {
         _errorMessage = 'Recording failed: ${exception.toString()}';
       });
-      debugPrint('❌ Recording failed: ${exception.toString()}');
+      Log.error('Recording failed: ${exception.toString()}', name: 'MacosCameraScreen', category: LogCategory.ui);
       return;
     }
 
@@ -207,7 +209,7 @@ class _MacOSCameraScreenState extends State<MacOSCameraScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error processing video: $e');
+      Log.error('Error processing video: $e', name: 'MacosCameraScreen', category: LogCategory.ui);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to process video: $e')),

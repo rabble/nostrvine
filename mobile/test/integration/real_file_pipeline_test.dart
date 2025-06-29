@@ -10,6 +10,8 @@ import 'package:path/path.dart' as path;
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/direct_upload_service.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/ready_event_data.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Real file pipeline tests with actual I/O operations
 void main() {
@@ -53,7 +55,7 @@ void main() {
         expect(testVideoFile.existsSync(), true);
         expect(testVideoFile.lengthSync(), greaterThan(0));
         
-        print('🧪 Created test video file: ${testVideoFile.path} (${testVideoFile.lengthSync()} bytes)');
+        Log.debug('🧪 Created test video file: ${testVideoFile.path} (${testVideoFile.lengthSync()} bytes)');
 
         // Initialize services with real persistence
         final uploadsBox = await Hive.openBox<PendingUpload>('real_test_uploads');
@@ -82,7 +84,7 @@ void main() {
           expect(persistedUpload, isNotNull);
           expect(persistedUpload!.localVideoPath, testVideoFile.path);
           
-          print('✅ Upload created and persisted: ${upload.id}');
+          Log.debug('✅ Upload created and persisted: ${upload.id}');
 
           // Test state transitions
           await uploadManager.markUploadReadyToPublish(upload.id, 'real-cloudinary-id-123');
@@ -95,7 +97,7 @@ void main() {
           final persistedUpdated = uploadsBox.get(upload.id);
           expect(persistedUpdated!.status, UploadStatus.readyToPublish);
           
-          print('✅ State transition persisted correctly');
+          Log.debug('✅ State transition persisted correctly');
 
         } finally {
           uploadManager.dispose();
@@ -141,7 +143,7 @@ void main() {
         await largeFile.writeAsBytes(largeData);
         expect(largeFile.lengthSync(), 1024 * 1024);
         
-        print('🧪 Created large test file: ${largeFile.lengthSync()} bytes');
+        Log.debug('🧪 Created large test file: ${largeFile.lengthSync()} bytes');
 
         final uploadsBox = await Hive.openBox<PendingUpload>('large_file_uploads');
         final uploadService = DirectUploadService();
@@ -158,7 +160,7 @@ void main() {
           );
 
           final duration = DateTime.now().difference(startTime);
-          print('✅ Large file upload creation took: ${duration.inMilliseconds}ms');
+          Log.debug('✅ Large file upload creation took: ${duration.inMilliseconds}ms');
           
           expect(upload.id, isNotEmpty);
           expect(upload.localVideoPath, largeFile.path);
@@ -224,7 +226,7 @@ void main() {
         expect(estimatedSize, greaterThan(200)); // Should include content + tags
         expect(estimatedSize, lessThan(10000)); // Should be reasonable
         
-        print('✅ NIP-94 event validated: ${nip94Tags.length} tags, ~$estimatedSize bytes');
+        Log.debug('✅ NIP-94 event validated: ${nip94Tags.length} tags, ~$estimatedSize bytes');
       });
 
       test('should handle edge cases in event data', () async {
@@ -307,7 +309,7 @@ void main() {
           expect(persistedFinal.nostrEventId, 'nostr-event-xyz789');
           expect(persistedFinal.cloudinaryPublicId, 'sync-cloudinary-123');
 
-          print('✅ State synchronization verified: ${stateChanges.join(' → ')}');
+          Log.debug('✅ State synchronization verified: ${stateChanges.join(' → ')}');
 
         } finally {
           uploadManager.dispose();
@@ -350,7 +352,7 @@ void main() {
           final uploads = await Future.wait(uploadFutures);
           final duration = DateTime.now().difference(startTime);
           
-          print('✅ ${uploads.length} concurrent uploads completed in ${duration.inMilliseconds}ms');
+          Log.debug('✅ ${uploads.length} concurrent uploads completed in ${duration.inMilliseconds}ms');
           
           // Verify all uploads were created successfully
           expect(uploads.length, fileCount);

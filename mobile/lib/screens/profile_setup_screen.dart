@@ -13,6 +13,7 @@ import '../services/user_profile_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/direct_upload_service.dart';
 import '../services/nip05_service.dart';
+import '../utils/unified_logger.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final bool isNewUser;
@@ -82,7 +83,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           }
         }
       } catch (e) {
-        debugPrint('Failed to load existing profile: $e');
+        Log.error('Failed to load existing profile: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
       }
     }
   }
@@ -582,7 +583,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 await launchUrl(url, mode: LaunchMode.externalApplication);
                               }
                             } catch (e) {
-                              debugPrint('Could not launch nostr.org: $e');
+                              Log.debug('Could not launch nostr.org: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
                             }
                           },
                           child: Row(
@@ -658,7 +659,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             profileData['nip05'] = nip05Identifier;
           }
         } catch (e) {
-          debugPrint('Failed to register NIP-05: $e');
+          Log.error('Failed to register NIP-05: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
           // Continue with profile creation even if NIP-05 fails
         }
       }
@@ -674,14 +675,25 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
 
       // Publish to Nostr relays
+      Log.info('Publishing profile event: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.debug('Profile data: $profileData', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
       final result = await nostrService.broadcastEvent(event);
       final success = result.isSuccessful;
+      
+      Log.info('Broadcast result: success=$success, successCount=${result.successCount}/${result.totalRelays}', 
+               name: 'ProfileSetupScreen', category: LogCategory.ui);
+      if (result.errors.isNotEmpty) {
+        Log.error('Broadcast errors: ${result.errors}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
 
       if (success) {
         // Force refresh the user's profile in auth service
         if (mounted) {
           final userProfileService = context.read<UserProfileService>();
-          await userProfileService.fetchProfile(authService.currentPublicKeyHex!);
+          Log.info('Force refreshing profile for ${authService.currentPublicKeyHex!.substring(0, 8)}...', 
+                   name: 'ProfileSetupScreen', category: LogCategory.ui);
+          await userProfileService.fetchProfile(authService.currentPublicKeyHex!, forceRefresh: true);
         }
         
         if (mounted) {
@@ -798,7 +810,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         await _uploadImage();
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      Log.error('Error picking image: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -829,7 +841,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         imageFile: _selectedImage!,
         nostrPubkey: authService.currentPublicKeyHex!,
         onProgress: (progress) {
-          debugPrint('Upload progress: ${(progress * 100).toStringAsFixed(0)}%');
+          Log.debug('Upload progress: ${(progress * 100).toStringAsFixed(0)}%', name: 'ProfileSetupScreen', category: LogCategory.ui);
         },
       );
       
@@ -851,7 +863,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         throw Exception(result.errorMessage ?? 'Upload failed');
       }
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      Log.error('Error uploading image: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

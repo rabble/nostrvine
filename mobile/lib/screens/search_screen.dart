@@ -9,6 +9,7 @@ import '../services/user_profile_service.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
 import 'profile_screen.dart';
+import '../utils/unified_logger.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -68,9 +69,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         try {
           // Convert npub to hex pubkey
           searchPubkey = Nip19.decode(query);
-          debugPrint('🔑 Decoded npub to pubkey: $searchPubkey');
+          Log.debug('� Decoded npub to pubkey: $searchPubkey', name: 'SearchScreen', category: LogCategory.ui);
         } catch (e) {
-          debugPrint('⚠️ Failed to decode npub: $e');
+          Log.error('Failed to decode npub: $e', name: 'SearchScreen', category: LogCategory.ui);
         }
       }
 
@@ -112,9 +113,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         _isSearching = false;
       });
 
-      debugPrint('🔍 Search results for "$query": ${videoResults.length} videos, ${userResults.length} users, ${hashtagResults.length} hashtags');
+      Log.debug('Search results for "$query": ${videoResults.length} videos, ${userResults.length} users, ${hashtagResults.length} hashtags', name: 'SearchScreen', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('❌ Search error: $e');
+      Log.error('Search error: $e', name: 'SearchScreen', category: LogCategory.ui);
       setState(() {
         _isSearching = false;
       });

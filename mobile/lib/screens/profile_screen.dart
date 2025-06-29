@@ -7,7 +7,6 @@ import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/social_service.dart';
 import '../services/video_event_service.dart';
-import '../services/key_storage_service.dart';
 import '../services/analytics_service.dart';
 import '../providers/profile_stats_provider.dart';
 import '../providers/profile_videos_provider.dart';
@@ -20,7 +19,7 @@ import 'universal_camera_screen.dart';
 import 'key_import_screen.dart';
 import 'relay_settings_screen.dart';
 import '../widgets/video_fullscreen_overlay.dart';
-import '../main.dart';
+import '../utils/unified_logger.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? profilePubkey; // If null, shows current user's profile
@@ -52,9 +51,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     final authService = context.read<AuthService>();
     final currentUserPubkey = authService.currentPublicKeyHex;
     
+    // Ensure AuthService is properly initialized before proceeding
+    if (!authService.isAuthenticated || currentUserPubkey == null) {
+      Log.warning('AuthService not ready, deferring profile initialization', name: 'ProfileScreen', category: LogCategory.ui);
+      // Retry after a short delay
+      Future.delayed(const Duration(milliseconds: 100), _initializeProfile);
+      return;
+    }
+    
+    // Clear any playing video when switching profiles
+    _playingVideoId = null;
+    
     // Determine target pubkey and ownership
-    _targetPubkey = widget.profilePubkey ?? currentUserPubkey;
-    _isOwnProfile = _targetPubkey == currentUserPubkey;
+    setState(() {
+      _targetPubkey = widget.profilePubkey ?? currentUserPubkey;
+      _isOwnProfile = _targetPubkey == currentUserPubkey;
+    });
+    
+    Log.info('Profile init: widget.profilePubkey=${widget.profilePubkey?.substring(0, 8)}, currentUserPubkey=${currentUserPubkey.substring(0, 8)}, _isOwnProfile=$_isOwnProfile, _targetPubkey=${_targetPubkey?.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
     
     // Load profile data for the target user
     if (_targetPubkey != null) {
@@ -66,9 +80,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         _loadUserProfile();
       }
       
-      // Force refresh video events when viewing profile to pick up newly published videos
-      final videoEventService = context.read<VideoEventService>();
-      videoEventService.refreshVideoFeed();
+      // Note: Video events are managed globally by VideoEventBridge
+      // Profile-specific video loading is handled by ProfileVideosProvider
     }
   }
   
@@ -81,20 +94,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   
   void _loadProfileVideos() {
     if (_targetPubkey == null) {
-      debugPrint('❌ Cannot load profile videos: _targetPubkey is null');
+      Log.error('Cannot load profile videos: _targetPubkey is null', name: 'ProfileScreen', category: LogCategory.ui);
       return;
     }
     
-    debugPrint('👤 Loading profile videos for: ${_targetPubkey!.substring(0, 8)}... (isOwnProfile: $_isOwnProfile)');
+    Log.debug('Loading profile videos for: ${_targetPubkey!.substring(0, 8)}... (isOwnProfile: $_isOwnProfile)', name: 'ProfileScreen', category: LogCategory.ui);
     try {
       final profileVideosProvider = context.read<ProfileVideosProvider>();
       profileVideosProvider.loadVideosForUser(_targetPubkey!).then((_) {
-        debugPrint('✅ Profile videos load completed for ${_targetPubkey!.substring(0, 8)}');
+        Log.info('Profile videos load completed for ${_targetPubkey!.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
       }).catchError((error) {
-        debugPrint('❌ Profile videos load failed for ${_targetPubkey!.substring(0, 8)}: $error');
+        Log.error('Profile videos load failed for ${_targetPubkey!.substring(0, 8)}: $error', name: 'ProfileScreen', category: LogCategory.ui);
       });
     } catch (e) {
-      debugPrint('❌ Error initiating profile videos load: $e');
+      Log.error('Error initiating profile videos load: $e', name: 'ProfileScreen', category: LogCategory.ui);
     }
   }
   
@@ -103,6 +116,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     
     final userProfileService = context.read<UserProfileService>();
     userProfileService.fetchProfile(_targetPubkey!);
+  }
+
+  @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if the profile pubkey has changed
+    if (widget.profilePubkey != oldWidget.profilePubkey) {
+      Log.info('Profile pubkey changed from ${oldWidget.profilePubkey} to ${widget.profilePubkey}', 
+               name: 'ProfileScreen', category: LogCategory.ui);
+      // Reinitialize with new profile
+      _initializeProfile();
+    }
   }
 
   @override
@@ -150,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
                 onTap: () {
-                  debugPrint('🍔 Hamburger menu tapped');
+                  Log.debug('� Hamburger menu tapped', name: 'ProfileScreen', category: LogCategory.ui);
                   _showOptionsMenu();
                 },
                 child: Padding(
@@ -678,7 +704,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildVinesGrid() {
     return Consumer<ProfileVideosProvider>(
       builder: (context, profileVideosProvider, child) {
-        debugPrint('📹 ProfileVideosProvider state: loading=${profileVideosProvider.isLoading}, hasVideos=${profileVideosProvider.hasVideos}, hasError=${profileVideosProvider.hasError}, videoCount=${profileVideosProvider.videoCount}, loadingState=${profileVideosProvider.loadingState}');
+        Log.error('� ProfileVideosProvider state: loading=${profileVideosProvider.isLoading}, hasVideos=${profileVideosProvider.hasVideos}, hasError=${profileVideosProvider.hasError}, videoCount=${profileVideosProvider.videoCount}, loadingState=${profileVideosProvider.loadingState}', name: 'ProfileScreen', category: LogCategory.ui);
         
         // Show loading state ONLY if actually loading
         if (profileVideosProvider.isLoading && profileVideosProvider.videoCount == 0) {
@@ -748,10 +774,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       return Padding(
         padding: const EdgeInsets.only(bottom: 80), // Add padding to avoid FAB overlap
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
               SizedBox(height: 16),
               Text(
@@ -780,13 +807,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   padding: const EdgeInsets.only(right: 16),
                   child: IconButton(
                     onPressed: () async {
-                      debugPrint('🔄 Manual refresh videos requested for ${_targetPubkey?.substring(0, 8)}');
+                      Log.debug('Manual refresh videos requested for ${_targetPubkey?.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
                       if (_targetPubkey != null) {
                         try {
                           await profileVideosProvider.refreshVideos();
-                          debugPrint('✅ Manual refresh completed');
+                          Log.info('Manual refresh completed', name: 'ProfileScreen', category: LogCategory.ui);
                         } catch (e) {
-                          debugPrint('❌ Manual refresh failed: $e');
+                          Log.error('Manual refresh failed: $e', name: 'ProfileScreen', category: LogCategory.ui);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Refresh failed: $e')),
@@ -801,6 +828,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ),
               ),
             ],
+          ),
           ),
         ),
       );
@@ -847,6 +875,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           }
 
           final videoEvent = profileVideosProvider.videos[index];
+          
+          // Debug log video data
+          if (index < 3) { // Only log first 3 to avoid spam
+            Log.debug('Video $index: id=${videoEvent.id.substring(0, 8)}, thumbnail=${videoEvent.thumbnailUrl?.substring(0, 50) ?? "null"}, videoUrl=${videoEvent.videoUrl?.substring(0, 50) ?? "null"}', 
+                     name: 'ProfileScreen', category: LogCategory.ui);
+          }
+          
           return GestureDetector(
             onTap: () => _openVine(videoEvent),
             child: Container(
@@ -1052,7 +1087,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   try {
                     return VideoEvent.fromNostrEvent(event);
                   } catch (e) {
-                    debugPrint('Error converting event to VideoEvent: $e');
+                    Log.error('Error converting event to VideoEvent: $e', name: 'ProfileScreen', category: LogCategory.ui);
                     return null;
                   }
                 })
@@ -1351,7 +1386,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _showOptionsMenu() {
-    debugPrint('🍔 _showOptionsMenu called');
+    Log.debug('� _showOptionsMenu called', name: 'ProfileScreen', category: LogCategory.ui);
     try {
       showModalBottomSheet(
         context: context,
@@ -1386,7 +1421,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       ),
     );
     } catch (e) {
-      debugPrint('❌ Error showing options menu: $e');
+      Log.error('Error showing options menu: $e', name: 'ProfileScreen', category: LogCategory.ui);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error opening menu: $e')),
       );
@@ -1394,7 +1429,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _showUserOptions() {
-    debugPrint('👤 _showUserOptions called for user profile');
+    Log.verbose('_showUserOptions called for user profile', name: 'ProfileScreen', category: LogCategory.ui);
     try {
       showModalBottomSheet(
         context: context,
@@ -1445,7 +1480,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ),
       );
     } catch (e) {
-      debugPrint('❌ Error showing user options menu: $e');
+      Log.error('Error showing user options menu: $e', name: 'ProfileScreen', category: LogCategory.ui);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error opening menu: $e')),
       );

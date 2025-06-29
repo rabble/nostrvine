@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:crypto/crypto.dart';
 import 'auth_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Exception thrown by NIP-98 authentication operations
 class Nip98AuthException implements Exception {
@@ -80,7 +81,7 @@ class Nip98AuthService extends ChangeNotifier {
     String? payload,
   }) async {
     if (!_authService.isAuthenticated) {
-      debugPrint('❌ Cannot create NIP-98 token - user not authenticated');
+      Log.error('Cannot create NIP-98 token - user not authenticated', name: 'Nip98AuthService', category: LogCategory.system);
       return null;
     }
     
@@ -91,11 +92,11 @@ class Nip98AuthService extends ChangeNotifier {
       // Check cache first
       final cachedToken = _tokenCache[cacheKey];
       if (cachedToken != null && !cachedToken.isExpired) {
-        debugPrint('🎯 Using cached NIP-98 token');
+        Log.debug('Using cached NIP-98 token', name: 'Nip98AuthService', category: LogCategory.system);
         return cachedToken;
       }
       
-      debugPrint('🔐 Creating new NIP-98 auth token for ${method.value} $url');
+      Log.debug('� Creating new NIP-98 auth token for ${method.value} $url', name: 'Nip98AuthService', category: LogCategory.system);
       
       // Parse URL to extract components
       final uri = Uri.parse(url);
@@ -127,13 +128,13 @@ class Nip98AuthService extends ChangeNotifier {
       // Cache the token
       _tokenCache[cacheKey] = nip98Token;
       
-      debugPrint('✅ Created NIP-98 token (expires: ${nip98Token.expiresAt})');
-      debugPrint('🔑 Event ID: ${authEvent.id}');
+      Log.info('Created NIP-98 token (expires: ${nip98Token.expiresAt})', name: 'Nip98AuthService', category: LogCategory.system);
+      Log.debug('� Event ID: ${authEvent.id}', name: 'Nip98AuthService', category: LogCategory.system);
       
       return nip98Token;
       
     } catch (e) {
-      debugPrint('❌ Failed to create NIP-98 token: $e');
+      Log.error('Failed to create NIP-98 token: $e', name: 'Nip98AuthService', category: LogCategory.system);
       return null;
     }
   }
@@ -170,20 +171,20 @@ class Nip98AuthService extends ChangeNotifier {
       );
       
       if (authEvent == null) {
-        debugPrint('❌ Failed to sign authentication event');
+        Log.error('Failed to sign authentication event', name: 'Nip98AuthService', category: LogCategory.system);
         return null;
       }
       
       // Validate the event
       if (!_validateAuthEvent(authEvent, url, method)) {
-        debugPrint('❌ Authentication event validation failed');
+        Log.error('Authentication event validation failed', name: 'Nip98AuthService', category: LogCategory.system);
         return null;
       }
       
       return authEvent;
       
     } catch (e) {
-      debugPrint('❌ Error creating auth event: $e');
+      Log.error('Error creating auth event: $e', name: 'Nip98AuthService', category: LogCategory.system);
       return null;
     }
   }
@@ -193,7 +194,7 @@ class Nip98AuthService extends ChangeNotifier {
     try {
       // Check event kind
       if (event.kind != 27235) {
-        debugPrint('❌ Invalid event kind: ${event.kind}');
+        Log.error('Invalid event kind: ${event.kind}', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
@@ -205,7 +206,7 @@ class Nip98AuthService extends ChangeNotifier {
         orElse: () => <String>[],
       );
       if (urlTag.isEmpty || urlTag[1] != url) {
-        debugPrint('❌ Missing or invalid URL tag');
+        Log.error('Missing or invalid URL tag', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
@@ -214,7 +215,7 @@ class Nip98AuthService extends ChangeNotifier {
         orElse: () => <String>[],
       );
       if (methodTag.isEmpty || methodTag[1] != method.value) {
-        debugPrint('❌ Missing or invalid method tag');
+        Log.error('Missing or invalid method tag', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
@@ -223,28 +224,28 @@ class Nip98AuthService extends ChangeNotifier {
         orElse: () => <String>[],
       );
       if (createdAtTag.isEmpty) {
-        debugPrint('❌ Missing created_at tag');
+        Log.error('Missing created_at tag', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
       // Check timestamp is recent (within 1 hour)
       final tagTimestamp = int.tryParse(createdAtTag[1]);
       if (tagTimestamp == null) {
-        debugPrint('❌ Invalid timestamp format');
+        Log.error('Invalid timestamp format', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
       final now = (DateTime.now().millisecondsSinceEpoch / 1000).round();
       final timeDiff = (now - tagTimestamp).abs();
       if (timeDiff > 3600) { // 1 hour
-        debugPrint('❌ Timestamp too old: ${timeDiff}s');
+        Log.error('Timestamp too old: ${timeDiff}s', name: 'Nip98AuthService', category: LogCategory.system);
         return false;
       }
       
       return true;
       
     } catch (e) {
-      debugPrint('❌ Auth event validation error: $e');
+      Log.error('Auth event validation error: $e', name: 'Nip98AuthService', category: LogCategory.system);
       return false;
     }
   }
@@ -269,14 +270,14 @@ class Nip98AuthService extends ChangeNotifier {
     }
     
     if (expiredKeys.isNotEmpty) {
-      debugPrint('🧹 Cleaned up ${expiredKeys.length} expired NIP-98 tokens');
+      Log.debug('🧹 Cleaned up ${expiredKeys.length} expired NIP-98 tokens', name: 'Nip98AuthService', category: LogCategory.system);
     }
   }
   
   /// Clear all cached tokens
   void clearTokenCache() {
     _tokenCache.clear();
-    debugPrint('🧹 Cleared all NIP-98 token cache');
+    Log.debug('🧹 Cleared all NIP-98 token cache', name: 'Nip98AuthService', category: LogCategory.system);
   }
   
   /// Get cache statistics
@@ -302,7 +303,7 @@ class Nip98AuthService extends ChangeNotifier {
   
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing Nip98AuthService');
+    Log.debug('�️ Disposing Nip98AuthService', name: 'Nip98AuthService', category: LogCategory.system);
     
     _cleanupTimer?.cancel();
     _tokenCache.clear();

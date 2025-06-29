@@ -1,49 +1,40 @@
 // ABOUTME: Script to help migrate debugPrint calls to UnifiedLogger with appropriate levels
 // ABOUTME: Run this to see migration suggestions for updating logging statements
 
-import 'dart:io';
+import '../utils/unified_logger.dart';
 
 void main() {
-  print('Logging Migration Helper\n');
-  print('This script analyzes debugPrint patterns and suggests appropriate log levels.\n');
+  Log.info('Logging Migration Helper', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('This script analyzes debugPrint patterns and suggests appropriate log levels.', name: 'MigrateLogging', category: LogCategory.system);
   
-  // Common patterns and their suggested log levels
-  final patterns = {
-    // Error patterns
-    RegExp(r'❌|Error|Failed|Exception|Crash', caseSensitive: false): 'Log.error',
-    
-    // Warning patterns  
-    RegExp(r'⚠️|Warning|Warn|Deprecated|Retry', caseSensitive: false): 'Log.warning',
-    
-    // Info patterns (important state changes)
-    RegExp(r'✅|Success|Completed|Connected|Initialized|Started|Stopped', caseSensitive: false): 'Log.info',
-    
-    // Debug patterns (detailed operational info)
-    RegExp(r'🔍|🔄|📡|Creating|Loading|Processing|Handling', caseSensitive: false): 'Log.debug',
-    
-    // Verbose patterns (very detailed tracing)
-    RegExp(r'- Authors:|- Hashtags:|- Since:|- Until:|- Limit:|Detailed|Trace', caseSensitive: false): 'Log.verbose',
-  };
+  // Common patterns and their suggested log levels (for reference)
+  // Error patterns: ❌|Error|Failed|Exception|Crash → Log.error
+  // Warning patterns: ⚠️|Warning|Warn|Deprecated|Retry → Log.warning  
+  // Info patterns: ✅|Success|Completed|Connected|Initialized|Started|Stopped → Log.info
+  // Debug patterns: 🔍|🔄|📡|Creating|Loading|Processing|Handling → Log.debug
+  // Verbose patterns: - Authors:|- Hashtags:|- Since:|- Until:|- Limit:|Detailed|Trace → Log.verbose
   
-  print('Pattern Analysis:\n');
-  print('ERROR level for: Errors, failures, exceptions');
-  print('WARNING level for: Warnings, retries, connection issues');
-  print('INFO level for: Important state changes, completions');
-  print('DEBUG level for: Operational details, processing steps');
-  print('VERBOSE level for: Detailed parameters, trace information\n');
+  Log.info('Pattern Analysis:', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('ERROR level for: Errors, failures, exceptions', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('WARNING level for: Warnings, retries, connection issues', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('INFO level for: Important state changes, completions', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('DEBUG level for: Operational details, processing steps', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('VERBOSE level for: Detailed parameters, trace information', name: 'MigrateLogging', category: LogCategory.system);
   
-  print('Migration steps:');
-  print('1. Add import: import \'../utils/unified_logger.dart\';');
-  print('2. Replace debugPrint based on content:');
-  print('   - debugPrint(\'❌ Error...\') → Log.error(\'Error...\', name: \'ServiceName\')');
-  print('   - debugPrint(\'⚠️ Warning...\') → Log.warning(\'Warning...\', name: \'ServiceName\')');
-  print('   - debugPrint(\'✅ Success...\') → Log.info(\'Success...\', name: \'ServiceName\')');
-  print('   - debugPrint(\'🔍 Loading...\') → Log.debug(\'Loading...\', name: \'ServiceName\')');
-  print('   - debugPrint(\'  - Details...\') → Log.verbose(\'Details...\', name: \'ServiceName\')');
-  print('\n3. For simple migrations without changing level:');
-  print('   - debugPrint(message) → Log.print(message)');
-  print('\n4. Configure log level at app startup:');
-  print('   - Development: UnifiedLogger.setLogLevel(LogLevel.debug)');
-  print('   - Production: UnifiedLogger.setLogLevel(LogLevel.info)');
-  print('   - Debugging issues: UnifiedLogger.setLogLevel(LogLevel.verbose)');
+  Log.info('Migration steps:', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('1. Add import: import \'../utils/unified_logger.dart\';', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('2. Replace debugPrint based on content:', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(\'❌ Error...\') → Log.error(\'Error...\', name: \'ServiceName\')', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(\'⚠️ Warning...\') → Log.warning(\'Warning...\', name: \'ServiceName\')', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(\'✅ Success...\') → Log.info(\'Success...\', name: \'ServiceName\')', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(\'🔍 Loading...\') → Log.debug(\'Loading...\', name: \'ServiceName\')', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(\'  - Details...\') → Log.verbose(\'Details...\', name: \'ServiceName\')', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('3. For simple migrations without changing level:', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - debugPrint(message) → Log.print(message)', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('4. Configure log level at app startup:', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - Development: UnifiedLogger.setLogLevel(LogLevel.debug)', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - Production: UnifiedLogger.setLogLevel(LogLevel.info)', name: 'MigrateLogging', category: LogCategory.system);
+  Log.info('   - Debugging issues: UnifiedLogger.setLogLevel(LogLevel.verbose)', name: 'MigrateLogging', category: LogCategory.system);
 }

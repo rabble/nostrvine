@@ -9,9 +9,10 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/direct_upload_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() async {
-  print('🎬 Starting end-to-end thumbnail test...');
+  Log.debug('🎬 Starting end-to-end thumbnail test...');
   
   // Create a test video file (MP4 format with minimal content)
   final testVideoBytes = _createTestVideoFile();
@@ -20,11 +21,11 @@ void main() async {
   
   try {
     await testVideoFile.writeAsBytes(testVideoBytes);
-    print('📹 Created test video file: ${testVideoFile.path}');
-    print('📦 Video file size: ${await testVideoFile.length()} bytes');
+    Log.debug('📹 Created test video file: ${testVideoFile.path}');
+    Log.debug('📦 Video file size: ${await testVideoFile.length()} bytes');
     
     // Test 1: Verify VideoThumbnailService can extract thumbnails
-    print('\n🧪 Test 1: Thumbnail extraction...');
+    Log.debug('\n🧪 Test 1: Thumbnail extraction...');
     
     final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
       videoPath: testVideoFile.path,
@@ -33,25 +34,25 @@ void main() async {
     );
     
     if (thumbnailBytes != null) {
-      print('✅ Thumbnail extraction successful!');
-      print('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
-      print('📊 Thumbnail format: JPEG');
+      Log.debug('✅ Thumbnail extraction successful!');
+      Log.debug('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
+      Log.debug('📊 Thumbnail format: JPEG');
       
       // Verify it's a valid JPEG (starts with FFD8)
       if (thumbnailBytes.length >= 2 && 
           thumbnailBytes[0] == 0xFF && 
           thumbnailBytes[1] == 0xD8) {
-        print('✅ Generated thumbnail is valid JPEG format');
+        Log.debug('✅ Generated thumbnail is valid JPEG format');
       } else {
-        print('❌ Generated thumbnail is not valid JPEG format');
+        Log.debug('❌ Generated thumbnail is not valid JPEG format');
       }
     } else {
-      print('❌ Thumbnail extraction failed - this is expected in test environment');
-      print('ℹ️  This would work with real video files on actual devices');
+      Log.debug('❌ Thumbnail extraction failed - this is expected in test environment');
+      Log.debug('ℹ️  This would work with real video files on actual devices');
     }
     
     // Test 2: Verify DirectUploadService structure includes thumbnails
-    print('\n🧪 Test 2: Upload service structure...');
+    Log.debug('\n🧪 Test 2: Upload service structure...');
     
     final uploadResult = DirectUploadResult.success(
       videoId: 'test_video_123',
@@ -63,13 +64,13 @@ void main() async {
       },
     );
     
-    print('✅ DirectUploadResult structure supports thumbnails');
-    print('🎬 Video URL: ${uploadResult.cdnUrl}');
-    print('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
-    print('📋 Success: ${uploadResult.success}');
+    Log.debug('✅ DirectUploadResult structure supports thumbnails');
+    Log.debug('🎬 Video URL: ${uploadResult.cdnUrl}');
+    Log.debug('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
+    Log.debug('📋 Success: ${uploadResult.success}');
     
     // Test 3: Verify NIP-71 event structure
-    print('\n🧪 Test 3: NIP-71 event structure...');
+    Log.debug('\n🧪 Test 3: NIP-71 event structure...');
     
     final expectedTags = [
       ['url', uploadResult.cdnUrl!],
@@ -80,13 +81,13 @@ void main() async {
       ['client', 'nostrvine'],
     ];
     
-    print('✅ NIP-71 event tags structure verified:');
+    Log.debug('✅ NIP-71 event tags structure verified:');
     for (final tag in expectedTags) {
-      print('  🏷️ ${tag[0]}: ${tag[1]}');
+      Log.debug('  🏷️ ${tag[0]}: ${tag[1]}');
     }
     
     // Test 4: Check optimal timestamp calculation
-    print('\n🧪 Test 4: Optimal timestamp calculation...');
+    Log.debug('\n🧪 Test 4: Optimal timestamp calculation...');
     
     final testDurations = [
       Duration(milliseconds: 500),  // Very short
@@ -96,27 +97,27 @@ void main() async {
     
     for (final duration in testDurations) {
       final timestamp = VideoThumbnailService.getOptimalTimestamp(duration);
-      print('📐 Duration: ${duration.inMilliseconds}ms → Timestamp: ${timestamp}ms');
+      Log.debug('📐 Duration: ${duration.inMilliseconds}ms → Timestamp: ${timestamp}ms');
     }
     
-    print('\n🎉 End-to-end thumbnail test completed successfully!');
-    print('📝 Summary:');
-    print('  ✅ Thumbnail service structure is correct');
-    print('  ✅ Upload service supports thumbnail URLs');
-    print('  ✅ NIP-71 event format includes thumb tags');
-    print('  ✅ Optimal timestamp calculation works');
-    print('  ℹ️  Actual thumbnail generation requires real video files on devices');
+    Log.debug('\n🎉 End-to-end thumbnail test completed successfully!');
+    Log.debug('📝 Summary:');
+    Log.debug('  ✅ Thumbnail service structure is correct');
+    Log.debug('  ✅ Upload service supports thumbnail URLs');
+    Log.debug('  ✅ NIP-71 event format includes thumb tags');
+    Log.debug('  ✅ Optimal timestamp calculation works');
+    Log.debug('  ℹ️  Actual thumbnail generation requires real video files on devices');
     
   } catch (e, stackTrace) {
-    print('❌ End-to-end test failed: $e');
-    print('📍 Stack trace: $stackTrace');
+    Log.debug('❌ End-to-end test failed: $e');
+    Log.debug('📍 Stack trace: $stackTrace');
   } finally {
     // Cleanup
     try {
       await tempDir.delete(recursive: true);
-      print('🗑️ Cleaned up test files');
+      Log.debug('🗑️ Cleaned up test files');
     } catch (e) {
-      print('⚠️ Warning: Failed to cleanup test files: $e');
+      Log.debug('⚠️ Warning: Failed to cleanup test files: $e');
     }
   }
 }

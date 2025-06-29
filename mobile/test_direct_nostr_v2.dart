@@ -10,6 +10,7 @@ import 'package:nostr_sdk/relay/relay_status.dart';
 import 'package:nostr_sdk/relay/event_filter.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 // Simplified NostrServiceV2 for testing
 class TestNostrServiceV2 {
@@ -20,7 +21,7 @@ class TestNostrServiceV2 {
   TestNostrServiceV2(this.privateKey);
   
   Future<void> initialize() async {
-    print('🔧 Initializing TestNostrServiceV2...');
+    Log.debug('🔧 Initializing TestNostrServiceV2...');
     
     final signer = LocalNostrSigner(privateKey);
     final pubKey = await signer.getPublicKey();
@@ -29,7 +30,7 @@ class TestNostrServiceV2 {
       throw Exception('Failed to get public key');
     }
     
-    print('🔑 Public key: ${pubKey.substring(0, 8)}...');
+    Log.debug('🔑 Public key: ${pubKey.substring(0, 8)}...');
     
     // Initialize Nostr client
     _nostrClient = Nostr(
@@ -38,7 +39,7 @@ class TestNostrServiceV2 {
       <EventFilter>[], // No global filters
       (relayUrl) => RelayBase(relayUrl, RelayStatus(relayUrl)),
       onNotice: (relayUrl, notice) {
-        print('📢 Notice from $relayUrl: $notice');
+        Log.debug('📢 Notice from $relayUrl: $notice');
       },
     );
     
@@ -46,15 +47,15 @@ class TestNostrServiceV2 {
     final relayUrl = 'wss://vine.hol.is';
     final relay = RelayBase(relayUrl, RelayStatus(relayUrl));
     
-    print('🔌 Connecting to $relayUrl...');
+    Log.debug('🔌 Connecting to $relayUrl...');
     final success = await _nostrClient!.addRelay(relay, autoSubscribe: true);
     
     if (success) {
       _connectedRelays.add(relayUrl);
-      print('✅ Connected to relay: $relayUrl');
-      print('  - Status: ${relay.relayStatus.connected}');
-      print('  - Read access: ${relay.relayStatus.readAccess}');
-      print('  - Write access: ${relay.relayStatus.writeAccess}');
+      Log.debug('✅ Connected to relay: $relayUrl');
+      Log.debug('  - Status: ${relay.relayStatus.connected}');
+      Log.debug('  - Read access: ${relay.relayStatus.readAccess}');
+      Log.debug('  - Write access: ${relay.relayStatus.writeAccess}');
     } else {
       throw Exception('Failed to connect to relay');
     }
@@ -77,28 +78,28 @@ class TestNostrServiceV2 {
     // Generate unique subscription ID
     final subscriptionId = '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
     
-    print('📡 Creating subscription with filters:');
+    Log.debug('📡 Creating subscription with filters:');
     for (final filter in sdkFilters) {
-      print('  - Filter: $filter');
+      Log.debug('  - Filter: $filter');
     }
     
     // Create subscription using SDK
     final sdkSubId = _nostrClient!.subscribe(
       sdkFilters,
       (Event event) {
-        print('📨 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+        Log.debug('📨 Received event: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
         controller.add(event);
       },
       id: subscriptionId,
     );
     
-    print('✅ Created subscription $subscriptionId (SDK ID: $sdkSubId) with ${filters.length} filters');
+    Log.debug('✅ Created subscription $subscriptionId (SDK ID: $sdkSubId) with ${filters.length} filters');
     
     // Check relay pool state
-    print('🔍 Checking relay pool state...');
+    Log.debug('🔍 Checking relay pool state...');
     final relays = _nostrClient!.activeRelays();
     for (final relay in relays) {
-      print('  - Relay ${relay.url}: connected=${relay.relayStatus.connected}, authed=${relay.relayStatus.authed}');
+      Log.debug('  - Relay ${relay.url}: connected=${relay.relayStatus.connected}, authed=${relay.relayStatus.authed}');
     }
     
     return controller.stream;
@@ -111,7 +112,7 @@ class TestNostrServiceV2 {
 }
 
 void main() async {
-  print('🚀 Testing NostrServiceV2 implementation...');
+  Log.debug('🚀 Testing NostrServiceV2 implementation...');
   
   // Generate keys
   final privateKey = generatePrivateKey();
@@ -134,18 +135,18 @@ void main() async {
     int eventCount = 0;
     final subscription = eventStream.listen((event) {
       eventCount++;
-      print('✅ Event #$eventCount:');
-      print('  - Kind: ${event.kind}');
-      print('  - ID: ${event.id.substring(0, 8)}...');
-      print('  - Author: ${event.pubkey.substring(0, 8)}...');
-      print('  - Content: ${event.content.substring(0, 50)}${event.content.length > 50 ? "..." : ""}');
+      Log.debug('✅ Event #$eventCount:');
+      Log.debug('  - Kind: ${event.kind}');
+      Log.debug('  - ID: ${event.id.substring(0, 8)}...');
+      Log.debug('  - Author: ${event.pubkey.substring(0, 8)}...');
+      Log.debug('  - Content: ${event.content.substring(0, 50)}${event.content.length > 50 ? "..." : ""}');
     });
     
     // Wait for events
-    print('⏳ Waiting for events (20 seconds)...');
+    Log.debug('⏳ Waiting for events (20 seconds)...');
     await Future.delayed(Duration(seconds: 20));
     
-    print('🏁 Test complete. Received $eventCount events.');
+    Log.debug('🏁 Test complete. Received $eventCount events.');
     
     // Cleanup
     await subscription.cancel();

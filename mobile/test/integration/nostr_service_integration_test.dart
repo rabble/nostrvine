@@ -4,8 +4,9 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/services/nostr_service_v2.dart';
+import 'package:openvine/services/nostr_service.dart';
 import 'package:openvine/services/nostr_key_manager.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +21,7 @@ void main() {
       }
       
       // Create service
-      final service = NostrServiceV2(keyManager);
+      final service = NostrService(keyManager);
       
       try {
         // Initialize service
@@ -41,7 +42,7 @@ void main() {
         final events = <dynamic>[];
         final subscription = eventStream.listen((event) {
           events.add(event);
-          print('Received event: ${event.kind} - ${event.id.substring(0, 8)}...');
+          Log.debug('Received event: ${event.kind} - ${event.id.substring(0, 8)}...');
         });
         
         // Wait for events
@@ -55,7 +56,7 @@ void main() {
             reason: 'Should receive at least one event from relay');
         
         if (events.isNotEmpty) {
-          print('✅ Received ${events.length} events');
+          Log.debug('✅ Received ${events.length} events');
         }
         
       } finally {

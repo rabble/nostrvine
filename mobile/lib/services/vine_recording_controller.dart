@@ -10,6 +10,7 @@ import 'package:camera_macos/camera_macos.dart' as macos;
 import 'package:path_provider/path_provider.dart';
 import '../utils/async_utils.dart';
 import 'web_camera_service_stub.dart' if (dart.library.html) 'web_camera_service.dart' as camera_service;
+import '../utils/unified_logger.dart';
 
 /// Represents a single recording segment in the Vine-style recording
 class RecordingSegment {
@@ -101,16 +102,16 @@ class MobileCameraInterface extends CameraPlatformInterface {
     
     // Check if already recording to prevent double-start
     if (_isRecording) {
-      debugPrint('⚠️ Already recording, skipping startVideoRecording');
+      Log.warning('Already recording, skipping startVideoRecording', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
     try {
       await _controller!.startVideoRecording();
       _isRecording = true;
-      debugPrint('✅ Started mobile camera recording');
+      Log.info('Started mobile camera recording', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to start mobile camera recording: $e');
+      Log.error('Failed to start mobile camera recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -123,18 +124,18 @@ class MobileCameraInterface extends CameraPlatformInterface {
     
     // Check if not recording to prevent double-stop
     if (!_isRecording) {
-      debugPrint('⚠️ Not currently recording, skipping stopVideoRecording');
+      Log.warning('Not currently recording, skipping stopVideoRecording', name: 'VineRecordingController', category: LogCategory.system);
       return null;
     }
     
     try {
       final xFile = await _controller!.stopVideoRecording();
       _isRecording = false;
-      debugPrint('✅ Stopped mobile camera recording: ${xFile.path}');
+      Log.info('Stopped mobile camera recording: ${xFile.path}', name: 'VineRecordingController', category: LogCategory.system);
       return xFile.path;
     } catch (e) {
       _isRecording = false; // Reset state even on error
-      debugPrint('❌ Failed to stop mobile camera recording: $e');
+      Log.error('Failed to stop mobile camera recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       // Don't rethrow - return null to indicate no file was saved
       return null;
     }
@@ -146,7 +147,7 @@ class MobileCameraInterface extends CameraPlatformInterface {
     
     // Don't switch if controller is not properly initialized
     if (_controller == null || !_controller!.value.isInitialized) {
-      debugPrint('⚠️ Cannot switch camera - controller not initialized');
+      Log.warning('Cannot switch camera - controller not initialized', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
@@ -155,7 +156,7 @@ class MobileCameraInterface extends CameraPlatformInterface {
       try {
         await _controller?.stopVideoRecording();
       } catch (e) {
-        debugPrint('⚠️ Error stopping recording during camera switch: $e');
+        Log.error('Error stopping recording during camera switch: $e', name: 'VineRecordingController', category: LogCategory.system);
       }
       _isRecording = false;
     }
@@ -172,11 +173,11 @@ class MobileCameraInterface extends CameraPlatformInterface {
       // Safely dispose old controller after new one is ready
       await oldController?.dispose();
       
-      debugPrint('📷 Successfully switched to camera $_currentCameraIndex');
+      Log.info('� Successfully switched to camera $_currentCameraIndex', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
       // If switching fails, restore old controller
       _controller = oldController;
-      debugPrint('❌ Camera switch failed, restored previous camera: $e');
+      Log.error('Camera switch failed, restored previous camera: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -202,7 +203,7 @@ class MobileCameraInterface extends CameraPlatformInterface {
       try {
         _controller?.stopVideoRecording();
       } catch (e) {
-        debugPrint('⚠️ Error stopping recording during disposal: $e');
+        Log.error('Error stopping recording during disposal: $e', name: 'VineRecordingController', category: LogCategory.system);
       }
       _isRecording = false;
     }
@@ -239,7 +240,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
         onCameraInizialized: (controller) {
           _controller = controller;
           completeInitialization();
-          debugPrint('📷 macOS camera controller initialized successfully');
+          Log.info('� macOS camera controller initialized successfully', name: 'VineRecordingController', category: LogCategory.system);
         },
       ),
     );
@@ -247,23 +248,23 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
     // For macOS, we can't wait for initialization here because the widget
     // needs to be in the widget tree first. Initialization will be checked
     // when recording starts.
-    debugPrint('📷 macOS camera widget created - waiting for widget mount');
+    Log.info('� macOS camera widget created - waiting for widget mount', name: 'VineRecordingController', category: LogCategory.system);
   }
   
   @override
   Future<void> startRecordingSegment(String filePath) async {
-    debugPrint('📷 Starting recording segment, initialized: $isInitialized, recording: $_isRecording, singleMode: $isSingleRecordingMode');
+    Log.info('� Starting recording segment, initialized: $isInitialized, recording: $_isRecording, singleMode: $isSingleRecordingMode', name: 'VineRecordingController', category: LogCategory.system);
     
     // Wait for camera to be initialized (up to 5 seconds) using proper async pattern
     try {
       await waitForInitialization(timeout: const Duration(seconds: 5));
     } catch (e) {
-      debugPrint('❌ macOS camera failed to initialize: $e');
+      Log.error('macOS camera failed to initialize: $e', name: 'VineRecordingController', category: LogCategory.system);
       throw Exception('macOS camera not initialized after waiting 5 seconds: $e');
     }
     
     if (_controller == null) {
-      debugPrint('❌ macOS camera controller is null after initialization');
+      Log.error('macOS camera controller is null after initialization', name: 'VineRecordingController', category: LogCategory.system);
       throw Exception('macOS camera controller not available');
     }
     
@@ -282,27 +283,27 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
         onVideoRecordingFinished: (file, exception) {
           _isRecording = false;
           if (exception != null) {
-            debugPrint('❌ macOS recording error: $exception');
+            Log.error('macOS recording error: $exception', name: 'VineRecordingController', category: LogCategory.system);
             _recordingCompleter?.completeError(exception);
             _recordingCompletionCompleter?.completeError(exception);
           } else {
-            debugPrint('✅ macOS recording completed: ${file?.url}');
+            Log.info('macOS recording completed: ${file?.url}', name: 'VineRecordingController', category: LogCategory.system);
             _recordingCompleter?.complete(file);
             _recordingCompletionCompleter?.complete(file?.url ?? '');
           }
         },
       );
       
-      debugPrint('🎬 Started macOS single recording mode');
+      Log.info('Started macOS single recording mode', name: 'VineRecordingController', category: LogCategory.system);
     } else if (isSingleRecordingMode && _isRecording) {
       // Already recording in single mode - just track the virtual segment start
-      debugPrint('📝 macOS single recording mode - tracking new virtual segment');
+      Log.verbose('macOS single recording mode - tracking new virtual segment', name: 'VineRecordingController', category: LogCategory.system);
     }
   }
   
   @override
   Future<String?> stopRecordingSegment() async {
-    debugPrint('📷 Stopping recording segment, recording: $_isRecording, singleMode: $isSingleRecordingMode');
+    Log.debug('� Stopping recording segment, recording: $_isRecording, singleMode: $isSingleRecordingMode', name: 'VineRecordingController', category: LogCategory.system);
     
     if (_controller == null || !isSingleRecordingMode) {
       return null;
@@ -311,7 +312,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
     // In single recording mode, we just track virtual segments
     // The actual recording continues until we call stopSingleRecording
     if (isSingleRecordingMode && _isRecording) {
-      debugPrint('📝 macOS single recording mode - virtual segment stop');
+      Log.verbose('macOS single recording mode - virtual segment stop', name: 'VineRecordingController', category: LogCategory.system);
       // Return the path for consistency, but actual file won't be ready yet
       return currentRecordingPath;
     }
@@ -321,7 +322,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
   
   /// Stop the single recording mode and return the final file
   Future<String?> stopSingleRecording() async {
-    debugPrint('🛑 Stopping macOS single recording mode');
+    Log.debug('� Stopping macOS single recording mode', name: 'VineRecordingController', category: LogCategory.system);
     
     if (!isSingleRecordingMode || !_isRecording) {
       return null;
@@ -346,7 +347,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
     try {
       return await _recordingCompletionCompleter!.future.timeout(timeout);
     } catch (e) {
-      debugPrint('❌ Recording completion timeout or error: $e');
+      Log.error('Recording completion timeout or error: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -359,7 +360,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
   @override
   Widget get previewWidget {
     if (!isInitialized) {
-      debugPrint('📷 macOS camera preview requested but not initialized yet');
+      Log.info('� macOS camera preview requested but not initialized yet', name: 'VineRecordingController', category: LogCategory.system);
     }
     return _previewWidget;
   }
@@ -367,7 +368,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
   @override
   Future<void> switchCamera() async {
     // TODO: Implement camera switching for macOS if multiple cameras are available
-    debugPrint('📷 Camera switching not yet implemented for macOS');
+    Log.debug('� Camera switching not yet implemented for macOS', name: 'VineRecordingController', category: LogCategory.system);
   }
   
   @override
@@ -375,7 +376,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
     // Stop any active recording
     if (_isRecording) {
       _isRecording = false;
-      debugPrint('📷 macOS camera interface disposed - stopped recording');
+      Log.info('� macOS camera interface disposed - stopped recording', name: 'VineRecordingController', category: LogCategory.system);
     }
     
     // Reset state
@@ -393,7 +394,7 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
     currentRecordingPath = null;
     _recordingCompleter = null;
     _virtualSegments.clear();
-    debugPrint('📷 macOS camera interface reset');
+    Log.debug('� macOS camera interface reset', name: 'VineRecordingController', category: LogCategory.system);
   }
 }
 
@@ -413,9 +414,9 @@ class WebCameraInterface extends CameraPlatformInterface {
       // Create preview widget with the initialized camera service
       _previewWidget = camera_service.WebCameraPreview(cameraService: _webCameraService!);
       
-      debugPrint('📷 Web camera interface initialized successfully');
+      Log.info('� Web camera interface initialized successfully', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Web camera interface initialization failed: $e');
+      Log.error('Web camera interface initialization failed: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -437,10 +438,10 @@ class WebCameraInterface extends CameraPlatformInterface {
     
     try {
       final blobUrl = await _webCameraService!.stopRecording();
-      debugPrint('📹 Web recording completed: $blobUrl');
+      Log.info('� Web recording completed: $blobUrl', name: 'VineRecordingController', category: LogCategory.system);
       return blobUrl;
     } catch (e) {
-      debugPrint('❌ Failed to stop web recording: $e');
+      Log.error('Failed to stop web recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -448,15 +449,15 @@ class WebCameraInterface extends CameraPlatformInterface {
   @override
   Future<void> switchCamera() async {
     if (_webCameraService == null) {
-      debugPrint('⚠️ Web camera service not initialized');
+      Log.warning('Web camera service not initialized', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
     try {
       await _webCameraService!.switchCamera();
-      debugPrint('📷 Web camera switched successfully');
+      Log.info('� Web camera switched successfully', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Camera switching failed on web: $e');
+      Log.error('Camera switching failed on web: $e', name: 'VineRecordingController', category: LogCategory.system);
     }
   }
   
@@ -477,7 +478,7 @@ class WebCameraInterface extends CameraPlatformInterface {
         // Call the static method through the service
         camera_service.WebCameraService.revokeBlobUrl(blobUrl);
       } catch (e) {
-        debugPrint('⚠️ Error revoking blob URL: $e');
+        Log.error('Error revoking blob URL: $e', name: 'VineRecordingController', category: LogCategory.system);
       }
     }
   }
@@ -522,13 +523,13 @@ class VineRecordingController extends ChangeNotifier {
   /// Switch between front and rear cameras
   Future<void> switchCamera() async {
     if (_state == VineRecordingState.recording) {
-      debugPrint('⚠️ Cannot switch camera while recording');
+      Log.warning('Cannot switch camera while recording', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
     // If we're in paused state with a segment in progress, ensure it's properly stopped
     if (_currentSegmentStartTime != null) {
-      debugPrint('⚠️ Cleaning up incomplete segment before camera switch');
+      Log.warning('Cleaning up incomplete segment before camera switch', name: 'VineRecordingController', category: LogCategory.system);
       _currentSegmentStartTime = null;
       _stopProgressTimer();
       _stopMaxDurationTimer();
@@ -536,9 +537,9 @@ class VineRecordingController extends ChangeNotifier {
     
     try {
       await _cameraInterface.switchCamera();
-      debugPrint('📷 Camera switched successfully');
+      Log.info('� Camera switched successfully', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to switch camera: $e');
+      Log.error('Failed to switch camera: $e', name: 'VineRecordingController', category: LogCategory.system);
     }
   }
   
@@ -569,10 +570,10 @@ class VineRecordingController extends ChangeNotifier {
         _tempDirectory = tempDir.path;
       }
       
-      debugPrint('🎬 VineRecordingController initialized for ${_getPlatformName()}');
+      Log.info('VineRecordingController initialized for ${_getPlatformName()}', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
       _setState(VineRecordingState.error);
-      debugPrint('❌ VineRecordingController initialization failed: $e');
+      Log.error('VineRecordingController initialization failed: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -583,13 +584,13 @@ class VineRecordingController extends ChangeNotifier {
     
     // Prevent starting if already recording
     if (_state == VineRecordingState.recording) {
-      debugPrint('⚠️ Already recording, ignoring start request');
+      Log.warning('Already recording, ignoring start request', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
     // On web, prevent multiple segments until compilation is implemented
     if (kIsWeb && _segments.isNotEmpty) {
-      debugPrint('⚠️ Multiple segments not supported on web yet');
+      Log.warning('Multiple segments not supported on web yet', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
@@ -607,14 +608,14 @@ class VineRecordingController extends ChangeNotifier {
       // Set max duration timer if this is the first segment or we're close to limit
       _startMaxDurationTimer();
       
-      debugPrint('🎬 Started recording segment ${_segments.length + 1}');
+      Log.info('Started recording segment ${_segments.length + 1}', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
       // Reset state and clean up on error
       _currentSegmentStartTime = null;
       _stopProgressTimer();
       _stopMaxDurationTimer();
       _setState(VineRecordingState.error);
-      debugPrint('❌ Failed to start recording: $e');
+      Log.error('Failed to start recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       // Don't rethrow - handle gracefully in UI
     }
   }
@@ -622,7 +623,7 @@ class VineRecordingController extends ChangeNotifier {
   /// Stop recording current segment (release)
   Future<void> stopRecording() async {
     if (_state != VineRecordingState.recording || _currentSegmentStartTime == null) {
-      debugPrint('⚠️ Not recording or no start time, ignoring stop request');
+      Log.warning('Not recording or no start time, ignoring stop request', name: 'VineRecordingController', category: LogCategory.system);
       return;
     }
     
@@ -647,7 +648,7 @@ class VineRecordingController extends ChangeNotifier {
           _segments.add(segment);
           _totalRecordedDuration += segmentDuration;
           
-          debugPrint('✅ Completed virtual segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms');
+          Log.info('Completed virtual segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms', name: 'VineRecordingController', category: LogCategory.system);
         } else {
           // Normal segment recording for other platforms
           final filePath = await _cameraInterface.stopRecordingSegment();
@@ -663,9 +664,9 @@ class VineRecordingController extends ChangeNotifier {
             _segments.add(segment);
             _totalRecordedDuration += segmentDuration;
             
-            debugPrint('✅ Completed segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms');
+            Log.info('Completed segment ${_segments.length}: ${segmentDuration.inMilliseconds}ms', name: 'VineRecordingController', category: LogCategory.system);
           } else {
-            debugPrint('⚠️ No file path returned from camera interface');
+            Log.warning('No file path returned from camera interface', name: 'VineRecordingController', category: LogCategory.system);
           }
         }
       }
@@ -683,7 +684,7 @@ class VineRecordingController extends ChangeNotifier {
       // Check if we've reached the maximum duration or if on web (single segment only)
       if (_totalRecordedDuration >= maxRecordingDuration || kIsWeb) {
         _setState(VineRecordingState.completed);
-        debugPrint('🏁 Recording completed - ${kIsWeb ? "web single segment" : "reached maximum duration"}');
+        Log.info('� Recording completed - ${kIsWeb ? "web single segment" : "reached maximum duration"}', name: 'VineRecordingController', category: LogCategory.system);
       } else {
         _setState(VineRecordingState.paused);
       }
@@ -694,7 +695,7 @@ class VineRecordingController extends ChangeNotifier {
       _stopProgressTimer();
       _stopMaxDurationTimer();
       _setState(VineRecordingState.error);
-      debugPrint('❌ Failed to stop recording: $e');
+      Log.error('Failed to stop recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       // Don't rethrow - handle gracefully in UI
     }
   }
@@ -728,10 +729,10 @@ class VineRecordingController extends ChangeNotifier {
               _setState(VineRecordingState.completed);
               return file;
             } else {
-              debugPrint('⚠️ Recording completed but file not found: $completedPath');
+              Log.warning('Recording completed but file not found: $completedPath', name: 'VineRecordingController', category: LogCategory.system);
             }
           } catch (e) {
-            debugPrint('❌ Recording completion failed: $e');
+            Log.error('Recording completion failed: $e', name: 'VineRecordingController', category: LogCategory.system);
             // Fall back to checking the current path
             if (macOSInterface.currentRecordingPath != null) {
               final file = File(macOSInterface.currentRecordingPath!);
@@ -763,7 +764,7 @@ class VineRecordingController extends ChangeNotifier {
               return tempFile;
             }
           } catch (e) {
-            debugPrint('❌ Failed to convert blob to file: $e');
+            Log.error('Failed to convert blob to file: $e', name: 'VineRecordingController', category: LogCategory.system);
           }
         }
       }
@@ -782,7 +783,7 @@ class VineRecordingController extends ChangeNotifier {
       
     } catch (e) {
       _setState(VineRecordingState.error);
-      debugPrint('❌ Failed to finish recording: $e');
+      Log.error('Failed to finish recording: $e', name: 'VineRecordingController', category: LogCategory.system);
       rethrow;
     }
   }
@@ -807,7 +808,7 @@ class VineRecordingController extends ChangeNotifier {
     
     // If was in error state and on web, reinitialize the camera
     if (wasInError && kIsWeb) {
-      debugPrint('🔄 Reinitializing web camera after error...');
+      Log.error('Reinitializing web camera after error...', name: 'VineRecordingController', category: LogCategory.system);
       if (_cameraInterface is WebCameraInterface) {
         final webInterface = _cameraInterface as WebCameraInterface;
         webInterface.dispose();
@@ -815,15 +816,15 @@ class VineRecordingController extends ChangeNotifier {
       // Create new camera interface and initialize
       _cameraInterface = WebCameraInterface();
       initialize().then((_) {
-        debugPrint('✅ Web camera reinitialized successfully');
+        Log.info('Web camera reinitialized successfully', name: 'VineRecordingController', category: LogCategory.system);
         _setState(VineRecordingState.idle);
       }).catchError((e) {
-        debugPrint('❌ Failed to reinitialize web camera: $e');
+        Log.error('Failed to reinitialize web camera: $e', name: 'VineRecordingController', category: LogCategory.system);
         _setState(VineRecordingState.error);
       });
     }
     
-    debugPrint('🔄 Recording session reset');
+    Log.debug('Recording session reset', name: 'VineRecordingController', category: LogCategory.system);
   }
   
   /// Clean up recording files and resources
@@ -838,9 +839,9 @@ class VineRecordingController extends ChangeNotifier {
         _cleanupMobileRecordings();
       }
       
-      debugPrint('🧹 Cleaned up recording resources');
+      Log.debug('🧹 Cleaned up recording resources', name: 'VineRecordingController', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Error cleaning up recordings: $e');
+      Log.error('Error cleaning up recordings: $e', name: 'VineRecordingController', category: LogCategory.system);
     }
   }
   
@@ -856,7 +857,7 @@ class VineRecordingController extends ChangeNotifier {
           try {
             webInterface._cleanupBlobUrl(segment.filePath!);
           } catch (e) {
-            debugPrint('⚠️ Error cleaning up blob URL: $e');
+            Log.error('Error cleaning up blob URL: $e', name: 'VineRecordingController', category: LogCategory.system);
           }
         }
       }
@@ -877,10 +878,10 @@ class VineRecordingController extends ChangeNotifier {
         final file = File(macOSInterface.currentRecordingPath!);
         if (file.existsSync()) {
           file.deleteSync();
-          debugPrint('🧹 Deleted macOS recording file: ${macOSInterface.currentRecordingPath}');
+          Log.debug('🧹 Deleted macOS recording file: ${macOSInterface.currentRecordingPath}', name: 'VineRecordingController', category: LogCategory.system);
         }
       } catch (e) {
-        debugPrint('⚠️ Error deleting macOS recording file: $e');
+        Log.error('Error deleting macOS recording file: $e', name: 'VineRecordingController', category: LogCategory.system);
       }
     }
     
@@ -896,10 +897,10 @@ class VineRecordingController extends ChangeNotifier {
           final file = File(segment.filePath!);
           if (file.existsSync()) {
             file.deleteSync();
-            debugPrint('🧹 Deleted mobile recording file: ${segment.filePath}');
+            Log.debug('🧹 Deleted mobile recording file: ${segment.filePath}', name: 'VineRecordingController', category: LogCategory.system);
           }
         } catch (e) {
-          debugPrint('⚠️ Error deleting mobile recording file: $e');
+          Log.error('Error deleting mobile recording file: $e', name: 'VineRecordingController', category: LogCategory.system);
         }
       }
     }
@@ -930,7 +931,7 @@ class VineRecordingController extends ChangeNotifier {
           notifyListeners();
         } catch (e) {
           // Ignore errors during disposal
-          debugPrint('⚠️ State notification error: $e');
+          Log.error('State notification error: $e', name: 'VineRecordingController', category: LogCategory.system);
         }
       }
     });

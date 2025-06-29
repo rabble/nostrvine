@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for extracting thumbnail images from video files
 class VideoThumbnailService {
@@ -25,13 +26,13 @@ class VideoThumbnailService {
     int quality = _thumbnailQuality,
   }) async {
     try {
-      debugPrint('🎬 Extracting thumbnail from video: $videoPath');
-      debugPrint('⏱️ Timestamp: ${timeMs}ms, Quality: $quality%');
+      Log.debug('Extracting thumbnail from video: $videoPath', name: 'VideoThumbnailService', category: LogCategory.video);
+      Log.debug('⏱️ Timestamp: ${timeMs}ms, Quality: $quality%', name: 'VideoThumbnailService', category: LogCategory.video);
       
       // Verify video file exists
       final videoFile = File(videoPath);
       if (!videoFile.existsSync()) {
-        debugPrint('❌ Video file not found: $videoPath');
+        Log.error('Video file not found: $videoPath', name: 'VideoThumbnailService', category: LogCategory.video);
         return null;
       }
       
@@ -47,27 +48,27 @@ class VideoThumbnailService {
       );
       
       if (thumbnailPath == null) {
-        debugPrint('❌ Failed to generate thumbnail');
+        Log.error('Failed to generate thumbnail', name: 'VideoThumbnailService', category: LogCategory.video);
         return null;
       }
       
       // Verify thumbnail was created
       final thumbnailFile = File(thumbnailPath);
       if (!thumbnailFile.existsSync()) {
-        debugPrint('❌ Thumbnail file not created');
+        Log.error('Thumbnail file not created', name: 'VideoThumbnailService', category: LogCategory.video);
         return null;
       }
       
       final thumbnailSize = await thumbnailFile.length();
-      debugPrint('✅ Thumbnail generated successfully:');
-      debugPrint('  📸 Path: $thumbnailPath');
-      debugPrint('  📦 Size: ${(thumbnailSize / 1024).toStringAsFixed(2)}KB');
+      Log.info('Thumbnail generated successfully:', name: 'VideoThumbnailService', category: LogCategory.video);
+      Log.debug('  📸 Path: $thumbnailPath', name: 'VideoThumbnailService', category: LogCategory.video);
+      Log.debug('  📦 Size: ${(thumbnailSize / 1024).toStringAsFixed(2)}KB', name: 'VideoThumbnailService', category: LogCategory.video);
       
       return thumbnailPath;
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Thumbnail extraction error: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Thumbnail extraction error: $e', name: 'VideoThumbnailService', category: LogCategory.video);
+      Log.verbose('� Stack trace: $stackTrace', name: 'VideoThumbnailService', category: LogCategory.video);
       return null;
     }
   }
@@ -79,7 +80,7 @@ class VideoThumbnailService {
     int quality = _thumbnailQuality,
   }) async {
     try {
-      debugPrint('🎬 Extracting thumbnail bytes from video: $videoPath');
+      Log.debug('Extracting thumbnail bytes from video: $videoPath', name: 'VideoThumbnailService', category: LogCategory.video);
       
       final uint8list = await VideoThumbnail.thumbnailData(
         video: videoPath,
@@ -91,15 +92,15 @@ class VideoThumbnailService {
       );
       
       if (uint8list == null) {
-        debugPrint('❌ Failed to generate thumbnail bytes');
+        Log.error('Failed to generate thumbnail bytes', name: 'VideoThumbnailService', category: LogCategory.video);
         return null;
       }
       
-      debugPrint('✅ Thumbnail bytes generated: ${(uint8list.length / 1024).toStringAsFixed(2)}KB');
+      Log.info('Thumbnail bytes generated: ${(uint8list.length / 1024).toStringAsFixed(2)}KB', name: 'VideoThumbnailService', category: LogCategory.video);
       return uint8list;
       
     } catch (e) {
-      debugPrint('❌ Thumbnail bytes extraction error: $e');
+      Log.error('Thumbnail bytes extraction error: $e', name: 'VideoThumbnailService', category: LogCategory.video);
       return null;
     }
   }
@@ -127,7 +128,7 @@ class VideoThumbnailService {
       }
     }
     
-    debugPrint('📸 Generated ${thumbnails.length} thumbnails');
+    Log.debug('� Generated ${thumbnails.length} thumbnails', name: 'VideoThumbnailService', category: LogCategory.video);
     return thumbnails;
   }
   
@@ -138,10 +139,10 @@ class VideoThumbnailService {
         final file = File(path);
         if (file.existsSync()) {
           await file.delete();
-          debugPrint('🗑️ Deleted thumbnail: $path');
+          Log.debug('�️ Deleted thumbnail: $path', name: 'VideoThumbnailService', category: LogCategory.video);
         }
       } catch (e) {
-        debugPrint('⚠️ Failed to delete thumbnail: $e');
+        Log.error('Failed to delete thumbnail: $e', name: 'VideoThumbnailService', category: LogCategory.video);
       }
     }
   }

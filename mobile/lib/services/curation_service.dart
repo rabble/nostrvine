@@ -10,6 +10,8 @@ import '../services/nostr_service_interface.dart';
 import '../services/video_event_service.dart';
 import '../services/social_service.dart';
 import '../services/default_content_service.dart';
+import '../utils/unified_logger.dart';
+import '../constants/app_constants.dart';
 
 class CurationService extends ChangeNotifier {
   final INostrService _nostrService;
@@ -62,7 +64,7 @@ class CurationService extends ChangeNotifier {
   /// Populate sample sets with real video data
   void _populateSampleSets() {
     final allVideos = _videoEventService.videoEvents;
-    debugPrint('🎨 Populating curation sets with ${allVideos.length} available videos');
+    Log.debug('Populating curation sets with ${allVideos.length} available videos', name: 'CurationService', category: LogCategory.system);
     
     // Always create Editor's Picks with default video, even if no other videos
     final editorsPicks = _selectEditorsPicksVideos(allVideos, allVideos);
@@ -100,11 +102,11 @@ class CurationService extends ChangeNotifier {
     final featured = _selectFeaturedVideos(sortedByReactions);
     _setVideoCache[CurationSetType.featured.id] = featured;
 
-    debugPrint('🎨 Populated curation sets:');
+    Log.debug('Populated curation sets:', name: 'CurationService', category: LogCategory.system);
     debugPrint('   Editor\'s Picks: ${updatedEditorsPicks.length} videos');
-    debugPrint('   Trending: ${trending.length} videos');
-    debugPrint('   Featured: ${featured.length} videos');
-    debugPrint('   Total available videos: ${allVideos.length}');
+    Log.debug('   Trending: ${trending.length} videos', name: 'CurationService', category: LogCategory.system);
+    Log.debug('   Featured: ${featured.length} videos', name: 'CurationService', category: LogCategory.system);
+    Log.debug('   Total available videos: ${allVideos.length}', name: 'CurationService', category: LogCategory.system);
   }
 
   /// Algorithm for selecting editor's picks
@@ -115,8 +117,8 @@ class CurationService extends ChangeNotifier {
     final picks = <VideoEvent>[];
     final seenIds = <String>{};
 
-    // Editor's Pick: Only show videos from the specified curator pubkey
-    const editorPubkey = '70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082';
+    // Editor's Pick: Only show videos from the classic vines curator pubkey
+    const editorPubkey = AppConstants.classicVinesPubkey;
     
     debugPrint('🎯 Filtering Editor\'s Picks to only show videos from pubkey: $editorPubkey');
     
@@ -132,11 +134,6 @@ class CurationService extends ChangeNotifier {
     
     // Add all editor's videos to picks
     for (final video in editorVideos) {
-      debugPrint('📹 Editor\'s video ${video.id.substring(0, 8)}:');
-      debugPrint('   - Title: ${video.title}');
-      debugPrint('   - hasVideo: ${video.hasVideo}');
-      debugPrint('   - videoUrl: ${video.videoUrl}');
-      debugPrint('   - thumbnailUrl: ${video.effectiveThumbnailUrl}');
       picks.add(video);
       seenIds.add(video.id);
     }
@@ -153,7 +150,7 @@ class CurationService extends ChangeNotifier {
         picks.add(defaultVideo);
         seenIds.add(defaultVideo.id);
       } else {
-        debugPrint('✅ Default video already exists in video events, using it as fallback');
+        Log.info('Default video already exists in video events, using it as fallback', name: 'CurationService', category: LogCategory.system);
         // Find and use the existing default video
         final existingDefault = _videoEventService.videoEvents.firstWhere((v) => v.id == defaultVideo.id);
         picks.add(existingDefault);
@@ -241,14 +238,14 @@ class CurationService extends ChangeNotifier {
       _error = 'Failed to refresh curation sets: $e';
       _isLoading = false;
       notifyListeners();
-      debugPrint('❌ Error refreshing curation sets: $e');
+      Log.error('Error refreshing curation sets: $e', name: 'CurationService', category: LogCategory.system);
     }
   }
 
   /// Subscribe to curation set updates
   Future<void> subscribeToCurationSets({List<String>? curatorPubkeys}) async {
     try {
-      debugPrint('📡 Subscribing to kind 30005 curation sets...');
+      Log.debug('Subscribing to kind 30005 curation sets...', name: 'CurationService', category: LogCategory.system);
       
       // Query for video curation sets (kind 30005)
       final filter = {
@@ -275,24 +272,24 @@ class CurationService extends ChangeNotifier {
           try {
             // Debug: Check what kind of event we're receiving
             if (event.kind != 30005) {
-              debugPrint('⚠️ Received unexpected event kind ${event.kind} in curation subscription (expected 30005)');
+              Log.warning('Received unexpected event kind ${event.kind} in curation subscription (expected 30005)', name: 'CurationService', category: LogCategory.system);
               return;
             }
             
             final curationSet = CurationSet.fromNostrEvent(event);
             _curationSets[curationSet.id] = curationSet;
-            debugPrint('📝 Received curation set: ${curationSet.title} (${curationSet.videoIds.length} videos)');
+            Log.verbose('Received curation set: ${curationSet.title} (${curationSet.videoIds.length} videos)', name: 'CurationService', category: LogCategory.system);
             
             // Update the video cache for this set
             _updateVideoCache(curationSet);
             notifyListeners();
             
           } catch (e) {
-            debugPrint('⚠️ Failed to parse curation set from event: $e');
+            Log.error('Failed to parse curation set from event: $e', name: 'CurationService', category: LogCategory.system);
           }
         },
         onError: (error) {
-          debugPrint('❌ Error in curation set subscription: $error');
+          Log.error('Error in curation set subscription: $error', name: 'CurationService', category: LogCategory.system);
         },
       );
       
@@ -305,7 +302,7 @@ class CurationService extends ChangeNotifier {
       });
       
     } catch (e) {
-      debugPrint('❌ Error subscribing to curation sets: $e');
+      Log.error('Error subscribing to curation sets: $e', name: 'CurationService', category: LogCategory.system);
     }
   }
   
@@ -327,7 +324,7 @@ class CurationService extends ChangeNotifier {
     }
     
     _setVideoCache[curationSet.id] = setVideos;
-    debugPrint('🎬 Updated cache for ${curationSet.id}: ${setVideos.length} videos found');
+    Log.info('Updated cache for ${curationSet.id}: ${setVideos.length} videos found', name: 'CurationService', category: LogCategory.system);
   }
 
   /// Create a new curation set (for future implementation)
@@ -340,10 +337,10 @@ class CurationService extends ChangeNotifier {
   }) async {
     try {
       // TODO: Implement actual creation and publishing to Nostr
-      debugPrint('🎨 Creating curation set: $title');
+      Log.debug('Creating curation set: $title', name: 'CurationService', category: LogCategory.system);
       return true;
     } catch (e) {
-      debugPrint('❌ Error creating curation set: $e');
+      Log.error('Error creating curation set: $e', name: 'CurationService', category: LogCategory.system);
       return false;
     }
   }
@@ -364,7 +361,7 @@ class CurationService extends ChangeNotifier {
 
   /// Handle video data changes
   void _onVideoDataChanged() {
-    debugPrint('🔄 Video data changed, refreshing curation sets');
+    Log.debug('Video data changed, refreshing curation sets', name: 'CurationService', category: LogCategory.system);
     _populateSampleSets();
     notifyListeners();
   }

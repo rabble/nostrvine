@@ -405,13 +405,8 @@ class VideoEvent {
       return thumbnailUrl;
     }
     
-    // Generate fallback thumbnail based on video characteristics
-    if (hasVideo) {
-      // Use a consistent hash of the video ID to ensure same thumbnail for same video
-      final hash = id.hashCode.abs() % 1000;
-      return 'https://picsum.photos/640/480?random=$hash';
-    }
-    
+    // NO MORE FAKE PICSUM SHIT! 
+    // Return null so we use proper video icon placeholder
     return null;
   }
   

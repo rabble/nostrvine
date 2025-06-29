@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import '../utils/unified_logger.dart';
 
 /// Camera recording configuration
 class CameraConfiguration {
@@ -126,10 +127,10 @@ class CameraService extends ChangeNotifier {
       
       _setState(RecordingState.idle);
       
-      debugPrint('📷 Camera initialized successfully');
+      Log.info('� Camera initialized successfully', name: 'CameraService', category: LogCategory.video);
     } catch (e) {
       _setState(RecordingState.error);
-      debugPrint('❌ Camera initialization failed: $e');
+      Log.error('Camera initialization failed: $e', name: 'CameraService', category: LogCategory.video);
       rethrow;
     }
   }
@@ -137,7 +138,7 @@ class CameraService extends ChangeNotifier {
   /// Start vine recording (direct video recording)
   Future<void> startRecording() async {
     if (!isInitialized || _isRecording) {
-      debugPrint('⚠️ Cannot start recording: initialized=$isInitialized, recording=$_isRecording');
+      Log.warning('Cannot start recording: initialized=$isInitialized, recording=$_isRecording', name: 'CameraService', category: LogCategory.video);
       return;
     }
     
@@ -156,17 +157,17 @@ class CameraService extends ChangeNotifier {
       if (enableAutoStop) {
         _autoStopTimer = Timer(maxVineDuration, () {
           if (_isRecording) {
-            debugPrint('⏰ Auto-stopping recording after ${maxVineDuration.inSeconds}s');
+            Log.debug('⏰ Auto-stopping recording after ${maxVineDuration.inSeconds}s', name: 'CameraService', category: LogCategory.video);
             stopRecording();
           }
         });
       }
       
-      debugPrint('🎬 Started vine recording (${maxVineDuration.inSeconds}s max)');
+      Log.info('Started vine recording (${maxVineDuration.inSeconds}s max)', name: 'CameraService', category: LogCategory.video);
     } catch (e) {
       _setState(RecordingState.error);
       _isRecording = false;
-      debugPrint('❌ Failed to start recording: $e');
+      Log.error('Failed to start recording: $e', name: 'CameraService', category: LogCategory.video);
       rethrow;
     }
   }
@@ -174,7 +175,7 @@ class CameraService extends ChangeNotifier {
   /// Stop recording and return video file
   Future<VineRecordingResult> stopRecording() async {
     if (!_isRecording) {
-      debugPrint('⚠️ Not currently recording, cannot stop');
+      Log.warning('Not currently recording, cannot stop', name: 'CameraService', category: LogCategory.video);
       throw Exception('Not currently recording');
     }
     
@@ -197,10 +198,10 @@ class CameraService extends ChangeNotifier {
       
       _setState(RecordingState.completed);
       
-      debugPrint('✅ Vine recording completed:');
-      debugPrint('  📹 File: ${videoFile.path}');
-      debugPrint('  ⏱️ Duration: ${duration.inSeconds}s');
-      debugPrint('  📦 Size: ${(await videoFile.length() / 1024 / 1024).toStringAsFixed(2)}MB');
+      Log.info('Vine recording completed:', name: 'CameraService', category: LogCategory.video);
+      Log.debug('  📹 File: ${videoFile.path}', name: 'CameraService', category: LogCategory.video);
+      Log.debug('  ⏱️ Duration: ${duration.inSeconds}s', name: 'CameraService', category: LogCategory.video);
+      Log.debug('  📦 Size: ${(await videoFile.length() / 1024 / 1024).toStringAsFixed(2)}MB', name: 'CameraService', category: LogCategory.video);
       
       return VineRecordingResult(
         videoFile: videoFile,
@@ -208,7 +209,7 @@ class CameraService extends ChangeNotifier {
       );
     } catch (e) {
       _setState(RecordingState.error);
-      debugPrint('❌ Failed to stop recording: $e');
+      Log.error('Failed to stop recording: $e', name: 'CameraService', category: LogCategory.video);
       rethrow;
     } finally {
       _isRecording = false;
@@ -233,9 +234,9 @@ class CameraService extends ChangeNotifier {
       _isRecording = false;
       _recordingStartTime = null;
       
-      debugPrint('🚫 Recording canceled');
+      Log.debug('Recording canceled', name: 'CameraService', category: LogCategory.video);
     } catch (e) {
-      debugPrint('⚠️ Error canceling recording: $e');
+      Log.error('Error canceling recording: $e', name: 'CameraService', category: LogCategory.video);
     }
   }
   
@@ -270,9 +271,9 @@ class CameraService extends ChangeNotifier {
       await _controller!.prepareForVideoRecording();
       
       notifyListeners();
-      debugPrint('🔄 Switched to ${newCamera.lensDirection} camera');
+      Log.debug('Switched to ${newCamera.lensDirection} camera', name: 'CameraService', category: LogCategory.video);
     } catch (e) {
-      debugPrint('❌ Failed to switch camera: $e');
+      Log.error('Failed to switch camera: $e', name: 'CameraService', category: LogCategory.video);
     }
   }
   
@@ -289,7 +290,7 @@ class CameraService extends ChangeNotifier {
   /// Update camera configuration
   void updateConfiguration(CameraConfiguration newConfiguration) {
     _configuration = newConfiguration;
-    debugPrint('📹 Updated camera configuration: $newConfiguration');
+    Log.debug('� Updated camera configuration: $newConfiguration', name: 'CameraService', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -302,7 +303,7 @@ class CameraService extends ChangeNotifier {
       recordingDuration: clampedDuration,
       enableAutoStop: _configuration.enableAutoStop,
     );
-    debugPrint('📹 Updated recording duration to ${clampedDuration.inSeconds}s');
+    Log.debug('� Updated recording duration to ${clampedDuration.inSeconds}s', name: 'CameraService', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -315,7 +316,7 @@ class CameraService extends ChangeNotifier {
       duration: duration,
       autoStop: autoStop,
     );
-    debugPrint('📹 Applied vine configuration: $_configuration');
+    Log.debug('� Applied vine configuration: $_configuration', name: 'CameraService', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -341,7 +342,7 @@ class CameraService extends ChangeNotifier {
           notifyListeners();
         } catch (e) {
           // Ignore errors during disposal
-          debugPrint('⚠️ State notification error: $e');
+          Log.error('State notification error: $e', name: 'CameraService', category: LogCategory.video);
         }
       }
     });
@@ -356,7 +357,7 @@ class CameraService extends ChangeNotifier {
           notifyListeners(); // Update UI with current progress
         } catch (e) {
           // Ignore errors during disposal
-          debugPrint('⚠️ Progress timer notification error: $e');
+          Log.error('Progress timer notification error: $e', name: 'CameraService', category: LogCategory.video);
         }
       }
     });
@@ -376,7 +377,7 @@ class CameraService extends ChangeNotifier {
       throw Exception('macOS camera requires CameraMacOSView widget. Use dedicated macOS camera screen.');
       
     } catch (e) {
-      debugPrint('❌ macOS camera initialization failed: $e');
+      Log.error('macOS camera initialization failed: $e', name: 'CameraService', category: LogCategory.video);
       // Fall back to showing error
       throw Exception('macOS camera initialization failed: $e');
     }

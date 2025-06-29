@@ -50,6 +50,28 @@ npm run deploy                     # Deploy to Cloudflare
 npm test                           # Run backend tests
 ```
 
+## Native Build Scripts
+**IMPORTANT**: Use these scripts instead of direct Flutter builds for iOS/macOS to prevent CocoaPods sync errors.
+
+```bash
+# Native builds (run from /mobile directory)
+./build_native.sh ios debug        # Build iOS debug with proper CocoaPods sync
+./build_native.sh ios release      # Build iOS release  
+./build_native.sh macos debug      # Build macOS debug
+./build_native.sh macos release    # Build macOS release
+./build_native.sh both debug       # Build both platforms
+
+# Platform-specific scripts
+./build_ios.sh debug               # iOS-only build script
+./build_macos.sh release           # macOS-only build script
+
+# Pre-build scripts for Xcode integration
+./pre_build_ios.sh                 # Ensure iOS CocoaPods sync before Xcode build
+./pre_build_macos.sh               # Ensure macOS CocoaPods sync before Xcode build
+```
+
+**Common CocoaPods Issues**: The scripts automatically handle "sandbox is not in sync with Podfile.lock" errors by ensuring `pod install` runs at the proper time. See `BUILD_SCRIPTS_README.md` for detailed usage and Xcode integration instructions.
+
 ## Development Workflow Requirements
 
 ### Code Quality Checks
@@ -122,17 +144,5 @@ class Controller extends ChangeNotifier {
 - `mobile/lib/screens/camera_screen.dart` - Camera UI with real preview
 - `mobile/spike/frame_capture_approaches/` - Research prototypes and analysis
 - `backend/src/` - Cloudflare Workers GIF creation logic
-
-## Recent Decisions
-**2024-12-16**: Selected Hybrid Frame Capture approach based on comprehensive prototype analysis
-- Combines video recording + real-time streaming with intelligent fallback
-- 87.5/100 confidence score from performance benchmarking
-- Provides maximum reliability for production vine app
-
-**2024-12-21**: Implemented NIP-18 Repost System (Issue #117)
-- Kind 6 events for reposts with proper 'e' and 'p' tag structure
-- VideoEventService processes both Kind 22 (videos) and Kind 6 (reposts)  
-- UserProfileService requires Kind 0 events for proper "Reposted by" display
-- Full UI integration with repost button and attribution indicators
 
 [See ./.claude/memories/ for universal standards]

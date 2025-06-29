@@ -25,13 +25,11 @@ void main() {
   late MockINostrService mockNostrService;
   late MockSubscriptionManager mockSubscriptionManager;
   late MockVideoEventService mockVideoEventService;
-  late MockProfileCacheService mockProfileCacheService;
 
   setUp(() {
     mockNostrService = MockINostrService();
     mockSubscriptionManager = MockSubscriptionManager();
     mockVideoEventService = MockVideoEventService();
-    mockProfileCacheService = MockProfileCacheService();
 
     provider = ProfileVideosProvider(mockNostrService);
     provider.setSubscriptionManager(mockSubscriptionManager);

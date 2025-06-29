@@ -11,14 +11,14 @@ import 'package:openvine/screens/vine_preview_screen.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
-import 'package:openvine/services/upload_service.dart';
+// import 'package:openvine/services/upload_service.dart'; // Service doesn't exist
 import 'package:openvine/providers/profile_videos_provider.dart';
 
 class MockFile extends Mock implements File {}
 class MockUploadManager extends Mock implements UploadManager {}
 class MockVideoEventPublisher extends Mock implements VideoEventPublisher {}
 class MockINostrService extends Mock implements INostrService {}
-class MockUploadService extends Mock implements UploadService {}
+// class MockUploadService extends Mock implements UploadService {} // Service doesn't exist
 class MockProfileVideosProvider extends Mock implements ProfileVideosProvider {}
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 class FakePendingUpload extends Fake implements PendingUpload {}

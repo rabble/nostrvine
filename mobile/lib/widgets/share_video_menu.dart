@@ -15,6 +15,7 @@ import '../services/nostr_service_interface.dart';
 import '../services/social_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 /// Comprehensive share menu for videos
 class ShareVideoMenu extends StatefulWidget {
@@ -316,7 +317,7 @@ class _ShareVideoMenuState extends State<ShareVideoMenu> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      debugPrint('❌ Failed to copy link: $e');
+      Log.error('Failed to copy link: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 
@@ -331,7 +332,7 @@ class _ShareVideoMenuState extends State<ShareVideoMenu> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      debugPrint('❌ Failed to share externally: $e');
+      Log.error('Failed to share externally: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 
@@ -361,7 +362,7 @@ class _ShareVideoMenuState extends State<ShareVideoMenu> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to toggle list: $e');
+      Log.error('Failed to toggle list: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 
@@ -395,7 +396,7 @@ class _ShareVideoMenuState extends State<ShareVideoMenu> {
       
       return widget.video.pubkey == userPubkey;
     } catch (e) {
-      debugPrint('⚠️ Error checking content ownership: $e');
+      Log.error('Error checking content ownership: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
       return false;
     }
   }
@@ -538,7 +539,7 @@ class _ShareVideoMenuState extends State<ShareVideoMenu> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Failed to delete content: $e');
+      Log.error('Failed to delete content: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -710,7 +711,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
             picture: profile?.picture,
           ));
         } catch (e) {
-          debugPrint('⚠️ Error loading contact profile $pubkey: $e');
+          Log.error('Error loading contact profile $pubkey: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
           // Still add the contact without profile data
           contacts.add(ShareableUser(
             pubkey: pubkey,
@@ -727,7 +728,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
         });
       }
     } catch (e) {
-      debugPrint('⚠️ Error loading user contacts: $e');
+      Log.error('Error loading user contacts: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
       if (mounted) {
         setState(() {
           _contacts = [];
@@ -812,7 +813,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
             picture: profile?.picture,
           ));
         } catch (e) {
-          debugPrint('⚠️ Error searching for user $pubkeyToSearch: $e');
+          Log.error('Error searching for user $pubkeyToSearch: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
           // Still add the user without profile data
           searchResults.add(ShareableUser(
             pubkey: pubkeyToSearch,
@@ -829,7 +830,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
         });
       }
     } catch (e) {
-      debugPrint('⚠️ Error searching users: $e');
+      Log.error('Error searching users: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
       if (mounted) {
         setState(() => _isSearching = false);
       }
@@ -862,7 +863,7 @@ class _SendToUserDialogState extends State<_SendToUserDialog> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to send video: $e');
+      Log.error('Failed to send video: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 
@@ -968,7 +969,7 @@ class _CreateListDialogState extends State<_CreateListDialog> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to create list: $e');
+      Log.error('Failed to create list: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 
@@ -1058,7 +1059,7 @@ class _SelectListDialog extends StatelessWidget {
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to toggle video in list: $e');
+      Log.error('Failed to toggle video in list: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 }
@@ -1187,7 +1188,7 @@ class _ReportContentDialogState extends State<_ReportContentDialog> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Failed to submit report: $e');
+      Log.error('Failed to submit report: $e', name: 'ShareVideoMenu', category: LogCategory.ui);
     }
   }
 

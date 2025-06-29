@@ -9,7 +9,6 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import '../../lib/services/video_event_service.dart';
 import '../../lib/services/nostr_service_interface.dart';
 import '../../lib/services/seen_videos_service.dart';
-import '../../lib/models/video_event.dart';
 import './video_event_service_repost_test.mocks.dart';
 
 @GenerateMocks([

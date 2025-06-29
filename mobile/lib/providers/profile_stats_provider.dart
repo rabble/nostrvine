@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 import '../services/social_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Statistics for a user's profile
 class ProfileStats {
@@ -102,7 +103,7 @@ class ProfileStatsProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      debugPrint('📊 Loading profile stats for: ${pubkey.substring(0, 8)}...');
+      Log.debug('Loading profile stats for: ${pubkey.substring(0, 8)}...', name: 'ProfileStatsProvider', category: LogCategory.ui);
 
       // Load all stats in parallel for better performance
       final results = await Future.wait([
@@ -128,12 +129,12 @@ class ProfileStatsProvider extends ChangeNotifier {
       _cacheStats(pubkey, _stats!);
 
       _setLoadingState(ProfileStatsLoadingState.loaded);
-      debugPrint('✅ Profile stats loaded: $_stats');
+      Log.info('Profile stats loaded: $_stats', name: 'ProfileStatsProvider', category: LogCategory.ui);
 
     } catch (e) {
       _error = e.toString();
       _setLoadingState(ProfileStatsLoadingState.error);
-      debugPrint('❌ Error loading profile stats: $e');
+      Log.error('Error loading profile stats: $e', name: 'ProfileStatsProvider', category: LogCategory.ui);
     }
   }
 
@@ -154,10 +155,10 @@ class ProfileStatsProvider extends ChangeNotifier {
     if (stats != null && timestamp != null) {
       final age = DateTime.now().difference(timestamp);
       if (age < _cacheExpiry) {
-        debugPrint('💾 Using cached stats for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)');
+        Log.debug('� Using cached stats for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)', name: 'ProfileStatsProvider', category: LogCategory.ui);
         return stats;
       } else {
-        debugPrint('⏰ Cache expired for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)');
+        Log.debug('⏰ Cache expired for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)', name: 'ProfileStatsProvider', category: LogCategory.ui);
         _clearCache(pubkey);
       }
     }
@@ -169,7 +170,7 @@ class ProfileStatsProvider extends ChangeNotifier {
   void _cacheStats(String pubkey, ProfileStats stats) {
     _statsCache[pubkey] = stats;
     _cacheTimestamps[pubkey] = DateTime.now();
-    debugPrint('💾 Cached stats for ${pubkey.substring(0, 8)}');
+    Log.debug('� Cached stats for ${pubkey.substring(0, 8)}', name: 'ProfileStatsProvider', category: LogCategory.ui);
   }
 
   /// Clear cache for a specific user
@@ -182,7 +183,7 @@ class ProfileStatsProvider extends ChangeNotifier {
   void clearAllCache() {
     _statsCache.clear();
     _cacheTimestamps.clear();
-    debugPrint('🗑️ Cleared all stats cache');
+    Log.debug('�️ Cleared all stats cache', name: 'ProfileStatsProvider', category: LogCategory.ui);
   }
 
   /// Set loading state and notify listeners
@@ -206,7 +207,7 @@ class ProfileStatsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing ProfileStatsProvider');
+    Log.debug('�️ Disposing ProfileStatsProvider', name: 'ProfileStatsProvider', category: LogCategory.ui);
     super.dispose();
   }
 }

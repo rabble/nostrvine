@@ -331,9 +331,6 @@ void main() {
       
       test('should handle extremely old and future timestamps', () {
         // ARRANGE
-        final oldTimestamp = DateTime(1970, 1, 1);
-        final futureTimestamp = DateTime(2030, 12, 31);
-        
         final oldEvent = Event(
           '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', // pubkey (hex)
           22,

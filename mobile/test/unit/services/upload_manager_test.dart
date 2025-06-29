@@ -16,11 +16,9 @@ class MockBox<T> extends Mock implements Box<T> {
 void main() {
   late UploadManager uploadManager;
   late MockDirectUploadService mockUploadService;
-  late MockBox<PendingUpload> mockPendingUploadsBox;
 
   setUp(() {
     mockUploadService = MockDirectUploadService();
-    mockPendingUploadsBox = MockBox<PendingUpload>();
 
     // Create upload manager with mocks
     uploadManager = UploadManager(

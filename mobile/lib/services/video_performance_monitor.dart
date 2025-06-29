@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'video_manager_interface.dart';
+import '../utils/unified_logger.dart';
 
 /// Performance monitoring service for video system
 /// 
@@ -64,7 +65,7 @@ class VideoPerformanceMonitor extends ChangeNotifier {
       _collectPerformanceSample();
     });
     
-    debugPrint('VideoPerformanceMonitor: Started monitoring');
+    Log.info('VideoPerformanceMonitor: Started monitoring', name: 'VideoPerformanceMonitor', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -76,7 +77,7 @@ class VideoPerformanceMonitor extends ChangeNotifier {
     _monitoringTimer?.cancel();
     _monitoringTimer = null;
     
-    debugPrint('VideoPerformanceMonitor: Stopped monitoring');
+    Log.info('VideoPerformanceMonitor: Stopped monitoring', name: 'VideoPerformanceMonitor', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -213,7 +214,7 @@ class VideoPerformanceMonitor extends ChangeNotifier {
     _circuitBreakerTrips.clear();
     _activeAlerts.clear();
     
-    debugPrint('VideoPerformanceMonitor: Cleared all data');
+    Log.debug('VideoPerformanceMonitor: Cleared all data', name: 'VideoPerformanceMonitor', category: LogCategory.video);
     notifyListeners();
   }
   
@@ -320,7 +321,7 @@ class VideoPerformanceMonitor extends ChangeNotifier {
       _activeAlerts.add(alert);
       _alertController.add(alert);
       
-      debugPrint('VideoPerformanceMonitor: Alert triggered - ${alert.message}');
+      Log.debug('VideoPerformanceMonitor: Alert triggered - ${alert.message}', name: 'VideoPerformanceMonitor', category: LogCategory.video);
     }
   }
   

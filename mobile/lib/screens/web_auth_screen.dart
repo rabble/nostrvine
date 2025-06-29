@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/web_auth_service.dart';
 import '../services/auth_service.dart';
+import '../utils/unified_logger.dart';
 
 class WebAuthScreen extends StatefulWidget {
   const WebAuthScreen({super.key});
@@ -82,7 +83,7 @@ class _WebAuthScreenState extends State<WebAuthScreen> with TickerProviderStateM
           );
         }
       } catch (e) {
-        debugPrint('❌ Failed to integrate web auth with main auth service: $e');
+        Log.error('Failed to integrate web auth with main auth service: $e', name: 'WebAuthScreen', category: LogCategory.ui);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -178,7 +179,7 @@ class _WebAuthScreenState extends State<WebAuthScreen> with TickerProviderStateM
         _bunkerUriController.text = clipboardData!.text!;
       }
     } catch (e) {
-      debugPrint('Failed to paste from clipboard: $e');
+      Log.error('Failed to paste from clipboard: $e', name: 'WebAuthScreen', category: LogCategory.ui);
     }
   }
 

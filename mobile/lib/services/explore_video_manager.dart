@@ -6,6 +6,7 @@ import '../models/video_event.dart';
 import '../models/curation_set.dart';
 import 'curation_service.dart';
 import 'video_manager_interface.dart';
+import '../utils/unified_logger.dart';
 
 /// Service that provides curated video collections through VideoManager
 /// 
@@ -50,20 +51,28 @@ class ExploreVideoManager extends ChangeNotifier {
   
   /// Handle changes from curation service
   void _onCurationChanged() {
-    debugPrint('🎨 CurationService changed, syncing collections...');
+    Log.debug('CurationService changed, syncing collections...', name: 'ExploreVideoManager', category: LogCategory.system);
     _syncAllCollections();
   }
   
   /// Sync all curation collections to VideoManager
   Future<void> _syncAllCollections() async {
+    // IMPORTANT: Do NOT add videos to VideoManager here!
+    // VideoEventBridge already handles video additions from Nostr subscriptions.
+    // ExploreVideoManager only needs to check which curated videos are available.
+    
+    Log.debug('Syncing curated collections with available videos in VideoManager...', name: 'ExploreVideoManager', category: LogCategory.system);
+    
+    // Sync each collection by checking what's available in VideoManager
     for (final type in CurationSetType.values) {
-      await _syncCollection(type);
+      await _syncCollectionInternal(type);
     }
+    
     notifyListeners();
   }
   
-  /// Sync a specific collection to VideoManager
-  Future<void> _syncCollection(CurationSetType type) async {
+  /// Internal sync method that doesn't notify listeners
+  Future<void> _syncCollectionInternal(CurationSetType type) async {
     try {
       // Get videos from curation service
       final curatedVideos = _curationService.getVideosForSetType(type);
@@ -73,42 +82,32 @@ class ExploreVideoManager extends ChangeNotifier {
         return;
       }
       
-      // Ensure all videos are registered with VideoManager
+      // Check which videos are available in VideoManager
       final availableVideos = <VideoEvent>[];
+      final missingVideos = <String>[];
       
       for (final video in curatedVideos) {
-        try {
-          // Check if video is already in VideoManager
-          final videoState = _videoManager.getVideoState(video.id);
-          
-          if (videoState == null) {
-            // Add video to VideoManager
-            await _videoManager.addVideoEvent(video);
-            debugPrint('📋 Added curated video ${video.id.substring(0, 8)}... to VideoManager');
-            
-            // Double-check that it was actually added successfully
-            final newVideoState = _videoManager.getVideoState(video.id);
-            if (newVideoState != null) {
-              availableVideos.add(video);
-            } else {
-              debugPrint('⚠️ Video ${video.id.substring(0, 8)}... failed to register in VideoManager');
-            }
-          } else {
-            // Video is already available
-            availableVideos.add(video);
-          }
-          
-        } catch (e) {
-          debugPrint('⚠️ Failed to register curated video ${video.id}: $e');
-          // Continue with other videos
+        // Check if the video is available in VideoManager
+        final videoState = _videoManager.getVideoState(video.id);
+        
+        if (videoState != null) {
+          // Video is available
+          availableVideos.add(video);
+        } else {
+          missingVideos.add(video.id);
         }
       }
       
       _availableCollections[type] = availableVideos;
-      debugPrint('✅ Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}');
+      Log.info('Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}', name: 'ExploreVideoManager', category: LogCategory.system);
+      
+      // Only log missing videos if there are any - this is actually useful debug info
+      if (missingVideos.isNotEmpty) {
+        Log.debug('Missing ${missingVideos.length} videos for ${type.name}: ${missingVideos.join(', ')}', name: 'ExploreVideoManager', category: LogCategory.system);
+      }
       
     } catch (e) {
-      debugPrint('❌ Failed to sync collection ${type.name}: $e');
+      Log.error('Failed to sync collection ${type.name}: $e', name: 'ExploreVideoManager', category: LogCategory.system);
       _availableCollections[type] = [];
     }
   }
@@ -136,11 +135,11 @@ class ExploreVideoManager extends ChangeNotifier {
         if (videoState != null) {
           videoManager.preloadVideo(videos[i].id);
         } else {
-          debugPrint('⚠️ Skipping preload for video ${videos[i].id.substring(0, 8)}... - not in VideoManager');
+          Log.warning('Skipping preload for video ${videos[i].id.substring(0, 8)}... - not in VideoManager', name: 'ExploreVideoManager', category: LogCategory.system);
         }
       }
       
-      debugPrint('⚡ Preloading ${type.name} collection around index $startIndex');
+      Log.debug('⚡ Preloading ${type.name} collection around index $startIndex', name: 'ExploreVideoManager', category: LogCategory.system);
     }
   }
   
@@ -148,9 +147,9 @@ class ExploreVideoManager extends ChangeNotifier {
   void pauseAllVideos() {
     try {
       _videoManager.pauseAllVideos();
-      debugPrint('⏸️ Paused all explore videos');
+      Log.debug('Paused all explore videos', name: 'ExploreVideoManager', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Error pausing explore videos: $e');
+      Log.error('Error pausing explore videos: $e', name: 'ExploreVideoManager', category: LogCategory.system);
     }
   }
   

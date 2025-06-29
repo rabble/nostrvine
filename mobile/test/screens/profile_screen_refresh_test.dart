@@ -1,7 +1,6 @@
 // ABOUTME: Simplified test for ProfileScreen refresh functionality
 // ABOUTME: Tests that profile updates when returning from setup screen
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nostr_sdk/event.dart';
+import '../utils/unified_logger.dart';
 
 /// Reasons for content filtering/reporting
 enum ContentFilterReason {
@@ -160,9 +161,9 @@ class ContentModerationService extends ChangeNotifier {
         }
       }
       
-      debugPrint('✅ Content moderation initialized with ${_muteLists.length} lists');
+      Log.info('Content moderation initialized with ${_muteLists.length} lists', name: 'ContentModerationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Failed to initialize content moderation: $e');
+      Log.error('Failed to initialize content moderation: $e', name: 'ContentModerationService', category: LogCategory.system);
     }
   }
 
@@ -232,7 +233,7 @@ class ContentModerationService extends ChangeNotifier {
     await _saveLocalMuteList();
     notifyListeners();
 
-    debugPrint('🚫 Added to mute list: $type:$value (${reason.name})');
+    Log.debug('Added to mute list: $type:$value (${reason.name})', name: 'ContentModerationService', category: LogCategory.system);
   }
 
   /// Remove entry from local mute list
@@ -277,10 +278,10 @@ class ContentModerationService extends ChangeNotifier {
       await _saveSubscribedLists();
       notifyListeners();
       
-      debugPrint('📝 Subscribed to mute list: $listId');
+      Log.verbose('Subscribed to mute list: $listId', name: 'ContentModerationService', category: LogCategory.system);
     } catch (e) {
       _subscribedLists.remove(listId);
-      debugPrint('⚠️ Failed to subscribe to mute list $listId: $e');
+      Log.error('Failed to subscribe to mute list $listId: $e', name: 'ContentModerationService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -355,9 +356,9 @@ class ContentModerationService extends ChangeNotifier {
       ];
       
       _muteLists['default'] = defaultEntries;
-      debugPrint('📋 Loaded default moderation list');
+      Log.debug('Loaded default moderation list', name: 'ContentModerationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Failed to load default moderation list: $e');
+      Log.error('Failed to load default moderation list: $e', name: 'ContentModerationService', category: LogCategory.system);
     }
   }
 
@@ -366,12 +367,12 @@ class ContentModerationService extends ChangeNotifier {
     try {
       // TODO: Implement NIP-51 list subscription
       // This would fetch the mute list from Nostr and parse entries
-      debugPrint('📡 Subscribing to mute list: $listId');
+      Log.debug('Subscribing to mute list: $listId', name: 'ContentModerationService', category: LogCategory.system);
       
       // Placeholder implementation
       _muteLists[listId] = [];
     } catch (e) {
-      debugPrint('⚠️ Failed to subscribe to mute list $listId: $e');
+      Log.error('Failed to subscribe to mute list $listId: $e', name: 'ContentModerationService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -446,7 +447,7 @@ class ContentModerationService extends ChangeNotifier {
           orElse: () => ContentSeverity.hide,
         );
       } catch (e) {
-        debugPrint('⚠️ Failed to load moderation settings: $e');
+        Log.error('Failed to load moderation settings: $e', name: 'ContentModerationService', category: LogCategory.system);
       }
     }
   }
@@ -473,7 +474,7 @@ class ContentModerationService extends ChangeNotifier {
             .toList();
         _muteLists['local'] = entries;
       } catch (e) {
-        debugPrint('⚠️ Failed to load local mute list: $e');
+        Log.error('Failed to load local mute list: $e', name: 'ContentModerationService', category: LogCategory.system);
       }
     }
   }
@@ -492,7 +493,7 @@ class ContentModerationService extends ChangeNotifier {
       try {
         _subscribedLists = List<String>.from(jsonDecode(listsJson));
       } catch (e) {
-        debugPrint('⚠️ Failed to load subscribed lists: $e');
+        Log.error('Failed to load subscribed lists: $e', name: 'ContentModerationService', category: LogCategory.system);
       }
     }
   }

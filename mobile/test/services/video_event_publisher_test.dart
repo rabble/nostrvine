@@ -30,14 +30,12 @@ void main() {
     late MockUploadManager mockUploadManager;
     late MockNostrService mockNostrService;
     late MockAuthService mockAuthService;
-    late List<ReadyEventData> mockReadyEvents;
     late Completer<List<ReadyEventData>> fetchCompleter;
 
     setUp(() {
       mockUploadManager = MockUploadManager();
       mockNostrService = MockNostrService();
       mockAuthService = MockAuthService();
-      mockReadyEvents = [];
       fetchCompleter = Completer<List<ReadyEventData>>();
 
       // Set up mock methods

@@ -8,6 +8,7 @@ import 'secure_key_storage_service.dart';
 import 'key_migration_service.dart';
 import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Authentication state for the user
 enum AuthState {
@@ -126,7 +127,7 @@ class AuthService extends ChangeNotifier {
   Future<bool> performMigrationIfNeeded({String? biometricPrompt}) async {
     if (!_migrationRequired) return true;
     
-    debugPrint('🔄 Performing key migration to secure storage');
+    Log.debug('Performing key migration to secure storage', name: 'AuthService', category: LogCategory.auth);
     
     try {
       final result = await _migrationService.performMigration(
@@ -136,18 +137,18 @@ class AuthService extends ChangeNotifier {
       
       if (result.isSuccess) {
         _migrationRequired = false;
-        debugPrint('✅ Migration completed successfully');
+        Log.info('Migration completed successfully', name: 'AuthService', category: LogCategory.auth);
         
         // Re-check auth after migration
         await _checkExistingAuth();
         return true;
       } else {
-        debugPrint('❌ Migration failed: ${result.error}');
+        Log.error('Migration failed: ${result.error}', name: 'AuthService', category: LogCategory.auth);
         _lastError = 'Migration failed: ${result.error}';
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Migration error: $e');
+      Log.error('Migration error: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Migration error: $e';
       return false;
     }
@@ -155,7 +156,7 @@ class AuthService extends ChangeNotifier {
   
   /// Initialize the authentication service
   Future<void> initialize() async {
-    debugPrint('🔐 Initializing SecureAuthService');
+    Log.debug('� Initializing SecureAuthService', name: 'AuthService', category: LogCategory.auth);
     
     // Defer state changes to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -172,10 +173,10 @@ class AuthService extends ChangeNotifier {
       // Check for existing keys
       await _checkExistingAuth();
       
-      debugPrint('✅ SecureAuthService initialized');
+      Log.info('SecureAuthService initialized', name: 'AuthService', category: LogCategory.auth);
       
     } catch (e) {
-      debugPrint('❌ SecureAuthService initialization failed: $e');
+      Log.error('SecureAuthService initialization failed: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Failed to initialize auth: $e';
       
       // Defer state change to avoid setState during build
@@ -187,7 +188,7 @@ class AuthService extends ChangeNotifier {
   
   /// Create a new Nostr identity
   Future<AuthResult> createNewIdentity({String? biometricPrompt}) async {
-    debugPrint('🆕 Creating new secure Nostr identity');
+    Log.debug('� Creating new secure Nostr identity', name: 'AuthService', category: LogCategory.auth);
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
@@ -201,13 +202,13 @@ class AuthService extends ChangeNotifier {
       // Set up user session
       await _setupUserSession(keyContainer);
       
-      debugPrint('✅ New secure identity created successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
+      Log.info('New secure identity created successfully', name: 'AuthService', category: LogCategory.auth);
+      Log.debug('� Public key: ${NostrEncoding.maskKey(keyContainer.npub)}', name: 'AuthService', category: LogCategory.auth);
       
       return AuthResult.success(keyContainer);
       
     } catch (e) {
-      debugPrint('❌ Failed to create secure identity: $e');
+      Log.error('Failed to create secure identity: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Failed to create identity: $e';
       _setAuthState(AuthState.unauthenticated);
       
@@ -217,7 +218,7 @@ class AuthService extends ChangeNotifier {
   
   /// Import identity from nsec (bech32 private key)
   Future<AuthResult> importFromNsec(String nsec, {String? biometricPrompt}) async {
-    debugPrint('📥 Importing identity from nsec to secure storage');
+    Log.debug('Importing identity from nsec to secure storage', name: 'AuthService', category: LogCategory.auth);
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
@@ -237,13 +238,13 @@ class AuthService extends ChangeNotifier {
       // Set up user session
       await _setupUserSession(keyContainer);
       
-      debugPrint('✅ Identity imported to secure storage successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
+      Log.info('Identity imported to secure storage successfully', name: 'AuthService', category: LogCategory.auth);
+      Log.debug('� Public key: ${NostrEncoding.maskKey(keyContainer.npub)}', name: 'AuthService', category: LogCategory.auth);
       
       return AuthResult.success(keyContainer);
       
     } catch (e) {
-      debugPrint('❌ Failed to import identity: $e');
+      Log.error('Failed to import identity: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Failed to import identity: $e';
       _setAuthState(AuthState.unauthenticated);
       
@@ -253,7 +254,7 @@ class AuthService extends ChangeNotifier {
   
   /// Import identity from hex private key
   Future<AuthResult> importFromHex(String privateKeyHex, {String? biometricPrompt}) async {
-    debugPrint('📥 Importing identity from hex to secure storage');
+    Log.debug('Importing identity from hex to secure storage', name: 'AuthService', category: LogCategory.auth);
     
     _setAuthState(AuthState.authenticating);
     _lastError = null;
@@ -273,13 +274,13 @@ class AuthService extends ChangeNotifier {
       // Set up user session
       await _setupUserSession(keyContainer);
       
-      debugPrint('✅ Identity imported from hex to secure storage successfully');
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyContainer.npub)}');
+      Log.info('Identity imported from hex to secure storage successfully', name: 'AuthService', category: LogCategory.auth);
+      Log.debug('� Public key: ${NostrEncoding.maskKey(keyContainer.npub)}', name: 'AuthService', category: LogCategory.auth);
       
       return AuthResult.success(keyContainer);
       
     } catch (e) {
-      debugPrint('❌ Failed to import from hex: $e');
+      Log.error('Failed to import from hex: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Failed to import from hex: $e';
       _setAuthState(AuthState.unauthenticated);
       
@@ -289,11 +290,11 @@ class AuthService extends ChangeNotifier {
   
   /// Sign out the current user
   Future<void> signOut({bool deleteKeys = false}) async {
-    debugPrint('👋 Signing out user');
+    Log.debug('� Signing out user', name: 'AuthService', category: LogCategory.auth);
     
     try {
       if (deleteKeys) {
-        debugPrint('🗑️ Deleting stored keys');
+        Log.debug('�️ Deleting stored keys', name: 'AuthService', category: LogCategory.auth);
         await _keyStorage.deleteKeys();
       } else {
         // Just clear cache
@@ -308,10 +309,10 @@ class AuthService extends ChangeNotifier {
       
       _setAuthState(AuthState.unauthenticated);
       
-      debugPrint('✅ User signed out');
+      Log.info('User signed out', name: 'AuthService', category: LogCategory.auth);
       
     } catch (e) {
-      debugPrint('❌ Error during sign out: $e');
+      Log.error('Error during sign out: $e', name: 'AuthService', category: LogCategory.auth);
       _lastError = 'Sign out failed: $e';
     }
   }
@@ -326,7 +327,7 @@ class AuthService extends ChangeNotifier {
         biometricPrompt: biometricPrompt,
       );
     } catch (e) {
-      debugPrint('❌ Failed to get private key: $e');
+      Log.error('Failed to get private key: $e', name: 'AuthService', category: LogCategory.auth);
       return null;
     }
   }
@@ -336,10 +337,10 @@ class AuthService extends ChangeNotifier {
     if (!isAuthenticated) return null;
     
     try {
-      debugPrint('⚠️ Exporting nsec - ensure secure handling');
+      Log.warning('Exporting nsec - ensure secure handling', name: 'AuthService', category: LogCategory.auth);
       return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
     } catch (e) {
-      debugPrint('❌ Failed to export nsec: $e');
+      Log.error('Failed to export nsec: $e', name: 'AuthService', category: LogCategory.auth);
       return null;
     }
   }
@@ -352,7 +353,7 @@ class AuthService extends ChangeNotifier {
     String? biometricPrompt,
   }) async {
     if (!isAuthenticated || _currentKeyContainer == null) {
-      debugPrint('❌ Cannot sign event - user not authenticated');
+      Log.error('Cannot sign event - user not authenticated', name: 'AuthService', category: LogCategory.auth);
       return null;
     }
     
@@ -373,7 +374,7 @@ class AuthService extends ChangeNotifier {
       }, biometricPrompt: biometricPrompt);
       
     } catch (e) {
-      debugPrint('❌ Failed to create event: $e');
+      Log.error('Failed to create event: $e', name: 'AuthService', category: LogCategory.auth);
       return null;
     }
   }
@@ -384,19 +385,19 @@ class AuthService extends ChangeNotifier {
       final hasKeys = await _keyStorage.hasKeys();
       
       if (hasKeys) {
-        debugPrint('🔍 Found existing secure keys, loading saved identity...');
+        Log.info('Found existing secure keys, loading saved identity...', name: 'AuthService', category: LogCategory.auth);
         
         final keyContainer = await _keyStorage.getKeyContainer();
         if (keyContainer != null) {
-          debugPrint('✅ Loaded existing secure identity: ${NostrEncoding.maskKey(keyContainer.npub)}');
+          Log.info('Loaded existing secure identity: ${NostrEncoding.maskKey(keyContainer.npub)}', name: 'AuthService', category: LogCategory.auth);
           await _setupUserSession(keyContainer);
           return;
         } else {
-          debugPrint('⚠️ Has keys flag set but could not load secure key container');
+          Log.warning('Has keys flag set but could not load secure key container', name: 'AuthService', category: LogCategory.auth);
         }
       }
       
-      debugPrint('📭 No existing secure keys found, creating new identity automatically...');
+      Log.info('No existing secure keys found, creating new identity automatically...', name: 'AuthService', category: LogCategory.auth);
       
       // Auto-create identity like TikTok - seamless onboarding
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -405,17 +406,17 @@ class AuthService extends ChangeNotifier {
       
       final result = await createNewIdentity();
       if (result.success && result.keyContainer != null) {
-        debugPrint('✅ Auto-created NEW secure Nostr identity: ${NostrEncoding.maskKey(result.keyContainer!.npub)}');
-        debugPrint('🔐 This identity is now securely saved and will be reused on next launch');
+        Log.info('Auto-created NEW secure Nostr identity: ${NostrEncoding.maskKey(result.keyContainer!.npub)}', name: 'AuthService', category: LogCategory.auth);
+        Log.debug('� This identity is now securely saved and will be reused on next launch', name: 'AuthService', category: LogCategory.auth);
       } else {
-        debugPrint('❌ Failed to auto-create identity: ${result.errorMessage}');
+        Log.error('Failed to auto-create identity: ${result.errorMessage}', name: 'AuthService', category: LogCategory.auth);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _setAuthState(AuthState.unauthenticated);
         });
       }
       
     } catch (e) {
-      debugPrint('❌ Error checking existing auth: $e');
+      Log.error('Error checking existing auth: $e', name: 'AuthService', category: LogCategory.auth);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _setAuthState(AuthState.unauthenticated);
       });
@@ -440,9 +441,9 @@ class AuthService extends ChangeNotifier {
     _setAuthState(AuthState.authenticated);
     _profileController.add(_currentProfile);
     
-    debugPrint('✅ Secure user session established');
-    debugPrint('👤 Profile: ${_currentProfile!.displayName}');
-    debugPrint('🔒 Security: Hardware-backed storage active');
+    Log.info('Secure user session established', name: 'AuthService', category: LogCategory.auth);
+    Log.verbose('Profile: ${_currentProfile!.displayName}', name: 'AuthService', category: LogCategory.auth);
+    Log.debug('� Security: Hardware-backed storage active', name: 'AuthService', category: LogCategory.auth);
   }
   
   /// Check if migration from legacy storage is needed
@@ -453,12 +454,12 @@ class AuthService extends ChangeNotifier {
       _migrationRequired = migrationStatus.status == MigrationStatus.pending;
       
       if (_migrationRequired) {
-        debugPrint('⚠️ Legacy keys found - migration required for security');
+        Log.warning('Legacy keys found - migration required for security', name: 'AuthService', category: LogCategory.auth);
       } else if (migrationStatus.status == MigrationStatus.failed) {
-        debugPrint('❌ Migration check failed: ${migrationStatus.error}');
+        Log.error('Migration check failed: ${migrationStatus.error}', name: 'AuthService', category: LogCategory.auth);
       }
     } catch (e) {
-      debugPrint('⚠️ Migration status check failed: $e');
+      Log.error('Migration status check failed: $e', name: 'AuthService', category: LogCategory.auth);
       _migrationRequired = false;
     }
   }
@@ -467,7 +468,7 @@ class AuthService extends ChangeNotifier {
   /// Use mobile platforms for secure key management
   @Deprecated('Web authentication not supported in secure mode')
   Future<void> setWebAuthenticationKey(String publicKeyHex) async {
-    debugPrint('❌ Web authentication not supported with secure storage');
+    Log.error('Web authentication not supported with secure storage', name: 'AuthService', category: LogCategory.auth);
     
     _lastError = 'Web authentication not supported in secure mode. Please use mobile app for secure key management.';
     _setAuthState(AuthState.unauthenticated);
@@ -485,7 +486,7 @@ class AuthService extends ChangeNotifier {
       _authStateController.add(newState);
       notifyListeners();
       
-      debugPrint('🔄 Auth state changed: ${newState.name}');
+      Log.debug('Auth state changed: ${newState.name}', name: 'AuthService', category: LogCategory.auth);
     }
   }
   
@@ -504,7 +505,7 @@ class AuthService extends ChangeNotifier {
   
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing SecureAuthService');
+    Log.debug('�️ Disposing SecureAuthService', name: 'AuthService', category: LogCategory.auth);
     
     // Securely dispose of key container
     _currentKeyContainer?.dispose();

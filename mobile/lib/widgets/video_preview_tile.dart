@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 /// Lightweight video preview widget for explore screens
 /// Automatically plays when visible, pauses when scrolled away
@@ -75,9 +76,9 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
     });
 
     try {
-      debugPrint('🎬 Initializing preview for ${widget.video.id.substring(0, 8)}...');
-      debugPrint('   Video URL: ${widget.video.videoUrl}');
-      debugPrint('   Thumbnail URL: ${widget.video.effectiveThumbnailUrl}');
+      Log.debug('Initializing preview for ${widget.video.id.substring(0, 8)}...', name: 'VideoPreviewTile', category: LogCategory.ui);
+      Log.debug('   Video URL: ${widget.video.videoUrl}', name: 'VideoPreviewTile', category: LogCategory.ui);
+      Log.debug('   Thumbnail URL: ${widget.video.effectiveThumbnailUrl}', name: 'VideoPreviewTile', category: LogCategory.ui);
       
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.video.videoUrl!),
@@ -96,11 +97,11 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
           _isInitializing = false;
         });
         
-        debugPrint('✅ Preview playing for ${widget.video.id.substring(0, 8)}');
+        Log.info('Preview playing for ${widget.video.id.substring(0, 8)}', name: 'VideoPreviewTile', category: LogCategory.ui);
       }
     } catch (e) {
-      debugPrint('❌ Preview initialization failed for ${widget.video.id.substring(0, 8)}: $e');
-      debugPrint('   Video URL was: ${widget.video.videoUrl}');
+      Log.error('Preview initialization failed for ${widget.video.id.substring(0, 8)}: $e', name: 'VideoPreviewTile', category: LogCategory.ui);
+      Log.debug('   Video URL was: ${widget.video.videoUrl}', name: 'VideoPreviewTile', category: LogCategory.ui);
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -111,7 +112,7 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
   }
 
   void _disposeVideo() {
-    debugPrint('🗑️ Disposing preview for ${widget.video.id.substring(0, 8)}...');
+    Log.debug('�️ Disposing preview for ${widget.video.id.substring(0, 8)}...', name: 'VideoPreviewTile', category: LogCategory.ui);
     _controller?.dispose();
     _controller = null;
   }

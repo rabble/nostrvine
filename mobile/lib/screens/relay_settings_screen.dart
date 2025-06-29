@@ -25,7 +25,7 @@ class _RelaySettingsScreenState extends State<RelaySettingsScreen> {
     super.dispose();
   }
 
-  void _showAddRelayDialog(NostrService nostrService) {
+  void _showAddRelayDialog(dynamic nostrService) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -150,19 +150,10 @@ class _RelaySettingsScreenState extends State<RelaySettingsScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final iNostrService = Provider.of<INostrService>(context);
     
-    // Cast to NostrService to access relay management methods
-    if (iNostrService is! NostrService) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Relay Settings'),
-        ),
-        body: const Center(
-          child: Text('Relay management not available on this platform'),
-        ),
-      );
-    }
-    
-    final nostrService = iNostrService as NostrService;
+    // Check if service has relay management methods (both v1 and v2 have them)
+    final nostrService = iNostrService;
+    // For now, both NostrService and NostrServiceV2 have the relay management methods
+    // In the future, we should add these methods to the interface
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
@@ -335,7 +326,7 @@ class _RelaySettingsScreenState extends State<RelaySettingsScreen> {
     );
   }
 
-  Widget _buildConnectionStatusCard(NostrService nostrService, bool isDarkMode) {
+  Widget _buildConnectionStatusCard(dynamic nostrService, bool isDarkMode) {
     final connectedCount = nostrService.relayStatuses.values
         .where((status) => status == RelayStatus.connected)
         .length;

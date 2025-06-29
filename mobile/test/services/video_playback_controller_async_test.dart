@@ -3,8 +3,6 @@
 
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:openvine/services/video_playback_controller.dart';
 import 'package:openvine/models/video_event.dart';
 
@@ -50,11 +48,6 @@ void main() {
       test('should use exponential backoff instead of fixed delays', () async {
         // This test verifies that the retry mechanism uses AsyncUtils.retryWithBackoff
         // instead of fixed Future.delayed calls
-        
-        final retryTimes = <DateTime>[];
-        
-        // Mock a failing initialization that records retry times
-        var attemptCount = 0;
         
         // Override the retry method to track timing without accessing private members
         // We'll test the behavior indirectly by checking the timing pattern

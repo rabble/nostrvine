@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/video_event.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for handling video sharing functionality
 class ShareService {
@@ -22,7 +23,7 @@ class ShareService {
       final neventLink = 'nostr:nevent1$eventId';
       return neventLink;
     } catch (e) {
-      debugPrint('Error generating Nostr event link: $e');
+      Log.error('Error generating Nostr event link: $e', name: 'ShareService', category: LogCategory.system);
       return 'nostr:note1${video.id}';
     }
   }
@@ -63,7 +64,7 @@ class ShareService {
         );
       }
     } catch (e) {
-      debugPrint('Error copying to clipboard: $e');
+      Log.error('Error copying to clipboard: $e', name: 'ShareService', category: LogCategory.system);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -84,7 +85,7 @@ class ShareService {
         subject: 'Check out this video on OpenVine',
       );
     } catch (e) {
-      debugPrint('Error sharing via sheet: $e');
+      Log.error('Error sharing via sheet: $e', name: 'ShareService', category: LogCategory.system);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

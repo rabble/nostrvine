@@ -9,6 +9,7 @@ import '../theme/vine_theme.dart';
 import '../models/pending_upload.dart';
 import '../services/upload_manager.dart';
 import '../services/auth_service.dart';
+import '../utils/unified_logger.dart';
 
 class VideoMetadataScreen extends StatefulWidget {
   final File videoFile;
@@ -32,6 +33,8 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   final List<String> _hashtags = [];
   bool _isVideoInitialized = false;
   String? _currentUploadId;
+  bool _isExpiringPost = false;
+  int _expirationHours = 24;
   
   @override
   void initState() {
@@ -53,20 +56,20 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   }
   
   Future<void> _initializeVideo() async {
-    debugPrint('🎬 Initializing video preview: ${widget.videoFile.path}');
-    debugPrint('📁 File exists: ${widget.videoFile.existsSync()}');
-    debugPrint('📏 File size: ${widget.videoFile.existsSync() ? widget.videoFile.lengthSync() : 0} bytes');
+    Log.debug('Initializing video preview: ${widget.videoFile.path}', name: 'VideoMetadataScreen', category: LogCategory.ui);
+    Log.debug('� File exists: ${widget.videoFile.existsSync()}', name: 'VideoMetadataScreen', category: LogCategory.ui);
+    Log.debug('� File size: ${widget.videoFile.existsSync() ? widget.videoFile.lengthSync() : 0} bytes', name: 'VideoMetadataScreen', category: LogCategory.ui);
     
     _videoController = VideoPlayerController.file(widget.videoFile);
     try {
       await _videoController.initialize();
-      debugPrint('✅ Video initialized: ${_videoController.value.size}');
+      Log.info('Video initialized: ${_videoController.value.size}', name: 'VideoMetadataScreen', category: LogCategory.ui);
       await _videoController.setLooping(true);
       await _videoController.play();
       setState(() => _isVideoInitialized = true);
     } catch (e) {
-      debugPrint('❌ Failed to initialize video: $e');
-      debugPrint('📍 Stack trace: ${StackTrace.current}');
+      Log.error('Failed to initialize video: $e', name: 'VideoMetadataScreen', category: LogCategory.ui);
+      Log.verbose('� Stack trace: ${StackTrace.current}', name: 'VideoMetadataScreen', category: LogCategory.ui);
       // Still update UI to show error state
       setState(() => _isVideoInitialized = false);
     }
@@ -74,7 +77,14 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   
   Widget _buildVideoPreview() {
     if (_isVideoInitialized && _videoController.value.isInitialized) {
-      return VideoPlayer(_videoController);
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _videoController.value.size.width,
+          height: _videoController.value.size.height,
+          child: VideoPlayer(_videoController),
+        ),
+      );
     }
     
     // Check if file exists
@@ -107,16 +117,19 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: VineTheme.vineGreen,
+        elevation: 0,
         title: const Text(
           'Add Details',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -127,201 +140,359 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Video preview
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Container(
-                    color: Colors.black,
-                    child: _buildVideoPreview(),
-                  ),
-                ),
-            
-            // Metadata form
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  TextField(
-                    controller: _titleController,
-                    enableInteractiveSelection: true,
-                    style: const TextStyle(color: VineTheme.primaryText),
-                    decoration: InputDecoration(
-                      labelText: 'Title',
-                      labelStyle: TextStyle(color: VineTheme.secondaryText),
-                      hintText: 'Give your vine a title',
-                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.secondaryText),
-                      ),
-                      focusedBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.vineGreen),
-                      ),
-                    ),
-                    maxLength: 100,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Description
-                  TextField(
-                    controller: _descriptionController,
-                    enableInteractiveSelection: true,
-                    style: const TextStyle(color: VineTheme.primaryText),
-                    decoration: InputDecoration(
-                      labelText: 'Description (optional)',
-                      labelStyle: TextStyle(color: VineTheme.secondaryText),
-                      hintText: 'Add a description',
-                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.secondaryText),
-                      ),
-                      focusedBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.vineGreen),
-                      ),
-                    ),
-                    maxLines: 3,
-                    maxLength: 500,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Hashtags
-                  TextField(
-                    controller: _hashtagController,
-                    enableInteractiveSelection: true,
-                    style: const TextStyle(color: VineTheme.primaryText),
-                    decoration: InputDecoration(
-                      labelText: 'Add hashtags',
-                      labelStyle: TextStyle(color: VineTheme.secondaryText),
-                      hintText: 'Type a hashtag and press enter',
-                      hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.secondaryText),
-                      ),
-                      focusedBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: VineTheme.vineGreen),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.add, color: VineTheme.vineGreen),
-                        onPressed: _addHashtag,
-                      ),
-                    ),
-                    onSubmitted: (_) => _addHashtag(),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Hashtag chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
+          // Upload progress bar at the top (always visible)
+          if (_currentUploadId != null)
+            Consumer<UploadManager>(
+              builder: (context, uploadManager, child) {
+                final upload = uploadManager.getUpload(_currentUploadId!);
+                if (upload == null) return const SizedBox.shrink();
+                return Container(
+                  width: double.infinity,
+                  color: Colors.grey[900],
+                  child: Column(
                     children: [
-                      // Default openvine tag
-                      Chip(
-                        label: const Text('#openvine'),
-                        backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
-                        labelStyle: const TextStyle(color: VineTheme.vineGreen),
+                      LinearProgressIndicator(
+                        value: upload.progressValue,
+                        backgroundColor: Colors.grey[800],
+                        valueColor: const AlwaysStoppedAnimation<Color>(VineTheme.vineGreen),
+                        minHeight: 3,
                       ),
-                      // User added tags
-                      ..._hashtags.map((tag) => Chip(
-                        label: Text('#$tag'),
-                        backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
-                        labelStyle: const TextStyle(color: VineTheme.vineGreen),
-                        deleteIcon: const Icon(Icons.close, size: 18),
-                        deleteIconColor: VineTheme.vineGreen,
-                        onDeleted: () {
-                          setState(() {
-                            _hashtags.remove(tag);
-                          });
-                        },
-                      )),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Video info and upload status
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: VineTheme.secondaryText, size: 20),
+                            const Icon(Icons.cloud_upload, color: VineTheme.vineGreen, size: 16),
                             const SizedBox(width: 8),
                             Text(
-                              'Duration: ${widget.duration.inSeconds}s • Size: ${_getFileSize()}',
-                              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+                              upload.status == UploadStatus.uploading
+                                  ? 'Uploading ${(upload.progressValue * 100).toInt()}%'
+                                  : upload.status == UploadStatus.readyToPublish
+                                      ? 'Upload complete - Ready to publish'
+                                      : upload.statusText,
+                              style: const TextStyle(color: VineTheme.vineGreen, fontSize: 13),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${widget.duration.inSeconds}s • ${_getFileSize()}',
+                              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
                             ),
                           ],
                         ),
-                        if (_currentUploadId != null) ...[
-                          const SizedBox(height: 8),
-                          Consumer<UploadManager>(
-                            builder: (context, uploadManager, child) {
-                              final upload = uploadManager.getUpload(_currentUploadId!);
-                              if (upload == null) return const SizedBox.shrink();
-                              return Column(
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          
+          // Video preview - smaller to save space
+          Container(
+            height: screenHeight * 0.25, // 25% of screen height
+            width: double.infinity,
+            color: Colors.black,
+            child: _buildVideoPreview(),
+          ),
+          
+          // Form fields with better spacing
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title field with integrated counter
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Title',
+                                  style: TextStyle(
+                                    color: VineTheme.secondaryText,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${_titleController.text.length}/100',
+                                  style: TextStyle(
+                                    color: VineTheme.secondaryText.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: _titleController,
+                              enabled: true,
+                              autofocus: false,
+                              enableInteractiveSelection: true,
+                              style: const TextStyle(
+                                color: VineTheme.primaryText,
+                                fontSize: 16,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Give your vine a catchy title',
+                                hintStyle: TextStyle(
+                                  color: VineTheme.secondaryText.withValues(alpha: 0.5),
+                                  fontSize: 16,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: VineTheme.secondaryText.withValues(alpha: 0.3)),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: VineTheme.vineGreen),
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              maxLength: 100,
+                              buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                                return const SizedBox.shrink(); // Hide default counter
+                              },
+                              onChanged: (_) => setState(() {}), // Update counter
+                            ),
+                          ],
+                        ),
+                        
+                        Divider(color: VineTheme.secondaryText.withValues(alpha: 0.3)),
+                        const SizedBox(height: 12),
+                        
+                        // Description field with integrated counter
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Description (optional)',
+                                  style: TextStyle(
+                                    color: VineTheme.secondaryText,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${_descriptionController.text.length}/500',
+                                  style: TextStyle(
+                                    color: VineTheme.secondaryText.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: _descriptionController,
+                              enabled: true,
+                              enableInteractiveSelection: true,
+                              style: const TextStyle(
+                                color: VineTheme.primaryText,
+                                fontSize: 15,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Tell viewers about your vine',
+                                hintStyle: TextStyle(
+                                  color: VineTheme.secondaryText.withValues(alpha: 0.5),
+                                  fontSize: 15,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: VineTheme.secondaryText.withValues(alpha: 0.3)),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: VineTheme.vineGreen),
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              maxLines: 2,
+                              maxLength: 500,
+                              buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                                return const SizedBox.shrink(); // Hide default counter
+                              },
+                              onChanged: (_) => setState(() {}), // Update counter
+                            ),
+                          ],
+                        ),
+                        
+                        Divider(color: VineTheme.secondaryText.withValues(alpha: 0.3)),
+                        const SizedBox(height: 12),
+                        
+                        // Hashtags section - more compact
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hashtags',
+                              style: TextStyle(
+                                color: VineTheme.secondaryText,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            
+                            // Hashtag chips - horizontal scroll if needed
+                            SizedBox(
+                              height: 32,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.cloud_upload, color: VineTheme.vineGreen, size: 16),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          upload.status == UploadStatus.uploading
-                                              ? 'Uploading ${(upload.progressValue * 100).toInt()}%'
-                                              : upload.status == UploadStatus.readyToPublish
-                                                  ? 'Upload complete'
-                                                  : upload.statusText,
-                                          style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-                                        ),
+                                  // Default openvine tag
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: Chip(
+                                      label: const Text('#openvine', style: TextStyle(fontSize: 13)),
+                                      backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
+                                      labelStyle: const TextStyle(color: VineTheme.vineGreen),
+                                      visualDensity: VisualDensity.compact,
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                  // User added tags
+                                  ..._hashtags.map((tag) => Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: Chip(
+                                      label: Text('#$tag', style: const TextStyle(fontSize: 13)),
+                                      backgroundColor: VineTheme.vineGreen.withValues(alpha: 0.2),
+                                      labelStyle: const TextStyle(color: VineTheme.vineGreen),
+                                      deleteIcon: const Icon(Icons.close, size: 16),
+                                      deleteIconColor: VineTheme.vineGreen,
+                                      visualDensity: VisualDensity.compact,
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      onDeleted: () {
+                                        setState(() {
+                                          _hashtags.remove(tag);
+                                        });
+                                      },
+                                    ),
+                                  )),
+                                  // Add hashtag button
+                                  if (_hashtags.length < 5) // Limit to 5 custom tags
+                                    Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      child: ActionChip(
+                                        label: const Text('+ Add', style: TextStyle(fontSize: 13)),
+                                        backgroundColor: Colors.grey[850],
+                                        labelStyle: TextStyle(color: VineTheme.secondaryText),
+                                        visualDensity: VisualDensity.compact,
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        onPressed: () => _showHashtagDialog(),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  LinearProgressIndicator(
-                                    value: upload.progressValue,
-                                    backgroundColor: Colors.grey[700],
-                                    valueColor: const AlwaysStoppedAnimation<Color>(VineTheme.vineGreen),
-                                    minHeight: 2,
-                                  ),
+                                    ),
                                 ],
-                              );
-                            },
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        Divider(color: VineTheme.secondaryText.withValues(alpha: 0.3)),
+                        const SizedBox(height: 12),
+                        
+                        // Expiring post toggle
+                        Row(
+                          children: [
+                            Text(
+                              'Expiring Post',
+                              style: TextStyle(
+                                color: VineTheme.secondaryText,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            Switch(
+                              value: _isExpiringPost,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isExpiringPost = value;
+                                });
+                              },
+                              activeColor: VineTheme.vineGreen,
+                            ),
+                          ],
+                        ),
+                        if (_isExpiringPost) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Expires in:',
+                            style: TextStyle(
+                              color: VineTheme.secondaryText.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 32,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                _buildExpirationOption('1 hour', 1),
+                                const SizedBox(width: 8),
+                                _buildExpirationOption('1 day', 24),
+                                const SizedBox(width: 8),
+                                _buildExpirationOption('1 week', 168),
+                                const SizedBox(width: 8),
+                                _buildExpirationOption('1 month', 720),
+                                const SizedBox(width: 8),
+                                _buildExpirationOption('1 year', 8760),
+                              ],
+                            ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildExpirationOption(String label, int hours) {
+    final isSelected = _expirationHours == hours;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _expirationHours = hours;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? VineTheme.vineGreen : Colors.grey[850],
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected 
+              ? null 
+              : Border.all(color: VineTheme.secondaryText.withValues(alpha: 0.3), width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : VineTheme.secondaryText,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 12,
+          ),
         ),
       ),
-    ],
-  ),
-);
-}
-  
+    );
+  }
   void _addHashtag() {
     final tag = _hashtagController.text.trim().replaceAll('#', '');
     if (tag.isNotEmpty && !_hashtags.contains(tag) && tag != 'openvine') {
@@ -330,6 +501,62 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
         _hashtagController.clear();
       });
     }
+  }
+  
+  void _showHashtagDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Add Hashtag',
+          style: TextStyle(color: VineTheme.primaryText),
+        ),
+        content: TextField(
+          controller: _hashtagController,
+          autofocus: true,
+          style: const TextStyle(color: VineTheme.primaryText),
+          decoration: InputDecoration(
+            hintText: 'Enter hashtag',
+            hintStyle: TextStyle(color: VineTheme.secondaryText.withValues(alpha: 0.5)),
+            prefixText: '#',
+            prefixStyle: const TextStyle(color: VineTheme.vineGreen),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: VineTheme.secondaryText),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: VineTheme.vineGreen),
+            ),
+          ),
+          onSubmitted: (_) {
+            _addHashtag();
+            Navigator.of(context).pop();
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _hashtagController.clear();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              _addHashtag();
+              Navigator.of(context).pop();
+            },
+            child: const Text(
+              'Add',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
+          ),
+        ],
+      ),
+    );
   }
   
   String _getFileSize() {
@@ -360,9 +587,9 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
         _currentUploadId = upload.id;
       });
       
-      debugPrint('🚀 Background upload started: ${upload.id}');
+      Log.info('Background upload started: ${upload.id}', name: 'VideoMetadataScreen', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('❌ Failed to start background upload: $e');
+      Log.error('Failed to start background upload: $e', name: 'VideoMetadataScreen', category: LogCategory.ui);
     }
   }
   
@@ -381,6 +608,14 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
     // Always include openvine tag
     final allHashtags = ['openvine', ..._hashtags];
     
+    // Calculate expiration timestamp if enabled
+    int? expirationTimestamp;
+    if (_isExpiringPost) {
+      final now = DateTime.now();
+      final expirationDate = now.add(Duration(hours: _expirationHours));
+      expirationTimestamp = expirationDate.millisecondsSinceEpoch ~/ 1000;
+    }
+    
     // TODO: Update the upload metadata with the final title/description
     // For now, the upload continues with the original metadata
     
@@ -391,6 +626,7 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
         'title': title,
         'description': _descriptionController.text.trim(),
         'hashtags': allHashtags,
+        'expirationTimestamp': expirationTimestamp,
       });
     }
   }

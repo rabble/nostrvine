@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/video_event_publisher.dart';
 import '../models/pending_upload.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 class VinePreviewScreen extends StatefulWidget {
   final File videoFile;
@@ -34,6 +35,8 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
   VideoPlayerController? _videoController;
   bool _isUploading = false;
   bool _isPlaying = false;
+  bool _isExpiringPost = false;
+  int _expirationHours = 24;
 
   @override
   void initState() {
@@ -68,7 +71,7 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
         _playVideo();
       }
     } catch (e) {
-      debugPrint('❌ Error initializing video preview: $e');
+      Log.error('Error initializing video preview: $e', name: 'VinePreviewScreen', category: LogCategory.ui);
     }
   }
 
@@ -169,9 +172,17 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
                       if (_videoController?.value.isInitialized == true)
                         GestureDetector(
                           onTap: _togglePlayPause,
-                          child: AspectRatio(
-                            aspectRatio: _videoController!.value.aspectRatio,
-                            child: VideoPlayer(_videoController!),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: _videoController!.value.size.width,
+                                height: _videoController!.value.size.height,
+                                child: VideoPlayer(_videoController!),
+                              ),
+                            ),
                           ),
                         )
                       else
@@ -321,6 +332,58 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Expiring post toggle
+                      Row(
+                        children: [
+                          const Text(
+                            'Expiring Post',
+                            style: TextStyle(
+                              color: VineTheme.whiteText,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: _isExpiringPost,
+                            onChanged: (value) {
+                              setState(() {
+                                _isExpiringPost = value;
+                              });
+                            },
+                            activeColor: VineTheme.vineGreen,
+                          ),
+                        ],
+                      ),
+                      if (_isExpiringPost) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Expires in:',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildExpirationOption('1 hour', 1),
+                              const SizedBox(width: 8),
+                              _buildExpirationOption('6 hours', 6),
+                              const SizedBox(width: 8),
+                              _buildExpirationOption('1 day', 24),
+                              const SizedBox(width: 8),
+                              _buildExpirationOption('3 days', 72),
+                              const SizedBox(width: 8),
+                              _buildExpirationOption('1 week', 168),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+
                       // Hashtags input
                       const Text(
                         'Hashtags',
@@ -412,6 +475,35 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
     );
   }
 
+  Widget _buildExpirationOption(String label, int hours) {
+    final isSelected = _expirationHours == hours;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _expirationHours = hours;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? VineTheme.vineGreen : Colors.grey[800],
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected 
+              ? null 
+              : Border.all(color: Colors.grey[600]!, width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : VineTheme.whiteText,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showExitConfirmation() {
     showDialog(
       context: context,
@@ -494,9 +586,9 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
       
       // Background upload started successfully
 
-      debugPrint('✅ Background upload started while user enters metadata');
+      Log.info('Background upload started while user enters metadata', name: 'VinePreviewScreen', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('❌ Failed to start background upload: $e');
+      Log.error('Failed to start background upload: $e', name: 'VinePreviewScreen', category: LogCategory.ui);
     }
   }
 
@@ -517,10 +609,6 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
 
     try {
       final uploadManager = context.read<UploadManager>();
-      final authService = context.read<AuthService>();
-      
-      // Get user's public key
-      final userPubkey = authService.currentPublicKeyHex ?? 'anonymous';
       
       // Parse hashtags
       final hashtags = _hashtagsController.text
@@ -534,11 +622,19 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
       
       if (existingUpload != null && existingUpload.status == UploadStatus.readyToPublish) {
         // Use the existing upload data to publish directly
-        debugPrint('📤 Publishing existing upload: ${existingUpload.id}');
-        debugPrint('🔗 CDN URL: ${existingUpload.cdnUrl}');
+        Log.debug('� Publishing existing upload: ${existingUpload.id}', name: 'VinePreviewScreen', category: LogCategory.ui);
+        Log.debug('� CDN URL: ${existingUpload.cdnUrl}', name: 'VinePreviewScreen', category: LogCategory.ui);
         
         // Get the video event publisher
         final videoEventPublisher = context.read<VideoEventPublisher>();
+        
+        // Calculate expiration timestamp if enabled
+        int? expirationTimestamp;
+        if (_isExpiringPost) {
+          final now = DateTime.now();
+          final expirationDate = now.add(Duration(hours: _expirationHours));
+          expirationTimestamp = expirationDate.millisecondsSinceEpoch ~/ 1000;
+        }
         
         // Create and publish the Nostr event with user's metadata
         await videoEventPublisher.publishVideoEvent(
@@ -546,9 +642,10 @@ class _VinePreviewScreenState extends State<VinePreviewScreen> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           hashtags: hashtags,
+          expirationTimestamp: expirationTimestamp,
         );
         
-        debugPrint('✅ Published video with user metadata');
+        Log.info('Published video with user metadata', name: 'VinePreviewScreen', category: LogCategory.ui);
       } else {
         // Fallback: if upload not found or not ready, show error
         throw Exception('Upload not ready. Please wait for upload to complete.');

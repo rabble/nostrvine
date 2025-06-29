@@ -11,7 +11,6 @@ import 'screens/explore_screen.dart';
 import 'screens/web_auth_screen.dart';
 import 'widgets/age_verification_dialog.dart';
 import 'services/nostr_service.dart';
-import 'services/nostr_service_v2.dart';
 import 'services/auth_service.dart';
 import 'services/key_storage_service.dart';
 import 'services/secure_key_storage_service.dart';
@@ -67,10 +66,26 @@ void main() async {
   
   // Set default log level based on build mode if not already configured
   if (const String.fromEnvironment('LOG_LEVEL').isEmpty) {
-    // For release builds, default to INFO to reduce log spam
-    // For debug builds, default to DEBUG for development
-    UnifiedLogger.setLogLevel(kReleaseMode ? LogLevel.info : LogLevel.debug);
+    if (kDebugMode) {
+      // Debug builds: enable debug logging for development visibility
+      UnifiedLogger.setLogLevel(LogLevel.debug);
+      UnifiedLogger.enableCategories({LogCategory.system, LogCategory.auth, LogCategory.relay, LogCategory.video});
+    } else {
+      // Release builds: minimal logging to reduce performance impact
+      UnifiedLogger.setLogLevel(LogLevel.warning);
+      UnifiedLogger.enableCategories({LogCategory.system, LogCategory.auth});
+    }
   }
+  
+  // Store original debugPrint to avoid recursion
+  final originalDebugPrint = debugPrint;
+  
+  // Override debugPrint to respect logging levels
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null && UnifiedLogger.isLevelEnabled(LogLevel.debug)) {
+      originalDebugPrint(message, wrapWidth: wrapWidth);
+    }
+  };
   
   // Handle Flutter framework errors more gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -136,53 +151,24 @@ class OpenVineApp extends StatelessWidget {
         // Nostr key manager
         ChangeNotifierProvider(create: (_) => NostrKeyManager()),
         
-        // Core Nostr service - platform-specific implementation
+        // Core Nostr service using nostr_sdk
         ChangeNotifierProxyProvider<NostrKeyManager, INostrService>(
           create: (context) {
             final keyManager = context.read<NostrKeyManager>();
-            // Use v2 service with nostr_sdk RelayPool
-            const useV2 = true; // Set to false to use old implementation
-            if (useV2) {
-              Log.debug('Creating NostrService v2 with nostr_sdk RelayPool', name: 'Main');
-              return NostrServiceV2(keyManager);
-            } else {
-              Log.debug('Creating NostrService v1 with custom WebSocket', name: 'Main');
-              return NostrService(keyManager);
-            }
+            Log.debug('Creating NostrService with nostr_sdk RelayPool', name: 'Main');
+            return NostrService(keyManager);
           },
           update: (_, keyManager, previous) {
             if (previous != null) return previous;
-            // Use v2 service with nostr_sdk RelayPool
-            const useV2 = true; // Set to false to use old implementation
-            if (useV2) {
-              Log.debug('Creating NostrService v2 with nostr_sdk RelayPool', name: 'Main');
-              return NostrServiceV2(keyManager);
-            } else {
-              Log.debug('Creating NostrService v1 with custom WebSocket', name: 'Main');
-              return NostrService(keyManager);
-            }
+            Log.debug('Creating NostrService with nostr_sdk RelayPool', name: 'Main');
+            return NostrService(keyManager);
           },
         ),
         
-        // Subscription manager for managing Nostr subscriptions (only for v1)
+        // Subscription manager - not needed with SDK-based service
         ChangeNotifierProxyProvider<INostrService, SubscriptionManager?>(
-          create: (context) {
-            const useV2 = true; // Must match the setting above
-            if (useV2) {
-              // V2 doesn't need SubscriptionManager
-              return null;
-            } else {
-              return SubscriptionManager(context.read<INostrService>());
-            }
-          },
-          update: (_, nostrService, previous) {
-            const useV2 = true; // Must match the setting above
-            if (useV2) {
-              return null;
-            } else {
-              return previous ?? SubscriptionManager(nostrService);
-            }
-          },
+          create: (context) => null,
+          update: (_, nostrService, previous) => null,
         ),
         
         // Profile cache service for persistent profile storage
@@ -291,31 +277,21 @@ class OpenVineApp extends StatelessWidget {
           ),
         ),
         
-        // Profile videos provider depends on Nostr service, SubscriptionManager, and VideoEventService
-        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager?, VideoEventService, ProfileVideosProvider>(
+        // Profile videos provider depends on Nostr service and VideoEventService
+        ChangeNotifierProxyProvider2<INostrService, VideoEventService, ProfileVideosProvider>(
           create: (context) {
             final provider = ProfileVideosProvider(
               context.read<INostrService>(),
             );
-            final subscriptionManager = context.read<SubscriptionManager?>();
-            if (subscriptionManager != null) {
-              provider.setSubscriptionManager(subscriptionManager);
-            }
             provider.setVideoEventService(context.read<VideoEventService>());
             return provider;
           },
-          update: (_, nostrService, subscriptionManager, videoEventService, previous) {
+          update: (_, nostrService, videoEventService, previous) {
             if (previous != null) {
-              if (subscriptionManager != null) {
-                previous.setSubscriptionManager(subscriptionManager);
-              }
               previous.setVideoEventService(videoEventService);
               return previous;
             }
             final provider = ProfileVideosProvider(nostrService);
-            if (subscriptionManager != null) {
-              provider.setSubscriptionManager(subscriptionManager);
-            }
             provider.setVideoEventService(videoEventService);
             return provider;
           },
@@ -340,7 +316,7 @@ class OpenVineApp extends StatelessWidget {
                     videoService: videoService,
                   );
                 } catch (e) {
-                  debugPrint('❌ Failed to initialize enhanced notification service: $e');
+                  Log.error('Failed to initialize enhanced notification service: $e', name: 'Main', category: LogCategory.system);
                 }
               });
             } else {
@@ -357,7 +333,7 @@ class OpenVineApp extends StatelessWidget {
                     videoService: videoService,
                   );
                 } catch (e) {
-                  debugPrint('❌ Failed to initialize enhanced notification service: $e');
+                  Log.error('Failed to initialize enhanced notification service: $e', name: 'Main', category: LogCategory.system);
                 }
               });
             }
@@ -572,7 +548,7 @@ class _AppInitializerState extends State<AppInitializer> {
       try {
         await context.read<INostrService>().initialize();
       } catch (e) {
-        debugPrint('⚠️ Nostr service initialization failed: $e');
+        Log.error('Nostr service initialization failed: $e', name: 'Main', category: LogCategory.system);
         // This is critical - rethrow
         rethrow;
       }
@@ -592,7 +568,7 @@ class _AppInitializerState extends State<AppInitializer> {
       try {
         await context.read<VideoEventPublisher>().initialize();
       } catch (e) {
-        debugPrint('⚠️ VideoEventPublisher initialization failed (backend endpoint missing): $e');
+        Log.error('VideoEventPublisher initialization failed (backend endpoint missing): $e', name: 'Main', category: LogCategory.system);
         // Continue anyway - this is for background publishing optimization
       }
 
@@ -610,10 +586,10 @@ class _AppInitializerState extends State<AppInitializer> {
         _initializationStatus = 'Ready!';
       });
       
-      debugPrint('✅ All services initialized successfully');
+      Log.info('All services initialized successfully', name: 'Main', category: LogCategory.system);
     } catch (e, stackTrace) {
-      debugPrint('❌ Service initialization failed: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Service initialization failed: $e', name: 'Main', category: LogCategory.system);
+      Log.verbose('� Stack trace: $stackTrace', name: 'Main', category: LogCategory.system);
       
       if (mounted) {
         setState(() {
@@ -802,18 +778,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _pauseFeedVideos() {
     try {
       FeedScreenV2.pauseVideos(_feedScreenKey);
-      debugPrint('🎬 Paused feed videos when navigating away');
+      Log.debug('Paused feed videos when navigating away', name: 'Main', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Error pausing feed videos: $e');
+      Log.error('Error pausing feed videos: $e', name: 'Main', category: LogCategory.system);
     }
   }
   
   void _resumeFeedVideos() {
     try {
       FeedScreenV2.resumeVideos(_feedScreenKey);
-      debugPrint('▶️ Resumed feed videos when returning to feed');
+      Log.debug('▶️ Resumed feed videos when returning to feed', name: 'Main', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Error resuming feed videos: $e');
+      Log.error('Error resuming feed videos: $e', name: 'Main', category: LogCategory.system);
     }
   }
   
@@ -826,10 +802,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         // but we can force pause all videos here for immediate effect
         final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
         exploreVideoManager.pauseAllVideos();
-        debugPrint('🎬 Paused explore videos when navigating away');
+        Log.debug('Paused explore videos when navigating away', name: 'Main', category: LogCategory.system);
       }
     } catch (e) {
-      debugPrint('⚠️ Error pausing explore videos: $e');
+      Log.error('Error pausing explore videos: $e', name: 'Main', category: LogCategory.system);
     }
   }
 
@@ -888,14 +864,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               await ageVerificationService.setAgeVerified(true);
               if (mounted) {
                 // Use universal camera screen that works on all platforms
-                final result = await Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
                 );
                 
                 // After returning from camera, refresh profile if on profile tab
                 if (mounted && _currentIndex == 3) {
-                  debugPrint('🔄 Refreshing profile after camera return');
+                  Log.debug('Refreshing profile after camera return', name: 'Main', category: LogCategory.system);
                   final profileVideosProvider = context.read<ProfileVideosProvider>();
                   profileVideosProvider.refreshVideos();
                 }
@@ -913,14 +889,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             }
           } else if (mounted) {
             // Already verified, go to camera
-            final result = await Navigator.push(
+            await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const UniversalCameraScreen()),
             );
             
             // After returning from camera, refresh profile if on profile tab
             if (mounted && _currentIndex == 3) {
-              debugPrint('🔄 Refreshing profile after camera return');
+              Log.debug('Refreshing profile after camera return', name: 'Main', category: LogCategory.system);
               final profileVideosProvider = context.read<ProfileVideosProvider>();
               profileVideosProvider.refreshVideos();
             }

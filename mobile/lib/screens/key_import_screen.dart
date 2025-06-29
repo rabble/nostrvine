@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'profile_setup_screen.dart';
+import '../utils/unified_logger.dart';
 
 class KeyImportScreen extends StatefulWidget {
   const KeyImportScreen({super.key});
@@ -234,7 +235,7 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
         _keyController.text = clipboardData!.text!.trim();
       }
     } catch (e) {
-      debugPrint('Failed to paste from clipboard: $e');
+      Log.error('Failed to paste from clipboard: $e', name: 'KeyImportScreen', category: LogCategory.ui);
     }
   }
 

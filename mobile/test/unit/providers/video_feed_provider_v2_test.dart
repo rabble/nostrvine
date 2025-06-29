@@ -2,10 +2,8 @@
 // ABOUTME: Tests the clean provider implementation that uses only IVideoManager (no legacy services)
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/foundation.dart';
 import 'package:openvine/providers/video_feed_provider_v2.dart';
 import 'package:openvine/services/video_manager_interface.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/models/video_state.dart';
 import '../../mocks/mock_video_manager.dart';
 import '../../helpers/test_helpers.dart';
@@ -107,7 +105,6 @@ void main() {
 
       test('should get video controller from VideoManager', () {
         // ARRANGE
-        final testVideo = TestHelpers.createVideoEvent(id: 'test-video');
         final mockController = MockVideoManager.createMockController();
         mockVideoManager.setController('test-video', mockController);
 

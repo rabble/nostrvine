@@ -143,7 +143,7 @@ class HashtagService extends ChangeNotifier {
   }
 
   /// Subscribe to videos with specific hashtags
-  Future<void> subscribeToHashtagVideos(List<String> hashtags, {int limit = 100}) {
+  Future<void> subscribeToHashtagVideos(List<String> hashtags, {int limit = 50}) {
     return _videoService.subscribeToHashtagVideos(hashtags, limit: limit);
   }
 

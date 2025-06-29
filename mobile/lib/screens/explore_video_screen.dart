@@ -8,6 +8,7 @@ import '../models/video_event.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 /// Inline video player screen that maintains explore context
 class ExploreVideoScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _ExploreVideoScreenState extends State<ExploreVideoScreen> {
   void initState() {
     super.initState();
     
-    debugPrint('🎬 ExploreVideoScreen.initState: Called with ${widget.videoList.length} videos');
+    Log.debug('ExploreVideoScreen.initState: Called with ${widget.videoList.length} videos', name: 'ExploreVideoScreen', category: LogCategory.ui);
     
     // Find starting video index or use provided index
     _currentIndex = widget.startingIndex ?? 
@@ -66,19 +67,54 @@ class _ExploreVideoScreenState extends State<ExploreVideoScreen> {
     try {
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
       
-      // Register all videos in the list with VideoManager
-      for (final video in widget.videoList) {
-        await _videoManager!.addVideoEvent(video);
-      }
-      
-      // Ensure the starting video is preloaded and ready
+      // PRIORITY 1: Immediately register and preload the current video
       if (_currentIndex < widget.videoList.length) {
         final currentVideo = widget.videoList[_currentIndex];
-        debugPrint('🎬 ExploreVideoScreen: Preloading starting video: ${currentVideo.id.substring(0, 8)}...');
+        Log.debug('ExploreVideoScreen: Priority loading starting video: ${currentVideo.id.substring(0, 8)}...', name: 'ExploreVideoScreen', category: LogCategory.ui);
+        
+        // Add and preload the current video first
+        await _videoManager!.addVideoEvent(currentVideo);
         _videoManager!.preloadVideo(currentVideo.id);
+        
+        // PRIORITY 2: Add adjacent videos for smooth scrolling
+        // Add the next video if available
+        if (_currentIndex + 1 < widget.videoList.length) {
+          await _videoManager!.addVideoEvent(widget.videoList[_currentIndex + 1]);
+        }
+        
+        // Add the previous video if available
+        if (_currentIndex - 1 >= 0) {
+          await _videoManager!.addVideoEvent(widget.videoList[_currentIndex - 1]);
+        }
       }
+      
+      // PRIORITY 3: Register remaining videos in background without blocking
+      // Use a deferred execution to avoid blocking the UI
+      Future.microtask(() async {
+        try {
+          for (int i = 0; i < widget.videoList.length; i++) {
+            // Skip already added videos
+            if (i == _currentIndex || i == _currentIndex + 1 || i == _currentIndex - 1) {
+              continue;
+            }
+            
+            // Add remaining videos without blocking
+            if (!mounted) return; // Check if widget is still mounted
+            await _videoManager!.addVideoEvent(widget.videoList[i]);
+            
+            // Small delay to prevent blocking the UI thread
+            if (i % 10 == 0) {
+              await Future.delayed(const Duration(milliseconds: 1));
+            }
+          }
+          
+          Log.debug('ExploreVideoScreen: Background registration of ${widget.videoList.length} videos completed', name: 'ExploreVideoScreen', category: LogCategory.ui);
+        } catch (e) {
+          Log.error('ExploreVideoScreen: Error in background video registration: $e', name: 'ExploreVideoScreen', category: LogCategory.ui);
+        }
+      });
     } catch (e) {
-      debugPrint('❌ ExploreVideoScreen: VideoManager not found: $e');
+      Log.error('ExploreVideoScreen: VideoManager not found: $e', name: 'ExploreVideoScreen', category: LogCategory.ui);
     }
   }
 
@@ -87,7 +123,7 @@ class _ExploreVideoScreenState extends State<ExploreVideoScreen> {
       try {
         _videoManager!.pauseAllVideos();
       } catch (e) {
-        debugPrint('Error pausing videos in explore video screen: $e');
+        Log.error('Error pausing videos in explore video screen: $e', name: 'ExploreVideoScreen', category: LogCategory.ui);
       }
     }
   }
@@ -101,11 +137,39 @@ class _ExploreVideoScreenState extends State<ExploreVideoScreen> {
     if (_videoManager != null && index < widget.videoList.length) {
       final newVideo = widget.videoList[index];
       
-      debugPrint('🎬 ExploreVideoScreen: Page changed to video $index: ${newVideo.id.substring(0, 8)}...');
+      Log.debug('ExploreVideoScreen: Page changed to video $index: ${newVideo.id.substring(0, 8)}...', name: 'ExploreVideoScreen', category: LogCategory.ui);
       
-      // Ensure video is registered and preload it
+      // Ensure video is registered and preload it with priority
       await _videoManager!.addVideoEvent(newVideo);
       _videoManager!.preloadVideo(newVideo.id);
+      
+      // Preload adjacent videos for smoother scrolling experience
+      // Use fire-and-forget pattern to avoid blocking current video
+      Future.microtask(() async {
+        try {
+          // Preload next video if available
+          if (index + 1 < widget.videoList.length) {
+            final nextVideo = widget.videoList[index + 1];
+            await _videoManager!.addVideoEvent(nextVideo);
+            _videoManager!.preloadVideo(nextVideo.id);
+          }
+          
+          // Preload next 2 videos for ultra-smooth experience
+          if (index + 2 < widget.videoList.length) {
+            final nextNextVideo = widget.videoList[index + 2];
+            await _videoManager!.addVideoEvent(nextNextVideo);
+            // Don't preload controller yet, just register
+          }
+          
+          // Register previous video for backward scrolling
+          if (index - 1 >= 0) {
+            final prevVideo = widget.videoList[index - 1];
+            await _videoManager!.addVideoEvent(prevVideo);
+          }
+        } catch (e) {
+          Log.error('ExploreVideoScreen: Error preloading adjacent videos: $e', name: 'ExploreVideoScreen', category: LogCategory.ui);
+        }
+      });
     }
   }
 

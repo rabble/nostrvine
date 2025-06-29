@@ -11,6 +11,7 @@ import '../models/notification_model.dart';
 import 'nostr_service_interface.dart';
 import 'user_profile_service.dart';
 import 'video_event_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Enhanced notification service with social features
 class NotificationServiceEnhanced extends ChangeNotifier {
@@ -56,7 +57,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
     required UserProfileService profileService,
     required VideoEventService videoService,
   }) async {
-    debugPrint('🔔 Initializing Enhanced NotificationService');
+    Log.debug('� Initializing Enhanced NotificationService', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     
     _nostrService = nostrService;
     _profileService = profileService;
@@ -75,16 +76,16 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       // Subscribe to Nostr events for notifications
       await _subscribeToNostrEvents();
       
-      debugPrint('✅ Enhanced NotificationService initialized');
+      Log.info('Enhanced NotificationService initialized', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to initialize enhanced notifications: $e');
+      Log.error('Failed to initialize enhanced notifications: $e', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 
   /// Subscribe to Nostr events for real-time notifications
   Future<void> _subscribeToNostrEvents() async {
     if (_nostrService == null || !_nostrService!.hasKeys) {
-      debugPrint('⚠️ Cannot subscribe to events without Nostr keys');
+      Log.warning('Cannot subscribe to events without Nostr keys', name: 'NotificationServiceEnhanced', category: LogCategory.system);
       return;
     }
     
@@ -214,9 +215,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       actorName: actorProfile?.name ?? actorProfile?.displayName,
       actorPictureUrl: actorProfile?.picture,
       message: '${actorProfile?.name ?? 'Someone'} liked your video',
-      timestamp: event.createdAt is DateTime 
-          ? event.createdAt as DateTime
-          : DateTime.fromMillisecondsSinceEpoch((event.createdAt as int) * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,
@@ -250,9 +249,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       actorName: actorProfile?.name ?? actorProfile?.displayName,
       actorPictureUrl: actorProfile?.picture,
       message: '${actorProfile?.name ?? 'Someone'} commented on your video',
-      timestamp: event.createdAt is DateTime 
-          ? event.createdAt as DateTime
-          : DateTime.fromMillisecondsSinceEpoch((event.createdAt as int) * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,
@@ -276,9 +273,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       actorName: actorProfile?.name ?? actorProfile?.displayName,
       actorPictureUrl: actorProfile?.picture,
       message: '${actorProfile?.name ?? 'Someone'} started following you',
-      timestamp: event.createdAt is DateTime 
-          ? event.createdAt as DateTime
-          : DateTime.fromMillisecondsSinceEpoch((event.createdAt as int) * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
     );
     
     await _addNotification(notification);
@@ -296,9 +291,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       actorName: actorProfile?.name ?? actorProfile?.displayName,
       actorPictureUrl: actorProfile?.picture,
       message: '${actorProfile?.name ?? 'Someone'} mentioned you',
-      timestamp: event.createdAt is DateTime 
-          ? event.createdAt as DateTime
-          : DateTime.fromMillisecondsSinceEpoch((event.createdAt as int) * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
       metadata: {
         'text': event.content,
       },
@@ -332,9 +325,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       actorName: actorProfile?.name ?? actorProfile?.displayName,
       actorPictureUrl: actorProfile?.picture,
       message: '${actorProfile?.name ?? 'Someone'} reposted your video',
-      timestamp: event.createdAt is DateTime 
-          ? event.createdAt as DateTime
-          : DateTime.fromMillisecondsSinceEpoch((event.createdAt as int) * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,
@@ -422,9 +413,9 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       // Update unread count
       _updateUnreadCount();
       
-      debugPrint('📦 Loaded ${_notifications.length} cached notifications');
+      Log.debug('� Loaded ${_notifications.length} cached notifications', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to load cached notifications: $e');
+      Log.error('Failed to load cached notifications: $e', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 
@@ -435,7 +426,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
     try {
       await _notificationBox!.put(notification.id, notification.toJson());
     } catch (e) {
-      debugPrint('❌ Failed to cache notification: $e');
+      Log.error('Failed to cache notification: $e', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 
@@ -445,10 +436,10 @@ class NotificationServiceEnhanced extends ChangeNotifier {
       // TODO: Implement proper notification permissions
       // For now, simulate granted permissions
       _permissionsGranted = true;
-      debugPrint('✅ Notification permissions granted (simulated)');
+      Log.info('Notification permissions granted (simulated)', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     } catch (e) {
       _permissionsGranted = false;
-      debugPrint('❌ Failed to get notification permissions: $e');
+      Log.error('Failed to get notification permissions: $e', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 
@@ -457,13 +448,13 @@ class NotificationServiceEnhanced extends ChangeNotifier {
     try {
       // TODO: Implement actual platform notifications
       // This would use flutter_local_notifications or similar
-      debugPrint('📱 Platform notification: ${notification.typeIcon} ${notification.message}');
+      Log.debug('� Platform notification: ${notification.typeIcon} ${notification.message}', name: 'NotificationServiceEnhanced', category: LogCategory.system);
       
       // Simulate haptic feedback
       HapticFeedback.mediumImpact();
       
     } catch (e) {
-      debugPrint('❌ Failed to show platform notification: $e');
+      Log.error('Failed to show platform notification: $e', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 
@@ -476,7 +467,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
     await _notificationBox?.clear();
     
     notifyListeners();
-    debugPrint('🗑️ Cleared all notifications');
+    Log.debug('�️ Cleared all notifications', name: 'NotificationServiceEnhanced', category: LogCategory.system);
   }
 
   /// Clear notifications older than specified duration
@@ -504,7 +495,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
     if (removedCount > 0) {
       _updateUnreadCount();
       notifyListeners();
-      debugPrint('🗑️ Cleared $removedCount old notifications');
+      Log.debug('�️ Cleared $removedCount old notifications', name: 'NotificationServiceEnhanced', category: LogCategory.system);
     }
   }
 

@@ -13,8 +13,6 @@ void main() {
     late MockVideoManager mockManager;
     late VideoEvent testVideo1;
     late VideoEvent testVideo2;
-    late VideoEvent failingVideo;
-
     setUp(() {
       mockManager = MockVideoManager();
       testVideo1 = TestHelpers.createVideoEvent(
@@ -24,10 +22,6 @@ void main() {
       testVideo2 = TestHelpers.createVideoEvent(
         id: 'test-video-2', 
         title: 'Test Video 2',
-      );
-      failingVideo = TestHelpers.createVideoEvent(
-        id: 'fail-video',
-        title: 'Failing Video',
       );
     });
 

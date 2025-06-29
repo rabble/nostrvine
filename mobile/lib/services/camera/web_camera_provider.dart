@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'camera_provider.dart';
+import '../utils/unified_logger.dart';
 
 /// Camera provider for web platforms using video recording + placeholder frames
 class WebCameraProvider implements CameraProvider {
@@ -37,7 +38,7 @@ class WebCameraProvider implements CameraProvider {
       );
       
       await _controller!.initialize();
-      debugPrint('📷 Web camera initialized successfully');
+      Log.info('� Web camera initialized successfully', name: 'WebCameraProvider', category: LogCategory.video);
     } catch (e) {
       throw CameraProviderException('Failed to initialize web camera', e);
     }
@@ -67,7 +68,7 @@ class WebCameraProvider implements CameraProvider {
       await _controller!.startVideoRecording();
       
       // Note: Web doesn't support image streaming, so no real-time frames
-      debugPrint('⚠️ Image streaming not supported on web platform. Will rely on video extraction fallback.');
+      Log.warning('Image streaming not supported on web platform. Will rely on video extraction fallback.', name: 'WebCameraProvider', category: LogCategory.video);
       
       // Auto-stop after max duration
       Future.delayed(maxVineDuration, () {
@@ -76,7 +77,7 @@ class WebCameraProvider implements CameraProvider {
         }
       });
       
-      debugPrint('🎬 Started web camera recording (video-only approach)');
+      Log.info('Started web camera recording (video-only approach)', name: 'WebCameraProvider', category: LogCategory.video);
     } catch (e) {
       _isRecording = false;
       throw CameraProviderException('Failed to start web recording', e);
@@ -97,7 +98,7 @@ class WebCameraProvider implements CameraProvider {
       // Stop video recording
       final videoFile = await _controller!.stopVideoRecording();
       
-      debugPrint('✅ Web camera recording stopped, video saved to: ${videoFile.path}');
+      Log.info('Web camera recording stopped, video saved to: ${videoFile.path}', name: 'WebCameraProvider', category: LogCategory.video);
       
       return CameraRecordingResult(
         videoPath: videoFile.path,
@@ -139,9 +140,9 @@ class WebCameraProvider implements CameraProvider {
       );
       
       await _controller!.initialize();
-      debugPrint('🔄 Switched to ${newCamera.lensDirection} camera on web');
+      Log.debug('Switched to ${newCamera.lensDirection} camera on web', name: 'WebCameraProvider', category: LogCategory.video);
     } catch (e) {
-      debugPrint('❌ Failed to switch camera on web: $e');
+      Log.error('Failed to switch camera on web: $e', name: 'WebCameraProvider', category: LogCategory.video);
     }
   }
   
@@ -151,7 +152,7 @@ class WebCameraProvider implements CameraProvider {
       try {
         await stopRecording();
       } catch (e) {
-        debugPrint('⚠️ Error stopping recording during disposal: $e');
+        Log.error('Error stopping recording during disposal: $e', name: 'WebCameraProvider', category: LogCategory.video);
       }
     }
     

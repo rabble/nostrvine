@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import '../services/nostr_service_interface.dart';
+import '../utils/unified_logger.dart';
 
 /// Centralized subscription manager to prevent relay overload
 class SubscriptionManager extends ChangeNotifier {
@@ -45,10 +46,10 @@ class SubscriptionManager extends ChangeNotifier {
     
     final subscriptionId = '${name}_${DateTime.now().millisecondsSinceEpoch}';
     
-    debugPrint('📡 Creating managed subscription: $subscriptionId');
-    debugPrint('   - Filters: ${optimizedFilters.length}');
-    debugPrint('   - Priority: $priority');
-    debugPrint('   - Active subscriptions: ${_activeSubscriptions.length}/$_maxConcurrentSubscriptions');
+    Log.debug('Creating managed subscription: $subscriptionId', name: 'SubscriptionManager', category: LogCategory.system);
+    Log.debug('   - Filters: ${optimizedFilters.length}', name: 'SubscriptionManager', category: LogCategory.system);
+    Log.debug('   - Priority: $priority', name: 'SubscriptionManager', category: LogCategory.system);
+    Log.debug('   - Active subscriptions: ${_activeSubscriptions.length}/$_maxConcurrentSubscriptions', name: 'SubscriptionManager', category: LogCategory.system);
     
     try {
       final eventStream = _nostrService.subscribeToEvents(filters: optimizedFilters, bypassLimits: true);
@@ -56,11 +57,11 @@ class SubscriptionManager extends ChangeNotifier {
       late StreamSubscription streamSubscription;
       streamSubscription = eventStream.listen(
         (event) {
-          debugPrint('📨 SubscriptionManager received event for $name: ${event.id.substring(0, 8)}, kind: ${event.kind}, author: ${event.pubkey.substring(0, 8)}');
+          Log.debug('� SubscriptionManager received event for $name: ${event.id.substring(0, 8)}, kind: ${event.kind}, author: ${event.pubkey.substring(0, 8)}', name: 'SubscriptionManager', category: LogCategory.system);
           
           // Rate limiting check
           if (!_checkRateLimit()) {
-            debugPrint('⚠️ Rate limit exceeded, dropping event');
+            Log.warning('Rate limit exceeded, dropping event', name: 'SubscriptionManager', category: LogCategory.system);
             return;
           }
           
@@ -68,12 +69,12 @@ class SubscriptionManager extends ChangeNotifier {
           onEvent(event);
         },
         onError: (error) {
-          debugPrint('❌ Subscription error in $subscriptionId: $error');
+          Log.error('Subscription error in $subscriptionId: $error', name: 'SubscriptionManager', category: LogCategory.system);
           onError?.call(error);
           _scheduleRetry(subscriptionId, name, filters, onEvent, onError, onComplete, priority);
         },
         onDone: () {
-          debugPrint('✅ Subscription completed: $subscriptionId');
+          Log.info('Subscription completed: $subscriptionId', name: 'SubscriptionManager', category: LogCategory.system);
           onComplete?.call();
           _removeSubscription(subscriptionId);
         },
@@ -82,7 +83,7 @@ class SubscriptionManager extends ChangeNotifier {
       // Set up timeout
       final timeoutDuration = timeout ?? _subscriptionTimeout;
       final timeoutTimer = Timer(timeoutDuration, () {
-        debugPrint('⏰ Subscription timeout: $subscriptionId');
+        Log.debug('⏰ Subscription timeout: $subscriptionId', name: 'SubscriptionManager', category: LogCategory.system);
         streamSubscription.cancel();
         _removeSubscription(subscriptionId);
       });
@@ -98,11 +99,11 @@ class SubscriptionManager extends ChangeNotifier {
         filters: optimizedFilters,
       );
       
-      debugPrint('✅ Subscription created: $subscriptionId (${_activeSubscriptions.length} total)');
+      Log.info('Subscription created: $subscriptionId (${_activeSubscriptions.length} total)', name: 'SubscriptionManager', category: LogCategory.system);
       return subscriptionId;
       
     } catch (e) {
-      debugPrint('❌ Failed to create subscription $subscriptionId: $e');
+      Log.error('Failed to create subscription $subscriptionId: $e', name: 'SubscriptionManager', category: LogCategory.system);
       rethrow;
     }
   }
@@ -111,7 +112,7 @@ class SubscriptionManager extends ChangeNotifier {
   Future<void> cancelSubscription(String subscriptionId) async {
     final subscription = _activeSubscriptions[subscriptionId];
     if (subscription != null) {
-      debugPrint('🗑️ Cancelling subscription: $subscriptionId');
+      Log.debug('�️ Cancelling subscription: $subscriptionId', name: 'SubscriptionManager', category: LogCategory.system);
       await subscription.subscription.cancel();
       subscription.timeoutTimer.cancel();
       _removeSubscription(subscriptionId);
@@ -125,7 +126,7 @@ class SubscriptionManager extends ChangeNotifier {
         .map((entry) => entry.key)
         .toList();
     
-    debugPrint('🗑️ Cancelling ${toCancel.length} subscriptions matching: $namePattern');
+    Log.debug('�️ Cancelling ${toCancel.length} subscriptions matching: $namePattern', name: 'SubscriptionManager', category: LogCategory.system);
     for (final id in toCancel) {
       await cancelSubscription(id);
     }
@@ -160,7 +161,7 @@ class SubscriptionManager extends ChangeNotifier {
         optimizedLimit = 100; // Cap at 100 events per filter
       }
       
-      debugPrint('🔍 Optimizing filter: kinds=${filter.kinds}, authors=${filter.authors?.map((a) => a.substring(0, 8)).toList()}, limit=$optimizedLimit');
+      Log.debug('Optimizing filter: kinds=${filter.kinds}, authors=${filter.authors?.map((a) => a.substring(0, 8)).toList()}, limit=$optimizedLimit', name: 'SubscriptionManager', category: LogCategory.system);
       
       // Create optimized filter
       final optimizedFilter = Filter(
@@ -178,7 +179,7 @@ class SubscriptionManager extends ChangeNotifier {
       optimized.add(optimizedFilter);
     }
     
-    debugPrint('🔧 Optimized ${filters.length} filters (reduced limits, cleaned params)');
+    Log.debug('Optimized ${filters.length} filters (reduced limits, cleaned params)', name: 'SubscriptionManager', category: LogCategory.system);
     return optimized;
   }
   
@@ -210,7 +211,7 @@ class SubscriptionManager extends ChangeNotifier {
     }
     
     if (targetId != null) {
-      debugPrint('🗑️ Cancelling lowest priority subscription: $targetId (priority: $lowestPriority)');
+      Log.debug('�️ Cancelling lowest priority subscription: $targetId (priority: $lowestPriority)', name: 'SubscriptionManager', category: LogCategory.system);
       await cancelSubscription(targetId);
     }
   }
@@ -228,7 +229,7 @@ class SubscriptionManager extends ChangeNotifier {
     final retryId = '${name}_retry_${DateTime.now().millisecondsSinceEpoch}';
     
     _retryTimers[retryId] = Timer(_retryDelay, () async {
-      debugPrint('🔄 Retrying subscription: $name');
+      Log.warning('Retrying subscription: $name', name: 'SubscriptionManager', category: LogCategory.system);
       try {
         await createSubscription(
           name: name,
@@ -239,7 +240,7 @@ class SubscriptionManager extends ChangeNotifier {
           priority: priority,
         );
       } catch (e) {
-        debugPrint('❌ Retry failed for $name: $e');
+        Log.error('Retry failed for $name: $e', name: 'SubscriptionManager', category: LogCategory.system);
       }
       _retryTimers.remove(retryId);
     });
@@ -253,7 +254,7 @@ class SubscriptionManager extends ChangeNotifier {
   
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing SubscriptionManager - cancelling all subscriptions');
+    Log.debug('�️ Disposing SubscriptionManager - cancelling all subscriptions', name: 'SubscriptionManager', category: LogCategory.system);
     
     // Cancel all active subscriptions
     for (final subscription in _activeSubscriptions.values) {

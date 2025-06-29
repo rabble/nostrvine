@@ -8,6 +8,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'dart:async';
+import 'package:openvine/utils/unified_logger.dart';
 
 class MockNostrService extends Mock implements INostrService {}
 
@@ -46,7 +47,7 @@ void main() {
     final videoEventService = VideoEventService(mockNostrService);
     
     // Step 1: Classic vines subscription
-    print('📱 Step 1: Loading classic vines...');
+    Log.debug('📱 Step 1: Loading classic vines...');
     await videoEventService.subscribeToVideoFeed(
       authors: ['25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856'],
       limit: 100,
@@ -54,14 +55,14 @@ void main() {
     );
     
     // Step 2: Open feed subscription (this was being wrongly rejected before)
-    print('📱 Step 2: Loading open feed...');
+    Log.debug('📱 Step 2: Loading open feed...');
     await videoEventService.subscribeToVideoFeed(
       limit: 300,
       replace: false,
     );
     
     // Step 3: Editor picks subscription
-    print('📱 Step 3: Loading editor picks...');
+    Log.debug('📱 Step 3: Loading editor picks...');
     await videoEventService.subscribeToVideoFeed(
       authors: ['70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082'],
       limit: 50,
@@ -91,11 +92,11 @@ void main() {
       equals('70ed6c56d6fb355f102a1e985741b5ee65f6ae9f772e028894b321bc74854082'));
     expect(subscriptionCalls[2]['limit'], equals(50));
     
-    print('✅ All subscriptions created correctly!');
-    print('📊 Subscription summary:');
-    print('  1. Classic vines: ${subscriptionCalls[0]['authors']} (limit: ${subscriptionCalls[0]['limit']})');
-    print('  2. Open feed: ALL videos (limit: ${subscriptionCalls[1]['limit']})');
-    print('  3. Editor picks: ${subscriptionCalls[2]['authors']} (limit: ${subscriptionCalls[2]['limit']})');
+    Log.debug('✅ All subscriptions created correctly!');
+    Log.debug('📊 Subscription summary:');
+    Log.debug('  1. Classic vines: ${subscriptionCalls[0]['authors']} (limit: ${subscriptionCalls[0]['limit']})');
+    Log.debug('  2. Open feed: ALL videos (limit: ${subscriptionCalls[1]['limit']})');
+    Log.debug('  3. Editor picks: ${subscriptionCalls[2]['authors']} (limit: ${subscriptionCalls[2]['limit']})');
     
     // Cleanup
     await streamController.close();

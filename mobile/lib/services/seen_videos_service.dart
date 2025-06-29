@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for tracking seen videos to prevent duplicates in feed
 class SeenVideosService extends ChangeNotifier {
@@ -29,9 +30,9 @@ class SeenVideosService extends ChangeNotifier {
       await _loadSeenVideos();
       _isInitialized = true;
       notifyListeners();
-      debugPrint('👁️ SeenVideosService initialized with ${_seenVideoIds.length} seen videos');
+      Log.info('�️ SeenVideosService initialized with ${_seenVideoIds.length} seen videos', name: 'SeenVideosService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to initialize SeenVideosService: $e');
+      Log.error('Failed to initialize SeenVideosService: $e', name: 'SeenVideosService', category: LogCategory.system);
     }
   }
   
@@ -43,9 +44,9 @@ class SeenVideosService extends ChangeNotifier {
       final seenList = _prefs!.getStringList(_seenVideosKey) ?? [];
       _seenVideoIds.clear();
       _seenVideoIds.addAll(seenList);
-      debugPrint('📂 Loaded ${_seenVideoIds.length} seen videos from storage');
+      Log.debug('� Loaded ${_seenVideoIds.length} seen videos from storage', name: 'SeenVideosService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error loading seen videos: $e');
+      Log.error('Error loading seen videos: $e', name: 'SeenVideosService', category: LogCategory.system);
     }
   }
   
@@ -65,9 +66,9 @@ class SeenVideosService extends ChangeNotifier {
       }
       
       await _prefs!.setStringList(_seenVideosKey, videoList);
-      debugPrint('💾 Saved ${videoList.length} seen videos to storage');
+      Log.debug('� Saved ${videoList.length} seen videos to storage', name: 'SeenVideosService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error saving seen videos: $e');
+      Log.error('Error saving seen videos: $e', name: 'SeenVideosService', category: LogCategory.system);
     }
   }
   
@@ -82,7 +83,7 @@ class SeenVideosService extends ChangeNotifier {
       return; // Already seen
     }
     
-    debugPrint('👁️ Marking video as seen: ${videoId.substring(0, 8)}...');
+    Log.debug('�️ Marking video as seen: ${videoId.substring(0, 8)}...', name: 'SeenVideosService', category: LogCategory.system);
     _seenVideoIds.add(videoId);
     
     // Save to storage asynchronously
@@ -111,7 +112,7 @@ class SeenVideosService extends ChangeNotifier {
   
   /// Clear all seen videos (for testing or user preference)
   Future<void> clearSeenVideos() async {
-    debugPrint('🗑️ Clearing all seen videos');
+    Log.debug('�️ Clearing all seen videos', name: 'SeenVideosService', category: LogCategory.system);
     _seenVideoIds.clear();
     
     if (_prefs != null) {
@@ -127,7 +128,7 @@ class SeenVideosService extends ChangeNotifier {
       return; // Not in seen list
     }
     
-    debugPrint('👁️ Marking video as unseen: ${videoId.substring(0, 8)}...');
+    Log.debug('�️ Marking video as unseen: ${videoId.substring(0, 8)}...', name: 'SeenVideosService', category: LogCategory.system);
     _seenVideoIds.remove(videoId);
     
     await _saveSeenVideos();

@@ -2,11 +2,11 @@
 // ABOUTME: Handles safe migration of existing keys without exposure during transition
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'key_storage_service.dart';
 import 'secure_key_storage_service.dart';
 import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Exception thrown during key migration operations
 class KeyMigrationException implements Exception {
@@ -54,20 +54,23 @@ class KeyMigrationService {
   final KeyStorageService _legacyStorage = KeyStorageService();
   final SecureKeyStorageService _secureStorage = SecureKeyStorageService();
   
+  // ignore: unused_field
   static const String _migrationCompleteKey = 'secure_migration_completed';
+  // ignore: unused_field
   static const String _migrationVersionKey = 'migration_version';
+  // ignore: unused_field
   static const int _currentMigrationVersion = 1;
   
   /// Check if migration is needed and get current status
   Future<MigrationResult> checkMigrationStatus() async {
-    debugPrint('🔍 Checking key migration status');
+    Log.debug('Checking key migration status', name: 'KeyMigrationService', category: LogCategory.auth);
     
     try {
       // Initialize services
       await Future.wait([
         _legacyStorage.initialize(),
         _secureStorage.initialize().catchError((e) {
-          debugPrint('⚠️ Secure storage initialization failed: $e');
+          Log.error('Secure storage initialization failed: $e', name: 'KeyMigrationService', category: LogCategory.auth);
           return null;
         }),
       ]);
@@ -82,7 +85,7 @@ class KeyMigrationService {
       final migrationCompleted = await _isMigrationCompleted();
       
       if (!legacyKeysExist) {
-        debugPrint('✅ No legacy keys found - migration not needed');
+        Log.info('No legacy keys found - migration not needed', name: 'KeyMigrationService', category: LogCategory.auth);
         return MigrationResult(
           status: MigrationStatus.notNeeded,
           secureStorageAvailable: secureStorageAvailable,
@@ -91,7 +94,7 @@ class KeyMigrationService {
       }
       
       if (migrationCompleted) {
-        debugPrint('✅ Migration already completed');
+        Log.info('Migration already completed', name: 'KeyMigrationService', category: LogCategory.auth);
         return MigrationResult(
           status: MigrationStatus.completed,
           secureStorageAvailable: secureStorageAvailable,
@@ -100,7 +103,7 @@ class KeyMigrationService {
       }
       
       if (!secureStorageAvailable) {
-        debugPrint('⚠️ Secure storage not available - migration cannot proceed');
+        Log.warning('Secure storage not available - migration cannot proceed', name: 'KeyMigrationService', category: LogCategory.auth);
         return MigrationResult(
           status: MigrationStatus.failed,
           error: 'Secure storage not available on this device',
@@ -109,7 +112,7 @@ class KeyMigrationService {
         );
       }
       
-      debugPrint('📋 Migration pending - legacy keys found and secure storage available');
+      Log.info('Migration pending - legacy keys found and secure storage available', name: 'KeyMigrationService', category: LogCategory.auth);
       return MigrationResult(
         status: MigrationStatus.pending,
         secureStorageAvailable: secureStorageAvailable,
@@ -117,7 +120,7 @@ class KeyMigrationService {
       );
       
     } catch (e) {
-      debugPrint('❌ Error checking migration status: $e');
+      Log.error('Error checking migration status: $e', name: 'KeyMigrationService', category: LogCategory.auth);
       return MigrationResult(
         status: MigrationStatus.failed,
         error: e.toString(),
@@ -132,7 +135,7 @@ class KeyMigrationService {
     String? biometricPrompt,
     bool deleteAfterMigration = true,
   }) async {
-    debugPrint('🔄 Starting key migration to secure storage');
+    Log.debug('Starting key migration to secure storage', name: 'KeyMigrationService', category: LogCategory.auth);
     
     try {
       // Check if migration is actually needed
@@ -146,27 +149,27 @@ class KeyMigrationService {
       }
       
       // Get legacy key pair
-      debugPrint('🔑 Retrieving legacy key pair');
+      Log.debug('� Retrieving legacy key pair', name: 'KeyMigrationService', category: LogCategory.auth);
       final legacyKeyPair = await _legacyStorage.getKeyPair();
       if (legacyKeyPair == null) {
         throw const KeyMigrationException('No legacy keys found to migrate');
       }
       
-      debugPrint('🔐 Migrating key for: ${NostrEncoding.maskKey(legacyKeyPair.npub)}');
+      Log.debug('� Migrating key for: ${NostrEncoding.maskKey(legacyKeyPair.npub)}', name: 'KeyMigrationService', category: LogCategory.auth);
       
       // Create secure container from legacy key
       final secureContainer = SecureKeyContainer.fromPrivateKeyHex(legacyKeyPair.privateKeyHex);
       
       try {
         // Store in secure storage
-        debugPrint('💾 Storing key in secure storage');
+        Log.debug('� Storing key in secure storage', name: 'KeyMigrationService', category: LogCategory.auth);
         final importResult = await _secureStorage.importFromNsec(
           legacyKeyPair.nsec,
           biometricPrompt: biometricPrompt,
         );
         
         // Verify the migration worked
-        debugPrint('✅ Verifying migration success');
+        Log.info('Verifying migration success', name: 'KeyMigrationService', category: LogCategory.auth);
         final retrievedContainer = await _secureStorage.getKeyContainer(
           biometricPrompt: biometricPrompt,
         );
@@ -180,11 +183,11 @@ class KeyMigrationService {
         
         // Delete legacy keys if requested
         if (deleteAfterMigration) {
-          debugPrint('🗑️ Deleting legacy keys');
+          Log.debug('�️ Deleting legacy keys', name: 'KeyMigrationService', category: LogCategory.auth);
           await _legacyStorage.deleteKeys();
         }
         
-        debugPrint('🎉 Migration completed successfully');
+        Log.info('� Migration completed successfully', name: 'KeyMigrationService', category: LogCategory.auth);
         return MigrationResult(
           status: MigrationStatus.completed,
           secureStorageAvailable: true,
@@ -198,7 +201,7 @@ class KeyMigrationService {
       }
       
     } catch (e) {
-      debugPrint('❌ Migration failed: $e');
+      Log.error('Migration failed: $e', name: 'KeyMigrationService', category: LogCategory.auth);
       return MigrationResult(
         status: MigrationStatus.failed,
         error: e.toString(),
@@ -214,7 +217,7 @@ class KeyMigrationService {
       await _secureStorage.initialize();
       return _secureStorage.securityInfo.isNotEmpty;
     } catch (e) {
-      debugPrint('⚠️ Device does not support secure migration: $e');
+      Log.warning('Device does not support secure migration: $e', name: 'KeyMigrationService', category: LogCategory.auth);
       return false;
     }
   }
@@ -279,21 +282,21 @@ class KeyMigrationService {
     try {
       // We could store this in SharedPreferences or another mechanism
       // For now, the presence of keys in secure storage indicates completion
-      debugPrint('✅ Migration marked as completed');
+      Log.info('Migration marked as completed', name: 'KeyMigrationService', category: LogCategory.auth);
     } catch (e) {
-      debugPrint('⚠️ Failed to mark migration as completed: $e');
+      Log.error('Failed to mark migration as completed: $e', name: 'KeyMigrationService', category: LogCategory.auth);
     }
   }
   
   /// Clean up legacy storage completely (use with caution!)
   Future<void> cleanupLegacyStorage() async {
-    debugPrint('🧹 Cleaning up legacy storage');
+    Log.debug('🧹 Cleaning up legacy storage', name: 'KeyMigrationService', category: LogCategory.auth);
     
     try {
       await _legacyStorage.deleteKeys();
-      debugPrint('✅ Legacy storage cleaned up');
+      Log.info('Legacy storage cleaned up', name: 'KeyMigrationService', category: LogCategory.auth);
     } catch (e) {
-      debugPrint('⚠️ Failed to clean up legacy storage: $e');
+      Log.error('Failed to clean up legacy storage: $e', name: 'KeyMigrationService', category: LogCategory.auth);
     }
   }
 }

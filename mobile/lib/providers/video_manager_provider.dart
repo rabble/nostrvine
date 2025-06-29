@@ -13,6 +13,7 @@ import '../services/circuit_breaker_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/seen_videos_service.dart';
 import '../services/connection_status_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Provider wrapper for the TDD VideoManager system
 /// 
@@ -94,7 +95,7 @@ class VideoManagerProvider extends ChangeNotifier {
       _lastUpdate = DateTime.now();
       notifyListeners();
     } catch (e) {
-      debugPrint('VideoManagerProvider: Error adding video: $e');
+      Log.error('VideoManagerProvider: Error adding video: $e', name: 'VideoManagerProvider', category: LogCategory.ui);
     }
   }
 
@@ -113,7 +114,7 @@ class VideoManagerProvider extends ChangeNotifier {
     int limit = 500,
   }) async {
     if (!_isInitialized) {
-      debugPrint('VideoManagerProvider: Cannot start subscription - not initialized');
+      Log.info('VideoManagerProvider: Cannot start subscription - not initialized', name: 'VideoManagerProvider', category: LogCategory.ui);
       return;
     }
 
@@ -129,7 +130,7 @@ class VideoManagerProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _initializationError = 'Failed to start video subscription: $e';
-      debugPrint('VideoManagerProvider: $e');
+      Log.debug('VideoManagerProvider: $e', name: 'VideoManagerProvider', category: LogCategory.ui);
       notifyListeners();
     }
   }
@@ -327,7 +328,7 @@ class VideoManagerProvider extends ChangeNotifier {
       _isInitialized = true;
       _initializationError = null;
       
-      debugPrint('VideoManagerProvider: Initialized successfully');
+      Log.info('VideoManagerProvider: Initialized successfully', name: 'VideoManagerProvider', category: LogCategory.ui);
       
       // Notify listeners after initialization
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -337,7 +338,7 @@ class VideoManagerProvider extends ChangeNotifier {
     } catch (e) {
       _isInitialized = false;
       _initializationError = 'Initialization failed: $e';
-      debugPrint('VideoManagerProvider: Initialization failed: $e');
+      Log.error('VideoManagerProvider: Initialization failed: $e', name: 'VideoManagerProvider', category: LogCategory.ui);
     }
   }
 

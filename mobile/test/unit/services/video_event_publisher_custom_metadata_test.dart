@@ -3,20 +3,23 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/nip94_metadata.dart';
+import 'package:openvine/models/ready_event_data.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/upload_manager.dart';
 
 class MockINostrService extends Mock implements INostrService {}
 class MockUploadManager extends Mock implements UploadManager {}
-class FakeNip94Metadata extends Fake implements Nip94Metadata {}
+class FakeNIP94Metadata extends Fake implements NIP94Metadata {}
 class FakeUploadStatus extends Fake implements UploadStatus {}
+class FakeReadyEventData extends Fake implements ReadyEventData {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(FakeNip94Metadata());
+    registerFallbackValue(FakeNIP94Metadata());
     registerFallbackValue(UploadStatus.published);
   });
 
@@ -31,10 +34,37 @@ void main() {
     videoEventPublisher = VideoEventPublisher(
       nostrService: mockNostrService,
       uploadManager: mockUploadManager,
+      fetchReadyEvents: () async => [],
+      cleanupRemoteEvent: (publicId) async {},
     );
     
     // Default mock behavior
-    when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((_) async => 'event123');
+    when(() => mockNostrService.publishVideoEvent(
+      videoUrl: any(named: 'videoUrl'),
+      content: any(named: 'content'),
+      title: any(named: 'title'),
+      thumbnailUrl: any(named: 'thumbnailUrl'),
+      duration: any(named: 'duration'),
+      dimensions: any(named: 'dimensions'),
+      mimeType: any(named: 'mimeType'),
+      sha256: any(named: 'sha256'),
+      fileSize: any(named: 'fileSize'),
+      hashtags: any(named: 'hashtags'),
+    )).thenAnswer((_) async => NostrBroadcastResult(
+      event: Event(
+        id: 'event123',
+        pubkey: 'pubkey123',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        kind: 22,
+        tags: [],
+        content: '',
+        sig: '',
+      ),
+      successCount: 1,
+      totalRelays: 1,
+      results: {'relay1': true},
+      errors: {},
+    ));
     when(() => mockUploadManager.updateUploadStatus(any(), any(), eventId: any(named: 'eventId')))
         .thenAnswer((_) async {});
   });
@@ -58,11 +88,38 @@ void main() {
       final customDescription = 'Custom Description';
       final customHashtags = ['custom', 'hashtags'];
 
-      // Capture the metadata passed to publishVideoEvent
-      Nip94Metadata? capturedMetadata;
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((invocation) async {
-        capturedMetadata = invocation.positionalArguments[0] as Nip94Metadata;
-        return 'event123';
+      // Capture the parameters passed to publishVideoEvent
+      String? capturedContent;
+      String? capturedTitle;
+      List<String>? capturedHashtags;
+      
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((invocation) async {
+        capturedContent = invocation.namedArguments[Symbol('content')] as String;
+        capturedTitle = invocation.namedArguments[Symbol('title')] as String?;
+        capturedHashtags = invocation.namedArguments[Symbol('hashtags')] as List<String>?;
+        return NostrBroadcastResult(
+          event: Event(
+            'pubkey123',
+            22,
+            [],
+            '',
+          ),
+          successCount: 1,
+          totalRelays: 1,
+          results: {'relay1': true},
+          errors: {},
+        );
       });
 
       // Act
@@ -75,13 +132,23 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      verify(() => mockNostrService.publishVideoEvent(any())).called(1);
+      verify(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).called(1);
       
-      // Verify the metadata contains custom values
-      expect(capturedMetadata, isNotNull);
-      expect(capturedMetadata!.title, equals(customTitle));
-      expect(capturedMetadata!.content, equals(customDescription));
-      expect(capturedMetadata!.t, equals(customHashtags));
+      // Verify the parameters contain custom values
+      expect(capturedTitle, equals(customTitle));
+      expect(capturedContent, equals(customDescription));
+      expect(capturedHashtags, equals(customHashtags));
     });
 
     test('should use original values when custom metadata is null', () async {
@@ -98,10 +165,37 @@ void main() {
         videoId: 'video123',
       );
 
-      Nip94Metadata? capturedMetadata;
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((invocation) async {
-        capturedMetadata = invocation.positionalArguments[0] as Nip94Metadata;
-        return 'event123';
+      String? capturedTitle;
+      String? capturedContent;
+      List<String>? capturedHashtags;
+      
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((invocation) async {
+        capturedTitle = invocation.namedArguments[Symbol('title')] as String?;
+        capturedContent = invocation.namedArguments[Symbol('content')] as String;
+        capturedHashtags = invocation.namedArguments[Symbol('hashtags')] as List<String>?;
+        return NostrBroadcastResult(
+          event: Event(
+            'pubkey123',
+            22,
+            [],
+            '',
+          ),
+          successCount: 1,
+          totalRelays: 1,
+          results: {'relay1': true},
+          errors: {},
+        );
       });
 
       // Act
@@ -114,9 +208,9 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      expect(capturedMetadata!.title, equals('Original Title'));
-      expect(capturedMetadata!.content, equals('Original Description'));
-      expect(capturedMetadata!.t, equals(['original', 'tags']));
+      expect(capturedTitle, equals('Original Title'));
+      expect(capturedContent, equals('Original Description'));
+      expect(capturedHashtags, equals(['original', 'tags']));
     });
 
     test('should handle partial metadata updates', () async {
@@ -133,10 +227,37 @@ void main() {
         videoId: 'video123',
       );
 
-      Nip94Metadata? capturedMetadata;
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((invocation) async {
-        capturedMetadata = invocation.positionalArguments[0] as Nip94Metadata;
-        return 'event123';
+      String? capturedTitle;
+      String? capturedContent;
+      List<String>? capturedHashtags;
+      
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((invocation) async {
+        capturedTitle = invocation.namedArguments[Symbol('title')] as String?;
+        capturedContent = invocation.namedArguments[Symbol('content')] as String;
+        capturedHashtags = invocation.namedArguments[Symbol('hashtags')] as List<String>?;
+        return NostrBroadcastResult(
+          event: Event(
+            'pubkey123',
+            22,
+            [],
+            '',
+          ),
+          successCount: 1,
+          totalRelays: 1,
+          results: {'relay1': true},
+          errors: {},
+        );
       });
 
       // Act - only update title
@@ -149,9 +270,9 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      expect(capturedMetadata!.title, equals('New Title Only'));
-      expect(capturedMetadata!.content, equals('Original Description'));
-      expect(capturedMetadata!.t, equals(['original', 'tags']));
+      expect(capturedTitle, equals('New Title Only'));
+      expect(capturedContent, equals('Original Description'));
+      expect(capturedHashtags, equals(['original', 'tags']));
     });
 
     test('should handle empty strings in metadata', () async {
@@ -168,10 +289,37 @@ void main() {
         videoId: 'video123',
       );
 
-      Nip94Metadata? capturedMetadata;
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((invocation) async {
-        capturedMetadata = invocation.positionalArguments[0] as Nip94Metadata;
-        return 'event123';
+      String? capturedTitle;
+      String? capturedContent;
+      List<String>? capturedHashtags;
+      
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((invocation) async {
+        capturedTitle = invocation.namedArguments[Symbol('title')] as String?;
+        capturedContent = invocation.namedArguments[Symbol('content')] as String;
+        capturedHashtags = invocation.namedArguments[Symbol('hashtags')] as List<String>?;
+        return NostrBroadcastResult(
+          event: Event(
+            'pubkey123',
+            22,
+            [],
+            '',
+          ),
+          successCount: 1,
+          totalRelays: 1,
+          results: {'relay1': true},
+          errors: {},
+        );
       });
 
       // Act
@@ -184,9 +332,9 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      expect(capturedMetadata!.title, equals(''));
-      expect(capturedMetadata!.content, equals(''));
-      expect(capturedMetadata!.t, equals([]));
+      expect(capturedTitle, equals(''));
+      expect(capturedContent, equals(''));
+      expect(capturedHashtags, equals([]));
     });
 
     test('should return false when publish fails', () async {
@@ -200,8 +348,18 @@ void main() {
         videoId: 'video123',
       );
 
-      when(() => mockNostrService.publishVideoEvent(any()))
-          .thenThrow(Exception('Publishing failed'));
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenThrow(Exception('Publishing failed'));
       when(() => mockUploadManager.updateUploadStatus(any(), UploadStatus.failed, errorMessage: any(named: 'errorMessage')))
           .thenAnswer((_) async {});
 
@@ -231,10 +389,37 @@ void main() {
         videoId: 'video123',
       );
 
-      Nip94Metadata? capturedMetadata;
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((invocation) async {
-        capturedMetadata = invocation.positionalArguments[0] as Nip94Metadata;
-        return 'event123';
+      String? capturedTitle;
+      String? capturedContent;
+      List<String>? capturedHashtags;
+      
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((invocation) async {
+        capturedTitle = invocation.namedArguments[Symbol('title')] as String?;
+        capturedContent = invocation.namedArguments[Symbol('content')] as String;
+        capturedHashtags = invocation.namedArguments[Symbol('hashtags')] as List<String>?;
+        return NostrBroadcastResult(
+          event: Event(
+            'pubkey123',
+            22,
+            [],
+            '',
+          ),
+          successCount: 1,
+          totalRelays: 1,
+          results: {'relay1': true},
+          errors: {},
+        );
       });
 
       // Act
@@ -247,9 +432,9 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      expect(capturedMetadata!.title, equals('Title with émojis 🎬 and symbols @#\$%'));
-      expect(capturedMetadata!.content, equals('Description with\nnewlines\tand\ttabs'));
-      expect(capturedMetadata!.t, equals(['tag-with-dash', 'tag_with_underscore', '🏷️']));
+      expect(capturedTitle, equals('Title with émojis 🎬 and symbols @#\$%'));
+      expect(capturedContent, equals('Description with\nnewlines\tand\ttabs'));
+      expect(capturedHashtags, equals(['tag-with-dash', 'tag_with_underscore', '🏷️']));
     });
 
     test('should update upload status on successful publish', () async {

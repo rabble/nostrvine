@@ -18,6 +18,7 @@ import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 // Mock classes
 class MockHttpClient extends Mock implements http.Client {}
@@ -161,7 +162,7 @@ void main() {
         // ACT: Execute the complete pipeline
         
         // Step 1: Start upload
-        print('🧪 TEST: Starting upload...');
+        Log.debug('🧪 TEST: Starting upload...');
         final upload = await uploadManager.startUpload(
           videoFile: testVideoFile,
           nostrPubkey: 'test-pubkey-123',
@@ -177,7 +178,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         
         // Step 2: Simulate processing completion
-        print('🧪 TEST: Simulating processing completion...');
+        Log.debug('🧪 TEST: Simulating processing completion...');
         await uploadManager.markUploadReadyToPublish(upload.id, 'test-video-123');
         
         final updatedUpload = uploadManager.getUpload(upload.id);
@@ -200,7 +201,7 @@ void main() {
         }));
 
         // Step 4: Initialize publisher and trigger background polling
-        print('🧪 TEST: Starting background publisher...');
+        Log.debug('🧪 TEST: Starting background publisher...');
         await videoEventPublisher.initialize();
         
         // Force an immediate check instead of waiting for polling interval
@@ -219,7 +220,7 @@ void main() {
         verify(() => mockNostrService.broadcastEvent(any())).called(1);
         verify(() => mockHttpClient.delete(any(), headers: any(named: 'headers'))).called(1);
 
-        print('✅ TEST: Complete pipeline executed successfully!');
+        Log.debug('✅ TEST: Complete pipeline executed successfully!');
       });
 
       test('pipeline should handle upload failures gracefully', () async {

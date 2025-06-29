@@ -4,6 +4,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import '../utils/unified_logger.dart';
 
 // Conditional imports for FFmpeg - disabled due to macOS compatibility issues
 // import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -26,7 +27,7 @@ class VideoFrameExtractor {
     int height = 480,
   }) async {
     try {
-      debugPrint('🎬 Starting FFmpeg frame extraction from: $videoPath');
+      Log.debug('Starting FFmpeg frame extraction from: $videoPath', name: 'VideoFrameExtractor', category: LogCategory.video);
       
       // Create temporary directory for frame images
       final tempDir = await getTemporaryDirectory();
@@ -46,14 +47,14 @@ class VideoFrameExtractor {
         outputPattern,
       ].join(' ');
       
-      debugPrint('🔧 FFmpeg command: ffmpeg $command');
+      Log.debug('FFmpeg command: ffmpeg $command', name: 'VideoFrameExtractor', category: LogCategory.video);
       
       // FFmpeg is temporarily disabled due to macOS compatibility issues
       throw UnsupportedError('FFmpeg frame extraction is currently disabled due to dependency conflicts. '
           'Use camera-based frame capture instead.');
       
     } catch (e) {
-      debugPrint('❌ Video frame extraction failed: $e');
+      Log.error('Video frame extraction failed: $e', name: 'VideoFrameExtractor', category: LogCategory.video);
       rethrow;
     }
   }
@@ -65,17 +66,17 @@ class VideoFrameExtractor {
   /// Returns a map with video metadata
   static Future<Map<String, dynamic>> getVideoInfo(String videoPath) async {
     try {
-      debugPrint('📊 Getting video info for: $videoPath');
+      Log.debug('Getting video info for: $videoPath', name: 'VideoFrameExtractor', category: LogCategory.video);
       
       // FFprobe command to get video information in JSON format
       // Note: Command construction for future FFmpeg integration
-      debugPrint('📊 Would execute FFprobe with: -v quiet -print_format json -show_format -show_streams $videoPath');
+      Log.debug('Would execute FFprobe with: -v quiet -print_format json -show_format -show_streams $videoPath', name: 'VideoFrameExtractor', category: LogCategory.video);
       
       // FFmpeg is temporarily disabled due to macOS compatibility issues
       throw UnsupportedError('FFprobe video info extraction is currently disabled due to dependency conflicts.');
       
     } catch (e) {
-      debugPrint('❌ Failed to get video info: $e');
+      Log.error('Failed to get video info: $e', name: 'VideoFrameExtractor', category: LogCategory.video);
       return {'success': false, 'error': e.toString()};
     }
   }

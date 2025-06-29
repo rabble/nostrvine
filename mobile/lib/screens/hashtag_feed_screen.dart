@@ -120,7 +120,7 @@ class _HashtagFeedScreenState extends State<HashtagFeedScreen> {
                         if (stats != null) ...[
                           const Spacer(),
                           Text(
-                            'by ${stats.authorCount} authors',
+                            'by ${stats.authorCount} viners',
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 12,

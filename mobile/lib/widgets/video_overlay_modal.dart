@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../models/video_event.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
+import '../utils/unified_logger.dart';
 
 /// Modal overlay for viewing videos while preserving the parent screen context
 class VideoOverlayModal extends StatefulWidget {
@@ -36,22 +37,22 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
   void initState() {
     super.initState();
     
-    debugPrint('🎬 VideoOverlayModal.initState: Called with ${widget.videoList.length} videos');
-    debugPrint('🎬 VideoOverlayModal.initState: Starting video: ${widget.startingVideo.id.substring(0, 8)}...');
-    debugPrint('🎬 VideoOverlayModal.initState: Provided starting index: ${widget.startingIndex}');
+    Log.debug('VideoOverlayModal.initState: Called with ${widget.videoList.length} videos', name: 'VideoOverlayModal', category: LogCategory.ui);
+    Log.debug('VideoOverlayModal.initState: Starting video: ${widget.startingVideo.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
+    Log.debug('VideoOverlayModal.initState: Provided starting index: ${widget.startingIndex}', name: 'VideoOverlayModal', category: LogCategory.ui);
     
     // Find starting video index or use provided index
     _currentIndex = widget.startingIndex ?? 
         widget.videoList.indexWhere((video) => video.id == widget.startingVideo.id);
     
-    debugPrint('🎬 VideoOverlayModal.initState: Found index: $_currentIndex');
+    Log.info('VideoOverlayModal.initState: Found index: $_currentIndex', name: 'VideoOverlayModal', category: LogCategory.ui);
     
     if (_currentIndex == -1) {
-      debugPrint('🎬 VideoOverlayModal.initState: Index not found, defaulting to 0');
+      Log.info('VideoOverlayModal.initState: Index not found, defaulting to 0', name: 'VideoOverlayModal', category: LogCategory.ui);
       _currentIndex = 0;
     }
     
-    debugPrint('🎬 VideoOverlayModal.initState: Final current index: $_currentIndex');
+    Log.debug('VideoOverlayModal.initState: Final current index: $_currentIndex', name: 'VideoOverlayModal', category: LogCategory.ui);
     
     _pageController = PageController(initialPage: _currentIndex);
     
@@ -69,29 +70,29 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
   }
 
   void _initializeVideoManager() async {
-    debugPrint('🎬 VideoOverlayModal._initializeVideoManager: Starting initialization');
+    Log.debug('VideoOverlayModal._initializeVideoManager: Starting initialization', name: 'VideoOverlayModal', category: LogCategory.ui);
     try {
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
-      debugPrint('🎬 VideoOverlayModal._initializeVideoManager: VideoManager obtained');
+      Log.debug('VideoOverlayModal._initializeVideoManager: VideoManager obtained', name: 'VideoOverlayModal', category: LogCategory.ui);
       
       // Register all videos in the list with VideoManager
-      debugPrint('🎬 VideoOverlayModal._initializeVideoManager: Registering ${widget.videoList.length} videos');
+      Log.debug('VideoOverlayModal._initializeVideoManager: Registering ${widget.videoList.length} videos', name: 'VideoOverlayModal', category: LogCategory.ui);
       for (int i = 0; i < widget.videoList.length; i++) {
         final video = widget.videoList[i];
-        debugPrint('🎬 VideoOverlayModal._initializeVideoManager: Registering video [$i]: ${video.id.substring(0, 8)}...');
+        Log.debug('VideoOverlayModal._initializeVideoManager: Registering video [$i]: ${video.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
         await _videoManager!.addVideoEvent(video);
       }
       
       // Ensure the starting video is preloaded and ready
       if (_currentIndex < widget.videoList.length) {
         final currentVideo = widget.videoList[_currentIndex];
-        debugPrint('🎬 VideoOverlayModal._initializeVideoManager: Preloading starting video at index $_currentIndex: ${currentVideo.id.substring(0, 8)}...');
+        Log.debug('VideoOverlayModal._initializeVideoManager: Preloading starting video at index $_currentIndex: ${currentVideo.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
         _videoManager!.preloadVideo(currentVideo.id);
       } else {
-        debugPrint('❌ VideoOverlayModal._initializeVideoManager: Current index $_currentIndex is out of bounds for ${widget.videoList.length} videos');
+        Log.error('VideoOverlayModal._initializeVideoManager: Current index $_currentIndex is out of bounds for ${widget.videoList.length} videos', name: 'VideoOverlayModal', category: LogCategory.ui);
       }
     } catch (e) {
-      debugPrint('❌ VideoOverlayModal._initializeVideoManager: VideoManager not found: $e');
+      Log.error('VideoOverlayModal._initializeVideoManager: VideoManager not found: $e', name: 'VideoOverlayModal', category: LogCategory.ui);
     }
   }
 
@@ -100,7 +101,7 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
       try {
         _videoManager!.pauseAllVideos();
       } catch (e) {
-        debugPrint('Error pausing videos in overlay: $e');
+        Log.error('Error pausing videos in overlay: $e', name: 'VideoOverlayModal', category: LogCategory.ui);
       }
     }
   }
@@ -114,7 +115,7 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
     if (_videoManager != null && index < widget.videoList.length) {
       final newVideo = widget.videoList[index];
       
-      debugPrint('🎬 VideoOverlayModal: Page changed to video $index: ${newVideo.id.substring(0, 8)}...');
+      Log.debug('VideoOverlayModal: Page changed to video $index: ${newVideo.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
       
       // Ensure video is registered and preload it
       await _videoManager!.addVideoEvent(newVideo);
@@ -124,13 +125,13 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🎬 VideoOverlayModal: Building with ${widget.videoList.length} videos, current index: $_currentIndex');
-    debugPrint('🎬 VideoOverlayModal: Starting video ID: ${widget.startingVideo.id.substring(0, 8)}...');
-    debugPrint('🎬 VideoOverlayModal: Starting index from widget: ${widget.startingIndex}');
+    Log.debug('VideoOverlayModal: Building with ${widget.videoList.length} videos, current index: $_currentIndex', name: 'VideoOverlayModal', category: LogCategory.ui);
+    Log.debug('VideoOverlayModal: Starting video ID: ${widget.startingVideo.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
+    Log.debug('VideoOverlayModal: Starting index from widget: ${widget.startingIndex}', name: 'VideoOverlayModal', category: LogCategory.ui);
     
     if (widget.videoList.isNotEmpty && _currentIndex < widget.videoList.length) {
       final currentVideo = widget.videoList[_currentIndex];
-      debugPrint('🎬 VideoOverlayModal: Current video at index $_currentIndex: ${currentVideo.id.substring(0, 8)}... - ${currentVideo.title ?? "No title"}');
+      Log.debug('VideoOverlayModal: Current video at index $_currentIndex: ${currentVideo.id.substring(0, 8)}... - ${currentVideo.title ?? "No title"}', name: 'VideoOverlayModal', category: LogCategory.ui);
     }
     
     return Scaffold(
@@ -210,7 +211,7 @@ class _VideoOverlayModalState extends State<VideoOverlayModal> {
                 final video = widget.videoList[index];
                 final isActive = index == _currentIndex;
 
-                debugPrint('🎬 VideoOverlayModal: Building video at index $index (active: $isActive): ${video.id.substring(0, 8)}...');
+                Log.debug('VideoOverlayModal: Building video at index $index (active: $isActive): ${video.id.substring(0, 8)}...', name: 'VideoOverlayModal', category: LogCategory.ui);
 
                 return SizedBox(
                   width: double.infinity,
@@ -234,19 +235,19 @@ void showVideoOverlay({
   required String contextTitle,
   int? startingIndex,
 }) {
-  debugPrint('🎬 showVideoOverlay: Called with:');
-  debugPrint('  - Context: $context');
-  debugPrint('  - Starting video: ${startingVideo.id.substring(0, 8)}... - ${startingVideo.title ?? "No title"}');
-  debugPrint('  - Video list: ${videoList.length} videos');
-  debugPrint('  - Context title: $contextTitle');
-  debugPrint('  - Starting index: $startingIndex');
+  Log.debug('showVideoOverlay: Called with:', name: 'VideoOverlayModal', category: LogCategory.ui);
+  Log.debug('  - Context: $context', name: 'VideoOverlayModal', category: LogCategory.ui);
+  Log.debug('  - Starting video: ${startingVideo.id.substring(0, 8)}... - ${startingVideo.title ?? "No title"}', name: 'VideoOverlayModal', category: LogCategory.ui);
+  Log.debug('  - Video list: ${videoList.length} videos', name: 'VideoOverlayModal', category: LogCategory.ui);
+  Log.debug('  - Context title: $contextTitle', name: 'VideoOverlayModal', category: LogCategory.ui);
+  Log.debug('  - Starting index: $startingIndex', name: 'VideoOverlayModal', category: LogCategory.ui);
   
   if (videoList.isEmpty) {
-    debugPrint('❌ showVideoOverlay: Cannot show overlay - video list is EMPTY');
+    Log.error('showVideoOverlay: Cannot show overlay - video list is EMPTY', name: 'VideoOverlayModal', category: LogCategory.ui);
     return;
   }
   
-  debugPrint('🎬 showVideoOverlay: Creating VideoOverlayModal and pushing route');
+  Log.debug('showVideoOverlay: Creating VideoOverlayModal and pushing route', name: 'VideoOverlayModal', category: LogCategory.ui);
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => VideoOverlayModal(

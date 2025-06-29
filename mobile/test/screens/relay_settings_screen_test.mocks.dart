@@ -8,8 +8,8 @@ import 'dart:ui' as _i9;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:nostr_sdk/event.dart' as _i6;
-import 'package:nostr_sdk/filter.dart' as _i8;
-import 'package:openvine/models/nip94_metadata.dart' as _i7;
+import 'package:nostr_sdk/filter.dart' as _i7;
+import 'package:openvine/models/nip94_metadata.dart' as _i8;
 import 'package:openvine/services/nostr_key_manager.dart' as _i2;
 import 'package:openvine/services/nostr_service.dart' as _i4;
 import 'package:openvine/services/nostr_service_interface.dart' as _i3;
@@ -77,18 +77,6 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
       ) as List<String>);
 
   @override
-  List<String> get relays => (super.noSuchMethod(
-        Invocation.getter(#relays),
-        returnValue: <String>[],
-      ) as List<String>);
-
-  @override
-  Map<String, _i4.RelayStatus> get relayStatuses => (super.noSuchMethod(
-        Invocation.getter(#relayStatuses),
-        returnValue: <String, _i4.RelayStatus>{},
-      ) as Map<String, _i4.RelayStatus>);
-
-  @override
   bool get hasKeys => (super.noSuchMethod(
         Invocation.getter(#hasKeys),
         returnValue: false,
@@ -116,6 +104,18 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
       ) as int);
 
   @override
+  List<String> get relays => (super.noSuchMethod(
+        Invocation.getter(#relays),
+        returnValue: <String>[],
+      ) as List<String>);
+
+  @override
+  Map<String, dynamic> get relayStatuses => (super.noSuchMethod(
+        Invocation.getter(#relayStatuses),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -132,6 +132,23 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
+
+  @override
+  _i5.Stream<_i6.Event> subscribeToEvents({
+    required List<_i7.Filter>? filters,
+    bool? bypassLimits = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #subscribeToEvents,
+          [],
+          {
+            #filters: filters,
+            #bypassLimits: bypassLimits,
+          },
+        ),
+        returnValue: _i5.Stream<_i6.Event>.empty(),
+      ) as _i5.Stream<_i6.Event>);
 
   @override
   _i5.Future<_i3.NostrBroadcastResult> broadcastEvent(_i6.Event? event) =>
@@ -152,7 +169,7 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
 
   @override
   _i5.Future<_i3.NostrBroadcastResult> publishFileMetadata({
-    required _i7.NIP94Metadata? metadata,
+    required _i8.NIP94Metadata? metadata,
     required String? content,
     List<String>? hashtags = const [],
   }) =>
@@ -234,23 +251,6 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
       ) as _i5.Future<_i3.NostrBroadcastResult>);
 
   @override
-  _i5.Stream<_i6.Event> subscribeToEvents({
-    required List<_i8.Filter>? filters,
-    bool? bypassLimits = false,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #subscribeToEvents,
-          [],
-          {
-            #filters: filters,
-            #bypassLimits: bypassLimits,
-          },
-        ),
-        returnValue: _i5.Stream<_i6.Event>.empty(),
-      ) as _i5.Stream<_i6.Event>);
-
-  @override
   _i5.Future<bool> addRelay(String? relayUrl) => (super.noSuchMethod(
         Invocation.method(
           #addRelay,
@@ -279,6 +279,16 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
       ) as Map<String, bool>);
 
   @override
+  _i5.Future<void> reconnectAll() => (super.noSuchMethod(
+        Invocation.method(
+          #reconnectAll,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   Map<String, dynamic> getConnectionStatus() => (super.noSuchMethod(
         Invocation.method(
           #getConnectionStatus,
@@ -295,16 +305,6 @@ class MockNostrService extends _i1.Mock implements _i4.NostrService {
         ),
         returnValue: <String, dynamic>{},
       ) as Map<String, dynamic>);
-
-  @override
-  _i5.Future<void> reconnectAll() => (super.noSuchMethod(
-        Invocation.method(
-          #reconnectAll,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(

@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import 'video_manager_interface.dart';
+import '../utils/unified_logger.dart';
 
 /// Extension methods for VideoManagerService to handle playback control
 /// 
@@ -42,7 +43,7 @@ mixin VideoControllerManager on ChangeNotifier {
       final controller = videoManager.getController(videoId);
       
       if (controller == null) {
-        debugPrint('VideoControllerManager: No controller found for $videoId');
+        Log.info('VideoControllerManager: No controller found for $videoId', name: 'VideoControllerManager', category: LogCategory.video);
         return;
       }
 
@@ -58,11 +59,11 @@ mixin VideoControllerManager on ChangeNotifier {
       _currentlyPlayingVideoId = videoId;
       _trackPlayback(videoId);
       
-      debugPrint('VideoControllerManager: Playing video $videoId');
+      Log.debug('VideoControllerManager: Playing video $videoId', name: 'VideoControllerManager', category: LogCategory.video);
       notifyListeners();
 
     } catch (e) {
-      debugPrint('VideoControllerManager: Error playing video $videoId: $e');
+      Log.error('VideoControllerManager: Error playing video $videoId: $e', name: 'VideoControllerManager', category: LogCategory.video);
     }
   }
 
@@ -80,11 +81,11 @@ mixin VideoControllerManager on ChangeNotifier {
         _currentlyPlayingVideoId = null;
       }
       
-      debugPrint('VideoControllerManager: Paused video $videoId');
+      Log.debug('VideoControllerManager: Paused video $videoId', name: 'VideoControllerManager', category: LogCategory.video);
       notifyListeners();
 
     } catch (e) {
-      debugPrint('VideoControllerManager: Error pausing video $videoId: $e');
+      Log.error('VideoControllerManager: Error pausing video $videoId: $e', name: 'VideoControllerManager', category: LogCategory.video);
     }
   }
 
@@ -159,7 +160,7 @@ mixin VideoControllerManager on ChangeNotifier {
 
   /// Handle video completion (for analytics and next video logic)
   void onVideoCompleted(String videoId) {
-    debugPrint('VideoControllerManager: Video $videoId completed');
+    Log.info('VideoControllerManager: Video $videoId completed', name: 'VideoControllerManager', category: LogCategory.video);
     
     if (_currentlyPlayingVideoId == videoId) {
       // If looping is disabled, move to next video
@@ -172,7 +173,7 @@ mixin VideoControllerManager on ChangeNotifier {
 
   /// Handle video errors during playback
   void onVideoError(String videoId, String error) {
-    debugPrint('VideoControllerManager: Playback error for $videoId: $error');
+    Log.error('VideoControllerManager: Playback error for $videoId: $error', name: 'VideoControllerManager', category: LogCategory.video);
     
     if (_currentlyPlayingVideoId == videoId) {
       _currentlyPlayingVideoId = null;
@@ -206,7 +207,7 @@ mixin VideoControllerManager on ChangeNotifier {
       }
 
     } catch (e) {
-      debugPrint('VideoControllerManager: Error configuring controller: $e');
+      Log.error('VideoControllerManager: Error configuring controller: $e', name: 'VideoControllerManager', category: LogCategory.video);
     }
   }
 
@@ -292,6 +293,15 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
   }
 
   @override
+  bool isAtFeedBoundary(int index) => _baseManager.isAtFeedBoundary(index);
+
+  @override
+  int get primaryVideoCount => _baseManager.primaryVideoCount;
+
+  @override
+  int get discoveryVideoCount => _baseManager.discoveryVideoCount;
+
+  @override
   void dispose() {
     _baseManager.dispose();
     super.dispose();
@@ -339,7 +349,7 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('Error pausing video $videoId: $e');
+      Log.error('Error pausing video $videoId: $e', name: 'VideoControllerManager', category: LogCategory.video);
     }
   }
 
@@ -377,7 +387,7 @@ class VideoManagerServiceWithPlayback extends ChangeNotifier
       _trackPlayback(videoId);
       notifyListeners();
     } catch (e) {
-      debugPrint('Error resuming video $videoId: $e');
+      Log.error('Error resuming video $videoId: $e', name: 'VideoControllerManager', category: LogCategory.video);
     }
   }
 

@@ -15,6 +15,7 @@ import '../models/notification_model.dart';
 import '../models/user_profile.dart' as models;
 import 'profile_screen.dart';
 import 'explore_video_screen.dart';
+import '../utils/unified_logger.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -326,14 +327,14 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
   }
 
   void _openVideo(VideoEvent video, VideoEventService videoEventService) {
-    debugPrint('🎬 Opening video from Activity: ${video.id.substring(0, 8)}...');
-    debugPrint('📺 Video URL: ${video.videoUrl}');
-    debugPrint('🖼️ Thumbnail URL: ${video.thumbnailUrl}');
-    debugPrint('📝 Title: ${video.title}');
+    Log.debug('Opening video from Activity: ${video.id.substring(0, 8)}...', name: 'ActivityScreen', category: LogCategory.ui);
+    Log.debug('� Video URL: ${video.videoUrl}', name: 'ActivityScreen', category: LogCategory.ui);
+    Log.verbose('Thumbnail URL: ${video.thumbnailUrl}', name: 'ActivityScreen', category: LogCategory.ui);
+    Log.verbose('Title: ${video.title}', name: 'ActivityScreen', category: LogCategory.ui);
     
     // Check if video has a valid URL
     if (video.videoUrl?.isEmpty != false) {
-      debugPrint('❌ Cannot open video - empty or null video URL');
+      Log.error('Cannot open video - empty or null video URL', name: 'ActivityScreen', category: LogCategory.ui);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Video URL is not available'),

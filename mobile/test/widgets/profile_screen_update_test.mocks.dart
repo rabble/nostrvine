@@ -779,6 +779,15 @@ class MockVideoEventService extends _i1.Mock implements _i12.VideoEventService {
       ) as int);
 
   @override
+  String get classicVinesPubkey => (super.noSuchMethod(
+        Invocation.getter(#classicVinesPubkey),
+        returnValue: _i10.dummyValue<String>(
+          this,
+          Invocation.getter(#classicVinesPubkey),
+        ),
+      ) as String);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -1293,16 +1302,6 @@ class MockProfileVideosProvider extends _i1.Mock
         Invocation.getter(#hasListeners),
         returnValue: false,
       ) as bool);
-
-  @override
-  void setSubscriptionManager(_i8.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
-        ),
-        returnValueForMissingStub: null,
-      );
 
   @override
   void setVideoEventService(_i12.VideoEventService? videoEventService) =>

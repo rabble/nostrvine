@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../services/vine_recording_controller.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 /// Progress bar that shows recording progress with segments
 class VineRecordingProgressBar extends StatelessWidget {
@@ -113,11 +114,11 @@ class _VineRecordButtonState extends State<VineRecordButton>
   }
 
   void _onTapDown(TapDownDetails details) {
-    debugPrint('🎬 Record button tap down - canRecord: ${widget.controller.canRecord}, state: ${widget.controller.state}');
+    Log.debug('Record button tap down - canRecord: ${widget.controller.canRecord}, state: ${widget.controller.state}', name: 'VineRecordingControls', category: LogCategory.ui);
     
     // If in error state, try to reset first
     if (widget.controller.state == VineRecordingState.error) {
-      debugPrint('🔄 Resetting from error state before recording');
+      Log.error('Resetting from error state before recording', name: 'VineRecordingControls', category: LogCategory.ui);
       widget.controller.reset();
       return;
     }
@@ -130,7 +131,7 @@ class _VineRecordButtonState extends State<VineRecordButton>
   }
 
   void _onTapUp(TapUpDetails details) {
-    debugPrint('🎬 Record button tap up - isPressed: $_isPressed, state: ${widget.controller.state}');
+    Log.debug('Record button tap up - isPressed: $_isPressed, state: ${widget.controller.state}', name: 'VineRecordingControls', category: LogCategory.ui);
     if (!_isPressed || !mounted) return;
     
     setState(() => _isPressed = false);
@@ -139,7 +140,7 @@ class _VineRecordButtonState extends State<VineRecordButton>
   }
 
   void _onTapCancel() {
-    debugPrint('🎬 Record button tap cancel - isPressed: $_isPressed, state: ${widget.controller.state}');
+    Log.debug('Record button tap cancel - isPressed: $_isPressed, state: ${widget.controller.state}', name: 'VineRecordingControls', category: LogCategory.ui);
     if (!_isPressed || !mounted) return;
     
     setState(() => _isPressed = false);

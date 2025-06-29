@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/video_event.dart';
+import '../utils/unified_logger.dart';
 
 /// Video player widget with comprehensive state management
 /// 
@@ -179,7 +180,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _chewieController!.pause();
       }
     } catch (e) {
-      debugPrint('Error handling active state change: $e');
+      Log.error('Error handling active state change: $e', name: 'VideoPlayerWidget', category: LogCategory.ui);
     }
   }
 
@@ -191,7 +192,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     });
     
     widget.onVideoError?.call();
-    debugPrint('VideoPlayerWidget error: $message');
+    Log.error('VideoPlayerWidget error: $message', name: 'VideoPlayerWidget', category: LogCategory.ui);
   }
 
   void _disposeChewieController() {

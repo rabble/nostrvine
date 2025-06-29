@@ -8,6 +8,7 @@ import '../widgets/video_feed_item.dart';
 import '../services/video_manager_interface.dart';
 import '../services/default_content_service.dart';
 import '../theme/vine_theme.dart';
+import '../utils/unified_logger.dart';
 
 class DebugVideoTestScreen extends StatefulWidget {
   const DebugVideoTestScreen({super.key});
@@ -30,9 +31,9 @@ class _DebugVideoTestScreenState extends State<DebugVideoTestScreen> {
       try {
         final videoManager = context.read<IVideoManager>();
         await videoManager.addVideoEvent(_testVideo);
-        debugPrint('✅ Added test video to manager');
+        Log.info('Added test video to manager', name: 'DebugVideoTest', category: LogCategory.ui);
       } catch (e) {
-        debugPrint('❌ Failed to add test video: $e');
+        Log.error('Failed to add test video: $e', name: 'DebugVideoTest', category: LogCategory.ui);
       }
     });
   }

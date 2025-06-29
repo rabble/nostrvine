@@ -182,6 +182,15 @@ abstract class IVideoManager {
   /// - memoryManagement: Whether memory management is enabled
   Map<String, dynamic> getDebugInfo();
   
+  /// Check if the given index is at the boundary between following and discovery feeds
+  bool isAtFeedBoundary(int index);
+  
+  /// Get the number of primary (following) videos
+  int get primaryVideoCount;
+  
+  /// Get the number of discovery videos
+  int get discoveryVideoCount;
+  
   /// Stream of state changes for reactive UI updates
   /// 
   /// Emits events when:

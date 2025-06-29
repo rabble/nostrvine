@@ -11,8 +11,6 @@ void main() {
       // This test verifies that NostrServiceV2 doesn't have the dual 
       // subscription tracking issue that was causing the "15/15" error
       
-      final service = NostrServiceV2(null as dynamic); // Mock will be injected in real usage
-      
       // Create multiple filters
       final filters = <Filter>[];
       for (int i = 0; i < 20; i++) {

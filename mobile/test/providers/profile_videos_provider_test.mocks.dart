@@ -110,6 +110,18 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as int);
 
   @override
+  List<String> get relays => (super.noSuchMethod(
+        Invocation.getter(#relays),
+        returnValue: <String>[],
+      ) as List<String>);
+
+  @override
+  Map<String, dynamic> get relayStatuses => (super.noSuchMethod(
+        Invocation.getter(#relayStatuses),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -243,6 +255,44 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
           ),
         )),
       ) as _i4.Future<_i3.NostrBroadcastResult>);
+
+  @override
+  _i4.Future<bool> addRelay(String? relayUrl) => (super.noSuchMethod(
+        Invocation.method(
+          #addRelay,
+          [relayUrl],
+        ),
+        returnValue: _i4.Future<bool>.value(false),
+      ) as _i4.Future<bool>);
+
+  @override
+  _i4.Future<void> removeRelay(String? relayUrl) => (super.noSuchMethod(
+        Invocation.method(
+          #removeRelay,
+          [relayUrl],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  Map<String, bool> getRelayStatus() => (super.noSuchMethod(
+        Invocation.method(
+          #getRelayStatus,
+          [],
+        ),
+        returnValue: <String, bool>{},
+      ) as Map<String, bool>);
+
+  @override
+  _i4.Future<void> reconnectAll() => (super.noSuchMethod(
+        Invocation.method(
+          #reconnectAll,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -443,6 +493,15 @@ class MockVideoEventService extends _i1.Mock implements _i11.VideoEventService {
         Invocation.getter(#eventCount),
         returnValue: 0,
       ) as int);
+
+  @override
+  String get classicVinesPubkey => (super.noSuchMethod(
+        Invocation.getter(#classicVinesPubkey),
+        returnValue: _i10.dummyValue<String>(
+          this,
+          Invocation.getter(#classicVinesPubkey),
+        ),
+      ) as String);
 
   @override
   bool get hasListeners => (super.noSuchMethod(

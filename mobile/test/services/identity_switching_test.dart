@@ -2,7 +2,6 @@
 // ABOUTME: Verifies key storage, switching, and backup functionality
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/key_storage_service.dart';
 import 'package:openvine/services/auth_service.dart';

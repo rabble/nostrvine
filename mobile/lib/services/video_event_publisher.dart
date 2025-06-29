@@ -10,6 +10,7 @@ import '../services/upload_manager.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/auth_service.dart';
 import 'package:nostr_sdk/event.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for publishing processed videos to Nostr relays
 class VideoEventPublisher extends ChangeNotifier {
@@ -60,7 +61,7 @@ class VideoEventPublisher extends ChangeNotifier {
 
   /// Initialize the publisher and start background polling
   Future<void> initialize() async {
-    debugPrint('🔧 Initializing VideoEventPublisher');
+    Log.debug('Initializing VideoEventPublisher', name: 'VideoEventPublisher', category: LogCategory.video);
     
     // Set up app lifecycle monitoring
     _setupAppLifecycleListener();
@@ -71,20 +72,20 @@ class VideoEventPublisher extends ChangeNotifier {
     // Start polling for ready events
     await startPolling();
     
-    debugPrint('✅ VideoEventPublisher initialized');
+    Log.info('VideoEventPublisher initialized', name: 'VideoEventPublisher', category: LogCategory.video);
   }
 
   /// Start the background polling service
   Future<void> startPolling() async {
     if (_isPollingActive) {
-      debugPrint('⚠️ Polling already active');
+      Log.warning('Polling already active', name: 'VideoEventPublisher', category: LogCategory.video);
       return;
     }
     
     _isPollingActive = true;
     _updatePollInterval();
     
-    debugPrint('🔄 Starting video event polling (interval: ${_currentPollInterval.inSeconds}s)');
+    Log.debug('Starting video event polling (interval: ${_currentPollInterval.inSeconds}s)', name: 'VideoEventPublisher', category: LogCategory.video);
     
     // Check if we're using direct uploads (skip polling if so)
     try {
@@ -94,7 +95,7 @@ class VideoEventPublisher extends ChangeNotifier {
       // Schedule periodic checks
       _pollTimer = Timer.periodic(_currentPollInterval, (_) => _checkForReadyEvents());
     } catch (e) {
-      debugPrint('⚠️ Polling endpoint not available - using direct upload only mode');
+      Log.warning('Polling endpoint not available - using direct upload only mode', name: 'VideoEventPublisher', category: LogCategory.video);
       // Continue without polling - direct uploads will still work
     }
   }
@@ -103,7 +104,7 @@ class VideoEventPublisher extends ChangeNotifier {
   void stopPolling() {
     if (!_isPollingActive) return;
     
-    debugPrint('⏹️ Stopping video event polling');
+    Log.debug('Stopping video event polling', name: 'VideoEventPublisher', category: LogCategory.video);
     
     _isPollingActive = false;
     _pollTimer?.cancel();
@@ -115,23 +116,23 @@ class VideoEventPublisher extends ChangeNotifier {
   /// Check for ready events and publish them
   Future<void> _checkForReadyEvents() async {
     if (!_isPollingActive || !_isAppActive) {
-      debugPrint('⏸️ Skipping poll - app inactive or polling stopped');
+      Log.warning('Skipping poll - app inactive or polling stopped', name: 'VideoEventPublisher', category: LogCategory.video);
       return;
     }
     
     try {
-      debugPrint('🔍 Checking for ready events...');
+      Log.debug('Checking for ready events...', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Fetch ready events from backend
       final readyEvents = await _fetchReadyEvents();
       
       if (readyEvents.isEmpty) {
-        debugPrint('📭 No ready events found');
+        Log.info('No ready events found', name: 'VideoEventPublisher', category: LogCategory.video);
         _updatePollInterval();
         return;
       }
       
-      debugPrint('📬 Found ${readyEvents.length} ready events');
+      Log.info('Found ${readyEvents.length} ready events', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Process each ready event
       for (final eventData in readyEvents) {
@@ -142,12 +143,12 @@ class VideoEventPublisher extends ChangeNotifier {
       _updatePollInterval();
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Error checking ready events: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Error checking ready events: $e', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('� Stack trace: $stackTrace', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Handle network errors gracefully
       if (e.toString().contains('network') || e.toString().contains('timeout')) {
-        debugPrint('🌐 Network error detected, will retry later');
+        Log.error('� Network error detected, will retry later', name: 'VideoEventPublisher', category: LogCategory.video);
         _scheduleRetry();
       }
     }
@@ -156,10 +157,10 @@ class VideoEventPublisher extends ChangeNotifier {
   /// Process a single ready event
   Future<void> _processReadyEvent(ReadyEventData eventData) async {
     try {
-      debugPrint('🎬 Processing ready event: ${eventData.publicId}');
+      Log.debug('Processing ready event: ${eventData.publicId}', name: 'VideoEventPublisher', category: LogCategory.video);
       
       if (!eventData.isReadyForPublishing) {
-        debugPrint('⚠️ Event not ready for publishing: ${eventData.statusDescription}');
+        Log.warning('Event not ready for publishing: ${eventData.statusDescription}', name: 'VideoEventPublisher', category: LogCategory.video);
         return;
       }
       
@@ -185,14 +186,14 @@ class VideoEventPublisher extends ChangeNotifier {
         _totalEventsPublished++;
         _lastPublishTime = DateTime.now();
         
-        debugPrint('✅ Successfully published event: ${nostrEvent.id}');
+        Log.info('Successfully published event: ${nostrEvent.id}', name: 'VideoEventPublisher', category: LogCategory.video);
       } else {
         throw Exception('Failed to publish to Nostr relays');
       }
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Failed to process event ${eventData.publicId}: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Failed to process event ${eventData.publicId}: $e', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('� Stack trace: $stackTrace', name: 'VideoEventPublisher', category: LogCategory.video);
       
       _totalEventsFailed++;
       _failedEvents.add(eventData);
@@ -205,7 +206,7 @@ class VideoEventPublisher extends ChangeNotifier {
   /// Create NIP-71 video event from ready event data
   Future<Event?> _createVideoEvent(ReadyEventData eventData) async {
     if (_authService == null || !_authService!.isAuthenticated) {
-      debugPrint('❌ Cannot create video event - user not authenticated');
+      Log.error('Cannot create video event - user not authenticated', name: 'VideoEventPublisher', category: LogCategory.video);
       return null;
     }
     
@@ -279,19 +280,19 @@ class VideoEventPublisher extends ChangeNotifier {
       );
       
       if (event == null) {
-        debugPrint('❌ Failed to create and sign video event');
+        Log.error('Failed to create and sign video event', name: 'VideoEventPublisher', category: LogCategory.video);
         return null;
       }
       
-      debugPrint('📹 Created Kind 22 video event: ${event.id}');
-      debugPrint('🎬 Video URL: $videoUrl');
-      debugPrint('📊 Event size: ${eventData.estimatedEventSize} bytes');
-      debugPrint('🏷️ Tags: ${event.tags.length}');
+      Log.info('� Created Kind 22 video event: ${event.id}', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.debug('Video URL: $videoUrl', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.debug('Event size: ${eventData.estimatedEventSize} bytes', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('Tags: ${event.tags.length}', name: 'VideoEventPublisher', category: LogCategory.video);
       
       return event;
       
     } catch (e) {
-      debugPrint('❌ Error creating video event: $e');
+      Log.error('Error creating video event: $e', name: 'VideoEventPublisher', category: LogCategory.video);
       return null;
     }
   }
@@ -299,16 +300,16 @@ class VideoEventPublisher extends ChangeNotifier {
   /// Publish event to Nostr relays
   Future<bool> _publishEventToNostr(Event event) async {
     try {
-      debugPrint('📡 Publishing event to Nostr relays: ${event.id}');
+      Log.debug('Publishing event to Nostr relays: ${event.id}', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Use the existing Nostr service to broadcast
       await _nostrService.broadcastEvent(event);
       
-      debugPrint('✅ Event published successfully to relays');
+      Log.info('Event published successfully to relays', name: 'VideoEventPublisher', category: LogCategory.video);
       return true;
       
     } catch (e) {
-      debugPrint('❌ Failed to publish event to relays: $e');
+      Log.error('Failed to publish event to relays: $e', name: 'VideoEventPublisher', category: LogCategory.video);
       return false;
     }
   }
@@ -319,10 +320,10 @@ class VideoEventPublisher extends ChangeNotifier {
     if (upload != null) {
       // This would normally update the upload in the manager with:
       // upload.copyWith(status: UploadStatus.published, nostrEventId: nostrEventId, completedAt: DateTime.now())
-      debugPrint('📱 Updated local upload status: ${eventData.originalUploadId} -> published');
-      debugPrint('🔗 Linked to Nostr event: $nostrEventId');
+      Log.debug('� Updated local upload status: ${eventData.originalUploadId} -> published', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.debug('� Linked to Nostr event: $nostrEventId', name: 'VideoEventPublisher', category: LogCategory.video);
     } else {
-      debugPrint('⚠️ Could not find local upload for: ${eventData.originalUploadId}');
+      Log.warning('Could not find local upload for: ${eventData.originalUploadId}', name: 'VideoEventPublisher', category: LogCategory.video);
     }
   }
 
@@ -331,12 +332,12 @@ class VideoEventPublisher extends ChangeNotifier {
     try {
       // Show platform notification
       // TODO: Implement actual notification service
-      debugPrint('🔔 Would show notification: Video published!');
-      debugPrint('📺 Event ID: $nostrEventId');
-      debugPrint('🎬 Video URL: ${eventData.secureUrl}');
+      Log.debug('� Would show notification: Video published!', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.debug('� Event ID: $nostrEventId', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.debug('Video URL: ${eventData.secureUrl}', name: 'VideoEventPublisher', category: LogCategory.video);
       
     } catch (e) {
-      debugPrint('⚠️ Failed to show notification: $e');
+      Log.error('Failed to show notification: $e', name: 'VideoEventPublisher', category: LogCategory.video);
     }
   }
 
@@ -360,14 +361,14 @@ class VideoEventPublisher extends ChangeNotifier {
     if (_isPollingActive && _pollTimer != null) {
       _pollTimer?.cancel();
       _pollTimer = Timer.periodic(_currentPollInterval, (_) => _checkForReadyEvents());
-      debugPrint('🔄 Updated poll interval to ${_currentPollInterval.inSeconds}s');
+      Log.debug('Updated poll interval to ${_currentPollInterval.inSeconds}s', name: 'VideoEventPublisher', category: LogCategory.video);
     }
   }
 
   /// Set up app lifecycle monitoring
   void _setupAppLifecycleListener() {
     SystemChannels.lifecycle.setMessageHandler((message) async {
-      debugPrint('📱 App lifecycle: $message');
+      Log.debug('� App lifecycle: $message', name: 'VideoEventPublisher', category: LogCategory.video);
       
       switch (message) {
         case 'AppLifecycleState.resumed':
@@ -377,7 +378,7 @@ class VideoEventPublisher extends ChangeNotifier {
           if (_lastAppBackgroundTime != null) {
             final backgroundDuration = DateTime.now().difference(_lastAppBackgroundTime!);
             if (backgroundDuration.inMinutes > 10) {
-              debugPrint('🔄 App resumed after ${backgroundDuration.inMinutes}min, checking immediately');
+              Log.debug('App resumed after ${backgroundDuration.inMinutes}min, checking immediately', name: 'VideoEventPublisher', category: LogCategory.video);
               _checkForReadyEvents();
             }
           }
@@ -401,7 +402,7 @@ class VideoEventPublisher extends ChangeNotifier {
   void _scheduleRetry() {
     _retryTimer?.cancel();
     _retryTimer = Timer(_retryDelay, () {
-      debugPrint('🔄 Retrying after network error');
+      Log.error('Retrying after network error', name: 'VideoEventPublisher', category: LogCategory.video);
       _checkForReadyEvents();
     });
   }
@@ -412,7 +413,7 @@ class VideoEventPublisher extends ChangeNotifier {
     
     _retryTimer?.cancel();
     _retryTimer = Timer(_retryDelay, () async {
-      debugPrint('🔄 Retrying ${_failedEvents.length} failed events');
+      Log.error('Retrying ${_failedEvents.length} failed events', name: 'VideoEventPublisher', category: LogCategory.video);
       
       final eventsToRetry = List<ReadyEventData>.from(_failedEvents);
       _failedEvents.clear();
@@ -440,7 +441,7 @@ class VideoEventPublisher extends ChangeNotifier {
 
   /// Force an immediate check (for manual testing)
   Future<void> forceCheck() async {
-    debugPrint('🔧 Force checking for ready events');
+    Log.debug('Force checking for ready events', name: 'VideoEventPublisher', category: LogCategory.video);
     await _checkForReadyEvents();
   }
   
@@ -452,19 +453,19 @@ class VideoEventPublisher extends ChangeNotifier {
       
       if (readyUploads.isEmpty) return;
       
-      debugPrint('📬 Found ${readyUploads.length} direct uploads ready to publish');
+      Log.info('Found ${readyUploads.length} direct uploads ready to publish', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Process each ready upload
       for (final upload in readyUploads) {
         // Skip if missing required fields
         if (upload.videoId == null || upload.cdnUrl == null) {
-          debugPrint('⚠️ Skipping upload ${upload.id} - missing videoId or cdnUrl');
+          Log.warning('Skipping upload ${upload.id} - missing videoId or cdnUrl', name: 'VideoEventPublisher', category: LogCategory.video);
           continue;
         }
         
         // Check if already being published (prevent duplicates)
         if (_activePublishes.contains(upload.id)) {
-          debugPrint('⏭️ Skipping upload ${upload.id} - already being published');
+          Log.warning('⏭️ Skipping upload ${upload.id} - already being published', name: 'VideoEventPublisher', category: LogCategory.video);
           continue;
         }
         
@@ -476,20 +477,20 @@ class VideoEventPublisher extends ChangeNotifier {
           final success = await publishDirectUpload(upload);
           
           if (success) {
-            debugPrint('✅ Published direct upload: ${upload.id}');
+            Log.info('Published direct upload: ${upload.id}', name: 'VideoEventPublisher', category: LogCategory.video);
           } else {
-            debugPrint('❌ Failed to publish direct upload: ${upload.id}');
+            Log.error('Failed to publish direct upload: ${upload.id}', name: 'VideoEventPublisher', category: LogCategory.video);
             // Remove from active set so it can be retried
             _activePublishes.remove(upload.id);
           }
         } catch (e) {
-          debugPrint('❌ Exception publishing direct upload ${upload.id}: $e');
+          Log.error('Exception publishing direct upload ${upload.id}: $e', name: 'VideoEventPublisher', category: LogCategory.video);
           // Remove from active set so it can be retried
           _activePublishes.remove(upload.id);
         }
       }
     } catch (e) {
-      debugPrint('❌ Error checking direct uploads: $e');
+      Log.error('Error checking direct uploads: $e', name: 'VideoEventPublisher', category: LogCategory.video);
     }
   }
   
@@ -499,6 +500,7 @@ class VideoEventPublisher extends ChangeNotifier {
     String? title,
     String? description,
     List<String>? hashtags,
+    int? expirationTimestamp,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -507,18 +509,18 @@ class VideoEventPublisher extends ChangeNotifier {
       hashtags: hashtags ?? upload.hashtags,
     );
     
-    return publishDirectUpload(updatedUpload);
+    return publishDirectUpload(updatedUpload, expirationTimestamp: expirationTimestamp);
   }
   
   /// Publish a video directly without polling (for direct upload)
-  Future<bool> publishDirectUpload(PendingUpload upload) async {
+  Future<bool> publishDirectUpload(PendingUpload upload, {int? expirationTimestamp}) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
-      debugPrint('❌ Cannot publish upload - missing videoId or cdnUrl');
+      Log.error('Cannot publish upload - missing videoId or cdnUrl', name: 'VideoEventPublisher', category: LogCategory.video);
       return false;
     }
     
     try {
-      debugPrint('🎬 Publishing direct upload: ${upload.videoId}');
+      Log.debug('Publishing direct upload: ${upload.videoId}', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Create NIP-94 style tags for the video
       final tags = <List<String>>[];
@@ -530,7 +532,7 @@ class VideoEventPublisher extends ChangeNotifier {
       // Add thumbnail if available
       if (upload.thumbnailPath != null) {
         tags.add(['thumb', upload.thumbnailPath!]);
-        debugPrint('🖼️ Including thumbnail: ${upload.thumbnailPath}');
+        Log.verbose('Including thumbnail: ${upload.thumbnailPath}', name: 'VideoEventPublisher', category: LogCategory.video);
       }
       
       // Optional tags
@@ -547,23 +549,28 @@ class VideoEventPublisher extends ChangeNotifier {
       // Add client tag
       tags.add(['client', 'openvine']);
       
+      // Add expiration tag if specified
+      if (expirationTimestamp != null) {
+        tags.add(['expiration', expirationTimestamp.toString()]);
+      }
+      
       // Create the event content
       final content = upload.description ?? upload.title ?? '';
       
       // Create and sign the event
       if (_authService == null) {
-        debugPrint('❌ Auth service is null - cannot create video event');
+        Log.error('Auth service is null - cannot create video event', name: 'VideoEventPublisher', category: LogCategory.video);
         return false;
       }
       
       if (!_authService!.isAuthenticated) {
-        debugPrint('❌ User not authenticated - cannot create video event');
+        Log.error('User not authenticated - cannot create video event', name: 'VideoEventPublisher', category: LogCategory.video);
         return false;
       }
       
-      debugPrint('🔐 Creating and signing video event...');
-      debugPrint('📝 Content: "$content"');
-      debugPrint('🏷️ Tags: ${tags.length} tags');
+      Log.debug('� Creating and signing video event...', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('Content: "$content"', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('Tags: ${tags.length} tags', name: 'VideoEventPublisher', category: LogCategory.video);
       
       final event = await _authService!.createAndSignEvent(
         kind: 22, // NIP-71 short video
@@ -572,11 +579,11 @@ class VideoEventPublisher extends ChangeNotifier {
       );
       
       if (event == null) {
-        debugPrint('❌ Failed to create and sign video event - createAndSignEvent returned null');
+        Log.error('Failed to create and sign video event - createAndSignEvent returned null', name: 'VideoEventPublisher', category: LogCategory.video);
         return false;
       }
       
-      debugPrint('✅ Created video event: ${event.id}');
+      Log.info('Created video event: ${event.id}', name: 'VideoEventPublisher', category: LogCategory.video);
       
       // Publish to Nostr relays
       final publishResult = await _publishEventToNostr(event);
@@ -592,18 +599,18 @@ class VideoEventPublisher extends ChangeNotifier {
         _totalEventsPublished++;
         _lastPublishTime = DateTime.now();
         
-        debugPrint('✅ Successfully published direct upload: ${event.id}');
-        debugPrint('🎬 Video URL: ${upload.cdnUrl}');
+        Log.info('Successfully published direct upload: ${event.id}', name: 'VideoEventPublisher', category: LogCategory.video);
+        Log.debug('Video URL: ${upload.cdnUrl}', name: 'VideoEventPublisher', category: LogCategory.video);
         
         return true;
       } else {
-        debugPrint('❌ Failed to publish to Nostr relays');
+        Log.error('Failed to publish to Nostr relays', name: 'VideoEventPublisher', category: LogCategory.video);
         return false;
       }
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Error publishing direct upload: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Error publishing direct upload: $e', name: 'VideoEventPublisher', category: LogCategory.video);
+      Log.verbose('� Stack trace: $stackTrace', name: 'VideoEventPublisher', category: LogCategory.video);
       _totalEventsFailed++;
       return false;
     }
@@ -611,7 +618,7 @@ class VideoEventPublisher extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing VideoEventPublisher');
+    Log.debug('�️ Disposing VideoEventPublisher', name: 'VideoEventPublisher', category: LogCategory.video);
     
     stopPolling();
     _failedEvents.clear();

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'nip98_auth_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Result of a Stream upload operation
 class StreamUploadResult {
@@ -155,7 +156,7 @@ class StreamUploadService extends ChangeNotifier {
     List<String>? hashtags,
     void Function(double progress)? onProgress,
   }) async {
-    debugPrint('🔄 Starting Stream upload for video: ${videoFile.path}');
+    Log.debug('Starting Stream upload for video: ${videoFile.path}', name: 'StreamUploadService', category: LogCategory.system);
     
     try {
       // Step 1: Request upload URL from our backend
@@ -174,7 +175,7 @@ class StreamUploadService extends ChangeNotifier {
         onProgress: onProgress,
       );
       
-      debugPrint('✅ Stream upload successful: $videoId');
+      Log.info('Stream upload successful: $videoId', name: 'StreamUploadService', category: LogCategory.system);
       return StreamUploadResult.success(
         videoId: videoId,
         uploadUrl: uploadRequest['uploadURL'] as String,
@@ -187,8 +188,8 @@ class StreamUploadService extends ChangeNotifier {
       );
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Stream upload error: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Stream upload error: $e', name: 'StreamUploadService', category: LogCategory.system);
+      Log.verbose('� Stack trace: $stackTrace', name: 'StreamUploadService', category: LogCategory.system);
       return StreamUploadResult.failure('Upload failed: $e');
     }
   }
@@ -201,7 +202,7 @@ class StreamUploadService extends ChangeNotifier {
     String? description,
     List<String>? hashtags,
   }) async {
-    debugPrint('🔐 Requesting Stream upload URL from backend');
+    Log.debug('� Requesting Stream upload URL from backend', name: 'StreamUploadService', category: LogCategory.system);
     
     try {
       // Get file size and basic metadata
@@ -229,13 +230,13 @@ class StreamUploadService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('✅ Received Stream upload URL');
+        Log.info('Received Stream upload URL', name: 'StreamUploadService', category: LogCategory.system);
         return data as Map<String, dynamic>;
       } else {
         throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to get Stream upload URL: $e');
+      Log.error('Failed to get Stream upload URL: $e', name: 'StreamUploadService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -246,7 +247,7 @@ class StreamUploadService extends ChangeNotifier {
     required String uploadUrl,
     void Function(double progress)? onProgress,
   }) async {
-    debugPrint('📤 Uploading to Cloudflare Stream: $uploadUrl');
+    Log.debug('� Uploading to Cloudflare Stream: $uploadUrl', name: 'StreamUploadService', category: LogCategory.system);
     
     try {
       var request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
@@ -293,14 +294,14 @@ class StreamUploadService extends ChangeNotifier {
         // Extract video ID from response headers or body
         // Cloudflare Stream returns the video ID in the response
         final videoId = _extractVideoIdFromResponse(responseBody, response.headers);
-        debugPrint('📤 Stream upload completed: $videoId');
+        Log.info('� Stream upload completed: $videoId', name: 'StreamUploadService', category: LogCategory.system);
         return videoId;
       } else {
         throw Exception('Stream upload failed: HTTP ${response.statusCode} - $responseBody');
       }
       
     } catch (e) {
-      debugPrint('❌ Stream direct upload error: $e');
+      Log.error('Stream direct upload error: $e', name: 'StreamUploadService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -335,7 +336,7 @@ class StreamUploadService extends ChangeNotifier {
       
       throw Exception('Could not extract video ID from Stream response');
     } catch (e) {
-      debugPrint('❌ Failed to extract video ID: $e');
+      Log.error('Failed to extract video ID: $e', name: 'StreamUploadService', category: LogCategory.system);
       // Generate a fallback ID based on timestamp
       return 'video_${DateTime.now().millisecondsSinceEpoch}';
     }
@@ -343,7 +344,7 @@ class StreamUploadService extends ChangeNotifier {
   
   /// Get video status from backend
   Future<StreamVideoStatus?> getVideoStatus(String videoId) async {
-    debugPrint('📊 Getting video status for: $videoId');
+    Log.debug('Getting video status for: $videoId', name: 'StreamUploadService', category: LogCategory.system);
     
     try {
       final statusUrl = AppConfig.streamStatusUrl(videoId);
@@ -358,13 +359,13 @@ class StreamUploadService extends ChangeNotifier {
         final data = jsonDecode(response.body);
         return StreamVideoStatus.fromJson(data);
       } else if (response.statusCode == 404) {
-        debugPrint('⚠️ Video not found: $videoId');
+        Log.warning('Video not found: $videoId', name: 'StreamUploadService', category: LogCategory.system);
         return null;
       } else {
         throw Exception('Status request failed: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to get video status: $e');
+      Log.error('Failed to get video status: $e', name: 'StreamUploadService', category: LogCategory.system);
       return null;
     }
   }
@@ -375,7 +376,7 @@ class StreamUploadService extends ChangeNotifier {
     Duration timeout = const Duration(minutes: 5),
     Duration pollInterval = const Duration(seconds: 2),
   }) async {
-    debugPrint('⏳ Waiting for video to be ready: $videoId');
+    Log.debug('⏳ Waiting for video to be ready: $videoId', name: 'StreamUploadService', category: LogCategory.system);
     
     final stopwatch = Stopwatch()..start();
     
@@ -387,7 +388,7 @@ class StreamUploadService extends ChangeNotifier {
       }
       
       if (status.isReady) {
-        debugPrint('✅ Video ready for streaming: $videoId');
+        Log.info('Video ready for streaming: $videoId', name: 'StreamUploadService', category: LogCategory.system);
         return status;
       }
       
@@ -395,7 +396,7 @@ class StreamUploadService extends ChangeNotifier {
         throw Exception('Video processing failed: ${status.error ?? 'Unknown error'}');
       }
       
-      debugPrint('⏳ Video still processing (${status.status}), waiting...');
+      Log.debug('⏳ Video still processing (${status.status}), waiting...', name: 'StreamUploadService', category: LogCategory.system);
       await Future.delayed(pollInterval);
     }
     
@@ -405,7 +406,7 @@ class StreamUploadService extends ChangeNotifier {
   /// Generate NIP-98 authentication token for backend requests
   Future<String> _getNip98Token({String? url, HttpMethod method = HttpMethod.post}) async {
     if (_authService == null) {
-      debugPrint('⚠️ No authentication service available');
+      Log.warning('No authentication service available', name: 'StreamUploadService', category: LogCategory.system);
       throw Exception('Authentication service not available');
     }
     
@@ -416,7 +417,7 @@ class StreamUploadService extends ChangeNotifier {
     );
     
     if (token == null) {
-      debugPrint('❌ Failed to create NIP-98 token');
+      Log.error('Failed to create NIP-98 token', name: 'StreamUploadService', category: LogCategory.system);
       throw Exception('Failed to create authentication token');
     }
     
@@ -429,7 +430,7 @@ class StreamUploadService extends ChangeNotifier {
     if (controller != null) {
       _progressControllers.remove(videoId);
       await controller.close();
-      debugPrint('🚫 Upload cancelled: $videoId');
+      Log.debug('Upload cancelled: $videoId', name: 'StreamUploadService', category: LogCategory.system);
     }
   }
   
@@ -449,7 +450,7 @@ class StreamUploadService extends ChangeNotifier {
   /// Test backend connectivity
   Future<bool> testConnection() async {
     try {
-      debugPrint('🔗 Testing Stream backend connection');
+      Log.debug('� Testing Stream backend connection', name: 'StreamUploadService', category: LogCategory.system);
       
       final response = await _client.get(
         Uri.parse(AppConfig.healthUrl),
@@ -460,7 +461,7 @@ class StreamUploadService extends ChangeNotifier {
       
       return isHealthy;
     } catch (e) {
-      debugPrint('❌ Stream backend connection test failed: $e');
+      Log.error('Stream backend connection test failed: $e', name: 'StreamUploadService', category: LogCategory.system);
       return false;
     }
   }

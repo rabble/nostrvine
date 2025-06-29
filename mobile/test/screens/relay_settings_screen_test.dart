@@ -8,7 +8,6 @@ import 'package:mockito/annotations.dart';
 import 'package:provider/provider.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/services/nostr_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([NostrService])
 import 'relay_settings_screen_test.mocks.dart';

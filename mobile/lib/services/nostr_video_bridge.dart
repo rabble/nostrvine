@@ -9,6 +9,7 @@ import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/seen_videos_service.dart';
 import '../services/connection_status_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Bridge service that connects Nostr video events to the TDD VideoManager
 /// 
@@ -77,12 +78,12 @@ class NostrVideoBridge extends ChangeNotifier {
     int limit = 500,
   }) async {
     if (_isActive) {
-      debugPrint('NostrVideoBridge: Already active, ignoring start request');
+      Log.debug('NostrVideoBridge: Already active, ignoring start request', name: 'NostrVideoBridge', category: LogCategory.relay);
       return;
     }
 
     try {
-      debugPrint('NostrVideoBridge: Starting bridge...');
+      Log.debug('NostrVideoBridge: Starting bridge...', name: 'NostrVideoBridge', category: LogCategory.relay);
       _isActive = true;
 
       // Subscribe to video events
@@ -104,11 +105,11 @@ class NostrVideoBridge extends ChangeNotifier {
       // Start health check timer
       _startHealthCheck();
 
-      debugPrint('NostrVideoBridge: Bridge started successfully');
+      Log.info('NostrVideoBridge: Bridge started successfully', name: 'NostrVideoBridge', category: LogCategory.relay);
       notifyListeners();
 
     } catch (e) {
-      debugPrint('NostrVideoBridge: Failed to start bridge: $e');
+      Log.error('NostrVideoBridge: Failed to start bridge: $e', name: 'NostrVideoBridge', category: LogCategory.relay);
       _isActive = false;
       rethrow;
     }
@@ -118,7 +119,7 @@ class NostrVideoBridge extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isActive) return;
 
-    debugPrint('NostrVideoBridge: Stopping bridge...');
+    Log.debug('NostrVideoBridge: Stopping bridge...', name: 'NostrVideoBridge', category: LogCategory.relay);
     _isActive = false;
 
     // Cancel subscriptions
@@ -131,7 +132,7 @@ class NostrVideoBridge extends ChangeNotifier {
     // Note: VideoEventService may not have unsubscribe method
     // Consider adding proper cleanup method
 
-    debugPrint('NostrVideoBridge: Bridge stopped');
+    Log.info('NostrVideoBridge: Bridge stopped', name: 'NostrVideoBridge', category: LogCategory.relay);
     notifyListeners();
   }
 
@@ -157,7 +158,7 @@ class NostrVideoBridge extends ChangeNotifier {
   /// Manually process existing events (useful for initial load)
   Future<void> processExistingEvents() async {
     final existingEvents = _videoEventService.videoEvents;
-    debugPrint('NostrVideoBridge: Processing ${existingEvents.length} existing events');
+    Log.debug('NostrVideoBridge: Processing ${existingEvents.length} existing events', name: 'NostrVideoBridge', category: LogCategory.relay);
 
     for (final event in existingEvents) {
       await _processVideoEvent(event);
@@ -233,7 +234,7 @@ class NostrVideoBridge extends ChangeNotifier {
       debugPrint('NostrVideoBridge: Added video ${event.id} (${event.title ?? 'No title'})');
 
     } catch (e) {
-      debugPrint('NostrVideoBridge: Error processing event ${event.id}: $e');
+      Log.error('NostrVideoBridge: Error processing event ${event.id}: $e', name: 'NostrVideoBridge', category: LogCategory.relay);
     }
   }
 
@@ -242,32 +243,32 @@ class NostrVideoBridge extends ChangeNotifier {
     
     // Must have valid video URL
     if (event.videoUrl == null || event.videoUrl!.isEmpty) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - no video URL');
+      Log.debug('NostrVideoBridge: Filtered event ${event.id} - no video URL', name: 'NostrVideoBridge', category: LogCategory.relay);
       return false;
     }
 
     // Must have reasonable content
     if (event.content.trim().isEmpty && (event.title?.trim().isEmpty ?? true)) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - no content or title');
+      Log.debug('NostrVideoBridge: Filtered event ${event.id} - no content or title', name: 'NostrVideoBridge', category: LogCategory.relay);
       return false;
     }
 
     // Check if already seen (if service available)
     if (_seenVideosService?.hasSeenVideo(event.id) == true) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - already seen');
+      Log.debug('NostrVideoBridge: Filtered event ${event.id} - already seen', name: 'NostrVideoBridge', category: LogCategory.relay);
       return false;
     }
 
     // Filter out videos that are too old (optional)
     final daysSinceCreated = DateTime.now().difference(event.timestamp).inDays;
     if (daysSinceCreated > 30) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - too old ($daysSinceCreated days)');
+      Log.info('NostrVideoBridge: Filtered event ${event.id} - too old ($daysSinceCreated days)', name: 'NostrVideoBridge', category: LogCategory.relay);
       return false;
     }
 
     // Filter out suspicious URLs
     if (_isSuspiciousUrl(event.videoUrl!)) {
-      debugPrint('NostrVideoBridge: Filtered event ${event.id} - suspicious URL');
+      Log.debug('NostrVideoBridge: Filtered event ${event.id} - suspicious URL', name: 'NostrVideoBridge', category: LogCategory.relay);
       return false;
     }
 
@@ -324,7 +325,7 @@ class NostrVideoBridge extends ChangeNotifier {
     if (_lastEventReceived != null) {
       final timeSinceLastEvent = DateTime.now().difference(_lastEventReceived!);
       if (timeSinceLastEvent.inMinutes > 10) {
-        debugPrint('NostrVideoBridge: No events received for ${timeSinceLastEvent.inMinutes} minutes, restarting...');
+        Log.debug('NostrVideoBridge: No events received for ${timeSinceLastEvent.inMinutes} minutes, restarting...', name: 'NostrVideoBridge', category: LogCategory.relay);
         restart();
       }
     }
@@ -334,7 +335,7 @@ class NostrVideoBridge extends ChangeNotifier {
     final estimatedMemory = videoManagerStats['estimatedMemoryMB'] as int? ?? 0;
     
     if (estimatedMemory > 800) { // Approaching the 1GB limit
-      debugPrint('NostrVideoBridge: High memory usage detected: ${estimatedMemory}MB');
+      Log.debug('NostrVideoBridge: High memory usage detected: ${estimatedMemory}MB', name: 'NostrVideoBridge', category: LogCategory.relay);
       // Could trigger additional cleanup here
     }
   }

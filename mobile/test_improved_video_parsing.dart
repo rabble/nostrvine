@@ -4,9 +4,10 @@
 import 'dart:convert';
 import 'package:nostr_sdk/event.dart';
 import 'lib/models/video_event.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
-  print('🚀 Testing improved video URL parsing...\n');
+  Log.debug('🚀 Testing improved video URL parsing...\n');
   
   // Test case 1: URL in content (no tags)
   test_UrlInContent();
@@ -20,11 +21,11 @@ void main() {
   // Test case 4: Multiple URL sources (priority handling)
   test_MultipleUrlSources();
   
-  print('\n✅ All tests completed!');
+  Log.debug('\n✅ All tests completed!');
 }
 
 void test_UrlInContent() {
-  print('=== Test 1: URL in content (no tags) ===');
+  Log.debug('=== Test 1: URL in content (no tags) ===');
   
   final event = Event(
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -36,21 +37,21 @@ void test_UrlInContent() {
   
   try {
     final videoEvent = VideoEvent.fromNostrEvent(event);
-    print('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+    Log.debug('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
     
     if (videoEvent.hasVideo && videoEvent.videoUrl == 'https://blossom.primal.net/test.mp4') {
-      print('✅ PASS: URL extracted from content');
+      Log.debug('✅ PASS: URL extracted from content');
     } else {
-      print('❌ FAIL: URL not extracted from content');
+      Log.debug('❌ FAIL: URL not extracted from content');
     }
   } catch (e) {
-    print('❌ ERROR: $e');
+    Log.debug('❌ ERROR: $e');
   }
-  print('');
+  Log.debug('');
 }
 
 void test_UrlInUnknownTag() {
-  print('=== Test 2: URL in unknown tag ===');
+  Log.debug('=== Test 2: URL in unknown tag ===');
   
   final event = Event(
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -62,21 +63,21 @@ void test_UrlInUnknownTag() {
   
   try {
     final videoEvent = VideoEvent.fromNostrEvent(event);
-    print('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+    Log.debug('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
     
     if (videoEvent.hasVideo && videoEvent.videoUrl == 'https://nostr.build/test.mp4') {
-      print('✅ PASS: URL extracted from unknown tag');
+      Log.debug('✅ PASS: URL extracted from unknown tag');
     } else {
-      print('❌ FAIL: URL not extracted from unknown tag');
+      Log.debug('❌ FAIL: URL not extracted from unknown tag');
     }
   } catch (e) {
-    print('❌ ERROR: $e');
+    Log.debug('❌ ERROR: $e');
   }
-  print('');
+  Log.debug('');
 }
 
 void test_BrokenUrlReplacement() {
-  print('=== Test 3: Broken apt.openvine.co URL replacement ===');
+  Log.debug('=== Test 3: Broken apt.openvine.co URL replacement ===');
   
   final event = Event(
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -88,21 +89,21 @@ void test_BrokenUrlReplacement() {
   
   try {
     final videoEvent = VideoEvent.fromNostrEvent(event);
-    print('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+    Log.debug('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
     
     if (videoEvent.hasVideo && !videoEvent.videoUrl!.contains('apt.openvine.co')) {
-      print('✅ PASS: Broken URL replaced with fallback');
+      Log.debug('✅ PASS: Broken URL replaced with fallback');
     } else {
-      print('❌ FAIL: Broken URL not replaced');
+      Log.debug('❌ FAIL: Broken URL not replaced');
     }
   } catch (e) {
-    print('❌ ERROR: $e');
+    Log.debug('❌ ERROR: $e');
   }
-  print('');
+  Log.debug('');
 }
 
 void test_MultipleUrlSources() {
-  print('=== Test 4: Multiple URL sources (priority) ===');
+  Log.debug('=== Test 4: Multiple URL sources (priority) ===');
   
   final event = Event(
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -117,15 +118,15 @@ void test_MultipleUrlSources() {
   
   try {
     final videoEvent = VideoEvent.fromNostrEvent(event);
-    print('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
+    Log.debug('Result: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}');
     
     if (videoEvent.hasVideo && videoEvent.videoUrl == 'https://blossom.primal.net/priority.mp4') {
-      print('✅ PASS: Correct URL priority handling');
+      Log.debug('✅ PASS: Correct URL priority handling');
     } else {
-      print('❌ FAIL: Incorrect URL priority');
+      Log.debug('❌ FAIL: Incorrect URL priority');
     }
   } catch (e) {
-    print('❌ ERROR: $e');
+    Log.debug('❌ ERROR: $e');
   }
-  print('');
+  Log.debug('');
 }

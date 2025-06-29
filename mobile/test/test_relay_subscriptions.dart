@@ -4,9 +4,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:web_socket_channel/io.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() async {
-  print('=== Relay Subscription Test ===\n');
+  Log.debug('=== Relay Subscription Test ===\n');
   
   // Track subscriptions we create
   final ourSubscriptions = <String>{};
@@ -15,7 +16,7 @@ void main() async {
     final wsUrl = Uri.parse('wss://vine.hol.is');
     final channel = IOWebSocketChannel.connect(wsUrl);
     
-    print('1. Connecting to ${wsUrl}...');
+    Log.debug('1. Connecting to ${wsUrl}...');
     
     // Listen for messages
     channel.stream.listen(
@@ -26,26 +27,26 @@ void main() async {
           final messageType = data[0];
           
           if (messageType == 'AUTH') {
-            print('\n🔐 AUTH challenge: ${data[1]}');
+            Log.debug('\n🔐 AUTH challenge: ${data[1]}');
             // For this test, we won't authenticate
           } else if (messageType == 'EVENT' && data.length >= 3) {
             final subId = data[1];
-            print('\n📨 EVENT for subscription: $subId');
+            Log.debug('\n📨 EVENT for subscription: $subId');
             if (ourSubscriptions.contains(subId)) {
-              print('   ✅ This is OUR subscription!');
+              Log.debug('   ✅ This is OUR subscription!');
             } else {
-              print('   ⚠️ Unknown subscription ID');
+              Log.debug('   ⚠️ Unknown subscription ID');
             }
           } else if (messageType == 'EOSE' && data.length >= 2) {
             final subId = data[1];
-            print('\n📭 EOSE for subscription: $subId');
+            Log.debug('\n📭 EOSE for subscription: $subId');
           } else if (messageType == 'NOTICE') {
-            print('\n📢 NOTICE: ${data[1]}');
+            Log.debug('\n📢 NOTICE: ${data[1]}');
           }
         }
       },
-      onError: (error) => print('❌ Error: $error'),
-      onDone: () => print('🔌 Connection closed'),
+      onError: (error) => Log.debug('❌ Error: $error'),
+      onDone: () => Log.debug('🔌 Connection closed'),
     );
     
     // Wait for AUTH challenges
@@ -55,7 +56,7 @@ void main() async {
     final subId = 'test_${DateTime.now().millisecondsSinceEpoch}';
     ourSubscriptions.add(subId);
     
-    print('\n2. Creating subscription with ID: $subId');
+    Log.debug('\n2. Creating subscription with ID: $subId');
     
     final req = jsonEncode([
       'REQ',
@@ -66,21 +67,21 @@ void main() async {
       }
     ]);
     
-    print('   Sending: $req');
+    Log.debug('   Sending: $req');
     channel.sink.add(req);
     
     // Wait for events
     await Future.delayed(Duration(seconds: 5));
     
     // Close subscription
-    print('\n3. Closing subscription...');
+    Log.debug('\n3. Closing subscription...');
     channel.sink.add(jsonEncode(['CLOSE', subId]));
     
     await Future.delayed(Duration(seconds: 1));
     await channel.sink.close();
     
   } catch (e) {
-    print('Error: $e');
+    Log.debug('Error: $e');
   }
   
   exit(0);

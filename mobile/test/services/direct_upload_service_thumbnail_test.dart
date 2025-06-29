@@ -9,7 +9,6 @@ import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/services/direct_upload_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:nostr_sdk/event.dart';
 
 @GenerateMocks([
@@ -69,10 +68,9 @@ void main() {
       await videoFile.writeAsBytes(Uint8List.fromList(List.generate(1000, (i) => i % 256)));
 
       var uploadRequestReceived = false;
-      var thumbnailIncluded = false;
 
       // Create a mock HTTP client that captures the request
-      final mockClient = MockClient((request) async {
+      MockClient((request) async {
         uploadRequestReceived = true;
 
         // Check if request is multipart
@@ -85,7 +83,7 @@ void main() {
           expect(hasVideoFile, isTrue);
 
           // Check for thumbnail file
-          thumbnailIncluded = request.files.any((file) => file.field == 'thumbnail');
+          request.files.any((file) => file.field == 'thumbnail');
         }
 
         // Return success response

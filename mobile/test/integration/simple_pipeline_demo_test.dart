@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:openvine/models/pending_upload.dart';
 import '../helpers/pipeline_test_factory.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +42,7 @@ void main() {
     });
 
     test('demonstrates successful pipeline flow', () async {
-      print('🧪 DEMO: Testing successful pipeline flow');
+      Log.debug('🧪 DEMO: Testing successful pipeline flow');
       
       // ARRANGE: Create test stack with success scenario
       final stack = await PipelineTestFactory.createTestStack(
@@ -60,7 +61,7 @@ void main() {
         );
         
         expect(testFile.existsSync(), true);
-        print('  ✅ Created test video file: ${testFile.lengthSync()} bytes');
+        Log.debug('  ✅ Created test video file: ${testFile.lengthSync()} bytes');
         
         // ACT: Execute full pipeline
         final result = await stack.executeFullPipeline(
@@ -76,15 +77,15 @@ void main() {
         expect(result.publishingTriggered, true);
         expect(result.finalStatus, UploadStatus.published);
         
-        print('  ✅ Pipeline executed successfully in ${result.duration?.inMilliseconds}ms');
-        print('  📊 Final result: ${result.toSummary()}');
+        Log.debug('  ✅ Pipeline executed successfully in ${result.duration?.inMilliseconds}ms');
+        Log.debug('  📊 Final result: ${result.toSummary()}');
         
         // Verify service states
         expect(stack.videoEventPublisher.publishingStats['total_published'], 1);
         expect(stack.videoEventPublisher.publishingStats['total_failed'], 0);
         expect(stack.videoEventPublisher.publishingStats['is_polling_active'], true);
         
-        print('  ✅ All services in healthy state');
+        Log.debug('  ✅ All services in healthy state');
         
       } finally {
         await stack.dispose();
@@ -92,7 +93,7 @@ void main() {
     });
 
     test('demonstrates upload failure handling', () async {
-      print('🧪 DEMO: Testing upload failure handling');
+      Log.debug('🧪 DEMO: Testing upload failure handling');
       
       // ARRANGE: Create test stack with upload failure scenario
       final stack = await PipelineTestFactory.createTestStack(
@@ -115,13 +116,13 @@ void main() {
         expect(result.finalStatus, UploadStatus.failed); // Marked as failed
         expect(result.error, isNotNull); // Error captured
         
-        print('  ✅ Upload failure handled gracefully');
-        print('  📊 Failure result: ${result.toSummary()}');
+        Log.debug('  ✅ Upload failure handled gracefully');
+        Log.debug('  📊 Failure result: ${result.toSummary()}');
         
         // Verify service remains stable despite failure
         expect(stack.videoEventPublisher.publishingStats['is_polling_active'], true);
         
-        print('  ✅ Services remain stable after failure');
+        Log.debug('  ✅ Services remain stable after failure');
         
       } finally {
         await stack.dispose();
@@ -129,7 +130,7 @@ void main() {
     });
 
     test('demonstrates ReadyEventData validation', () async {
-      print('🧪 DEMO: Testing ReadyEventData processing');
+      Log.debug('🧪 DEMO: Testing ReadyEventData processing');
       
       // ARRANGE: Create test ready event
       final readyEvent = PipelineTestFactory.createTestReadyEvent(
@@ -146,7 +147,7 @@ void main() {
       
       // ACT & ASSERT: Verify event validation
       expect(readyEvent.isReadyForPublishing, true);
-      print('  ✅ Ready event validation passed');
+      Log.debug('  ✅ Ready event validation passed');
       
       // Verify NIP-94 tag generation
       final nip94Tags = readyEvent.nip94Tags;
@@ -156,18 +157,18 @@ void main() {
       expect(nip94Tags, contains(['dim', '1920x1080']));
       expect(nip94Tags, contains(['duration', '6'])); // Rounded from 5.5
       
-      print('  ✅ NIP-94 tags generated: ${nip94Tags.length} tags');
+      Log.debug('  ✅ NIP-94 tags generated: ${nip94Tags.length} tags');
       
       // Verify size estimation
       final estimatedSize = readyEvent.estimatedEventSize;
       expect(estimatedSize, greaterThan(100));
       expect(estimatedSize, lessThan(5000));
       
-      print('  ✅ Event size estimation: ~$estimatedSize bytes');
+      Log.debug('  ✅ Event size estimation: ~$estimatedSize bytes');
     });
 
     test('demonstrates concurrent operation handling', () async {
-      print('🧪 DEMO: Testing concurrent operations');
+      Log.debug('🧪 DEMO: Testing concurrent operations');
       
       // ARRANGE: Create multiple test stacks
       final stacks = <PipelineTestStack>[];
@@ -210,18 +211,18 @@ void main() {
           final result = results[i];
           if (result.success) successCount++;
           
-          print('  📊 Concurrent ${i + 1}: ${result.success ? 'SUCCESS' : 'FAILED'} in ${result.duration?.inMilliseconds}ms');
+          Log.debug('  📊 Concurrent ${i + 1}: ${result.success ? 'SUCCESS' : 'FAILED'} in ${result.duration?.inMilliseconds}ms');
         }
         
         expect(successCount, greaterThan(0)); // At least some should succeed
-        print('  ✅ Concurrent operations: $successCount/${{results.length}} succeeded');
+        Log.debug('  ✅ Concurrent operations: $successCount/${{results.length}} succeeded');
         
         // Verify all services remain stable
         for (final stack in stacks) {
           expect(stack.videoEventPublisher.publishingStats['is_polling_active'], true);
         }
         
-        print('  ✅ All services stable after concurrent operations');
+        Log.debug('  ✅ All services stable after concurrent operations');
         
       } finally {
         for (final stack in stacks) {

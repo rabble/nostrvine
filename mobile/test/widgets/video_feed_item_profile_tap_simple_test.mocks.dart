@@ -66,6 +66,18 @@ class MockIVideoManager extends _i1.Mock implements _i3.IVideoManager {
       ) as List<_i4.VideoEvent>);
 
   @override
+  int get primaryVideoCount => (super.noSuchMethod(
+        Invocation.getter(#primaryVideoCount),
+        returnValue: 0,
+      ) as int);
+
+  @override
+  int get discoveryVideoCount => (super.noSuchMethod(
+        Invocation.getter(#discoveryVideoCount),
+        returnValue: 0,
+      ) as int);
+
+  @override
   _i5.Stream<void> get stateChanges => (super.noSuchMethod(
         Invocation.getter(#stateChanges),
         returnValue: _i5.Stream<void>.empty(),
@@ -182,6 +194,15 @@ class MockIVideoManager extends _i1.Mock implements _i3.IVideoManager {
         ),
         returnValue: <String, dynamic>{},
       ) as Map<String, dynamic>);
+
+  @override
+  bool isAtFeedBoundary(int? index) => (super.noSuchMethod(
+        Invocation.method(
+          #isAtFeedBoundary,
+          [index],
+        ),
+        returnValue: false,
+      ) as bool);
 
   @override
   void dispose() => super.noSuchMethod(

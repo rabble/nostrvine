@@ -4,6 +4,7 @@
 import 'package:hive/hive.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for persistent caching of user profiles
 class ProfileCacheService extends ChangeNotifier {
@@ -37,13 +38,13 @@ class ProfileCacheService extends ChangeNotifier {
       
       _isInitialized = true;
       
-      debugPrint('✅ ProfileCacheService initialized with ${_profileBox!.length} cached profiles');
+      Log.info('ProfileCacheService initialized with ${_profileBox!.length} cached profiles', name: 'ProfileCacheService', category: LogCategory.storage);
       
       // Clean up old profiles on startup
       await _cleanupExpiredProfiles();
       
     } catch (e) {
-      debugPrint('❌ Failed to initialize ProfileCacheService: $e');
+      Log.error('Failed to initialize ProfileCacheService: $e', name: 'ProfileCacheService', category: LogCategory.storage);
       rethrow;
     }
   }
@@ -68,11 +69,11 @@ class ProfileCacheService extends ChangeNotifier {
         return null;
       }
       
-      debugPrint('💾 Retrieved cached profile for ${pubkey.substring(0, 8)}... (${profile.bestDisplayName})');
+      Log.debug('� Retrieved cached profile for ${pubkey.substring(0, 8)}... (${profile.bestDisplayName})', name: 'ProfileCacheService', category: LogCategory.storage);
       return profile;
       
     } catch (e) {
-      debugPrint('❌ Error retrieving cached profile for $pubkey: $e');
+      Log.error('Error retrieving cached profile for $pubkey: $e', name: 'ProfileCacheService', category: LogCategory.storage);
       return null;
     }
   }
@@ -90,7 +91,7 @@ class ProfileCacheService extends ChangeNotifier {
   /// Cache a profile
   Future<void> cacheProfile(UserProfile profile) async {
     if (!_isInitialized || _profileBox == null) {
-      debugPrint('⚠️ ProfileCacheService not initialized, cannot cache profile');
+      Log.warning('ProfileCacheService not initialized, cannot cache profile', name: 'ProfileCacheService', category: LogCategory.storage);
       return;
     }
     
@@ -105,12 +106,12 @@ class ProfileCacheService extends ChangeNotifier {
       // Track when this profile was fetched
       await _fetchTimestamps?.put(profile.pubkey, DateTime.now());
       
-      debugPrint('💾 Cached profile for ${profile.pubkey.substring(0, 8)}... (${profile.bestDisplayName})');
+      Log.debug('� Cached profile for ${profile.pubkey.substring(0, 8)}... (${profile.bestDisplayName})', name: 'ProfileCacheService', category: LogCategory.storage);
       
       notifyListeners();
       
     } catch (e) {
-      debugPrint('❌ Error caching profile for ${profile.pubkey}: $e');
+      Log.error('Error caching profile for ${profile.pubkey}: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   
@@ -124,14 +125,14 @@ class ProfileCacheService extends ChangeNotifier {
       // Only update if the new profile is newer
       if (existing == null || profile.createdAt.isAfter(existing.createdAt)) {
         await _profileBox!.put(profile.pubkey, profile);
-        debugPrint('🔄 Updated cached profile for ${profile.pubkey.substring(0, 8)}... (${profile.bestDisplayName})');
+        Log.debug('Updated cached profile for ${profile.pubkey.substring(0, 8)}... (${profile.bestDisplayName})', name: 'ProfileCacheService', category: LogCategory.storage);
         notifyListeners();
       } else {
-        debugPrint('⏩ Skipping update for ${profile.pubkey.substring(0, 8)}... - cached version is newer');
+        Log.warning('⏩ Skipping update for ${profile.pubkey.substring(0, 8)}... - cached version is newer', name: 'ProfileCacheService', category: LogCategory.storage);
       }
       
     } catch (e) {
-      debugPrint('❌ Error updating cached profile for ${profile.pubkey}: $e');
+      Log.error('Error updating cached profile for ${profile.pubkey}: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   
@@ -141,10 +142,10 @@ class ProfileCacheService extends ChangeNotifier {
     
     try {
       await _profileBox!.delete(pubkey);
-      debugPrint('🗑️ Removed cached profile for ${pubkey.substring(0, 8)}...');
+      Log.debug('�️ Removed cached profile for ${pubkey.substring(0, 8)}...', name: 'ProfileCacheService', category: LogCategory.storage);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error removing cached profile for $pubkey: $e');
+      Log.error('Error removing cached profile for $pubkey: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   
@@ -181,10 +182,10 @@ class ProfileCacheService extends ChangeNotifier {
     
     try {
       await _profileBox!.clear();
-      debugPrint('🗑️ Cleared all cached profiles');
+      Log.debug('�️ Cleared all cached profiles', name: 'ProfileCacheService', category: LogCategory.storage);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error clearing profile cache: $e');
+      Log.error('Error clearing profile cache: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   
@@ -215,11 +216,11 @@ class ProfileCacheService extends ChangeNotifier {
         for (final key in expiredKeys) {
           await _profileBox!.delete(key);
         }
-        debugPrint('🗑️ Cleaned up ${expiredKeys.length} expired profiles');
+        Log.debug('�️ Cleaned up ${expiredKeys.length} expired profiles', name: 'ProfileCacheService', category: LogCategory.storage);
       }
       
     } catch (e) {
-      debugPrint('❌ Error cleaning up expired profiles: $e');
+      Log.error('Error cleaning up expired profiles: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   
@@ -240,10 +241,10 @@ class ProfileCacheService extends ChangeNotifier {
         await _profileBox!.delete(profiles[i].key);
       }
       
-      debugPrint('🗑️ Removed $toRemove oldest profiles to make space');
+      Log.debug('�️ Removed $toRemove oldest profiles to make space', name: 'ProfileCacheService', category: LogCategory.storage);
       
     } catch (e) {
-      debugPrint('❌ Error cleaning up oldest profiles: $e');
+      Log.error('Error cleaning up oldest profiles: $e', name: 'ProfileCacheService', category: LogCategory.storage);
     }
   }
   

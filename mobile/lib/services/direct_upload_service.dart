@@ -10,6 +10,7 @@ import 'dart:convert';
 import '../config/app_config.dart';
 import 'nip98_auth_service.dart';
 import 'video_thumbnail_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Result of a direct upload operation
 class DirectUploadResult {
@@ -72,7 +73,7 @@ class DirectUploadService extends ChangeNotifier {
     List<String>? hashtags,
     void Function(double progress)? onProgress,
   }) async {
-    debugPrint('🔄 Starting direct upload for video: ${videoFile.path}');
+    Log.debug('Starting direct upload for video: ${videoFile.path}', name: 'DirectUploadService', category: LogCategory.system);
     
     String? videoId;
     
@@ -91,7 +92,7 @@ class DirectUploadService extends ChangeNotifier {
       
       // Generate thumbnail before upload
       progressController.add(0.05); // 5% for thumbnail generation
-      debugPrint('📸 Generating video thumbnail...');
+      Log.debug('� Generating video thumbnail...', name: 'DirectUploadService', category: LogCategory.system);
       
       Uint8List? thumbnailBytes;
       try {
@@ -102,12 +103,12 @@ class DirectUploadService extends ChangeNotifier {
         );
         
         if (thumbnailBytes != null) {
-          debugPrint('✅ Thumbnail generated: ${(thumbnailBytes.length / 1024).toStringAsFixed(2)}KB');
+          Log.info('Thumbnail generated: ${(thumbnailBytes.length / 1024).toStringAsFixed(2)}KB', name: 'DirectUploadService', category: LogCategory.system);
         } else {
-          debugPrint('⚠️ Failed to generate thumbnail, continuing without it');
+          Log.error('Failed to generate thumbnail, continuing without it', name: 'DirectUploadService', category: LogCategory.system);
         }
       } catch (e) {
-        debugPrint('⚠️ Thumbnail generation error: $e, continuing without thumbnail');
+        Log.error('Thumbnail generation error: $e, continuing without thumbnail', name: 'DirectUploadService', category: LogCategory.system);
       }
 
       // Create multipart request for direct CF Workers upload
@@ -158,7 +159,7 @@ class DirectUploadService extends ChangeNotifier {
           contentType: MediaType('image', 'jpeg'),
         );
         request.files.add(thumbnailFile);
-        debugPrint('🖼️ Added thumbnail to upload request');
+        Log.verbose('Added thumbnail to upload request', name: 'DirectUploadService', category: LogCategory.system);
       }
       
       // Add optional metadata fields
@@ -187,8 +188,8 @@ class DirectUploadService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('✅ Direct upload successful');
-        debugPrint('📄 Response: $data');
+        Log.info('Direct upload successful', name: 'DirectUploadService', category: LogCategory.system);
+        Log.debug('� Response: $data', name: 'DirectUploadService', category: LogCategory.system);
         
         // Updated NIP-96 response structure
         if (data['status'] == 'success') {
@@ -220,12 +221,12 @@ class DirectUploadService extends ChangeNotifier {
           );
         } else {
           final errorMsg = data['message'] ?? data['error'] ?? 'Upload failed';
-          debugPrint('❌ $errorMsg');
+          Log.error('$errorMsg', name: 'DirectUploadService', category: LogCategory.system);
           return DirectUploadResult.failure(errorMsg);
         }
       } else {
         final errorBody = response.body;
-        debugPrint('❌ Upload failed with status ${response.statusCode}: $errorBody');
+        Log.error('Upload failed with status ${response.statusCode}: $errorBody', name: 'DirectUploadService', category: LogCategory.system);
         try {
           final errorData = jsonDecode(errorBody);
           final errorMsg = 'Upload failed: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}';
@@ -236,8 +237,8 @@ class DirectUploadService extends ChangeNotifier {
       }
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Upload error: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Upload error: $e', name: 'DirectUploadService', category: LogCategory.system);
+      Log.verbose('� Stack trace: $stackTrace', name: 'DirectUploadService', category: LogCategory.system);
       
       // Clean up progress tracking on error
       if (videoId != null) {
@@ -266,12 +267,12 @@ class DirectUploadService extends ChangeNotifier {
       
       if (authToken != null) {
         headers['Authorization'] = authToken.authorizationHeader;
-        debugPrint('🔐 Added NIP-98 auth to upload request');
+        Log.debug('� Added NIP-98 auth to upload request', name: 'DirectUploadService', category: LogCategory.system);
       } else {
-        debugPrint('⚠️ Failed to create NIP-98 auth token for upload');
+        Log.error('Failed to create NIP-98 auth token for upload', name: 'DirectUploadService', category: LogCategory.system);
       }
     } else {
-      debugPrint('⚠️ No authentication service available for upload');
+      Log.warning('No authentication service available for upload', name: 'DirectUploadService', category: LogCategory.system);
     }
     
     return headers;
@@ -285,7 +286,7 @@ class DirectUploadService extends ChangeNotifier {
     if (controller != null || subscription != null) {
       await subscription?.cancel();
       await controller?.close();
-      debugPrint('🚫 Upload cancelled: $videoId');
+      Log.debug('Upload cancelled: $videoId', name: 'DirectUploadService', category: LogCategory.system);
     }
   }
   
@@ -305,7 +306,7 @@ class DirectUploadService extends ChangeNotifier {
     required String nostrPubkey,
     void Function(double progress)? onProgress,
   }) async {
-    debugPrint('🔄 Starting profile picture upload for: ${imageFile.path}');
+    Log.debug('Starting profile picture upload for: ${imageFile.path}', name: 'DirectUploadService', category: LogCategory.system);
     
     String? uploadId;
     
@@ -384,8 +385,8 @@ class DirectUploadService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('✅ Profile picture upload successful');
-        debugPrint('📄 Response: $data');
+        Log.info('Profile picture upload successful', name: 'DirectUploadService', category: LogCategory.system);
+        Log.debug('� Response: $data', name: 'DirectUploadService', category: LogCategory.system);
         
         if (data['status'] == 'success') {
           final cdnUrl = data['url'] ?? data['download_url'];
@@ -408,8 +409,8 @@ class DirectUploadService extends ChangeNotifier {
         );
       }
     } catch (e, stack) {
-      debugPrint('❌ Profile picture upload error: $e');
-      debugPrint('Stack trace: $stack');
+      Log.error('Profile picture upload error: $e', name: 'DirectUploadService', category: LogCategory.system);
+      Log.verbose('Stack trace: $stack', name: 'DirectUploadService', category: LogCategory.system);
       
       // Cleanup on error
       if (uploadId != null) {
@@ -448,7 +449,7 @@ class DirectUploadService extends ChangeNotifier {
         return MediaType('video', 'x-m4v');
       default:
         // Default to mp4 for unknown video files
-        debugPrint('⚠️ Unknown video file extension: $extension, defaulting to mp4');
+        Log.warning('Unknown video file extension: $extension, defaulting to mp4', name: 'DirectUploadService', category: LogCategory.system);
         return MediaType('video', 'mp4');
     }
   }
@@ -472,7 +473,7 @@ class DirectUploadService extends ChangeNotifier {
         return MediaType('image', 'heic');
       default:
         // Default to jpeg for unknown image files
-        debugPrint('⚠️ Unknown image file extension: $extension, defaulting to jpeg');
+        Log.warning('Unknown image file extension: $extension, defaulting to jpeg', name: 'DirectUploadService', category: LogCategory.system);
         return MediaType('image', 'jpeg');
     }
   }

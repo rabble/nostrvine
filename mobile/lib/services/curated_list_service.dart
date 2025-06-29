@@ -5,10 +5,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nostr_sdk/event.dart';
-import '../models/video_event.dart';
 import 'nostr_service_interface.dart';
 import 'auth_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Represents a curated list of videos
 class CuratedList {
@@ -117,7 +116,7 @@ class CuratedListService extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       if (!_authService.isAuthenticated) {
-        debugPrint('⚠️ Cannot initialize curated lists - user not authenticated');
+        Log.warning('Cannot initialize curated lists - user not authenticated', name: 'CuratedListService', category: LogCategory.system);
         return;
       }
 
@@ -127,10 +126,10 @@ class CuratedListService extends ChangeNotifier {
       }
 
       _isInitialized = true;
-      debugPrint('✅ Curated list service initialized with ${_lists.length} lists');
+      Log.info('Curated list service initialized with ${_lists.length} lists', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Failed to initialize curated list service: $e');
+      Log.error('Failed to initialize curated list service: $e', name: 'CuratedListService', category: LogCategory.system);
     }
   }
 
@@ -178,11 +177,11 @@ class CuratedListService extends ChangeNotifier {
         await _publishListToNostr(newList);
       }
 
-      debugPrint('📝 Created new curated list: $name ($listId)');
+      Log.info('Created new curated list: $name ($listId)', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
       return newList;
     } catch (e) {
-      debugPrint('❌ Failed to create curated list: $e');
+      Log.error('Failed to create curated list: $e', name: 'CuratedListService', category: LogCategory.system);
       return null;
     }
   }
@@ -192,7 +191,7 @@ class CuratedListService extends ChangeNotifier {
     try {
       final listIndex = _lists.indexWhere((list) => list.id == listId);
       if (listIndex == -1) {
-        debugPrint('⚠️ List not found: $listId');
+        Log.warning('List not found: $listId', name: 'CuratedListService', category: LogCategory.system);
         return false;
       }
 
@@ -200,7 +199,7 @@ class CuratedListService extends ChangeNotifier {
       
       // Check if video is already in the list
       if (list.videoEventIds.contains(videoEventId)) {
-        debugPrint('⚠️ Video already in list: $videoEventId');
+        Log.warning('Video already in list: $videoEventId', name: 'CuratedListService', category: LogCategory.system);
         return true; // Return true since it's already there
       }
 
@@ -219,11 +218,11 @@ class CuratedListService extends ChangeNotifier {
         await _publishListToNostr(updatedList);
       }
 
-      debugPrint('➕ Added video to list "${list.name}": $videoEventId');
+      Log.debug('➕ Added video to list "${list.name}": $videoEventId', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Failed to add video to list: $e');
+      Log.error('Failed to add video to list: $e', name: 'CuratedListService', category: LogCategory.system);
       return false;
     }
   }
@@ -233,7 +232,7 @@ class CuratedListService extends ChangeNotifier {
     try {
       final listIndex = _lists.indexWhere((list) => list.id == listId);
       if (listIndex == -1) {
-        debugPrint('⚠️ List not found: $listId');
+        Log.warning('List not found: $listId', name: 'CuratedListService', category: LogCategory.system);
         return false;
       }
 
@@ -253,11 +252,11 @@ class CuratedListService extends ChangeNotifier {
         await _publishListToNostr(updatedList);
       }
 
-      debugPrint('➖ Removed video from list "${list.name}": $videoEventId');
+      Log.debug('➖ Removed video from list "${list.name}": $videoEventId', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Failed to remove video from list: $e');
+      Log.error('Failed to remove video from list: $e', name: 'CuratedListService', category: LogCategory.system);
       return false;
     }
   }
@@ -313,11 +312,11 @@ class CuratedListService extends ChangeNotifier {
         await _publishListToNostr(updatedList);
       }
 
-      debugPrint('✏️ Updated list: ${updatedList.name}');
+      Log.debug('✏️ Updated list: ${updatedList.name}', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Failed to update list: $e');
+      Log.error('Failed to update list: $e', name: 'CuratedListService', category: LogCategory.system);
       return false;
     }
   }
@@ -327,7 +326,7 @@ class CuratedListService extends ChangeNotifier {
     try {
       // Don't allow deleting the default list
       if (listId == defaultListId) {
-        debugPrint('⚠️ Cannot delete default list');
+        Log.warning('Cannot delete default list', name: 'CuratedListService', category: LogCategory.system);
         return false;
       }
 
@@ -342,11 +341,11 @@ class CuratedListService extends ChangeNotifier {
 
       // TODO: Send deletion event to Nostr if it was published
 
-      debugPrint('🗑️ Deleted list: ${list.name}');
+      Log.debug('�️ Deleted list: ${list.name}', name: 'CuratedListService', category: LogCategory.system);
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Failed to delete list: $e');
+      Log.error('Failed to delete list: $e', name: 'CuratedListService', category: LogCategory.system);
       return false;
     }
   }
@@ -372,7 +371,7 @@ class CuratedListService extends ChangeNotifier {
   Future<void> _publishListToNostr(CuratedList list) async {
     try {
       if (!_authService.isAuthenticated) {
-        debugPrint('⚠️ Cannot publish list - user not authenticated');
+        Log.warning('Cannot publish list - user not authenticated', name: 'CuratedListService', category: LogCategory.system);
         return;
       }
 
@@ -415,11 +414,11 @@ class CuratedListService extends ChangeNotifier {
             _lists[listIndex] = list.copyWith(nostrEventId: event.id);
             await _saveLists();
           }
-          debugPrint('📡 Published list to Nostr: ${list.name} (${event.id})');
+          Log.debug('Published list to Nostr: ${list.name} (${event.id})', name: 'CuratedListService', category: LogCategory.system);
         }
       }
     } catch (e) {
-      debugPrint('❌ Failed to publish list to Nostr: $e');
+      Log.error('Failed to publish list to Nostr: $e', name: 'CuratedListService', category: LogCategory.system);
     }
   }
 
@@ -433,9 +432,9 @@ class CuratedListService extends ChangeNotifier {
         _lists.addAll(
           listsData.map((json) => CuratedList.fromJson(json))
         );
-        debugPrint('📁 Loaded ${_lists.length} curated lists from storage');
+        Log.debug('� Loaded ${_lists.length} curated lists from storage', name: 'CuratedListService', category: LogCategory.system);
       } catch (e) {
-        debugPrint('⚠️ Failed to load curated lists: $e');
+        Log.error('Failed to load curated lists: $e', name: 'CuratedListService', category: LogCategory.system);
       }
     }
   }
@@ -446,7 +445,7 @@ class CuratedListService extends ChangeNotifier {
       final listsJson = _lists.map((list) => list.toJson()).toList();
       await _prefs.setString(listsStorageKey, jsonEncode(listsJson));
     } catch (e) {
-      debugPrint('⚠️ Failed to save curated lists: $e');
+      Log.error('Failed to save curated lists: $e', name: 'CuratedListService', category: LogCategory.system);
     }
   }
 

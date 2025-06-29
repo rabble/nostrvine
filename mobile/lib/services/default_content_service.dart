@@ -1,9 +1,9 @@
 // ABOUTME: Service for managing default/featured content shown to new users
 // ABOUTME: Provides fallback videos when the feed is empty or for onboarding
 
-import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for managing default content shown to new users
 class DefaultContentService {
@@ -38,7 +38,7 @@ class DefaultContentService {
     try {
       return VideoEvent.fromNostrEvent(defaultEvent);
     } catch (e) {
-      debugPrint('Error creating default video event: $e');
+      Log.error('Error creating default video event: $e', name: 'DefaultContentService', category: LogCategory.system);
       // Return a minimal fallback video
       return _createFallbackVideo();
     }

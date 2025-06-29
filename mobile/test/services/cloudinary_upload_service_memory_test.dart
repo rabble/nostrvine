@@ -21,14 +21,12 @@ void main() {
       // Create a mock file
       final mockFile = File('/tmp/mock_video.mp4');
       
-      bool progressCallbackCalled = false;
-      
       // Start an upload that will fail (no auth), but track the progress callback
       final result = await service.uploadVideo(
         videoFile: mockFile,
         nostrPubkey: 'test_pubkey',
         onProgress: (progress) {
-          progressCallbackCalled = true;
+          // Progress callback for upload tracking
         },
       );
       

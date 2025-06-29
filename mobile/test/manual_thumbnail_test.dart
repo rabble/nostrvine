@@ -6,13 +6,14 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   group('Manual Thumbnail Tests', () {
     test('Test thumbnail functionality with sample video', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       
-      print('🎬 Manual thumbnail test starting...');
+      Log.debug('🎬 Manual thumbnail test starting...');
       
       // Create a test directory
       final tempDir = await Directory.systemTemp.createTemp('manual_thumbnail_test');
@@ -24,11 +25,11 @@ void main() {
         final testVideoFile = File('${tempDir.path}/real_test_video.mp4');
         await testVideoFile.writeAsBytes(realVideoBytes);
         
-        print('📹 Created test video file: ${testVideoFile.path}');
-        print('📦 Video file size: ${await testVideoFile.length()} bytes');
+        Log.debug('📹 Created test video file: ${testVideoFile.path}');
+        Log.debug('📦 Video file size: ${await testVideoFile.length()} bytes');
         
         // Test 1: Try thumbnail extraction with real video content
-        print('\n🧪 Test 1: Attempting thumbnail extraction...');
+        Log.debug('\n🧪 Test 1: Attempting thumbnail extraction...');
         
         final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
           videoPath: testVideoFile.path,
@@ -37,33 +38,33 @@ void main() {
         );
         
         if (thumbnailBytes != null && thumbnailBytes.isNotEmpty) {
-          print('✅ SUCCESS! Thumbnail generated successfully!');
-          print('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
+          Log.debug('✅ SUCCESS! Thumbnail generated successfully!');
+          Log.debug('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
           
           // Verify it's valid JPEG
           if (thumbnailBytes.length >= 2 && 
               thumbnailBytes[0] == 0xFF && 
               thumbnailBytes[1] == 0xD8) {
-            print('✅ Generated thumbnail is valid JPEG format');
+            Log.debug('✅ Generated thumbnail is valid JPEG format');
             
             // Save thumbnail to verify
             final thumbnailFile = File('${tempDir.path}/generated_thumbnail.jpg');
             await thumbnailFile.writeAsBytes(thumbnailBytes);
-            print('💾 Saved thumbnail to: ${thumbnailFile.path}');
+            Log.debug('💾 Saved thumbnail to: ${thumbnailFile.path}');
             
           } else {
-            print('⚠️ Thumbnail data is not valid JPEG format');
+            Log.debug('⚠️ Thumbnail data is not valid JPEG format');
           }
         } else {
-          print('❌ Thumbnail extraction returned null/empty');
-          print('ℹ️ This could mean:');
-          print('  - video_thumbnail plugin not available in test environment');
-          print('  - Video content not recognized as valid');
-          print('  - Platform limitations (plugins often don\'t work in tests)');
+          Log.debug('❌ Thumbnail extraction returned null/empty');
+          Log.debug('ℹ️ This could mean:');
+          Log.debug('  - video_thumbnail plugin not available in test environment');
+          Log.debug('  - Video content not recognized as valid');
+          Log.debug('  - Platform limitations (plugins often don\'t work in tests)');
         }
         
         // Test 2: Test different timestamps
-        print('\n🧪 Test 2: Testing optimal timestamp calculation...');
+        Log.debug('\n🧪 Test 2: Testing optimal timestamp calculation...');
         
         final testDurations = [
           Duration(milliseconds: 500),
@@ -75,11 +76,11 @@ void main() {
         
         for (final duration in testDurations) {
           final timestamp = VideoThumbnailService.getOptimalTimestamp(duration);
-          print('📐 ${duration.inSeconds}s video → ${timestamp}ms timestamp');
+          Log.debug('📐 ${duration.inSeconds}s video → ${timestamp}ms timestamp');
         }
         
         // Test 3: Test upload result structure
-        print('\n🧪 Test 3: Testing upload result structure...');
+        Log.debug('\n🧪 Test 3: Testing upload result structure...');
         
         final uploadResult = DirectUploadResult.success(
           videoId: 'manual_test_video_123',
@@ -99,13 +100,13 @@ void main() {
         expect(uploadResult.thumbnailUrl, contains('thumbnail'));
         expect(uploadResult.metadata?['has_thumbnail'], isNotNull);
         
-        print('✅ Upload result structure is correct');
-        print('🎬 Video URL: ${uploadResult.cdnUrl}');
-        print('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
-        print('📊 Metadata: ${uploadResult.metadata}');
+        Log.debug('✅ Upload result structure is correct');
+        Log.debug('🎬 Video URL: ${uploadResult.cdnUrl}');
+        Log.debug('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
+        Log.debug('📊 Metadata: ${uploadResult.metadata}');
         
         // Test 4: Verify NIP-71 event structure
-        print('\n🧪 Test 4: Verifying NIP-71 event tags...');
+        Log.debug('\n🧪 Test 4: Verifying NIP-71 event tags...');
         
         final expectedTags = [
           ['url', uploadResult.cdnUrl!],
@@ -117,29 +118,29 @@ void main() {
           ['client', 'nostrvine'],
         ];
         
-        print('✅ NIP-71 event tags would include:');
+        Log.debug('✅ NIP-71 event tags would include:');
         for (final tag in expectedTags) {
-          print('  🏷️ ${tag[0]}: ${tag[1]}');
+          Log.debug('  🏷️ ${tag[0]}: ${tag[1]}');
         }
         
-        print('\n🎉 Manual thumbnail test completed!');
-        print('📋 Results Summary:');
-        print('  📸 Thumbnail extraction: ${thumbnailBytes != null ? "SUCCESS" : "FAILED (expected in test env)"}');
-        print('  📐 Timestamp calculation: SUCCESS');
-        print('  📤 Upload structure: SUCCESS');
-        print('  🏷️ NIP-71 compliance: SUCCESS');
+        Log.debug('\n🎉 Manual thumbnail test completed!');
+        Log.debug('📋 Results Summary:');
+        Log.debug('  📸 Thumbnail extraction: ${thumbnailBytes != null ? "SUCCESS" : "FAILED (expected in test env)"}');
+        Log.debug('  📐 Timestamp calculation: SUCCESS');
+        Log.debug('  📤 Upload structure: SUCCESS');
+        Log.debug('  🏷️ NIP-71 compliance: SUCCESS');
         
       } catch (e, stackTrace) {
-        print('❌ Manual test failed: $e');
-        print('📍 Stack trace: $stackTrace');
+        Log.debug('❌ Manual test failed: $e');
+        Log.debug('📍 Stack trace: $stackTrace');
         fail('Manual thumbnail test failed: $e');
       } finally {
         // Cleanup
         try {
           await tempDir.delete(recursive: true);
-          print('🗑️ Cleaned up test files');
+          Log.debug('🗑️ Cleaned up test files');
         } catch (e) {
-          print('⚠️ Warning: Failed to cleanup: $e');
+          Log.debug('⚠️ Warning: Failed to cleanup: $e');
         }
       }
     });

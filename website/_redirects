@@ -1,14 +1,15 @@
 # OpenVine Website Redirects
 
-# Clean URLs - remove .html extensions
-/about /about.html 200
-/ios /ios.html 200  
-/android /android.html 200
-/trending /trending.html 200
-/open-source /open-source.html 200
+# Clean URLs - serve .html files without extension
+/about /about.html 200!
+/ios /ios.html 200!
+/android /android.html 200!
+/trending /trending.html 200!
+/open-source /open-source.html 200!
+/featured-viners /featured-viners.html 200!
 
 # Video pages - Vine-compatible URLs
 /v/* /watch.html 200
 
-# Profile pages - Vine-compatible URLs (must be last)
-/* /profile.html 200
+# Profile pages - Vine-compatible URLs
+/u/* /profile.html 200

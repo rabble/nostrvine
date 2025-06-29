@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for monitoring connection status and handling offline scenarios
 class ConnectionStatusService extends ChangeNotifier {
@@ -40,7 +41,7 @@ class ConnectionStatusService extends ChangeNotifier {
   /// Initialize connection monitoring
   Future<void> initialize() async {
     try {
-      debugPrint('🌐 Initializing connection status service...');
+      Log.debug('� Initializing connection status service...', name: 'ConnectionStatusService', category: LogCategory.system);
       
       // Check initial connectivity
       await _checkConnectivity();
@@ -54,26 +55,26 @@ class ConnectionStatusService extends ChangeNotifier {
       // Start periodic internet access checks
       _startPeriodicChecks();
       
-      debugPrint('✅ Connection status service initialized');
+      Log.info('Connection status service initialized', name: 'ConnectionStatusService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to initialize connection status service: $e');
+      Log.error('Failed to initialize connection status service: $e', name: 'ConnectionStatusService', category: LogCategory.system);
       _lastError = e.toString();
     }
   }
   
   /// Handle connectivity changes
   void _onConnectivityChanged(List<ConnectivityResult> results) {
-    debugPrint('🔄 Connectivity changed: $results');
+    Log.debug('Connectivity changed: $results', name: 'ConnectionStatusService', category: LogCategory.system);
     _connectionTypes = results;
     
     final wasOnline = _isOnline;
     _isOnline = !results.contains(ConnectivityResult.none);
     
     if (_isOnline && !wasOnline) {
-      debugPrint('🟢 Connection restored');
+      Log.debug('� Connection restored', name: 'ConnectionStatusService', category: LogCategory.system);
       _checkInternetAccess(); // Verify actual internet access
     } else if (!_isOnline && wasOnline) {
-      debugPrint('🔴 Connection lost');
+      Log.debug('� Connection lost', name: 'ConnectionStatusService', category: LogCategory.system);
       _hasInternetAccess = false;
     }
     
@@ -82,7 +83,7 @@ class ConnectionStatusService extends ChangeNotifier {
   
   /// Handle connectivity stream errors
   void _onConnectivityError(dynamic error) {
-    debugPrint('❌ Connectivity stream error: $error');
+    Log.error('Connectivity stream error: $error', name: 'ConnectionStatusService', category: LogCategory.system);
     _lastError = error.toString();
     notifyListeners();
   }
@@ -100,9 +101,9 @@ class ConnectionStatusService extends ChangeNotifier {
         _hasInternetAccess = false;
       }
       
-      debugPrint('📶 Initial connectivity: $_connectionTypes, online: $_isOnline, internet: $_hasInternetAccess');
+      Log.debug('� Initial connectivity: $_connectionTypes, online: $_isOnline, internet: $_hasInternetAccess', name: 'ConnectionStatusService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Error checking connectivity: $e');
+      Log.error('Error checking connectivity: $e', name: 'ConnectionStatusService', category: LogCategory.system);
       _lastError = e.toString();
       _isOnline = false;
       _hasInternetAccess = false;
@@ -124,7 +125,7 @@ class ConnectionStatusService extends ChangeNotifier {
         // On web, if connectivity_plus reports we're online, we assume internet access
         // since we can't use InternetAddress.lookup on web
         hasAccess = _isOnline;
-        debugPrint('🌐 Web platform: Using connectivity assumption for internet access');
+        Log.debug('� Web platform: Using connectivity assumption for internet access', name: 'ConnectionStatusService', category: LogCategory.system);
       } else {
         // Native platform: Use DNS lookup to test actual internet access
         final hosts = [
@@ -144,7 +145,7 @@ class ConnectionStatusService extends ChangeNotifier {
               break;
             }
           } catch (e) {
-            debugPrint('⚠️ Failed to reach $host: $e');
+            Log.error('Failed to reach $host: $e', name: 'ConnectionStatusService', category: LogCategory.system);
           }
         }
       }
@@ -153,14 +154,14 @@ class ConnectionStatusService extends ChangeNotifier {
       _hasInternetAccess = hasAccess;
       
       if (hasAccess && !hadAccess) {
-        debugPrint('🌐 Internet access restored');
+        Log.debug('� Internet access restored', name: 'ConnectionStatusService', category: LogCategory.system);
       } else if (!hasAccess && hadAccess) {
-        debugPrint('⚠️ Internet access lost');
+        Log.warning('Internet access lost', name: 'ConnectionStatusService', category: LogCategory.system);
       }
       
       debugPrint('🌐 Internet access check: $hasAccess (platform: ${kIsWeb ? 'web' : 'native'})');
     } catch (e) {
-      debugPrint('❌ Error checking internet access: $e');
+      Log.error('Error checking internet access: $e', name: 'ConnectionStatusService', category: LogCategory.system);
       _lastError = e.toString();
       _hasInternetAccess = false;
     }
@@ -179,7 +180,7 @@ class ConnectionStatusService extends ChangeNotifier {
   
   /// Force a connection check
   Future<void> forceCheck() async {
-    debugPrint('🔄 Force checking connection status...');
+    Log.debug('Force checking connection status...', name: 'ConnectionStatusService', category: LogCategory.system);
     await _checkConnectivity();
   }
   
@@ -187,7 +188,7 @@ class ConnectionStatusService extends ChangeNotifier {
   Future<bool> waitForConnection({Duration timeout = const Duration(seconds: 30)}) async {
     if (_isOnline && _hasInternetAccess) return true;
     
-    debugPrint('⏳ Waiting for connection to be restored...');
+    Log.debug('⏳ Waiting for connection to be restored...', name: 'ConnectionStatusService', category: LogCategory.system);
     
     final completer = Completer<bool>();
     late StreamSubscription subscription;

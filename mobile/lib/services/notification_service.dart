@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/unified_logger.dart';
 
 /// Types of notifications
 enum NotificationType {
@@ -120,21 +121,21 @@ class NotificationService extends ChangeNotifier {
 
   /// Initialize notification service
   Future<void> initialize() async {
-    debugPrint('🔔 Initializing NotificationService');
+    Log.debug('� Initializing NotificationService', name: 'NotificationService', category: LogCategory.system);
     
     try {
       // Request notification permissions
       await _requestPermissions();
       
-      debugPrint('✅ NotificationService initialized');
+      Log.info('NotificationService initialized', name: 'NotificationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to initialize notifications: $e');
+      Log.error('Failed to initialize notifications: $e', name: 'NotificationService', category: LogCategory.system);
     }
   }
 
   /// Show a notification
   Future<void> show(AppNotification notification) async {
-    debugPrint('🔔 Showing notification: ${notification.title}');
+    Log.debug('� Showing notification: ${notification.title}', name: 'NotificationService', category: LogCategory.system);
     
     // Add to internal list
     _addNotification(notification);
@@ -145,10 +146,10 @@ class NotificationService extends ChangeNotifier {
         await _showPlatformNotification(notification);
       } else {
         // Show in-app notification only
-        debugPrint('⚠️ No notification permissions, showing in-app only');
+        Log.warning('No notification permissions, showing in-app only', name: 'NotificationService', category: LogCategory.system);
       }
     } catch (e) {
-      debugPrint('❌ Failed to show notification: $e');
+      Log.error('Failed to show notification: $e', name: 'NotificationService', category: LogCategory.system);
     }
   }
 
@@ -190,7 +191,7 @@ class NotificationService extends ChangeNotifier {
   void clearAll() {
     _notifications.clear();
     notifyListeners();
-    debugPrint('🗑️ Cleared all notifications');
+    Log.debug('�️ Cleared all notifications', name: 'NotificationService', category: LogCategory.system);
   }
 
   /// Clear notifications older than specified duration
@@ -204,7 +205,7 @@ class NotificationService extends ChangeNotifier {
     final removedCount = initialCount - _notifications.length;
     if (removedCount > 0) {
       notifyListeners();
-      debugPrint('🗑️ Cleared $removedCount old notifications');
+      Log.debug('�️ Cleared $removedCount old notifications', name: 'NotificationService', category: LogCategory.system);
     }
   }
 
@@ -219,10 +220,10 @@ class NotificationService extends ChangeNotifier {
       // TODO: Implement proper notification permissions
       // For now, simulate granted permissions
       _permissionsGranted = true;
-      debugPrint('✅ Notification permissions granted (simulated)');
+      Log.info('Notification permissions granted (simulated)', name: 'NotificationService', category: LogCategory.system);
     } catch (e) {
       _permissionsGranted = false;
-      debugPrint('❌ Failed to get notification permissions: $e');
+      Log.error('Failed to get notification permissions: $e', name: 'NotificationService', category: LogCategory.system);
     }
   }
 
@@ -231,7 +232,7 @@ class NotificationService extends ChangeNotifier {
     try {
       // TODO: Implement actual platform notifications
       // This would use flutter_local_notifications or similar
-      debugPrint('📱 Platform notification: ${notification.title} - ${notification.body}');
+      Log.debug('� Platform notification: ${notification.title} - ${notification.body}', name: 'NotificationService', category: LogCategory.system);
       
       // Simulate haptic feedback for important notifications
       if (notification.type == NotificationType.videoPublished) {
@@ -241,7 +242,7 @@ class NotificationService extends ChangeNotifier {
       }
       
     } catch (e) {
-      debugPrint('❌ Failed to show platform notification: $e');
+      Log.error('Failed to show platform notification: $e', name: 'NotificationService', category: LogCategory.system);
     }
   }
 

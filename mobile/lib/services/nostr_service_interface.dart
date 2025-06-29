@@ -54,6 +54,8 @@ abstract class INostrService extends ChangeNotifier {
   NostrKeyManager get keyManager;
   int get relayCount;
   int get connectedRelayCount;
+  List<String> get relays;
+  Map<String, dynamic> get relayStatuses;
   
   // Methods
   Future<void> initialize({List<String>? customRelays});
@@ -78,6 +80,12 @@ abstract class INostrService extends ChangeNotifier {
     int? fileSize,
     List<String> hashtags = const [],
   });
+  
+  // Relay management methods
+  Future<bool> addRelay(String relayUrl);
+  Future<void> removeRelay(String relayUrl);
+  Map<String, bool> getRelayStatus();
+  Future<void> reconnectAll();
   
   @override
   void dispose();

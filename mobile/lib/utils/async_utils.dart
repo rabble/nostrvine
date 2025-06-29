@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import '../utils/unified_logger.dart';
 
 /// Utilities for proper asynchronous programming patterns
 class AsyncUtils {
@@ -48,7 +49,7 @@ class AsyncUtils {
       if (!completer.isCompleted) {
         cleanup();
         if (debugName != null) {
-          debugPrint('⏰ AsyncUtils.waitForCondition timeout: $debugName');
+          Log.debug('⏰ AsyncUtils.waitForCondition timeout: $debugName', name: 'AsyncUtils', category: LogCategory.system);
         }
         completer.complete(false);
       }
@@ -61,7 +62,7 @@ class AsyncUtils {
           if (!completer.isCompleted) {
             cleanup();
             if (debugName != null) {
-              debugPrint('✅ AsyncUtils.waitForCondition success: $debugName');
+              Log.info('AsyncUtils.waitForCondition success: $debugName', name: 'AsyncUtils', category: LogCategory.system);
             }
             completer.complete(true);
           }
@@ -70,7 +71,7 @@ class AsyncUtils {
         if (!completer.isCompleted) {
           cleanup();
           if (debugName != null) {
-            debugPrint('❌ AsyncUtils.waitForCondition error: $debugName - $e');
+            Log.error('AsyncUtils.waitForCondition error: $debugName - $e', name: 'AsyncUtils', category: LogCategory.system);
           }
           completer.completeError(e);
         }
@@ -137,7 +138,7 @@ class AsyncUtils {
       try {
         final result = await operation();
         if (debugName != null && attempts > 0) {
-          debugPrint('✅ AsyncUtils.retryWithBackoff succeeded after $attempts retries: $debugName');
+          Log.warning('AsyncUtils.retryWithBackoff succeeded after $attempts retries: $debugName', name: 'AsyncUtils', category: LogCategory.system);
         }
         return result;
       } catch (error) {
@@ -146,7 +147,7 @@ class AsyncUtils {
         // Check if we should retry this error
         if (retryWhen != null && !retryWhen(error)) {
           if (debugName != null) {
-            debugPrint('❌ AsyncUtils.retryWithBackoff not retrying error: $debugName - $error');
+            Log.error('AsyncUtils.retryWithBackoff not retrying error: $debugName - $error', name: 'AsyncUtils', category: LogCategory.system);
           }
           rethrow;
         }
@@ -154,7 +155,7 @@ class AsyncUtils {
         // If we've exceeded max retries, throw the error
         if (attempts > maxRetries) {
           if (debugName != null) {
-            debugPrint('❌ AsyncUtils.retryWithBackoff max retries exceeded: $debugName - $error');
+            Log.error('AsyncUtils.retryWithBackoff max retries exceeded: $debugName - $error', name: 'AsyncUtils', category: LogCategory.system);
           }
           rethrow;
         }
@@ -167,7 +168,7 @@ class AsyncUtils {
         final delay = Duration(milliseconds: delayMs);
         
         if (debugName != null) {
-          debugPrint('🔄 AsyncUtils.retryWithBackoff attempt $attempts failed, retrying in ${delay.inMilliseconds}ms: $debugName');
+          Log.error('AsyncUtils.retryWithBackoff attempt $attempts failed, retrying in ${delay.inMilliseconds}ms: $debugName', name: 'AsyncUtils', category: LogCategory.system);
         }
         
         await Future.delayed(delay);
@@ -209,7 +210,7 @@ class AsyncUtils {
       if (!completer.isCompleted) {
         cleanup();
         if (debugName != null) {
-          debugPrint('⏰ AsyncUtils.waitForStreamValue timeout: $debugName');
+          Log.debug('⏰ AsyncUtils.waitForStreamValue timeout: $debugName', name: 'AsyncUtils', category: LogCategory.system);
         }
         completer.completeError(TimeoutException('Stream value timeout', timeout));
       }
@@ -222,7 +223,7 @@ class AsyncUtils {
           if (predicate(value) && !completer.isCompleted) {
             cleanup();
             if (debugName != null) {
-              debugPrint('✅ AsyncUtils.waitForStreamValue success: $debugName');
+              Log.info('AsyncUtils.waitForStreamValue success: $debugName', name: 'AsyncUtils', category: LogCategory.system);
             }
             completer.complete(value);
           }
@@ -230,7 +231,7 @@ class AsyncUtils {
           if (!completer.isCompleted) {
             cleanup();
             if (debugName != null) {
-              debugPrint('❌ AsyncUtils.waitForStreamValue predicate error: $debugName - $e');
+              Log.error('AsyncUtils.waitForStreamValue predicate error: $debugName - $e', name: 'AsyncUtils', category: LogCategory.system);
             }
             completer.completeError(e);
           }
@@ -240,7 +241,7 @@ class AsyncUtils {
         if (!completer.isCompleted) {
           cleanup();
           if (debugName != null) {
-            debugPrint('❌ AsyncUtils.waitForStreamValue stream error: $debugName - $error');
+            Log.error('AsyncUtils.waitForStreamValue stream error: $debugName - $error', name: 'AsyncUtils', category: LogCategory.system);
           }
           completer.completeError(error);
         }

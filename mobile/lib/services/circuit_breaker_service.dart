@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
+import '../utils/unified_logger.dart';
 
 /// Circuit breaker states
 enum CircuitBreakerState {
@@ -119,7 +120,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
       }
     }
     
-    debugPrint('CircuitBreaker: Success recorded for $url');
+    Log.info('CircuitBreaker: Success recorded for $url', name: 'CircuitBreakerService', category: LogCategory.system);
   }
 
   /// Record a failed request
@@ -145,13 +146,13 @@ class VideoCircuitBreaker extends ChangeNotifier {
     // Check if URL should be permanently failed
     if (_urlFailureCounts[url]! >= _failureThreshold * 2) {
       _permanentlyFailedUrls.add(url);
-      debugPrint('CircuitBreaker: URL permanently failed: $url');
+      Log.error('CircuitBreaker: URL permanently failed: $url', name: 'CircuitBreakerService', category: LogCategory.system);
     }
     
     // Check overall failure rate
     _checkFailureThreshold();
     
-    debugPrint('CircuitBreaker: Failure recorded for $url (count: ${_urlFailureCounts[url]})');
+    Log.debug('CircuitBreaker: Failure recorded for $url (count: ${_urlFailureCounts[url]})', name: 'CircuitBreakerService', category: LogCategory.system);
   }
 
   /// Get failure statistics
@@ -194,7 +195,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
     _recoveryTimer?.cancel();
     _recoveryTimer = null;
     
-    debugPrint('CircuitBreaker: Reset to closed state');
+    Log.debug('CircuitBreaker: Reset to closed state', name: 'CircuitBreakerService', category: LogCategory.system);
     notifyListeners();
   }
 
@@ -202,7 +203,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
   void clearPermanentFailures() {
     final count = _permanentlyFailedUrls.length;
     _permanentlyFailedUrls.clear();
-    debugPrint('CircuitBreaker: Cleared $count permanently failed URLs');
+    Log.error('CircuitBreaker: Cleared $count permanently failed URLs', name: 'CircuitBreakerService', category: LogCategory.system);
   }
 
   @override
@@ -233,7 +234,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
       _transitionToHalfOpen();
     });
     
-    debugPrint('CircuitBreaker: Transitioned to OPEN state');
+    Log.debug('CircuitBreaker: Transitioned to OPEN state', name: 'CircuitBreakerService', category: LogCategory.system);
     notifyListeners();
   }
 
@@ -250,7 +251,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
       }
     });
     
-    debugPrint('CircuitBreaker: Transitioned to HALF-OPEN state');
+    Log.debug('CircuitBreaker: Transitioned to HALF-OPEN state', name: 'CircuitBreakerService', category: LogCategory.system);
     notifyListeners();
   }
 
@@ -260,7 +261,7 @@ class VideoCircuitBreaker extends ChangeNotifier {
     _recoveryTimer?.cancel();
     _recoveryTimer = null;
     
-    debugPrint('CircuitBreaker: Transitioned to CLOSED state');
+    Log.debug('CircuitBreaker: Transitioned to CLOSED state', name: 'CircuitBreakerService', category: LogCategory.system);
     notifyListeners();
   }
 

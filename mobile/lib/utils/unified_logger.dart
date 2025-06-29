@@ -118,7 +118,7 @@ class UnifiedLogger {
   static void setLogLevel(LogLevel level) {
     _currentLevel = level;
     if (kDebugMode) {
-      debugPrint('🔧 Log level set to: ${level.name}');
+      Log.debug('Log level set to: ${level.name}', name: 'UnifiedLogger', category: LogCategory.system);
     }
   }
   
@@ -134,7 +134,7 @@ class UnifiedLogger {
   static void enableCategory(LogCategory category) {
     _enabledCategories.add(category);
     if (kDebugMode) {
-      debugPrint('🔧 Enabled category: ${category.name}');
+      Log.debug('Enabled category: ${category.name}', name: 'UnifiedLogger', category: LogCategory.system);
     }
   }
   
@@ -142,7 +142,7 @@ class UnifiedLogger {
   static void disableCategory(LogCategory category) {
     _enabledCategories.remove(category);
     if (kDebugMode) {
-      debugPrint('🔧 Disabled category: ${category.name}');
+      Log.debug('Disabled category: ${category.name}', name: 'UnifiedLogger', category: LogCategory.system);
     }
   }
   

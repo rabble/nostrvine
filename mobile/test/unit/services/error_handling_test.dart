@@ -219,7 +219,6 @@ void main() {
 
         // Track preload attempts
         int preloadAttempts = 0;
-        final originalPreloadVideo = videoManager.preloadVideo;
 
         // Simulate multiple failed attempts
         for (int i = 0; i < 10; i++) {
@@ -270,9 +269,6 @@ void main() {
 
         // Verify retry delays increase (exponential backoff)
         if (retryTimes.length >= 3) {
-          final delay1 = retryTimes[1].difference(retryTimes[0]);
-          final delay2 = retryTimes[2].difference(retryTimes[1]);
-
           // Note: Due to testing config short timeouts, exact verification is limited
           expect(retryTimes.length, equals(3));
         }

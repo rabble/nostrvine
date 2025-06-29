@@ -17,6 +17,7 @@ import '../services/user_profile_service.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../screens/comments_screen.dart';
 import '../screens/profile_screen.dart';
+import '../utils/unified_logger.dart';
 
 /// Individual video item widget implementing TDD specifications
 /// 
@@ -92,7 +93,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       
       // Trigger preload if video is active
       if (widget.isActive) {
-        _videoManager.preloadVideo(widget.video.id);
+        try {
+          _videoManager.preloadVideo(widget.video.id);
+        } catch (e) {
+          Log.info('VideoFeedItem: Video not ready for preload yet: ${widget.video.id}', name: 'VideoFeedItem', category: LogCategory.ui);
+        }
         
         // Schedule controller update after current frame to ensure proper initialization
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,7 +105,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         });
       }
     } catch (e) {
-      debugPrint('VideoFeedItem: VideoManager not found: $e');
+      Log.info('VideoFeedItem: VideoManager not found: $e', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
 
@@ -112,7 +117,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         profileService.fetchProfile(widget.video.pubkey);
       }
     } catch (e) {
-      debugPrint('VideoFeedItem: UserProfileService not found: $e');
+      Log.info('VideoFeedItem: UserProfileService not found: $e', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
 
@@ -121,7 +126,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     
     if (widget.isActive) {
       // Preload and potentially play video
-      _videoManager.preloadVideo(widget.video.id);
+      try {
+        _videoManager.preloadVideo(widget.video.id);
+      } catch (e) {
+        Log.info('VideoFeedItem: Video not ready for preload yet: ${widget.video.id}', name: 'VideoFeedItem', category: LogCategory.ui);
+      }
       _updateController();
       
       // Auto-play if controller is ready and initialized
@@ -155,9 +164,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     final videoState = _videoManager.getVideoState(widget.video.id);
     final newController = _videoManager.getController(widget.video.id);
     
-    debugPrint('🎬 Controller state for ${widget.video.id.substring(0, 8)}: ${_controller?.value.isInitialized}');
-    debugPrint('🎬 Video state: ${videoState?.loadingState}');
-    debugPrint('🎬 VideoManager has controller: ${newController != null}');
+    Log.info('Controller state for ${widget.video.id.substring(0, 8)}: ${_controller?.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.debug('Video state: ${videoState?.loadingState}', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.debug('VideoManager has controller: ${newController != null}', name: 'VideoFeedItem', category: LogCategory.ui);
     
     if (newController != _controller) {
       setState(() {
@@ -194,7 +203,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
 
   void _playVideo() {
     if (_controller != null && _controller!.value.isInitialized && !_controller!.value.isPlaying) {
-      debugPrint('▶️ Playing video: ${widget.video.id.substring(0, 8)}...');
+      Log.debug('▶️ Playing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
       _controller!.play();
       // Only loop when the video is active (not in background/comments)
       _controller!.setLooping(widget.isActive);
@@ -210,34 +219,34 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       analyticsService.trackVideoView(widget.video);
     } catch (e) {
       // Analytics is optional - don't crash if service is not available
-      debugPrint('⚠️ Analytics service not available: $e');
+      Log.warning('Analytics service not available: $e', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
 
   void _pauseVideo() {
     if (_controller != null && _controller!.value.isPlaying) {
-      debugPrint('⏸️ Pausing video: ${widget.video.id.substring(0, 8)}...');
+      Log.debug('Pausing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
       _controller!.pause();
     }
   }
 
   void _togglePlayPause() {
-    debugPrint('🎬 _togglePlayPause called for ${widget.video.id.substring(0, 8)}...');
+    Log.debug('_togglePlayPause called for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
     if (_controller != null && _controller!.value.isInitialized) {
       final wasPlaying = _controller!.value.isPlaying;
-      debugPrint('🎬 Current playing state: $wasPlaying');
+      Log.debug('Current playing state: $wasPlaying', name: 'VideoFeedItem', category: LogCategory.ui);
       
       if (wasPlaying) {
-        debugPrint('⏸️ Calling _pauseVideo()');
+        Log.debug('Calling _pauseVideo()', name: 'VideoFeedItem', category: LogCategory.ui);
         _pauseVideo();
       } else {
-        debugPrint('▶️ Calling _playVideo()');
+        Log.debug('▶️ Calling _playVideo()', name: 'VideoFeedItem', category: LogCategory.ui);
         _playVideo();
       }
-      debugPrint('🎭 Showing play/pause icon');
+      Log.debug('� Showing play/pause icon', name: 'VideoFeedItem', category: LogCategory.ui);
       _showPlayPauseIconBriefly();
     } else {
-      debugPrint('❌ _togglePlayPause failed - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}');
+      Log.error('_togglePlayPause failed - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
 
@@ -265,7 +274,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _navigateToHashtagFeed(String hashtag) {
-    debugPrint('🔗 Navigating to hashtag feed: #$hashtag');
+    Log.debug('� Navigating to hashtag feed: #$hashtag', name: 'VideoFeedItem', category: LogCategory.ui);
     
     // Pause video before navigating away
     _pauseVideo();
@@ -476,12 +485,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
               onTap: () {
-                debugPrint('🎯 Web video tap detected for ${widget.video.id.substring(0, 8)}...');
+                Log.debug('Web video tap detected for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
                 if (_controller != null && _controller!.value.isInitialized && !_controller!.value.hasError) {
-                  debugPrint('✅ Web video tap conditions met, toggling play/pause');
+                  Log.info('Web video tap conditions met, toggling play/pause', name: 'VideoFeedItem', category: LogCategory.ui);
                   _togglePlayPause();
                 } else {
-                  debugPrint('❌ Web video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}');
+                  Log.error('Web video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}', name: 'VideoFeedItem', category: LogCategory.ui);
                 }
               },
               child: Stack(
@@ -508,12 +517,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         aspectRatio: _controller!.value.aspectRatio,
         child: GestureDetector(
           onTap: () {
-            debugPrint('🎯 Native video tap detected for ${widget.video.id.substring(0, 8)}...');
+            Log.debug('Native video tap detected for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
             if (_controller != null && _controller!.value.isInitialized && !_controller!.value.hasError) {
-              debugPrint('✅ Native video tap conditions met, toggling play/pause');
+              Log.info('Native video tap conditions met, toggling play/pause', name: 'VideoFeedItem', category: LogCategory.ui);
               _togglePlayPause();
             } else {
-              debugPrint('❌ Native video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}');
+              Log.error('Native video tap ignored - controller: ${_controller != null}, initialized: ${_controller?.value.isInitialized}, hasError: ${_controller?.value.hasError}', name: 'VideoFeedItem', category: LogCategory.ui);
             }
           },
           child: VideoPlayer(_controller!),
@@ -866,7 +875,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             const SizedBox(width: 6),
             GestureDetector(
               onTap: () {
-                debugPrint('👤 Navigating to profile: ${widget.video.pubkey}');
+                Log.verbose('Navigating to profile: ${widget.video.pubkey}', name: 'VideoFeedItem', category: LogCategory.ui);
                 // Pause video before navigating away
                 _pauseVideo();
                 Navigator.of(context).push(
@@ -973,7 +982,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             const SizedBox(width: 6),
             GestureDetector(
               onTap: () {
-                debugPrint('👤 Navigating to reposter profile: ${widget.video.reposterPubkey}');
+                Log.verbose('Navigating to reposter profile: ${widget.video.reposterPubkey}', name: 'VideoFeedItem', category: LogCategory.ui);
                 // Pause video before navigating away
                 _pauseVideo();
                 Navigator.of(context).push(
@@ -1274,7 +1283,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       
       return count;
     } catch (e) {
-      debugPrint('Error getting comment count: $e');
+      Log.error('Error getting comment count: $e', name: 'VideoFeedItem', category: LogCategory.ui);
       return 0;
     }
   }

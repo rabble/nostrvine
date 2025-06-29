@@ -464,7 +464,6 @@ void main() {
       test('should enforce 500MB memory target through controller limits', () async {
         // 500MB target / 20MB per controller = 25 controllers theoretical max
         // But we enforce 15 controllers max for safety margin
-        const int maxControllersForTarget = 500 ~/ 20; // 25
         const int actualMaxControllers = 15;
         
         final debugInfo = videoManager.getDebugInfo();

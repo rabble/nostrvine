@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'nip07_service.dart';
+import '../utils/unified_logger.dart';
 // import 'nsec_bunker_service.dart'; // Temporarily disabled due to nostr library compatibility
 
 /// Available authentication methods for web
@@ -77,7 +78,7 @@ class BunkerSigner implements WebSigner {
   @override
   Future<Map<String, dynamic>?> signEvent(Map<String, dynamic> event) async {
     // Temporarily return null - bunker not implemented yet
-    debugPrint('⚠️ Bunker signing temporarily unavailable');
+    Log.warning('Bunker signing temporarily unavailable', name: 'WebAuthService', category: LogCategory.system);
     return null;
   }
   
@@ -156,7 +157,7 @@ class WebAuthService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔐 Starting NIP-07 authentication...');
+      Log.debug('� Starting NIP-07 authentication...', name: 'WebAuthService', category: LogCategory.system);
       
       final result = await _nip07Service.connect();
       if (!result.success) {
@@ -172,12 +173,12 @@ class WebAuthService extends ChangeNotifier {
       _currentSigner = Nip07Signer(_nip07Service);
       _isAuthenticated = true;
 
-      debugPrint('✅ NIP-07 authentication successful');
+      Log.info('NIP-07 authentication successful', name: 'WebAuthService', category: LogCategory.system);
       notifyListeners();
       
       return WebAuthResult.success(WebAuthMethod.nip07, result.publicKey!);
     } catch (e) {
-      debugPrint('❌ NIP-07 authentication error: $e');
+      Log.error('NIP-07 authentication error: $e', name: 'WebAuthService', category: LogCategory.system);
       return WebAuthResult.failure(
         'Unexpected NIP-07 error: ${e.toString()}',
         code: 'UNEXPECTED_ERROR',
@@ -187,7 +188,7 @@ class WebAuthService extends ChangeNotifier {
 
   /// Authenticate using nsec bunker (temporarily disabled)
   Future<WebAuthResult> authenticateWithBunker(String bunkerUri) async {
-    debugPrint('⚠️ Bunker authentication temporarily unavailable');
+    Log.warning('Bunker authentication temporarily unavailable', name: 'WebAuthService', category: LogCategory.system);
     return WebAuthResult.failure(
       'Bunker authentication is temporarily unavailable',
       code: 'TEMPORARILY_UNAVAILABLE',
@@ -197,21 +198,21 @@ class WebAuthService extends ChangeNotifier {
   /// Sign an event using the current authentication method
   Future<Map<String, dynamic>?> signEvent(Map<String, dynamic> event) async {
     if (!isAuthenticated || _currentSigner == null) {
-      debugPrint('❌ Cannot sign event: not authenticated');
+      Log.error('Cannot sign event: not authenticated', name: 'WebAuthService', category: LogCategory.system);
       return null;
     }
 
     try {
       return await _currentSigner!.signEvent(event);
     } catch (e) {
-      debugPrint('❌ Event signing failed: $e');
+      Log.error('Event signing failed: $e', name: 'WebAuthService', category: LogCategory.system);
       return null;
     }
   }
 
   /// Disconnect and clear authentication
   Future<void> disconnect() async {
-    debugPrint('🔓 Disconnecting web authentication...');
+    Log.debug('� Disconnecting web authentication...', name: 'WebAuthService', category: LogCategory.system);
     
     _currentSigner?.dispose();
     _currentSigner = null;
@@ -224,7 +225,7 @@ class WebAuthService extends ChangeNotifier {
     // await _bunkerService.disconnect(); // Temporarily disabled
 
     notifyListeners();
-    debugPrint('✅ Web authentication disconnected');
+    Log.info('Web authentication disconnected', name: 'WebAuthService', category: LogCategory.system);
   }
 
   /// Check for existing session on startup
@@ -240,19 +241,19 @@ class WebAuthService extends ChangeNotifier {
           _currentSigner = Nip07Signer(_nip07Service);
           _isAuthenticated = true;
           
-          debugPrint('✅ Restored NIP-07 session');
+          Log.info('Restored NIP-07 session', name: 'WebAuthService', category: LogCategory.system);
           notifyListeners();
           return;
         }
       } catch (e) {
         // Silent failure, user will need to authenticate manually
-        debugPrint('🔍 No existing NIP-07 session found');
+        Log.info('No existing NIP-07 session found', name: 'WebAuthService', category: LogCategory.system);
       }
     }
 
     // For bunker, we would need to store the URI securely and reconnect
     // This is more complex and should be implemented based on security requirements
-    debugPrint('🔍 No existing web session found');
+    Log.info('No existing web session found', name: 'WebAuthService', category: LogCategory.system);
   }
 
   /// Get debug information

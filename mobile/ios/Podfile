@@ -1,8 +1,14 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# Define the global iOS platform for this project
+platform :ios, '12.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+# Use CDN source for CocoaPods specs
+source 'https://cdn.cocoapods.org/'
+
+# Suppress master specs repo warning
+install! 'cocoapods', :warn_for_unused_master_specs_repo => false
 
 project 'Runner', {
   'Debug' => :debug,

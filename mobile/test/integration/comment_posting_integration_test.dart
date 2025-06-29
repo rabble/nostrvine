@@ -1,7 +1,6 @@
 // ABOUTME: Integration test for comment posting to verify Nostr event creation and UI updates
 // ABOUTME: Tests that comments create proper Kind 1 events, send to relays, and update UI immediately
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
@@ -9,7 +8,6 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/providers/comments_provider.dart';
-import 'package:openvine/models/comment.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 // Generate mocks

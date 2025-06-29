@@ -6,6 +6,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../models/comment.dart';
+import '../utils/unified_logger.dart';
 
 
 /// Comment tree node for organizing threaded comments
@@ -129,7 +130,7 @@ class CommentsProvider extends ChangeNotifier {
       ));
       
     } catch (e) {
-      debugPrint('❌ Error loading comments: $e');
+      Log.error('Error loading comments: $e', name: 'CommentsProvider', category: LogCategory.ui);
       _updateState(_state.copyWith(
         isLoading: false,
         error: 'Failed to load comments',
@@ -180,7 +181,7 @@ class CommentsProvider extends ChangeNotifier {
         replyToAuthorPubkey: replyToAuthorPubkey,
       );
     } catch (e) {
-      debugPrint('⚠️ Error parsing comment event: $e');
+      Log.error('Error parsing comment event: $e', name: 'CommentsProvider', category: LogCategory.ui);
       return null;
     }
   }
@@ -309,7 +310,7 @@ class CommentsProvider extends ChangeNotifier {
       await _loadComments();
       
     } catch (e) {
-      debugPrint('❌ Error posting comment: $e');
+      Log.error('Error posting comment: $e', name: 'CommentsProvider', category: LogCategory.ui);
       _updateState(_state.copyWith(error: 'Failed to post comment'));
       
       // Remove optimistic comment on error

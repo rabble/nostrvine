@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'camera_provider.dart';
+import '../utils/unified_logger.dart';
 
 /// Camera provider for iOS and Android using the camera plugin
 class MobileCameraProvider implements CameraProvider {
@@ -39,7 +40,7 @@ class MobileCameraProvider implements CameraProvider {
       );
       
       await _controller!.initialize();
-      debugPrint('📷 Mobile camera initialized successfully');
+      Log.info('� Mobile camera initialized successfully', name: 'MobileCameraProvider', category: LogCategory.video);
     } catch (e) {
       throw CameraProviderException('Failed to initialize mobile camera', e);
     }
@@ -79,7 +80,7 @@ class MobileCameraProvider implements CameraProvider {
           _realtimeFrames.add(frameData);
           _frameCallback?.call(frameData);
         } catch (e) {
-          debugPrint('⚠️ Frame capture error: $e');
+          Log.error('Frame capture error: $e', name: 'MobileCameraProvider', category: LogCategory.video);
         }
       });
       _isStreaming = true;
@@ -91,7 +92,7 @@ class MobileCameraProvider implements CameraProvider {
         }
       });
       
-      debugPrint('🎬 Started mobile camera recording with real-time streaming');
+      Log.info('Started mobile camera recording with real-time streaming', name: 'MobileCameraProvider', category: LogCategory.video);
     } catch (e) {
       _isRecording = false;
       throw CameraProviderException('Failed to start recording', e);
@@ -116,7 +117,7 @@ class MobileCameraProvider implements CameraProvider {
       // Stop video recording
       final videoFile = await _controller!.stopVideoRecording();
       
-      debugPrint('✅ Mobile camera recording stopped: ${_realtimeFrames.length} real-time frames');
+      Log.info('Mobile camera recording stopped: ${_realtimeFrames.length} real-time frames', name: 'MobileCameraProvider', category: LogCategory.video);
       
       return CameraRecordingResult(
         videoPath: videoFile.path,
@@ -159,9 +160,9 @@ class MobileCameraProvider implements CameraProvider {
       );
       
       await _controller!.initialize();
-      debugPrint('🔄 Switched to ${newCamera.lensDirection} camera');
+      Log.debug('Switched to ${newCamera.lensDirection} camera', name: 'MobileCameraProvider', category: LogCategory.video);
     } catch (e) {
-      debugPrint('❌ Failed to switch camera: $e');
+      Log.error('Failed to switch camera: $e', name: 'MobileCameraProvider', category: LogCategory.video);
     }
   }
   
@@ -171,7 +172,7 @@ class MobileCameraProvider implements CameraProvider {
       try {
         await stopRecording();
       } catch (e) {
-        debugPrint('⚠️ Error stopping recording during disposal: $e');
+        Log.error('Error stopping recording during disposal: $e', name: 'MobileCameraProvider', category: LogCategory.video);
       }
     }
     

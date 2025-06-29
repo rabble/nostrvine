@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:crypto/crypto.dart';
+import '../utils/unified_logger.dart';
 
 // Simple KeyPair class to replace Keychain
 class Keychain {
@@ -42,7 +43,7 @@ class NostrKeyManager extends ChangeNotifier {
   /// Initialize key manager and load existing keys
   Future<void> initialize() async {
     try {
-      debugPrint('🔑 Initializing Nostr key manager...');
+      Log.debug('� Initializing Nostr key manager...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       final prefs = await SharedPreferences.getInstance();
       
@@ -51,10 +52,10 @@ class NostrKeyManager extends ChangeNotifier {
       final keyVersion = prefs.getInt(_keyVersionKey) ?? 0;
       
       if (existingKeyData != null && keyVersion >= _currentKeyVersion) {
-        debugPrint('🔑 Loading existing Nostr keys...');
+        Log.debug('� Loading existing Nostr keys...', name: 'NostrKeyManager', category: LogCategory.relay);
         await _loadKeysFromStorage(existingKeyData);
       } else {
-        debugPrint('🔑 No existing keys found or version outdated');
+        Log.info('� No existing keys found or version outdated', name: 'NostrKeyManager', category: LogCategory.relay);
       }
       
       // Load backup hash
@@ -64,13 +65,13 @@ class NostrKeyManager extends ChangeNotifier {
       notifyListeners();
       
       if (hasKeys) {
-        debugPrint('✅ Key manager initialized with existing identity');
+        Log.info('Key manager initialized with existing identity', name: 'NostrKeyManager', category: LogCategory.relay);
       } else {
-        debugPrint('✅ Key manager initialized, ready for key generation');
+        Log.info('Key manager initialized, ready for key generation', name: 'NostrKeyManager', category: LogCategory.relay);
       }
       
     } catch (e) {
-      debugPrint('❌ Failed to initialize key manager: $e');
+      Log.error('Failed to initialize key manager: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       rethrow;
     }
   }
@@ -82,7 +83,7 @@ class NostrKeyManager extends ChangeNotifier {
     }
     
     try {
-      debugPrint('🔑 Generating new Nostr key pair...');
+      Log.debug('� Generating new Nostr key pair...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       // Generate new key pair
       _keyPair = Keychain.generate();
@@ -92,12 +93,12 @@ class NostrKeyManager extends ChangeNotifier {
       
       notifyListeners();
       
-      debugPrint('✅ New Nostr key pair generated and saved');
-      debugPrint('📝 Public key: ${_keyPair!.public}');
+      Log.info('New Nostr key pair generated and saved', name: 'NostrKeyManager', category: LogCategory.relay);
+      Log.verbose('Public key: ${_keyPair!.public}', name: 'NostrKeyManager', category: LogCategory.relay);
       
       return _keyPair!;
     } catch (e) {
-      debugPrint('❌ Failed to generate keys: $e');
+      Log.error('Failed to generate keys: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to generate new keys: $e');
     }
   }
@@ -109,7 +110,7 @@ class NostrKeyManager extends ChangeNotifier {
     }
     
     try {
-      debugPrint('🔑 Importing Nostr private key...');
+      Log.debug('� Importing Nostr private key...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       // Validate private key format (64 character hex)
       if (!_isValidPrivateKey(privateKey)) {
@@ -124,12 +125,12 @@ class NostrKeyManager extends ChangeNotifier {
       
       notifyListeners();
       
-      debugPrint('✅ Private key imported successfully');
-      debugPrint('📝 Public key: ${_keyPair!.public}');
+      Log.info('Private key imported successfully', name: 'NostrKeyManager', category: LogCategory.relay);
+      Log.verbose('Public key: ${_keyPair!.public}', name: 'NostrKeyManager', category: LogCategory.relay);
       
       return _keyPair!;
     } catch (e) {
-      debugPrint('❌ Failed to import private key: $e');
+      Log.error('Failed to import private key: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to import private key: $e');
     }
   }
@@ -140,7 +141,7 @@ class NostrKeyManager extends ChangeNotifier {
       throw NostrKeyException('No keys available for export');
     }
     
-    debugPrint('🔑 Exporting private key for backup');
+    Log.debug('� Exporting private key for backup', name: 'NostrKeyManager', category: LogCategory.relay);
     return _keyPair!.private;
   }
   
@@ -151,7 +152,7 @@ class NostrKeyManager extends ChangeNotifier {
     }
     
     try {
-      debugPrint('🔑 Creating mnemonic backup...');
+      Log.debug('� Creating mnemonic backup...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       // Use private key as entropy source for mnemonic generation
       final privateKeyBytes = _hexToBytes(_keyPair!.private);
@@ -178,10 +179,10 @@ class NostrKeyManager extends ChangeNotifier {
       
       notifyListeners();
       
-      debugPrint('✅ Mnemonic backup created');
+      Log.info('Mnemonic backup created', name: 'NostrKeyManager', category: LogCategory.relay);
       return mnemonic;
     } catch (e) {
-      debugPrint('❌ Failed to create mnemonic backup: $e');
+      Log.error('Failed to create mnemonic backup: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to create backup: $e');
     }
   }
@@ -193,7 +194,7 @@ class NostrKeyManager extends ChangeNotifier {
     }
     
     try {
-      debugPrint('🔑 Restoring from mnemonic backup...');
+      Log.debug('� Restoring from mnemonic backup...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       if (mnemonic.length != 12) {
         throw NostrKeyException('Invalid mnemonic length (expected 12 words)');
@@ -212,7 +213,7 @@ class NostrKeyManager extends ChangeNotifier {
       throw NostrKeyException('Mnemonic restoration requires private key for verification in prototype');
       
     } catch (e) {
-      debugPrint('❌ Failed to restore from mnemonic: $e');
+      Log.error('Failed to restore from mnemonic: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       rethrow;
     }
   }
@@ -226,7 +227,7 @@ class NostrKeyManager extends ChangeNotifier {
       
       return calculatedHash == _backupHash;
     } catch (e) {
-      debugPrint('❌ Backup verification failed: $e');
+      Log.error('Backup verification failed: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       return false;
     }
   }
@@ -234,7 +235,7 @@ class NostrKeyManager extends ChangeNotifier {
   /// Clear all stored keys (logout)
   Future<void> clearKeys() async {
     try {
-      debugPrint('🔑 Clearing stored Nostr keys...');
+      Log.debug('� Clearing stored Nostr keys...', name: 'NostrKeyManager', category: LogCategory.relay);
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyPairKey);
@@ -246,9 +247,9 @@ class NostrKeyManager extends ChangeNotifier {
       
       notifyListeners();
       
-      debugPrint('✅ Nostr keys cleared successfully');
+      Log.info('Nostr keys cleared successfully', name: 'NostrKeyManager', category: LogCategory.relay);
     } catch (e) {
-      debugPrint('❌ Failed to clear keys: $e');
+      Log.error('Failed to clear keys: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to clear keys: $e');
     }
   }
@@ -274,9 +275,9 @@ class NostrKeyManager extends ChangeNotifier {
       await prefs.setString(_keyPairKey, keyDataString);
       await prefs.setInt(_keyVersionKey, _currentKeyVersion);
       
-      debugPrint('✅ Keys saved to persistent storage');
+      Log.info('Keys saved to persistent storage', name: 'NostrKeyManager', category: LogCategory.relay);
     } catch (e) {
-      debugPrint('❌ Failed to save keys: $e');
+      Log.error('Failed to save keys: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to save keys: $e');
     }
   }
@@ -305,9 +306,9 @@ class NostrKeyManager extends ChangeNotifier {
         throw NostrKeyException('Public key mismatch - possible corruption');
       }
       
-      debugPrint('✅ Keys loaded from storage');
+      Log.info('Keys loaded from storage', name: 'NostrKeyManager', category: LogCategory.relay);
     } catch (e) {
-      debugPrint('❌ Failed to load keys from storage: $e');
+      Log.error('Failed to load keys from storage: $e', name: 'NostrKeyManager', category: LogCategory.relay);
       throw NostrKeyException('Failed to load stored keys: $e');
     }
   }

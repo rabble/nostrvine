@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'camera_provider.dart';
 import 'native_macos_camera.dart';
+import '../utils/unified_logger.dart';
 // import '../video_frame_extractor.dart'; // Temporarily disabled due to dependency conflict
 
 /// Camera provider for macOS using fallback implementation
@@ -35,67 +36,67 @@ class MacosCameraProvider implements CameraProvider {
     final isDevelopmentMode = kDebugMode;
     
     if (isDevelopmentMode) {
-      debugPrint('🔧 [MacosCameraProvider] Development mode - using fallback implementation');
-      debugPrint('🔧 This bypasses macOS permission issues during development');
+      Log.debug('[MacosCameraProvider] Development mode - using fallback implementation', name: 'MacosCameraProvider', category: LogCategory.video);
+      Log.debug('This bypasses macOS permission issues during development', name: 'MacosCameraProvider', category: LogCategory.video);
       await _initializeFallbackMode();
       return;
     }
     
     try {
-      debugPrint('🔵 [MacosCameraProvider] Starting initialization (native mode)');
+      Log.debug('� [MacosCameraProvider] Starting initialization (native mode)', name: 'MacosCameraProvider', category: LogCategory.video);
       
       // Check permission first
-      debugPrint('🔵 [MacosCameraProvider] Checking camera permission...');
+      Log.debug('� [MacosCameraProvider] Checking camera permission...', name: 'MacosCameraProvider', category: LogCategory.video);
       final hasPermission = await NativeMacOSCamera.hasPermission();
-      debugPrint('🔵 [MacosCameraProvider] Has permission: $hasPermission');
+      Log.debug('� [MacosCameraProvider] Has permission: $hasPermission', name: 'MacosCameraProvider', category: LogCategory.video);
       
       if (!hasPermission) {
-        debugPrint('🔵 [MacosCameraProvider] Requesting camera permission...');
+        Log.debug('� [MacosCameraProvider] Requesting camera permission...', name: 'MacosCameraProvider', category: LogCategory.video);
         final granted = await NativeMacOSCamera.requestPermission();
-        debugPrint('🔵 [MacosCameraProvider] Permission granted: $granted');
+        Log.debug('� [MacosCameraProvider] Permission granted: $granted', name: 'MacosCameraProvider', category: LogCategory.video);
         if (!granted) {
-          debugPrint('⚠️ [MacosCameraProvider] Permission denied, falling back to test mode');
+          Log.warning('[MacosCameraProvider] Permission denied, falling back to test mode', name: 'MacosCameraProvider', category: LogCategory.video);
           await _initializeFallbackMode();
           return;
         }
       }
       
       // Initialize native camera
-      debugPrint('🔵 [MacosCameraProvider] Initializing native camera...');
+      Log.debug('� [MacosCameraProvider] Initializing native camera...', name: 'MacosCameraProvider', category: LogCategory.video);
       final initialized = await NativeMacOSCamera.initialize();
-      debugPrint('🔵 [MacosCameraProvider] Native camera initialized: $initialized');
+      Log.info('� [MacosCameraProvider] Native camera initialized: $initialized', name: 'MacosCameraProvider', category: LogCategory.video);
       if (!initialized) {
-        debugPrint('⚠️ [MacosCameraProvider] Native init failed, falling back to test mode');
+        Log.error('[MacosCameraProvider] Native init failed, falling back to test mode', name: 'MacosCameraProvider', category: LogCategory.video);
         await _initializeFallbackMode();
         return;
       }
       
       // Start preview
-      debugPrint('🔵 [MacosCameraProvider] Starting camera preview...');
+      Log.debug('� [MacosCameraProvider] Starting camera preview...', name: 'MacosCameraProvider', category: LogCategory.video);
       final previewStarted = await NativeMacOSCamera.startPreview();
-      debugPrint('🔵 [MacosCameraProvider] Preview started: $previewStarted');
+      Log.info('� [MacosCameraProvider] Preview started: $previewStarted', name: 'MacosCameraProvider', category: LogCategory.video);
       if (!previewStarted) {
-        debugPrint('⚠️ [MacosCameraProvider] Preview failed, falling back to test mode');
+        Log.error('[MacosCameraProvider] Preview failed, falling back to test mode', name: 'MacosCameraProvider', category: LogCategory.video);
         await _initializeFallbackMode();
         return;
       }
       
       _isInitialized = true;
-      debugPrint('✅ [MacosCameraProvider] Successfully initialized with native implementation');
+      Log.info('[MacosCameraProvider] Successfully initialized with native implementation', name: 'MacosCameraProvider', category: LogCategory.video);
     } catch (e) {
-      debugPrint('❌ [MacosCameraProvider] Native camera failed: $e');
-      debugPrint('🔧 [MacosCameraProvider] Falling back to development test mode');
+      Log.error('[MacosCameraProvider] Native camera failed: $e', name: 'MacosCameraProvider', category: LogCategory.video);
+      Log.debug('[MacosCameraProvider] Falling back to development test mode', name: 'MacosCameraProvider', category: LogCategory.video);
       await _initializeFallbackMode();
     }
   }
   
   /// Initialize fallback mode for development (bypasses camera permissions)
   Future<void> _initializeFallbackMode() async {
-    debugPrint('🔧 [MacosCameraProvider] Initializing fallback mode');
-    debugPrint('📸 This provides a working camera interface for development');
+    Log.debug('[MacosCameraProvider] Initializing fallback mode', name: 'MacosCameraProvider', category: LogCategory.video);
+    Log.debug('� This provides a working camera interface for development', name: 'MacosCameraProvider', category: LogCategory.video);
     
     _isInitialized = true;
-    debugPrint('✅ [MacosCameraProvider] Fallback mode initialized successfully');
+    Log.info('[MacosCameraProvider] Fallback mode initialized successfully', name: 'MacosCameraProvider', category: LogCategory.video);
   }
   
   @override
@@ -300,8 +301,8 @@ class MacosCameraProvider implements CameraProvider {
   
   @override
   Future<void> startRecording({Function(Uint8List)? onFrame}) async {
-    debugPrint('🔵 [MacosCameraProvider] startRecording called');
-    debugPrint('🔵 [MacosCameraProvider] initialized: $isInitialized, recording: $_isRecording');
+    Log.debug('� [MacosCameraProvider] startRecording called', name: 'MacosCameraProvider', category: LogCategory.video);
+    Log.info('� [MacosCameraProvider] initialized: $isInitialized, recording: $_isRecording', name: 'MacosCameraProvider', category: LogCategory.video);
     
     if (!isInitialized || _isRecording) {
       throw CameraProviderException('Cannot start recording: camera not ready or already recording');
@@ -315,47 +316,47 @@ class MacosCameraProvider implements CameraProvider {
       
       // Check if we're in development/fallback mode
       if (kDebugMode) {
-        debugPrint('🔧 [MacosCameraProvider] Starting fallback recording (dev mode)');
+        Log.debug('[MacosCameraProvider] Starting fallback recording (dev mode)', name: 'MacosCameraProvider', category: LogCategory.video);
         await _startFallbackRecording();
         return;
       }
       
-      debugPrint('🔵 [MacosCameraProvider] Starting native macOS camera recording');
+      Log.debug('� [MacosCameraProvider] Starting native macOS camera recording', name: 'MacosCameraProvider', category: LogCategory.video);
       
       // Start native recording
       final recordingStarted = await NativeMacOSCamera.startRecording();
-      debugPrint('🔵 [MacosCameraProvider] Native recording started: $recordingStarted');
+      Log.info('� [MacosCameraProvider] Native recording started: $recordingStarted', name: 'MacosCameraProvider', category: LogCategory.video);
       if (!recordingStarted) {
         throw CameraProviderException('Failed to start native recording');
       }
       
       // Subscribe to frame stream for real-time processing
-      debugPrint('🔵 [MacosCameraProvider] Setting up frame stream subscription');
+      Log.debug('� [MacosCameraProvider] Setting up frame stream subscription', name: 'MacosCameraProvider', category: LogCategory.video);
       _frameSubscription = NativeMacOSCamera.frameStream.listen(
         (frame) {
           _realtimeFrames.add(frame);
           _frameCallback?.call(frame);
           // Log every 30th frame to avoid spam but show activity
           if (_realtimeFrames.length % 30 == 0) {
-            debugPrint('🖼️ [MacosCameraProvider] Captured ${_realtimeFrames.length} frames');
+            Log.verbose('[MacosCameraProvider] Captured ${_realtimeFrames.length} frames', name: 'MacosCameraProvider', category: LogCategory.video);
           }
         },
         onError: (error) {
-          debugPrint('❌ [MacosCameraProvider] Frame stream error: $error');
+          Log.error('[MacosCameraProvider] Frame stream error: $error', name: 'MacosCameraProvider', category: LogCategory.video);
         },
       );
       
-      debugPrint('✅ [MacosCameraProvider] Native macOS camera recording started successfully');
+      Log.info('[MacosCameraProvider] Native macOS camera recording started successfully', name: 'MacosCameraProvider', category: LogCategory.video);
       
       // Auto-stop after max duration using Timer for proper cancellation
       _autoStopTimer = Timer(maxVineDuration, () {
         if (_isRecording) {
-          debugPrint('⏱️ [MacosCameraProvider] Auto-stopping recording after ${maxVineDuration.inSeconds}s');
+          Log.debug('⏱️ [MacosCameraProvider] Auto-stopping recording after ${maxVineDuration.inSeconds}s', name: 'MacosCameraProvider', category: LogCategory.video);
           stopRecording();
         }
       });
     } catch (e) {
-      debugPrint('❌ [MacosCameraProvider] Failed to start recording: $e');
+      Log.error('[MacosCameraProvider] Failed to start recording: $e', name: 'MacosCameraProvider', category: LogCategory.video);
       _isRecording = false;
       await _frameSubscription?.cancel();
       _frameSubscription = null;
@@ -369,7 +370,7 @@ class MacosCameraProvider implements CameraProvider {
       throw CameraProviderException('Not currently recording');
     }
     
-    debugPrint('🔵 [MacosCameraProvider] stopRecording called, _isRecording: $_isRecording');
+    Log.debug('� [MacosCameraProvider] stopRecording called, _isRecording: $_isRecording', name: 'MacosCameraProvider', category: LogCategory.video);
     
     // Cancel auto-stop timer to prevent race condition
     _autoStopTimer?.cancel();
@@ -385,23 +386,23 @@ class MacosCameraProvider implements CameraProvider {
       
       // Check if we're in development/fallback mode
       if (kDebugMode) {
-        debugPrint('🔧 [MacosCameraProvider] Stopping fallback recording (dev mode)');
+        Log.debug('[MacosCameraProvider] Stopping fallback recording (dev mode)', name: 'MacosCameraProvider', category: LogCategory.video);
         return _stopFallbackRecording(duration);
       }
       
-      debugPrint('🛑 Stopping native macOS camera recording');
+      Log.debug('� Stopping native macOS camera recording', name: 'MacosCameraProvider', category: LogCategory.video);
       
       // Stop native recording
       final videoPath = await NativeMacOSCamera.stopRecording();
-      debugPrint('🔵 [MacosCameraProvider] Native stopRecording completed with path: $videoPath');
+      Log.info('� [MacosCameraProvider] Native stopRecording completed with path: $videoPath', name: 'MacosCameraProvider', category: LogCategory.video);
       
       // Stop frame subscription
       await _frameSubscription?.cancel();
       _frameSubscription = null;
       
-      debugPrint('✅ Native macOS camera recording stopped');
-      debugPrint('📁 Video saved to: $videoPath');
-      debugPrint('🎨 Captured ${_realtimeFrames.length} live frames');
+      Log.info('Native macOS camera recording stopped', name: 'MacosCameraProvider', category: LogCategory.video);
+      Log.debug('� Video saved to: $videoPath', name: 'MacosCameraProvider', category: LogCategory.video);
+      Log.debug('Captured ${_realtimeFrames.length} live frames', name: 'MacosCameraProvider', category: LogCategory.video);
       
       return CameraRecordingResult(
         videoPath: videoPath ?? '/tmp/openvine_recording.mp4', // Provide fallback if null
@@ -411,7 +412,7 @@ class MacosCameraProvider implements CameraProvider {
         duration: duration,
       );
     } catch (e) {
-      debugPrint('❌ Error stopping native recording: $e');
+      Log.error('Error stopping native recording: $e', name: 'MacosCameraProvider', category: LogCategory.video);
       // Fallback to test frames if native recording fails
       final testFrames = _generateTestFrames();
       final duration = _recordingStartTime != null 
@@ -440,16 +441,16 @@ class MacosCameraProvider implements CameraProvider {
     if (!isInitialized || _isRecording) return;
     
     try {
-      debugPrint('🔄 Switching native macOS camera');
+      Log.debug('Switching native macOS camera', name: 'MacosCameraProvider', category: LogCategory.video);
       
       final switched = await NativeMacOSCamera.switchCamera(1);
       if (switched) {
-        debugPrint('✅ Camera switched successfully');
+        Log.info('Camera switched successfully', name: 'MacosCameraProvider', category: LogCategory.video);
       } else {
-        debugPrint('⚠️ Camera switch not supported or failed');
+        Log.error('Camera switch not supported or failed', name: 'MacosCameraProvider', category: LogCategory.video);
       }
     } catch (e) {
-      debugPrint('❌ Error switching camera: $e');
+      Log.error('Error switching camera: $e', name: 'MacosCameraProvider', category: LogCategory.video);
     }
   }
   
@@ -459,7 +460,7 @@ class MacosCameraProvider implements CameraProvider {
       try {
         await stopRecording();
       } catch (e) {
-        debugPrint('⚠️ Error stopping recording during disposal: $e');
+        Log.error('Error stopping recording during disposal: $e', name: 'MacosCameraProvider', category: LogCategory.video);
       }
     }
     
@@ -473,9 +474,9 @@ class MacosCameraProvider implements CameraProvider {
     // Dispose native camera resources
     try {
       await NativeMacOSCamera.dispose();
-      debugPrint('✅ Native macOS camera disposed');
+      Log.info('Native macOS camera disposed', name: 'MacosCameraProvider', category: LogCategory.video);
     } catch (e) {
-      debugPrint('⚠️ Error disposing native camera: $e');
+      Log.error('Error disposing native camera: $e', name: 'MacosCameraProvider', category: LogCategory.video);
     }
     
     _isInitialized = false;
@@ -483,7 +484,7 @@ class MacosCameraProvider implements CameraProvider {
   
   /// Start fallback recording for development mode
   Future<void> _startFallbackRecording() async {
-    debugPrint('🔧 [MacosCameraProvider] Starting fallback recording simulation');
+    Log.debug('[MacosCameraProvider] Starting fallback recording simulation', name: 'MacosCameraProvider', category: LogCategory.video);
     
     // Generate test frames periodically to simulate real-time capture
     Timer.periodic(const Duration(milliseconds: 200), (timer) {
@@ -509,18 +510,18 @@ class MacosCameraProvider implements CameraProvider {
     // Auto-stop after max duration
     _autoStopTimer = Timer(maxVineDuration, () {
       if (_isRecording) {
-        debugPrint('⏱️ [MacosCameraProvider] Auto-stopping fallback recording after ${maxVineDuration.inSeconds}s');
+        Log.debug('⏱️ [MacosCameraProvider] Auto-stopping fallback recording after ${maxVineDuration.inSeconds}s', name: 'MacosCameraProvider', category: LogCategory.video);
         stopRecording();
       }
     });
     
-    debugPrint('✅ [MacosCameraProvider] Fallback recording started successfully');
+    Log.info('[MacosCameraProvider] Fallback recording started successfully', name: 'MacosCameraProvider', category: LogCategory.video);
   }
   
   /// Stop fallback recording and return result
   CameraRecordingResult _stopFallbackRecording(Duration duration) {
-    debugPrint('🔧 [MacosCameraProvider] Generating fallback recording result');
-    debugPrint('🎨 Captured ${_realtimeFrames.length} test frames');
+    Log.debug('[MacosCameraProvider] Generating fallback recording result', name: 'MacosCameraProvider', category: LogCategory.video);
+    Log.debug('Captured ${_realtimeFrames.length} test frames', name: 'MacosCameraProvider', category: LogCategory.video);
     
     return CameraRecordingResult(
       videoPath: '/dev/fallback/openvine_test_video.mp4',

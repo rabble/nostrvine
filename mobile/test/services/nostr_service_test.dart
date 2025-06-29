@@ -168,7 +168,7 @@ void main() {
       });
       
       test('should provide meaningful error messages', () {
-        const error = NostrServiceException('Test error message');
+        final error = NostrServiceException('Test error message');
         expect(error.message, equals('Test error message'));
         expect(error.toString(), contains('NostrServiceException'));
       });

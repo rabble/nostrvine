@@ -14,6 +14,7 @@ import '../screens/comments_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../widgets/share_video_menu.dart';
+import '../utils/unified_logger.dart';
 
 /// Full-screen overlay that displays video with proper scaling and interactions
 class VideoFullscreenOverlay extends StatefulWidget {
@@ -65,7 +66,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
     
     // Check if video has changed
     if (widget.video.id != _currentVideoId) {
-      debugPrint('🔄 Video changed from ${_currentVideoId?.substring(0, 8)} to ${widget.video.id.substring(0, 8)}');
+      Log.debug('Video changed from ${_currentVideoId?.substring(0, 8)} to ${widget.video.id.substring(0, 8)}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       _currentVideoId = widget.video.id;
       
       // Dispose old video and initialize new one
@@ -86,14 +87,14 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
 
   Future<void> _initializeVideo() async {
     // More detailed debug logging
-    debugPrint('🎬 _initializeVideo called for ${widget.video.id.substring(0, 8)}...');
-    debugPrint('   - hasVideo: ${widget.video.hasVideo}');
-    debugPrint('   - videoUrl: ${widget.video.videoUrl}');
-    debugPrint('   - _isInitializing: $_isInitializing');
-    debugPrint('   - _controller: $_controller');
+    Log.debug('_initializeVideo called for ${widget.video.id.substring(0, 8)}...', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+    Log.debug('   - hasVideo: ${widget.video.hasVideo}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+    Log.debug('   - videoUrl: ${widget.video.videoUrl}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+    Log.debug('   - _isInitializing: $_isInitializing', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+    Log.debug('   - _controller: $_controller', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
     
     if (_isInitializing || _controller != null || !widget.video.hasVideo) {
-      debugPrint('⚠️ Skipping initialization - conditions not met');
+      Log.warning('Skipping initialization - conditions not met', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       return;
     }
 
@@ -103,7 +104,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
     });
 
     try {
-      debugPrint('🎬 Creating VideoPlayerController for URL: ${widget.video.videoUrl}');
+      Log.debug('Creating VideoPlayerController for URL: ${widget.video.videoUrl}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.video.videoUrl!),
@@ -111,9 +112,9 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
       
       _controller = controller;
       
-      debugPrint('⏳ Initializing video controller...');
+      Log.debug('⏳ Initializing video controller...', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       await controller.initialize();
-      debugPrint('✅ Video controller initialized successfully');
+      Log.info('Video controller initialized successfully', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       
       if (mounted) {
         await controller.setLooping(true);
@@ -124,21 +125,21 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
           _isInitializing = false;
         });
         
-        debugPrint('✅ Fullscreen video playing with audio for ${widget.video.id.substring(0, 8)}');
-        debugPrint('   - Duration: ${controller.value.duration}');
-        debugPrint('   - Size: ${controller.value.size}');
-        debugPrint('   - AspectRatio: ${controller.value.aspectRatio}');
+        Log.info('Fullscreen video playing with audio for ${widget.video.id.substring(0, 8)}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+        Log.debug('   - Duration: ${controller.value.duration}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+        Log.debug('   - Size: ${controller.value.size}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+        Log.debug('   - AspectRatio: ${controller.value.aspectRatio}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Fullscreen video initialization failed: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Fullscreen video initialization failed: $e', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+      Log.verbose('� Stack trace: $stackTrace', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       
       // Check if it's a CORS or network issue
       final errorMessage = e.toString().toLowerCase();
       if (errorMessage.contains('cors') || errorMessage.contains('access-control') || 
           errorMessage.contains('cross-origin') || errorMessage.contains('network')) {
-        debugPrint('🌐 This appears to be a CORS or network error');
-        debugPrint('   Check if the video URL is accessible and CORS headers are properly set');
+        Log.error('� This appears to be a CORS or network error', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+        Log.debug('   Check if the video URL is accessible and CORS headers are properly set', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
       }
       
       if (mounted) {
@@ -151,7 +152,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
   }
 
   void _disposeVideo() {
-    debugPrint('🗑️ Disposing fullscreen video');
+    Log.debug('�️ Disposing fullscreen video', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
     _controller?.dispose();
     _controller = null;
   }
@@ -408,7 +409,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  debugPrint('👤 Navigating to profile: ${widget.video.pubkey}');
+                  Log.verbose('Navigating to profile: ${widget.video.pubkey}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
                   // Pause video before navigating away
                   if (_controller != null && _controller!.value.isPlaying) {
                     _controller!.pause();
@@ -803,7 +804,7 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
   }
 
   void _navigateToHashtagFeed(String hashtag) {
-    debugPrint('🔗 Navigating to hashtag feed: #$hashtag');
+    Log.debug('� Navigating to hashtag feed: #$hashtag', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
     
     Navigator.of(context).push(
       MaterialPageRoute(

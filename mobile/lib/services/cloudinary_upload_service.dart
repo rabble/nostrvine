@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';
 import 'nip98_auth_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Result of a Cloudinary upload operation
 class UploadResult {
@@ -97,7 +98,7 @@ class CloudinaryUploadService extends ChangeNotifier {
     List<String>? hashtags,
     void Function(double progress)? onProgress,
   }) async {
-    debugPrint('🔄 Starting Cloudinary upload for video: ${videoFile.path}');
+    Log.debug('Starting Cloudinary upload for video: ${videoFile.path}', name: 'CloudinaryUploadService', category: LogCategory.system);
     
     String? publicId;
     
@@ -136,7 +137,7 @@ class CloudinaryUploadService extends ChangeNotifier {
       
       // Simulate progress for now
       progressController.add(1.0);
-      debugPrint('📤 Upload completed');
+      Log.info('� Upload completed', name: 'CloudinaryUploadService', category: LogCategory.system);
       
       // Cleanup progress controller and subscription
       _progressControllers.remove(signedParams.publicId);
@@ -145,7 +146,7 @@ class CloudinaryUploadService extends ChangeNotifier {
       await progressController.close();
       
       if (response.publicId.isNotEmpty) {
-        debugPrint('✅ Cloudinary upload successful: ${response.publicId}');
+        Log.info('Cloudinary upload successful: ${response.publicId}', name: 'CloudinaryUploadService', category: LogCategory.system);
         return UploadResult.success(
           cloudinaryPublicId: response.publicId,
           cloudinaryUrl: response.secureUrl.isNotEmpty ? response.secureUrl : response.url,
@@ -159,12 +160,12 @@ class CloudinaryUploadService extends ChangeNotifier {
         );
       } else {
         final errorMsg = 'Cloudinary upload failed: Invalid response';
-        debugPrint('❌ $errorMsg');
+        Log.error('$errorMsg', name: 'CloudinaryUploadService', category: LogCategory.system);
         return UploadResult.failure(errorMsg);
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Upload error: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Upload error: $e', name: 'CloudinaryUploadService', category: LogCategory.system);
+      Log.verbose('� Stack trace: $stackTrace', name: 'CloudinaryUploadService', category: LogCategory.system);
       
       // Clean up progress tracking on error
       if (publicId != null) {
@@ -186,7 +187,7 @@ class CloudinaryUploadService extends ChangeNotifier {
     String? description,
     List<String>? hashtags,
   }) async {
-    debugPrint('🔐 Requesting signed upload parameters from backend');
+    Log.debug('� Requesting signed upload parameters from backend', name: 'CloudinaryUploadService', category: LogCategory.system);
     
     try {
       // Get file size and basic metadata
@@ -211,13 +212,13 @@ class CloudinaryUploadService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('✅ Received signed upload parameters');
+        Log.info('Received signed upload parameters', name: 'CloudinaryUploadService', category: LogCategory.system);
         return SignedUploadParams.fromJson(data);
       } else {
         throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to get signed upload parameters: $e');
+      Log.error('Failed to get signed upload parameters: $e', name: 'CloudinaryUploadService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -237,12 +238,12 @@ class CloudinaryUploadService extends ChangeNotifier {
       
       if (authToken != null) {
         headers['Authorization'] = authToken.authorizationHeader;
-        debugPrint('🔐 Added NIP-98 auth to upload request');
+        Log.debug('� Added NIP-98 auth to upload request', name: 'CloudinaryUploadService', category: LogCategory.system);
       } else {
-        debugPrint('⚠️ Failed to create NIP-98 auth token for upload');
+        Log.error('Failed to create NIP-98 auth token for upload', name: 'CloudinaryUploadService', category: LogCategory.system);
       }
     } else {
-      debugPrint('⚠️ No authentication service available for upload');
+      Log.warning('No authentication service available for upload', name: 'CloudinaryUploadService', category: LogCategory.system);
     }
     
     return headers;
@@ -256,7 +257,7 @@ class CloudinaryUploadService extends ChangeNotifier {
     if (controller != null || subscription != null) {
       await subscription?.cancel();
       await controller?.close();
-      debugPrint('🚫 Upload cancelled: $publicId');
+      Log.debug('Upload cancelled: $publicId', name: 'CloudinaryUploadService', category: LogCategory.system);
     }
   }
   

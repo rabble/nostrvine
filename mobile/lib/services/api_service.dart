@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../models/ready_event_data.dart';
 import '../config/app_config.dart';
 import 'nip98_auth_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Exception thrown by API service
 class ApiException implements Exception {
@@ -37,7 +38,7 @@ class ApiService extends ChangeNotifier {
 
   /// Get ready events from the backend
   Future<List<ReadyEventData>> getReadyEvents() async {
-    debugPrint('🌐 Fetching ready events from backend');
+    Log.debug('� Fetching ready events from backend', name: 'ApiService', category: LogCategory.api);
     
     try {
       final uri = Uri.parse('$_baseUrl/v1/media/ready-events');
@@ -47,7 +48,7 @@ class ApiService extends ChangeNotifier {
         headers: await _getHeaders(url: uri.toString(), method: HttpMethod.get),
       ).timeout(_defaultTimeout);
       
-      debugPrint('📡 API Response: ${response.statusCode}');
+      Log.debug('API Response: ${response.statusCode}', name: 'ApiService', category: LogCategory.api);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -57,12 +58,12 @@ class ApiService extends ChangeNotifier {
             .map((eventJson) => ReadyEventData.fromJson(eventJson))
             .toList();
         
-        debugPrint('✅ Fetched ${readyEvents.length} ready events');
+        Log.info('Fetched ${readyEvents.length} ready events', name: 'ApiService', category: LogCategory.api);
         return readyEvents;
         
       } else if (response.statusCode == 204 || response.statusCode == 404) {
         // No ready events available
-        debugPrint('📭 No ready events available (${response.statusCode})');
+        Log.debug('No ready events available (${response.statusCode})', name: 'ApiService', category: LogCategory.api);
         return [];
         
       } else {
@@ -85,7 +86,7 @@ class ApiService extends ChangeNotifier {
 
   /// Clean up a processed event on the backend
   Future<void> cleanupRemoteEvent(String publicId) async {
-    debugPrint('🧹 Cleaning up remote event: $publicId');
+    Log.debug('🧹 Cleaning up remote event: $publicId', name: 'ApiService', category: LogCategory.api);
     
     try {
       final uri = Uri.parse('$_baseUrl/v1/media/cleanup/$publicId');
@@ -96,9 +97,9 @@ class ApiService extends ChangeNotifier {
       ).timeout(_defaultTimeout);
       
       if (response.statusCode == 200 || response.statusCode == 204) {
-        debugPrint('✅ Remote event cleaned up: $publicId');
+        Log.info('Remote event cleaned up: $publicId', name: 'ApiService', category: LogCategory.api);
       } else if (response.statusCode == 404) {
-        debugPrint('⚠️ Remote event not found (already cleaned?): $publicId');
+        Log.warning('Remote event not found (already cleaned?): $publicId', name: 'ApiService', category: LogCategory.api);
       } else {
         throw ApiException(
           'Failed to cleanup remote event',
@@ -124,7 +125,7 @@ class ApiService extends ChangeNotifier {
     String? description,
     List<String>? hashtags,
   }) async {
-    debugPrint('🔐 Requesting signed upload parameters');
+    Log.debug('� Requesting signed upload parameters', name: 'ApiService', category: LogCategory.api);
     
     try {
       final uri = Uri.parse('$_baseUrl/v1/media/request-upload');
@@ -146,7 +147,7 @@ class ApiService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        debugPrint('✅ Received signed upload parameters');
+        Log.info('Received signed upload parameters', name: 'ApiService', category: LogCategory.api);
         return data;
       } else {
         throw ApiException(
@@ -166,7 +167,7 @@ class ApiService extends ChangeNotifier {
 
   /// Get user's upload status
   Future<Map<String, dynamic>> getUserUploadStatus() async {
-    debugPrint('📊 Fetching user upload status');
+    Log.debug('Fetching user upload status', name: 'ApiService', category: LogCategory.api);
     
     try {
       final uri = Uri.parse('$_baseUrl/v1/media/status');
@@ -178,7 +179,7 @@ class ApiService extends ChangeNotifier {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        debugPrint('✅ Retrieved upload status');
+        Log.info('Retrieved upload status', name: 'ApiService', category: LogCategory.api);
         return data;
       } else {
         throw ApiException(
@@ -216,12 +217,12 @@ class ApiService extends ChangeNotifier {
       
       if (authToken != null) {
         headers['Authorization'] = authToken.authorizationHeader;
-        debugPrint('🔐 Added NIP-98 auth to request');
+        Log.debug('� Added NIP-98 auth to request', name: 'ApiService', category: LogCategory.api);
       } else {
-        debugPrint('⚠️ Failed to create NIP-98 auth token');
+        Log.error('Failed to create NIP-98 auth token', name: 'ApiService', category: LogCategory.api);
       }
     } else {
-      debugPrint('⚠️ No authentication service available');
+      Log.warning('No authentication service available', name: 'ApiService', category: LogCategory.api);
     }
     
     return headers;
@@ -230,7 +231,7 @@ class ApiService extends ChangeNotifier {
   /// Test API connectivity
   Future<bool> testConnection() async {
     try {
-      debugPrint('🔗 Testing API connection to: ${AppConfig.healthUrl}');
+      Log.debug('� Testing API connection to: ${AppConfig.healthUrl}', name: 'ApiService', category: LogCategory.api);
       
       final uri = Uri.parse(AppConfig.healthUrl);
       final response = await _client.get(uri).timeout(const Duration(seconds: 10));
@@ -250,7 +251,7 @@ class ApiService extends ChangeNotifier {
       return isHealthy;
       
     } catch (e) {
-      debugPrint('❌ API connection test failed: $e');
+      Log.error('API connection test failed: $e', name: 'ApiService', category: LogCategory.api);
       return false;
     }
   }
@@ -265,7 +266,7 @@ class ApiService extends ChangeNotifier {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to get API config: $e');
+      Log.error('Failed to get API config: $e', name: 'ApiService', category: LogCategory.api);
     }
     return null;
   }

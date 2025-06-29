@@ -15,6 +15,7 @@ import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:openvine/utils/nostr_encoding.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   group('DirectUploadService Integration', () {
@@ -39,13 +40,13 @@ void main() {
         testVideoFile = File(path.join(tempDir.path, 'test_video.mp4'));
         await existingVideo.copy(testVideoFile.path);
         final fileSize = await testVideoFile.length();
-        print('📁 Using existing video file: ${testVideoFile.path} (${fileSize} bytes)');
+        Log.debug('📁 Using existing video file: ${testVideoFile.path} (${fileSize} bytes)');
       } else {
         // Fallback: create a minimal test MP4 file
         testVideoFile = File(path.join(tempDir.path, 'test_video.mp4'));
         final mp4Data = _createMinimalMp4Data();
         await testVideoFile.writeAsBytes(mp4Data);
-        print('📁 Created minimal test video file: ${testVideoFile.path} (${mp4Data.length} bytes)');
+        Log.debug('📁 Created minimal test video file: ${testVideoFile.path} (${mp4Data.length} bytes)');
       }
     });
     
@@ -53,7 +54,7 @@ void main() {
       // Clean up test files
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
-        print('🧹 Cleaned up test directory: ${tempDir.path}');
+        Log.debug('🧹 Cleaned up test directory: ${tempDir.path}');
       }
     });
 
@@ -80,11 +81,11 @@ void main() {
 
     group('End-to-End Upload Flow', () {
       test('should successfully upload video with NIP-98 auth', () async {
-        print('\n🧪 Starting end-to-end upload test...');
+        Log.debug('\n🧪 Starting end-to-end upload test...');
         
         // 1. Create test authentication setup using real cryptographic keys
         final keyPair = _generateRealKeyPair();
-        print('🔑 Generated test keypair: ${keyPair.publicKeyHex}');
+        Log.debug('🔑 Generated test keypair: ${keyPair.publicKeyHex}');
         
         // Create mock auth service that returns our test key
         final authService = TestAuthService(keyPair: keyPair);
@@ -97,7 +98,7 @@ void main() {
         final progressEvents = <double>[];
         
         // 4. Perform the upload
-        print('📤 Starting upload of test video...');
+        Log.debug('📤 Starting upload of test video...');
         final result = await uploadService.uploadVideo(
           videoFile: testVideoFile,
           nostrPubkey: keyPair.publicKeyHex,
@@ -106,17 +107,17 @@ void main() {
           hashtags: ['test', 'e2e', 'nostrvine'],
           onProgress: (progress) {
             progressEvents.add(progress);
-            print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+            Log.debug('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
           },
         );
         
         // 5. Verify upload result
-        print('📋 Upload result: success=${result.success}');
+        Log.debug('📋 Upload result: success=${result.success}');
         if (result.success) {
-          print('✅ Upload successful!');
-          print('🆔 Video ID: ${result.videoId}');
-          print('🔗 CDN URL: ${result.cdnUrl}');
-          print('📊 Metadata: ${result.metadata}');
+          Log.debug('✅ Upload successful!');
+          Log.debug('🆔 Video ID: ${result.videoId}');
+          Log.debug('🔗 CDN URL: ${result.cdnUrl}');
+          Log.debug('📊 Metadata: ${result.metadata}');
           
           expect(result.success, isTrue);
           expect(result.cdnUrl, isNotNull);
@@ -124,22 +125,22 @@ void main() {
           
           // 6. Test file accessibility (if CDN is working)
           if (result.cdnUrl != null) {
-            print('🌐 Testing CDN URL accessibility...');
+            Log.debug('🌐 Testing CDN URL accessibility...');
             try {
               final response = await http.head(Uri.parse(result.cdnUrl!));
-              print('🌐 CDN response: ${response.statusCode}');
+              Log.debug('🌐 CDN response: ${response.statusCode}');
               
               // Note: CDN might return 404 due to the known serving issue,
               // but upload should still be successful
               if (response.statusCode == 200) {
-                print('✅ CDN serving is working!');
+                Log.debug('✅ CDN serving is working!');
                 expect(response.headers['content-type'], contains('video'));
               } else {
-                print('⚠️ CDN serving issue (known): ${response.statusCode}');
+                Log.debug('⚠️ CDN serving issue (known): ${response.statusCode}');
                 // Don't fail the test for CDN serving issues
               }
             } catch (e) {
-              print('⚠️ CDN test failed (acceptable): $e');
+              Log.debug('⚠️ CDN test failed (acceptable): $e');
               // Don't fail the test for CDN issues
             }
           }
@@ -148,16 +149,16 @@ void main() {
           expect(progressEvents, isNotEmpty);
           expect(progressEvents.first, greaterThanOrEqualTo(0.0));
           expect(progressEvents.last, greaterThanOrEqualTo(0.9)); // Should reach near 100%
-          print('📊 Progress events: ${progressEvents.length} updates');
+          Log.debug('📊 Progress events: ${progressEvents.length} updates');
           
         } else {
-          print('❌ Upload failed: ${result.errorMessage}');
+          Log.debug('❌ Upload failed: ${result.errorMessage}');
           fail('Upload should have succeeded, but got error: ${result.errorMessage}');
         }
       }, timeout: const Timeout(Duration(minutes: 2)));
       
       test('should handle upload without authentication', () async {
-        print('\n🧪 Testing upload without authentication...');
+        Log.debug('\n🧪 Testing upload without authentication...');
         
         // Create service without authentication
         final uploadService = DirectUploadService();
@@ -168,7 +169,7 @@ void main() {
           nostrPubkey: 'test-pubkey',
         );
         
-        print('📋 No-auth result: success=${result.success}, error=${result.errorMessage}');
+        Log.debug('📋 No-auth result: success=${result.success}, error=${result.errorMessage}');
         
         // Should fail but not crash
         expect(result.success, isFalse);
@@ -176,7 +177,7 @@ void main() {
       });
       
       test('should handle missing file gracefully', () async {
-        print('\n🧪 Testing upload with missing file...');
+        Log.debug('\n🧪 Testing upload with missing file...');
         
         final authService = TestAuthService(keyPair: _generateRealKeyPair());
         final nip98Service = Nip98AuthService(authService: authService);
@@ -191,7 +192,7 @@ void main() {
           nostrPubkey: 'test-pubkey',
         );
         
-        print('📋 Missing file result: success=${result.success}, error=${result.errorMessage}');
+        Log.debug('📋 Missing file result: success=${result.success}, error=${result.errorMessage}');
         
         // Should fail gracefully
         expect(result.success, isFalse);
@@ -269,7 +270,7 @@ class TestAuthService extends AuthService {
       return event;
       
     } catch (e) {
-      print('❌ TestAuthService failed to create event: $e');
+      Log.debug('❌ TestAuthService failed to create event: $e');
       return null;
     }
   }

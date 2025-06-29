@@ -3,6 +3,7 @@
 
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for generating and decoding Blurhash placeholders
 class BlurhashService {
@@ -22,7 +23,7 @@ class BlurhashService {
       final hash = _simpleHash(imageBytes);
       return _generateDeterministicBlurhash(hash, componentX, componentY);
     } catch (e) {
-      debugPrint('❌ Failed to generate blurhash: $e');
+      Log.error('Failed to generate blurhash: $e', name: 'BlurhashService', category: LogCategory.system);
       return null;
     }
   }
@@ -41,7 +42,7 @@ class BlurhashService {
       final bytes = byteData.buffer.asUint8List();
       return generateBlurhash(bytes, componentX: componentX, componentY: componentY);
     } catch (e) {
-      debugPrint('❌ Failed to generate blurhash from image: $e');
+      Log.error('Failed to generate blurhash from image: $e', name: 'BlurhashService', category: LogCategory.system);
       return null;
     }
   }
@@ -70,7 +71,7 @@ class BlurhashService {
         timestamp: DateTime.now(),
       );
     } catch (e) {
-      debugPrint('❌ Failed to decode blurhash: $e');
+      Log.error('Failed to decode blurhash: $e', name: 'BlurhashService', category: LogCategory.system);
       return null;
     }
   }

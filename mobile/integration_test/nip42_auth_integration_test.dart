@@ -4,10 +4,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/main.dart' as app;
-import 'package:openvine/services/nostr_service_v2.dart';
+import 'package:openvine/services/nostr_service.dart';
 import 'package:openvine/services/nostr_key_manager.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +20,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       // Access the services directly
-      print('\n=== NIP-42 Authentication Test ===');
+      Log.debug('\n=== NIP-42 Authentication Test ===');
       
       // Create test services
       final keyManager = NostrKeyManager();
@@ -28,16 +29,16 @@ void main() {
         await keyManager.generateKeys();
       }
       
-      final nostrService = NostrServiceV2(keyManager);
+      final nostrService = NostrService(keyManager);
       
       // Test 1: Connect to relay
-      print('\n1. Testing relay connection...');
+      Log.debug('\n1. Testing relay connection...');
       await nostrService.initialize(customRelays: ['wss://vine.hol.is']);
-      print('Connected to relays: ${nostrService.connectedRelays}');
-      print('Public key: ${nostrService.publicKey}');
+      Log.debug('Connected to relays: ${nostrService.connectedRelays}');
+      Log.debug('Public key: ${nostrService.publicKey}');
       
       // Test 2: Try to subscribe to events
-      print('\n2. Testing event subscription (should trigger AUTH if needed)...');
+      Log.debug('\n2. Testing event subscription (should trigger AUTH if needed)...');
       final filters = [
         Filter(
           kinds: [22], // Video events
@@ -53,30 +54,30 @@ void main() {
         await subscription.take(5).timeout(
           const Duration(seconds: 10),
           onTimeout: (sink) {
-            print('Timeout waiting for events - checking if AUTH is required');
+            Log.debug('Timeout waiting for events - checking if AUTH is required');
           },
         ).forEach((event) {
           events.add(event);
-          print('Received event: ${event.kind} - ${event.id.substring(0, 8)}...');
+          Log.debug('Received event: ${event.kind} - ${event.id.substring(0, 8)}...');
         });
       } catch (e) {
-        print('Error during subscription: $e');
+        Log.debug('Error during subscription: $e');
       }
       
-      print('\n3. Results:');
-      print('Events received: ${events.length}');
+      Log.debug('\n3. Results:');
+      Log.debug('Events received: ${events.length}');
       
       if (events.isEmpty) {
-        print('⚠️ No events received - possible causes:');
-        print('  - Relay requires NIP-42 AUTH but not sending challenge');
-        print('  - No Kind 22 events on the relay');
-        print('  - AUTH is failing silently');
+        Log.debug('⚠️ No events received - possible causes:');
+        Log.debug('  - Relay requires NIP-42 AUTH but not sending challenge');
+        Log.debug('  - No Kind 22 events on the relay');
+        Log.debug('  - AUTH is failing silently');
       } else {
-        print('✅ Successfully received ${events.length} events!');
+        Log.debug('✅ Successfully received ${events.length} events!');
       }
       
       // Test 3: Try to query our own profile
-      print('\n4. Testing profile query (should work after AUTH)...');
+      Log.debug('\n4. Testing profile query (should work after AUTH)...');
       final profileFilters = [
         Filter(
           kinds: [0], // Profile metadata
@@ -94,10 +95,10 @@ void main() {
             profileEvents.add(event);
           });
       } catch (e) {
-        print('Profile query error: $e');
+        Log.debug('Profile query error: $e');
       }
       
-      print('Profile events: ${profileEvents.length}');
+      Log.debug('Profile events: ${profileEvents.length}');
       
       // Wait a bit to see any notices or errors
       await tester.pump(const Duration(seconds: 2));

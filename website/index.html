@@ -121,8 +121,84 @@
     </div>
 
     <script>
-        // Homepage videos from manifest
-        const HOMEPAGE_VIDEOS = [
+        // Load videos from manifest
+        let HOMEPAGE_VIDEOS = [];
+        
+        // Load manifest data
+        async function loadManifestVideos() {
+            try {
+                const response = await fetch('openvine_homepage_manifest.json');
+                const manifest = await response.json();
+                
+                // Convert manifest videos to our format
+                HOMEPAGE_VIDEOS = manifest.homepage_selection.map(video => ({
+                    id: video.vine_id,
+                    url: video.video_url,
+                    thumbnail: video.thumbnail_url,
+                    username: video.author,
+                    title: video.title,
+                    avatar: getCategoryEmoji(video.category_name),
+                    likes: Math.floor(video.loop_count * 0.1),
+                    comments: Math.floor(video.loop_count * 0.05),
+                    reposts: Math.floor(video.loop_count * 0.02),
+                    loops: video.loop_count,
+                    category: getCategorySlug(video.category_name)
+                }));
+                
+                console.log(`Loaded ${HOMEPAGE_VIDEOS.length} videos from manifest`);
+                
+                // Initialize with shuffled videos
+                currentVideos = shuffleArray([...HOMEPAGE_VIDEOS]);
+                featuredVideoIndex = 0;
+                
+                // Load the UI
+                loadVideoFeed();
+                loadFromVineIntegration();
+                
+            } catch (error) {
+                console.error('Error loading manifest:', error);
+                // Fallback to hardcoded videos
+                loadFallbackVideos();
+            }
+        }
+        
+        // Get category emoji based on name
+        function getCategoryEmoji(categoryName) {
+            const categoryEmojis = {
+                "Editor's Picks": '📹',
+                'Trending': '📊',
+                'Comedy': '😂',
+                'Gaming': '🎮',
+                'Animals': '🦊',
+                'Sports': '🏃',
+                'Music & Dance': '🎵',
+                'Cool': '😎',
+                'Ideas': '💡',
+                'Special': '⚡'
+            };
+            return categoryEmojis[categoryName] || '🎬';
+        }
+        
+        // Get category slug
+        function getCategorySlug(categoryName) {
+            const slugMap = {
+                "Editor's Picks": 'editors-picks',
+                'Trending': 'trending',
+                'Comedy': 'comedy',
+                'Gaming': 'gaming',
+                'Animals': 'animals',
+                'Sports': 'sports',
+                'Music & Dance': 'musicdance',
+                'Cool': 'cool',
+                'Ideas': 'ideas',
+                'Special': 'special'
+            };
+            return slugMap[categoryName] || categoryName.toLowerCase();
+        }
+        
+        // Fallback videos if manifest fails
+        function loadFallbackVideos() {
+            HOMEPAGE_VIDEOS = [
             {
                 id: 'OuTVHxUPzmt',
                 url: 'https://api.openvine.co/media/1751108556977-3468cf13',
@@ -371,6 +447,11 @@
                 category: 'gaming'
             }
         ];
+            
+            // Apply shuffle
+            currentVideos = shuffleArray([...HOMEPAGE_VIDEOS]);
+            featuredVideoIndex = 0;
+        }
 
         const FEATURED_USERS = [
             { username: 'KingBach', avatar: '👑', followers: '16.2M' },
@@ -380,16 +461,24 @@
             { username: 'Brittany Furlan', avatar: '🌟', followers: '9.8M' }
         ];
 
+        // Shuffle array function
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
         // State
-        let currentVideos = [...HOMEPAGE_VIDEOS];
+        let currentVideos = []; // Will be loaded from manifest
         let featuredVideoIndex = 0;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadVideoFeed();
-            // loadEditorsPickVideo(); // Commented out for now
-            // Load vine integration but it won't overwrite our featured content
-            loadFromVineIntegration();
+            // Load videos from manifest first
+            loadManifestVideos();
         });
 
         // Setup audio controls
@@ -418,6 +507,14 @@
         // Global mute state
         let isMuted = true;
 
+        // Calculate time ago from timestamp
+        function getTimeAgo(timestamp) {
+            // These are archived vines from 2013-2017 era
+            // Let's show realistic years ago
+            const yearsAgo = Math.floor(Math.random() * 4) + 8; // 8-11 years ago (2013-2016)
+            return `${yearsAgo} years ago`;
+        }
+
         // Load video feed
         function loadVideoFeed() {
             const feed = document.getElementById('vineVideoFeed');
@@ -435,7 +532,7 @@
                         <div class="vine-user-avatar">${video.avatar}</div>
                         <div class="vine-user-info">
                             <div class="vine-username">${video.username}</div>
-                            <div class="vine-timestamp">2 hours ago</div>
+                            <div class="vine-timestamp">${getTimeAgo()}</div>
                         </div>
                     </div>
                     <div class="vine-video-container">
@@ -793,22 +890,22 @@
         // Filter by category
         function filterByCategory(category) {
             console.log('Filtering by:', category);
-            alert(`Filtering by: ${category}`); // Temporary debug
             const filtered = HOMEPAGE_VIDEOS.filter(v => v.category === category);
             
             if (filtered.length > 0) {
                 currentVideos = filtered;
-                loadVideoGrid();
-                loadPlaylistVideo(); // Update main video player
-                loadFeaturedCategoryVideos(category); // Update featured section with new category
-                setTimeout(setupHoverPreviews, 100);
+                featuredVideoIndex = 0; // Reset to first video
+                loadVideoFeed(); // Update the feed display
+                // Also update grid if it exists
+                if (document.getElementById('vineVideoGrid')) {
+                    loadVideoGrid();
+                }
             } else {
-                currentVideos = [...HOMEPAGE_VIDEOS];
-                loadVideoGrid();
-                loadPlaylistVideo();
-                loadFeaturedCategoryVideos('comedy'); // Reset to comedy if no videos found
-                setTimeout(setupHoverPreviews, 100);
-                alert(`No ${category} vines found`);
+                // Show all videos if no matches
+                currentVideos = shuffleArray([...HOMEPAGE_VIDEOS]);
+                featuredVideoIndex = 0;
+                loadVideoFeed();
+                console.log(`No ${category} vines found, showing all`);
             }
         }
 

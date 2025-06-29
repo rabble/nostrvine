@@ -8,13 +8,14 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:openvine/screens/profile_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/profile_videos_provider.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:openvine/models/user_profile.dart' as models;
+import 'package:openvine/providers/profile_videos_provider.dart' show ProfileVideosLoadingState;
 
 @GenerateMocks([
   AuthService,
@@ -53,7 +54,7 @@ void main() {
       when(mockProfileVideosProvider.hasVideos).thenReturn(false);
       when(mockProfileVideosProvider.hasError).thenReturn(false);
       when(mockProfileVideosProvider.videoCount).thenReturn(0);
-      when(mockProfileVideosProvider.loadingState).thenReturn('idle');
+      when(mockProfileVideosProvider.loadingState).thenReturn(ProfileVideosLoadingState.idle);
     });
 
     Widget createTestWidget({String? profilePubkey}) {
@@ -89,14 +90,11 @@ void main() {
       // Setup for own profile view
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'Test User',
+          npub: 'npub1testuser',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'Test Display Name',
           about: 'Test bio',
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -118,19 +116,16 @@ void main() {
       // Setup for viewing another user's profile
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'Current User',
+          npub: 'npub1currentuser',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'Current User',
           about: null,
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'current_event_id',
-          rawData: {},
         ),
       );
       
       when(mockUserProfileService.getCachedProfile('other_user_pubkey')).thenReturn(
-        UserProfile(
+        models.UserProfile(
           pubkey: 'other_user_pubkey',
           name: 'Other User',
           displayName: 'Other User',
@@ -155,14 +150,11 @@ void main() {
     testWidgets('should update profile display after editing', (WidgetTester tester) async {
       // Setup initial profile
       var currentProfile = UserProfile(
-        pubkey: 'current_user_pubkey',
-        name: 'Old Name',
+        npub: 'npub1currentuser',
+        publicKeyHex: 'current_user_pubkey',
         displayName: 'Old Display Name',
         about: 'Old bio',
         picture: null,
-        createdAt: DateTime.now(),
-        eventId: 'test_event_id',
-        rawData: {},
       );
       
       when(mockAuthService.currentProfile).thenReturn(currentProfile);
@@ -176,14 +168,11 @@ void main() {
       
       // Simulate profile update
       final updatedProfile = UserProfile(
-        pubkey: 'current_user_pubkey',
-        name: 'New Name',
+        npub: 'npub1currentuser',
+        publicKeyHex: 'current_user_pubkey',
         displayName: 'New Display Name',
         about: 'New bio description',
         picture: 'https://example.com/new-avatar.jpg',
-        createdAt: DateTime.now(),
-        eventId: 'updated_event_id',
-        rawData: {},
       );
       
       // Update the mock to return new profile
@@ -204,14 +193,11 @@ void main() {
       // Setup user with default/npub name
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'npub1abc123...',
+          npub: 'npub1abc123...',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'npub1abc123...',
           about: null,
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -228,14 +214,11 @@ void main() {
       // Setup user with custom name
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'Custom User',
+          npub: 'npub1customuser',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'Custom Display Name',
           about: 'Custom bio',
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -252,14 +235,11 @@ void main() {
       // Setup initial profile
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'Initial Name',
+          npub: 'npub1initialuser',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'Initial Name',
           about: null,
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -302,14 +282,11 @@ void main() {
       // Setup profile with picture
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'User With Picture',
+          npub: 'npub1userwithpic',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'User With Picture',
           about: 'Has a profile picture',
           picture: 'https://example.com/avatar.jpg',
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -327,14 +304,11 @@ void main() {
       // Setup profile
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'Test User',
+          npub: 'npub1testuser',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'Test User',
           about: null,
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       
@@ -359,14 +333,11 @@ void main() {
       // Setup user without custom name
       when(mockAuthService.currentProfile).thenReturn(
         UserProfile(
-          pubkey: 'current_user_pubkey',
-          name: 'npub1abc123...',
+          npub: 'npub1abc123...',
+          publicKeyHex: 'current_user_pubkey',
           displayName: 'npub1abc123...',
           about: null,
           picture: null,
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-          rawData: {},
         ),
       );
       

@@ -13,6 +13,7 @@ import 'search_screen.dart';
 import 'hashtag_feed_screen.dart';
 import '../widgets/video_explore_tile.dart';
 import '../widgets/video_feed_item.dart';
+import '../utils/unified_logger.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -546,7 +547,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                       child: GestureDetector(
                         onLongPress: () {
                           // Navigate to full hashtag feed on long press
-                          debugPrint('🔗 Navigating to hashtag feed from trending (long press): #$hashtag');
+                          Log.debug('� Navigating to hashtag feed from trending (long press): #$hashtag', name: 'ExploreScreen', category: LogCategory.ui);
                           Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => HashtagFeedScreen(hashtag: hashtag),

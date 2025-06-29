@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nostr_sdk/event.dart';
 import 'nostr_service_interface.dart';
 import 'content_moderation_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Report submission result
 class ReportResult {
@@ -116,14 +117,14 @@ class ContentReportingService extends ChangeNotifier {
     try {
       // Ensure Nostr service is initialized
       if (!_nostrService.isInitialized) {
-        debugPrint('⚠️ Nostr service not initialized, cannot setup reporting');
+        Log.warning('Nostr service not initialized, cannot setup reporting', name: 'ContentReportingService', category: LogCategory.system);
         return;
       }
 
       _isInitialized = true;
-      debugPrint('✅ Content reporting service initialized');
+      Log.info('Content reporting service initialized', name: 'ContentReportingService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('⚠️ Failed to initialize content reporting: $e');
+      Log.error('Failed to initialize content reporting: $e', name: 'ContentReportingService', category: LogCategory.system);
     }
   }
 
@@ -158,10 +159,10 @@ class ContentReportingService extends ChangeNotifier {
       if (reportEvent != null) {
         final broadcastResult = await _nostrService.broadcastEvent(reportEvent);
         if (broadcastResult.successCount == 0) {
-          debugPrint('⚠️ Failed to broadcast report to relays');
+          Log.error('Failed to broadcast report to relays', name: 'ContentReportingService', category: LogCategory.system);
           // Still save locally even if broadcast fails
         } else {
-          debugPrint('📡 Report broadcast to ${broadcastResult.successCount} relays');
+          Log.info('Report broadcast to ${broadcastResult.successCount} relays', name: 'ContentReportingService', category: LogCategory.system);
         }
       }
 
@@ -181,11 +182,11 @@ class ContentReportingService extends ChangeNotifier {
       await _saveReportHistory();
       notifyListeners();
 
-      debugPrint('📢 Content report submitted: $reportId');
+      Log.debug('Content report submitted: $reportId', name: 'ContentReportingService', category: LogCategory.system);
       return ReportResult.createSuccess(reportId);
 
     } catch (e) {
-      debugPrint('❌ Failed to submit content report: $e');
+      Log.error('Failed to submit content report: $e', name: 'ContentReportingService', category: LogCategory.system);
       return ReportResult.failure('Failed to submit report: $e');
     }
   }
@@ -280,7 +281,7 @@ class ContentReportingService extends ChangeNotifier {
       notifyListeners();
       
       final removedCount = initialCount - _reportHistory.length;
-      debugPrint('🧹 Cleared $removedCount old reports');
+      Log.debug('🧹 Cleared $removedCount old reports', name: 'ContentReportingService', category: LogCategory.system);
     }
   }
 
@@ -296,7 +297,7 @@ class ContentReportingService extends ChangeNotifier {
   }) async {
     try {
       if (!_nostrService.hasKeys) {
-        debugPrint('❌ Cannot create report event: no keys available');
+        Log.error('Cannot create report event: no keys available', name: 'ContentReportingService', category: LogCategory.system);
         return null;
       }
 
@@ -334,13 +335,13 @@ class ContentReportingService extends ChangeNotifier {
       // Sign the event
       event.sign(_nostrService.keyManager.keyPair!.private);
       
-      debugPrint('📢 Created NIP-56 report event (kind 1984): ${event.id}');
-      debugPrint('🏷️ Tags: ${tags.length}, Content length: ${reportContent.length}');
-      debugPrint('🎯 Reporting: $eventId for $reason');
+      Log.info('Created NIP-56 report event (kind 1984): ${event.id}', name: 'ContentReportingService', category: LogCategory.system);
+      Log.verbose('Tags: ${tags.length}, Content length: ${reportContent.length}', name: 'ContentReportingService', category: LogCategory.system);
+      Log.debug('Reporting: $eventId for $reason', name: 'ContentReportingService', category: LogCategory.system);
       
       return event;
     } catch (e) {
-      debugPrint('❌ Failed to create NIP-56 report event: $e');
+      Log.error('Failed to create NIP-56 report event: $e', name: 'ContentReportingService', category: LogCategory.system);
       return null;
     }
   }
@@ -361,6 +362,7 @@ class ContentReportingService extends ChangeNotifier {
   }
 
   /// Create metadata for report (for our internal tracking)
+  // ignore: unused_element
   dynamic _createReportMetadata(String reportId, ContentFilterReason reason) {
     // This would return proper NIP-94 metadata for the report
     // For now, return a placeholder
@@ -403,9 +405,9 @@ class ContentReportingService extends ChangeNotifier {
         _reportHistory.addAll(
           reportsJson.map((json) => ContentReport.fromJson(json))
         );
-        debugPrint('📁 Loaded ${_reportHistory.length} reports from history');
+        Log.debug('� Loaded ${_reportHistory.length} reports from history', name: 'ContentReportingService', category: LogCategory.system);
       } catch (e) {
-        debugPrint('⚠️ Failed to load report history: $e');
+        Log.error('Failed to load report history: $e', name: 'ContentReportingService', category: LogCategory.system);
       }
     }
   }
@@ -418,7 +420,7 @@ class ContentReportingService extends ChangeNotifier {
           .toList();
       await _prefs.setString(reportsStorageKey, jsonEncode(reportsJson));
     } catch (e) {
-      debugPrint('⚠️ Failed to save report history: $e');
+      Log.error('Failed to save report history: $e', name: 'ContentReportingService', category: LogCategory.system);
     }
   }
 

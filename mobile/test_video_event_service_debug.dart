@@ -1,15 +1,16 @@
-// ABOUTME: Test to debug VideoEventService with NostrServiceV2
+// ABOUTME: Test to debug VideoEventService with NostrService
 // ABOUTME: Run with: dart test_video_event_service_debug.dart
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'lib/services/nostr_service_v2.dart';
+import 'lib/services/nostr_service.dart';
 import 'lib/services/nostr_key_manager.dart';
 import 'lib/services/video_event_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() async {
-  print('🚀 Testing VideoEventService with NostrServiceV2...\n');
+  Log.debug('🚀 Testing VideoEventService with NostrService...\n');
   
   // Initialize key manager
   final keyManager = NostrKeyManager();
@@ -19,58 +20,58 @@ void main() async {
     await keyManager.generateKeys();
   }
   
-  print('🔑 Generated keys: ${keyManager.publicKey!.substring(0, 8)}...');
+  Log.debug('🔑 Generated keys: ${keyManager.publicKey!.substring(0, 8)}...');
   
-  // Create NostrServiceV2
-  final nostrService = NostrServiceV2(keyManager);
+  // Create NostrService
+  final nostrService = NostrService(keyManager);
   
   try {
     // Initialize service
-    print('🔧 Initializing NostrServiceV2...');
+    Log.debug('🔧 Initializing NostrService...');
     await nostrService.initialize();
     
-    print('✅ NostrService initialized');
-    print('  - Connected relays: ${nostrService.connectedRelays}');
-    print('  - Relay count: ${nostrService.relayCount}');
+    Log.debug('✅ NostrService initialized');
+    Log.debug('  - Connected relays: ${nostrService.connectedRelays}');
+    Log.debug('  - Relay count: ${nostrService.relayCount}');
     
     // Create VideoEventService
-    print('\n🎥 Creating VideoEventService...');
+    Log.debug('\n🎥 Creating VideoEventService...');
     final videoService = VideoEventService(nostrService);
     
     // Test direct subscription
-    print('\n📡 Testing direct subscription to nostr service...');
+    Log.debug('\n📡 Testing direct subscription to nostr service...');
     final filter = Filter(kinds: [22], limit: 5);
     final eventStream = nostrService.subscribeToEvents(filters: [filter]);
     
     int directEventCount = 0;
     final directSub = eventStream.listen((event) {
       directEventCount++;
-      print('📨 Direct event #$directEventCount: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
+      Log.debug('📨 Direct event #$directEventCount: kind=${event.kind}, id=${event.id.substring(0, 8)}...');
     });
     
     // Test VideoEventService subscription
-    print('\n🎬 Testing VideoEventService subscription...');
+    Log.debug('\n🎬 Testing VideoEventService subscription...');
     await videoService.subscribeToVideoFeed(limit: 5);
     
-    print('  - Is subscribed: ${videoService.isSubscribed}');
-    print('  - Is loading: ${videoService.isLoading}');
-    print('  - Error: ${videoService.error}');
-    print('  - Event count: ${videoService.eventCount}');
+    Log.debug('  - Is subscribed: ${videoService.isSubscribed}');
+    Log.debug('  - Is loading: ${videoService.isLoading}');
+    Log.debug('  - Error: ${videoService.error}');
+    Log.debug('  - Event count: ${videoService.eventCount}');
     
     // Wait for events
-    print('\n⏳ Waiting for events (15 seconds)...');
+    Log.debug('\n⏳ Waiting for events (15 seconds)...');
     await Future.delayed(Duration(seconds: 15));
     
-    print('\n📊 Final Results:');
-    print('  - Direct events received: $directEventCount');
-    print('  - VideoService events: ${videoService.eventCount}');
-    print('  - VideoService error: ${videoService.error}');
+    Log.debug('\n📊 Final Results:');
+    Log.debug('  - Direct events received: $directEventCount');
+    Log.debug('  - VideoService events: ${videoService.eventCount}');
+    Log.debug('  - VideoService error: ${videoService.error}');
     
     // Print some video events if any
     if (videoService.videoEvents.isNotEmpty) {
-      print('\n📹 Video events:');
+      Log.debug('\n📹 Video events:');
       for (final video in videoService.videoEvents.take(3)) {
-        print('  - ${video.id.substring(0, 8)}...: ${video.content.substring(0, 50)}...');
+        Log.debug('  - ${video.id.substring(0, 8)}...: ${video.content.substring(0, 50)}...');
       }
     }
     
@@ -78,7 +79,7 @@ void main() async {
     directSub.cancel();
     
   } catch (e) {
-    print('❌ Error: $e');
+    Log.debug('❌ Error: $e');
   } finally {
     nostrService.dispose();
   }

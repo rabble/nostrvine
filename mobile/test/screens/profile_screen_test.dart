@@ -16,6 +16,7 @@ import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/profile_videos_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/models/user_profile.dart';
 
 @GenerateMocks([
   AuthService,
@@ -48,7 +49,7 @@ void main() {
 
     // Setup default mock behaviors
     when(mockAuthService.authState).thenReturn(AuthState.authenticated);
-    when(mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey_hex');
+    when(mockAuthService.currentPublicKeyHex).thenReturn('79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798');
     when(mockAuthService.currentProfile).thenReturn(null);
     when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
     when(mockUserProfileService.fetchProfile(any)).thenAnswer((_) async {});
@@ -61,6 +62,10 @@ void main() {
     when(mockProfileVideosProvider.hasVideos).thenReturn(false);
     when(mockProfileVideosProvider.hasError).thenReturn(false);
     when(mockProfileVideosProvider.error).thenReturn(null);
+    when(mockProfileVideosProvider.videoCount).thenReturn(0);
+    when(mockProfileVideosProvider.videos).thenReturn([]);
+    when(mockProfileVideosProvider.loadingState).thenReturn(ProfileVideosLoadingState.loaded);
+    when(mockProfileVideosProvider.hasMore).thenReturn(false);
     when(mockProfileVideosProvider.loadVideosForUser(any)).thenAnswer((_) async {});
     when(mockProfileVideosProvider.refreshVideos()).thenAnswer((_) async {});
     when(mockSocialService.isFollowing(any)).thenReturn(false);

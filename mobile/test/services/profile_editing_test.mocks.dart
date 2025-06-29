@@ -119,6 +119,18 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as int);
 
   @override
+  List<String> get relays => (super.noSuchMethod(
+        Invocation.getter(#relays),
+        returnValue: <String>[],
+      ) as List<String>);
+
+  @override
+  Map<String, dynamic> get relayStatuses => (super.noSuchMethod(
+        Invocation.getter(#relayStatuses),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -252,6 +264,44 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
           ),
         )),
       ) as _i5.Future<_i3.NostrBroadcastResult>);
+
+  @override
+  _i5.Future<bool> addRelay(String? relayUrl) => (super.noSuchMethod(
+        Invocation.method(
+          #addRelay,
+          [relayUrl],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> removeRelay(String? relayUrl) => (super.noSuchMethod(
+        Invocation.method(
+          #removeRelay,
+          [relayUrl],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  Map<String, bool> getRelayStatus() => (super.noSuchMethod(
+        Invocation.method(
+          #getRelayStatus,
+          [],
+        ),
+        returnValue: <String, bool>{},
+      ) as Map<String, bool>);
+
+  @override
+  _i5.Future<void> reconnectAll() => (super.noSuchMethod(
+        Invocation.method(
+          #reconnectAll,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(

@@ -12,12 +12,12 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/unified_logger.dart';
 
 /// Exception thrown by key storage operations
 class KeyStorageException implements Exception {
@@ -70,14 +70,14 @@ class NostrKeyPair {
   /// Generate a new random key pair with timeout for iOS safety
   factory NostrKeyPair.generate() {
     try {
-      debugPrint('🔧 Starting key generation...');
+      Log.debug('Starting key generation...', name: 'KeyStorageService', category: LogCategory.auth);
       final privateKeyHex = generatePrivateKey();
-      debugPrint('✅ Private key generated successfully');
+      Log.info('Private key generated successfully', name: 'KeyStorageService', category: LogCategory.auth);
       final keyPair = NostrKeyPair.fromPrivateKey(privateKeyHex);
-      debugPrint('✅ Key pair created successfully');
+      Log.info('Key pair created successfully', name: 'KeyStorageService', category: LogCategory.auth);
       return keyPair;
     } catch (e) {
-      debugPrint('❌ Key generation failed: $e');
+      Log.error('Key generation failed: $e', name: 'KeyStorageService', category: LogCategory.auth);
       rethrow;
     }
   }
@@ -130,21 +130,21 @@ class KeyStorageService extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
     
-    debugPrint('🔐 Initializing KeyStorageService');
+    Log.debug('� Initializing KeyStorageService', name: 'KeyStorageService', category: LogCategory.auth);
     
     try {
       // Test secure storage access
       await _secureStorage.containsKey(key: _hasKeysKey);
       
       _isInitialized = true;
-      debugPrint('✅ KeyStorageService initialized');
+      Log.info('KeyStorageService initialized', name: 'KeyStorageService', category: LogCategory.auth);
       
     } catch (e) {
-      debugPrint('⚠️ Secure storage not available (likely web/Chrome): $e');
+      Log.warning('Secure storage not available (likely web/Chrome): $e', name: 'KeyStorageService', category: LogCategory.auth);
       // Fallback to SharedPreferences for web/development
       _useSecureStorage = false;
       _isInitialized = true;
-      debugPrint('🔧 KeyStorageService initialized in compatibility mode (using SharedPreferences)');
+      Log.info('KeyStorageService initialized in compatibility mode (using SharedPreferences)', name: 'KeyStorageService', category: LogCategory.auth);
     }
   }
   
@@ -158,7 +158,7 @@ class KeyStorageService extends ChangeNotifier {
           final hasKeysValue = await _secureStorage.read(key: _hasKeysKey);
           if (hasKeysValue == 'true') return true;
         } catch (secureStorageError) {
-          debugPrint('⚠️ Secure storage read failed, checking fallback: $secureStorageError');
+          Log.error('Secure storage read failed, checking fallback: $secureStorageError', name: 'KeyStorageService', category: LogCategory.auth);
         }
         
         // Check fallback storage for development
@@ -170,7 +170,7 @@ class KeyStorageService extends ChangeNotifier {
         return prefs.getBool(_hasKeysKey) ?? false;
       }
     } catch (e) {
-      debugPrint('⚠️ Error checking for keys: $e');
+      Log.error('Error checking for keys: $e', name: 'KeyStorageService', category: LogCategory.auth);
       return false;
     }
   }
@@ -180,7 +180,7 @@ class KeyStorageService extends ChangeNotifier {
     await _ensureInitialized();
     
     try {
-      debugPrint('🔐 Storing new key pair');
+      Log.debug('� Storing new key pair', name: 'KeyStorageService', category: LogCategory.auth);
       
       try {
         // Try secure storage first
@@ -193,9 +193,9 @@ class KeyStorageService extends ChangeNotifier {
           _secureStorage.write(key: _keyCreatedAtKey, value: DateTime.now().toIso8601String()),
         ]);
         
-        debugPrint('✅ Key pair stored in secure storage');
+        Log.info('Key pair stored in secure storage', name: 'KeyStorageService', category: LogCategory.auth);
       } catch (secureStorageError) {
-        debugPrint('⚠️ Secure storage failed, falling back to SharedPreferences: $secureStorageError');
+        Log.error('Secure storage failed, falling back to SharedPreferences: $secureStorageError', name: 'KeyStorageService', category: LogCategory.auth);
         
         // Fallback to SharedPreferences for development
         final prefs = await SharedPreferences.getInstance();
@@ -206,7 +206,7 @@ class KeyStorageService extends ChangeNotifier {
         await prefs.setString('dev_$_hasKeysKey', 'true');
         await prefs.setString('dev_$_keyCreatedAtKey', DateTime.now().toIso8601String());
         
-        debugPrint('✅ Key pair stored in SharedPreferences (development fallback)');
+        Log.info('Key pair stored in SharedPreferences (development fallback)', name: 'KeyStorageService', category: LogCategory.auth);
       }
       
       // Update cache
@@ -215,7 +215,7 @@ class KeyStorageService extends ChangeNotifier {
       
       await _updateLastAccess();
       
-      debugPrint('🔑 Public key: ${NostrEncoding.maskKey(keyPair.npub)}');
+      Log.debug('� Public key: ${NostrEncoding.maskKey(keyPair.npub)}', name: 'KeyStorageService', category: LogCategory.auth);
       
       notifyListeners();
       
@@ -228,7 +228,7 @@ class KeyStorageService extends ChangeNotifier {
   Future<NostrKeyPair> generateAndStoreKeys() async {
     await _ensureInitialized();
     
-    debugPrint('🔧 Generating new Nostr key pair');
+    Log.debug('Generating new Nostr key pair', name: 'KeyStorageService', category: LogCategory.auth);
     
     try {
       // Add timeout for iOS safety - key generation can sometimes hang
@@ -239,11 +239,11 @@ class KeyStorageService extends ChangeNotifier {
       
       await storeKeyPair(keyPair);
       
-      debugPrint('✅ Generated and stored new key pair');
+      Log.info('Generated and stored new key pair', name: 'KeyStorageService', category: LogCategory.auth);
       return keyPair;
       
     } catch (e) {
-      debugPrint('❌ Key generation error: $e');
+      Log.error('Key generation error: $e', name: 'KeyStorageService', category: LogCategory.auth);
       throw KeyStorageException('Failed to generate keys: $e');
     }
   }
@@ -252,7 +252,7 @@ class KeyStorageService extends ChangeNotifier {
   Future<NostrKeyPair> importFromNsec(String nsec) async {
     await _ensureInitialized();
     
-    debugPrint('📥 Importing keys from nsec');
+    Log.debug('Importing keys from nsec', name: 'KeyStorageService', category: LogCategory.auth);
     
     try {
       if (!NostrEncoding.isValidNsec(nsec)) {
@@ -262,7 +262,7 @@ class KeyStorageService extends ChangeNotifier {
       final keyPair = NostrKeyPair.fromNsec(nsec);
       await storeKeyPair(keyPair);
       
-      debugPrint('✅ Keys imported successfully');
+      Log.info('Keys imported successfully', name: 'KeyStorageService', category: LogCategory.auth);
       return keyPair;
       
     } catch (e) {
@@ -274,7 +274,7 @@ class KeyStorageService extends ChangeNotifier {
   Future<NostrKeyPair> importFromHex(String privateKeyHex) async {
     await _ensureInitialized();
     
-    debugPrint('📥 Importing keys from hex');
+    Log.debug('Importing keys from hex', name: 'KeyStorageService', category: LogCategory.auth);
     
     try {
       if (!NostrEncoding.isValidHexKey(privateKeyHex)) {
@@ -284,7 +284,7 @@ class KeyStorageService extends ChangeNotifier {
       final keyPair = NostrKeyPair.fromPrivateKey(privateKeyHex);
       await storeKeyPair(keyPair);
       
-      debugPrint('✅ Keys imported successfully');
+      Log.info('Keys imported successfully', name: 'KeyStorageService', category: LogCategory.auth);
       return keyPair;
       
     } catch (e) {
@@ -312,7 +312,7 @@ class KeyStorageService extends ChangeNotifier {
           privateKey = await _secureStorage.read(key: _privateKeyKey);
         }
       } catch (secureStorageError) {
-        debugPrint('⚠️ Secure storage read failed, checking fallback: $secureStorageError');
+        Log.error('Secure storage read failed, checking fallback: $secureStorageError', name: 'KeyStorageService', category: LogCategory.auth);
       }
       
       // Check fallback storage if secure storage failed
@@ -337,7 +337,7 @@ class KeyStorageService extends ChangeNotifier {
       return keyPair;
       
     } catch (e) {
-      debugPrint('❌ Error retrieving key pair: $e');
+      Log.error('Error retrieving key pair: $e', name: 'KeyStorageService', category: LogCategory.auth);
       throw KeyStorageException('Failed to retrieve keys: $e');
     }
   }
@@ -356,7 +356,7 @@ class KeyStorageService extends ChangeNotifier {
       final keyPair = await getKeyPair();
       if (keyPair == null) return null;
       
-      debugPrint('🔓 Private key accessed for signing');
+      Log.debug('� Private key accessed for signing', name: 'KeyStorageService', category: LogCategory.auth);
       await _updateLastAccess();
       
       return keyPair.privateKeyHex;
@@ -371,7 +371,7 @@ class KeyStorageService extends ChangeNotifier {
     final keyPair = await getKeyPair();
     if (keyPair == null) return null;
     
-    debugPrint('⚠️ NSEC exported - ensure secure handling');
+    Log.warning('NSEC exported - ensure secure handling', name: 'KeyStorageService', category: LogCategory.auth);
     return keyPair.nsec;
   }
   
@@ -379,7 +379,7 @@ class KeyStorageService extends ChangeNotifier {
   Future<void> deleteKeys() async {
     await _ensureInitialized();
     
-    debugPrint('🗑️ Deleting all stored keys');
+    Log.debug('�️ Deleting all stored keys', name: 'KeyStorageService', category: LogCategory.auth);
     
     try {
       await Future.wait([
@@ -396,7 +396,7 @@ class KeyStorageService extends ChangeNotifier {
       _cachedKeyPair = null;
       _cacheTimestamp = null;
       
-      debugPrint('✅ All keys deleted');
+      Log.info('All keys deleted', name: 'KeyStorageService', category: LogCategory.auth);
       notifyListeners();
       
     } catch (e) {
@@ -428,7 +428,7 @@ class KeyStorageService extends ChangeNotifier {
   void clearCache() {
     _cachedKeyPair = null;
     _cacheTimestamp = null;
-    debugPrint('🧹 Key cache cleared');
+    Log.debug('🧹 Key cache cleared', name: 'KeyStorageService', category: LogCategory.auth);
   }
   
   /// Check if the cache is still valid
@@ -448,7 +448,7 @@ class KeyStorageService extends ChangeNotifier {
       );
     } catch (e) {
       // Non-critical error, just log it
-      debugPrint('⚠️ Failed to update last access time: $e');
+      Log.error('Failed to update last access time: $e', name: 'KeyStorageService', category: LogCategory.auth);
     }
   }
   
@@ -464,7 +464,7 @@ class KeyStorageService extends ChangeNotifier {
     await _ensureInitialized();
     
     try {
-      debugPrint('🔐 Storing identity key pair for ${NostrEncoding.maskKey(npub)}');
+      Log.debug('� Storing identity key pair for ${NostrEncoding.maskKey(npub)}', name: 'KeyStorageService', category: LogCategory.auth);
       
       final identityKey = '$_savedKeysPrefix$npub';
       
@@ -483,9 +483,9 @@ class KeyStorageService extends ChangeNotifier {
             key: identityKey,
             value: jsonEncode(identityData),
           );
-          debugPrint('✅ Identity stored in secure storage');
+          Log.info('Identity stored in secure storage', name: 'KeyStorageService', category: LogCategory.auth);
         } catch (e) {
-          debugPrint('⚠️ Secure storage failed, using SharedPreferences: $e');
+          Log.error('Secure storage failed, using SharedPreferences: $e', name: 'KeyStorageService', category: LogCategory.auth);
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('dev_$identityKey', jsonEncode(identityData));
         }
@@ -494,7 +494,7 @@ class KeyStorageService extends ChangeNotifier {
         await prefs.setString(identityKey, jsonEncode(identityData));
       }
       
-      debugPrint('✅ Stored identity for ${NostrEncoding.maskKey(npub)}');
+      Log.info('Stored identity for ${NostrEncoding.maskKey(npub)}', name: 'KeyStorageService', category: LogCategory.auth);
     } catch (e) {
       throw KeyStorageException('Failed to store identity: $e');
     }
@@ -512,7 +512,7 @@ class KeyStorageService extends ChangeNotifier {
         try {
           identityJson = await _secureStorage.read(key: identityKey);
         } catch (e) {
-          debugPrint('⚠️ Secure storage read failed, checking SharedPreferences: $e');
+          Log.error('Secure storage read failed, checking SharedPreferences: $e', name: 'KeyStorageService', category: LogCategory.auth);
           final prefs = await SharedPreferences.getInstance();
           identityJson = prefs.getString('dev_$identityKey');
         }
@@ -522,7 +522,7 @@ class KeyStorageService extends ChangeNotifier {
       }
       
       if (identityJson == null) {
-        debugPrint('⚠️ No saved identity found for ${NostrEncoding.maskKey(npub)}');
+        Log.warning('No saved identity found for ${NostrEncoding.maskKey(npub)}', name: 'KeyStorageService', category: LogCategory.auth);
         return null;
       }
       
@@ -535,7 +535,7 @@ class KeyStorageService extends ChangeNotifier {
         nsec: identityData['nsec'] as String,
       );
     } catch (e) {
-      debugPrint('❌ Error retrieving identity: $e');
+      Log.error('Error retrieving identity: $e', name: 'KeyStorageService', category: LogCategory.auth);
       return null;
     }
   }
@@ -552,24 +552,24 @@ class KeyStorageService extends ChangeNotifier {
       // Get the target identity
       final targetKeyPair = await getIdentityKeyPair(npub);
       if (targetKeyPair == null) {
-        debugPrint('❌ Target identity not found');
+        Log.error('Target identity not found', name: 'KeyStorageService', category: LogCategory.auth);
         return false;
       }
       
       // Store as the active identity
       await storeKeyPair(targetKeyPair);
       
-      debugPrint('✅ Switched to identity: ${NostrEncoding.maskKey(npub)}');
+      Log.info('Switched to identity: ${NostrEncoding.maskKey(npub)}', name: 'KeyStorageService', category: LogCategory.auth);
       return true;
     } catch (e) {
-      debugPrint('❌ Error switching identity: $e');
+      Log.error('Error switching identity: $e', name: 'KeyStorageService', category: LogCategory.auth);
       return false;
     }
   }
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing KeyStorageService');
+    Log.debug('�️ Disposing KeyStorageService', name: 'KeyStorageService', category: LogCategory.auth);
     clearCache();
     super.dispose();
   }

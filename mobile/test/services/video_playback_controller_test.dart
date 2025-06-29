@@ -1,7 +1,6 @@
 // ABOUTME: Comprehensive tests for VideoPlaybackController with all use cases
 // ABOUTME: Tests cover configuration variants, lifecycle, error handling, and navigation patterns
 
-import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';

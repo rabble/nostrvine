@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/unified_logger.dart';
 
 /// Feature flag decision returned by the service
 class FeatureFlagDecision {
@@ -173,11 +174,11 @@ class FeatureFlagService extends ChangeNotifier {
         notifyListeners();
         return decision;
       } else {
-        debugPrint('Feature flag API error: ${response.statusCode}');
+        Log.error('Feature flag API error: ${response.statusCode}', name: 'FeatureFlagService', category: LogCategory.system);
         return _getFallbackDecision(flagName);
       }
     } catch (e) {
-      debugPrint('Feature flag error: $e');
+      Log.error('Feature flag error: $e', name: 'FeatureFlagService', category: LogCategory.system);
       return _getFallbackDecision(flagName);
     }
   }
@@ -202,7 +203,7 @@ class FeatureFlagService extends ChangeNotifier {
         throw Exception('Failed to fetch feature flags: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error fetching all flags: $e');
+      Log.error('Error fetching all flags: $e', name: 'FeatureFlagService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -335,7 +336,7 @@ class FeatureFlagService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('Error loading persisted decision: $e');
+      Log.error('Error loading persisted decision: $e', name: 'FeatureFlagService', category: LogCategory.system);
     }
     
     return null;
@@ -362,7 +363,7 @@ class FeatureFlagService extends ChangeNotifier {
   Future<void> _sendAnalytics(Map<String, dynamic> event) async {
     // Queue analytics events to send in batch
     // This would integrate with your analytics service
-    debugPrint('Feature flag analytics: ${jsonEncode(event)}');
+    Log.debug('Feature flag analytics: ${jsonEncode(event)}', name: 'FeatureFlagService', category: LogCategory.system);
   }
 
   @override

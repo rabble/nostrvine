@@ -33,7 +33,7 @@ class LoggingConfigService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Failed to load logging preferences: $e');
+        Log.error('Failed to load logging preferences: $e', name: 'LoggingConfigService', category: LogCategory.system);
       }
     }
   }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/age_verification_dialog.dart';
+import '../utils/unified_logger.dart';
 
 class AgeVerificationService extends ChangeNotifier {
   static const String _ageVerifiedKey = 'age_verified';
@@ -44,7 +45,7 @@ class AgeVerificationService extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading age verification status: $e');
+      Log.error('Error loading age verification status: $e', name: 'AgeVerificationService', category: LogCategory.system);
     }
   }
   
@@ -66,9 +67,9 @@ class AgeVerificationService extends ChangeNotifier {
       _isAgeVerified = verified;
       notifyListeners();
       
-      debugPrint('Age verification status updated: $verified');
+      Log.debug('Age verification status updated: $verified', name: 'AgeVerificationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('Error saving age verification status: $e');
+      Log.error('Error saving age verification status: $e', name: 'AgeVerificationService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -98,9 +99,9 @@ class AgeVerificationService extends ChangeNotifier {
       _isAdultContentVerified = verified;
       notifyListeners();
       
-      debugPrint('Adult content verification status updated: $verified');
+      Log.debug('Adult content verification status updated: $verified', name: 'AgeVerificationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('Error saving adult content verification status: $e');
+      Log.error('Error saving adult content verification status: $e', name: 'AgeVerificationService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -147,9 +148,9 @@ class AgeVerificationService extends ChangeNotifier {
       _adultContentVerificationDate = null;
       notifyListeners();
       
-      debugPrint('Age verification status cleared');
+      Log.debug('Age verification status cleared', name: 'AgeVerificationService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('Error clearing age verification status: $e');
+      Log.error('Error clearing age verification status: $e', name: 'AgeVerificationService', category: LogCategory.system);
     }
   }
 }

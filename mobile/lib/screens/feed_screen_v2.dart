@@ -11,7 +11,9 @@ import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import '../theme/vine_theme.dart';
+import '../widgets/feed_transition_indicator.dart';
 import 'search_screen.dart';
+import '../utils/unified_logger.dart';
 
 /// Feed context for filtering videos
 enum FeedContext {
@@ -82,7 +84,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   StreamSubscription? _stateChangeSubscription;
   Timer? _debounceTimer;
   bool _isUserScrolling = false; // Track if user is actively scrolling
-  bool _isLoadingMore = false; // Track if we're currently loading more videos
+  // Removed _isLoadingMore as we no longer show loading indicator
   DateTime? _lastPaginationRequest; // Prevent too frequent pagination requests
 
   @override
@@ -145,9 +147,9 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       // Try to get the video event bridge for pagination
       try {
         _videoEventBridge = Provider.of<VideoEventBridge>(context, listen: false);
-        debugPrint('✅ VideoEventBridge found for pagination support');
+        Log.info('VideoEventBridge found for pagination support', name: 'FeedScreenV2', category: LogCategory.ui);
       } catch (e) {
-        debugPrint('⚠️ VideoEventBridge not found - pagination will be limited: $e');
+        Log.warning('VideoEventBridge not found - pagination will be limited: $e', name: 'FeedScreenV2', category: LogCategory.ui);
       }
       
       _isInitialized = true;
@@ -162,7 +164,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _stateChangeSubscription = _videoManager!.stateChanges.listen((_) {
         // Don't rebuild during user scrolling to prevent index misalignment
         if (_isUserScrolling) {
-          debugPrint('🚫 Skipping state update during user scrolling');
+          Log.warning('Skipping state update during user scrolling', name: 'FeedScreenV2', category: LogCategory.ui);
           return;
         }
         
@@ -187,7 +189,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
             
             // Aggressive preloading for first videos
             if (wasEmpty && _videoManager!.videos.isNotEmpty) {
-              debugPrint('🚀 FIRST VIDEO ARRIVED - immediate render and preload!');
+              Log.debug('FIRST VIDEO ARRIVED - immediate render and preload!', name: 'FeedScreenV2', category: LogCategory.ui);
               // Start preloading immediately, don't wait for render
               _videoManager!.preloadAroundIndex(_currentIndex);
               
@@ -208,7 +210,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       setState(() {});
     } catch (e) {
       // Handle case where video manager is not provided
-      debugPrint('FeedScreenV2: VideoManager not found in context: $e');
+      Log.info('FeedScreenV2: VideoManager not found in context: $e', name: 'FeedScreenV2', category: LogCategory.ui);
       _videoManager = null;
       _isInitialized = true; // Mark as initialized even without manager
       setState(() {});
@@ -222,27 +224,44 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       _currentIndex = index;
     });
     
+    // Don't try to preload or play the transition indicator
+    if (_shouldShowTransitionAtIndex(index)) {
+      // Pause any playing videos when showing transition
+      _pauseAllVideos();
+      return;
+    }
+    
+    // Adjust index for video operations
+    final videoIndex = _adjustVideoIndex(index);
+    if (videoIndex < 0 || videoIndex >= _videoManager!.videos.length) {
+      return;
+    }
+    
     // Trigger preloading around new position
-    _videoManager!.preloadAroundIndex(index);
+    _videoManager!.preloadAroundIndex(videoIndex);
     
     // Update video playback states
-    _updateVideoPlayback(index);
+    _updateVideoPlayback(videoIndex);
   }
 
-  void _updateVideoPlayback(int newIndex) {
+  void _updateVideoPlayback(int videoIndex) {
     if (_videoManager == null) return;
     
     final videos = _videoManager!.videos;
-    if (newIndex < 0 || newIndex >= videos.length) return;
+    if (videoIndex < 0 || videoIndex >= videos.length) return;
     
-    // Pause previous video
-    if (_currentIndex != newIndex && _currentIndex < videos.length) {
-      final previousVideo = videos[_currentIndex];
+    // Get the previous video index (accounting for transition)
+    final previousVideoIndex = _adjustVideoIndex(_currentIndex);
+    
+    // Pause previous video if it's valid
+    if (previousVideoIndex >= 0 && previousVideoIndex < videos.length && 
+        previousVideoIndex != videoIndex) {
+      final previousVideo = videos[previousVideoIndex];
       _pauseVideo(previousVideo.id);
     }
     
     // Play current video
-    final currentVideo = videos[newIndex];
+    final currentVideo = videos[videoIndex];
     _playVideo(currentVideo.id);
   }
 
@@ -256,9 +275,9 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     
     try {
       _videoManager!.pauseVideo(videoId);
-      debugPrint('⏸️ Paused video: ${videoId.substring(0, 8)}...');
+      Log.debug('Paused video: ${videoId.substring(0, 8)}...', name: 'FeedScreenV2', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('⚠️ Error pausing video $videoId: $e');
+      Log.error('Error pausing video $videoId: $e', name: 'FeedScreenV2', category: LogCategory.ui);
     }
   }
 
@@ -267,9 +286,9 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     
     try {
       _videoManager!.pauseAllVideos();
-      debugPrint('⏸️ Paused all videos in feed');
+      Log.debug('Paused all videos in feed', name: 'FeedScreenV2', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('⚠️ Error pausing all videos: $e');
+      Log.error('Error pausing all videos: $e', name: 'FeedScreenV2', category: LogCategory.ui);
     }
   }
 
@@ -285,7 +304,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     // Also trigger preloading around current position to reload videos that were stopped
     if (_videoManager != null && _videoManager!.videos.isNotEmpty) {
       _videoManager!.preloadAroundIndex(_currentIndex);
-      debugPrint('▶️ Triggered preloading around index $_currentIndex when resuming feed');
+      Log.debug('▶️ Triggered preloading around index $_currentIndex when resuming feed', name: 'FeedScreenV2', category: LogCategory.ui);
     }
   }
 
@@ -327,7 +346,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   void _filterVideosByHashtag(String hashtag) {
     // TODO: Implement hashtag filtering
     // This would filter _videoManager!.videos to only include videos with the hashtag
-    debugPrint('🏷️ Filtering by hashtag: $hashtag');
+    Log.verbose('Filtering by hashtag: $hashtag', name: 'FeedScreenV2', category: LogCategory.ui);
   }
 
   void _filterEditorsPicks() {
@@ -339,13 +358,13 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   void _filterTrendingContent() {
     // TODO: Implement trending content filtering
     // This would filter _videoManager!.videos to only include trending videos
-    debugPrint('📈 Filtering for trending content');
+    Log.debug('� Filtering for trending content', name: 'FeedScreenV2', category: LogCategory.ui);
   }
 
   void _filterVideosByUser(String pubkey) {
     // TODO: Implement user filtering
     // This would filter _videoManager!.videos to only include videos by specific user
-    debugPrint('👤 Filtering by user: ${pubkey.substring(0, 8)}...');
+    Log.verbose('Filtering by user: ${pubkey.substring(0, 8)}...', name: 'FeedScreenV2', category: LogCategory.ui);
   }
 
   /// Set initial video position if starting video is provided
@@ -363,7 +382,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
           _pageController.jumpToPage(startIndex);
         }
       });
-      debugPrint('🎯 Starting feed at video ${startIndex + 1}/${videos.length}');
+      Log.debug('Starting feed at video ${startIndex + 1}/${videos.length}', name: 'FeedScreenV2', category: LogCategory.ui);
     }
   }
 
@@ -377,7 +396,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       // Check if video needs to be preloaded first
       final videoState = _videoManager!.getVideoState(currentVideo.id);
       if (videoState != null && videoState.loadingState == VideoLoadingState.notLoaded) {
-        debugPrint('🔄 Current video needs reload, preloading: ${currentVideo.id.substring(0, 8)}...');
+        Log.debug('Current video needs reload, preloading: ${currentVideo.id.substring(0, 8)}...', name: 'FeedScreenV2', category: LogCategory.ui);
         _videoManager!.preloadVideo(currentVideo.id);
       }
       
@@ -428,45 +447,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       body: SafeArea(
         top: false, // AppBar handles top safe area
         bottom: false, // Let videos extend to bottom for full screen
-        child: Stack(
-          children: [
-            _buildBody(),
-            // Show loading indicator when paginating
-            if (_isLoadingMore)
-              Positioned(
-                bottom: 100,
-                right: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Loading more...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+        child: _buildBody(),
       ),
     );
   }
@@ -546,10 +527,10 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
           // Track user scrolling to prevent rebuilds during interaction
           if (notification is ScrollStartNotification) {
             _isUserScrolling = true;
-            debugPrint('🏃 User started scrolling');
+            Log.info('� User started scrolling', name: 'FeedScreenV2', category: LogCategory.ui);
           } else if (notification is ScrollEndNotification) {
             _isUserScrolling = false;
-            debugPrint('🛑 User stopped scrolling');
+            Log.info('� User stopped scrolling', name: 'FeedScreenV2', category: LogCategory.ui);
           }
           return false;
         },
@@ -557,19 +538,30 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
           controller: _pageController,
           scrollDirection: Axis.vertical,
           onPageChanged: _onPageChanged,
-          itemCount: videos.length,
+          itemCount: _calculateItemCount(videos.length),
           pageSnapping: true,
           itemBuilder: (context, index) {
+            // Check if this is the transition indicator position
+            if (_shouldShowTransitionAtIndex(index)) {
+              return FeedTransitionIndicator(
+                followingCount: _videoManager?.primaryVideoCount ?? 0,
+                discoveryCount: _videoManager?.discoveryVideoCount ?? 0,
+              );
+            }
+            
+            // Adjust index to account for transition indicator
+            final videoIndex = _adjustVideoIndex(index);
+            
             // Bounds checking
-            if (index < 0 || index >= videos.length) {
+            if (videoIndex < 0 || videoIndex >= videos.length) {
               return _buildErrorItem('Index out of bounds');
             }
 
-            final video = videos[index];
+            final video = videos[videoIndex];
             final isActive = index == _currentIndex;
 
             // Check if we're near the end and should load more videos
-            _checkForPagination(index, videos.length);
+            _checkForPagination(videoIndex, videos.length);
 
             // Error boundary for individual videos
             return _buildVideoItemWithErrorBoundary(video, isActive);
@@ -577,6 +569,57 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
         ),
       ),
     );
+  }
+  
+  /// Calculate total item count including transition indicator if needed
+  int _calculateItemCount(int videoCount) {
+    if (_videoManager == null || videoCount == 0) return videoCount;
+    
+    // Check if we should show transition indicator
+    final primaryCount = _videoManager!.primaryVideoCount;
+    final discoveryCount = _videoManager!.discoveryVideoCount;
+    
+    // Only show transition if we have both primary and discovery videos
+    if (primaryCount > 0 && discoveryCount > 0) {
+      return videoCount + 1; // Add 1 for the transition indicator
+    }
+    
+    return videoCount;
+  }
+  
+  /// Check if the current index should show the transition indicator
+  bool _shouldShowTransitionAtIndex(int index) {
+    if (_videoManager == null) return false;
+    
+    final primaryCount = _videoManager!.primaryVideoCount;
+    final discoveryCount = _videoManager!.discoveryVideoCount;
+    
+    // Only show transition if we have both types of videos
+    if (primaryCount == 0 || discoveryCount == 0) return false;
+    
+    // Transition shows at the position after all primary videos
+    return index == primaryCount;
+  }
+  
+  /// Adjust video index to account for transition indicator
+  int _adjustVideoIndex(int pageIndex) {
+    if (_videoManager == null) return pageIndex;
+    
+    final primaryCount = _videoManager!.primaryVideoCount;
+    final discoveryCount = _videoManager!.discoveryVideoCount;
+    
+    // If we don't have both types, no adjustment needed
+    if (primaryCount == 0 || discoveryCount == 0) return pageIndex;
+    
+    // If index is before transition position, no adjustment
+    if (pageIndex < primaryCount) return pageIndex;
+    
+    // If index is the transition position, this shouldn't be called
+    // but return safe value anyway
+    if (pageIndex == primaryCount) return -1;
+    
+    // If index is after transition, subtract 1 to account for indicator
+    return pageIndex - 1;
   }
 
   Widget _buildVideoItemWithErrorBoundary(VideoEvent video, bool isActive) {
@@ -588,7 +631,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       );
     } catch (e) {
       // Error boundary - prevent one bad video from crashing entire feed
-      debugPrint('FeedScreenV2: Error creating video item ${video.id}: $e');
+      Log.error('FeedScreenV2: Error creating video item ${video.id}: $e', name: 'FeedScreenV2', category: LogCategory.ui);
       return _buildErrorItem('Error loading video: ${video.title ?? video.id}');
     }
   }
@@ -643,7 +686,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   }
 
   void _handleVideoError(String videoId, String error) {
-    debugPrint('FeedScreenV2: Video error for $videoId: $error');
+    Log.error('FeedScreenV2: Video error for $videoId: $error', name: 'FeedScreenV2', category: LogCategory.ui);
     // Error handling would be implemented here
     // For now, just log the error
   }
@@ -651,7 +694,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   /// Check if we're near the end of the video list and should load more content
   void _checkForPagination(int currentIndex, int totalVideos) {
     // Only trigger pagination if we have a video event bridge
-    if (_videoEventBridge == null || _isLoadingMore) return;
+    if (_videoEventBridge == null) return;
     
     // Check if we're near the end (within 5 videos)
     const paginationThreshold = 5;
@@ -666,30 +709,19 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
       return;
     }
     
-    debugPrint('📜 Near end of feed (${totalVideos - currentIndex} videos left), loading more...');
+    Log.debug('� Near end of feed (${totalVideos - currentIndex} videos left), loading more...', name: 'FeedScreenV2', category: LogCategory.ui);
     _loadMoreVideos();
   }
   
   /// Load more videos from the backend
   Future<void> _loadMoreVideos() async {
-    if (_isLoadingMore) return;
-    
-    // Defer setState to avoid calling during build phase
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = true;
-        });
-      }
-    });
-    
     _lastPaginationRequest = DateTime.now();
     
     try {
       await _videoEventBridge!.loadMoreEvents();
-      debugPrint('✅ Successfully loaded more videos');
+      Log.info('Successfully loaded more videos', name: 'FeedScreenV2', category: LogCategory.ui);
     } catch (e) {
-      debugPrint('❌ Failed to load more videos: $e');
+      Log.error('Failed to load more videos: $e', name: 'FeedScreenV2', category: LogCategory.ui);
       // Show a subtle error indicator to the user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -699,12 +731,6 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
             backgroundColor: Colors.grey[800],
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = false;
-        });
       }
     }
   }

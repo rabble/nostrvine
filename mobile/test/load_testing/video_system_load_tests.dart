@@ -6,12 +6,10 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/models/video_state.dart';
 import 'package:openvine/services/video_manager_interface.dart';
 import 'package:openvine/services/video_manager_service.dart';
 import 'package:openvine/services/video_performance_monitor.dart';
 import '../helpers/test_helpers.dart';
-import '../mocks/mock_video_manager.dart';
 
 /// Comprehensive load testing suite for video system
 /// 

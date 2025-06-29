@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/video_event.dart';
 import '../services/video_manager_interface.dart';
 import '../widgets/video_feed_item.dart';
+import '../utils/unified_logger.dart';
 
 /// Compact modal overlay for viewing videos while preserving parent navigation
 /// 
@@ -41,7 +42,7 @@ class _VideoOverlayModalCompactState extends State<VideoOverlayModalCompact>
   void initState() {
     super.initState();
     
-    debugPrint('🎬 VideoOverlayModalCompact: Initializing with ${widget.videoList.length} videos');
+    Log.debug('VideoOverlayModalCompact: Initializing with ${widget.videoList.length} videos', name: 'VideoOverlayModalCompact', category: LogCategory.ui);
     
     // Find starting video index
     _currentIndex = widget.startingIndex ?? 
@@ -99,7 +100,7 @@ class _VideoOverlayModalCompactState extends State<VideoOverlayModalCompact>
         _videoManager!.preloadVideo(currentVideo.id);
       }
     } catch (e) {
-      debugPrint('❌ VideoOverlayModalCompact: VideoManager initialization failed: $e');
+      Log.error('VideoOverlayModalCompact: VideoManager initialization failed: $e', name: 'VideoOverlayModalCompact', category: LogCategory.ui);
     }
   }
 
@@ -108,7 +109,7 @@ class _VideoOverlayModalCompactState extends State<VideoOverlayModalCompact>
       try {
         _videoManager!.pauseAllVideos();
       } catch (e) {
-        debugPrint('Error pausing videos in compact overlay: $e');
+        Log.error('Error pausing videos in compact overlay: $e', name: 'VideoOverlayModalCompact', category: LogCategory.ui);
       }
     }
   }
@@ -321,10 +322,10 @@ void showCompactVideoOverlay({
   required String contextTitle,
   int? startingIndex,
 }) {
-  debugPrint('🎬 showCompactVideoOverlay: ${videoList.length} videos, context: $contextTitle');
+  Log.debug('showCompactVideoOverlay: ${videoList.length} videos, context: $contextTitle', name: 'VideoOverlayModalCompact', category: LogCategory.ui);
   
   if (videoList.isEmpty) {
-    debugPrint('❌ Cannot show compact overlay - video list is empty');
+    Log.error('Cannot show compact overlay - video list is empty', name: 'VideoOverlayModalCompact', category: LogCategory.ui);
     return;
   }
   

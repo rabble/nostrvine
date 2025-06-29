@@ -7,11 +7,11 @@ import '../services/vine_recording_controller.dart';
 import '../services/nostr_key_manager.dart';
 import '../services/upload_manager.dart';
 import '../services/video_manager_interface.dart';
-import '../models/pending_upload.dart';
 import '../widgets/vine_recording_controls.dart';
 import '../theme/vine_theme.dart';
 import 'video_metadata_screen.dart';
 import '../main.dart';
+import '../utils/unified_logger.dart';
 
 class UniversalCameraScreen extends StatefulWidget {
   const UniversalCameraScreen({super.key});
@@ -46,7 +46,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
       // Stop all background videos immediately when camera screen opens
       final videoManager = context.read<IVideoManager>();
       videoManager.stopAllVideos();
-      debugPrint('🎥 Stopped all background videos on camera screen init');
+      Log.info('Stopped all background videos on camera screen init', name: 'UniversalCameraScreen', category: LogCategory.ui);
       
       // Get services from providers
       _uploadManager = context.read<UploadManager>();
@@ -61,16 +61,16 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
       
       // For macOS, give the camera widget time to mount and initialize
       if (Theme.of(context).platform == TargetPlatform.macOS) {
-        debugPrint('📷 Waiting for macOS camera widget to mount...');
+        Log.debug('� Waiting for macOS camera widget to mount...', name: 'UniversalCameraScreen', category: LogCategory.ui);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          debugPrint('📷 macOS camera widget should now be mounted');
+          Log.debug('� macOS camera widget should now be mounted', name: 'UniversalCameraScreen', category: LogCategory.ui);
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to initialize camera: $e';
       });
-      debugPrint('❌ Camera initialization failed: $e');
+      Log.error('Camera initialization failed: $e', name: 'UniversalCameraScreen', category: LogCategory.ui);
     }
   }
 
@@ -102,7 +102,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
           final pubkey = _keyManager.publicKey ?? '';
           
           // Start upload through upload manager
-          final upload = await _uploadManager!.startUpload(
+          await _uploadManager!.startUpload(
             videoFile: videoFile,
             nostrPubkey: pubkey,
             title: result['caption'] ?? '',
@@ -124,7 +124,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error processing recording: $e');
+      Log.error('Error processing recording: $e', name: 'UniversalCameraScreen', category: LogCategory.ui);
       
       // Don't reset here on error - let files persist until next recording session
       
@@ -168,7 +168,7 @@ class _UniversalCameraScreenState extends State<UniversalCameraScreen> {
             Positioned.fill(
               child: Builder(
                 builder: (context) {
-                  debugPrint('📷 Building camera preview widget');
+                  Log.debug('� Building camera preview widget', name: 'UniversalCameraScreen', category: LogCategory.ui);
                   return _recordingController.cameraPreview;
                 },
               ),

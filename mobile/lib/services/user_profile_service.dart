@@ -10,6 +10,7 @@ import 'nostr_service_interface.dart';
 import 'connection_status_service.dart';
 import 'subscription_manager.dart';
 import 'profile_cache_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
 class UserProfileService extends ChangeNotifier {
@@ -30,13 +31,13 @@ class UserProfileService extends ChangeNotifier {
   /// Set subscription manager for optimized profile fetching
   void setSubscriptionManager(SubscriptionManager subscriptionManager) {
     _subscriptionManager = subscriptionManager;
-    debugPrint('📡 SubscriptionManager attached to UserProfileService');
+    Log.debug('SubscriptionManager attached to UserProfileService', name: 'UserProfileService', category: LogCategory.system);
   }
   
   /// Set persistent cache service for profile storage
   void setPersistentCache(ProfileCacheService cacheService) {
     _persistentCache = cacheService;
-    debugPrint('💾 ProfileCacheService attached to UserProfileService');
+    Log.debug('� ProfileCacheService attached to UserProfileService', name: 'UserProfileService', category: LogCategory.system);
   }
   
   /// Get cached profile for a user
@@ -85,7 +86,7 @@ class UserProfileService extends ChangeNotifier {
       await _persistentCache!.updateCachedProfile(profile);
     }
     
-    debugPrint('🔄 Updated cached profile for ${profile.pubkey.substring(0, 8)}: ${profile.bestDisplayName}');
+    Log.debug('Updated cached profile for ${profile.pubkey.substring(0, 8)}: ${profile.bestDisplayName}', name: 'UserProfileService', category: LogCategory.system);
     notifyListeners();
   }
   
@@ -94,17 +95,17 @@ class UserProfileService extends ChangeNotifier {
     if (_isInitialized) return;
     
     try {
-      debugPrint('👤 Initializing user profile service...');
+      Log.verbose('Initializing user profile service...', name: 'UserProfileService', category: LogCategory.system);
       
       if (!_nostrService.isInitialized) {
-        debugPrint('⚠️ Nostr service not initialized, profile service will wait');
+        Log.warning('Nostr service not initialized, profile service will wait', name: 'UserProfileService', category: LogCategory.system);
         return;
       }
       
       _isInitialized = true;
-      debugPrint('✅ User profile service initialized');
+      Log.info('User profile service initialized', name: 'UserProfileService', category: LogCategory.system);
     } catch (e) {
-      debugPrint('❌ Failed to initialize user profile service: $e');
+      Log.error('Failed to initialize user profile service: $e', name: 'UserProfileService', category: LogCategory.system);
       rethrow;
     }
   }
@@ -121,36 +122,36 @@ class UserProfileService extends ChangeNotifier {
       
       // Check if we should do a soft refresh (background update)
       if (cachedProfile != null && _persistentCache?.shouldRefreshProfile(pubkey) == true) {
-        debugPrint('🔄 Profile cached but stale for ${pubkey.substring(0, 8)}... - will refresh in background');
+        Log.debug('Profile cached but stale for ${pubkey.substring(0, 8)}... - will refresh in background', name: 'UserProfileService', category: LogCategory.system);
         // Do a background refresh without blocking the UI
         Future.microtask(() => _backgroundRefreshProfile(pubkey));
       }
       
-      debugPrint('👤 Returning cached profile for ${pubkey.substring(0, 8)}...');
+      Log.verbose('Returning cached profile for ${pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
       return cachedProfile;
     }
     
     // Check if already requesting this profile - STOP HERE, don't create duplicate subscriptions
     if (_pendingRequests.contains(pubkey)) {
-      debugPrint('⏳ Profile request already pending for ${pubkey.substring(0, 8)}... (skipping duplicate)');
+      Log.warning('⏳ Profile request already pending for ${pubkey.substring(0, 8)}... (skipping duplicate)', name: 'UserProfileService', category: LogCategory.system);
       return null;
     }
     
     // Check if we already have an active subscription for this pubkey
     if (_profileSubscriptions.containsKey(pubkey) || _activeSubscriptionIds.containsKey(pubkey)) {
-      debugPrint('🔄 Active subscription already exists for ${pubkey.substring(0, 8)}... (skipping duplicate)');
+      Log.warning('Active subscription already exists for ${pubkey.substring(0, 8)}... (skipping duplicate)', name: 'UserProfileService', category: LogCategory.system);
       return null;
     }
     
     // Check connection
     if (!_connectionService.isOnline) {
-      debugPrint('📡 Offline - cannot fetch profile for ${pubkey.substring(0, 8)}...');
+      Log.debug('Offline - cannot fetch profile for ${pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
       return null;
     }
     
     try {
       _pendingRequests.add(pubkey);
-      debugPrint('👤 Fetching profile for user: ${pubkey.substring(0, 8)}...');
+      Log.verbose('Fetching profile for user: ${pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
       
       // Create filter for kind 0 events from this user
       final filter = Filter(
@@ -186,7 +187,6 @@ class UserProfileService extends ChangeNotifier {
         // Set timeout for profile fetch
         Timer(const Duration(seconds: 10), () {
           if (_pendingRequests.contains(pubkey)) {
-            debugPrint('⏰ Profile fetch timeout for ${pubkey.substring(0, 8)}...');
             _cleanupProfileRequest(pubkey);
           }
         });
@@ -194,7 +194,7 @@ class UserProfileService extends ChangeNotifier {
       
       return null; // Profile will be available in cache once loaded
     } catch (e) {
-      debugPrint('❌ Failed to fetch profile for ${pubkey.substring(0, 8)}: $e');
+      Log.error('Failed to fetch profile for ${pubkey.substring(0, 8)}: $e', name: 'UserProfileService', category: LogCategory.system);
       _pendingRequests.remove(pubkey);
       return null;
     }
@@ -205,7 +205,7 @@ class UserProfileService extends ChangeNotifier {
     try {
       if (event.kind != 0) return;
       
-      debugPrint('👤 Received profile event for ${event.pubkey.substring(0, 8)}...');
+      Log.verbose('Received profile event for ${event.pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
       
       // Parse profile data from event content
       final profile = UserProfile.fromNostrEvent(event);
@@ -220,22 +220,21 @@ class UserProfileService extends ChangeNotifier {
       
       _cleanupProfileRequest(event.pubkey);
       
-      debugPrint('✅ Cached profile for ${event.pubkey.substring(0, 8)}: ${profile.bestDisplayName}');
+      Log.debug('Cached profile for ${event.pubkey.substring(0, 8)}: ${profile.bestDisplayName}', name: 'UserProfileService', category: LogCategory.system);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error parsing profile event: $e');
+      Log.error('Error parsing profile event: $e', name: 'UserProfileService', category: LogCategory.system);
     }
   }
   
   /// Handle profile fetch error
   void _handleProfileError(String pubkey, dynamic error) {
-    debugPrint('❌ Profile fetch error for ${pubkey.substring(0, 8)}: $error');
+    Log.error('Profile fetch error for ${pubkey.substring(0, 8)}: $error', name: 'UserProfileService', category: LogCategory.system);
     _cleanupProfileRequest(pubkey);
   }
   
   /// Handle profile fetch completion
   void _handleProfileComplete(String pubkey) {
-    debugPrint('🏁 Profile fetch completed for ${pubkey.substring(0, 8)}...');
     _cleanupProfileRequest(pubkey);
   }
   
@@ -258,7 +257,7 @@ class UserProfileService extends ChangeNotifier {
   Future<void> fetchMultipleProfiles(List<String> pubkeys, {bool forceRefresh = false}) async {
     if (pubkeys.isEmpty) return;
     
-    debugPrint('👥 Batch fetching ${pubkeys.length} profiles...');
+    Log.debug('� Batch fetching ${pubkeys.length} profiles...', name: 'UserProfileService', category: LogCategory.system);
     
     // Filter out already cached profiles unless forcing refresh
     final pubkeysToFetch = forceRefresh 
@@ -266,7 +265,7 @@ class UserProfileService extends ChangeNotifier {
         : pubkeys.where((pubkey) => !_profileCache.containsKey(pubkey)).toList();
     
     if (pubkeysToFetch.isEmpty) {
-      debugPrint('👥 All profiles already cached');
+      Log.debug('� All profiles already cached', name: 'UserProfileService', category: LogCategory.system);
       return;
     }
     
@@ -278,14 +277,14 @@ class UserProfileService extends ChangeNotifier {
         limit: pubkeysToFetch.length,
       );
       
-      debugPrint('👥 Requesting profiles for ${pubkeysToFetch.length} users...');
+      Log.debug('� Requesting profiles for ${pubkeysToFetch.length} users...', name: 'UserProfileService', category: LogCategory.system);
       
       // Subscribe to profile events
       final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
       final subscription = eventStream.listen(
         (event) => _handleProfileEvent(event),
-        onError: (error) => debugPrint('❌ Batch profile fetch error: $error'),
-        onDone: () => debugPrint('🏁 Batch profile fetch completed'),
+        onError: (error) => Log.error('Batch profile fetch error: $error', name: 'UserProfileService', category: LogCategory.system),
+        onDone: () => Log.info('� Batch profile fetch completed', name: 'UserProfileService', category: LogCategory.system),
       );
       
       // Mark all as pending
@@ -299,10 +298,10 @@ class UserProfileService extends ChangeNotifier {
         for (final pubkey in pubkeysToFetch) {
           _pendingRequests.remove(pubkey);
         }
-        debugPrint('⏰ Batch profile fetch timeout');
+        Log.debug('⏰ Batch profile fetch timeout', name: 'UserProfileService', category: LogCategory.system);
       });
     } catch (e) {
-      debugPrint('❌ Failed to batch fetch profiles: $e');
+      Log.error('Failed to batch fetch profiles: $e', name: 'UserProfileService', category: LogCategory.system);
       for (final pubkey in pubkeysToFetch) {
         _pendingRequests.remove(pubkey);
       }
@@ -336,14 +335,14 @@ class UserProfileService extends ChangeNotifier {
   void clearCache() {
     _profileCache.clear();
     notifyListeners();
-    debugPrint('🧹 Profile cache cleared');
+    Log.debug('🧹 Profile cache cleared', name: 'UserProfileService', category: LogCategory.system);
   }
   
   /// Remove specific profile from cache
   void removeProfile(String pubkey) {
     if (_profileCache.remove(pubkey) != null) {
       notifyListeners();
-      debugPrint('🗑️ Removed profile from cache: ${pubkey.substring(0, 8)}...');
+      Log.debug('�️ Removed profile from cache: ${pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
     }
   }
   
@@ -357,10 +356,10 @@ class UserProfileService extends ChangeNotifier {
     }
     
     try {
-      debugPrint('🔄 Background refresh for stale profile ${pubkey.substring(0, 8)}...');
+      Log.debug('Background refresh for stale profile ${pubkey.substring(0, 8)}...', name: 'UserProfileService', category: LogCategory.system);
       await fetchProfile(pubkey, forceRefresh: true);
     } catch (e) {
-      debugPrint('⚠️ Background refresh failed for ${pubkey.substring(0, 8)}: $e');
+      Log.error('Background refresh failed for ${pubkey.substring(0, 8)}: $e', name: 'UserProfileService', category: LogCategory.system);
     }
   }
   
@@ -384,7 +383,7 @@ class UserProfileService extends ChangeNotifier {
     _pendingRequests.clear();
     _profileCache.clear();
     super.dispose();
-    debugPrint('🗑️ UserProfileService disposed');
+    Log.debug('�️ UserProfileService disposed', name: 'UserProfileService', category: LogCategory.system);
   }
 }
 

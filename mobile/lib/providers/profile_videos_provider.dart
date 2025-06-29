@@ -4,10 +4,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
 import '../services/nostr_service_interface.dart';
-import '../services/subscription_manager.dart';
 import '../services/video_event_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Loading state for user videos
 enum ProfileVideosLoadingState {
@@ -21,7 +22,6 @@ enum ProfileVideosLoadingState {
 /// Provider for managing user-specific video fetching with pagination
 class ProfileVideosProvider extends ChangeNotifier {
   final INostrService _nostrService;
-  SubscriptionManager? _subscriptionManager;
   VideoEventService? _videoEventService;
 
   // State management
@@ -42,14 +42,9 @@ class ProfileVideosProvider extends ChangeNotifier {
   static const int _pageSize = 20;
 
   // Subscription management
-  String? _currentSubscriptionId;
+  StreamSubscription<Event>? _currentSubscription;
 
   ProfileVideosProvider(this._nostrService);
-
-  /// Set the subscription manager for proper subscription handling
-  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
-    _subscriptionManager = subscriptionManager;
-  }
   
   /// Set the video event service for accessing cached videos
   void setVideoEventService(VideoEventService videoEventService) {
@@ -94,13 +89,13 @@ class ProfileVideosProvider extends ChangeNotifier {
     _lastTimestamp = null;
 
     try {
-      debugPrint('📹 Loading videos for user: ${pubkey.substring(0, 8)}...');
+      Log.debug('� Loading videos for user: ${pubkey.substring(0, 8)}...', name: 'ProfileVideosProvider', category: LogCategory.ui);
       
       // First check if we have videos in the VideoEventService cache
       if (_videoEventService != null) {
         final cachedVideos = _videoEventService!.getVideosByAuthor(pubkey);
         if (cachedVideos.isNotEmpty) {
-          debugPrint('✅ Found ${cachedVideos.length} videos in cache for ${pubkey.substring(0, 8)}');
+          Log.info('Found ${cachedVideos.length} videos in cache for ${pubkey.substring(0, 8)}', name: 'ProfileVideosProvider', category: LogCategory.ui);
           _videos = cachedVideos;
           _hasMore = false; // We have all videos from cache
           _setLoadingState(ProfileVideosLoadingState.loaded);
@@ -113,20 +108,13 @@ class ProfileVideosProvider extends ChangeNotifier {
           
           return; // Exit early - no subscription needed
         } else {
-          debugPrint('⚠️ No videos found in cache for ${pubkey.substring(0, 8)}, fetching from relays...');
+          Log.warning('No videos found in cache for ${pubkey.substring(0, 8)}, fetching from relays...', name: 'ProfileVideosProvider', category: LogCategory.ui);
         }
       }
 
       // Cancel existing subscription if any
-      if (_currentSubscriptionId != null && _subscriptionManager != null) {
-        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
-        _currentSubscriptionId = null;
-      }
-
-      // Check if we have subscription manager
-      if (_subscriptionManager == null) {
-        throw Exception('SubscriptionManager not available - cannot load profile videos');
-      }
+      await _currentSubscription?.cancel();
+      _currentSubscription = null;
 
       // Create filter for user's Kind 22 video events
       final filter = Filter(
@@ -135,20 +123,20 @@ class ProfileVideosProvider extends ChangeNotifier {
         limit: _pageSize,
       );
 
-      debugPrint('🔍 Creating filter for profile videos:');
-      debugPrint('  - Author: $pubkey');
-      debugPrint('  - Kinds: [22]');
-      debugPrint('  - Limit: $_pageSize');
+      Log.debug('Creating filter for profile videos:', name: 'ProfileVideosProvider', category: LogCategory.ui);
+      Log.debug('  - Author: $pubkey', name: 'ProfileVideosProvider', category: LogCategory.ui);
+      Log.debug('  - Kinds: [22]', name: 'ProfileVideosProvider', category: LogCategory.ui);
+      Log.verbose('  - Limit: $_pageSize', name: 'ProfileVideosProvider', category: LogCategory.ui);
 
       final completer = Completer<void>();
       final receivedVideos = <VideoEvent>[];
 
-      // Subscribe to video events using SubscriptionManager
-      _currentSubscriptionId = await _subscriptionManager!.createSubscription(
-        name: 'profile_videos_${_currentPubkey!.substring(0, 8)}',
-        filters: [filter],
-        onEvent: (event) {
-          debugPrint('📨 Received event in profile videos: ${event.id.substring(0, 8)}, kind: ${event.kind}, author: ${event.pubkey.substring(0, 8)}');
+      // Subscribe to video events using NostrService directly
+      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      
+      _currentSubscription = eventStream.listen(
+        (event) {
+          Log.debug('� Received event in profile videos: ${event.id.substring(0, 8)}, kind: ${event.kind}, author: ${event.pubkey.substring(0, 8)}', name: 'ProfileVideosProvider', category: LogCategory.ui);
           try {
             if (event.kind == 22) {
               final videoEvent = VideoEvent.fromNostrEvent(event);
@@ -156,50 +144,46 @@ class ProfileVideosProvider extends ChangeNotifier {
               // Avoid duplicates
               if (!receivedVideos.any((v) => v.id == videoEvent.id)) {
                 receivedVideos.add(videoEvent);
-                debugPrint('📹 Received video: ${videoEvent.id.substring(0, 8)} (${videoEvent.title ?? 'No title'})');
               }
             } else {
-              debugPrint('⚠️ Received non-video event, kind: ${event.kind}');
+              Log.warning('Received non-video event, kind: ${event.kind}', name: 'ProfileVideosProvider', category: LogCategory.ui);
             }
           } catch (e) {
-            debugPrint('⚠️ Error parsing video event: $e');
+            Log.error('Error parsing video event: $e', name: 'ProfileVideosProvider', category: LogCategory.ui);
           }
         },
         onError: (error) {
-          debugPrint('❌ Error in video subscription: $error');
+          Log.error('Error in video subscription: $error', name: 'ProfileVideosProvider', category: LogCategory.ui);
           if (!completer.isCompleted) {
             completer.completeError(error);
           }
         },
-        onComplete: () {
+        onDone: () {
           if (!completer.isCompleted) {
             completer.complete();
           }
         },
-        priority: 2, // High priority for profile videos (user-facing)
       );
 
       // Set timeout to avoid hanging indefinitely
       Timer(const Duration(seconds: 8), () {
         if (!completer.isCompleted) {
-          debugPrint('⏰ Video loading timeout reached for ${pubkey.substring(0, 8)}');
+          Log.debug('⏰ Video loading timeout reached for ${pubkey.substring(0, 8)}', name: 'ProfileVideosProvider', category: LogCategory.ui);
           completer.complete();
         }
       });
 
       await completer.future;
 
-      debugPrint('📊 Profile video subscription completed:');
-      debugPrint('  - Received ${receivedVideos.length} videos for author $pubkey');
+      Log.info('Profile video subscription completed:', name: 'ProfileVideosProvider', category: LogCategory.ui);
+      Log.debug('  - Received ${receivedVideos.length} videos for author $pubkey', name: 'ProfileVideosProvider', category: LogCategory.ui);
       if (receivedVideos.isNotEmpty) {
         debugPrint('  - First video: ${receivedVideos.first.id.substring(0, 8)} (${receivedVideos.first.title ?? 'No title'})');
       }
 
       // Close the subscription after data fetch
-      if (_currentSubscriptionId != null && _subscriptionManager != null) {
-        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
-        _currentSubscriptionId = null;
-      }
+      await _currentSubscription?.cancel();
+      _currentSubscription = null;
 
       // Sort videos by creation time (newest first)
       receivedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -215,7 +199,7 @@ class ProfileVideosProvider extends ChangeNotifier {
       _cacheVideos(pubkey, _videos, _hasMore);
 
       _setLoadingState(ProfileVideosLoadingState.loaded);
-      debugPrint('✅ Loaded ${_videos.length} videos for user ${pubkey.substring(0, 8)}...');
+      Log.info('Loaded ${_videos.length} videos for user ${pubkey.substring(0, 8)}...', name: 'ProfileVideosProvider', category: LogCategory.ui);
       
       // Force notification even if empty to ensure UI updates
       notifyListeners();
@@ -223,7 +207,7 @@ class ProfileVideosProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       _setLoadingState(ProfileVideosLoadingState.error);
-      debugPrint('❌ Error loading videos: $e');
+      Log.error('Error loading videos: $e', name: 'ProfileVideosProvider', category: LogCategory.ui);
     }
   }
 
@@ -236,18 +220,11 @@ class ProfileVideosProvider extends ChangeNotifier {
     _setLoadingState(ProfileVideosLoadingState.loadingMore);
 
     try {
-      debugPrint('📹 Loading more videos for user: ${_currentPubkey!.substring(0, 8)}...');
-
-      // Check if we have subscription manager
-      if (_subscriptionManager == null) {
-        throw Exception('SubscriptionManager not available - cannot load more profile videos');
-      }
+      Log.debug('� Loading more videos for user: ${_currentPubkey!.substring(0, 8)}...', name: 'ProfileVideosProvider', category: LogCategory.ui);
 
       // Cancel existing subscription if any
-      if (_currentSubscriptionId != null) {
-        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
-        _currentSubscriptionId = null;
-      }
+      await _currentSubscription?.cancel();
+      _currentSubscription = null;
 
       // Create filter for next page
       final filter = Filter(
@@ -260,11 +237,11 @@ class ProfileVideosProvider extends ChangeNotifier {
       final completer = Completer<void>();
       final receivedVideos = <VideoEvent>[];
 
-      // Subscribe to more video events using SubscriptionManager
-      _currentSubscriptionId = await _subscriptionManager!.createSubscription(
-        name: 'profile_videos_more_${_currentPubkey!.substring(0, 8)}',
-        filters: [filter],
-        onEvent: (event) {
+      // Subscribe to more video events using NostrService directly
+      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      
+      _currentSubscription = eventStream.listen(
+        (event) {
           try {
             final videoEvent = VideoEvent.fromNostrEvent(event);
             
@@ -272,24 +249,23 @@ class ProfileVideosProvider extends ChangeNotifier {
             if (!_videos.any((v) => v.id == videoEvent.id) && 
                 !receivedVideos.any((v) => v.id == videoEvent.id)) {
               receivedVideos.add(videoEvent);
-              debugPrint('📹 Received more video: ${videoEvent.id.substring(0, 8)}');
+              Log.debug('� Received more video: ${videoEvent.id.substring(0, 8)}', name: 'ProfileVideosProvider', category: LogCategory.ui);
             }
           } catch (e) {
-            debugPrint('⚠️ Error parsing video event: $e');
+            Log.error('Error parsing video event: $e', name: 'ProfileVideosProvider', category: LogCategory.ui);
           }
         },
         onError: (error) {
-          debugPrint('❌ Error in load more subscription: $error');
+          Log.error('Error in load more subscription: $error', name: 'ProfileVideosProvider', category: LogCategory.ui);
           if (!completer.isCompleted) {
             completer.completeError(error);
           }
         },
-        onComplete: () {
+        onDone: () {
           if (!completer.isCompleted) {
             completer.complete();
           }
         },
-        priority: 5, // Medium priority for load more videos
       );
 
       // Set timeout
@@ -302,10 +278,8 @@ class ProfileVideosProvider extends ChangeNotifier {
       await completer.future;
 
       // Cancel the subscription after data fetch to prevent resource leak  
-      if (_currentSubscriptionId != null && _subscriptionManager != null) {
-        _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
-        _currentSubscriptionId = null;
-      }
+      await _currentSubscription?.cancel();
+      _currentSubscription = null;
 
       // Sort new videos by creation time
       receivedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -322,12 +296,12 @@ class ProfileVideosProvider extends ChangeNotifier {
       _cacheVideos(_currentPubkey!, _videos, _hasMore);
 
       _setLoadingState(ProfileVideosLoadingState.loaded);
-      debugPrint('✅ Loaded ${receivedVideos.length} more videos (total: ${_videos.length})');
+      Log.info('Loaded ${receivedVideos.length} more videos (total: ${_videos.length})', name: 'ProfileVideosProvider', category: LogCategory.ui);
 
     } catch (e) {
       _error = e.toString();
       _setLoadingState(ProfileVideosLoadingState.error);
-      debugPrint('❌ Error loading more videos: $e');
+      Log.error('Error loading more videos: $e', name: 'ProfileVideosProvider', category: LogCategory.ui);
     }
   }
 
@@ -347,10 +321,10 @@ class ProfileVideosProvider extends ChangeNotifier {
     if (videos != null && timestamp != null) {
       final age = DateTime.now().difference(timestamp);
       if (age < _cacheExpiry) {
-        debugPrint('💾 Using cached videos for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)');
+        Log.debug('� Using cached videos for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)', name: 'ProfileVideosProvider', category: LogCategory.ui);
         return videos;
       } else {
-        debugPrint('⏰ Video cache expired for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)');
+        Log.debug('⏰ Video cache expired for ${pubkey.substring(0, 8)} (age: ${age.inMinutes}min)', name: 'ProfileVideosProvider', category: LogCategory.ui);
         _clearCache(pubkey);
       }
     }
@@ -363,7 +337,7 @@ class ProfileVideosProvider extends ChangeNotifier {
     _videosCache[pubkey] = List.from(videos);
     _cacheTimestamps[pubkey] = DateTime.now();
     _hasMoreCache[pubkey] = hasMore;
-    debugPrint('💾 Cached ${videos.length} videos for ${pubkey.substring(0, 8)}');
+    Log.debug('� Cached ${videos.length} videos for ${pubkey.substring(0, 8)}', name: 'ProfileVideosProvider', category: LogCategory.ui);
   }
 
   /// Clear cache for a specific user
@@ -378,7 +352,7 @@ class ProfileVideosProvider extends ChangeNotifier {
     _videosCache.clear();
     _cacheTimestamps.clear();
     _hasMoreCache.clear();
-    debugPrint('🗑️ Cleared all video cache');
+    Log.debug('�️ Cleared all video cache', name: 'ProfileVideosProvider', category: LogCategory.ui);
   }
 
   /// Set loading state and notify listeners
@@ -389,13 +363,11 @@ class ProfileVideosProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing ProfileVideosProvider');
+    Log.debug('�️ Disposing ProfileVideosProvider', name: 'ProfileVideosProvider', category: LogCategory.ui);
     
-    // Close subscription using SubscriptionManager if available
-    if (_currentSubscriptionId != null && _subscriptionManager != null) {
-      _subscriptionManager!.cancelSubscription(_currentSubscriptionId!);
-      _currentSubscriptionId = null;
-    }
+    // Close subscription
+    _currentSubscription?.cancel();
+    _currentSubscription = null;
     
     super.dispose();
   }

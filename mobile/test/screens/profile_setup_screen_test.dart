@@ -2,7 +2,6 @@
 // ABOUTME: Ensures profile setup actually saves data and publishes to Nostr relays correctly
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -31,13 +30,11 @@ void main() {
     late MockAuthService mockAuthService;
     late MockUserProfileService mockUserProfileService;
     late MockINostrService mockNostrService;
-    late MockDirectUploadService mockUploadService;
     
     setUp(() {
       mockAuthService = MockAuthService();
       mockUserProfileService = MockUserProfileService();
       mockNostrService = MockINostrService();
-      mockUploadService = MockDirectUploadService();
       
       // Setup default mocks
       when(mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey_hex');

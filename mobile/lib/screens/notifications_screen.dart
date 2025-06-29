@@ -7,6 +7,7 @@ import '../models/notification_model.dart';
 import '../services/notification_service_enhanced.dart';
 import '../widgets/notification_list_item.dart';
 import '../theme/app_theme.dart';
+import '../utils/unified_logger.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -336,20 +337,20 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       case NotificationType.repost:
         if (notification.targetEventId != null) {
           // Navigate to video detail screen
-          debugPrint('Navigate to video: ${notification.targetEventId}');
+          Log.debug('Navigate to video: ${notification.targetEventId}', name: 'NotificationsScreen', category: LogCategory.ui);
         }
         break;
       case NotificationType.follow:
         // Navigate to user profile
-        debugPrint('Navigate to profile: ${notification.actorPubkey}');
+        Log.debug('Navigate to profile: ${notification.actorPubkey}', name: 'NotificationsScreen', category: LogCategory.ui);
         break;
       case NotificationType.mention:
         // Navigate to the mention context
-        debugPrint('Navigate to mention context');
+        Log.debug('Navigate to mention context', name: 'NotificationsScreen', category: LogCategory.ui);
         break;
       case NotificationType.system:
         // Handle system notifications
-        debugPrint('System notification action');
+        Log.debug('System notification action', name: 'NotificationsScreen', category: LogCategory.ui);
         break;
     }
   }

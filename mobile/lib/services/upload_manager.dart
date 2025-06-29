@@ -3,13 +3,13 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/pending_upload.dart';
 import '../utils/async_utils.dart';
 import 'direct_upload_service.dart';
 import 'circuit_breaker_service.dart';
+import '../utils/unified_logger.dart';
 
 /// Upload retry configuration
 class UploadRetryConfig {
@@ -78,7 +78,7 @@ class UploadManager extends ChangeNotifier {
 
   /// Initialize the upload manager and load persisted uploads
   Future<void> initialize() async {
-    debugPrint('🔧 Initializing UploadManager');
+    Log.debug('Initializing UploadManager', name: 'UploadManager', category: LogCategory.video);
     
     try {
       // Initialize Hive adapters
@@ -92,7 +92,7 @@ class UploadManager extends ChangeNotifier {
       // Open the uploads box
       _uploadsBox = await Hive.openBox<PendingUpload>(_uploadsBoxName);
       
-      debugPrint('✅ UploadManager initialized with ${_uploadsBox!.length} existing uploads');
+      Log.info('UploadManager initialized with ${_uploadsBox!.length} existing uploads', name: 'UploadManager', category: LogCategory.video);
       
       // Clean up any problematic uploads first
       await cleanupProblematicUploads();
@@ -101,8 +101,8 @@ class UploadManager extends ChangeNotifier {
       await _resumeInterruptedUploads();
       
     } catch (e, stackTrace) {
-      debugPrint('❌ Failed to initialize UploadManager: $e');
-      debugPrint('📍 Stack trace: $stackTrace');
+      Log.error('Failed to initialize UploadManager: $e', name: 'UploadManager', category: LogCategory.video);
+      Log.verbose('� Stack trace: $stackTrace', name: 'UploadManager', category: LogCategory.video);
       rethrow;
     }
   }
@@ -146,9 +146,9 @@ class UploadManager extends ChangeNotifier {
       );
       
       await _updateUpload(updatedUpload);
-      debugPrint('✅ Upload marked as published: $uploadId -> $nostrEventId');
+      Log.info('Upload marked as published: $uploadId -> $nostrEventId', name: 'UploadManager', category: LogCategory.video);
     } else {
-      debugPrint('⚠️ Could not find upload to mark as published: $uploadId');
+      Log.warning('Could not find upload to mark as published: $uploadId', name: 'UploadManager', category: LogCategory.video);
     }
   }
 
@@ -162,7 +162,7 @@ class UploadManager extends ChangeNotifier {
       );
       
       await _updateUpload(updatedUpload);
-      debugPrint('📋 Upload marked as ready to publish: $uploadId');
+      Log.debug('Upload marked as ready to publish: $uploadId', name: 'UploadManager', category: LogCategory.video);
     }
   }
 
@@ -180,7 +180,7 @@ class UploadManager extends ChangeNotifier {
     String? description,
     List<String>? hashtags,
   }) async {
-    debugPrint('🚀 Starting new upload: ${videoFile.path}');
+    Log.debug('Starting new upload: ${videoFile.path}', name: 'UploadManager', category: LogCategory.video);
     
     // Create pending upload record
     final upload = PendingUpload.create(
@@ -234,7 +234,7 @@ class UploadManager extends ChangeNotifier {
           
           // Update status based on current retry count
           final currentRetry = upload.retryCount ?? 0;
-          debugPrint('🚀 Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}');
+          Log.warning('Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}', name: 'UploadManager', category: LogCategory.video);
           
           await _updateUpload(upload.copyWith(
             status: currentRetry == 0 ? UploadStatus.uploading : UploadStatus.retrying,
@@ -264,7 +264,7 @@ class UploadManager extends ChangeNotifier {
         debugName: 'Upload-${upload.id}',
       );
     } catch (e) {
-      debugPrint('❌ Upload failed after all retries: $e');
+      Log.error('Upload failed after all retries: $e', name: 'UploadManager', category: LogCategory.video);
       rethrow;
     }
   }
@@ -322,9 +322,9 @@ class UploadManager extends ChangeNotifier {
           wasSuccessful: true,
         );
         
-        debugPrint('✅ Direct upload successful: ${result.videoId}');
-        debugPrint('🔗 CDN URL: ${result.cdnUrl}');
-        debugPrint('📊 Upload metrics: ${metrics.fileSizeMB.toStringAsFixed(1)}MB in ${duration.inSeconds}s (${throughput.toStringAsFixed(2)} MB/s)');
+        Log.info('Direct upload successful: ${result.videoId}', name: 'UploadManager', category: LogCategory.video);
+        Log.debug('� CDN URL: ${result.cdnUrl}', name: 'UploadManager', category: LogCategory.video);
+        Log.debug('Upload metrics: ${metrics.fileSizeMB.toStringAsFixed(1)}MB in ${duration.inSeconds}s (${throughput.toStringAsFixed(2)} MB/s)', name: 'UploadManager', category: LogCategory.video);
       }
       
       // Notify that upload is ready for immediate publishing
@@ -340,8 +340,8 @@ class UploadManager extends ChangeNotifier {
     final metrics = _uploadMetrics[upload.id];
     final errorCategory = _categorizeError(error);
     
-    debugPrint('❌ Upload failed for ${upload.id}: $error');
-    debugPrint('🏷️ Error category: $errorCategory');
+    Log.error('Upload failed for ${upload.id}: $error', name: 'UploadManager', category: LogCategory.video);
+    Log.error('Error category: $errorCategory', name: 'UploadManager', category: LogCategory.video);
     
     await _updateUpload(upload.copyWith(
       status: UploadStatus.failed,
@@ -430,16 +430,16 @@ class UploadManager extends ChangeNotifier {
   Future<void> pauseUpload(String uploadId) async {
     final upload = getUpload(uploadId);
     if (upload == null) {
-      debugPrint('❌ Upload not found for pause: $uploadId');
+      Log.error('Upload not found for pause: $uploadId', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
     if (upload.status != UploadStatus.uploading) {
-      debugPrint('❌ Upload is not currently uploading: ${upload.status}');
+      Log.error('Upload is not currently uploading: ${upload.status}', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
-    debugPrint('⏸️ Pausing upload: $uploadId');
+    Log.debug('Pausing upload: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Cancel the active upload (similar to cancelUpload but non-destructive)
     if (upload.cloudinaryPublicId != null) {
@@ -458,23 +458,23 @@ class UploadManager extends ChangeNotifier {
     _progressSubscriptions[uploadId]?.cancel();
     _progressSubscriptions.remove(uploadId);
     
-    debugPrint('✅ Upload paused: $uploadId');
+    Log.info('Upload paused: $uploadId', name: 'UploadManager', category: LogCategory.video);
   }
 
   /// Resume a paused upload
   Future<void> resumeUpload(String uploadId) async {
     final upload = getUpload(uploadId);
     if (upload == null) {
-      debugPrint('❌ Upload not found for resume: $uploadId');
+      Log.error('Upload not found for resume: $uploadId', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
     if (upload.status != UploadStatus.paused) {
-      debugPrint('❌ Upload is not paused: ${upload.status}');
+      Log.error('Upload is not paused: ${upload.status}', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
-    debugPrint('▶️ Resuming upload: $uploadId');
+    Log.debug('▶️ Resuming upload: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Reset to pending to restart upload from beginning
     final resumedUpload = upload.copyWith(
@@ -488,23 +488,23 @@ class UploadManager extends ChangeNotifier {
     // Start upload process again
     _performUpload(resumedUpload);
     
-    debugPrint('✅ Upload resumed: $uploadId');
+    Log.info('Upload resumed: $uploadId', name: 'UploadManager', category: LogCategory.video);
   }
 
   /// Retry a failed upload
   Future<void> retryUpload(String uploadId) async {
     final upload = getUpload(uploadId);
     if (upload == null) {
-      debugPrint('❌ Upload not found for retry: $uploadId');
+      Log.error('Upload not found for retry: $uploadId', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
     if (!upload.canRetry) {
-      debugPrint('❌ Upload cannot be retried: $uploadId (retries: ${upload.retryCount})');
+      Log.error('Upload cannot be retried: $uploadId (retries: ${upload.retryCount})', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
-    debugPrint('🔄 Retrying upload: $uploadId');
+    Log.warning('Retrying upload: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Reset status and error
     final resetUpload = upload.copyWith(
@@ -524,7 +524,7 @@ class UploadManager extends ChangeNotifier {
     final upload = getUpload(uploadId);
     if (upload == null) return;
     
-    debugPrint('🚫 Cancelling upload: $uploadId');
+    Log.debug('Cancelling upload: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Cancel any active upload
     if (upload.cloudinaryPublicId != null) {
@@ -544,7 +544,7 @@ class UploadManager extends ChangeNotifier {
     _progressSubscriptions[uploadId]?.cancel();
     _progressSubscriptions.remove(uploadId);
     
-    debugPrint('✅ Upload cancelled and available for retry: $uploadId');
+    Log.warning('Upload cancelled and available for retry: $uploadId', name: 'UploadManager', category: LogCategory.video);
   }
 
   /// Delete an upload permanently (removes from storage)
@@ -552,7 +552,7 @@ class UploadManager extends ChangeNotifier {
     final upload = getUpload(uploadId);
     if (upload == null) return;
     
-    debugPrint('🗑️ Deleting upload: $uploadId');
+    Log.debug('�️ Deleting upload: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Cancel any active upload first
     if (upload.status == UploadStatus.uploading) {
@@ -569,7 +569,7 @@ class UploadManager extends ChangeNotifier {
     await _uploadsBox?.delete(uploadId);
     
     notifyListeners();
-    debugPrint('✅ Upload deleted permanently: $uploadId');
+    Log.info('Upload deleted permanently: $uploadId', name: 'UploadManager', category: LogCategory.video);
   }
 
   /// Remove completed or failed uploads
@@ -585,7 +585,7 @@ class UploadManager extends ChangeNotifier {
     
     for (final upload in completedUploads) {
       await _uploadsBox!.delete(upload.id);
-      debugPrint('🗑️ Cleaned up old upload: ${upload.id}');
+      Log.debug('�️ Cleaned up old upload: ${upload.id}', name: 'UploadManager', category: LogCategory.video);
     }
     
     if (completedUploads.isNotEmpty) {
@@ -600,7 +600,7 @@ class UploadManager extends ChangeNotifier {
         .toList();
     
     for (final upload in interruptedUploads) {
-      debugPrint('🔄 Resuming interrupted upload: ${upload.id}');
+      Log.debug('Resuming interrupted upload: ${upload.id}', name: 'UploadManager', category: LogCategory.video);
       
       // Reset to pending and restart
       final resetUpload = upload.copyWith(
@@ -635,7 +635,7 @@ class UploadManager extends ChangeNotifier {
   Future<void> updateUploadStatus(String uploadId, UploadStatus status, {String? nostrEventId}) async {
     final upload = getUpload(uploadId);
     if (upload == null) {
-      debugPrint('⚠️ Upload not found for status update: $uploadId');
+      Log.warning('Upload not found for status update: $uploadId', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
@@ -646,7 +646,7 @@ class UploadManager extends ChangeNotifier {
     );
     
     await _updateUpload(updatedUpload);
-    debugPrint('✅ Updated upload status: $uploadId -> $status');
+    Log.info('Updated upload status: $uploadId -> $status', name: 'UploadManager', category: LogCategory.video);
   }
 
   /// Get upload statistics
@@ -673,7 +673,7 @@ class UploadManager extends ChangeNotifier {
       // These should be moved back to failed status so user can retry
       if (upload.status == UploadStatus.readyToPublish && 
           (upload.videoId == null || upload.cdnUrl == null)) {
-        debugPrint('🔄 Fixing stuck upload: ${upload.id} (missing videoId/cdnUrl) - moving to failed');
+        Log.error('Fixing stuck upload: ${upload.id} (missing videoId/cdnUrl) - moving to failed', name: 'UploadManager', category: LogCategory.video);
         final fixedUpload = upload.copyWith(status: UploadStatus.failed);
         await _updateUpload(fixedUpload);
         fixedCount++;
@@ -681,7 +681,7 @@ class UploadManager extends ChangeNotifier {
     }
     
     if (fixedCount > 0) {
-      debugPrint('🔄 Fixed $fixedCount stuck uploads - moved back to failed status');
+      Log.error('Fixed $fixedCount stuck uploads - moved back to failed status', name: 'UploadManager', category: LogCategory.video);
       notifyListeners();
     }
   }
@@ -748,12 +748,12 @@ class UploadManager extends ChangeNotifier {
   Future<void> retryUploadWithBackoff(String uploadId) async {
     final upload = getUpload(uploadId);
     if (upload == null) {
-      debugPrint('⚠️ Upload not found for retry: $uploadId');
+      Log.warning('Upload not found for retry: $uploadId', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
     if (upload.status != UploadStatus.failed) {
-      debugPrint('⚠️ Upload is not in failed state: ${upload.status}');
+      Log.error('Upload is not in failed state: ${upload.status}', name: 'UploadManager', category: LogCategory.video);
       return;
     }
     
@@ -761,7 +761,7 @@ class UploadManager extends ChangeNotifier {
     _retryTimers[uploadId]?.cancel();
     _retryTimers.remove(uploadId);
     
-    debugPrint('🔄 Retrying upload with backoff: $uploadId');
+    Log.warning('Retrying upload with backoff: $uploadId', name: 'UploadManager', category: LogCategory.video);
     
     // Reset retry count if it's been more than 1 hour since last attempt
     final now = DateTime.now();

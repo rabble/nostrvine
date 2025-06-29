@@ -9,14 +9,14 @@ import 'package:openvine/main.dart' as app;
 import 'package:openvine/services/camera_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/direct_upload_service.dart';
-import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Thumbnail Integration Tests', () {
     testWidgets('Record video and generate thumbnail end-to-end', (WidgetTester tester) async {
-      print('🎬 Starting real thumbnail integration test...');
+      Log.debug('🎬 Starting real thumbnail integration test...');
       
       // Start the app
       app.main();
@@ -25,27 +25,26 @@ void main() {
       // Wait for app to initialize
       await tester.pump(const Duration(seconds: 2));
       
-      print('📱 App initialized, looking for camera screen...');
+      Log.debug('📱 App initialized, looking for camera screen...');
       
       // Navigate to camera screen if not already there
       // Look for camera button or record button
       final cameraButtonFinder = find.byIcon(Icons.videocam);
-      final recordButtonFinder = find.text('Record');
       final fabFinder = find.byType(FloatingActionButton);
       
-      if (await tester.binding.defaultBinaryMessenger.checkMockMessageHandler('flutter/platform', null) == null) {
-        print('⚠️ Running on real device - camera should be available');
+      if (!tester.binding.defaultBinaryMessenger.checkMockMessageHandler('flutter/platform', null)) {
+        Log.debug('⚠️ Running on real device - camera should be available');
       } else {
-        print('ℹ️ Running in test environment - will simulate camera operations');
+        Log.debug('ℹ️ Running in test environment - will simulate camera operations');
       }
       
       // Try to find and tap camera-related UI elements
       if (cameraButtonFinder.evaluate().isNotEmpty) {
-        print('📹 Found camera button, tapping...');
+        Log.debug('📹 Found camera button, tapping...');
         await tester.tap(cameraButtonFinder);
         await tester.pumpAndSettle();
       } else if (fabFinder.evaluate().isNotEmpty) {
-        print('🎯 Found FAB, assuming it is for camera...');
+        Log.debug('🎯 Found FAB, assuming it is for camera...');
         await tester.tap(fabFinder);
         await tester.pumpAndSettle();
       }
@@ -54,32 +53,32 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       
       // Try to test camera service directly if UI interaction fails
-      print('🔧 Testing CameraService directly...');
+      Log.debug('🔧 Testing CameraService directly...');
       
       final cameraService = CameraService();
       
       try {
-        print('📷 Initializing camera service...');
+        Log.debug('📷 Initializing camera service...');
         await cameraService.initialize();
-        print('✅ Camera service initialized successfully');
+        Log.debug('✅ Camera service initialized successfully');
         
-        print('🎬 Starting video recording...');
+        Log.debug('🎬 Starting video recording...');
         await cameraService.startRecording();
-        print('✅ Recording started');
+        Log.debug('✅ Recording started');
         
         // Record for 2 seconds
         await Future.delayed(const Duration(seconds: 2));
         
-        print('⏹️ Stopping recording...');
+        Log.debug('⏹️ Stopping recording...');
         final result = await cameraService.stopRecording();
-        print('✅ Recording stopped');
+        Log.debug('✅ Recording stopped');
         
-        print('📹 Video file: ${result.videoFile.path}');
-        print('⏱️ Duration: ${result.duration.inSeconds}s');
-        print('📦 File size: ${await result.videoFile.length()} bytes');
+        Log.debug('📹 Video file: ${result.videoFile.path}');
+        Log.debug('⏱️ Duration: ${result.duration.inSeconds}s');
+        Log.debug('📦 File size: ${await result.videoFile.length()} bytes');
         
         // Test thumbnail generation
-        print('\n🖼️ Testing thumbnail generation...');
+        Log.debug('\n🖼️ Testing thumbnail generation...');
         
         final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
           videoPath: result.videoFile.path,
@@ -88,20 +87,20 @@ void main() {
         );
         
         if (thumbnailBytes != null) {
-          print('✅ Thumbnail generated successfully!');
-          print('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
+          Log.debug('✅ Thumbnail generated successfully!');
+          Log.debug('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
           
           // Verify it's a valid JPEG
           if (thumbnailBytes.length >= 2 && 
               thumbnailBytes[0] == 0xFF && 
               thumbnailBytes[1] == 0xD8) {
-            print('✅ Generated thumbnail is valid JPEG format');
+            Log.debug('✅ Generated thumbnail is valid JPEG format');
           } else {
-            print('❌ Generated thumbnail is not valid JPEG format');
+            Log.debug('❌ Generated thumbnail is not valid JPEG format');
           }
           
           // Test upload structure (without actually uploading)
-          print('\n📤 Testing upload structure...');
+          Log.debug('\n📤 Testing upload structure...');
           
           final uploadResult = DirectUploadResult.success(
             videoId: 'real_test_video',
@@ -114,30 +113,30 @@ void main() {
             },
           );
           
-          print('✅ Upload result structure verified');
-          print('🎬 Video URL: ${uploadResult.cdnUrl}');
-          print('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
-          print('📊 Metadata: ${uploadResult.metadata}');
+          Log.debug('✅ Upload result structure verified');
+          Log.debug('🎬 Video URL: ${uploadResult.cdnUrl}');
+          Log.debug('🖼️ Thumbnail URL: ${uploadResult.thumbnailUrl}');
+          Log.debug('📊 Metadata: ${uploadResult.metadata}');
           
         } else {
-          print('❌ Thumbnail generation failed');
-          print('ℹ️ This might be due to test environment limitations');
+          Log.debug('❌ Thumbnail generation failed');
+          Log.debug('ℹ️ This might be due to test environment limitations');
         }
         
         // Clean up
         try {
           await result.videoFile.delete();
-          print('🗑️ Cleaned up video file');
+          Log.debug('🗑️ Cleaned up video file');
         } catch (e) {
-          print('⚠️ Could not delete video file: $e');
+          Log.debug('⚠️ Could not delete video file: $e');
         }
         
       } catch (e) {
-        print('❌ Camera test failed: $e');
-        print('ℹ️ This is expected on simulator or headless test environment');
+        Log.debug('❌ Camera test failed: $e');
+        Log.debug('ℹ️ This is expected on simulator or headless test environment');
         
         // Test the structure without real recording
-        print('\n🧪 Testing thumbnail service structure without real video...');
+        Log.debug('\n🧪 Testing thumbnail service structure without real video...');
         
         // Create a dummy file for structure testing
         final tempDir = await Directory.systemTemp.createTemp('structure_test');
@@ -149,15 +148,15 @@ void main() {
         );
         
         if (thumbnailResult == null) {
-          print('✅ Thumbnail service correctly handles invalid video files');
+          Log.debug('✅ Thumbnail service correctly handles invalid video files');
         }
         
         // Test optimal timestamp calculation
         final timestamp1 = VideoThumbnailService.getOptimalTimestamp(Duration(seconds: 6, milliseconds: 300));
         final timestamp2 = VideoThumbnailService.getOptimalTimestamp(Duration(seconds: 30));
         
-        print('✅ Optimal timestamp for vine (6.3s): ${timestamp1}ms');
-        print('✅ Optimal timestamp for long video (30s): ${timestamp2}ms');
+        Log.debug('✅ Optimal timestamp for vine (6.3s): ${timestamp1}ms');
+        Log.debug('✅ Optimal timestamp for long video (30s): ${timestamp2}ms');
         
         expect(timestamp1, equals(630)); // 10% of 6300ms
         expect(timestamp2, equals(1000)); // Capped at 1000ms
@@ -168,11 +167,11 @@ void main() {
         cameraService.dispose();
       }
       
-      print('\n🎉 Thumbnail integration test completed!');
+      Log.debug('\n🎉 Thumbnail integration test completed!');
     }, timeout: const Timeout(Duration(minutes: 2)));
     
     testWidgets('Test upload manager thumbnail integration', (WidgetTester tester) async {
-      print('\n📋 Testing UploadManager thumbnail integration...');
+      Log.debug('\n📋 Testing UploadManager thumbnail integration...');
       
       // Start the app to get services initialized
       app.main();
@@ -180,7 +179,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       
       // Test UploadManager structure supports thumbnails
-      print('🔧 Testing UploadManager with thumbnail data...');
+      Log.debug('🔧 Testing UploadManager with thumbnail data...');
       
       // This tests that our PendingUpload model supports thumbnails
       // and that the upload flow can handle them
@@ -192,7 +191,7 @@ void main() {
         'expected_thumbnail_size': 'varies',
       };
       
-      print('✅ Upload metadata structure supports thumbnails: $testMetadata');
+      Log.debug('✅ Upload metadata structure supports thumbnails: $testMetadata');
       
       // Test the upload result processing
       final mockUploadResult = DirectUploadResult.success(
@@ -206,10 +205,10 @@ void main() {
       expect(mockUploadResult.thumbnailUrl, isNotNull);
       expect(mockUploadResult.thumbnailUrl, contains('thumb'));
       
-      print('✅ DirectUploadResult correctly handles thumbnail URLs');
-      print('📸 Thumbnail URL format verified: ${mockUploadResult.thumbnailUrl}');
+      Log.debug('✅ DirectUploadResult correctly handles thumbnail URLs');
+      Log.debug('📸 Thumbnail URL format verified: ${mockUploadResult.thumbnailUrl}');
       
-      print('🎉 UploadManager thumbnail integration test passed!');
+      Log.debug('🎉 UploadManager thumbnail integration test passed!');
     });
   });
 }
