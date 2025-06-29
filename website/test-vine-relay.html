@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test vine.hol.is Relay</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .container {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #00bf8f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #00a77d;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        input {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #666;
+            padding: 8px;
+            margin: 5px;
+            font-family: monospace;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected { background: #004d40; color: #00ff88; }
+        .status.error { background: #4d0000; color: #ff6666; }
+        .status.warning { background: #4d3300; color: #ffaa00; }
+        .event {
+            border: 1px solid #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #111;
+        }
+        .event-header {
+            color: #00aaff;
+            font-weight: bold;
+        }
+        .event-content {
+            color: #cccccc;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍇 vine.hol.is Relay Test Script</h1>
+        <p>Testing NIP-42 authentication and Kind 22 event queries on the groups relay</p>
+        
+        <div class="controls">
+            <button onclick="connectRelay()">Connect to Relay</button>
+            <button onclick="testBasicQuery()" id="basicBtn" disabled>Test Basic Query</button>
+            <button onclick="testSearchQuery()" id="searchBtn" disabled>Test Search Query</button>
+            <button onclick="testKind22Query()" id="kind22Btn" disabled>Test Kind 22 Query</button>
+            <button onclick="clearOutput()">Clear Output</button>
+            <br>
+            <input type="text" id="searchInput" placeholder="Search term" value="vine">
+            <button onclick="testCustomSearch()" id="customBtn" disabled>Custom Search</button>
+        </div>
+        
+        <div id="status" class="status">Ready to connect</div>
+        
+        <h3>WebSocket Messages</h3>
+        <div id="output" class="output"></div>
+        
+        <h3>Parsed Events</h3>
+        <div id="events" class="output"></div>
+    </div>
+
+    <script src="https://unpkg.com/@noble/secp256k1@1.7.1/index.js"></script>
+    <script>
+        const secp = window.nobleSecp256k1;
+        let ws = null;
+        let privateKey = null;
+        let publicKey = null;
+        let isAuthenticated = false;
+        let messageCounter = 0;
+
+        // Generate disposable key pair
+        function generateKeyPair() {
+            const privKey = secp.utils.randomPrivateKey();
+            const pubKey = secp.schnorr.getPublicKey(privKey);
+            
+            privateKey = secp.etc.bytesToHex(privKey);
+            publicKey = secp.etc.bytesToHex(pubKey);
+            
+            log(`Generated keypair:`, 'info');
+            log(`Private key: ${privateKey}`, 'info');
+            log(`Public key: ${publicKey}`, 'info');
+        }
+
+        // Logging function
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = `[${timestamp}] `;
+            
+            if (typeof message === 'object') {
+                message = JSON.stringify(message, null, 2);
+            }
+            
+            output.textContent += prefix + message + '\n';
+            output.scrollTop = output.scrollHeight;
+            
+            console.log(type + ':', message);
+        }
+
+        // Status updates
+        function setStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        // Event display
+        function displayEvent(event) {
+            const eventsDiv = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event';
+            
+            eventDiv.innerHTML = `
+                <div class="event-header">
+                    Kind ${event.kind} | ${new Date(event.created_at * 1000).toLocaleString()}
+                </div>
+                <div class="event-content">
+                    <strong>ID:</strong> ${event.id}<br>
+                    <strong>Author:</strong> ${event.pubkey.slice(0, 16)}...<br>
+                    <strong>Content:</strong> ${event.content || '(empty)'}<br>
+                    <strong>Tags:</strong> ${JSON.stringify(event.tags || [])}
+                </div>
+            `;
+            
+            eventsDiv.appendChild(eventDiv);
+            eventsDiv.scrollTop = eventsDiv.scrollHeight;
+        }
+
+        // Sign Nostr event
+        async function signEvent(event) {
+            const serialized = JSON.stringify([
+                0,
+                event.pubkey,
+                event.created_at,
+                event.kind,
+                event.tags,
+                event.content
+            ]);
+            
+            const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(serialized));
+            const hashArray = new Uint8Array(hash);
+            
+            event.id = secp.etc.bytesToHex(hashArray);
+            const signature = await secp.schnorr.sign(hashArray, privateKey);
+            event.sig = secp.etc.bytesToHex(signature);
+            
+            return event;
+        }
+
+        // Connect to relay
+        async function connectRelay() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+            
+            generateKeyPair();
+            setStatus('Connecting to vine.hol.is...', 'warning');
+            log('Connecting to wss://vine.hol.is');
+            
+            ws = new WebSocket('wss://vine.hol.is');
+            isAuthenticated = false;
+            
+            ws.onopen = () => {
+                setStatus('Connected, waiting for AUTH challenge...', 'connected');
+                log('WebSocket connected');
+            };
+            
+            ws.onmessage = async (event) => {
+                messageCounter++;
+                const data = JSON.parse(event.data);
+                log(`<-- [${messageCounter}] ${event.data}`);
+                
+                const [type, ...args] = data;
+                
+                switch (type) {
+                    case 'AUTH':
+                        await handleAuth(args[0]);
+                        break;
+                    case 'OK':
+                        handleOK(args);
+                        break;
+                    case 'EVENT':
+                        handleEvent(args);
+                        break;
+                    case 'EOSE':
+                        log(`End of stored events for subscription: ${args[0]}`);
+                        break;
+                    case 'NOTICE':
+                        log(`NOTICE: ${args[0]}`, 'warning');
+                        break;
+                    case 'CLOSED':
+                        log(`Subscription closed: ${args[0]} - ${args[1]}`, 'warning');
+                        break;
+                    default:
+                        log(`Unknown message type: ${type}`);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                setStatus('WebSocket error', 'error');
+                log(`WebSocket error: ${error}`);
+            };
+            
+            ws.onclose = () => {
+                setStatus('Disconnected', 'error');
+                log('WebSocket closed');
+                document.querySelectorAll('button[id$="Btn"]').forEach(btn => btn.disabled = true);
+            };
+        }
+
+        // Handle AUTH challenge
+        async function handleAuth(challenge) {
+            log(`Received AUTH challenge: ${challenge}`);
+            
+            const authEvent = {
+                kind: 22242,
+                pubkey: publicKey,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [
+                    ['relay', 'wss://vine.hol.is'],
+                    ['challenge', challenge]
+                ],
+                content: ''
+            };
+            
+            const signedEvent = await signEvent(authEvent);
+            const authMessage = ['AUTH', signedEvent];
+            
+            log(`--> ${JSON.stringify(authMessage)}`);
+            ws.send(JSON.stringify(authMessage));
+        }
+
+        // Handle OK response
+        function handleOK(args) {
+            const [eventId, success, message] = args;
+            if (success) {
+                log(`✅ Event accepted: ${eventId}`);
+                if (!isAuthenticated) {
+                    isAuthenticated = true;
+                    setStatus('Authenticated successfully!', 'connected');
+                    document.querySelectorAll('button[id$="Btn"]').forEach(btn => btn.disabled = false);
+                }
+            } else {
+                log(`❌ Event rejected: ${eventId} - ${message}`, 'error');
+                setStatus(`Authentication failed: ${message}`, 'error');
+            }
+        }
+
+        // Handle EVENT
+        function handleEvent(args) {
+            const [subscriptionId, event] = args;
+            log(`📥 Received event for ${subscriptionId}: Kind ${event.kind}`);
+            displayEvent(event);
+        }
+
+        // Send subscription request
+        function sendREQ(subscription) {
+            if (!isAuthenticated) {
+                log('❌ Not authenticated yet!', 'error');
+                return;
+            }
+            
+            const subId = `test_${Date.now()}`;
+            const reqMessage = ['REQ', subId, subscription];
+            
+            log(`--> ${JSON.stringify(reqMessage)}`);
+            ws.send(JSON.stringify(reqMessage));
+            
+            return subId;
+        }
+
+        // Test basic query (last 10 events of any kind)
+        function testBasicQuery() {
+            log('=== Testing Basic Query ===');
+            sendREQ({
+                limit: 10,
+                since: Math.floor(Date.now() / 1000) - (24 * 60 * 60) // Last 24 hours
+            });
+        }
+
+        // Test search query (if supported)
+        function testSearchQuery() {
+            log('=== Testing Search Query (NIP-50) ===');
+            sendREQ({
+                search: 'vine',
+                limit: 20
+            });
+        }
+
+        // Test Kind 22 query
+        function testKind22Query() {
+            log('=== Testing Kind 22 (Short Video) Query ===');
+            sendREQ({
+                kinds: [22],
+                limit: 50,
+                since: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) // Last 30 days
+            });
+        }
+
+        // Test custom search
+        function testCustomSearch() {
+            const searchTerm = document.getElementById('searchInput').value;
+            log(`=== Testing Custom Search: "${searchTerm}" ===`);
+            
+            // Try multiple approaches
+            sendREQ({
+                search: searchTerm,
+                kinds: [22],
+                limit: 30
+            });
+            
+            setTimeout(() => {
+                sendREQ({
+                    kinds: [22],
+                    limit: 100,
+                    since: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60) // Last 7 days
+                });
+            }, 2000);
+        }
+
+        // Clear output
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+            document.getElementById('events').innerHTML = '';
+            messageCounter = 0;
+        }
+
+        // Auto-connect on load
+        window.addEventListener('load', () => {
+            log('🍇 Vine Relay Test Script Loaded');
+            log('This script tests NIP-42 auth and various query types');
+            log('Click "Connect to Relay" to begin testing');
+        });
+    </script>
+</body>
+</html>

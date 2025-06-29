@@ -1,0 +1,72 @@
+{
+  "name": "OpenVine",
+  "version": "1.0.0",
+  "description": "OpenVine - Decentralized vine-like video sharing on Nostr",
+  "devtools": {
+    "console": {
+      "customFormatters": true,
+      "preserveLog": true
+    },
+    "network": {
+      "preserveLog": true,
+      "recordFilmStrip": false
+    },
+    "sources": {
+      "enableJavaScriptSourceMaps": true,
+      "enableCSSSourceMaps": true
+    },
+    "performance": {
+      "cpuThrottling": 1,
+      "networkThrottling": null
+    }
+  },
+  "debugging": {
+    "skipFiles": [
+      "node_modules/**",
+      "**/*.min.js"
+    ],
+    "sourceMaps": {
+      "enabled": true,
+      "autoDetect": true
+    }
+  },
+  "customHeaders": {
+    "X-Debug-Mode": "true"
+  },
+  "websocket": {
+    "inspectFrames": true,
+    "captureFrames": [
+      "wss://vine.hol.is",
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.nos.social",
+      "wss://relay.nostr.band",
+      "wss://cache2.primal.net/v1"
+    ]
+  },
+  "localStorage": {
+    "inspect": true,
+    "keys": [
+      "vineTheme",
+      "nostrPrivateKey",
+      "nostrPublicKey",
+      "lastSync"
+    ]
+  },
+  "breakpoints": {
+    "patterns": [
+      "**/nostr-*.js",
+      "**/vine-*.js",
+      "**/*WebSocket*"
+    ]
+  },
+  "logging": {
+    "level": "verbose",
+    "categories": {
+      "nostr": true,
+      "websocket": true,
+      "video": true,
+      "network": true
+    }
+  }
+}

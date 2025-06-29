@@ -8,12 +8,23 @@
     "start": "npx http-server -p 8080",
     "serve": "npx serve -p 8080"
   },
-  "keywords": ["openvine", "nostr", "video", "vine"],
+  "keywords": [
+    "openvine",
+    "nostr",
+    "video",
+    "vine"
+  ],
   "author": "OpenVine Team",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.2",
     "http-server": "^14.1.1",
+    "live-server": "^1.2.2",
     "serve": "^14.2.1"
+  },
+  "dependencies": {
+    "@noble/secp256k1": "^2.3.0",
+    "@scure/bip32": "^1.7.0",
+    "@scure/bip39": "^1.6.0",
+    "ws": "^8.18.3"
   }
 }

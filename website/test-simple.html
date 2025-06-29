@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple vine.hol.is Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .container {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #00bf8f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #00a77d;
+        }
+        input {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #666;
+            padding: 8px;
+            margin: 5px;
+            font-family: monospace;
+            width: 200px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #004d40;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍇 Simple vine.hol.is Test (No Auth)</h1>
+        <p>Testing direct connection to vine.hol.is relay without authentication</p>
+        
+        <div class="controls">
+            <button onclick="testBasicConnection()">Test Basic Connection</button>
+            <button onclick="testKind22Events()">Test All Content Types</button>
+            <button onclick="testProfilesOnly()">Test Profiles Only</button>
+            <button onclick="testSearch()">Test Search</button>
+            <button onclick="clearOutput()">Clear Output</button>
+            <br>
+            <input type="text" id="searchInput" placeholder="Search term" value="vine">
+            <button onclick="testCustomSearch()">Custom Search</button>
+        </div>
+        
+        <div id="status" class="status">Ready to test</div>
+        
+        <h3>Output</h3>
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        let messageCounter = 0;
+
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = `[${timestamp}] `;
+            
+            if (typeof message === 'object') {
+                message = JSON.stringify(message, null, 2);
+            }
+            
+            output.textContent += prefix + message + '\n';
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+            messageCounter = 0;
+        }
+
+        function testBasicConnection() {
+            log('=== Testing Basic Connection ===');
+            setStatus('Connecting to vine.hol.is...');
+            
+            const ws = new WebSocket('wss://vine.hol.is');
+            
+            ws.onopen = () => {
+                log('✅ Connected to vine.hol.is relay');
+                setStatus('Connected! Testing basic query...');
+                
+                // Send basic query without auth
+                const subscription = {
+                    limit: 5,
+                    since: Math.floor(Date.now() / 1000) - (24 * 60 * 60) // Last 24 hours
+                };
+                
+                const reqMessage = ['REQ', 'test_basic', subscription];
+                log('Sending: ' + JSON.stringify(reqMessage));
+                ws.send(JSON.stringify(reqMessage));
+                
+                setTimeout(() => ws.close(), 5000);
+            };
+            
+            ws.onmessage = (event) => {
+                messageCounter++;
+                const message = JSON.parse(event.data);
+                log(`← [${messageCounter}] ${event.data}`);
+                
+                if (message[0] === 'EVENT') {
+                    const eventData = message[2];
+                    log(`  📺 Kind ${eventData.kind} by ${eventData.pubkey.slice(0, 16)}...`);
+                    if (eventData.content) {
+                        log(`  💬 Content: ${eventData.content.slice(0, 100)}...`);
+                    }
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ WebSocket error: ' + error);
+                setStatus('Connection failed');
+            };
+            
+            ws.onclose = () => {
+                log('👋 Connection closed');
+                setStatus('Test completed');
+            };
+        }
+
+        function testKind22Events() {
+            log('=== Testing All Content Types (Videos, Profiles, Playlists) ===');
+            setStatus('Fetching all content types...');
+            
+            const ws = new WebSocket('wss://vine.hol.is');
+            let eventCounts = { 0: 0, 22: 0, 30023: 0 };
+            
+            ws.onopen = () => {
+                log('✅ Connected, requesting multiple content types');
+                
+                // Try broader time range for profiles - they might be older
+                const subscription = {
+                    kinds: [0, 22, 30023], // Profiles, Videos, Playlists
+                    limit: 200,
+                    since: Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60) // Last year instead of 30 days
+                };
+                
+                const reqMessage = ['REQ', 'test_all_types', subscription];
+                log('Sending: ' + JSON.stringify(reqMessage));
+                ws.send(JSON.stringify(reqMessage));
+                
+                setTimeout(() => ws.close(), 20000);
+            };
+            
+            ws.onmessage = (event) => {
+                messageCounter++;
+                const message = JSON.parse(event.data);
+                
+                if (message[0] === 'EVENT') {
+                    const eventData = message[2];
+                    eventCounts[eventData.kind]++;
+                    
+                    log(`← [${Object.values(eventCounts).reduce((a,b) => a+b, 0)}] Kind ${eventData.kind} Event:`);
+                    
+                    if (eventData.kind === 0) {
+                        // Profile
+                        try {
+                            const profile = JSON.parse(eventData.content);
+                            log(`  👤 Profile: ${profile.name || profile.display_name || 'Unknown'}`);
+                            log(`  📝 About: ${(profile.about || '').slice(0, 50)}...`);
+                            log(`  🖼️ Picture: ${profile.picture ? 'Yes' : 'No'}`);
+                            log(`  ✅ NIP-05: ${profile.nip05 || 'None'}`);
+                        } catch (e) {
+                            log(`  ❌ Error parsing profile: ${e.message}`);
+                        }
+                    } else if (eventData.kind === 22) {
+                        // Video
+                        log(`  📺 Video: ${eventData.content?.slice(0, 50) || '(no content)'}...`);
+                        const videoTags = eventData.tags?.filter(tag => tag[0] === 'r') || [];
+                        if (videoTags.length > 0) {
+                            log(`  🎥 Has video URLs: ${videoTags.length}`);
+                        }
+                    } else if (eventData.kind === 30023) {
+                        // Playlist  
+                        try {
+                            const playlist = JSON.parse(eventData.content);
+                            log(`  📋 Playlist: ${playlist.name || 'Untitled'}`);
+                            log(`  📝 Description: ${(playlist.description || '').slice(0, 50)}...`);
+                            const videoRefs = eventData.tags?.filter(tag => tag[0] === 'e') || [];
+                            log(`  🎬 Contains ${videoRefs.length} video references`);
+                        } catch (e) {
+                            log(`  ❌ Error parsing playlist: ${e.message}`);
+                        }
+                    }
+                    
+                    log(`  📅 ${new Date(eventData.created_at * 1000).toISOString()}`);
+                    log('  ---');
+                } else if (message[0] === 'EOSE') {
+                    const total = Object.values(eventCounts).reduce((a,b) => a+b, 0);
+                    log(`📋 End of events - found ${total} total events:`);
+                    log(`  - Kind 0 (Profiles): ${eventCounts[0]}`);
+                    log(`  - Kind 22 (Videos): ${eventCounts[22]}`);
+                    log(`  - Kind 30023 (Playlists): ${eventCounts[30023]}`);
+                } else {
+                    log(`← [${messageCounter}] ${event.data}`);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ WebSocket error: ' + error);
+                setStatus('Failed to fetch videos');
+            };
+            
+            ws.onclose = () => {
+                const total = Object.values(eventCounts).reduce((a,b) => a+b, 0);
+                log(`👋 Connection closed - found ${total} total events`);
+                setStatus(`Found ${eventCounts[0]} profiles, ${eventCounts[22]} videos, ${eventCounts[30023]} playlists`);
+            };
+        }
+
+        function testProfilesOnly() {
+            log('=== Testing Kind 0 (Profiles) Only ===');
+            setStatus('Fetching profiles without time constraints...');
+            
+            const ws = new WebSocket('wss://vine.hol.is');
+            let profileCount = 0;
+            
+            ws.onopen = () => {
+                log('✅ Connected, requesting Kind 0 events only');
+                
+                // Try without time constraints to see if any profiles exist
+                const subscription = {
+                    kinds: [0], // Profiles only
+                    limit: 100
+                    // No 'since' parameter - get any profiles that exist
+                };
+                
+                const reqMessage = ['REQ', 'test_profiles_only', subscription];
+                log('Sending: ' + JSON.stringify(reqMessage));
+                ws.send(JSON.stringify(reqMessage));
+                
+                setTimeout(() => {
+                    ws.close();
+                    log(`👤 Profile search completed - found ${profileCount} profiles total`);
+                    setStatus(`Found ${profileCount} profiles`);
+                }, 15000);
+            };
+            
+            ws.onmessage = (event) => {
+                messageCounter++;
+                const message = JSON.parse(event.data);
+                
+                if (message[0] === 'EVENT') {
+                    const eventData = message[2];
+                    profileCount++;
+                    
+                    log(`← [${profileCount}] Profile Event:`);
+                    
+                    try {
+                        const profile = JSON.parse(eventData.content);
+                        log(`  👤 Name: ${profile.name || profile.display_name || 'Unknown'}`);
+                        log(`  📝 About: ${(profile.about || '').slice(0, 50)}...`);
+                        log(`  🖼️ Picture: ${profile.picture ? 'Yes' : 'No'}`);
+                        log(`  ✅ NIP-05: ${profile.nip05 || 'None'}`);
+                        log(`  🗓️ Created: ${new Date(eventData.created_at * 1000).toISOString()}`);
+                        log(`  🔑 Pubkey: ${eventData.pubkey.slice(0, 16)}...`);
+                    } catch (e) {
+                        log(`  ❌ Error parsing profile: ${e.message}`);
+                        log(`  📄 Raw content: ${eventData.content}`);
+                    }
+                    log('  ---');
+                } else if (message[0] === 'EOSE') {
+                    log(`📋 End of stored events - found ${profileCount} total profiles`);
+                } else {
+                    log(`← [${messageCounter}] ${event.data}`);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ WebSocket error: ' + error);
+                setStatus('Failed to fetch profiles');
+            };
+            
+            ws.onclose = () => {
+                log(`👋 Connection closed - found ${profileCount} total profiles`);
+            };
+        }
+
+        function testSearch() {
+            testCustomSearch();
+        }
+
+        function testCustomSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                log('❌ Please enter a search term');
+                return;
+            }
+            
+            log(`=== Searching for: "${query}" ===`);
+            setStatus(`Searching for "${query}"...`);
+            
+            const ws = new WebSocket('wss://vine.hol.is');
+            let searchResults = [];
+            
+            ws.onopen = () => {
+                log('✅ Connected, fetching events to search...');
+                
+                // Get recent Kind 22 events to search through
+                const subscription = {
+                    kinds: [22],
+                    limit: 100,
+                    since: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) // Last 30 days
+                };
+                
+                const reqMessage = ['REQ', 'search_' + Date.now(), subscription];
+                log('Fetching events to search through...');
+                ws.send(JSON.stringify(reqMessage));
+                
+                setTimeout(() => {
+                    ws.close();
+                    log(`🔍 Search completed - found ${searchResults.length} matches for "${query}"`);
+                    setStatus(`Found ${searchResults.length} matches`);
+                }, 8000);
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                
+                if (message[0] === 'EVENT') {
+                    const eventData = message[2];
+                    
+                    // Check if event matches search query
+                    const searchLower = query.toLowerCase();
+                    const content = (eventData.content || '').toLowerCase();
+                    const author = eventData.pubkey.slice(0, 16);
+                    
+                    if (content.includes(searchLower) || author.includes(searchLower)) {
+                        searchResults.push(eventData);
+                        log(`🎯 MATCH: ${eventData.content || '(no content)'}`);
+                        log(`    Author: ${author}... | Date: ${new Date(eventData.created_at * 1000).toISOString()}`);
+                        
+                        // Show video URLs if available
+                        const videoTags = eventData.tags?.filter(tag => tag[0] === 'r') || [];
+                        if (videoTags.length > 0) {
+                            log(`    Video: ${videoTags[0][1]}`);
+                        }
+                        log('    ---');
+                    }
+                } else if (message[0] === 'EOSE') {
+                    log(`📋 End of stored events - processing ${searchResults.length} matches`);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ Search failed: ' + error);
+                setStatus('Search failed');
+            };
+            
+            ws.onclose = () => {
+                log('👋 Search connection closed');
+            };
+        }
+
+        // Auto-load message
+        window.addEventListener('load', () => {
+            log('🍇 Simple Vine Relay Test Loaded');
+            log('This version connects directly without authentication');
+            log('Click buttons above to test different functionality');
+        });
+    </script>
+</body>
+</html>
