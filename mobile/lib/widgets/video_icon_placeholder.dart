@@ -12,6 +12,7 @@ class VideoIconPlaceholder extends StatefulWidget {
   final Color? iconColor;
   final bool showLoading;
   final double borderRadius;
+  final bool showPlayIcon;
 
   const VideoIconPlaceholder({
     super.key,
@@ -21,6 +22,7 @@ class VideoIconPlaceholder extends StatefulWidget {
     this.iconColor,
     this.showLoading = false,
     this.borderRadius = 8.0,
+    this.showPlayIcon = true,
   });
 
   @override
@@ -108,25 +110,34 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
 
   Widget _buildIcon(Color? iconColor) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.play_circle_outline,
-            size: 48,
-            color: iconColor,
-          ),
-          const SizedBox(height: 8),
-          Text(
+      child: widget.showPlayIcon 
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.play_circle_outline,
+                size: 48,
+                color: iconColor,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Video',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: iconColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          )
+        : Text(
             'Video',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: iconColor,
               fontWeight: FontWeight.w500,
             ),
           ),
-        ],
-      ),
     );
   }
 }

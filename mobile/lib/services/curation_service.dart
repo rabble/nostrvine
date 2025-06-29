@@ -2,7 +2,9 @@
 // ABOUTME: Handles fetching, caching, and filtering videos based on curation sets
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
 import '../models/curation_set.dart';
 import '../models/video_event.dart';
@@ -64,14 +66,13 @@ class CurationService extends ChangeNotifier {
   /// Populate sample sets with real video data
   void _populateSampleSets() {
     final allVideos = _videoEventService.videoEvents;
-    Log.debug('Populating curation sets with ${allVideos.length} available videos', name: 'CurationService', category: LogCategory.system);
+    // Populating curation sets silently
     
     // Always create Editor's Picks with default video, even if no other videos
     final editorsPicks = _selectEditorsPicksVideos(allVideos, allVideos);
     _setVideoCache[CurationSetType.editorsPicks.id] = editorsPicks;
     
     if (allVideos.isEmpty) {
-      debugPrint('⚠️ No videos available, but added default video to Editor\'s Picks');
       // Set empty for other categories since we don't have data
       _setVideoCache[CurationSetType.trending.id] = [];
       _setVideoCache[CurationSetType.featured.id] = [];
@@ -102,11 +103,10 @@ class CurationService extends ChangeNotifier {
     final featured = _selectFeaturedVideos(sortedByReactions);
     _setVideoCache[CurationSetType.featured.id] = featured;
 
-    Log.debug('Populated curation sets:', name: 'CurationService', category: LogCategory.system);
-    debugPrint('   Editor\'s Picks: ${updatedEditorsPicks.length} videos');
-    Log.debug('   Trending: ${trending.length} videos', name: 'CurationService', category: LogCategory.system);
-    Log.debug('   Featured: ${featured.length} videos', name: 'CurationService', category: LogCategory.system);
-    Log.debug('   Total available videos: ${allVideos.length}', name: 'CurationService', category: LogCategory.system);
+    Log.verbose('Populated curation sets:', name: 'CurationService', category: LogCategory.system);
+    Log.verbose('   Trending: ${trending.length} videos', name: 'CurationService', category: LogCategory.system);
+    Log.verbose('   Featured: ${featured.length} videos', name: 'CurationService', category: LogCategory.system);
+    Log.verbose('   Total available videos: ${allVideos.length}', name: 'CurationService', category: LogCategory.system);
   }
 
   /// Algorithm for selecting editor's picks
@@ -120,14 +120,14 @@ class CurationService extends ChangeNotifier {
     // Editor's Pick: Only show videos from the classic vines curator pubkey
     const editorPubkey = AppConstants.classicVinesPubkey;
     
-    debugPrint('🎯 Filtering Editor\'s Picks to only show videos from pubkey: $editorPubkey');
+    // Selecting editor's picks silently
     
     // Get all videos from the editor's pubkey
     final editorVideos = _videoEventService.videoEvents
         .where((video) => video.pubkey == editorPubkey)
         .toList();
     
-    debugPrint('📹 Found ${editorVideos.length} videos from editor\'s account');
+    // Found videos from editor's pubkey
     
     // Sort editor's videos by creation time (newest first)
     editorVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -136,17 +136,17 @@ class CurationService extends ChangeNotifier {
     for (final video in editorVideos) {
       picks.add(video);
       seenIds.add(video.id);
+      // Added editor video silently
     }
     
     // If no videos from editor, show a message or default content
     if (picks.isEmpty) {
-      debugPrint('⚠️ No videos found from editor\'s pubkey, checking for default video');
+      Log.warning('No videos found from editor\'s pubkey, using default video as fallback', name: 'CurationService', category: LogCategory.system);
       // ALWAYS include the default video if no editor videos found
       final defaultVideo = DefaultContentService.createDefaultVideo();
       final hasDefaultVideo = _videoEventService.videoEvents.any((v) => v.id == defaultVideo.id);
       
       if (!hasDefaultVideo) {
-        debugPrint('🎯 Adding default video "I\'m the bad guys" as fallback');
         picks.add(defaultVideo);
         seenIds.add(defaultVideo.id);
       } else {
@@ -158,6 +158,7 @@ class CurationService extends ChangeNotifier {
       }
     }
 
+    // Editor's picks selection complete
     return picks;
   }
 
@@ -166,6 +167,7 @@ class CurationService extends ChangeNotifier {
     List<VideoEvent> byTime,
     List<VideoEvent> byReactions,
   ) {
+    // Fallback to local algorithm
     final trending = <VideoEvent>[];
     final seenIds = <String>{};
 
@@ -192,6 +194,71 @@ class CurationService extends ChangeNotifier {
     }
 
     return trending;
+  }
+
+  /// Refresh trending videos from analytics API (call this when user visits trending)
+  Future<void> refreshTrendingFromAnalytics() async {
+    await _fetchTrendingFromAnalytics();
+  }
+
+  /// Fetch trending videos from analytics API
+  Future<void> _fetchTrendingFromAnalytics() async {
+    try {
+      Log.debug('Fetching trending videos from analytics API...', name: 'CurationService', category: LogCategory.system);
+      
+      final response = await http.get(
+        Uri.parse('https://analytics.openvine.co/analytics/trending/vines'),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'OpenVine-Mobile/1.0',
+        },
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final vinesData = data['vines'] as List<dynamic>?;
+        
+        if (vinesData != null && vinesData.isNotEmpty) {
+          final trending = <VideoEvent>[];
+          final allVideos = _videoEventService.videoEvents;
+          
+          // Match trending event IDs with local video events
+          for (final vineData in vinesData) {
+            final eventId = vineData['eventId'] as String?;
+            if (eventId != null) {
+              // Find the video in our local cache
+              final localVideo = allVideos.firstWhere(
+                (video) => video.id == eventId,
+                orElse: () => VideoEvent(
+                  id: '',
+                  pubkey: '',
+                  createdAt: 0,
+                  content: '',
+                  timestamp: DateTime.now(),
+                ),
+              );
+              
+              if (localVideo.id.isNotEmpty) {
+                trending.add(localVideo);
+                Log.verbose('Found trending video: ${localVideo.title ?? localVideo.id.substring(0, 8)} (${vineData['views']} views)', name: 'CurationService', category: LogCategory.system);
+              }
+            }
+          }
+          
+          if (trending.isNotEmpty) {
+            // Update the trending cache with analytics data
+            _setVideoCache[CurationSetType.trending.id] = trending;
+            Log.info('Updated trending videos from analytics: ${trending.length} videos', name: 'CurationService', category: LogCategory.system);
+            notifyListeners();
+          }
+        }
+      } else {
+        Log.warning('Analytics API returned ${response.statusCode}: ${response.body}', name: 'CurationService', category: LogCategory.system);
+      }
+    } catch (e) {
+      Log.error('Failed to fetch trending from analytics: $e', name: 'CurationService', category: LogCategory.system);
+      // Continue with local algorithm fallback
+    }
   }
 
   /// Algorithm for selecting featured videos
@@ -250,7 +317,7 @@ class CurationService extends ChangeNotifier {
       // Query for video curation sets (kind 30005)
       final filter = {
         'kinds': [30005],
-        'limit': 100,
+        'limit': 500,
       };
       
       // If specific curators provided, filter by them
@@ -263,7 +330,7 @@ class CurationService extends ChangeNotifier {
         filters: [Filter(
           kinds: [30005],
           authors: curatorPubkeys,
-          limit: 100,
+          limit: 500,
         )],
       );
       
@@ -361,7 +428,6 @@ class CurationService extends ChangeNotifier {
 
   /// Handle video data changes
   void _onVideoDataChanged() {
-    Log.debug('Video data changed, refreshing curation sets', name: 'CurationService', category: LogCategory.system);
     _populateSampleSets();
     notifyListeners();
   }

@@ -51,7 +51,7 @@ class ExploreVideoManager extends ChangeNotifier {
   
   /// Handle changes from curation service
   void _onCurationChanged() {
-    Log.debug('CurationService changed, syncing collections...', name: 'ExploreVideoManager', category: LogCategory.system);
+    Log.verbose('CurationService changed, syncing collections...', name: 'ExploreVideoManager', category: LogCategory.system);
     _syncAllCollections();
   }
   
@@ -61,7 +61,6 @@ class ExploreVideoManager extends ChangeNotifier {
     // VideoEventBridge already handles video additions from Nostr subscriptions.
     // ExploreVideoManager only needs to check which curated videos are available.
     
-    Log.debug('Syncing curated collections with available videos in VideoManager...', name: 'ExploreVideoManager', category: LogCategory.system);
     
     // Sync each collection by checking what's available in VideoManager
     for (final type in CurationSetType.values) {
@@ -99,11 +98,11 @@ class ExploreVideoManager extends ChangeNotifier {
       }
       
       _availableCollections[type] = availableVideos;
-      Log.info('Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}', name: 'ExploreVideoManager', category: LogCategory.system);
+      Log.verbose('Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}', name: 'ExploreVideoManager', category: LogCategory.system);
       
       // Only log missing videos if there are any - this is actually useful debug info
       if (missingVideos.isNotEmpty) {
-        Log.debug('Missing ${missingVideos.length} videos for ${type.name}: ${missingVideos.join(', ')}', name: 'ExploreVideoManager', category: LogCategory.system);
+        Log.verbose('Missing ${missingVideos.length} videos for ${type.name}: ${missingVideos.join(', ')}', name: 'ExploreVideoManager', category: LogCategory.system);
       }
       
     } catch (e) {

@@ -12,11 +12,17 @@ kv_namespaces = [
   { binding = "ANALYTICS_KV", id = "136757026e7b487ab79ff8bb611dcb18", preview_id = "6c6b2c0330384061a3987efc5e564de5" }
 ]
 
+# D1 Database for analytics
+# [[d1_databases]]
+# binding = "ANALYTICS_DB"
+# database_name = "openvine-analytics"
+# database_id = "YOUR_D1_DATABASE_ID_HERE"
+
 # Environment variables
 [vars]
 ENVIRONMENT = "development"
 TRENDING_UPDATE_INTERVAL = "300" # 5 minutes in seconds
-MIN_VIEWS_FOR_TRENDING = "10"
+MIN_VIEWS_FOR_TRENDING = "1"
 
 # Development environment
 [env.development]
@@ -27,13 +33,19 @@ vars = { ENVIRONMENT = "development" }
 [env.production.vars]
 ENVIRONMENT = "production"
 TRENDING_UPDATE_INTERVAL = "300"
-MIN_VIEWS_FOR_TRENDING = "10"
+MIN_VIEWS_FOR_TRENDING = "1"
 
 # Production KV namespaces
 [[env.production.kv_namespaces]]
 binding = "ANALYTICS_KV"
 id = "136757026e7b487ab79ff8bb611dcb18"
 preview_id = "6c6b2c0330384061a3987efc5e564de5"
+
+# Production D1 Database
+# [[env.production.d1_databases]]
+# binding = "ANALYTICS_DB"
+# database_name = "openvine-analytics"
+# database_id = "YOUR_D1_DATABASE_ID_HERE"
 
 # Custom domain routing
 [[env.production.routes]]

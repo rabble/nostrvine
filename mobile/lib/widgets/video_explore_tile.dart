@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/video_event.dart';
+import 'video_thumbnail_widget.dart';
 
 /// Video thumbnail tile for explore screen
 /// - Shows thumbnail with play button
@@ -35,15 +36,13 @@ class VideoExploreTile extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Thumbnail image
-              if (video.effectiveThumbnailUrl != null)
-                Image.network(
-                  video.effectiveThumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-                )
-              else
-                _buildPlaceholder(),
+              // Smart thumbnail with automatic API generation
+              VideoThumbnailWidget(
+                video: video,
+                fit: BoxFit.cover,
+                showPlayIcon: false,
+                borderRadius: BorderRadius.circular(8),
+              ),
 
               // Play button overlay
               const Center(
@@ -111,16 +110,4 @@ class VideoExploreTile extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
-    return Container(
-      color: Colors.grey[900],
-      child: const Center(
-        child: Icon(
-          Icons.play_circle_outline,
-          color: Colors.white54,
-          size: 48,
-        ),
-      ),
-    );
-  }
 }

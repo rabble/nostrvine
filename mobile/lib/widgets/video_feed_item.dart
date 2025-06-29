@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import '../services/video_manager_interface.dart';
+import '../services/video_visibility_manager.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../services/analytics_service.dart';
@@ -73,8 +75,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void didUpdateWidget(VideoFeedItem oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Handle activation state changes
-    if (widget.isActive != oldWidget.isActive) {
+    // Handle activation state changes OR video changes
+    if (widget.isActive != oldWidget.isActive || 
+        widget.video.id != oldWidget.video.id) {
+      Log.info('📱 Widget updated: isActive changed: ${widget.isActive != oldWidget.isActive}, video changed: ${widget.video.id != oldWidget.video.id}', name: 'VideoFeedItem', category: LogCategory.ui);
       _handleActivationChange();
     }
   }
@@ -82,6 +86,15 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   @override
   void dispose() {
     _iconAnimationController.dispose();
+    
+    // Remove from visibility tracking
+    try {
+      final visibilityManager = context.read<VideoVisibilityManager>();
+      visibilityManager.removeVideo(widget.video.id);
+    } catch (e) {
+      // Visibility manager might not be available
+    }
+    
     // Don't dispose controller here - VideoManager handles lifecycle
     super.dispose();
   }
@@ -110,43 +123,58 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _loadUserProfile() {
-    try {
-      final profileService = Provider.of<UserProfileService>(context, listen: false);
-      // Request profile if not already cached
-      if (!profileService.hasProfile(widget.video.pubkey)) {
-        profileService.fetchProfile(widget.video.pubkey);
-      }
-    } catch (e) {
-      Log.info('VideoFeedItem: UserProfileService not found: $e', name: 'VideoFeedItem', category: LogCategory.ui);
-    }
+    // Profile loading is now handled at the feed level with batch fetching
+    // This method is kept for compatibility but no longer fetches individually
+    Log.verbose('Profile loading handled at feed level for ${widget.video.pubkey.substring(0, 8)}...', 
+        name: 'VideoFeedItem', category: LogCategory.ui);
   }
 
   void _handleActivationChange() {
     if (!_isInitialized) return;
     
-    if (widget.isActive) {
-      // Preload and potentially play video
+    // Get visibility manager
+    final visibilityManager = context.read<VideoVisibilityManager>();
+    final shouldPlay = visibilityManager.shouldVideoPlay(widget.video.id);
+    
+    Log.info('🎯 _handleActivationChange called for ${widget.video.id.substring(0, 8)}... isActive: ${widget.isActive}, shouldPlay: $shouldPlay', 
+        name: 'VideoFeedItem', category: LogCategory.ui);
+    
+    // Only proceed if BOTH isActive AND visible
+    if (widget.isActive && shouldPlay) {
+      // Preload video - Consumer<IVideoManager> will trigger _updateController via stream when ready
       try {
+        Log.info('📥 Starting preload for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
         _videoManager.preloadVideo(widget.video.id);
       } catch (e) {
         Log.info('VideoFeedItem: Video not ready for preload yet: ${widget.video.id}', name: 'VideoFeedItem', category: LogCategory.ui);
       }
+      
+      // IMPORTANT: Also check immediately after preload starts
+      // The controller might already be ready from previous loads
       _updateController();
       
-      // Auto-play if controller is ready and initialized
+      // Auto-play if controller is already ready
+      Log.info('🎮 Checking existing controller: ${_controller != null}', name: 'VideoFeedItem', category: LogCategory.ui);
       if (_controller != null) {
+        Log.info('🎮 Controller exists, isInitialized: ${_controller!.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
         if (_controller!.value.isInitialized) {
+          Log.info('▶️ Controller ready, calling _playVideo immediately', name: 'VideoFeedItem', category: LogCategory.ui);
           _playVideo();
         } else {
+          Log.info('⏳ Controller not initialized, adding listener', name: 'VideoFeedItem', category: LogCategory.ui);
           // Add listener to play when initialized
           void onInitialized() {
+            Log.info('🔔 Controller initialization listener triggered, isInitialized: ${_controller!.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
             if (_controller!.value.isInitialized && widget.isActive) {
+              Log.info('▶️ Controller now ready, calling _playVideo from listener', name: 'VideoFeedItem', category: LogCategory.ui);
               _playVideo();
               _controller!.removeListener(onInitialized);
             }
           }
           _controller!.addListener(onInitialized);
         }
+      } else {
+        Log.info('❌ No controller available yet, waiting for Consumer update', name: 'VideoFeedItem', category: LogCategory.ui);
       }
     } else {
       // Video became inactive - pause and disable looping
@@ -161,34 +189,46 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void _updateController() {
     if (!_isInitialized) return;
     
+    Log.info('🔄 _updateController called for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
+    
     final videoState = _videoManager.getVideoState(widget.video.id);
     final newController = _videoManager.getController(widget.video.id);
     
-    Log.info('Controller state for ${widget.video.id.substring(0, 8)}: ${_controller?.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
-    Log.debug('Video state: ${videoState?.loadingState}', name: 'VideoFeedItem', category: LogCategory.ui);
-    Log.debug('VideoManager has controller: ${newController != null}', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.info('📊 Current controller state: ${_controller?.value.isInitialized ?? "null"}', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.info('📊 Video state: ${videoState?.loadingState}', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.info('📊 New controller from VideoManager: ${newController != null}', name: 'VideoFeedItem', category: LogCategory.ui);
     
     if (newController != _controller) {
+      Log.info('🔄 Controller changed! Old: ${_controller != null}, New: ${newController != null}', name: 'VideoFeedItem', category: LogCategory.ui);
       setState(() {
         _controller = newController;
       });
       
       // Auto-play video when controller becomes available and video is active
       if (newController != null && widget.isActive) {
+        Log.info('🎬 New controller available and widget is active', name: 'VideoFeedItem', category: LogCategory.ui);
         // Check if already initialized
         if (newController.value.isInitialized) {
+          Log.info('✅ Controller already initialized, calling _playVideo', name: 'VideoFeedItem', category: LogCategory.ui);
           _playVideo();
         } else {
+          Log.info('⏳ Controller not yet initialized, adding listener', name: 'VideoFeedItem', category: LogCategory.ui);
           // Add listener to play when initialized
           void onInitialized() {
+            Log.info('🔔 UpdateController listener triggered, isInitialized: ${newController.value.isInitialized}', name: 'VideoFeedItem', category: LogCategory.ui);
             if (newController.value.isInitialized && widget.isActive) {
+              Log.info('▶️ Controller ready in listener, calling _playVideo', name: 'VideoFeedItem', category: LogCategory.ui);
               _playVideo();
               newController.removeListener(onInitialized);
             }
           }
           newController.addListener(onInitialized);
         }
+      } else {
+        Log.info('⚠️ Controller not available or widget not active. Controller: ${newController != null}, isActive: ${widget.isActive}', name: 'VideoFeedItem', category: LogCategory.ui);
       }
+    } else {
+      Log.info('↔️ No controller change detected', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
 
@@ -202,11 +242,24 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _playVideo() {
+    // CRITICAL: Double-check visibility before playing
+    final visibilityManager = context.read<VideoVisibilityManager>();
+    final shouldPlay = visibilityManager.shouldVideoPlay(widget.video.id);
+    
+    if (!shouldPlay) {
+      Log.warning('⚠️ Attempted to play video ${widget.video.id.substring(0, 8)} but it\'s not visible!', 
+          name: 'VideoFeedItem', category: LogCategory.ui);
+      return;
+    }
+    
     if (_controller != null && _controller!.value.isInitialized && !_controller!.value.isPlaying) {
       Log.debug('▶️ Playing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
       _controller!.play();
       // Only loop when the video is active (not in background/comments)
       _controller!.setLooping(widget.isActive);
+      
+      // Notify visibility manager that this video is actively playing (enables auto-play)
+      visibilityManager.setActivelyPlaying(widget.video.id);
       
       // Track video view if analytics is enabled
       _trackVideoView();
@@ -222,11 +275,32 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       Log.warning('Analytics service not available: $e', name: 'VideoFeedItem', category: LogCategory.ui);
     }
   }
+  
+  void _checkAutoPlay(VideoVisibilityManager visibilityManager, VideoState videoState) {
+    // Only auto-play if video is ready and should auto-play
+    if (videoState.loadingState == VideoLoadingState.ready &&
+        _controller != null && 
+        _controller!.value.isInitialized &&
+        !_controller!.value.isPlaying &&
+        visibilityManager.shouldAutoPlay(widget.video.id)) {
+      
+      Log.info('🎬 Auto-playing video: ${widget.video.id.substring(0, 8)}', 
+          name: 'VideoFeedItem', category: LogCategory.ui);
+      _playVideo();
+    }
+  }
 
-  void _pauseVideo() {
+  void _pauseVideo({bool userInitiated = false}) {
     if (_controller != null && _controller!.value.isPlaying) {
       Log.debug('Pausing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
       _controller!.pause();
+      
+      // If user manually paused, disable auto-play
+      if (userInitiated) {
+        final visibilityManager = context.read<VideoVisibilityManager>();
+        visibilityManager.disableAutoPlay();
+        Log.info('🛑 User paused video - auto-play disabled', name: 'VideoFeedItem', category: LogCategory.ui);
+      }
     }
   }
 
@@ -237,8 +311,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       Log.debug('Current playing state: $wasPlaying', name: 'VideoFeedItem', category: LogCategory.ui);
       
       if (wasPlaying) {
-        Log.debug('Calling _pauseVideo()', name: 'VideoFeedItem', category: LogCategory.ui);
-        _pauseVideo();
+        Log.debug('Calling _pauseVideo() with userInitiated=true', name: 'VideoFeedItem', category: LogCategory.ui);
+        _pauseVideo(userInitiated: true);
       } else {
         Log.debug('▶️ Calling _playVideo()', name: 'VideoFeedItem', category: LogCategory.ui);
         _playVideo();
@@ -298,21 +372,45 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return _buildErrorState('Video system not available');
     }
 
-    return Consumer<IVideoManager>(
-      builder: (context, videoManager, child) {
-        final videoState = videoManager.getVideoState(widget.video.id);
+    // Wrap with VisibilityDetector for real visibility tracking
+    return VisibilityDetector(
+      key: Key('video-visibility-${widget.video.id}'),
+      onVisibilityChanged: (visibilityInfo) {
+        // Report visibility to centralized manager
+        final visibilityManager = context.read<VideoVisibilityManager>();
+        visibilityManager.updateVideoVisibility(
+          widget.video.id, 
+          visibilityInfo.visibleFraction,
+        );
         
-        if (videoState == null) {
-          return _buildErrorState('Video not found');
-        }
-
-        // Schedule controller update after build completes
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _updateController();
-        });
-
-        return _buildVideoContent(videoState);
+        Log.info('👁️ Visibility changed for ${widget.video.id.substring(0, 8)}: ${(visibilityInfo.visibleFraction * 100).toStringAsFixed(1)}%', 
+            name: 'VideoFeedItem', category: LogCategory.ui);
       },
+      child: Consumer2<IVideoManager, VideoVisibilityManager>(
+        builder: (context, videoManager, visibilityManager, child) {
+          Log.info('🔵 Consumer rebuild triggered for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
+          
+          final videoState = videoManager.getVideoState(widget.video.id);
+          
+          if (videoState == null) {
+            Log.info('❌ Video state is null for ${widget.video.id.substring(0, 8)}', name: 'VideoFeedItem', category: LogCategory.ui);
+            return _buildErrorState('Video not found');
+          }
+
+          Log.info('🔵 Video state: ${videoState.loadingState} for ${widget.video.id.substring(0, 8)}', name: 'VideoFeedItem', category: LogCategory.ui);
+
+          // Schedule controller update after build completes
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Log.info('🕐 PostFrameCallback triggering _updateController for ${widget.video.id.substring(0, 8)}', name: 'VideoFeedItem', category: LogCategory.ui);
+            _updateController();
+            
+            // Check for auto-play after controller update
+            _checkAutoPlay(visibilityManager, videoState);
+          });
+
+          return _buildVideoContent(videoState);
+        },
+      ),
     );
   }
 

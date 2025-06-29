@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/video_manager_interface.dart';
 import '../services/video_event_bridge.dart';
+import '../services/user_profile_service.dart';
 import '../widgets/video_feed_item.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
@@ -79,6 +80,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   late PageController _pageController;
   IVideoManager? _videoManager;
   VideoEventBridge? _videoEventBridge;
+  UserProfileService? _userProfileService;
   int _currentIndex = 0;
   bool _isInitialized = false;
   StreamSubscription? _stateChangeSubscription;
@@ -86,6 +88,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
   bool _isUserScrolling = false; // Track if user is actively scrolling
   // Removed _isLoadingMore as we no longer show loading indicator
   DateTime? _lastPaginationRequest; // Prevent too frequent pagination requests
+  final Set<String> _profilesBeingFetched = {}; // Track profiles currently being fetched
 
   @override
   bool get wantKeepAlive => true; // Keep state alive when using IndexedStack
@@ -152,6 +155,14 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
         Log.warning('VideoEventBridge not found - pagination will be limited: $e', name: 'FeedScreenV2', category: LogCategory.ui);
       }
       
+      // Try to get the user profile service for batch profile loading
+      try {
+        _userProfileService = Provider.of<UserProfileService>(context, listen: false);
+        Log.info('UserProfileService found for profile batching', name: 'FeedScreenV2', category: LogCategory.ui);
+      } catch (e) {
+        Log.warning('UserProfileService not found - profile loading will be individual: $e', name: 'FeedScreenV2', category: LogCategory.ui);
+      }
+      
       _isInitialized = true;
       
       // Apply context filtering if needed
@@ -202,9 +213,10 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
         });
       });
       
-      // Trigger initial preloading
+      // Trigger initial preloading and profile batching
       if (_videoManager!.videos.isNotEmpty) {
         _videoManager!.preloadAroundIndex(0);
+        _batchFetchProfilesAroundIndex(0);
       }
       
       setState(() {});
@@ -240,8 +252,18 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     // Trigger preloading around new position
     _videoManager!.preloadAroundIndex(videoIndex);
     
+    // Batch fetch profiles for videos around current position
+    _batchFetchProfilesAroundIndex(videoIndex);
+    
     // Update video playback states
     _updateVideoPlayback(videoIndex);
+    
+    // Check if user is approaching end of primary videos - trigger discovery loading
+    final primaryCount = _videoManager!.primaryVideoCount;
+    if (primaryCount > 0 && videoIndex >= primaryCount - 3 && _videoEventBridge != null) {
+      // User is within 3 videos of the end of primary content - load discovery feed
+      _videoEventBridge!.triggerDiscoveryFeed();
+    }
   }
 
   void _updateVideoPlayback(int videoIndex) {
@@ -735,6 +757,49 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     }
   }
 
+  /// Batch fetch profiles for videos around the current position
+  void _batchFetchProfilesAroundIndex(int currentIndex) {
+    if (_userProfileService == null || _videoManager == null) return;
+    
+    final videos = _videoManager!.videos;
+    if (videos.isEmpty) return;
+    
+    // Define window of videos to prefetch profiles for
+    const preloadRadius = 3; // Preload profiles for ±3 videos
+    final startIndex = (currentIndex - preloadRadius).clamp(0, videos.length - 1);
+    final endIndex = (currentIndex + preloadRadius).clamp(0, videos.length - 1);
+    
+    // Collect unique pubkeys that need profile fetching
+    final pubkeysToFetch = <String>{};
+    
+    for (int i = startIndex; i <= endIndex; i++) {
+      final video = videos[i];
+      
+      // Only add pubkeys that aren't already cached or being fetched
+      if (!_userProfileService!.hasProfile(video.pubkey) && 
+          !_profilesBeingFetched.contains(video.pubkey)) {
+        pubkeysToFetch.add(video.pubkey);
+      }
+    }
+    
+    if (pubkeysToFetch.isEmpty) return;
+    
+    // Mark profiles as being fetched to prevent duplicate requests
+    _profilesBeingFetched.addAll(pubkeysToFetch);
+    
+    Log.debug('🔄 Batch fetching ${pubkeysToFetch.length} profiles for videos around index $currentIndex', 
+        name: 'FeedScreenV2', category: LogCategory.ui);
+    
+    // Batch fetch profiles
+    _userProfileService!.fetchMultipleProfiles(pubkeysToFetch.toList()).then((_) {
+      // Remove from tracking set after fetching
+      _profilesBeingFetched.removeAll(pubkeysToFetch);
+    }).catchError((error) {
+      Log.error('Failed to batch fetch profiles: $error', name: 'FeedScreenV2', category: LogCategory.ui);
+      _profilesBeingFetched.removeAll(pubkeysToFetch);
+    });
+  }
+  
   // Note: Keyboard navigation methods removed to avoid unused warnings
   // Would be implemented for accessibility support when needed
 }

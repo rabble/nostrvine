@@ -10,7 +10,7 @@ export async function handleViewTracking(
   try {
     // Parse request body
     const body = await request.json() as ViewRequest;
-    const { eventId, source = 'web', creatorPubkey } = body;
+    const { eventId, source = 'web', creatorPubkey, hashtags, title } = body;
 
     // Validate event ID (64 char hex string)
     if (!eventId || !/^[a-f0-9]{64}$/i.test(eventId)) {
@@ -28,13 +28,32 @@ export async function handleViewTracking(
     
     // Increment view count
     const newCount = (currentData?.count || 0) + 1;
+    const now = Date.now();
+    
+    // Preserve existing metadata or use new
     const viewData: ViewData = {
       count: newCount,
-      lastUpdate: Date.now()
+      lastUpdate: now,
+      hashtags: hashtags || currentData?.hashtags || [],
+      creatorPubkey: creatorPubkey || currentData?.creatorPubkey,
+      title: title || currentData?.title
     };
 
-    // Store updated count
+    // Store updated count with metadata
     await env.ANALYTICS_KV.put(viewKey, JSON.stringify(viewData));
+    
+    // Track hourly buckets for time-window analytics
+    const hourBucket = new Date(now).toISOString().slice(0, 13); // YYYY-MM-DDTHH
+    const hourKey = `hour:${hourBucket}:${eventId}`;
+    const hourData = await env.ANALYTICS_KV.get<number>(hourKey);
+    await env.ANALYTICS_KV.put(hourKey, String((hourData || 0) + 1), {
+      expirationTtl: 60 * 60 * 24 * 31 // Keep hourly data for 31 days
+    });
+    
+    // Track hashtag views
+    if (hashtags && hashtags.length > 0) {
+      await trackHashtagViews(env, eventId, hashtags);
+    }
 
     // Track creator metrics if provided
     if (creatorPubkey && /^[a-f0-9]{64}$/i.test(creatorPubkey)) {
@@ -71,6 +90,33 @@ export async function handleViewTracking(
   }
 }
 
+
+// Track views for each hashtag
+async function trackHashtagViews(env: AnalyticsEnv, eventId: string, hashtags: string[]): Promise<void> {
+  try {
+    for (const hashtag of hashtags) {
+      // Normalize hashtag (lowercase, remove # if present)
+      const normalizedTag = hashtag.toLowerCase().replace(/^#/, '');
+      
+      // Track this video is associated with this hashtag
+      const hashtagVideoKey = `hashtag-video:${normalizedTag}:${eventId}`;
+      const exists = await env.ANALYTICS_KV.get(hashtagVideoKey);
+      if (!exists) {
+        await env.ANALYTICS_KV.put(hashtagVideoKey, '1', {
+          expirationTtl: 60 * 60 * 24 * 30 // 30 days
+        });
+      }
+      
+      // Increment hashtag view counter
+      const hashtagViewKey = `hashtag-views:${normalizedTag}`;
+      const currentViews = await env.ANALYTICS_KV.get<number>(hashtagViewKey);
+      await env.ANALYTICS_KV.put(hashtagViewKey, String((currentViews || 0) + 1));
+    }
+  } catch (error) {
+    console.error('Failed to track hashtag views:', error);
+    // Don't fail the whole request if hashtag tracking fails
+  }
+}
 
 // Update creator metrics when their video gets a view
 async function updateCreatorMetrics(env: AnalyticsEnv, creatorPubkey: string, eventId: string): Promise<void> {

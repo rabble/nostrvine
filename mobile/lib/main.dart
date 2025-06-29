@@ -10,6 +10,7 @@ import 'screens/activity_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/web_auth_screen.dart';
 import 'widgets/age_verification_dialog.dart';
+import 'widgets/app_lifecycle_handler.dart';
 import 'services/nostr_service.dart';
 import 'services/auth_service.dart';
 import 'services/key_storage_service.dart';
@@ -38,6 +39,7 @@ import 'services/hashtag_service.dart';
 import 'services/video_manager_interface.dart';
 import 'services/video_manager_service.dart';
 import 'services/video_event_bridge.dart';
+import 'services/video_visibility_manager.dart';
 import 'services/curation_service.dart';
 import 'services/explore_video_manager.dart';
 import 'services/content_reporting_service.dart';
@@ -118,6 +120,9 @@ class OpenVineApp extends StatelessWidget {
       providers: [
         // Connection status service
         ChangeNotifierProvider(create: (_) => ConnectionStatusService()),
+        
+        // Video visibility manager - ensures videos only play when visible
+        ChangeNotifierProvider(create: (_) => VideoVisibilityManager()),
         
         // Analytics service (with opt-out support)
         ChangeNotifierProvider(create: (_) {
@@ -442,16 +447,40 @@ class OpenVineApp extends StatelessWidget {
           ),
         ),
         
-        // ExploreVideoManager - bridges CurationService with VideoManager
-        ChangeNotifierProxyProvider2<CurationService, IVideoManager, ExploreVideoManager>(
-          create: (context) => ExploreVideoManager(
-            curationService: context.read<CurationService>(),
-            videoManager: context.read<IVideoManager>(),
-          ),
-          update: (_, curationService, videoManager, previous) => previous ?? ExploreVideoManager(
-            curationService: curationService,
-            videoManager: videoManager,
-          ),
+        // ExploreVideoManager - bridges CurationService with separate VideoManager instance
+        ChangeNotifierProxyProvider3<CurationService, SeenVideosService, ContentBlocklistService, ExploreVideoManager>(
+          create: (context) {
+            // Create a separate video manager instance specifically for explore
+            final exploreVideoManager = VideoManagerService(
+              config: VideoManagerConfig.wifi(),
+              seenVideosService: context.read<SeenVideosService>(),
+              blocklistService: context.read<ContentBlocklistService>(),
+            );
+            exploreVideoManager.filterExistingVideos();
+            
+            return ExploreVideoManager(
+              curationService: context.read<CurationService>(),
+              videoManager: exploreVideoManager,
+            );
+          },
+          update: (_, curationService, seenVideosService, blocklistService, previous) {
+            if (previous != null) {
+              return previous;
+            }
+            
+            // Create new separate video manager for explore
+            final exploreVideoManager = VideoManagerService(
+              config: VideoManagerConfig.wifi(),
+              seenVideosService: seenVideosService,
+              blocklistService: blocklistService,
+            );
+            exploreVideoManager.filterExistingVideos();
+            
+            return ExploreVideoManager(
+              curationService: curationService,
+              videoManager: exploreVideoManager,
+            );
+          },
         ),
         
         // Content reporting service for NIP-56 compliance (temporarily using FakeSharedPreferences)
@@ -506,14 +535,17 @@ class OpenVineApp extends StatelessWidget {
           ),
         ),
         
-        // Note: VideoFeedProvider removed - FeedScreenV2 uses VideoManager directly
+        // Note: VideoFeedProvider removed - FeedScreenV2 uses main VideoManager directly
+        // ExploreVideoManager creates its own separate VideoManager instance to avoid video conflicts
         // Note: VinePublishingService removed - using video-based approach now
       ],
-      child: MaterialApp(
-        title: 'OpenVine',
-        debugShowCheckedModeBanner: false,
-        theme: VineTheme.theme,
-        home: const ResponsiveWrapper(child: AppInitializer()),
+      child: AppLifecycleHandler(
+        child: MaterialApp(
+          title: 'OpenVine',
+          debugShowCheckedModeBanner: false,
+          theme: VineTheme.theme,
+          home: const ResponsiveWrapper(child: AppInitializer()),
+        ),
       ),
     );
   }

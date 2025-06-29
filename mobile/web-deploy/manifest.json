@@ -1,13 +1,17 @@
 {
     "name": "OpenVine",
     "short_name": "OpenVine",
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#00BF63",
+    "background_color": "#000000",
     "theme_color": "#00BF63",
     "description": "A decentralized vine-like video sharing app powered by Nostr",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "lang": "en-US",
+    "dir": "ltr",
+    "categories": ["social", "video", "entertainment"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

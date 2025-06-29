@@ -39,7 +39,7 @@ class ProfileVideosProvider extends ChangeNotifier {
   static const Duration _cacheExpiry = Duration(minutes: 10);
 
   // Pagination settings
-  static const int _pageSize = 20;
+  static const int _pageSize = 200;
 
   // Subscription management
   StreamSubscription<Event>? _currentSubscription;

@@ -79,11 +79,13 @@ class AnalyticsService extends ChangeNotifier {
     // Don't prevent tracking the same video multiple times - users can rewatch videos!
     
     try {
-      // Prepare view data
+      // Prepare view data with hashtags and title
       final viewData = {
         'eventId': video.id,
         'source': source,
         'creatorPubkey': video.pubkey,
+        'hashtags': video.hashtags.isNotEmpty ? video.hashtags : null,
+        'title': video.title,
       };
       
       // Send view tracking request

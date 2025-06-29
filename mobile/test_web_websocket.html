@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>Testing vine.hol.is WebSocket Connection</h1>
+    <div id="status">Connecting...</div>
+    <div id="logs"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+        
+        function log(message) {
+            console.log(message);
+            logsDiv.innerHTML += '<div>' + new Date().toISOString() + ': ' + message + '</div>';
+        }
+        
+        try {
+            log('Attempting to connect to wss://vine.hol.is');
+            const ws = new WebSocket('wss://vine.hol.is');
+            
+            ws.onopen = function(event) {
+                log('✅ WebSocket connection opened');
+                statusDiv.textContent = 'Connected';
+                
+                // Send a test REQ message
+                const testReq = JSON.stringify([
+                    'REQ',
+                    'test-connection',
+                    { kinds: [22], limit: 1 }
+                ]);
+                log('Sending test request: ' + testReq);
+                ws.send(testReq);
+            };
+            
+            ws.onmessage = function(event) {
+                log('📨 Received: ' + event.data);
+            };
+            
+            ws.onclose = function(event) {
+                log('❌ WebSocket closed: code=' + event.code + ', reason=' + event.reason);
+                statusDiv.textContent = 'Disconnected';
+            };
+            
+            ws.onerror = function(error) {
+                log('❌ WebSocket error: ' + error);
+                statusDiv.textContent = 'Error';
+            };
+            
+        } catch (e) {
+            log('❌ Exception: ' + e.message);
+            statusDiv.textContent = 'Exception';
+        }
+    </script>
+</body>
+</html>

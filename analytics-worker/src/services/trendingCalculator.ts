@@ -10,31 +10,45 @@ export function calculateTrendingScore(viewData: ViewData, currentTime: number):
 }
 
 export async function calculateTrending(env: AnalyticsEnv): Promise<TrendingData> {
-  const minViews = parseInt(env.MIN_VIEWS_FOR_TRENDING || '10');
+  const minViews = parseInt(env.MIN_VIEWS_FOR_TRENDING || '1'); // Lower threshold
   const videos: TrendingVideo[] = [];
   
   try {
-    // List all view entries (limited to prevent overwhelming KV)
-    const list = await env.ANALYTICS_KV.list({ prefix: 'views:', limit: 1000 });
+    // List view entries with a reasonable limit to prevent timeouts
+    const list = await env.ANALYTICS_KV.list({ prefix: 'views:', limit: 100 }); // Reduced limit
     
-    // Process each video's view data
-    for (const key of list.keys) {
+    // Batch fetch to reduce KV round trips
+    const promises = list.keys.map(async (key) => {
       const eventId = key.name.replace('views:', '');
-      const viewData = await env.ANALYTICS_KV.get<ViewData>(key.name, 'json');
-      
-      if (!viewData || viewData.count < minViews) {
-        continue;
+      try {
+        const viewData = await env.ANALYTICS_KV.get<ViewData>(key.name, 'json');
+        
+        if (!viewData || viewData.count < minViews) {
+          return null;
+        }
+        
+        // Calculate trending score using the exported function
+        const score = calculateTrendingScore(viewData, Date.now());
+        
+        return {
+          eventId,
+          views: viewData.count,
+          score,
+        };
+      } catch (e) {
+        console.warn(`Failed to fetch view data for ${eventId}:`, e);
+        return null;
       }
-      
-      // Calculate trending score using the exported function
-      const score = calculateTrendingScore(viewData, Date.now());
-      
-      videos.push({
-        eventId,
-        views: viewData.count,
-        score,
-        // Future: fetch title and hashtags from Nostr or cache
-      });
+    });
+    
+    // Wait for all fetches to complete
+    const results = await Promise.all(promises);
+    
+    // Filter out nulls and add to videos array
+    for (const result of results) {
+      if (result) {
+        videos.push(result);
+      }
     }
     
     // Sort by score (highest first)

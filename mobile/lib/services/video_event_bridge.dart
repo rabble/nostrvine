@@ -33,6 +33,10 @@ class VideoEventBridge {
   // ignore: unused_field
   bool _curationSynced = false;
   Set<String> _followingPubkeys = {};
+  Timer? _discoveryFallbackTimer;
+  
+  // Profile fetching deduplication
+  final Set<String> _requestedProfiles = {};
   
   VideoEventBridge({
     required VideoEventService videoEventService,
@@ -73,17 +77,40 @@ class VideoEventBridge {
         Log.debug('� Loading following feed FIRST from ${priorityPubkeys.length} accounts', name: 'VideoEventBridge', category: LogCategory.video);
         await _videoEventService.subscribeToVideoFeed(
           authors: priorityPubkeys.toList(),
-          limit: 200, // Get plenty of following content
+          limit: 500, // Increased limit to ensure we get all classic vines content (125+ videos)
           replace: true, // Start fresh with following content
         );
         
         // Set up listener to trigger discovery feed once we get following content
         _setupFollowingListener(priorityPubkeys);
+        
+        // Set up fallback timer to load discovery if no content arrives within 3 seconds
+        final isUsingClassicVinesFallback = priorityPubkeys.contains(AppConstants.classicVinesPubkey) && 
+                                           priorityPubkeys.length == 1;
+        if (isUsingClassicVinesFallback) {
+          Log.debug('Setting up discovery fallback timer for classic vines account', name: 'VideoEventBridge', category: LogCategory.video);
+          _discoveryFallbackTimer = Timer(const Duration(seconds: 1), () {
+            if (!_discoveryFeedLoaded && _videoManager.videos.isEmpty) {
+              Log.debug('� Fallback timer triggered - loading discovery feed due to empty classic vines', name: 'VideoEventBridge', category: LogCategory.video);
+              _discoveryFeedLoaded = true;
+              _loadDiscoveryFeed();
+            }
+          });
+        }
       } else {
         // No follows, just load discovery feed
         Log.debug('� No following list, loading discovery feed directly', name: 'VideoEventBridge', category: LogCategory.video);
         await _loadDiscoveryFeed();
       }
+      
+      // Additional safety net: if no videos after 2 seconds, force load discovery
+      Timer(const Duration(seconds: 2), () {
+        if (!_discoveryFeedLoaded && _videoManager.videos.isEmpty) {
+          Log.debug('🚨 Emergency fallback - no videos loaded, forcing discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
+          _discoveryFeedLoaded = true;
+          _loadDiscoveryFeed();
+        }
+      });
       
       // Add initial events to VideoManager IMMEDIATELY
       if (_videoEventService.hasEvents) {
@@ -132,13 +159,20 @@ class VideoEventBridge {
     if (_videoEventService.hasEvents) {
       final currentVideoCount = _videoManager.videos.length;
       
+      // Cancel fallback timer if we get any content
+      if (_discoveryFallbackTimer?.isActive == true) {
+        Log.debug('Canceling discovery fallback timer - got video content', name: 'VideoEventBridge', category: LogCategory.video);
+        _discoveryFallbackTimer?.cancel();
+        _discoveryFallbackTimer = null;
+      }
+      
       if (currentVideoCount == 0) {
         // FIRST VIDEO - highest priority, immediate sync
         Log.debug('FIRST VIDEO ARRIVING - immediate sync for fastest display!', name: 'VideoEventBridge', category: LogCategory.video);
         _addEventsToVideoManager(_videoEventService.videoEvents);
       } else {
         // Subsequent videos - async to not block UI
-        Log.debug('Additional videos - async sync', name: 'VideoEventBridge', category: LogCategory.video);
+        Log.verbose('Additional videos - async sync', name: 'VideoEventBridge', category: LogCategory.video);
         _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
       }
       
@@ -160,7 +194,7 @@ class VideoEventBridge {
       return;
     }
     
-    Log.debug('Adding ${newEvents.length} new events to VideoManager (${events.length} total provided, ${events.length - newEvents.length} already processed)', name: 'VideoEventBridge', category: LogCategory.video);
+    Log.verbose('Adding ${newEvents.length} new events to VideoManager (${events.length} total provided, ${events.length - newEvents.length} already processed)', name: 'VideoEventBridge', category: LogCategory.video);
     
     // Track unique pubkeys for batch profile fetching
     final newPubkeys = <String>{};
@@ -181,22 +215,23 @@ class VideoEventBridge {
     
     // Batch fetch profiles for unique pubkeys only
     if (newPubkeys.isNotEmpty) {
-      Log.verbose('Fetching profiles for ${newPubkeys.length} unique users', name: 'VideoEventBridge', category: LogCategory.video);
+      // Additional deduplication to prevent race conditions
+      final pubkeysToFetch = newPubkeys.where((pubkey) => 
+        !_requestedProfiles.contains(pubkey)).toList();
       
-      if (existingIds.isEmpty) {
-        // First batch - fetch immediately for fast display
-        for (final pubkey in newPubkeys.take(3)) {
-          _userProfileService.fetchProfile(pubkey);
-        }
-        // Fetch remaining async
-        for (final pubkey in newPubkeys.skip(3)) {
-          Future.microtask(() => _userProfileService.fetchProfile(pubkey));
-        }
-      } else {
-        // Subsequent batches - all async to not block UI
-        for (final pubkey in newPubkeys) {
-          Future.microtask(() => _userProfileService.fetchProfile(pubkey));
-        }
+      if (pubkeysToFetch.isNotEmpty) {
+        Log.verbose('Fetching profiles for ${pubkeysToFetch.length} unique users (${newPubkeys.length - pubkeysToFetch.length} already requested)', name: 'VideoEventBridge', category: LogCategory.video);
+        
+        // Mark as requested to prevent race conditions
+        _requestedProfiles.addAll(pubkeysToFetch);
+        
+        // Use batch fetching to reduce subscription overhead
+        await _userProfileService.fetchMultipleProfiles(pubkeysToFetch);
+        
+        // Clean up requested set after a delay to allow retries for failed requests
+        Future.delayed(const Duration(seconds: 30), () {
+          _requestedProfiles.removeAll(pubkeysToFetch);
+        });
       }
     }
     
@@ -272,21 +307,37 @@ class VideoEventBridge {
         .where((event) => _followingPubkeys.contains(event.pubkey))
         .length;
     
-    // Trigger discovery feed once we have some following content (threshold: 5+)
-    if (followingVideosCount >= 5) {
+    // Special case: if using classic vines fallback and got no content, load discovery immediately
+    final isUsingClassicVinesFallback = _followingPubkeys.contains(AppConstants.classicVinesPubkey) && 
+                                       _followingPubkeys.length == 1;
+    
+    if (isUsingClassicVinesFallback && followingVideosCount == 0) {
       _discoveryFeedLoaded = true;
-      Log.debug('� Following content milestone reached: $followingVideosCount videos - loading discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
+      Log.debug('� Classic vines fallback has no content - loading discovery feed immediately', name: 'VideoEventBridge', category: LogCategory.video);
       _loadDiscoveryFeed();
+      return;
     }
+    
+    // DON'T automatically load discovery content - wait for user to reach the end of primary videos
+    Log.debug('Following content loaded: $followingVideosCount videos. Discovery feed will load when user reaches end of primary content.', name: 'VideoEventBridge', category: LogCategory.video);
   }
   
+  /// Trigger discovery feed loading when user reaches end of primary videos
+  Future<void> triggerDiscoveryFeed() async {
+    if (_discoveryFeedLoaded) return;
+    
+    _discoveryFeedLoaded = true;
+    Log.debug('🔍 User reached end of primary videos - loading discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
+    await _loadDiscoveryFeed();
+  }
+
   /// Load the discovery feed after following content is established
   Future<void> _loadDiscoveryFeed() async {
     try {
       // Load discovery content from everyone else
       Log.debug('� Loading discovery feed (general content) AFTER following content', name: 'VideoEventBridge', category: LogCategory.video);
       await _videoEventService.subscribeToVideoFeed(
-        limit: 300, // Get plenty of discovery content
+        limit: 500, // Increased limit to get plenty of discovery content
         replace: false, // Keep following content AND add discovery
       );
       
@@ -300,5 +351,6 @@ class VideoEventBridge {
   void dispose() {
     _videoEventService.removeListener(_onVideoEventServiceChanged);
     _eventSubscription?.cancel();
+    _discoveryFallbackTimer?.cancel();
   }
 }

@@ -3,6 +3,7 @@
 
 import 'package:nostr_sdk/event.dart';
 import 'dart:developer' as developer;
+import '../services/thumbnail_api_service.dart';
 
 /// Represents a NIP-71 video event (kind 22 for short videos)
 class VideoEvent {
@@ -226,7 +227,21 @@ class VideoEvent {
           break;
         case 'r':
           // NIP-25 reference - might contain media URLs
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          // Also handle "r" tags with type annotation (e.g., ["r", "url", "video"] or ["r", "url", "thumbnail"])
+          if (tag.length >= 3) {
+            final url = tagValue;
+            final type = tag[2];
+            developer.log('🔍 DEBUG: Found r tag with type annotation: url="$url" type="$type"', name: 'VideoEvent');
+            
+            if (type == 'video' && url.isNotEmpty && _isValidVideoUrl(url)) {
+              videoUrl ??= url;
+              developer.log('✅ Found video URL in r tag with type annotation: $url', name: 'VideoEvent');
+            } else if (type == 'thumbnail' && url.isNotEmpty && !url.contains('apt.openvine.co') && !url.contains('picsum.photos')) {
+              thumbnailUrl ??= url;
+              developer.log('✅ Found thumbnail URL in r tag with type annotation: $url', name: 'VideoEvent');
+            }
+          } else if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+            // Fallback: if no type annotation, treat as video URL
             videoUrl ??= tagValue;
             developer.log('✅ Found video URL in r tag: $tagValue', name: 'VideoEvent');
           }
@@ -408,6 +423,44 @@ class VideoEvent {
     // NO MORE FAKE PICSUM SHIT! 
     // Return null so we use proper video icon placeholder
     return null;
+  }
+
+  /// Get thumbnail URL from API service with automatic generation
+  /// This method provides an async fallback that generates thumbnails when missing
+  Future<String?> getApiThumbnailUrl({
+    double timeSeconds = 2.5,
+    ThumbnailSize size = ThumbnailSize.medium,
+  }) async {
+    // First check if we already have a thumbnail URL
+    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
+      return thumbnailUrl;
+    }
+
+    // Use the new thumbnail API service for automatic generation
+    return await ThumbnailApiService.getThumbnailWithFallback(
+      id,
+      timeSeconds: timeSeconds,
+      size: size,
+    );
+  }
+
+  /// Get thumbnail URL synchronously from API service (no generation)
+  /// This method provides immediate URL construction without async calls
+  String getApiThumbnailUrlSync({
+    double timeSeconds = 2.5,
+    ThumbnailSize size = ThumbnailSize.medium,
+  }) {
+    // First check if we already have a thumbnail URL
+    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
+      return thumbnailUrl!;
+    }
+
+    // Generate API URL (may or may not exist, but provides proper fallback)
+    return ThumbnailApiService.getThumbnailUrl(
+      id,
+      timeSeconds: timeSeconds,
+      size: size,
+    );
   }
   
   /// Check if video URL is a GIF

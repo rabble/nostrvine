@@ -2,12 +2,14 @@
 // ABOUTME: Handles Nostr identity creation, import, and session management with secure storage
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:nostr_sdk/event.dart';
 import 'secure_key_storage_service.dart';
 import 'key_migration_service.dart';
 import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';
+import '../utils/nostr_timestamp.dart';
 import '../utils/unified_logger.dart';
 
 /// Authentication state for the user
@@ -360,15 +362,72 @@ class AuthService extends ChangeNotifier {
     try {
       return await _keyStorage.withPrivateKey<Event?>((privateKey) {
         // Create event with current user's public key
+        // Use appropriate timestamp backdating based on event kind
+        final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
+        
+        // CRITICAL: vine.hol.is relay requires specific tags for storage
+        final eventTags = List<List<String>>.from(tags ?? []);
+        
+        // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python script order)
+        if (kind == 0) {
+          final expirationTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000) + (72 * 60 * 60); // 72 hours
+          eventTags.add(['expiration', expirationTimestamp.toString()]);
+        }
+        
+        eventTags.add(['h', 'vine']); // Required by vine.hol.is relay
+        
         final event = Event(
           _currentKeyContainer!.publicKeyHex,
           kind,
-          tags ?? [],
+          eventTags,
           content,
+          createdAt: NostrTimestamp.now(driftTolerance: driftTolerance),
         );
+        
+        // DEBUG: Log event details before signing
+        Log.info('🔍 Event BEFORE signing:', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - ID: ${event.id}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Pubkey: ${event.pubkey}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Kind: ${event.kind}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Created at: ${event.createdAt}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Tags: ${event.tags}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Content: ${event.content}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Signature (before): ${event.sig}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Is valid (before): ${event.isValid}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Is signed (before): ${event.isSigned}', name: 'AuthService', category: LogCategory.auth);
+        
+        // CRITICAL DEBUG: Log the exact JSON array used for ID calculation
+        final idCalculationArray = [0, event.pubkey, event.createdAt, event.kind, event.tags, event.content];
+        final idCalculationJson = jsonEncode(idCalculationArray);
+        Log.info('📊 CRITICAL: ID calculation JSON array:', name: 'AuthService', category: LogCategory.auth);
+        Log.info('   Raw Array: $idCalculationArray', name: 'AuthService', category: LogCategory.auth);
+        Log.info('   JSON: $idCalculationJson', name: 'AuthService', category: LogCategory.auth);
+        Log.info('   JSON Length: ${idCalculationJson.length} chars', name: 'AuthService', category: LogCategory.auth);
         
         // Sign the event
         event.sign(privateKey);
+        
+        // DEBUG: Log event details after signing
+        Log.info('🔍 Event AFTER signing:', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - ID (should be same): ${event.id}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Signature (after): ${event.sig}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Is valid (after): ${event.isValid}', name: 'AuthService', category: LogCategory.auth);
+        Log.info('  - Is signed (after): ${event.isSigned}', name: 'AuthService', category: LogCategory.auth);
+        
+        // CRITICAL: Verify signature is actually valid
+        if (!event.isSigned) {
+          Log.error('❌ Event signature validation FAILED!', name: 'AuthService', category: LogCategory.auth);
+          Log.error('   This would cause relay to accept but not store the event', name: 'AuthService', category: LogCategory.auth);
+          return null;
+        }
+        
+        if (!event.isValid) {
+          Log.error('❌ Event structure validation FAILED!', name: 'AuthService', category: LogCategory.auth);
+          Log.error('   Event ID does not match computed hash', name: 'AuthService', category: LogCategory.auth);
+          return null;
+        }
+        
+        Log.info('✅ Event signature and structure validation PASSED', name: 'AuthService', category: LogCategory.auth);
         
         return event;
       }, biometricPrompt: biometricPrompt);
@@ -503,6 +562,7 @@ class AuthService extends ChangeNotifier {
     };
   }
   
+
   @override
   void dispose() {
     Log.debug('�️ Disposing SecureAuthService', name: 'AuthService', category: LogCategory.auth);

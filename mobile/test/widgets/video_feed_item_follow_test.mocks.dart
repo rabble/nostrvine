@@ -599,6 +599,24 @@ class MockUserProfileService extends _i1.Mock
       ) as bool);
 
   @override
+  bool shouldSkipProfileFetch(String? pubkey) => (super.noSuchMethod(
+        Invocation.method(
+          #shouldSkipProfileFetch,
+          [pubkey],
+        ),
+        returnValue: false,
+      ) as bool);
+
+  @override
+  void markProfileAsMissing(String? pubkey) => super.noSuchMethod(
+        Invocation.method(
+          #markProfileAsMissing,
+          [pubkey],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i3.Future<void> updateCachedProfile(_i8.UserProfile? profile) =>
       (super.noSuchMethod(
         Invocation.method(

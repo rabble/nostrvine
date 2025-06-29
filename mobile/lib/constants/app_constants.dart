@@ -18,10 +18,10 @@ class AppConstants {
   // ============================================================================
   
   /// Default limit for following feed subscriptions
-  static const int followingFeedLimit = 200;
+  static const int followingFeedLimit = 500;
   
   /// Default limit for discovery feed subscriptions  
-  static const int discoveryFeedLimit = 300;
+  static const int discoveryFeedLimit = 500;
   
   /// Minimum following videos needed before loading discovery feed
   static const int followingVideoThreshold = 5;

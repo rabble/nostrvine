@@ -1,0 +1,1096 @@
+COMPLETE KIND 0 EVENTS FROM vine.hol.is
+Total events: 84
+Generated: 2025-06-29 22:54:32.474533
+========================================================================================================================
+
+EVENT 1 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: c4c51a5ed027d276be1f8367a203e1383ccca618eac549a72c874eda4ed16d01
+pubkey: 741dcf628922ab1c6fd013ef2eafb63b74e4dfcdd61c2028a94c33b402ec3eb1
+created_at: 1751194375
+kind: 0
+tags: [[expiration, 1751453575], [h, vine]]
+content: {"name": "vine_user_5003PhXAQFz", "display_name": "vine_user_5003PhXAQFz", "about": "Rescued Vine creator. Original account: @vine_user_5003PhXAQFz. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5003PhXAQFz.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5003PhXAQFz", "nip05": "vine_user_5003PhXAQFz@vine.openvine.co"}
+sig: 77d4430a45e98c4d14bbf9f680a47d686de88926e1486a9e5ca3a675b8ecfe961223666c559368d6b9a48aeeebec386f72a2418f12798faf35666f68e02894d5
+runtimeType: Event
+========================================================================================================================
+
+EVENT 2 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: dc3e9084fa11b0e0713881a7e244683075520fb2f7ed33b0fc57d709e9d24820
+pubkey: d016d23a3e86dbf9b61e02695c3075c6f2fa76d33aa5f9e99b33eb084e92d487
+created_at: 1751194371
+kind: 0
+tags: [[expiration, 1751453571], [h, vine]]
+content: {"name": "VineTime (READ BIO)", "display_name": "VineTime (READ BIO)", "about": "Rescued Vine creator. Original account: @VineTime (READ BIO). Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_VineTime (READ BIO).jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/VineTime (READ BIO)", "nip05": "VineTime (READ BIO)@vine.openvine.co"}
+sig: 7a4b477b2830b27baecf01b8f58735951a07b8a93a4b396466d265ab94dcfe901b6a941b397ff3b5daac042c8a5301263fec4021642c0cbd778399e50ca49331
+runtimeType: Event
+========================================================================================================================
+
+EVENT 3 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 6fb3895f5a8323f74c428d09a5d74e373467209f036d540dcad1b9d1e1346d57
+pubkey: 64a38d61d24a2b0a1b357adbb97496d3af29f03cd2a2c00b9f5bb13f18cffbfe
+created_at: 1751194367
+kind: 0
+tags: [[expiration, 1751453567], [h, vine]]
+content: {"name": "lovsehun\u30fc\u6b7b ig: lov.sehun", "display_name": "lovsehun\u30fc\u6b7b ig: lov.sehun", "about": "Rescued Vine creator. Original account: @lovsehun\u30fc\u6b7b ig: lov.sehun. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_lovsehun\u30fc\u6b7b ig: lov.sehun.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/lovsehun\u30fc\u6b7b ig: lov.sehun", "nip05": "lovsehun\u30fc\u6b7b ig: lov.sehun@vine.openvine.co"}
+sig: 0817bd9d66d8d9ef43ea89d2b08734634b78d6006d1975567bff02f9a0e04fff110bab26bd964bf45cfaced6329ffe5b47a60ebd2ae0a2711cef62cf1981c2fe
+runtimeType: Event
+========================================================================================================================
+
+EVENT 4 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 7eaa41610aceb4c5f122895d25e20d39ac55850c32f391549bb468a0b16b3595
+pubkey: 0eacbd80f17bece0d0334fc48546f13d9c255215231dcea382938262dfcebe18
+created_at: 1751194363
+kind: 0
+tags: [[expiration, 1751453563], [h, vine]]
+content: {"name": "~Damn Daisy~", "display_name": "~Damn Daisy~", "about": "Rescued Vine creator. Original account: @~Damn Daisy~. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_~Damn Daisy~.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/~Damn Daisy~", "nip05": "~Damn Daisy~@vine.openvine.co"}
+sig: 48e99e2e8fec6af31ae7e3708df7319ec75c508d627dfe3ff413a3c37ad6ee1aa5e30aa566117f6c912652eb267b6987c00355f689c1bb00ae3b5673dcf76e61
+runtimeType: Event
+========================================================================================================================
+
+EVENT 5 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 14fc5e18966994af3d4d71289169707d4dc0702f2b2313c3d8a6e098f3b7408e
+pubkey: 2b5d0d33053f4cd0233a54a753488bf97a922b87c413caacc85dd2d259cccd41
+created_at: 1751194359
+kind: 0
+tags: [[expiration, 1751453559], [h, vine]]
+content: {"name": "\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f", "display_name": "\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f", "about": "Rescued Vine creator. Original account: @\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f", "nip05": "\u307f\u306a\u3068\uff0a3\u5ea6\u306e\u98ef\u3088\u308a\u7950\u4e5f@vine.openvine.co"}
+sig: 281423c883cda55661b3559d615d4063d879793bb585266291c4d69e1b463a9ae807b66347bc7a3c7894fdff432b55742128e1496dc12d9a58ca198080104a65
+runtimeType: Event
+========================================================================================================================
+
+EVENT 6 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 5a12f844f07489d56df080f69cfd5df83ebbaeb971e60c4a6c4583c4ac769575
+pubkey: 1a26c77b9489814255e9e4d62abc3056c49ba839f2c26aeb5bde05240f0b4c84
+created_at: 1751194355
+kind: 0
+tags: [[expiration, 1751453555], [h, vine]]
+content: {"name": "vine_user_5016mawXmX3", "display_name": "vine_user_5016mawXmX3", "about": "Rescued Vine creator. Original account: @vine_user_5016mawXmX3. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5016mawXmX3.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5016mawXmX3", "nip05": "vine_user_5016mawXmX3@vine.openvine.co"}
+sig: 9f3fed0eb6839a7c47ff4e9575587bfcbfceb3593221abe612a52ff1f05ce4d311849d3933d44137808402b2c6c1872a2a28faf9553d61c9063d42781907e913
+runtimeType: Event
+========================================================================================================================
+
+EVENT 7 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: d1ada2c13d3f3d056b455515db128488937bdc27dc5c4e489e6fc41e72c2dbbc
+pubkey: d3e9b7e8e652485e52282a7604b26b5bb2ad272844e1f747d015dde684e25d26
+created_at: 1751194350
+kind: 0
+tags: [[expiration, 1751453550], [h, vine]]
+content: {"name": "vine_user_500zrDpF3EL", "display_name": "vine_user_500zrDpF3EL", "about": "Rescued Vine creator. Original account: @vine_user_500zrDpF3EL. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500zrDpF3EL.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500zrDpF3EL", "nip05": "vine_user_500zrDpF3EL@vine.openvine.co"}
+sig: f9942c618887e084c9ddd8a0abf293401de832a9f517729d82dfbb66cc54865ef394eb348c21ab1e792e2d55dd3be7102d268f228009bf439c1043aaccb7ee49
+runtimeType: Event
+========================================================================================================================
+
+EVENT 8 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: ec1b3eb23e6eb982b69baeda4a9cfa37c004f56a1f40f755175bc9435d3bd805
+pubkey: 744e72e8c442bf07b9eedd67fdd92ae741b23c9ef59233604099183e7484a2a0
+created_at: 1751194346
+kind: 0
+tags: [[expiration, 1751453546], [h, vine]]
+content: {"name": "vine_user_500Oe353rL3", "display_name": "vine_user_500Oe353rL3", "about": "Rescued Vine creator. Original account: @vine_user_500Oe353rL3. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500Oe353rL3.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500Oe353rL3", "nip05": "vine_user_500Oe353rL3@vine.openvine.co"}
+sig: bdad760a530ef9acb0b7bd4709c0af3a6a58d7e475898f40a0a36bdccbf88166a847933faf566b197ec19692555b0ae164a85c0030c2581d0457fcf6d3a2b86e
+runtimeType: Event
+========================================================================================================================
+
+EVENT 9 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 7de7d3679ea1349ad3a630af0da1c92c38f807ebee017cffa911da1978ccf0c1
+pubkey: 7e8dd771a2f17cc9d6c8456146a04532e3b882d10caf6e02d1109d8606b70043
+created_at: 1751194342
+kind: 0
+tags: [[expiration, 1751453542], [h, vine]]
+content: {"name": "vine_user_5000ttzmxAg", "display_name": "vine_user_5000ttzmxAg", "about": "Rescued Vine creator. Original account: @vine_user_5000ttzmxAg. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5000ttzmxAg.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5000ttzmxAg", "nip05": "vine_user_5000ttzmxAg@vine.openvine.co"}
+sig: cc642d418c883b79e27b8b69f6b3bec5aeb2bce47b4b14307ce315d2934177b9b2e86179349101d4e1cc2a16c5daab833515d975c8555cabb3ff578d33e14469
+runtimeType: Event
+========================================================================================================================
+
+EVENT 10 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 117819a3cb56dd08e2a4c5d238494d09de2bc0848f7b437eeb6781033af3e3e9
+pubkey: 8f1895d0c9f7074d3fa7d2e5409f42bd7e45ebd57b64147c3d8d7d1d15ea5763
+created_at: 1751194335
+kind: 0
+tags: [[expiration, 1751453535], [h, vine]]
+content: {"name": "vine_user_5012K1Z3YW9", "display_name": "vine_user_5012K1Z3YW9", "about": "Rescued Vine creator. Original account: @vine_user_5012K1Z3YW9. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5012K1Z3YW9.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5012K1Z3YW9", "nip05": "vine_user_5012K1Z3YW9@vine.openvine.co"}
+sig: 6f00bad6830cab5f441d0a92b4cd3bec420f8e3aa0bd32dd15306acc204237adf9ce365480fce11457e683d33e2f393d070de7dd52f873abadc97c1ea2f377c4
+runtimeType: Event
+========================================================================================================================
+
+EVENT 11 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: df029e624c81a0032274ce15f7563484d90eb555bfa4b5f90130562a0fed3662
+pubkey: 82d744a20e61b9770591f3c2e6aa9ad4884e045d74f4fdfc76e07aeab2af755f
+created_at: 1751194328
+kind: 0
+tags: [[expiration, 1751453528], [h, vine]]
+content: {"name": "aka void (yt: wxyne edits)", "display_name": "aka void (yt: wxyne edits)", "about": "Rescued Vine creator. Original account: @aka void (yt: wxyne edits). Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_aka void (yt: wxyne edits).jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/aka void (yt: wxyne edits)", "nip05": "aka void (yt: wxyne edits)@vine.openvine.co"}
+sig: 4b307a8dc8b1b61d24079c323ccb5bd91c24296bd4673f4a9b02183926f871f17f7edd120f30430bb9c6f23200dc7c44b7605497d2a96cf2a8f66da70220eceb
+runtimeType: Event
+========================================================================================================================
+
+EVENT 12 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 2ce49c7c5cbaaa568a742aa001b0e48b8e236edd716df629275441cb015d4736
+pubkey: 7249db86057d0829e4b29d902a2ce23c827a7f4aa6cf443ce91a9d0758080764
+created_at: 1751194324
+kind: 0
+tags: [[expiration, 1751453524], [h, vine]]
+content: {"name": "NBA", "display_name": "NBA", "about": "Rescued Vine creator. Original account: @NBA. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_NBA.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/NBA", "nip05": "NBA@vine.openvine.co"}
+sig: e60ef2daca31192438bcafed3eb08c1c6ee7602aec1cfbbe3857dcccc0d06ab0d3786a2645e6429c844924984c7cfe22c501a6fd63d40438f772bdb1b91b1dd9
+runtimeType: Event
+========================================================================================================================
+
+EVENT 13 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 301c9467854219f0a23194e3e6648505c6d9bcd27bcf570edadc7c25a0f534d7
+pubkey: 6e6fa94c73cb55a8d82b6a61f6cb50fb36b50d850937858c344f2bb9a69b63a9
+created_at: 1751194320
+kind: 0
+tags: [[expiration, 1751453520], [h, vine]]
+content: {"name": "enchantedskies;", "display_name": "enchantedskies;", "about": "Rescued Vine creator. Original account: @enchantedskies;. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_enchantedskies;.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/enchantedskies;", "nip05": "enchantedskies;@vine.openvine.co"}
+sig: 8935aabcb97cdc76b0304d11c3050af3d4be1f1444b7b6d652b9d9542675a00d3cbffc62486c480b3adeb6b6fcbfd978740e00bcff80e42f1d9a2e6b7b8ee0de
+runtimeType: Event
+========================================================================================================================
+
+EVENT 14 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 999c1f0a11e4047de8a9ea89125bf17863a387da5b54497845a42a7ca3cce346
+pubkey: ee3973c2ee13b1d40a63b8f1f5853c77ba2a93adcefe0d5b51b677880171c5ed
+created_at: 1751194316
+kind: 0
+tags: [[expiration, 1751453516], [h, vine]]
+content: {"name": "vine_user_Mv2pJAZ1vpF", "display_name": "vine_user_Mv2pJAZ1vpF", "about": "Rescued Vine creator. Original account: @vine_user_Mv2pJAZ1vpF. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_Mv2pJAZ1vpF.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_Mv2pJAZ1vpF", "nip05": "vine_user_Mv2pJAZ1vpF@vine.openvine.co"}
+sig: ff88a4082a5375af3f6249984d235befe31413df3fcf006904e27faf2f9f14d010b3ba70c75d90c3ce5c1af7cd3e2a39982f1799367fdfaeaa2e070de9694d99
+runtimeType: Event
+========================================================================================================================
+
+EVENT 15 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 39087a86cb04ccbd0b58a4d578ba1dbf4b60149fdf7ff4979b766bfaf8eda826
+pubkey: dbc8d998783dfe9757321b71f72c3f67ea6f9b520f1c44cd0a0b5e6e6dbdde26
+created_at: 1751194312
+kind: 0
+tags: [[expiration, 1751453512], [h, vine]]
+content: {"name": "Catherine", "display_name": "Catherine", "about": "Rescued Vine creator. Original account: @Catherine. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Catherine.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Catherine", "nip05": "Catherine@vine.openvine.co"}
+sig: ada015f475ecebaf758a30d7a519b00192e92527251d0036a510cdbb939112de9be6b64b30ba342a4ea42486e4cf2c94d507e78dc24571e2dfafad1516824bf1
+runtimeType: Event
+========================================================================================================================
+
+EVENT 16 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 4166e9f4140b67303135ca01016be3c90d095e3f3e25d8564b6bc1fb0a5320de
+pubkey: 411ef371ddd39be88396b823990a2555ecbed483c8b44a8edd480819fca927ee
+created_at: 1751194307
+kind: 0
+tags: [[expiration, 1751453507], [h, vine]]
+content: {"name": "ig: luminous.vine", "display_name": "ig: luminous.vine", "about": "Rescued Vine creator. Original account: @ig: luminous.vine. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig: luminous.vine.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig: luminous.vine", "nip05": "ig: luminous.vine@vine.openvine.co"}
+sig: 4cc38d0a8c3956026b3176d9ee75e27ce9cddc1398f24779a9996242c2d2a19b2ff5407abab85a691aeb0c6491b4c7bb33bc04026771cf13a1ce63eeff0ff2b9
+runtimeType: Event
+========================================================================================================================
+
+EVENT 17 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 9e797ec0cd43470a23f6a5bac79a92a8bf540b027fd9a5333d94fa82a59f3daa
+pubkey: 71c3a7e774268922c03fa4e0ebb0ed0305b8907ef86412cb668314e5fedb54b4
+created_at: 1751194302
+kind: 0
+tags: [[expiration, 1751453502], [h, vine]]
+content: {"name": "\u3064\u3093\u3055\u3093", "display_name": "\u3064\u3093\u3055\u3093", "about": "Rescued Vine creator. Original account: @\u3064\u3093\u3055\u3093. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u3064\u3093\u3055\u3093.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u3064\u3093\u3055\u3093", "nip05": "\u3064\u3093\u3055\u3093@vine.openvine.co"}
+sig: b63090ac958d7ab2882a947d8f133e6f6765fa52ffffbd598fffe5826093a05c548b2a8b5e9df4837f7c23f098f98eda9fc117bc06bd2dc70d5becd5e0a81621
+runtimeType: Event
+========================================================================================================================
+
+EVENT 18 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 900eebe35143e6e3317dc5471f66ed97ae7834584e93c3776a3d90ac63e92fc0
+pubkey: a0354356ee50fd12efc2045fe06c38dbad598c116101a89a97f88787c5d34e13
+created_at: 1751194298
+kind: 0
+tags: [[expiration, 1751453498], [h, vine]]
+content: {"name": "vine_user_5006aA7zuKH", "display_name": "vine_user_5006aA7zuKH", "about": "Rescued Vine creator. Original account: @vine_user_5006aA7zuKH. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5006aA7zuKH.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5006aA7zuKH", "nip05": "vine_user_5006aA7zuKH@vine.openvine.co"}
+sig: faa55624e6c43e38fe6309f78d049e49f96d6c2f921fed66750abb6f910f419ce64fe45f149f0e9237ce6fc601377f680a716e50b6222d9a6f245b056640fba6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 19 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 925df1e977f4c6e603b420b1b8c7e447165c18a8f225b0acbdd4a3b4664923b5
+pubkey: 875b84c0af7b9c732c8ec401934d4849d4be65bd84432df3d5b9cd0f7a9cdff9
+created_at: 1751194294
+kind: 0
+tags: [[expiration, 1751453494], [h, vine]]
+content: {"name": "vine_user_Min9wlMKh9M", "display_name": "vine_user_Min9wlMKh9M", "about": "Rescued Vine creator. Original account: @vine_user_Min9wlMKh9M. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_Min9wlMKh9M.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_Min9wlMKh9M", "nip05": "vine_user_Min9wlMKh9M@vine.openvine.co"}
+sig: 1d0c286c98b61dbd2cf95bc3ef83d786845ff0e543d840ffdb957940eacd72de0be8ba0b977a023abd3a35e5c4bfebe5664d890d71d2569bb7281766a92c2079
+runtimeType: Event
+========================================================================================================================
+
+EVENT 20 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 4787bb56cbc4c60f9f365fa569397994161d206ba32d16ffbacaa6758f468466
+pubkey: db6556ba294b486f815c5a7c2613a98788fc6c7019b341b7e3bc401918db32b9
+created_at: 1751194289
+kind: 0
+tags: [[expiration, 1751453489], [h, vine]]
+content: {"name": "vine_user_500JWnPWE3t", "display_name": "vine_user_500JWnPWE3t", "about": "Rescued Vine creator. Original account: @vine_user_500JWnPWE3t. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500JWnPWE3t.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500JWnPWE3t", "nip05": "vine_user_500JWnPWE3t@vine.openvine.co"}
+sig: 4f82da3a350231438e7218b9ebd6dcc4120127be3b2362e807c9eb5fffbc78a730a8bca565b7ade3f67d66065436c664066c399059c7d07037894bfa231dde81
+runtimeType: Event
+========================================================================================================================
+
+EVENT 21 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 8bd7f4aeb54f125cf684099d5583b54828e11e814fbb15defb5780938d2e35c0
+pubkey: 82dcf3f76c2b32ec6762aee529617cab62dc58f2a22e3ec02bed80cd031a9730
+created_at: 1751194285
+kind: 0
+tags: [[expiration, 1751453485], [h, vine]]
+content: {"name": "strangest./ ig: werecoyotex", "display_name": "strangest./ ig: werecoyotex", "about": "Rescued Vine creator. Original account: @strangest./ ig: werecoyotex. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_strangest./ ig: werecoyotex.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/strangest./ ig: werecoyotex", "nip05": "strangest./ ig: werecoyotex@vine.openvine.co"}
+sig: a989227cb5eb89b35230033f06146814673b040e5f98619591aa15cec57534436f1620bc18f4007ff758dd3a7b8c40203cc7f89aacfadd1494813dd82b9e8f99
+runtimeType: Event
+========================================================================================================================
+
+EVENT 22 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 4e6fe3990f873628b60043d2b064e37295dbc2e4d07f8c79a81763dd338a4ecd
+pubkey: 81008d7a70b1b29f28afa93bf69fa277d4bd2254043afe61e3880de4d953a71b
+created_at: 1751194281
+kind: 0
+tags: [[expiration, 1751453481], [h, vine]]
+content: {"name": "vine_user_5006ULpELd5", "display_name": "vine_user_5006ULpELd5", "about": "Rescued Vine creator. Original account: @vine_user_5006ULpELd5. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5006ULpELd5.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5006ULpELd5", "nip05": "vine_user_5006ULpELd5@vine.openvine.co"}
+sig: 225587500be7ab807e86ef5215fc44b637e099b11511fa9d1372250bddcbb7036c63b02602ee1089fca33fb31add051d3bbc39d8649924b97d1c8da9a649e797
+runtimeType: Event
+========================================================================================================================
+
+EVENT 23 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: d62bdd97a9da8a2e3540783d1f1865d92821127232ee03d1fa644da70ae7d85f
+pubkey: d48c040f796d9b70fdd42d86f0c3489b5abccb6ec40d4d4ce3df297659c54878
+created_at: 1751194277
+kind: 0
+tags: [[expiration, 1751453477], [h, vine]]
+content: {"name": "lost g.", "display_name": "lost g.", "about": "Rescued Vine creator. Original account: @lost g.. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_lost g..jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/lost g.", "nip05": "lost g.@vine.openvine.co"}
+sig: d6f94e92e6db9f5d2803692595cc7e7a3821864852a88a5138139f89cfa5d3501093c548ffd4a8faf77b6ff3335e91164e5f348f9b40386e3caa4eaec43c8453
+runtimeType: Event
+========================================================================================================================
+
+EVENT 24 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 06d4e18fbbd101eeb3a3bc6ebefd6a9835f3cc5eaa733ad6bb834a76b5ce6e5b
+pubkey: 3d7fc57f2ece149af3309c66e44663882224a1cdc8b3b1e57f90f55d1af1d9cc
+created_at: 1751194273
+kind: 0
+tags: [[expiration, 1751453473], [h, vine]]
+content: {"name": "Rin", "display_name": "Rin", "about": "Rescued Vine creator. Original account: @Rin. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Rin.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Rin", "nip05": "Rin@vine.openvine.co"}
+sig: 2f9bffd3030a7a58fe9d68a0e610713c393bf38160927f09ec41b39fdd49ca9dfb26a201e76f098880843526de5247358573b7b104310c7b63a462c7e93741fb
+runtimeType: Event
+========================================================================================================================
+
+EVENT 25 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: cdf2499f4dc73566f5d3543ad02d94c4167bc18ea734d6aae957f54971322702
+pubkey: f0e0bfef46d22f7f27a420d14097d7fb9b9e8fd12097c6fe56cbdd34fb73523d
+created_at: 1751194269
+kind: 0
+tags: [[expiration, 1751453469], [h, vine]]
+content: {"name": "vine_user_50101HtEPYL", "display_name": "vine_user_50101HtEPYL", "about": "Rescued Vine creator. Original account: @vine_user_50101HtEPYL. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_50101HtEPYL.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_50101HtEPYL", "nip05": "vine_user_50101HtEPYL@vine.openvine.co"}
+sig: 759f090373bedadb18a1611a0f646e7a8239d16be41914e4e11a4c8be5c857d56d0eeb62ae54dbcf58a6f6527ca9212b8b4a094c828dc1d5c7ecb24cd1725648
+runtimeType: Event
+========================================================================================================================
+
+EVENT 26 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 953943b4e4b17ef6e21c9e2d27c77c7914cbbaa0dc9f3dcbba81f53d90322a09
+pubkey: 66b43bbf1c35f08bf0a1ff544f3adcb8765ec577825311832e7cf3fb80816e15
+created_at: 1751194263
+kind: 0
+tags: [[expiration, 1751453463], [h, vine]]
+content: {"name": "vine_user_500P9iYWzYY", "display_name": "vine_user_500P9iYWzYY", "about": "Rescued Vine creator. Original account: @vine_user_500P9iYWzYY. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500P9iYWzYY.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500P9iYWzYY", "nip05": "vine_user_500P9iYWzYY@vine.openvine.co"}
+sig: fb32cf7f99dbae65046a3184cadf9d6a4703ac2baea207b2f905c9b6a9f845d04c43877dd572be2a8dfd9fceca4fcbf8ec11f2d8d34d40cd724eec35110a6be6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 27 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 9c6957019c7e2eecaa3c790b48ae3642e77353c3b790d8af36150cc045277a32
+pubkey: 0b7913910582a4964c2f3afb79c04b5398eda69b53ec5c18875491af24de68ee
+created_at: 1751194259
+kind: 0
+tags: [[expiration, 1751453459], [h, vine]]
+content: {"name": "Retro Flow", "display_name": "Retro Flow", "about": "Rescued Vine creator. Original account: @Retro Flow. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Retro Flow.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Retro Flow", "nip05": "Retro Flow@vine.openvine.co"}
+sig: 1c64431486f16c340c7d7549255a58f478a36e9ac969335a27b52af107f98086c6065ffa2708d0e118f874a2bce442faa58ef5576d541f87ea6129ee083ee4ef
+runtimeType: Event
+========================================================================================================================
+
+EVENT 28 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 737346dc82a1b5e4766d7ab93eff68e587fb903bb4aefa6fa3ec6d0b37554e12
+pubkey: 847bc7d722656c8c39e5d3dd490fd4484ca5c0a877bf1e888269e081f01141d9
+created_at: 1751194178
+kind: 0
+tags: [[expiration, 1751453378], [h, vine]]
+content: {"name": "Ig Dangchloee", "display_name": "Ig Dangchloee", "about": "Rescued Vine creator. Original account: @Ig Dangchloee. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Ig Dangchloee.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Ig Dangchloee", "nip05": "Ig Dangchloee@vine.openvine.co"}
+sig: 116b3ac1b35ec866857b43121e7ef3495ad2a62f65aa48151dedf31e6052aba7f59dbcdae1038f4e0946c9ad13632619d2bd26db20fe4c38079dccbdb28b21f3
+runtimeType: Event
+========================================================================================================================
+
+EVENT 29 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 386a628b6fa63bfefb3200c5c66dcdb930a0c9eeb8762ae5b65e9612ee86423e
+pubkey: e9898bc5b5f2d45b31f50acefd85506a8ab3c43bb5e802010209e246aaa9f27f
+created_at: 1751194176
+kind: 0
+tags: [[expiration, 1751453376], [h, vine]]
+content: {"name": "Andrew Jive IG: andrewjive", "display_name": "Andrew Jive IG: andrewjive", "about": "Rescued Vine creator. Original account: @Andrew Jive IG: andrewjive. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Andrew Jive IG: andrewjive.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Andrew Jive IG: andrewjive", "nip05": "Andrew Jive IG: andrewjive@vine.openvine.co"}
+sig: 0283ec3d7c9a26e275477ac0c08820e988bc5711bc4fc3e2882ee6825f3f437ad786b32eb63d17d6f6c9ad43e407833483d778a2c15a9f100d8ced6580eeb9a9
+runtimeType: Event
+========================================================================================================================
+
+EVENT 30 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: e18d421b64acce10fd260044043145ee9fd53ffeeb096208d03315fd17799a8e
+pubkey: 99da64fa572382fd4c0b9b3da8e64aeb00ac6b4737fba68013a47a1b56801532
+created_at: 1751194174
+kind: 0
+tags: [[expiration, 1751453374], [h, vine]]
+content: {"name": "vine_user_500AEDhapDJ", "display_name": "vine_user_500AEDhapDJ", "about": "Rescued Vine creator. Original account: @vine_user_500AEDhapDJ. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500AEDhapDJ.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500AEDhapDJ", "nip05": "vine_user_500AEDhapDJ@vine.openvine.co"}
+sig: 179aa8939e036ee46db116f16064bcda5f8ec1801ebf0b9a2d6e51d58d71bc0d444f430c99b105912ce328419c8055076cf2297555b6bdc9d880422f11c3380e
+runtimeType: Event
+========================================================================================================================
+
+EVENT 31 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 2c4263abe0679de90e00516f54f344598d64c85f3902566c5c4856f0a289ba22
+pubkey: b8381b9e08858dba9813fe82d5bd38cb6f4ae75320bf0b644817540946436eee
+created_at: 1751194173
+kind: 0
+tags: [[expiration, 1751453373], [h, vine]]
+content: {"name": "sevendinosaurs ate my pizza", "display_name": "sevendinosaurs ate my pizza", "about": "Rescued Vine creator. Original account: @sevendinosaurs ate my pizza. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_sevendinosaurs ate my pizza.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/sevendinosaurs ate my pizza", "nip05": "sevendinosaurs ate my pizza@vine.openvine.co"}
+sig: ee05f78581dbc8519c79f15c20d2134935b8ef443b1c96a07b776e2a36dd6faaf480ce4dc01f90ffa77ecd70427e9d6c871c25fcf6beae9a639745434b5f74fd
+runtimeType: Event
+========================================================================================================================
+
+EVENT 32 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 6226c6978a2be1169df997680c480b8d8f094815ec4f36f280b7440602d289ed
+pubkey: af39a9d3993bf8d0d2260e609fe7ecc18f7d96527414d2e023eee737136ccc86
+created_at: 1751194171
+kind: 0
+tags: [[expiration, 1751453371], [h, vine]]
+content: {"name": "\u300a O W L \u300b\u1d2e\u1d2e\u02e2", "display_name": "\u300a O W L \u300b\u1d2e\u1d2e\u02e2", "about": "Rescued Vine creator. Original account: @\u300a O W L \u300b\u1d2e\u1d2e\u02e2. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u300a O W L \u300b\u1d2e\u1d2e\u02e2.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u300a O W L \u300b\u1d2e\u1d2e\u02e2", "nip05": "\u300a O W L \u300b\u1d2e\u1d2e\u02e2@vine.openvine.co"}
+sig: 7f3dfca21e32a9fa64a8d637afa420d6c880276126bb7b976cb2019a2e04e7f17326b2dcde4753b19ebd92f32bcc0e73b04ba9e8f402890353eb5d1d671f6344
+runtimeType: Event
+========================================================================================================================
+
+EVENT 33 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 8abd565c01af7498b33fce25b70ad7848aa21f237eb6a44c9f7c4fc02a52df36
+pubkey: bfc52e6e5e212b54fe6cc58994efa64eee1819d70635b96f345eb5d498f4e7e0
+created_at: 1751194170
+kind: 0
+tags: [[expiration, 1751453370], [h, vine]]
+content: {"name": "John", "display_name": "John", "about": "Rescued Vine creator. Original account: @John. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_John.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/John", "nip05": "John@vine.openvine.co"}
+sig: c49e559f8f916c4955084245ba6d5663f7807d08ffd37da7becead8825c03546f2b91236819e4d167140a8a28420ce75782dd33278b2a38e1a4a3901dc69a39b
+runtimeType: Event
+========================================================================================================================
+
+EVENT 34 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: b63cbfa913274da9ebdd64285b931ab1dd521bf8049692180a59602c2f7f4ae3
+pubkey: 34b268adcde70f0c33502240534a65eb8bad9fca2663cec06ad195f8a7f9bfff
+created_at: 1751194168
+kind: 0
+tags: [[expiration, 1751453368], [h, vine]]
+content: {"name": "\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5", "display_name": "\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5", "about": "Rescued Vine creator. Original account: @\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5", "nip05": "\u2022\u30df\u30f3\u2022 \u00a5Virtual\u00a5@vine.openvine.co"}
+sig: 6ba65f3ad4066a0bb9bd9aeecb532bfd324a616d9e078735add62b9af4eb0e386d7f5a8009992f37d96a75b145929d8ee07bb9ae1c2ee9d291c1464ebe39533c
+runtimeType: Event
+========================================================================================================================
+
+EVENT 35 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: dd754b0c14ed9e5c3938a514d2e595069d58057015c6273267bc4f1d373dc5b2
+pubkey: 2621ebe7a2976452d4d66adacb95952d4c4b52c5a59c353b5eede25c87e1be83
+created_at: 1751194167
+kind: 0
+tags: [[expiration, 1751453367], [h, vine]]
+content: {"name": "Laura", "display_name": "Laura", "about": "Rescued Vine creator. Original account: @Laura. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Laura.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Laura", "nip05": "Laura@vine.openvine.co"}
+sig: 51dc67e512126836f2c78d9967276f9a8e5c67237d7b6bcc7b030b0322d2a77d14d61270162e98fad8764ed2126098d10ca1be92da54e363692cedef2ab929a4
+runtimeType: Event
+========================================================================================================================
+
+EVENT 36 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 20fefdc638bc5f369908907eb787f29ab3c66b0d499c54a54092f7fe10af9e64
+pubkey: 6e6d7b235306f898cbb52b342a7a4e65609c315b23eee44982f8026ba4c478fa
+created_at: 1751194165
+kind: 0
+tags: [[expiration, 1751453365], [h, vine]]
+content: {"name": "vine_user_5002wXwQOKX", "display_name": "vine_user_5002wXwQOKX", "about": "Rescued Vine creator. Original account: @vine_user_5002wXwQOKX. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5002wXwQOKX.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5002wXwQOKX", "nip05": "vine_user_5002wXwQOKX@vine.openvine.co"}
+sig: 2c33a63cd0eef0a8a06a96d731a58aa3e7f9db96296792e3b64bae8ba035dbe48783534fed1d929283bde4b1adf30bf28efa4865071a45b9e93b098244e5edf5
+runtimeType: Event
+========================================================================================================================
+
+EVENT 37 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 76c57085155ff2effe105adb42df7bf022592172d7c70468b34a244244cb6b85
+pubkey: e9e8dd2f3273bed35eae3b1d997091f2f7ef094b646091930a229fddf1f41768
+created_at: 1751194164
+kind: 0
+tags: [[expiration, 1751453364], [h, vine]]
+content: {"name": "tw: damnvernon \u27b3\u2661\u00b0", "display_name": "tw: damnvernon \u27b3\u2661\u00b0", "about": "Rescued Vine creator. Original account: @tw: damnvernon \u27b3\u2661\u00b0. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_tw: damnvernon \u27b3\u2661\u00b0.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/tw: damnvernon \u27b3\u2661\u00b0", "nip05": "tw: damnvernon \u27b3\u2661\u00b0@vine.openvine.co"}
+sig: 5efe16ce16edd55323b6c392cde7566963a31a5acfc5426dee3ce2d3697e7a855cd7ace61bbe3a4495aae330e97d034c55ddcaef0d2e0aacd29d8a9556192612
+runtimeType: Event
+========================================================================================================================
+
+EVENT 38 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 6822965f73a21fc5461fd62f941a9459662be41eb682c599d1277c260774c6c3
+pubkey: 9d523ff119572086f273a9558e3ace7189a634df7c4de8261fba5506955c9f15
+created_at: 1751194162
+kind: 0
+tags: [[expiration, 1751453362], [h, vine]]
+content: {"name": "dodaeng \ub3c4\ub315 daily", "display_name": "dodaeng \ub3c4\ub315 daily", "about": "Rescued Vine creator. Original account: @dodaeng \ub3c4\ub315 daily. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_dodaeng \ub3c4\ub315 daily.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/dodaeng \ub3c4\ub315 daily", "nip05": "dodaeng \ub3c4\ub315 daily@vine.openvine.co"}
+sig: 9cbfc27a7fe34ce9d01c355f50d0e160668df1874aa1b569564092fdc691ad949ac7c68d663f6e8c9908c83cebcc206fd175e0ef98eb84621a8e92a81ee09cf6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 39 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 2d43fce7de3515c8370040a3f4c72a4f304e79a897ca633686cd3df89f3230c7
+pubkey: 92a0b8f416d4d8a77e3da420dd3f3eecb5edc111c6897cd51ccc2bbd9404bf13
+created_at: 1751194161
+kind: 0
+tags: [[expiration, 1751453361], [h, vine]]
+content: {"name": "ig; allurehowell", "display_name": "ig; allurehowell", "about": "Rescued Vine creator. Original account: @ig; allurehowell. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig; allurehowell.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig; allurehowell", "nip05": "ig; allurehowell@vine.openvine.co"}
+sig: 8c391b09afca7fd3360e4bc687c1f1cc3ef97cea42b132ffe9d9d4f4a89f2c562d6e89955e52f3737dc68bb26ed021a1bd141202dc0375941368b268dd7840ea
+runtimeType: Event
+========================================================================================================================
+
+EVENT 40 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 40ecc0e38c26ecfb47cca9410240a7783df39ccbb9b9ad9296563c5ea5ee00b0
+pubkey: ce5a0a5612f44617bf8dcdb92a46d45942615dd67d6505f231190bc39be02b0e
+created_at: 1751194159
+kind: 0
+tags: [[expiration, 1751453359], [h, vine]]
+content: {"name": "vine_user_5012ALULr0T", "display_name": "vine_user_5012ALULr0T", "about": "Rescued Vine creator. Original account: @vine_user_5012ALULr0T. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5012ALULr0T.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5012ALULr0T", "nip05": "vine_user_5012ALULr0T@vine.openvine.co"}
+sig: 7a0aa7c727c571e41320b1dc662f10fcee2f726de05ae9b3ad7f313311b7e11c4eac08c304c23bb9315262a20aa0c3281d0df396a4edf2320a6149fc1d56cbfe
+runtimeType: Event
+========================================================================================================================
+
+EVENT 41 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 424b7a21e1959d0bef6fd26fd8f56a5c66292180eb089dcecec7bc2472f3ca31
+pubkey: 85254bdefd6313a477003de85b2625c37ce89b79496200b4373c20f93e33a3d4
+created_at: 1751194158
+kind: 0
+tags: [[expiration, 1751453358], [h, vine]]
+content: {"name": "MysticMatheo {bio}", "display_name": "MysticMatheo {bio}", "about": "Rescued Vine creator. Original account: @MysticMatheo {bio}. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_MysticMatheo {bio}.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/MysticMatheo {bio}", "nip05": "MysticMatheo {bio}@vine.openvine.co"}
+sig: 5f6663b95fa3bf430dbc04bbc6340facb63aa8078c9330daa9cc8b05b08679f419553d0cee8d12741894d33d0db1db0e8cc08175c137f655dcdac8c772d6f76b
+runtimeType: Event
+========================================================================================================================
+
+EVENT 42 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 6c71e7cc854254c00f711d7a52e806bc9c138372e88c48ce4987f935290963db
+pubkey: 8e274e1540b91189c1489a2e5a5d830a555023f4631f304f69b5a2e17379e910
+created_at: 1751194156
+kind: 0
+tags: [[expiration, 1751453356], [h, vine]]
+content: {"name": "ig:Bending_edits", "display_name": "ig:Bending_edits", "about": "Rescued Vine creator. Original account: @ig:Bending_edits. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig:Bending_edits.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig:Bending_edits", "nip05": "ig:Bending_edits@vine.openvine.co"}
+sig: e08ff583de515bddfe9ee16fb4ef97e7bb79a8fdf5f2072b57470a525aafb05533af94d543f211e26ecfec5d825608e947f4f886dec3f391c1bac4cca336e397
+runtimeType: Event
+========================================================================================================================
+
+EVENT 43 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 6c907bcfaeca533a45df676ce64c3ceb7f7b83183aa2c242cb117dcac8d99431
+pubkey: 08ae41fb6cec4ef092162db6e78e5f554dc09343464305af33a223436931c661
+created_at: 1751194155
+kind: 0
+tags: [[expiration, 1751453355], [h, vine]]
+content: {"name": "AFreak (CHECK BIO)", "display_name": "AFreak (CHECK BIO)", "about": "Rescued Vine creator. Original account: @AFreak (CHECK BIO). Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_AFreak (CHECK BIO).jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/AFreak (CHECK BIO)", "nip05": "AFreak (CHECK BIO)@vine.openvine.co"}
+sig: ff5bad271d8555b4cdfbf9ed39c26ac498caefc8899373e2bca394b450177af659e1ca2e242d3810fa5452c1028e5a4fa599b32737ed8bd553cb59729b7f9192
+runtimeType: Event
+========================================================================================================================
+
+EVENT 44 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: ebb439a2e76aa7f4524ac41b8be67e668e5de6b5b2055a2d56f6c7959a24fcdc
+pubkey: 6fa6bc3139fab93118a8a6fe07b3e402b4ed26ee93e4d3dd4fa398ee5c55ffb9
+created_at: 1751194153
+kind: 0
+tags: [[expiration, 1751453353], [h, vine]]
+content: {"name": "Dan McFischBerg", "display_name": "Dan McFischBerg", "about": "Rescued Vine creator. Original account: @Dan McFischBerg. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Dan McFischBerg.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Dan McFischBerg", "nip05": "Dan McFischBerg@vine.openvine.co"}
+sig: 51d9ae40dd6911a91ebedf19a821b62ba9e1c40ab50c21278130d6b5a4bb1814f7bf2e1a47e769a322283885304d9c52d3035d236c2f51f30a1fa24821587c82
+runtimeType: Event
+========================================================================================================================
+
+EVENT 45 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: bf1990b6801e77dcbf9a363b27cfa784a1d367d44fb0cc71e754a3aac739f06f
+pubkey: 8db4ab340c7da4e11811f2c13457e5003b021215a6a8cb8d993f2599c3d78183
+created_at: 1751194152
+kind: 0
+tags: [[expiration, 1751453352], [h, vine]]
+content: {"name": "vine_user_5010YKK6FV6", "display_name": "vine_user_5010YKK6FV6", "about": "Rescued Vine creator. Original account: @vine_user_5010YKK6FV6. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5010YKK6FV6.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5010YKK6FV6", "nip05": "vine_user_5010YKK6FV6@vine.openvine.co"}
+sig: bd13ca4f276ca87e968b709d40c608df52b90403ce141ac2406f3f78a5c4b72834d4945f1fc8c6d2d9cec62f7ea5cedcdc9c64adfcd4802dc4d6b32f89d1e777
+runtimeType: Event
+========================================================================================================================
+
+EVENT 46 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: eb94ffc3c48abba09312a69d430c3760b7e520a3f6722606b0deea8b375878f5
+pubkey: e343ad7d97dee73b79c4976859a675d3277ad112bc8631ad6181f827e930e4a4
+created_at: 1751194149
+kind: 0
+tags: [[expiration, 1751453349], [h, vine]]
+content: {"name": "vine_user_5017FIjVDPY", "display_name": "vine_user_5017FIjVDPY", "about": "Rescued Vine creator. Original account: @vine_user_5017FIjVDPY. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5017FIjVDPY.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5017FIjVDPY", "nip05": "vine_user_5017FIjVDPY@vine.openvine.co"}
+sig: 66e350a5d177aabfe4e30d6aa7d8da391c9c166c74befffb1e2027757fb082713d016f484cd55a8ec032469dd7ff9acba95d59bdcc5394018f65f8f1f3195bd9
+runtimeType: Event
+========================================================================================================================
+
+EVENT 47 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 4478e2893a7a6c9d91bb2afd38bb06e5f65c5bd148a13405565b80d6d201372d
+pubkey: 5709b556fbbe61ce1a1465996d9bfff34855834037c2fab6b0bbad621b9588fa
+created_at: 1751194148
+kind: 0
+tags: [[expiration, 1751453348], [h, vine]]
+content: {"name": "\u306f\u3053K", "display_name": "\u306f\u3053K", "about": "Rescued Vine creator. Original account: @\u306f\u3053K. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u306f\u3053K.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u306f\u3053K", "nip05": "\u306f\u3053K@vine.openvine.co"}
+sig: 626e827a829d0fe988c7c8d7f153657b46dfc762b8ff23365d0544e0cfc5be9e4227174f3f71fdf128e525dc8375b631f7c75a131b0b2060755451f7ef6c8ffb
+runtimeType: Event
+========================================================================================================================
+
+EVENT 48 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 9a896325fe0bf1eebc7de6bf52a87520fc123c0e1c2c9cfd0e6ffdd7f92b02b8
+pubkey: 3b2545342dd32a403b50a1f7af74e239da6a21c1d11d1a5e0766f40b467e3b3d
+created_at: 1751194146
+kind: 0
+tags: [[expiration, 1751453346], [h, vine]]
+content: {"name": "vine_user_50119atqOIK", "display_name": "vine_user_50119atqOIK", "about": "Rescued Vine creator. Original account: @vine_user_50119atqOIK. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_50119atqOIK.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_50119atqOIK", "nip05": "vine_user_50119atqOIK@vine.openvine.co"}
+sig: e53524d2156be9a2d08000dc9bf7a5463f927849531d4022420eb430723fb592aaf363ca9396f9995eaebc448ed62dbb59842f1f4051536d4527a0a91df84bd3
+runtimeType: Event
+========================================================================================================================
+
+EVENT 49 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 0a2ae918f1bbd8af40bf861dc476b0e8e3e43cdcc64527eb9014a82e0b952688
+pubkey: 9ef823138bb1e9d7ebed38540a9009b5b846e1bd9ddd4a46b329f23b6bbe6b96
+created_at: 1751194145
+kind: 0
+tags: [[expiration, 1751453345], [h, vine]]
+content: {"name": "ig : giacarangii", "display_name": "ig : giacarangii", "about": "Rescued Vine creator. Original account: @ig : giacarangii. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig : giacarangii.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig : giacarangii", "nip05": "ig : giacarangii@vine.openvine.co"}
+sig: 9a9541890c20a747510fe3e51d2b5e760443557b10ad4f9b7704c913c9ab66a628bec06dcf591b9f6620115517c87479e78a68c8b68f24e68d7625862387a150
+runtimeType: Event
+========================================================================================================================
+
+EVENT 50 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 698786330420346147a22ccfff2b7c3b732eafd96cd7ead512a473bde75e7367
+pubkey: 53f710940c2e5449424cc8ba55f00ec5dac2202cf0b9cd297d1a9f8f74e482f2
+created_at: 1751194143
+kind: 0
+tags: [[expiration, 1751453343], [h, vine]]
+content: {"name": "Sora Audios", "display_name": "Sora Audios", "about": "Rescued Vine creator. Original account: @Sora Audios. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Sora Audios.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Sora Audios", "nip05": "Sora Audios@vine.openvine.co"}
+sig: ff6394fd7f8b96310b40261af37b45b8e9129a54ab9f10a86b4dc504cad07b5c0a1edea1aaed70081a09a634180c4698698d2e2cee6ab484cb44ec32f2c22ce4
+runtimeType: Event
+========================================================================================================================
+
+EVENT 51 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 38022449d05fedfb173a75e73142955a729865af8ef047c411e83eb68a18d491
+pubkey: 6a5ef6c8c32924f99c077103a056bba1de9d48aa734cf4b3ae6917ae67f71c29
+created_at: 1751194142
+kind: 0
+tags: [[expiration, 1751453342], [h, vine]]
+content: {"name": "vine_user_5017OEdbJU0", "display_name": "vine_user_5017OEdbJU0", "about": "Rescued Vine creator. Original account: @vine_user_5017OEdbJU0. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5017OEdbJU0.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5017OEdbJU0", "nip05": "vine_user_5017OEdbJU0@vine.openvine.co"}
+sig: c0889c409522040d3857ddb9ea4c608a5476f770f8648a34cc80d63542f478c4804ca76d540f1a1089b33b26fd4706677dc7a00fe8f1dc06b8d714bed924bbb0
+runtimeType: Event
+========================================================================================================================
+
+EVENT 52 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 161469a7ab33b4492844cc5efbbf7496c1627450983ec488e95c1e5b147ff787
+pubkey: 5dd6082f38509599a9ae555507825ca434cd0650d0cfcd9d47ea87c698b9af5e
+created_at: 1751194140
+kind: 0
+tags: [[expiration, 1751453340], [h, vine]]
+content: {"name": "naruto.next.generations", "display_name": "naruto.next.generations", "about": "Rescued Vine creator. Original account: @naruto.next.generations. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_naruto.next.generations.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/naruto.next.generations", "nip05": "naruto.next.generations@vine.openvine.co"}
+sig: e24dafaebb340e21b60f9eccf4e32938abb4f3635db701fa2469d22862b6415393147cc94d282005498050a798260d30e8779fa3b90c03edeae9bf6ef00fe1f1
+runtimeType: Event
+========================================================================================================================
+
+EVENT 53 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 17167b447157e2c49d20d0298e280c03b63481af6b2cb882a759519cc7798c9c
+pubkey: a479998b45d1d9c560706eb366a753bf4d37cbc8a6272b23f3b2a9e6f2534640
+created_at: 1751194139
+kind: 0
+tags: [[expiration, 1751453339], [h, vine]]
+content: {"name": "dyo nuts", "display_name": "dyo nuts", "about": "Rescued Vine creator. Original account: @dyo nuts. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_dyo nuts.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/dyo nuts", "nip05": "dyo nuts@vine.openvine.co"}
+sig: 3f0a9e740e72cda0d5b197b399e004a54723ca7a229d3a4c8fba1f9588cdc6f7e98b3064b8d2a2fedd49e0473dcac81a8d7269ee719496bfca73aec9b537be1e
+runtimeType: Event
+========================================================================================================================
+
+EVENT 54 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 129fa1456ffb1a52a80becffe0b5223096712751f68bd738d29de7f9e0fbedfa
+pubkey: e84da55a34822ea2f352aec98a649ddc01c87700e004cbe8c4dee5195c323eae
+created_at: 1751194137
+kind: 0
+tags: [[expiration, 1751453337], [h, vine]]
+content: {"name": "vine_user_500H3deI1A3", "display_name": "vine_user_500H3deI1A3", "about": "Rescued Vine creator. Original account: @vine_user_500H3deI1A3. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500H3deI1A3.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500H3deI1A3", "nip05": "vine_user_500H3deI1A3@vine.openvine.co"}
+sig: 8002b59b767db23be27d1cb33e83b0a61091a2d1d56fff965b1c794cadfa1dc5d0fdf6869f87d6b36d101b45f84b0242798a89fa72168f3633b38ead75874a49
+runtimeType: Event
+========================================================================================================================
+
+EVENT 55 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: bcb239a0071f84bd4db507673f94ea96fe85a48ac2321c26ab2e9321c9e22f3c
+pubkey: 8d530b8c2fcb6ef130b745981517d03930898b4eb1a1f21f31ecd36f794de35d
+created_at: 1751194135
+kind: 0
+tags: [[expiration, 1751453335], [h, vine]]
+content: {"name": "devon and cody go to whitecastle", "display_name": "devon and cody go to whitecastle", "about": "Rescued Vine creator. Original account: @devon and cody go to whitecastle. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_devon and cody go to whitecastle.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/devon and cody go to whitecastle", "nip05": "devon and cody go to whitecastle@vine.openvine.co"}
+sig: f284c29633a3ffc4943780a1973f6369c893778443c0021e7130e9507f5282ffccce6c03ea36eeeec7e29ba812e381c620cc4d9755a3b7b2bcd7396d041ab346
+runtimeType: Event
+========================================================================================================================
+
+EVENT 56 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 80237c2b13e244f207d20501d49557d483fc96b6a6f71a3bda060b80799b8cd0
+pubkey: d1ffd43fae1ac7f70f91f3da1a0836921697a14579867f57e64beb3faefa550a
+created_at: 1751194134
+kind: 0
+tags: [[expiration, 1751453334], [h, vine]]
+content: {"name": "vine_user_5006Zlnp2i6", "display_name": "vine_user_5006Zlnp2i6", "about": "Rescued Vine creator. Original account: @vine_user_5006Zlnp2i6. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5006Zlnp2i6.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5006Zlnp2i6", "nip05": "vine_user_5006Zlnp2i6@vine.openvine.co"}
+sig: aeaa8935dd0e20af6c7ea5967eeb5fb97e0b854420d048fc10fad1f5086a689066cccfc6f85acf067d45aa14f257b2a56b9ed6047431d9071686c69649280ddc
+runtimeType: Event
+========================================================================================================================
+
+EVENT 57 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 90fa99035199fbc8ab373de2a67ace1e17c9002b31da4f9b3b89a23d72bde543
+pubkey: 0f194c46b71c11b59c5bbe9b3889d9ff16579b76ebe77b442855cf75b90c02ec
+created_at: 1751194132
+kind: 0
+tags: [[expiration, 1751453332], [h, vine]]
+content: {"name": "vine_user_500Ix95KqdM", "display_name": "vine_user_500Ix95KqdM", "about": "Rescued Vine creator. Original account: @vine_user_500Ix95KqdM. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500Ix95KqdM.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500Ix95KqdM", "nip05": "vine_user_500Ix95KqdM@vine.openvine.co"}
+sig: 54fb5b4a4337a073139669add8f4567e6e515b7762ecb12018cc13c20606c38ca3fb7aa79192cdf4b11668fdf662144e0b40145e9a5b72c768e34a674ab1a1fc
+runtimeType: Event
+========================================================================================================================
+
+EVENT 58 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: d6ab1a146a7c28b43a52b48deb539805f0726578bac049b07f82572808a9a338
+pubkey: b35acb7a5ee92f6ec2d29611c1ee2a3cd7a4250ac1b1449b20a06e63522aaf52
+created_at: 1751194131
+kind: 0
+tags: [[expiration, 1751453331], [h, vine]]
+content: {"name": "vine_user_500IgLqH6aK", "display_name": "vine_user_500IgLqH6aK", "about": "Rescued Vine creator. Original account: @vine_user_500IgLqH6aK. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_500IgLqH6aK.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_500IgLqH6aK", "nip05": "vine_user_500IgLqH6aK@vine.openvine.co"}
+sig: 789226e39e5ab47ffea21716e83dbcf6e270a5424df672bf53e05458be89b5c6b51d1ede33f1459829356fcd57a5aa42da3c9666903f7130d322bdf3f5401cce
+runtimeType: Event
+========================================================================================================================
+
+EVENT 59 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 56f2aa1d97b641cdb94cf096f403dd6468442048329c74f9b06e81893cda0c1a
+pubkey: b23f2feabd414d00985311eadad3ed21662601ef32f1a6ebfb7c51d8e884278a
+created_at: 1751194129
+kind: 0
+tags: [[expiration, 1751453329], [h, vine]]
+content: {"name": "vine_user_5013P9e7uOt", "display_name": "vine_user_5013P9e7uOt", "about": "Rescued Vine creator. Original account: @vine_user_5013P9e7uOt. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5013P9e7uOt.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5013P9e7uOt", "nip05": "vine_user_5013P9e7uOt@vine.openvine.co"}
+sig: 7ea27013bf2766f7ae9c7f281ee4a99e223d9fa1bf5e5e5c10715de1c0b9d47a037cac7d263e72a473e1385dc81d75a6940dd1ed7c3a7b06809dbd6d6bdeb107
+runtimeType: Event
+========================================================================================================================
+
+EVENT 60 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 54679c9c246d2ad924780640f7127a67b2f36048ef385088d46a279933a069e7
+pubkey: 855a27fe15694bf5a8b95b3893c4426964df05b89eb7bfc7884710a117075c5e
+created_at: 1751194125
+kind: 0
+tags: [[expiration, 1751453325], [h, vine]]
+content: {"name": "IASH from80s!", "display_name": "IASH from80s!", "about": "Rescued Vine creator. Original account: @IASH from80s!. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_IASH from80s!.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/IASH from80s!", "nip05": "IASH from80s!@vine.openvine.co"}
+sig: 822560d46e5dcaa0367e78e80004f9c2da72f12b939df1c6b6c69ad5b5011f07c4a3f3b1c01d1d1b4e1474757f505a0b43ce51dc17b4435d91eafb431e50483c
+runtimeType: Event
+========================================================================================================================
+
+EVENT 61 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 3efb69f27c6fa9ba1aeae75fb9df7397b75113859decd547fd4ac49917bd4c37
+pubkey: d25b2ac2d2c1494dbb8906705d725c3f90f5ea0a0e153a56f6f6c4cf59c25b5f
+created_at: 1751194123
+kind: 0
+tags: [[expiration, 1751453323], [h, vine]]
+content: {"name": "vine_user_5017LrOpLn9", "display_name": "vine_user_5017LrOpLn9", "about": "Rescued Vine creator. Original account: @vine_user_5017LrOpLn9. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5017LrOpLn9.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5017LrOpLn9", "nip05": "vine_user_5017LrOpLn9@vine.openvine.co"}
+sig: 0b00dbb274864d7402fbf065bf476ab28e1afeae3a3cf14c7c1502a66eb58b42cd9ef0a5835652c8924369644a79800097da0065358f24cc989008cef9530517
+runtimeType: Event
+========================================================================================================================
+
+EVENT 62 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 0419e48cda972cda62016912546e787713d411e3c101bd712d6b7d36faffe384
+pubkey: 71be9492393d48411d3f06b5869fcdf5f709279fbfdf88d977537cd0f37904cc
+created_at: 1751194122
+kind: 0
+tags: [[expiration, 1751453322], [h, vine]]
+content: {"name": "vine_user_5013zDtK1Kl", "display_name": "vine_user_5013zDtK1Kl", "about": "Rescued Vine creator. Original account: @vine_user_5013zDtK1Kl. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5013zDtK1Kl.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5013zDtK1Kl", "nip05": "vine_user_5013zDtK1Kl@vine.openvine.co"}
+sig: 6536b5465a393eebe93f15134d812abc3f365b19cce604d53b65acb3489fd5d4e07c4d2164afd0f35ce0262f10a7f972bb5cf320442565da73898da1670df7bc
+runtimeType: Event
+========================================================================================================================
+
+EVENT 63 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: a97ffcca90dea614bc049801276aae681dc1094ea5afb4f9c17614c989f93a07
+pubkey: aede813d73d84ca5952e4517bcc992d1ef092e7d81404a76ada03713aa806156
+created_at: 1751194120
+kind: 0
+tags: [[expiration, 1751453320], [h, vine]]
+content: {"name": "\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011", "display_name": "\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011", "about": "Rescued Vine creator. Original account: @\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011", "nip05": "\u307f\u304d*\u305f\u307e\u2661\u3010Twitter\u5f15\u7528RT\u00d7\u3011@vine.openvine.co"}
+sig: 52d59609a07b3d333773df908d9920bd3d5f2d073b851f66213790178def183c2829946007ddb9c52d799769f579da0897c9e67f4abff374717d6981ec5b636a
+runtimeType: Event
+========================================================================================================================
+
+EVENT 64 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 8f1f6d93cfe3402271324d2fa1cb531733af0f87ba5b12ae4015588012a42b27
+pubkey: 8879d44ae132f1efbe6d013da234d4ea842971f8cec72c197e831bf283978b6f
+created_at: 1751194119
+kind: 0
+tags: [[expiration, 1751453319], [h, vine]]
+content: {"name": "Emerson & Winston", "display_name": "Emerson & Winston", "about": "Rescued Vine creator. Original account: @Emerson & Winston. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Emerson & Winston.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Emerson & Winston", "nip05": "Emerson & Winston@vine.openvine.co"}
+sig: 768f075ff191ac6ff294b3c6ad9abcf000da0c30acf607a8fede46a084fa8d83bb09f22d2091b4c0730e1268a2e19d1de97117b154693985809336caefa64ea0
+runtimeType: Event
+========================================================================================================================
+
+EVENT 65 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: de502d1b6e68522438935b4cad736acd39bfe44536a1a6adaad6df646389f203
+pubkey: fb9365de296ea3ab9e71ee92163d13e15a0705bf1de83cf188e7ffe407a05b39
+created_at: 1751194117
+kind: 0
+tags: [[expiration, 1751453317], [h, vine]]
+content: {"name": "\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f", "display_name": "\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f", "about": "Rescued Vine creator. Original account: @\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f", "nip05": "\u3074\u3063\u3074\uff8e\uff97\uff70\u7279\u96c6\u3060\u304b\u3089\u30b0\u30f3\u3061\u3083\u3093\u3074\u306a\u306e\uff1f@vine.openvine.co"}
+sig: 708437838c34cf130a322a06647bdb21f22f15d8f9942fc99d68876f77b7101730a1cc34e5dda5571781922c4b9fa81d271f6b17bd63f82ad01d3a970408af2a
+runtimeType: Event
+========================================================================================================================
+
+EVENT 66 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 315ff239961582acac3768b1c4ecc3bbb66c839adde08928ecb4ad66f6b5e0d7
+pubkey: b22f8bd4c0b419dda4a96a065c3ba67fabc41d3a1e04472d1b5ed6f02028d8c0
+created_at: 1751194116
+kind: 0
+tags: [[expiration, 1751453316], [h, vine]]
+content: {"name": "vine_user_5013aqUOQjB", "display_name": "vine_user_5013aqUOQjB", "about": "Rescued Vine creator. Original account: @vine_user_5013aqUOQjB. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5013aqUOQjB.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5013aqUOQjB", "nip05": "vine_user_5013aqUOQjB@vine.openvine.co"}
+sig: 2dcbc5c0f983bc7217dbf8317bdb7c1a33519737d2e6a2fd0a10f8c1a7925a73b01022d0fb814609f0bda51fdad4157fba7d861bffc435b72575818ef3728520
+runtimeType: Event
+========================================================================================================================
+
+EVENT 67 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 727b7b2848ab7a864e80add763634175facb273368cd334b11be593e40c85a2e
+pubkey: e986c25f9f72ea3e0505f9477c0a80f768e02b2de02285837d977aba0076acc5
+created_at: 1751194114
+kind: 0
+tags: [[expiration, 1751453314], [h, vine]]
+content: {"name": "\u00c7orlu Trv D\u00fcnya", "display_name": "\u00c7orlu Trv D\u00fcnya", "about": "Rescued Vine creator. Original account: @\u00c7orlu Trv D\u00fcnya. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u00c7orlu Trv D\u00fcnya.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u00c7orlu Trv D\u00fcnya", "nip05": "\u00c7orlu Trv D\u00fcnya@vine.openvine.co"}
+sig: 561450d50725b9c413a8670d92e860cf545ae917f626e83768785981b84e8b7f8512a070a7394f88f5cabb6ece2e0dba88261cabac1daf7f5e5cef7cc46ef0b3
+runtimeType: Event
+========================================================================================================================
+
+EVENT 68 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 034fcd98f08c24d1992b841f0df7ea8f8b0662a197d3a2cf5318cfab5809f2e4
+pubkey: 7315bc913fb1ca2018eceb040393895cdb0e4c96d1f1ece54920b28b9b72b772
+created_at: 1751194113
+kind: 0
+tags: [[expiration, 1751453313], [h, vine]]
+content: {"name": "vine_user_5012hgPjxQZ", "display_name": "vine_user_5012hgPjxQZ", "about": "Rescued Vine creator. Original account: @vine_user_5012hgPjxQZ. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_5012hgPjxQZ.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_5012hgPjxQZ", "nip05": "vine_user_5012hgPjxQZ@vine.openvine.co"}
+sig: a5caf460b26e16830f70b66982e6ca1c272d3ea4d8187ec3a83c8e92d054b2eee381f6f02a1b2224d0a95fa200cb44034c0d69adcb7eb3a19666047e87f68075
+runtimeType: Event
+========================================================================================================================
+
+EVENT 69 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 4cbb154da167d26f8e1783f56a309f17ca7e962f5bad67f449a84da9e06812c2
+pubkey: 95b50aab1966cbbaa39aec6e02965eab31ae1fbb02d4068552e06b8e32936730
+created_at: 1751194111
+kind: 0
+tags: [[expiration, 1751453311], [h, vine]]
+content: {"name": "c0----------j", "display_name": "c0----------j", "about": "Rescued Vine creator. Original account: @c0----------j. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_c0----------j.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/c0----------j", "nip05": "c0----------j@vine.openvine.co"}
+sig: bd1871dc904f5dddf9f8dc1570fea534e0e5186fa81f1a708780c6c046e2b3c088619136847e66d8f2944ae997caa5f2325eeb56243ddd8b0fa3f1a7f5986af6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 70 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: f214371fcfeed750c26604060c9e6ab89286489605a1ecd9691185b83abde3bb
+pubkey: 200b350c1d1a74cc0f04843bc0f01e3b909e52e3838305a2d7ea7a135ff89996
+created_at: 1751194109
+kind: 0
+tags: [[expiration, 1751453309], [h, vine]]
+content: {"name": "unknown_user", "display_name": "unknown_user", "about": "Rescued Vine creator. Original account: @unknown_user. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_unknown_user.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/unknown_user", "nip05": "unknown_user@vine.openvine.co"}
+sig: a90b49057bfa4bccb8c024273ca1363793bdaf8a534f2003e5fc68d2181fcac7f6db0f78863aad75302d4fd5935cb47f78f82db976e8f7ae6388732b661b59a7
+runtimeType: Event
+========================================================================================================================
+
+EVENT 71 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 856dc7fc8b945e617899e1ba4916527ed72660acafc13ddeb2d09d8aee37bc00
+pubkey: 6f166f5ea3d6c791dc7f78c7ff30ef0ec215a71563f34e5a7af2abbee2673837
+created_at: 1751194108
+kind: 0
+tags: [[expiration, 1751453308], [h, vine]]
+content: {"name": "Malikah", "display_name": "Malikah", "about": "Rescued Vine creator. Original account: @Malikah. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Malikah.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Malikah", "nip05": "Malikah@vine.openvine.co"}
+sig: fe86d01eb63db2660c437bb8caca4e19cb127f578c6268e661399a523c67832eead9110a7882c8e6013cf43ac22f85b747440989859ecc725e47a81f341daa4e
+runtimeType: Event
+========================================================================================================================
+
+EVENT 72 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: d5d1c2ecca4dc73ed21fa7d7a668f966acc85205306e8a56743d1d7c331205a4
+pubkey: 08d98aa8801b112ebdf6a95cc47cc33719abc7fbc7e9bb1e01bc218fd680dd27
+created_at: 1751194106
+kind: 0
+tags: [[expiration, 1751453306], [h, vine]]
+content: {"name": "\u0646\u0648\u0641 \u0633\u0639\u062f \u2728", "display_name": "\u0646\u0648\u0641 \u0633\u0639\u062f \u2728", "about": "Rescued Vine creator. Original account: @\u0646\u0648\u0641 \u0633\u0639\u062f \u2728. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u0646\u0648\u0641 \u0633\u0639\u062f \u2728.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u0646\u0648\u0641 \u0633\u0639\u062f \u2728", "nip05": "\u0646\u0648\u0641 \u0633\u0639\u062f \u2728@vine.openvine.co"}
+sig: 7141e44d13d0d782b67e7107f0330bb68a267a333637464c080dda40e59ac096a4d7e7db17f490c3eaf8ee422c878a9fb03eb170c109d983962d3c1f5bea660e
+runtimeType: Event
+========================================================================================================================
+
+EVENT 73 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 7dd3b510cfd3dec8171765ab66ee74c95e6cec93d3832e09e43deb80bca692d4
+pubkey: 5fa5558c267f390a93dc7403f5260b7a21c6b9d4a4cd75cec3b66f400f4955f9
+created_at: 1751194102
+kind: 0
+tags: [[expiration, 1751453302], [h, vine]]
+content: {"name": "[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine", "display_name": "[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine", "about": "Rescued Vine creator. Original account: @[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine", "nip05": "[~\u2022M\u20actt@t\u00f8n|D@r\u0142!ng\u2022~]#SaveVine@vine.openvine.co"}
+sig: 97819d3ffd484292e0f29695480e6a274ca9c8571f4568f67824300d8fcde4c42460e8e5b6117b43654bc7d28319c2a8998312e933cf55e9fbbf9091f38bd2b2
+runtimeType: Event
+========================================================================================================================
+
+EVENT 74 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: d08c8aa001acc20111ad5d57866b6c2e4d413e5a0cb88c7b72e944350df30df3
+pubkey: 802ccecd411583bf2a13b457b1e10d99f3d6f2e440e0245c48547971fd4fff29
+created_at: 1751194100
+kind: 0
+tags: [[expiration, 1751453300], [h, vine]]
+content: {"name": "shinyas.lattes // tetskurooya", "display_name": "shinyas.lattes // tetskurooya", "about": "Rescued Vine creator. Original account: @shinyas.lattes // tetskurooya. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_shinyas.lattes // tetskurooya.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/shinyas.lattes // tetskurooya", "nip05": "shinyas.lattes // tetskurooya@vine.openvine.co"}
+sig: 3a5270314486403b1ff9de564456a03e83ce6d8ea5db45f0dcb9f2af60b22962279e9195313a2dddf7b2b05a02988db54cfba3776d91d3fbbb4284ef1ab42513
+runtimeType: Event
+========================================================================================================================
+
+EVENT 75 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: ad875967a92bf5e946576c33f7201aa81894ee423c6a82b7c5abb0c8b67aa72e
+pubkey: 3e6fe11b178ee35586e60d63700fe54ad12013a6cce57734cf00958cc37b9fa1
+created_at: 1751194039
+kind: 0
+tags: [[expiration, 1751453239], [h, vine]]
+content: {"name": "Kenneth Udut", "display_name": "Kenneth Udut", "about": "Rescued Vine creator. Original account: @Kenneth Udut. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Kenneth Udut.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Kenneth Udut", "nip05": "Kenneth Udut@vine.openvine.co"}
+sig: f4d9dfb5a16473e79f7db7dca344849f067b903070cc25ecb7572977715cd2ffe4885baffe7e5367984e00e0fde68c7d53dfbbde18067d0dc3df38c3631f17bd
+runtimeType: Event
+========================================================================================================================
+
+EVENT 76 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 90d867010443d370c9d95e6071e316fc415dc011640dc97d21a90a4189eaccfa
+pubkey: 01a2c687ac46d8317662df59880c6002fb83b1f2cdad1eb5c3c860c97bc73a78
+created_at: 1751100977
+kind: 0
+tags: [[h, vine], [expiration, 1751360177]]
+content: {"name": "Aydengamrtube", "display_name": "Aydengamrtube", "about": "Rescued Vine creator. Original account: @Aydengamrtube. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Aydengamrtube.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Aydengamrtube", "nip05": "Aydengamrtube@vine.openvine.co"}
+sig: 13d2a9cb372e42a4646d28277a592b31449b18e8d55e2ea9e3389955c0c9bb2a4d3ed5dc44c624a94827fdf596045139b60082c939d0f8d1c2708bf1279984b0
+runtimeType: Event
+========================================================================================================================
+
+EVENT 77 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 9aa32b5d7473f196af0b4acc6531e16698f34aba224d19a36ef706d953bf4fc7
+pubkey: b87a5720ad9ee055529fb99d26c23bb07040ecc4e7646f7bd1d0a5263ff64d91
+created_at: 1751099957
+kind: 0
+tags: [[h, vine], [expiration, 1751359157]]
+content: {"name": "MIIII", "display_name": "MIIII", "about": "Rescued Vine creator. Original account: @MIIII. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_MIIII.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/MIIII", "nip05": "MIIII@vine.openvine.co"}
+sig: 8b2bcd153ea801e1a18108a09661474c8f3e44a35447fe2aee8624c466c317c6df29b7214d6cf0f8b47bcccf3174bc91f64df1cdf0e5aff115540fac2e71351d
+runtimeType: Event
+========================================================================================================================
+
+EVENT 78 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: bf73544dc193d4418c4d7f6a146a5398ed5e92f1a13533132e510d48cdec9192
+pubkey: 512fc347f1de286bd9b479689d5b46dc26d23aba863f5bc4f7a5b98fc65afae2
+created_at: 1751098901
+kind: 0
+tags: [[h, vine], [expiration, 1751358101]]
+content: {"name": "\u00d7Anim3 Bagel\u00d7", "display_name": "\u00d7Anim3 Bagel\u00d7", "about": "Rescued Vine creator. Original account: @\u00d7Anim3 Bagel\u00d7. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u00d7Anim3 Bagel\u00d7.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u00d7Anim3 Bagel\u00d7", "nip05": "\u00d7Anim3 Bagel\u00d7@vine.openvine.co"}
+sig: fc23ab2d90fa5f78eeb9fd7698c0575da944d07e89262bdaa437c5e50029fcfd93c64d29b1a5983d4264d4ae297d06c2a5eae610f9b86e7029db908c724eaec2
+runtimeType: Event
+========================================================================================================================
+
+EVENT 79 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: da1395e1a58218c5e456fde25ec45580e23df1aab1c33d6912f3f091519204f5
+pubkey: 18cf9f4bc547541f45a5cbe370851ddb63592ae7446570435865816be5a21dbd
+created_at: 1751098811
+kind: 0
+tags: [[h, vine], [expiration, 1751358011]]
+content: {"name": "vine_user_OanlA21IZ20", "display_name": "vine_user_OanlA21IZ20", "about": "Rescued Vine creator. Original account: @vine_user_OanlA21IZ20. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_vine_user_OanlA21IZ20.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/vine_user_OanlA21IZ20", "nip05": "vine_user_OanlA21IZ20@vine.openvine.co"}
+sig: a580dea541c5bea9ac367e908ae9bcc91e2b4f2dd30e57039baa4ffee0035908229694aa407a1dbd574a138bac4659b44ab14298c14ac7b565c9d2b14815c165
+runtimeType: Event
+========================================================================================================================
+
+EVENT 80 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: ccdb5f0e7400bf25e48800cd9fb0c330c19fb85b343db010ac1c156cd5a6f678
+pubkey: 63df89f95a64f66dc878cb5ca6368d465e108fd38c6c2778d547569410f90047
+created_at: 1751098396
+kind: 0
+tags: [[h, vine], [expiration, 1751357596]]
+content: {"name": "ig: JEDRLEE", "display_name": "ig: JEDRLEE", "about": "Rescued Vine creator. Original account: @ig: JEDRLEE. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig: JEDRLEE.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig: JEDRLEE", "nip05": "ig: JEDRLEE@vine.openvine.co"}
+sig: 46402b475075ddad63b6b1215c36e50debb2861f44ecfddb882037e6d8c6e8bf64ee504d9e8b91c6c9968c96c205ae7984b63f244e279ecbe29164990134aa6f
+runtimeType: Event
+========================================================================================================================
+
+EVENT 81 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: 8056f9c9cd78e89f518eefee9685d1fe8c09135d741e50e31db29f7f712634a6
+pubkey: 149da0259c9bab4f140888e6a44ad96de2c5d85d4cffbb549d36cb0c27ece662
+created_at: 1751098142
+kind: 0
+tags: [[h, vine], [expiration, 1751357342]]
+content: {"name": "Romtom410", "display_name": "Romtom410", "about": "Rescued Vine creator. Original account: @Romtom410. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_Romtom410.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/Romtom410", "nip05": "Romtom410@vine.openvine.co"}
+sig: 1e524b12c7df237c0cea239426ae5bc08c1bb3ff8743955faf05d81b5e5afe7586f3ca567ed915e2905d733296dfca9f650bb3bfdfe65f3337ab15abfd9eac8c
+runtimeType: Event
+========================================================================================================================
+
+EVENT 82 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: a82aaf5ab69cbd785e10b9aed7fc473f8c120a13d3a1e95c82ff27281d3239d0
+pubkey: e4965630c4e066fbe30b4e3563302fdf97350a197cd5d31cb32e05affbdf035a
+created_at: 1751097855
+kind: 0
+tags: [[h, vine], [expiration, 1751357055]]
+content: {"name": "ig : mysticalwanheda", "display_name": "ig : mysticalwanheda", "about": "Rescued Vine creator. Original account: @ig : mysticalwanheda. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_ig : mysticalwanheda.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/ig : mysticalwanheda", "nip05": "ig : mysticalwanheda@vine.openvine.co"}
+sig: a94f6e9a5fecb25faccd7118e498c0283a3110cef494ac8399f70ab7417e060cae8bec38dc57b47b20b46fe4ceb593a6928c1829fd1d6fc86fb8c7e9a6efcef6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 83 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: bd16af12afeae376e4ed79e9f08560160c10efdf9a299c64c7f275cdedea6b66
+pubkey: fc21bfe8d4a47a47953cac52d8b7bf6136d0bcf7064c21643eba29f24ac20a00
+created_at: 1751097706
+kind: 0
+tags: [[h, vine], [expiration, 1751356906]]
+content: {"name": "earth angel", "display_name": "earth angel", "about": "Rescued Vine creator. Original account: @earth angel. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_earth angel.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/earth angel", "nip05": "earth angel@vine.openvine.co"}
+sig: d770662e05cd9b88270eed8efb5d04aa37302c46b339e7508e39f77393f907301c9f022a2ad051a00174b7ad4c6e884beec0d0de9a0443977d7c9451b94838f6
+runtimeType: Event
+========================================================================================================================
+
+EVENT 84 of 84:
+COMPLETE EVENT SERIALIZATION:
+event.toString(): Instance of 'Event'
+id: af7410696dfd51fa3a0a9b6de76ae83319a6a8f94d8eccda4e32ff5f7bbf02a6
+pubkey: 19043b858be27fb4671f441a2259290a8785df2f3b30b5ad369180456503e20b
+created_at: 1751097636
+kind: 0
+tags: [[h, vine], [expiration, 1751356836]]
+content: {"name": "\u21a0lonelyaudios\u219e", "display_name": "\u21a0lonelyaudios\u219e", "about": "Rescued Vine creator. Original account: @\u21a0lonelyaudios\u219e. Preserving archived Vines on Nostr. If you are the original creator, please contact us to claim this account!", "picture": "https://api.openvine.co/static/avatars/vine_\u21a0lonelyaudios\u219e.jpg", "banner": "https://api.openvine.co/static/banners/vine_archive.jpg", "website": "https://openvine.co/vine/\u21a0lonelyaudios\u219e", "nip05": "\u21a0lonelyaudios\u219e@vine.openvine.co"}
+sig: fc3d154d06bca06e4000632d5d2c2dc70b65a2aa4dcad013b3aa47f5b14d697e0c4dbd0df913477315e7f7d34556eef38f1e67e233838aecc28aae04f4c0cbbc
+runtimeType: Event
+========================================================================================================================

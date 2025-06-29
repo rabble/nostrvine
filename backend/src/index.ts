@@ -23,6 +23,9 @@ import { handleBatchVideoLookup, handleBatchVideoOptions } from './handlers/batc
 // Analytics service
 import { VideoAnalyticsService } from './services/analytics';
 
+// Thumbnail service
+import { ThumbnailService } from './services/ThumbnailService';
+
 // Feature flags
 import {
   handleListFeatureFlags,
@@ -269,6 +272,82 @@ export default {
 				return wrapResponse(Promise.resolve(handleFeatureFlagsOptions()));
 			}
 
+			// Thumbnail endpoints
+			if (pathname.startsWith('/thumbnail/') && method === 'GET') {
+				const videoId = pathname.split('/thumbnail/')[1].split('?')[0];
+				const thumbnailService = new ThumbnailService(env);
+				
+				// Parse query parameters
+				const url = new URL(request.url);
+				const options = {
+					size: url.searchParams.get('size') as 'small' | 'medium' | 'large' | undefined,
+					timestamp: parseInt(url.searchParams.get('t') || '1'),
+					format: url.searchParams.get('format') as 'jpg' | 'webp' | undefined
+				};
+				
+				return thumbnailService.getThumbnail(videoId, options);
+			}
+
+			if (pathname.startsWith('/thumbnail/') && pathname.endsWith('/upload') && method === 'POST') {
+				const videoId = pathname.split('/thumbnail/')[1].split('/upload')[0];
+				const thumbnailService = new ThumbnailService(env);
+				
+				// Get thumbnail data from request
+				const formData = await request.formData();
+				const thumbnailFile = formData.get('thumbnail');
+				
+				if (!thumbnailFile || !(thumbnailFile instanceof File)) {
+					return new Response(JSON.stringify({ error: 'No thumbnail file provided' }), {
+						status: 400,
+						headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+					});
+				}
+				
+				const thumbnailBuffer = await thumbnailFile.arrayBuffer();
+				const format = thumbnailFile.type === 'image/webp' ? 'webp' : 'jpg';
+				
+				const thumbnailUrl = await thumbnailService.uploadCustomThumbnail(videoId, thumbnailBuffer, format);
+				
+				return new Response(JSON.stringify({ 
+					success: true,
+					thumbnailUrl 
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*'
+					}
+				});
+			}
+
+			if (pathname.startsWith('/thumbnail/') && pathname.endsWith('/list') && method === 'GET') {
+				const videoId = pathname.split('/thumbnail/')[1].split('/list')[0];
+				const thumbnailService = new ThumbnailService(env);
+				const thumbnails = await thumbnailService.listThumbnails(videoId);
+				
+				return new Response(JSON.stringify({
+					videoId,
+					thumbnails,
+					count: thumbnails.length
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+						'Cache-Control': 'public, max-age=300' // 5 minutes
+					}
+				});
+			}
+
+			if (pathname.startsWith('/thumbnail/') && method === 'OPTIONS') {
+				return new Response(null, {
+					status: 200,
+					headers: {
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+						'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+					}
+				});
+			}
+
 			// Video metadata endpoints
 			if (pathname === '/v1/media/list' && method === 'GET') {
 				return handleVideoList(request, env);
@@ -406,6 +485,9 @@ export default {
 					'/v1/media/webhook (Legacy)',
 					'/api/upload (NIP-96)',
 					'/api/status/{jobId}',
+					'/thumbnail/{videoId} (Get/generate thumbnail)',
+					'/thumbnail/{videoId}/upload (Upload custom thumbnail)',
+					'/thumbnail/{videoId}/list (List available thumbnails)',
 					'/health',
 					'/media/{fileId}'
 				]

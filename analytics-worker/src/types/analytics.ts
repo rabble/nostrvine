@@ -4,6 +4,9 @@
 export interface ViewData {
   count: number;
   lastUpdate: number; // timestamp
+  hashtags?: string[]; // Hashtags associated with this video
+  creatorPubkey?: string; // Creator's public key
+  title?: string; // Video title for display
   // Future: could add hourly buckets for trend calculation
 }
 
@@ -25,6 +28,8 @@ export interface ViewRequest {
   eventId: string;
   source?: 'web' | 'mobile' | 'api';
   creatorPubkey?: string; // Optional: track creator metrics
+  hashtags?: string[]; // Video hashtags for trending calculation
+  title?: string; // Video title
   // Future: could add optional userId for opt-in personalization
 }
 
@@ -46,7 +51,28 @@ export interface TrendingCreator {
 
 export interface AnalyticsEnv {
   ANALYTICS_KV: KVNamespace;
+  ANALYTICS_DB?: D1Database; // Optional until we set it up
   ENVIRONMENT: string;
   TRENDING_UPDATE_INTERVAL: string;
   MIN_VIEWS_FOR_TRENDING: string;
+}
+
+// Time window analytics
+export interface TimeWindowStats {
+  eventId: string;
+  views1h: number;
+  views6h: number;
+  views24h: number;
+  views7d: number;
+  views30d: number;
+  velocityScore: number;
+}
+
+// Hashtag trending data
+export interface HashtagTrending {
+  hashtag: string;
+  timeframe: '1h' | '6h' | '24h' | '7d' | '30d';
+  videoCount: number;
+  totalViews: number;
+  topVideos: TrendingVideo[];
 }

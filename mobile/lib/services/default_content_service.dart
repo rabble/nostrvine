@@ -56,7 +56,7 @@ class DefaultContentService {
       content: 'Rabble on Twitter',
       title: 'Are we the bad guys?',
       videoUrl: 'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4',
-      thumbnailUrl: 'https://picsum.photos/640/480?random=1',
+      thumbnailUrl: null, // No more fake thumbnails - use video icon placeholder
       duration: 3,
       dimensions: '1920x1080',
       mimeType: 'video/mp4',

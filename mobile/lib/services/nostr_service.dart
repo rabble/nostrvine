@@ -2,6 +2,8 @@
 // ABOUTME: Combines best features of v1 and v2 - SDK reliability with custom relay management
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/event.dart';
@@ -101,11 +103,20 @@ class NostrService extends ChangeNotifier implements INostrService {
     }
     
     try {
-      // Initialize connection service
-      await _connectionService.initialize();
+      // Initialize connection service with web-specific error handling
+      if (kIsWeb) {
+        try {
+          await _connectionService.initialize();
+        } catch (e) {
+          Log.warning('⚠️ Connection service init failed on web (expected): $e', category: LogCategory.relay);
+          // On web, assume we're online and continue
+        }
+      } else {
+        await _connectionService.initialize();
+      }
       
-      // Check connectivity
-      if (!_connectionService.isOnline) {
+      // Check connectivity (skip on web where connectivity check might fail)
+      if (!kIsWeb && !_connectionService.isOnline) {
         Log.warning('⚠️ Device appears to be offline', category: LogCategory.relay);
         throw NostrServiceException('Device is offline');
       }
@@ -163,10 +174,20 @@ class NostrService extends ChangeNotifier implements INostrService {
         },
       );
       
-      // Add relays - let SDK handle all connection management
+      // Add relays - configure authentication FIRST, then connect
       for (final relayUrl in relaysToConnect) {
         try {
           final relay = RelayBase(relayUrl, sdk.RelayStatus(relayUrl));
+          
+          // Configure vine.hol.is for NIP-42 authentication BEFORE connecting
+          if (relayUrl == 'wss://vine.hol.is') {
+            // First add the relay to the pool without connecting
+            await _nostrClient!.relayPool.add(relay, autoSubscribe: false, init: false);
+            // Then configure authentication
+            _nostrClient!.relayPool.setRelayAlwaysAuth(relayUrl, true);
+            Log.info('🔐 Pre-configured vine.hol.is for NIP-42 authentication', name: 'NostrService', category: LogCategory.relay);
+          }
+          
           final success = await _nostrClient!.addRelay(relay, autoSubscribe: true);
           if (success) {
             _connectedRelays.add(relayUrl);
@@ -194,6 +215,8 @@ class NostrService extends ChangeNotifier implements INostrService {
         Log.debug('Post-AUTH relay status for ${relay.url}:', name: 'NostrService', category: LogCategory.relay);
         Log.info('  - Connected: ${relay.relayStatus.connected == ClientConneccted.CONNECTED}', name: 'NostrService', category: LogCategory.relay);
         Log.debug('  - Authed: ${relay.relayStatus.authed}', name: 'NostrService', category: LogCategory.relay);
+        Log.debug('  - AlwaysAuth: ${relay.relayStatus.alwaysAuth}', name: 'NostrService', category: LogCategory.relay);
+        Log.debug('  - Pending authed messages: ${relay.pendingAuthedMessages.length}', name: 'NostrService', category: LogCategory.relay);
         Log.debug('  - Read access: ${relay.relayStatus.readAccess}', name: 'NostrService', category: LogCategory.relay);
         Log.debug('  - Write access: ${relay.relayStatus.writeAccess}', name: 'NostrService', category: LogCategory.relay);
       }
@@ -235,7 +258,7 @@ class NostrService extends ChangeNotifier implements INostrService {
     final sdkSubId = _nostrClient!.subscribe(
       sdkFilters,
       (Event event) {
-        Log.debug('� Received event in NostrServiceV2 callback: kind=${event.kind}, id=${event.id.substring(0, 8)}...', name: 'NostrService', category: LogCategory.relay);
+        Log.verbose('� Received event in NostrServiceV2 callback: kind=${event.kind}, id=${event.id.substring(0, 8)}...', name: 'NostrService', category: LogCategory.relay);
         // Forward events to our stream
         controller.add(event);
       },
@@ -271,11 +294,100 @@ class NostrService extends ChangeNotifier implements INostrService {
       throw NostrServiceException('NostrService not initialized or no keys available');
     }
     
+    Log.info('📤 Broadcasting event:', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Event ID: ${event.id}', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Kind: ${event.kind}', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Pubkey: ${event.pubkey.substring(0, 8)}...', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Content: ${event.content.substring(0, math.min(100, event.content.length))}...', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Created at: ${event.createdAt}', name: 'NostrService', category: LogCategory.relay);
+    Log.info('  - Tags: ${event.tags}', name: 'NostrService', category: LogCategory.relay);
+    
+    // CRITICAL DEBUG: Log the exact JSON that will be sent to the relay
+    final eventJson = event.toJson();
+    Log.info('🔍 WEBSOCKET EVENT JSON being sent to relay:', name: 'NostrService', category: LogCategory.relay);
+    Log.info('   Raw JSON: $eventJson', name: 'NostrService', category: LogCategory.relay);
+    
+    // DEBUG: Verify event JSON structure
+    print("🔍 DEBUG: Event toJson() type: ${eventJson.runtimeType}");
+    
+    // Verify event data types
+    try {
+      assert(eventJson['id'] is String, 'id must be String, got ${eventJson['id'].runtimeType}');
+      assert(eventJson['pubkey'] is String, 'pubkey must be String, got ${eventJson['pubkey'].runtimeType}');
+      assert(eventJson['created_at'] is int, 'created_at must be int, got ${eventJson['created_at'].runtimeType}');
+      assert(eventJson['kind'] is int, 'kind must be int, got ${eventJson['kind'].runtimeType}');
+      assert(eventJson['tags'] is List, 'tags must be List, got ${eventJson['tags'].runtimeType}');
+      assert(eventJson['content'] is String, 'content must be String, got ${eventJson['content'].runtimeType}');
+      assert(eventJson['sig'] is String, 'sig must be String, got ${eventJson['sig'].runtimeType}');
+      
+      // Check tags structure
+      for (var i = 0; i < eventJson['tags'].length; i++) {
+        var tag = eventJson['tags'][i];
+        assert(tag is List, 'Tag $i must be List, got ${tag.runtimeType}');
+        for (var j = 0; j < tag.length; j++) {
+          var item = tag[j];
+          assert(item is String, 'Tag $i item $j must be String, got ${item.runtimeType}: $item');
+        }
+      }
+      
+      print("✅ Event data types are correct");
+    } catch (e) {
+      print("❌ ERROR: Event data type validation failed: $e");
+    }
+    
+    try {
+      final testJson = jsonEncode(eventJson);
+      print("🔍 DEBUG: Event JSON-encodes successfully to: ${testJson.substring(0, math.min(200, testJson.length))}...");
+    } catch (e) {
+      print("❌ ERROR: Event cannot be JSON-encoded: $e");
+    }
+    
+    // Also log as EVENT message format that goes over WebSocket
+    final eventMessage = ['EVENT', eventJson];
+    Log.info('🔍 WEBSOCKET MESSAGE FORMAT being sent:', name: 'NostrService', category: LogCategory.relay);
+    Log.info('   WebSocket Message: $eventMessage', name: 'NostrService', category: LogCategory.relay);
+    
+    // CRITICAL: Check if signature is getting corrupted
+    print('🔍 SIGNATURE CORRUPTION CHECK:');
+    print('   Original event.sig: ${event.sig}');
+    print('   EventJson["sig"]: ${eventJson["sig"]}');
+    final eventMessageData = eventMessage[1] as Map<String, dynamic>;
+    print('   In eventMessage[1]["sig"]: ${eventMessageData["sig"]}');
+    if (event.sig != eventJson["sig"]) {
+      print('❌ SIGNATURE MISMATCH: event.sig != eventJson["sig"]');
+    } else {
+      print('✅ Signatures match between event and eventJson');
+    }
+    
+    // DEBUG: Verify complete message can be JSON encoded
+    print("🔍 DEBUG: Complete message structure: $eventMessage");
+    print("🔍 DEBUG: Message[0] type: ${eventMessage[0].runtimeType}");
+    print("🔍 DEBUG: Message[1] type: ${eventMessage[1].runtimeType}");
+    try {
+      final testJson = jsonEncode(eventMessage);
+      print("🔍 DEBUG: Complete message JSON-encodes successfully");
+    } catch (e) {
+      print("❌ ERROR: Complete message cannot be JSON-encoded: $e");
+    }
+    
     try {
       // Sign and send event using SDK
+      Log.info('🔏 Signing and sending event to ${_connectedRelays.length} relays...', name: 'NostrService', category: LogCategory.relay);
+      
+      // DEBUG: Check which relay type is being used
+      final relays = _nostrClient!.activeRelays();
+      for (final relay in relays) {
+        print("🔍 DEBUG: Relay type: ${relay.runtimeType}");
+        print("🔍 DEBUG: Relay URL: ${relay.url}");
+      }
+      
       final sentEvent = await _nostrClient!.sendEvent(event);
       
       if (sentEvent != null) {
+        Log.info('✅ Event broadcast successful:', name: 'NostrService', category: LogCategory.relay);
+        Log.info('  - Sent event ID: ${sentEvent.id}', name: 'NostrService', category: LogCategory.relay);
+        Log.info('  - Sent to relays: $_connectedRelays', name: 'NostrService', category: LogCategory.relay);
+        
         // SDK doesn't provide per-relay results, so we'll assume success
         final results = <String, bool>{};
         final errors = <String, String>{};
@@ -292,10 +404,11 @@ class NostrService extends ChangeNotifier implements INostrService {
           errors: errors,
         );
       } else {
+        Log.error('❌ sendEvent returned null', name: 'NostrService', category: LogCategory.relay);
         throw NostrServiceException('Failed to broadcast event');
       }
     } catch (e) {
-      Log.error('Error broadcasting event: $e', name: 'NostrService', category: LogCategory.relay);
+      Log.error('❌ Error broadcasting event: $e', name: 'NostrService', category: LogCategory.relay);
       rethrow;
     }
   }

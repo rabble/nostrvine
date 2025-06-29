@@ -14,6 +14,7 @@ import '../services/nostr_service_interface.dart';
 import '../services/direct_upload_service.dart';
 import '../services/nip05_service.dart';
 import '../utils/unified_logger.dart';
+import '../utils/async_utils.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final bool isNewUser;
@@ -108,9 +109,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Form(
               key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Text(
                     widget.isNewUser 
                         ? 'Welcome to OpenVine!'
@@ -500,7 +502,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ),
                 
-                const Spacer(),
+                const SizedBox(height: 32),
 
                 // Nostr explanation for new users
                 if (widget.isNewUser)
@@ -605,6 +607,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ),
                 ],
+                ),
               ),
             ),
           ),
@@ -614,7 +617,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Future<void> _publishProfile() async {
+    Log.info('🚀 Starting profile publish...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+    
     if (!_formKey.currentState!.validate()) {
+      Log.warning('Form validation failed', name: 'ProfileSetupScreen', category: LogCategory.ui);
       return;
     }
 
@@ -625,6 +631,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     try {
       final authService = context.read<AuthService>();
       final nostrService = context.read<INostrService>();
+      final userProfileService = context.read<UserProfileService>();
+      
+      Log.info('Auth status: isAuthenticated=${authService.isAuthenticated}, publicKey=${authService.currentPublicKeyHex != null}', 
+               name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('NostrService status: isInitialized=${nostrService.isInitialized}, connectedRelays=${nostrService.connectedRelays.length}', 
+               name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      // Log existing profile before update
+      final currentPubkey = authService.currentPublicKeyHex!;
+      final existingProfile = userProfileService.getCachedProfile(currentPubkey);
+      if (existingProfile != null) {
+        Log.info('📋 Existing profile before update:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - name: ${existingProfile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - displayName: ${existingProfile.displayName}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - about: ${existingProfile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - picture: ${existingProfile.picture}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - eventId: ${existingProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      } else {
+        Log.info('📋 No existing profile found for ${currentPubkey.substring(0, 8)}...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
       
       // Create profile metadata
       final profileData = <String, dynamic>{
@@ -638,6 +664,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (_pictureController.text.trim().isNotEmpty) {
         profileData['picture'] = _pictureController.text.trim();
       }
+      
+      Log.info('📝 Profile data to publish:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - name: ${profileData['name']}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - about: ${profileData['about'] ?? 'not set'}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - picture: ${profileData['picture'] ?? 'not set'}', name: 'ProfileSetupScreen', category: LogCategory.ui);
       
       // Handle NIP-05 registration if username provided
       String? nip05Identifier;
@@ -665,18 +696,34 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
 
       // Create NIP-01 kind 0 profile event
+      Log.info('🔨 Creating kind 0 event...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
       final event = await authService.createAndSignEvent(
         kind: 0,
         content: jsonEncode(profileData),
       );
       
       if (event == null) {
+        Log.error('❌ Failed to create profile event - createAndSignEvent returned null', name: 'ProfileSetupScreen', category: LogCategory.ui);
         throw Exception('Failed to create profile event');
       }
 
+      // Log the created event
+      Log.info('✅ Created kind 0 event:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Event ID: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Pubkey: ${event.pubkey}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Kind: ${event.kind}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Content: ${event.content}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Created at: ${event.createdAt}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Signature: ${event.sig}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('  - Tags: ${event.tags}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      // Check if event is valid
+      final isValid = event.isSigned;
+      Log.info('🔍 Event signature valid: $isValid', name: 'ProfileSetupScreen', category: LogCategory.ui);
+
       // Publish to Nostr relays
-      Log.info('Publishing profile event: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
-      Log.debug('Profile data: $profileData', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.info('📡 Publishing profile event to Nostr relays...', name: 'ProfileSetupScreen', category: LogCategory.ui);
       
       final result = await nostrService.broadcastEvent(event);
       final success = result.isSuccessful;
@@ -686,14 +733,119 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (result.errors.isNotEmpty) {
         Log.error('Broadcast errors: ${result.errors}', name: 'ProfileSetupScreen', category: LogCategory.ui);
       }
+      
+      // Immediate verification: try to query the event back from relay
+      Log.info('🔍 Immediate verification: checking if event was actually stored...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      await Future.delayed(const Duration(seconds: 1)); // Brief delay to let relay process
+      
+      try {
+        final verificationProfile = await userProfileService.fetchProfile(currentPubkey, forceRefresh: true);
+        if (verificationProfile != null) {
+          Log.info('✅ Immediate verification: found profile with event ID ${verificationProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          if (verificationProfile.eventId == event.id) {
+            Log.info('🎯 Immediate verification: Event ID matches! Relay stored our event correctly.', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          } else {
+            Log.warning('⚠️ Immediate verification: Event ID mismatch. Expected ${event.id}, got ${verificationProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          }
+        } else {
+          Log.warning('⚠️ Immediate verification: No profile found. Relay may have rejected the event.', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        }
+      } catch (e) {
+        Log.error('❌ Immediate verification failed: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
+      
+      // Add delay to give relay time to process (temporary debugging)
+      Log.info('⏳ Waiting 2 seconds for relay to process event...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      await Future.delayed(const Duration(seconds: 2));
 
       if (success) {
         // Force refresh the user's profile in auth service
         if (mounted) {
-          final userProfileService = context.read<UserProfileService>();
-          Log.info('Force refreshing profile for ${authService.currentPublicKeyHex!.substring(0, 8)}...', 
+          Log.info('🔄 Attempting to force refresh profile after successful broadcast...', 
                    name: 'ProfileSetupScreen', category: LogCategory.ui);
-          await userProfileService.fetchProfile(authService.currentPublicKeyHex!, forceRefresh: true);
+          
+          final userProfileService = context.read<UserProfileService>();
+          final beforeRefreshProfile = userProfileService.getCachedProfile(currentPubkey);
+          
+          Log.info('📋 Profile before refresh:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          if (beforeRefreshProfile != null) {
+            Log.info('  - name: ${beforeRefreshProfile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - about: ${beforeRefreshProfile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - eventId: ${beforeRefreshProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          } else {
+            Log.info('  - No cached profile', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          }
+          
+          // Use proper retry logic to wait for relay to process the new event
+          Log.info('🔄 Using retry logic to wait for relay to process profile update...', 
+                   name: 'ProfileSetupScreen', category: LogCategory.ui);
+          
+          final refreshedProfile = await AsyncUtils.retryWithBackoff(
+            operation: () async {
+              Log.info('🔄 Retry attempt: clearing cache and fetching profile...', 
+                       name: 'ProfileSetupScreen', category: LogCategory.ui);
+              
+              // Log current relay status
+              final relayStatus = nostrService.getRelayStatus();
+              Log.info('🔗 Current relay status: $relayStatus', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              
+              userProfileService.removeProfile(currentPubkey);
+              final profile = await userProfileService.fetchProfile(currentPubkey, forceRefresh: true);
+              
+              Log.info('📋 Profile fetch result:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - Expected event ID: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - Expected timestamp: ${event.createdAt} (${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)})', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              if (profile != null) {
+                Log.info('  - Fetched profile event ID: ${profile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                Log.info('  - Fetched profile timestamp: ${profile.createdAt.millisecondsSinceEpoch ~/ 1000} (${profile.createdAt})', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                Log.info('  - Profile name: ${profile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                Log.info('  - Profile about: ${profile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              } else {
+                Log.warning('  - Profile is null', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              }
+              
+              // Verify we got the updated profile by checking event ID or timestamp
+              final eventIdMatches = profile?.eventId == event.id;
+              final timestampMatches = profile?.createdAt != null && 
+                                     profile!.createdAt.millisecondsSinceEpoch >= (event.createdAt * 1000 - 1000);
+              
+              Log.info('🔍 Profile validation:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - Event ID matches: $eventIdMatches', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - Timestamp valid: $timestampMatches', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              
+              if (eventIdMatches || timestampMatches) {
+                Log.info('✅ Profile validation passed - using fetched profile', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                return profile;
+              }
+              
+              Log.warning('❌ Profile validation failed - relay hasn\'t processed new event yet', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              throw Exception('Profile not yet updated on relay - retrying...');
+            },
+            maxRetries: 3,
+            baseDelay: const Duration(seconds: 1),
+            debugName: 'profile-refresh-after-publish',
+          );
+          
+          // Check what we got back
+          if (refreshedProfile != null) {
+            Log.info('✅ Profile refreshed successfully:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - name: ${refreshedProfile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - about: ${refreshedProfile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - eventId: ${refreshedProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          } else {
+            Log.warning('⚠️ fetchProfile returned null after refresh', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            
+            // Check cache again
+            final afterRefreshProfile = userProfileService.getCachedProfile(currentPubkey);
+            if (afterRefreshProfile != null) {
+              Log.info('📋 But profile IS in cache after refresh:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - name: ${afterRefreshProfile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - about: ${afterRefreshProfile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              Log.info('  - eventId: ${afterRefreshProfile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            } else {
+              Log.error('❌ Profile NOT in cache after refresh', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            }
+          }
         }
         
         if (mounted) {

@@ -111,7 +111,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
   void _subscribeToReactions(String userPubkey) {
     final filter = Filter(
       kinds: [7], // Kind 7 = Reactions (NIP-25)
-      // Note: Need to find correct way to add tag filters for nostr_sdk
+      h: ['vine'], // Required for vine.hol.is relay
     );
     
     final subscription = _nostrService!.subscribeToEvents(
@@ -127,7 +127,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
   void _subscribeToComments(String userPubkey) {
     final filter = Filter(
       kinds: [1], // Kind 1 = Text notes (comments)
-      // Note: Need to find correct way to add tag filters for nostr_sdk
+      h: ['vine'], // Required for vine.hol.is relay
     );
     
     final subscription = _nostrService!.subscribeToEvents(
@@ -143,7 +143,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
   void _subscribeToFollows(String userPubkey) {
     final filter = Filter(
       kinds: [3], // Kind 3 = Contact list (follows)
-      // Note: Need to find correct way to add tag filters for nostr_sdk
+      h: ['vine'], // Required for vine.hol.is relay
     );
     
     final subscription = _nostrService!.subscribeToEvents(
@@ -159,7 +159,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
   void _subscribeToMentions(String userPubkey) {
     final filter = Filter(
       kinds: [1, 30023], // Text notes and long-form content
-      // Note: Need to find correct way to add tag filters for nostr_sdk
+      h: ['vine'], // Required for vine.hol.is relay
     );
     
     final subscription = _nostrService!.subscribeToEvents(
@@ -175,7 +175,7 @@ class NotificationServiceEnhanced extends ChangeNotifier {
   void _subscribeToReposts(String userPubkey) {
     final filter = Filter(
       kinds: [6], // Kind 6 = Reposts (NIP-18)
-      // Note: Need to find correct way to add tag filters for nostr_sdk
+      h: ['vine'], // Required for vine.hol.is relay
     );
     
     final subscription = _nostrService!.subscribeToEvents(

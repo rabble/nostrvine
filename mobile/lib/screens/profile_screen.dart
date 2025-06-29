@@ -70,6 +70,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     
     Log.info('Profile init: widget.profilePubkey=${widget.profilePubkey?.substring(0, 8)}, currentUserPubkey=${currentUserPubkey.substring(0, 8)}, _isOwnProfile=$_isOwnProfile, _targetPubkey=${_targetPubkey?.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
     
+    // Log current cached profile
+    final userProfileService = context.read<UserProfileService>();
+    final cachedProfile = userProfileService.getCachedProfile(_targetPubkey!);
+    if (cachedProfile != null) {
+      Log.info('📋 ProfileScreen: Cached profile found on init:', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - name: ${cachedProfile.name}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - displayName: ${cachedProfile.displayName}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - about: ${cachedProfile.about}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - eventId: ${cachedProfile.eventId}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - createdAt: ${cachedProfile.createdAt}', name: 'ProfileScreen', category: LogCategory.ui);
+    } else {
+      Log.info('📋 ProfileScreen: No cached profile found on init for ${_targetPubkey!.substring(0, 8)}...', name: 'ProfileScreen', category: LogCategory.ui);
+    }
+    
     // Load profile data for the target user
     if (_targetPubkey != null) {
       _loadProfileStats();
@@ -1514,28 +1528,59 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _editProfile() async {
+    Log.info('📝 Edit Profile button tapped', name: 'ProfileScreen', category: LogCategory.ui);
+    
+    // Log current profile before editing
+    final userProfileService = context.read<UserProfileService>();
+    final authService = context.read<AuthService>();
+    final currentPubkey = authService.currentPublicKeyHex!;
+    
+    final profileBeforeEdit = userProfileService.getCachedProfile(currentPubkey);
+    if (profileBeforeEdit != null) {
+      Log.info('📋 Profile before edit:', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - name: ${profileBeforeEdit.name}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - about: ${profileBeforeEdit.about}', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('  - eventId: ${profileBeforeEdit.eventId}', name: 'ProfileScreen', category: LogCategory.ui);
+    }
+    
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ProfileSetupScreen(isNewUser: false),
       ),
     );
     
+    Log.info('📝 Returned from ProfileSetupScreen with result: $result', name: 'ProfileScreen', category: LogCategory.ui);
+    
     // Refresh profile data when returning from edit
     if (result == true && mounted) {
+      Log.info('🔄 Profile was updated, refreshing...', name: 'ProfileScreen', category: LogCategory.ui);
+      
       setState(() {
         // Trigger rebuild to show updated profile
       });
       
       // Refresh profile data
-      final authService = context.read<AuthService>();
-      final userProfileService = context.read<UserProfileService>();
       if (authService.currentPublicKeyHex != null) {
-        userProfileService.fetchProfile(authService.currentPublicKeyHex!);
+        Log.info('🔄 Fetching updated profile for ${currentPubkey.substring(0, 8)}...', name: 'ProfileScreen', category: LogCategory.ui);
+        await userProfileService.fetchProfile(currentPubkey);
+        
+        // Log profile after refresh
+        final profileAfterEdit = userProfileService.getCachedProfile(currentPubkey);
+        if (profileAfterEdit != null) {
+          Log.info('📋 Profile after refresh:', name: 'ProfileScreen', category: LogCategory.ui);
+          Log.info('  - name: ${profileAfterEdit.name}', name: 'ProfileScreen', category: LogCategory.ui);
+          Log.info('  - about: ${profileAfterEdit.about}', name: 'ProfileScreen', category: LogCategory.ui);
+          Log.info('  - eventId: ${profileAfterEdit.eventId}', name: 'ProfileScreen', category: LogCategory.ui);
+        } else {
+          Log.warning('⚠️ No profile found after refresh!', name: 'ProfileScreen', category: LogCategory.ui);
+        }
       }
       
       // Reload profile stats and videos
       _loadProfileStats();
       _loadProfileVideos();
+    } else {
+      Log.info('❌ Profile edit was cancelled or failed', name: 'ProfileScreen', category: LogCategory.ui);
     }
   }
 

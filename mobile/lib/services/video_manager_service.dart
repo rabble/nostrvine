@@ -183,10 +183,8 @@ class VideoManagerService implements IVideoManager {
     // Sort videos into appropriate array based on following status
     if (_followingPubkeys.contains(event.pubkey)) {
       _primaryVideos.add(event);
-      Log.info('Added following video to primary feed: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
     } else {
       _discoveryVideos.add(event);
-      Log.info('Added video to discovery feed: ${event.id} from ${event.pubkey.length >= 8 ? event.pubkey.substring(0, 8) : event.pubkey}', name: 'VideoManager');
     }
     
     // Initialize state
@@ -198,7 +196,6 @@ class VideoManagerService implements IVideoManager {
     // Notify listeners
     _notifyStateChange();
     
-    Log.info('Added video event: ${event.id}, primary: ${_primaryVideos.length}, discovery: ${_discoveryVideos.length}', name: 'VideoManager');
   }
   
   @override

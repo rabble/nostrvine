@@ -2,7 +2,7 @@
 // ABOUTME: Provides data for popular content discovery in mobile app and website
 
 import { AnalyticsEnv, TrendingVideo } from '../types/analytics';
-import { calculateTrendingScore } from '../services/trendingCalculator';
+import { calculateTrendingScore, getTrending } from '../services/trendingCalculator';
 
 export async function handleTrendingVines(
   request: Request,
@@ -11,40 +11,33 @@ export async function handleTrendingVines(
   try {
     const url = new URL(request.url);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
-    const minViews = parseInt(env.MIN_VIEWS_FOR_TRENDING);
+    const minViews = parseInt(env.MIN_VIEWS_FOR_TRENDING || '1'); // Default to 1 view minimum
 
-    // Get all video view data
-    const { keys } = await env.ANALYTICS_KV.list({ prefix: 'views:' });
-    const trendingVines: TrendingVideo[] = [];
-    const now = Date.now();
+    // Try to get cached trending data first
+    const cachedTrending = await getTrending(env);
+    
+    // If we have cached data, return it immediately
+    if (cachedTrending && cachedTrending.videos.length > 0) {
+      const response = {
+        vines: cachedTrending.videos.slice(0, limit),
+        algorithm: 'global_popularity',
+        updatedAt: cachedTrending.updatedAt,
+        period: '24h',
+        totalVines: cachedTrending.videos.length
+      };
 
-    // Process each video's trending score
-    for (const key of keys) {
-      const eventId = key.name.replace('views:', '');
-      
-      try {
-        const viewDataStr = await env.ANALYTICS_KV.get(key.name);
-        if (!viewDataStr) continue;
-        
-        const viewData = JSON.parse(viewDataStr);
-        
-        // Skip videos below minimum threshold
-        if (viewData.count < minViews) continue;
-        
-        // Calculate trending score
-        const score = calculateTrendingScore(viewData, now);
-        
-        trendingVines.push({
-          eventId,
-          views: viewData.count,
-          score,
-          // Note: title and hashtags could be fetched from Nostr events in the future
-        });
-      } catch (error) {
-        console.warn(`Failed to process vine ${eventId}:`, error);
-        continue;
-      }
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300', // 5 minute cache
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
+    
+    // If no cache, return empty list (calculation happens in background)
+    const trendingVines: TrendingVideo[] = [];
 
     // Sort by trending score and limit results
     const topVines = trendingVines
@@ -54,7 +47,7 @@ export async function handleTrendingVines(
     const response = {
       vines: topVines,
       algorithm: 'global_popularity',
-      updatedAt: now,
+      updatedAt: Date.now(),
       period: '24h', // Could make this configurable
       totalVines: trendingVines.length
     };

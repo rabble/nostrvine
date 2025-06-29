@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Reduced Logging Verbosity**: Significantly reduced excessive console logging
+  - Removed verbose curation service logging that spammed console on every video event
+  - Converted excessive `Log.info` statements to `Log.debug` or removed entirely
+  - Eliminated redundant websocket message logging (`DEBUG: Received message from wss://vine.hol.is: EVENT`)
+  - Cleaned up repetitive "Editor's Picks selection" and "Populating curation sets" log spam
+  - Improved development experience with cleaner, more focused console output
+
 ### Added
 - **NIP-05 Username Registration**: Complete NIP-05 verification system with username availability checking
   - Username registration service with backend integration

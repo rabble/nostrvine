@@ -7,6 +7,7 @@ import '../theme/vine_theme.dart';
 import '../services/video_event_service.dart';
 import '../services/explore_video_manager.dart';
 import '../services/hashtag_service.dart';
+import '../services/curation_service.dart';
 import '../models/curation_set.dart';
 import '../models/video_event.dart';
 import 'search_screen.dart';
@@ -62,6 +63,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       setState(() {
         _currentVideoIndex = 0;
       });
+      
+      // Fetch trending data when user switches to Popular Now or Trending tabs
+      if (_tabController.index == 1 || _tabController.index == 2) {
+        final curationService = Provider.of<CurationService>(context, listen: false);
+        curationService.refreshTrendingFromAnalytics();
+      }
     }
   }
 

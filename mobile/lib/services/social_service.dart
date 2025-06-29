@@ -284,6 +284,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             kinds: [7],
             e: [eventId],
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -341,6 +342,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             authors: [currentUserPubkey],
             kinds: [7],
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -389,6 +391,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             authors: [currentUserPubkey],
             kinds: [6],
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -433,6 +436,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             authors: [pubkey],
             kinds: [7], // NIP-25 reactions
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -466,6 +470,7 @@ class SocialService extends ChangeNotifier {
                 filters: [
                   Filter(
                     ids: likedEventIds.toList(),
+                    h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
                   ),
                 ],
               );
@@ -538,6 +543,7 @@ class SocialService extends ChangeNotifier {
             authors: [currentUserPubkey],
             kinds: [3], // NIP-02 contact list
             limit: 1, // Get most recent only
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -764,6 +770,7 @@ class SocialService extends ChangeNotifier {
             authors: [pubkey],
             kinds: [3],
             limit: 1,
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -790,6 +797,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             kinds: [3],
             p: [pubkey], // Events that mention this pubkey in p tags
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -846,6 +854,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             authors: [pubkey],
             kinds: [22], // NIP-71 short video events
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -898,6 +907,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             authors: [pubkey],
             kinds: [22], // NIP-71 short video events
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -944,6 +954,7 @@ class SocialService extends ChangeNotifier {
           Filter(
             kinds: [7], // Like events
             e: videoIds, // Events that reference our videos
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
       );
@@ -1064,6 +1075,7 @@ class SocialService extends ChangeNotifier {
     final filter = Filter(
       kinds: [1], // Text notes
       e: [rootEventId], // Comments that reference this event
+      h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
     );
     
     // Subscribe to comment events

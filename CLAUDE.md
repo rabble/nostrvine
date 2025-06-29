@@ -22,6 +22,31 @@ OpenVine requires specific Nostr event types for proper functionality:
 - **Kind 7**: Reactions (NIP-25) - Like/heart interactions
 - **Kind 3**: Contact lists (NIP-02) - Follow/following relationships
 
+### CRITICAL: vine.hol.is Relay Requirement
+**ALL events published to the vine.hol.is relay MUST include the tag `['h', 'vine']`** for the relay to store them. Events without this tag will be accepted (relay returns `OK`) but will NOT be stored or retrievable.
+
+This affects ALL event types:
+- Kind 0 (profiles)
+- Kind 22 (videos) 
+- Kind 7 (likes/reactions)
+- Kind 6 (reposts)
+- Kind 1 (text notes)
+- Kind 3 (contact lists)
+- Any other event types
+
+**Implementation**: 
+1. **Event Publishing**: The `AuthService.createAndSignEvent()` method automatically adds this tag to all events before publishing.
+2. **Event Querying**: ALL filter-based subscriptions now include `h: ['vine']` to only receive events with the required tag.
+
+**Files Updated**:
+- `nostr_sdk/lib/filter.dart` - Extended Filter class to support `h` parameter
+- `lib/services/video_event_service.dart` - Added vine tag to Kind 22 and Kind 6 filters
+- `lib/services/user_profile_service.dart` - Added vine tag to Kind 0 profile filters
+- `lib/services/social_service.dart` - Added vine tag to ALL event type filters (Kind 1, 3, 6, 7, 22)
+- `lib/services/auth_service.dart` - Automatically adds vine tag to all published events
+
+This ensures both publishing AND querying compatibility with the vine.hol.is relay infrastructure.
+
 See `mobile/docs/NOSTR_EVENT_TYPES.md` for complete event type documentation.
 
 ## Development Environment

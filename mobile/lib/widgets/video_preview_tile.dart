@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
 import '../utils/unified_logger.dart';
+import 'video_thumbnail_widget.dart';
 
 /// Lightweight video preview widget for explore screens
 /// Automatically plays when visible, pauses when scrolled away
@@ -144,14 +145,12 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
                     child: VideoPlayer(_controller!),
                   ),
                 )
-              else if (widget.video.effectiveThumbnailUrl != null)
-                Image.network(
-                  widget.video.effectiveThumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-                )
               else
-                _buildPlaceholder(),
+                VideoThumbnailWidget(
+                  video: widget.video,
+                  fit: BoxFit.cover,
+                  showPlayIcon: false,
+                ),
 
               // Loading indicator
               if (_isInitializing)
@@ -207,16 +206,4 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
     );
   }
 
-  Widget _buildPlaceholder() {
-    return Container(
-      color: Colors.grey[900],
-      child: const Center(
-        child: Icon(
-          Icons.play_circle_outline,
-          color: Colors.white54,
-          size: 48,
-        ),
-      ),
-    );
-  }
 }

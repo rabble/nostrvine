@@ -51,6 +51,7 @@ dependencies:
   camera_macos: ^0.0.1  # macOS camera support
   video_player: ^2.9.1
   chewie: ^1.8.3  # Better video player with format support
+  visibility_detector: ^0.4.0+2  # Detect widget visibility for proper video control
   image: ^4.1.7  # Image processing for GIF generation
   video_thumbnail: ^0.5.3  # Extract thumbnails from videos
   image_picker: ^1.0.7  # For selecting images from gallery or camera

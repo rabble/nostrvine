@@ -6,6 +6,8 @@ import { handleViewTracking } from './handlers/viewTracking';
 import { handleTrending, handleVideoStats } from './handlers/trending';
 import { handleTrendingVines } from './handlers/trendingVines';
 import { handleTrendingViners } from './handlers/trendingViners';
+import { handleHashtagTrending } from './handlers/hashtagTrending';
+import { handleVelocityTrending } from './handlers/velocityTrending';
 
 export default {
   async fetch(
@@ -54,6 +56,22 @@ export default {
       const videoStatsMatch = path.match(/^\/analytics\/video\/([a-f0-9]{64})\/stats$/i);
       if (videoStatsMatch && request.method === 'GET') {
         return handleVideoStats(request, env, videoStatsMatch[1]);
+      }
+
+      // GET /analytics/hashtag/:hashtag/trending - Get trending for specific hashtag
+      const hashtagMatch = path.match(/^\/analytics\/hashtag\/([^\/]+)\/trending$/);
+      if (hashtagMatch && request.method === 'GET') {
+        return handleHashtagTrending(request, env, hashtagMatch[1]);
+      }
+
+      // GET /analytics/hashtags/trending - Get trending hashtags
+      if (path === '/analytics/hashtags/trending' && request.method === 'GET') {
+        return handleHashtagTrending(request, env);
+      }
+
+      // GET /analytics/trending/velocity - Get rapidly ascending content
+      if (path === '/analytics/trending/velocity' && request.method === 'GET') {
+        return handleVelocityTrending(request, env);
       }
 
       // Health check endpoint
