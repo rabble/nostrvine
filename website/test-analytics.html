@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics API Test - OpenVine</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .container {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin: 10px 0;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        button {
+            background: #00bf8f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #00a77d;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #004d40;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍇 Analytics API Test</h1>
+        <p>Testing OpenVine analytics endpoints and data integration</p>
+        
+        <div>
+            <button onclick="testTrendingHashtags()">Test Trending Hashtags</button>
+            <button onclick="testHashtagTrending('vine')">Test #vine Trending</button>
+            <button onclick="testHashtagTrending('comedy')">Test #comedy Trending</button>
+            <button onclick="testVelocityVideos()">Test Velocity Videos</button>
+            <button onclick="clearOutput()">Clear Output</button>
+        </div>
+        
+        <div id="status" class="status">Ready to test</div>
+        
+        <h3>Analytics API Output</h3>
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        const ANALYTICS_API = 'https://analytics.openvine.co/analytics';
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = `[${timestamp}] `;
+            
+            if (typeof message === 'object') {
+                message = JSON.stringify(message, null, 2);
+            }
+            
+            output.textContent += prefix + message + '\n';
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+        }
+
+        async function testTrendingHashtags() {
+            log('=== Testing Trending Hashtags ===');
+            setStatus('Fetching trending hashtags...');
+            
+            try {
+                const response = await fetch(`${ANALYTICS_API}/hashtags/trending`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                log('✅ Trending Hashtags Response:');
+                log(data);
+                
+                if (data.hashtags && data.hashtags.length > 0) {
+                    log(`📊 Found ${data.hashtags.length} trending hashtags:`);
+                    data.hashtags.forEach((tag, i) => {
+                        log(`  ${i+1}. #${tag.hashtag} - ${tag.views.toLocaleString()} views`);
+                    });
+                    setStatus(`Found ${data.hashtags.length} trending hashtags`);
+                } else {
+                    log('❌ No trending hashtags found');
+                    setStatus('No trending hashtags');
+                }
+                
+            } catch (error) {
+                log('❌ Error fetching trending hashtags:');
+                log(error.message);
+                setStatus('Error fetching trending hashtags');
+            }
+        }
+
+        async function testHashtagTrending(hashtag) {
+            log(`=== Testing Trending Videos for #${hashtag} ===`);
+            setStatus(`Fetching trending videos for #${hashtag}...`);
+            
+            try {
+                const response = await fetch(`${ANALYTICS_API}/hashtag/${hashtag}/trending?timeframe=24h`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                log(`✅ Trending Videos for #${hashtag}:`);
+                log(data);
+                
+                if (data.topVideos && data.topVideos.length > 0) {
+                    log(`📺 Found ${data.topVideos.length} trending videos:`);
+                    data.topVideos.forEach((video, i) => {
+                        log(`  ${i+1}. ${video.eventId.slice(0, 16)}... - ${video.views} views, score: ${video.score.toFixed(2)}`);
+                        if (video.hashtags) {
+                            log(`      Tags: ${video.hashtags.map(h => '#' + h).join(', ')}`);
+                        }
+                    });
+                    setStatus(`Found ${data.topVideos.length} trending videos for #${hashtag}`);
+                } else {
+                    log(`❌ No trending videos found for #${hashtag}`);
+                    setStatus(`No trending videos for #${hashtag}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error fetching trending videos for #${hashtag}:`);
+                log(error.message);
+                setStatus(`Error fetching trending for #${hashtag}`);
+            }
+        }
+
+        async function testVelocityVideos() {
+            log('=== Testing Velocity/Rising Videos ===');
+            setStatus('Fetching velocity videos...');
+            
+            try {
+                const response = await fetch(`${ANALYTICS_API}/trending/velocity`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                log('✅ Velocity Videos Response:');
+                log(data);
+                
+                if (data.videos && data.videos.length > 0) {
+                    log(`🚀 Found ${data.videos.length} rising videos:`);
+                    data.videos.forEach((video, i) => {
+                        log(`  ${i+1}. ${video.eventId.slice(0, 16)}... - ${video.views} views, velocity: ${video.velocityScore?.toFixed(2) || 'N/A'}`);
+                    });
+                    setStatus(`Found ${data.videos.length} rising videos`);
+                } else {
+                    log('📝 No rising videos found (this is normal if no videos are rapidly gaining views)');
+                    setStatus('No rising videos (normal)');
+                }
+                
+            } catch (error) {
+                log('❌ Error fetching velocity videos:');
+                log(error.message);
+                setStatus('Error fetching velocity videos');
+            }
+        }
+
+        // Auto-run basic test on load
+        window.addEventListener('load', () => {
+            log('🍇 Analytics API Test Loaded');
+            log('Click buttons above to test different endpoints');
+            testTrendingHashtags();
+        });
+    </script>
+</body>
+</html>
