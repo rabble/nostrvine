@@ -7,6 +7,7 @@
 /trending /trending.html 200!
 /open-source /open-source.html 200!
 /featured-viners /featured-viners.html 200!
+/privacy /privacy.html 200!
 
 # Video pages - Vine-compatible URLs
 /v/* /watch.html 200
