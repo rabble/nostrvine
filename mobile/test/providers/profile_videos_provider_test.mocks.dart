@@ -295,6 +295,16 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i4.Future<void>);
 
   @override
+  _i4.Future<void> closeAllSubscriptions() => (super.noSuchMethod(
+        Invocation.method(
+          #closeAllSubscriptions,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -515,16 +525,6 @@ class MockVideoEventService extends _i1.Mock implements _i11.VideoEventService {
         Invocation.method(
           #setBlocklistService,
           [blocklistService],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void setSubscriptionManager(_i9.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
         ),
         returnValueForMissingStub: null,
       );

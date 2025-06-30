@@ -19,13 +19,12 @@ class UserProfileService extends ChangeNotifier {
   final ConnectionStatusService _connectionService = ConnectionStatusService();
   
   final Map<String, UserProfile> _profileCache = {}; // In-memory cache for fast access
-  final Map<String, StreamSubscription> _profileSubscriptions = {};
   final Map<String, String> _activeSubscriptionIds = {}; // pubkey -> subscription ID
   final Set<String> _pendingRequests = {};
   bool _isInitialized = false;
   
   // Batch fetching management
-  StreamSubscription? _batchSubscription;
+  String? _batchSubscriptionId;
   Timer? _batchTimeout;
   Timer? _batchDebounceTimer;
   final Set<String> _pendingBatchPubkeys = {};
@@ -34,16 +33,11 @@ class UserProfileService extends ChangeNotifier {
   final Set<String> _knownMissingProfiles = {};
   final Map<String, DateTime> _missingProfileRetryAfter = {};
   
-  SubscriptionManager? _subscriptionManager;
+  final SubscriptionManager _subscriptionManager;
   ProfileCacheService? _persistentCache;
   
-  UserProfileService(this._nostrService);
-  
-  /// Set subscription manager for optimized profile fetching
-  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
-    _subscriptionManager = subscriptionManager;
-    Log.debug('SubscriptionManager attached to UserProfileService', name: 'UserProfileService', category: LogCategory.system);
-  }
+  UserProfileService(this._nostrService, {required SubscriptionManager subscriptionManager})
+      : _subscriptionManager = subscriptionManager;
   
   /// Set persistent cache service for profile storage
   void setPersistentCache(ProfileCacheService cacheService) {
@@ -189,7 +183,7 @@ class UserProfileService extends ChangeNotifier {
     
     // Check if we already have an active subscription for this pubkey
     // (Note: forceRefresh already cleaned up existing subscriptions above)
-    if (_profileSubscriptions.containsKey(pubkey) || _activeSubscriptionIds.containsKey(pubkey)) {
+    if (_activeSubscriptionIds.containsKey(pubkey)) {
       Log.warning('Active subscription already exists for ${pubkey.substring(0, 8)}... (skipping duplicate)', name: 'UserProfileService', category: LogCategory.system);
       return null;
     }
@@ -213,37 +207,18 @@ class UserProfileService extends ChangeNotifier {
         h: ['vine'], // vine.hol.is optimized for vine-tagged content - gets more results!
       );
       
-      // Use managed subscription if available
-      if (_subscriptionManager != null) {
-        final subscriptionId = await _subscriptionManager!.createSubscription(
-          name: 'profile_${pubkey.substring(0, 8)}',
-          filters: [filter],
-          onEvent: (event) => _handleProfileEvent(event),
-          onError: (error) => _handleProfileError(pubkey, error),
-          onComplete: () => _handleProfileComplete(pubkey),
-          timeout: const Duration(seconds: 10),
-          priority: 2, // High priority for profile fetches (user-facing)
-        );
-        
-        _activeSubscriptionIds[pubkey] = subscriptionId;
-      } else {
-        // Fall back to direct subscription
-        final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-        final subscription = eventStream.listen(
-          (event) => _handleProfileEvent(event),
-          onError: (error) => _handleProfileError(pubkey, error),
-          onDone: () => _handleProfileComplete(pubkey),
-        );
-        
-        _profileSubscriptions[pubkey] = subscription;
-        
-        // Set timeout for profile fetch
-        Timer(const Duration(seconds: 10), () {
-          if (_pendingRequests.contains(pubkey)) {
-            _cleanupProfileRequest(pubkey);
-          }
-        });
-      }
+      // Use managed subscription
+      final subscriptionId = await _subscriptionManager.createSubscription(
+        name: 'profile_${pubkey.substring(0, 8)}',
+        filters: [filter],
+        onEvent: (event) => _handleProfileEvent(event),
+        onError: (error) => _handleProfileError(pubkey, error),
+        onComplete: () => _handleProfileComplete(pubkey),
+        timeout: const Duration(seconds: 10),
+        priority: 2, // High priority for profile fetches (user-facing)
+      );
+      
+      _activeSubscriptionIds[pubkey] = subscriptionId;
       
       return null; // Profile will be available in cache once loaded
     } catch (e) {
@@ -320,13 +295,9 @@ class UserProfileService extends ChangeNotifier {
     
     // Clean up managed subscription
     final subscriptionId = _activeSubscriptionIds.remove(pubkey);
-    if (subscriptionId != null && _subscriptionManager != null) {
-      _subscriptionManager!.cancelSubscription(subscriptionId);
+    if (subscriptionId != null) {
+      _subscriptionManager.cancelSubscription(subscriptionId);
     }
-    
-    // Clean up direct subscription
-    final subscription = _profileSubscriptions.remove(pubkey);
-    subscription?.cancel();
   }
   
   /// Batch fetch profiles for multiple users
@@ -360,7 +331,7 @@ class UserProfileService extends ChangeNotifier {
     _batchDebounceTimer?.cancel();
     
     // If we already have an active subscription, let it complete
-    if (_batchSubscription != null) {
+    if (_batchSubscriptionId != null) {
       Log.debug('📦 Added ${pubkeysToFetch.length} profiles to pending batch (total pending: ${_pendingBatchPubkeys.length})', name: 'UserProfileService', category: LogCategory.system);
       return;
     }
@@ -372,7 +343,7 @@ class UserProfileService extends ChangeNotifier {
   }
   
   /// Execute the actual batch fetch
-  void _executeBatchFetch() {
+  Future<void> _executeBatchFetch() async {
     if (_pendingBatchPubkeys.isEmpty) return;
     
     // Move pending to current batch
@@ -394,18 +365,19 @@ class UserProfileService extends ChangeNotifier {
       // Track which profiles we're fetching in this batch
       final thisBatchPubkeys = Set<String>.from(batchPubkeys);
       
-      // Subscribe to profile events
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-      _batchSubscription = eventStream.listen(
-        (event) => _handleProfileEvent(event),
+      // Subscribe to profile events using SubscriptionManager
+      final subscriptionId = await _subscriptionManager.createSubscription(
+        name: 'profile_batch_${DateTime.now().millisecondsSinceEpoch}',
+        filters: [filter],
+        onEvent: (event) => _handleProfileEvent(event),
         onError: (error) => Log.error('Batch profile fetch error: $error', name: 'UserProfileService', category: LogCategory.system),
-        onDone: () => _completeBatchFetch(thisBatchPubkeys),
+        onComplete: () => _completeBatchFetch(thisBatchPubkeys),
+        timeout: const Duration(seconds: 5),
+        priority: 2, // High priority for profile fetches
       );
       
-      // Set timeout for batch fetch - reduced timeout for faster UI
-      _batchTimeout = Timer(const Duration(seconds: 5), () {
-        _completeBatchFetch(thisBatchPubkeys);
-      });
+      // Store subscription ID for cleanup
+      _batchSubscriptionId = subscriptionId;
     } catch (e) {
       Log.error('Failed to batch fetch profiles: $e', name: 'UserProfileService', category: LogCategory.system);
       _completeBatchFetch(batchPubkeys.toSet());
@@ -414,8 +386,11 @@ class UserProfileService extends ChangeNotifier {
   
   /// Complete the batch fetch and clean up
   void _completeBatchFetch(Set<String> batchPubkeys) {
-    _batchSubscription?.cancel();
-    _batchSubscription = null;
+    // Cancel managed subscription
+    if (_batchSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_batchSubscriptionId!);
+      _batchSubscriptionId = null;
+    }
     
     _batchTimeout?.cancel();
     _batchTimeout = null;
@@ -490,7 +465,6 @@ class UserProfileService extends ChangeNotifier {
   Future<void> _backgroundRefreshProfile(String pubkey) async {
     // Don't refresh if already pending
     if (_pendingRequests.contains(pubkey) || 
-        _profileSubscriptions.containsKey(pubkey) || 
         _activeSubscriptionIds.containsKey(pubkey)) {
       return;
     }
@@ -508,7 +482,8 @@ class UserProfileService extends ChangeNotifier {
     return {
       'cachedProfiles': _profileCache.length,
       'pendingRequests': _pendingRequests.length,
-      'activeSubscriptions': _profileSubscriptions.length,
+      'activeSubscriptions': _activeSubscriptionIds.length,
+      'managedSubscriptions': _activeSubscriptionIds.length,
       'isInitialized': _isInitialized,
     };
   }
@@ -518,13 +493,20 @@ class UserProfileService extends ChangeNotifier {
     // Cancel batch operations
     _batchDebounceTimer?.cancel();
     _batchTimeout?.cancel();
-    _batchSubscription?.cancel();
     
-    // Cancel all active subscriptions
-    for (final subscription in _profileSubscriptions.values) {
-      subscription.cancel();
+    // Cancel batch subscription
+    if (_batchSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_batchSubscriptionId!);
+      _batchSubscriptionId = null;
     }
-    _profileSubscriptions.clear();
+    
+    // Cancel all active managed subscriptions
+    for (final subscriptionId in _activeSubscriptionIds.values) {
+      _subscriptionManager.cancelSubscription(subscriptionId);
+    }
+    _activeSubscriptionIds.clear();
+    
+    // Clean up remaining state
     _pendingRequests.clear();
     _profileCache.clear();
     _pendingBatchPubkeys.clear();

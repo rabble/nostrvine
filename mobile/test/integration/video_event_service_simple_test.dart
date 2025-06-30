@@ -11,16 +11,18 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 import 'video_event_service_simple_test.mocks.dart';
 
-@GenerateMocks([INostrService])
+@GenerateMocks([INostrService, SubscriptionManager])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   
   group('VideoEventService Event Reception Bug Investigation', () {
     late MockINostrService mockNostrService;
+    late MockSubscriptionManager mockSubscriptionManager;
     late VideoEventService videoEventService;
     late SeenVideosService seenVideosService;
     late ContentBlocklistService blocklistService;
@@ -38,6 +40,7 @@ void main() {
 
       // Set up mocks
       mockNostrService = MockINostrService();
+      mockSubscriptionManager = MockSubscriptionManager();
       mockEventStream = StreamController<Event>.broadcast();
       
       // Mock basic properties
@@ -59,6 +62,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         seenVideosService: seenVideosService,
+        subscriptionManager: mockSubscriptionManager,
       );
       videoEventService.setBlocklistService(blocklistService);
     });

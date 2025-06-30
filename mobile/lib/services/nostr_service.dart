@@ -179,14 +179,7 @@ class NostrService extends ChangeNotifier implements INostrService {
         try {
           final relay = RelayBase(relayUrl, sdk.RelayStatus(relayUrl));
           
-          // Configure vine.hol.is for NIP-42 authentication BEFORE connecting
-          if (relayUrl == 'wss://vine.hol.is') {
-            // First add the relay to the pool without connecting
-            await _nostrClient!.relayPool.add(relay, autoSubscribe: false, init: false);
-            // Then configure authentication
-            _nostrClient!.relayPool.setRelayAlwaysAuth(relayUrl, true);
-            Log.info('🔐 Pre-configured vine.hol.is for NIP-42 authentication', name: 'NostrService', category: LogCategory.relay);
-          }
+          // relay.damus.io doesn't require special authentication configuration
           
           final success = await _nostrClient!.addRelay(relay, autoSubscribe: true);
           if (success) {
@@ -664,6 +657,27 @@ class NostrService extends ChangeNotifier implements INostrService {
     } catch (e) {
       Log.error('Failed to save relays: $e', name: 'NostrService', category: LogCategory.relay);
     }
+  }
+  
+  @override
+  Future<void> closeAllSubscriptions() async {
+    Log.info('🧹 Closing all active subscriptions (${_activeSubscriptions.length} total)', name: 'NostrService', category: LogCategory.relay);
+    
+    // Create a copy of the subscriptions to avoid concurrent modification
+    final subscriptionsToClose = Map<String, String>.from(_activeSubscriptions);
+    
+    // Close all subscriptions
+    for (final entry in subscriptionsToClose.entries) {
+      try {
+        _nostrClient?.unsubscribe(entry.value);
+        Log.debug('  - Closed subscription ${entry.key}', name: 'NostrService', category: LogCategory.relay);
+      } catch (e) {
+        Log.error('Failed to close subscription ${entry.key}: $e', name: 'NostrService', category: LogCategory.relay);
+      }
+    }
+    
+    _activeSubscriptions.clear();
+    Log.info('✅ All subscriptions closed', name: 'NostrService', category: LogCategory.relay);
   }
   
   @override

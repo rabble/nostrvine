@@ -10,6 +10,7 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:nostr_sdk/event.dart' as _i5;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/social_service.dart' as _i3;
+import 'package:openvine/services/user_profile_service.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -429,6 +430,18 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           ),
         )),
       ) as _i4.Future<_i2.AuthResult>);
+
+  @override
+  _i4.Future<void> refreshCurrentProfile(
+          _i7.UserProfileService? userProfileService) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #refreshCurrentProfile,
+          [userProfileService],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> signOut({bool? deleteKeys = false}) => (super.noSuchMethod(

@@ -91,6 +91,7 @@ class VideoVisibilityManager extends ChangeNotifier {
       // Auto-play logic: if auto-play is enabled and this is a new visible video,
       // make it the actively playing one
       if (_autoPlayEnabled) {
+        // When setting a new actively playing video, ensure only one can play
         _setActivelyPlaying(videoId);
       }
       
@@ -102,6 +103,22 @@ class VideoVisibilityManager extends ChangeNotifier {
       // If this was the actively playing video, update auto-play state
       if (_lastPlayingVideo == videoId) {
         _lastPlayingVideo = null;
+        // If auto-play is enabled, find the next most visible video
+        if (_autoPlayEnabled && _playableVideos.isNotEmpty) {
+          // Get the most visible video from the remaining playable ones
+          String? nextVideo;
+          double maxVisibility = 0;
+          for (final id in _playableVideos) {
+            final info = _visibilityMap[id];
+            if (info != null && info.visibilityFraction > maxVisibility) {
+              maxVisibility = info.visibilityFraction;
+              nextVideo = id;
+            }
+          }
+          if (nextVideo != null) {
+            _setActivelyPlaying(nextVideo);
+          }
+        }
       }
       
       Log.info('⏸️ Video $videoId is no longer playable (visibility: ${(visibilityFraction * 100).toStringAsFixed(1)}%)', 
@@ -162,6 +179,13 @@ class VideoVisibilityManager extends ChangeNotifier {
   
   /// Internal method to set actively playing video
   void _setActivelyPlaying(String videoId) {
+    // If there was a previous video playing, ensure it's no longer in playable set
+    if (_lastPlayingVideo != null && _lastPlayingVideo != videoId) {
+      _playableVideos.remove(_lastPlayingVideo);
+      Log.info('⏸️ Removing previous video from playable: $_lastPlayingVideo', 
+          name: 'VideoVisibilityManager', category: LogCategory.video);
+    }
+    
     _autoPlayEnabled = true;
     _lastPlayingVideo = videoId;
     Log.info('🎬 Auto-play enabled - actively playing: $videoId', 

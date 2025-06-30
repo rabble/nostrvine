@@ -15,8 +15,7 @@ import 'package:openvine/models/video_event.dart' as _i10;
 import 'package:openvine/services/content_blocklist_service.dart' as _i12;
 import 'package:openvine/services/nostr_key_manager.dart' as _i2;
 import 'package:openvine/services/nostr_service_interface.dart' as _i3;
-import 'package:openvine/services/social_service.dart' as _i14;
-import 'package:openvine/services/subscription_manager.dart' as _i13;
+import 'package:openvine/services/social_service.dart' as _i13;
 import 'package:openvine/services/video_event_service.dart' as _i9;
 
 // ignore_for_file: type=lint
@@ -294,6 +293,16 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i4.Future<void>);
 
   @override
+  _i4.Future<void> closeAllSubscriptions() => (super.noSuchMethod(
+        Invocation.method(
+          #closeAllSubscriptions,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -389,16 +398,6 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
         Invocation.method(
           #setBlocklistService,
           [blocklistService],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void setSubscriptionManager(_i13.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
         ),
         returnValueForMissingStub: null,
       );
@@ -728,7 +727,7 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
 /// A class which mocks [SocialService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSocialService extends _i1.Mock implements _i14.SocialService {
+class MockSocialService extends _i1.Mock implements _i13.SocialService {
   MockSocialService() {
     _i1.throwOnMissingStub(this);
   }

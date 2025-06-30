@@ -4,25 +4,25 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i7;
-import 'dart:io' as _i17;
-import 'dart:ui' as _i9;
+import 'dart:io' as _i16;
+import 'dart:ui' as _i10;
 
-import 'package:image_picker/image_picker.dart' as _i18;
+import 'package:image_picker/image_picker.dart' as _i17;
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart'
     as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i14;
-import 'package:nostr_sdk/event.dart' as _i8;
-import 'package:nostr_sdk/filter.dart' as _i15;
-import 'package:openvine/models/nip94_metadata.dart' as _i16;
+import 'package:mockito/src/dummies.dart' as _i13;
+import 'package:nostr_sdk/event.dart' as _i9;
+import 'package:nostr_sdk/filter.dart' as _i14;
+import 'package:openvine/models/nip94_metadata.dart' as _i15;
 import 'package:openvine/models/user_profile.dart' as _i11;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/direct_upload_service.dart' as _i5;
 import 'package:openvine/services/nostr_key_manager.dart' as _i3;
 import 'package:openvine/services/nostr_service_interface.dart' as _i4;
-import 'package:openvine/services/profile_cache_service.dart' as _i13;
-import 'package:openvine/services/subscription_manager.dart' as _i12;
-import 'package:openvine/services/user_profile_service.dart' as _i10;
+import 'package:openvine/services/profile_cache_service.dart' as _i12;
+import 'package:openvine/services/subscription_manager.dart' as _i18;
+import 'package:openvine/services/user_profile_service.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -224,6 +224,18 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       ) as _i7.Future<_i2.AuthResult>);
 
   @override
+  _i7.Future<void> refreshCurrentProfile(
+          _i8.UserProfileService? userProfileService) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #refreshCurrentProfile,
+          [userProfileService],
+        ),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
+
+  @override
   _i7.Future<void> signOut({bool? deleteKeys = false}) => (super.noSuchMethod(
         Invocation.method(
           #signOut,
@@ -257,7 +269,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       ) as _i7.Future<String?>);
 
   @override
-  _i7.Future<_i8.Event?> createAndSignEvent({
+  _i7.Future<_i9.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -274,8 +286,8 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
             #biometricPrompt: biometricPrompt,
           },
         ),
-        returnValue: _i7.Future<_i8.Event?>.value(),
-      ) as _i7.Future<_i8.Event?>);
+        returnValue: _i7.Future<_i9.Event?>.value(),
+      ) as _i7.Future<_i9.Event?>);
 
   @override
   _i7.Future<void> setWebAuthenticationKey(String? publicKeyHex) =>
@@ -298,7 +310,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       );
 
   @override
-  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -307,7 +319,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       );
 
   @override
-  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -329,7 +341,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockUserProfileService extends _i1.Mock
-    implements _i10.UserProfileService {
+    implements _i8.UserProfileService {
   MockUserProfileService() {
     _i1.throwOnMissingStub(this);
   }
@@ -347,17 +359,7 @@ class MockUserProfileService extends _i1.Mock
       ) as bool);
 
   @override
-  void setSubscriptionManager(_i12.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void setPersistentCache(_i13.ProfileCacheService? cacheService) =>
+  void setPersistentCache(_i12.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(
           #setPersistentCache,
@@ -456,7 +458,7 @@ class MockUserProfileService extends _i1.Mock
           #getDisplayName,
           [pubkey],
         ),
-        returnValue: _i14.dummyValue<String>(
+        returnValue: _i13.dummyValue<String>(
           this,
           Invocation.method(
             #getDisplayName,
@@ -514,7 +516,7 @@ class MockUserProfileService extends _i1.Mock
       );
 
   @override
-  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -523,7 +525,7 @@ class MockUserProfileService extends _i1.Mock
       );
 
   @override
-  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -625,8 +627,8 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
       ) as _i7.Future<void>);
 
   @override
-  _i7.Stream<_i8.Event> subscribeToEvents({
-    required List<_i15.Filter>? filters,
+  _i7.Stream<_i9.Event> subscribeToEvents({
+    required List<_i14.Filter>? filters,
     bool? bypassLimits = false,
   }) =>
       (super.noSuchMethod(
@@ -638,11 +640,11 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
             #bypassLimits: bypassLimits,
           },
         ),
-        returnValue: _i7.Stream<_i8.Event>.empty(),
-      ) as _i7.Stream<_i8.Event>);
+        returnValue: _i7.Stream<_i9.Event>.empty(),
+      ) as _i7.Stream<_i9.Event>);
 
   @override
-  _i7.Future<_i4.NostrBroadcastResult> broadcastEvent(_i8.Event? event) =>
+  _i7.Future<_i4.NostrBroadcastResult> broadcastEvent(_i9.Event? event) =>
       (super.noSuchMethod(
         Invocation.method(
           #broadcastEvent,
@@ -660,7 +662,7 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
 
   @override
   _i7.Future<_i4.NostrBroadcastResult> publishFileMetadata({
-    required _i16.NIP94Metadata? metadata,
+    required _i15.NIP94Metadata? metadata,
     required String? content,
     List<String>? hashtags = const [],
   }) =>
@@ -780,6 +782,16 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
       ) as _i7.Future<void>);
 
   @override
+  _i7.Future<void> closeAllSubscriptions() => (super.noSuchMethod(
+        Invocation.method(
+          #closeAllSubscriptions,
+          [],
+        ),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -789,7 +801,7 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
       );
 
   @override
-  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -798,7 +810,7 @@ class MockINostrService extends _i1.Mock implements _i4.INostrService {
       );
 
   @override
-  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -839,7 +851,7 @@ class MockDirectUploadService extends _i1.Mock
 
   @override
   _i7.Future<_i5.DirectUploadResult> uploadVideo({
-    required _i17.File? videoFile,
+    required _i16.File? videoFile,
     required String? nostrPubkey,
     String? title,
     String? description,
@@ -905,7 +917,7 @@ class MockDirectUploadService extends _i1.Mock
 
   @override
   _i7.Future<_i5.DirectUploadResult> uploadProfilePicture({
-    required _i17.File? imageFile,
+    required _i16.File? imageFile,
     required String? nostrPubkey,
     void Function(double)? onProgress,
   }) =>
@@ -944,7 +956,7 @@ class MockDirectUploadService extends _i1.Mock
       );
 
   @override
-  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -953,7 +965,7 @@ class MockDirectUploadService extends _i1.Mock
       );
 
   @override
-  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -974,7 +986,7 @@ class MockDirectUploadService extends _i1.Mock
 /// A class which mocks [ImagePicker].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockImagePicker extends _i1.Mock implements _i18.ImagePicker {
+class MockImagePicker extends _i1.Mock implements _i17.ImagePicker {
   MockImagePicker() {
     _i1.throwOnMissingStub(this);
   }
@@ -1114,4 +1126,129 @@ class MockImagePicker extends _i1.Mock implements _i18.ImagePicker {
         ),
         returnValue: false,
       ) as bool);
+}
+
+/// A class which mocks [SubscriptionManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSubscriptionManager extends _i1.Mock
+    implements _i18.SubscriptionManager {
+  MockSubscriptionManager() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool get hasListeners => (super.noSuchMethod(
+        Invocation.getter(#hasListeners),
+        returnValue: false,
+      ) as bool);
+
+  @override
+  _i7.Future<String> createSubscription({
+    required String? name,
+    required List<_i14.Filter>? filters,
+    required dynamic Function(_i9.Event)? onEvent,
+    dynamic Function(dynamic)? onError,
+    _i10.VoidCallback? onComplete,
+    Duration? timeout,
+    int? priority = 5,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createSubscription,
+          [],
+          {
+            #name: name,
+            #filters: filters,
+            #onEvent: onEvent,
+            #onError: onError,
+            #onComplete: onComplete,
+            #timeout: timeout,
+            #priority: priority,
+          },
+        ),
+        returnValue: _i7.Future<String>.value(_i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #createSubscription,
+            [],
+            {
+              #name: name,
+              #filters: filters,
+              #onEvent: onEvent,
+              #onError: onError,
+              #onComplete: onComplete,
+              #timeout: timeout,
+              #priority: priority,
+            },
+          ),
+        )),
+      ) as _i7.Future<String>);
+
+  @override
+  _i7.Future<void> cancelSubscription(String? subscriptionId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelSubscription,
+          [subscriptionId],
+        ),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
+
+  @override
+  _i7.Future<void> cancelSubscriptionsByName(String? namePattern) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelSubscriptionsByName,
+          [namePattern],
+        ),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
+
+  @override
+  Map<String, dynamic> getStats() => (super.noSuchMethod(
+        Invocation.method(
+          #getStats,
+          [],
+        ),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #addListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #removeListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void notifyListeners() => super.noSuchMethod(
+        Invocation.method(
+          #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

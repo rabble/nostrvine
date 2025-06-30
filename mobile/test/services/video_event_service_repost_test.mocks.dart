@@ -7,12 +7,14 @@ import 'dart:async' as _i4;
 import 'dart:ui' as _i8;
 
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i11;
 import 'package:nostr_sdk/event.dart' as _i5;
 import 'package:nostr_sdk/filter.dart' as _i6;
 import 'package:openvine/models/nip94_metadata.dart' as _i7;
 import 'package:openvine/services/nostr_key_manager.dart' as _i2;
 import 'package:openvine/services/nostr_service_interface.dart' as _i3;
 import 'package:openvine/services/seen_videos_service.dart' as _i9;
+import 'package:openvine/services/subscription_manager.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -289,6 +291,16 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i4.Future<void>);
 
   @override
+  _i4.Future<void> closeAllSubscriptions() => (super.noSuchMethod(
+        Invocation.method(
+          #closeAllSubscriptions,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -415,6 +427,131 @@ class MockSeenVideosService extends _i1.Mock implements _i9.SeenVideosService {
   Map<String, dynamic> getStatistics() => (super.noSuchMethod(
         Invocation.method(
           #getStatistics,
+          [],
+        ),
+        returnValue: <String, dynamic>{},
+      ) as Map<String, dynamic>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #addListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void removeListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #removeListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void notifyListeners() => super.noSuchMethod(
+        Invocation.method(
+          #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+}
+
+/// A class which mocks [SubscriptionManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSubscriptionManager extends _i1.Mock
+    implements _i10.SubscriptionManager {
+  MockSubscriptionManager() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool get hasListeners => (super.noSuchMethod(
+        Invocation.getter(#hasListeners),
+        returnValue: false,
+      ) as bool);
+
+  @override
+  _i4.Future<String> createSubscription({
+    required String? name,
+    required List<_i6.Filter>? filters,
+    required dynamic Function(_i5.Event)? onEvent,
+    dynamic Function(dynamic)? onError,
+    _i8.VoidCallback? onComplete,
+    Duration? timeout,
+    int? priority = 5,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createSubscription,
+          [],
+          {
+            #name: name,
+            #filters: filters,
+            #onEvent: onEvent,
+            #onError: onError,
+            #onComplete: onComplete,
+            #timeout: timeout,
+            #priority: priority,
+          },
+        ),
+        returnValue: _i4.Future<String>.value(_i11.dummyValue<String>(
+          this,
+          Invocation.method(
+            #createSubscription,
+            [],
+            {
+              #name: name,
+              #filters: filters,
+              #onEvent: onEvent,
+              #onError: onError,
+              #onComplete: onComplete,
+              #timeout: timeout,
+              #priority: priority,
+            },
+          ),
+        )),
+      ) as _i4.Future<String>);
+
+  @override
+  _i4.Future<void> cancelSubscription(String? subscriptionId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelSubscription,
+          [subscriptionId],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> cancelSubscriptionsByName(String? namePattern) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelSubscriptionsByName,
+          [namePattern],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  Map<String, dynamic> getStats() => (super.noSuchMethod(
+        Invocation.method(
+          #getStats,
           [],
         ),
         returnValue: <String, dynamic>{},

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Web Platform Compatibility**: Fixed critical Platform._version error preventing web app from connecting to relays
+  - Fixed dart:io imports in platform_secure_storage.dart with conditional imports for web compatibility
+  - Fixed dart:io imports in secure_key_storage_service.dart for web support
+  - Fixed nostr_sdk relay implementation to use platform-specific WebSocket connections
+  - Created separate IO and Web implementations for relay connections in nostr_sdk
+  - Web app now successfully connects to wss://vine.hol.is relay
+  - Resolved runtime errors that prevented web deployment from functioning
+
 ### Changed
 - **Reduced Logging Verbosity**: Significantly reduced excessive console logging
   - Removed verbose curation service logging that spammed console on every video event

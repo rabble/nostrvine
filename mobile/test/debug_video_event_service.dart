@@ -8,6 +8,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service.dart';
 import 'package:openvine/services/nostr_key_manager.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 // Simple mock NostrService that we can control
@@ -94,7 +95,8 @@ void main() {
     // This is a hack but allows us to test without SharedPreferences
     
     Log.info('📡 Creating VideoEventService', name: 'DebugTest');
-    final videoEventService = VideoEventService(nostrService);
+    final subscriptionManager = SubscriptionManager(nostrService);
+    final videoEventService = VideoEventService(nostrService, subscriptionManager: subscriptionManager);
     
     // Add a listener to track changes
     int changeCount = 0;

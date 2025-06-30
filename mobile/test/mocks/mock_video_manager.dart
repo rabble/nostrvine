@@ -95,6 +95,15 @@ class MockVideoManager implements IVideoManager {
   final Map<String, VideoPlayerController?> _controllers = {};
   final StreamController<void> _stateChangesController = StreamController<void>.broadcast();
   
+  @override
+  int get primaryVideoCount => _videos.length;
+  
+  @override
+  int get discoveryVideoCount => 0;
+  
+  @override
+  bool isAtFeedBoundary(int index) => false;
+  
   // Configuration (ignored in mock but needed for compatibility)
   final VideoManagerConfig? _config;
   

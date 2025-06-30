@@ -7,6 +7,7 @@ import 'package:mockito/annotations.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/providers/comments_provider.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
@@ -14,12 +15,14 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 @GenerateMocks([
   INostrService,
   AuthService,
+  SubscriptionManager,
 ])
 import 'comment_posting_integration_test.mocks.dart';
 void main() {
   group('Comment Posting Integration Tests', () {
     late MockINostrService mockNostrService;
     late MockAuthService mockAuthService;
+    late MockSubscriptionManager mockSubscriptionManager;
     late SocialService socialService;
     late CommentsProvider commentsProvider;
     
@@ -31,12 +34,17 @@ void main() {
     setUp(() {
       mockNostrService = MockINostrService();
       mockAuthService = MockAuthService();
+      mockSubscriptionManager = MockSubscriptionManager();
       
       // Setup auth service defaults
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.currentPublicKeyHex).thenReturn(testCurrentUserPubkey);
       
-      socialService = SocialService(mockNostrService, mockAuthService);
+      // Mock subscribeToEvents to prevent initialization calls
+      when(mockNostrService.subscribeToEvents(filters: anyNamed('filters')))
+          .thenAnswer((_) => const Stream.empty());
+      
+      socialService = SocialService(mockNostrService, mockAuthService, subscriptionManager: mockSubscriptionManager);
       commentsProvider = CommentsProvider(
         socialService: socialService,
         authService: mockAuthService,

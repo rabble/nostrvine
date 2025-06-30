@@ -11,6 +11,7 @@ import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';
 import '../utils/nostr_timestamp.dart';
 import '../utils/unified_logger.dart';
+import 'user_profile_service.dart' as ups;
 
 /// Authentication state for the user
 enum AuthState {
@@ -287,6 +288,41 @@ class AuthService extends ChangeNotifier {
       _setAuthState(AuthState.unauthenticated);
       
       return AuthResult.failure(_lastError!);
+    }
+  }
+  
+  /// Refresh the current user's profile from UserProfileService
+  Future<void> refreshCurrentProfile(ups.UserProfileService userProfileService) async {
+    if (_currentKeyContainer == null) return;
+    
+    Log.debug('🔄 Refreshing current user profile from UserProfileService', name: 'AuthService', category: LogCategory.auth);
+    
+    // Get the latest profile from UserProfileService
+    final cachedProfile = userProfileService.getCachedProfile(_currentKeyContainer!.publicKeyHex);
+    
+    if (cachedProfile != null) {
+      Log.info('📋 Found updated profile:', name: 'AuthService', category: LogCategory.auth);
+      Log.info('  - name: ${cachedProfile.name}', name: 'AuthService', category: LogCategory.auth);
+      Log.info('  - displayName: ${cachedProfile.displayName}', name: 'AuthService', category: LogCategory.auth);
+      Log.info('  - about: ${cachedProfile.about}', name: 'AuthService', category: LogCategory.auth);
+      
+      // Update the AuthService profile with data from UserProfileService
+      _currentProfile = UserProfile(
+        npub: _currentKeyContainer!.npub,
+        publicKeyHex: _currentKeyContainer!.publicKeyHex,
+        displayName: cachedProfile.displayName ?? cachedProfile.name ?? NostrEncoding.maskKey(_currentKeyContainer!.npub),
+        about: cachedProfile.about,
+        picture: cachedProfile.picture,
+        nip05: cachedProfile.nip05,
+      );
+      
+      // Notify listeners and stream
+      _profileController.add(_currentProfile);
+      notifyListeners();
+      
+      Log.info('✅ AuthService profile updated', name: 'AuthService', category: LogCategory.auth);
+    } else {
+      Log.warning('⚠️ No cached profile found in UserProfileService', name: 'AuthService', category: LogCategory.auth);
     }
   }
   

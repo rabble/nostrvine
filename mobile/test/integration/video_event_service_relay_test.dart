@@ -8,6 +8,7 @@ import 'package:openvine/services/nostr_service.dart';
 import 'package:openvine/services/nostr_key_manager.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
@@ -16,6 +17,7 @@ void main() {
   group('VideoEventService Live Relay Integration', () {
     late NostrKeyManager keyManager;
     late NostrService nostrService;
+    late SubscriptionManager subscriptionManager;
     late VideoEventService videoEventService;
     late SeenVideosService seenVideosService;
     late ContentBlocklistService blocklistService;
@@ -47,15 +49,19 @@ void main() {
       nostrService = NostrService(keyManager);
       await nostrService.initialize();
 
+      subscriptionManager = SubscriptionManager(nostrService);
+
       videoEventService = VideoEventService(
         nostrService,
         seenVideosService: seenVideosService,
+        subscriptionManager: subscriptionManager,
       );
       videoEventService.setBlocklistService(blocklistService);
     });
 
     tearDown(() async {
       videoEventService.dispose();
+      subscriptionManager.dispose();
       nostrService.dispose();
       seenVideosService.dispose();
     });

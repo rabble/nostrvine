@@ -6,25 +6,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import '../../lib/services/video_event_service.dart';
-import '../../lib/services/nostr_service_interface.dart';
-import '../../lib/services/seen_videos_service.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/seen_videos_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import './video_event_service_repost_test.mocks.dart';
 
 @GenerateMocks([
   INostrService,
   SeenVideosService,
+  SubscriptionManager,
 ])
 void main() {
   group('VideoEventService Kind 6 Repost Processing', () {
     late VideoEventService videoEventService;
     late MockINostrService mockNostrService;
     late MockSeenVideosService mockSeenVideosService;
+    late MockSubscriptionManager mockSubscriptionManager;
     late StreamController<Event> eventStreamController;
 
     setUp(() {
       mockNostrService = MockINostrService();
       mockSeenVideosService = MockSeenVideosService();
+      mockSubscriptionManager = MockSubscriptionManager();
       eventStreamController = StreamController<Event>.broadcast();
 
       // Setup default mock behaviors
@@ -42,6 +46,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         seenVideosService: mockSeenVideosService,
+        subscriptionManager: mockSubscriptionManager,
       );
     });
 

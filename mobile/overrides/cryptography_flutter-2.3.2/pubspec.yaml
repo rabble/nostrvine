@@ -26,3 +26,6 @@ flutter:
         pluginClass: CryptographyFlutterPlugin
       windows:
         pluginClass: CryptographyFlutterPlugin
+      web:
+        pluginClass: CryptographyFlutterWebPlugin
+        fileName: cryptography_flutter_web.dart

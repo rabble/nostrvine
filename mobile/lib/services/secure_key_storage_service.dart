@@ -2,7 +2,7 @@
 // ABOUTME: Replaces the vulnerable KeyStorageService with production-grade cryptographic key protection
 
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'stubs/platform_stub.dart';
 import 'package:flutter/foundation.dart';
 import '../utils/secure_key_container.dart';
 import '../utils/nostr_encoding.dart';

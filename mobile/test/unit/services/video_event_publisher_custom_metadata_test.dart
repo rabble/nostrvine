@@ -14,13 +14,12 @@ import 'package:openvine/services/upload_manager.dart';
 class MockINostrService extends Mock implements INostrService {}
 class MockUploadManager extends Mock implements UploadManager {}
 class FakeNIP94Metadata extends Fake implements NIP94Metadata {}
-class FakeUploadStatus extends Fake implements UploadStatus {}
 class FakeReadyEventData extends Fake implements ReadyEventData {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeNIP94Metadata());
-    registerFallbackValue(UploadStatus.published);
+    registerFallbackValue(UploadStatus.pending);
   });
 
   late VideoEventPublisher videoEventPublisher;
@@ -38,35 +37,7 @@ void main() {
       cleanupRemoteEvent: (publicId) async {},
     );
     
-    // Default mock behavior
-    when(() => mockNostrService.publishVideoEvent(
-      videoUrl: any(named: 'videoUrl'),
-      content: any(named: 'content'),
-      title: any(named: 'title'),
-      thumbnailUrl: any(named: 'thumbnailUrl'),
-      duration: any(named: 'duration'),
-      dimensions: any(named: 'dimensions'),
-      mimeType: any(named: 'mimeType'),
-      sha256: any(named: 'sha256'),
-      fileSize: any(named: 'fileSize'),
-      hashtags: any(named: 'hashtags'),
-    )).thenAnswer((_) async => NostrBroadcastResult(
-      event: Event(
-        id: 'event123',
-        pubkey: 'pubkey123',
-        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        kind: 22,
-        tags: [],
-        content: '',
-        sig: '',
-      ),
-      successCount: 1,
-      totalRelays: 1,
-      results: {'relay1': true},
-      errors: {},
-    ));
-    when(() => mockUploadManager.updateUploadStatus(any(), any(), eventId: any(named: 'eventId')))
-        .thenAnswer((_) async {});
+    // Default mock behavior - removed global stub, tests will provide specific stubs
   });
 
   group('VideoEventPublisher.publishVideoEvent', () {
@@ -360,7 +331,7 @@ void main() {
         fileSize: any(named: 'fileSize'),
         hashtags: any(named: 'hashtags'),
       )).thenThrow(Exception('Publishing failed'));
-      when(() => mockUploadManager.updateUploadStatus(any(), UploadStatus.failed, errorMessage: any(named: 'errorMessage')))
+      when(() => mockUploadManager.updateUploadStatus(any(), UploadStatus.failed))
           .thenAnswer((_) async {});
 
       // Act
@@ -373,8 +344,7 @@ void main() {
       expect(result, isFalse);
       verify(() => mockUploadManager.updateUploadStatus(
         upload.id, 
-        UploadStatus.failed, 
-        errorMessage: any(named: 'errorMessage'),
+        UploadStatus.failed,
       )).called(1);
     });
 
@@ -449,7 +419,29 @@ void main() {
         videoId: 'video123',
       );
 
-      when(() => mockNostrService.publishVideoEvent(any())).thenAnswer((_) async => 'event-id-456');
+      when(() => mockNostrService.publishVideoEvent(
+        videoUrl: any(named: 'videoUrl'),
+        content: any(named: 'content'),
+        title: any(named: 'title'),
+        thumbnailUrl: any(named: 'thumbnailUrl'),
+        duration: any(named: 'duration'),
+        dimensions: any(named: 'dimensions'),
+        mimeType: any(named: 'mimeType'),
+        sha256: any(named: 'sha256'),
+        fileSize: any(named: 'fileSize'),
+        hashtags: any(named: 'hashtags'),
+      )).thenAnswer((_) async => NostrBroadcastResult(
+        event: Event(
+          'pubkey123',
+          22,
+          [],
+          '',
+        ),
+        successCount: 1,
+        totalRelays: 1,
+        results: {'relay1': true},
+        errors: {},
+      ));
 
       // Act
       final result = await videoEventPublisher.publishVideoEvent(
@@ -462,7 +454,7 @@ void main() {
       verify(() => mockUploadManager.updateUploadStatus(
         'upload-123',
         UploadStatus.published,
-        eventId: 'event-id-456',
+        nostrEventId: any(named: 'nostrEventId'),
       )).called(1);
     });
   });

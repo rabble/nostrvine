@@ -8,8 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/secure_key_container.dart';
 import '../utils/unified_logger.dart';
 
-// Platform detection - safer for web compatibility
-import 'dart:io' show Platform;
+// Platform detection with web compatibility
+import 'dart:io' if (dart.library.html) 'stubs/platform_stub.dart' show Platform;
 
 /// Exception thrown by platform secure storage operations
 class PlatformSecureStorageException implements Exception {

@@ -43,7 +43,7 @@ class VideoEventService extends ChangeNotifier {
   
   // Optional services for enhanced functionality
   ContentBlocklistService? _blocklistService;
-  SubscriptionManager? _subscriptionManager;
+  final SubscriptionManager _subscriptionManager;
   
   // Track if current subscription is for following list or general feed
   bool _isFollowingFeed = false;
@@ -54,7 +54,7 @@ class VideoEventService extends ChangeNotifier {
   VideoEventService(
     this._nostrService, {
     SeenVideosService? seenVideosService,
-    SubscriptionManager? subscriptionManager,
+    required SubscriptionManager subscriptionManager,
   }) : _subscriptionManager = subscriptionManager;
   
   /// Set the blocklist service for content filtering
@@ -63,11 +63,6 @@ class VideoEventService extends ChangeNotifier {
     Log.debug('Blocklist service attached to VideoEventService', name: 'VideoEventService', category: LogCategory.video);
   }
   
-  /// Set the subscription manager for centralized subscription management
-  void setSubscriptionManager(SubscriptionManager subscriptionManager) {
-    _subscriptionManager = subscriptionManager;
-    Log.debug('SubscriptionManager attached to VideoEventService', name: 'VideoEventService', category: LogCategory.video);
-  }
   
   // Getters
   List<VideoEvent> get videoEvents => List.unmodifiable(_videoEvents);
@@ -179,6 +174,11 @@ class VideoEventService extends ChangeNotifier {
         h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
       );
       
+      // Debug: Log when subscribing to Classic Vines
+      if (authors != null && authors.contains(AppConstants.classicVinesPubkey)) {
+        Log.debug('🌟 Subscribing to Classic Vines account (${AppConstants.classicVinesPubkey})', name: 'VideoEventService', category: LogCategory.video);
+      }
+      
       if (hashtags != null && hashtags.isNotEmpty) {
         Log.debug('Adding hashtag filter to relay query: $hashtags', name: 'VideoEventService', category: LogCategory.video);
       }
@@ -210,41 +210,19 @@ class VideoEventService extends ChangeNotifier {
       // Store hashtag filter for event processing
       _activeHashtagFilter = hashtags;
       
-      // Use managed subscription if available, otherwise fall back to direct subscription
-      if (_subscriptionManager != null) {
-        Log.debug('Creating managed subscription via SubscriptionManager...', name: 'VideoEventService', category: LogCategory.video);
-        final subscriptionId = await _subscriptionManager!.createSubscription(
-          name: 'video_feed',
-          filters: filters,
-          onEvent: (event) => _handleNewVideoEvent(event),
-          onError: (error) => _handleSubscriptionError(error),
-          onComplete: () => _handleSubscriptionComplete(),
-          priority: _isFollowingFeed ? 1 : 3, // Higher priority for following feed
-        );
-        
-        _activeSubscriptionIds.add(subscriptionId);
-        Log.info('Managed subscription created with ID: $subscriptionId', name: 'VideoEventService', category: LogCategory.video);
-      } else {
-        Log.debug('Creating direct subscription via nostr_sdk...', name: 'VideoEventService', category: LogCategory.video);
-        final eventStream = _nostrService.subscribeToEvents(filters: filters);
-        
-        final subscriptionKey = 'video_feed_${DateTime.now().millisecondsSinceEpoch}';
-        final subscription = eventStream.listen(
-          (event) {
-            _handleNewVideoEvent(event);
-          },
-          onError: (error) {
-            Log.error('Stream error: $error', name: 'VideoEventService', category: LogCategory.video);
-            _handleSubscriptionError(error);
-          },
-          onDone: () {
-            _handleSubscriptionComplete();
-          },
-        );
-        
-        _subscriptions[subscriptionKey] = subscription;
-        Log.info('Direct subscription created with key: $subscriptionKey', name: 'VideoEventService', category: LogCategory.video);
-      }
+      // Always use managed subscription via SubscriptionManager
+      Log.debug('Creating managed subscription via SubscriptionManager...', name: 'VideoEventService', category: LogCategory.video);
+      final subscriptionId = await _subscriptionManager.createSubscription(
+        name: 'video_feed',
+        filters: filters,
+        onEvent: (event) => _handleNewVideoEvent(event),
+        onError: (error) => _handleSubscriptionError(error),
+        onComplete: () => _handleSubscriptionComplete(),
+        priority: _isFollowingFeed ? 1 : 3, // Higher priority for following feed
+      );
+      
+      _activeSubscriptionIds.add(subscriptionId);
+      Log.info('Managed subscription created with ID: $subscriptionId', name: 'VideoEventService', category: LogCategory.video);
       
       _isSubscribed = true;
       
@@ -347,6 +325,11 @@ class VideoEventService extends ChangeNotifier {
           Log.verbose('Video author pubkey: ${videoEvent.pubkey}', name: 'VideoEventService', category: LogCategory.video);
           Log.verbose('Video title: ${videoEvent.title}', name: 'VideoEventService', category: LogCategory.video);
           Log.verbose('Video hashtags: ${videoEvent.hashtags}', name: 'VideoEventService', category: LogCategory.video);
+          
+          // Debug: Special logging for Classic Vines content
+          if (videoEvent.pubkey == AppConstants.classicVinesPubkey) {
+            Log.info('🌟 Received Classic Vines video: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}', name: 'VideoEventService', category: LogCategory.video);
+          }
           
           // Check hashtag filter if active
           if (_activeHashtagFilter != null && _activeHashtagFilter!.isNotEmpty) {
@@ -621,9 +604,8 @@ class VideoEventService extends ChangeNotifier {
     debugPrint('🔍 One-shot historical query: until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}, limit=$limit');
     Log.debug('Filter: ${filter.toJson()}', name: 'VideoEventService', category: LogCategory.video);
     
-    // Use managed subscription if available
-    if (_subscriptionManager != null) {
-      final subscriptionId = await _subscriptionManager!.createSubscription(
+    // Always use managed subscription
+    final subscriptionId = await _subscriptionManager.createSubscription(
         name: 'historical_query',
         filters: [filter],
         onEvent: (event) => _handleNewVideoEvent(event),
@@ -641,37 +623,8 @@ class VideoEventService extends ChangeNotifier {
       
       // Clean up subscription when done
       completer.future.whenComplete(() {
-        _subscriptionManager!.cancelSubscription(subscriptionId);
+        _subscriptionManager.cancelSubscription(subscriptionId);
       });
-    } else {
-      // Fall back to direct subscription
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
-      late StreamSubscription subscription;
-      
-      subscription = eventStream.listen(
-        (event) {
-          _handleNewVideoEvent(event);
-        },
-        onError: (error) {
-          Log.error('Historical query error: $error', name: 'VideoEventService', category: LogCategory.video);
-          if (!completer.isCompleted) completer.completeError(error);
-        },
-        onDone: () {
-          Log.info('Historical query completed (EOSE received)', name: 'VideoEventService', category: LogCategory.video);
-          subscription.cancel();
-          if (!completer.isCompleted) completer.complete();
-        },
-      );
-      
-      // Set timeout for the query
-      Timer(const Duration(seconds: 30), () {
-        if (!completer.isCompleted) {
-          Log.debug('⏰ Historical query timed out after 30 seconds', name: 'VideoEventService', category: LogCategory.video);
-          subscription.cancel();
-          completer.complete();
-        }
-      });
-    }
     
     return completer.future;
   }
@@ -843,10 +796,10 @@ class VideoEventService extends ChangeNotifier {
   /// Cancel all existing subscriptions
   Future<void> _cancelExistingSubscriptions() async {
     // Cancel managed subscriptions
-    if (_subscriptionManager != null && _activeSubscriptionIds.isNotEmpty) {
+    if (_activeSubscriptionIds.isNotEmpty) {
       Log.debug('Cancelling ${_activeSubscriptionIds.length} managed subscriptions...', name: 'VideoEventService', category: LogCategory.video);
       for (final subscriptionId in _activeSubscriptionIds) {
-        await _subscriptionManager!.cancelSubscription(subscriptionId);
+        await _subscriptionManager.cancelSubscription(subscriptionId);
       }
       _activeSubscriptionIds.clear();
     }

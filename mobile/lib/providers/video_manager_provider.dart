@@ -13,6 +13,7 @@ import '../services/circuit_breaker_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/seen_videos_service.dart';
 import '../services/connection_status_service.dart';
+import '../services/subscription_manager.dart';
 import '../utils/unified_logger.dart';
 
 /// Provider wrapper for the TDD VideoManager system
@@ -313,10 +314,14 @@ class VideoManagerProvider extends ChangeNotifier {
       final baseManager = VideoManagerService(config: config);
       _videoManager = VideoManagerServiceWithPlayback(baseManager);
 
+      // Initialize subscription manager
+      final subscriptionManager = SubscriptionManager(nostrService);
+
       // Initialize Nostr bridge
       _nostrBridge = NostrVideoBridge(
         videoManager: _videoManager,
         nostrService: nostrService,
+        subscriptionManager: subscriptionManager,
         seenVideosService: seenVideosService,
       );
 

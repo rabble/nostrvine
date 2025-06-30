@@ -7,6 +7,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'lib/services/nostr_service.dart';
 import 'lib/services/nostr_key_manager.dart';
 import 'lib/services/video_event_service.dart';
+import 'lib/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() async {
@@ -36,7 +37,8 @@ void main() async {
     
     // Create VideoEventService
     Log.debug('\n🎥 Creating VideoEventService...');
-    final videoService = VideoEventService(nostrService);
+    final subscriptionManager = SubscriptionManager(nostrService);
+    final videoService = VideoEventService(nostrService, subscriptionManager: subscriptionManager);
     
     // Test direct subscription
     Log.debug('\n📡 Testing direct subscription to nostr service...');

@@ -7,12 +7,14 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'nostr_service_interface.dart';
 import 'auth_service.dart';
+import 'subscription_manager.dart';
 import '../utils/unified_logger.dart';
 
 /// Service for managing social interactions on Nostr
 class SocialService extends ChangeNotifier {
   final INostrService _nostrService;
   final AuthService _authService;
+  final SubscriptionManager _subscriptionManager;
   
   // Cache for UI state - liked events by current user
   final Set<String> _likedEventIds = <String>{};
@@ -38,16 +40,15 @@ class SocialService extends ChangeNotifier {
   // Current user's latest Kind 3 event for follow list management
   Event? _currentUserContactListEvent;
   
-  // Subscription for real-time like updates
-  StreamSubscription<Event>? _likeSubscription;
+  // Managed subscription IDs
+  String? _likeSubscriptionId;
+  String? _followSubscriptionId;
+  String? _repostSubscriptionId;
+  String? _userLikesSubscriptionId;
+  String? _userRepostsSubscriptionId;
   
-  // Subscription for real-time follow list updates
-  StreamSubscription<Event>? _followSubscription;
-  
-  // Subscription for real-time repost updates
-  StreamSubscription<Event>? _repostSubscription;
-  
-  SocialService(this._nostrService, this._authService) {
+  SocialService(this._nostrService, this._authService, {required SubscriptionManager subscriptionManager}) 
+      : _subscriptionManager = subscriptionManager {
     _initialize();
   }
   
@@ -278,8 +279,9 @@ class SocialService extends ChangeNotifier {
       final completer = Completer<int>();
       int likeCount = 0;
       
-      // Subscribe to Kind 7 reactions for this event
-      final subscription = _nostrService.subscribeToEvents(
+      // Subscribe to Kind 7 reactions for this event using SubscriptionManager
+      final subscriptionId = await _subscriptionManager.createSubscription(
+        name: 'like_count_${eventId.substring(0, 8)}',
         filters: [
           Filter(
             kinds: [7],
@@ -287,11 +289,7 @@ class SocialService extends ChangeNotifier {
             h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
-      );
-      
-      // Count the reactions
-      final streamSubscription = subscription.listen(
-        (event) {
+        onEvent: (event) {
           // Only count '+' reactions as likes
           if (event.content.trim() == '+') {
             likeCount++;
@@ -303,20 +301,14 @@ class SocialService extends ChangeNotifier {
             completer.complete(0);
           }
         },
-        onDone: () {
+        onComplete: () {
           if (!completer.isCompleted) {
             completer.complete(likeCount);
           }
         },
+        timeout: const Duration(seconds: 5),
+        priority: 4, // Lower priority for count queries
       );
-      
-      // Set a timeout to avoid hanging indefinitely
-      Timer(const Duration(seconds: 5), () {
-        if (!completer.isCompleted) {
-          streamSubscription.cancel();
-          completer.complete(likeCount);
-        }
-      });
       
       return await completer.future;
       
@@ -336,8 +328,9 @@ class SocialService extends ChangeNotifier {
       
       Log.debug('Loading user liked events for: ${currentUserPubkey.substring(0, 8)}...', name: 'SocialService', category: LogCategory.system);
       
-      // Subscribe to current user's reactions (Kind 7)
-      final subscription = _nostrService.subscribeToEvents(
+      // Subscribe to current user's reactions (Kind 7) using SubscriptionManager
+      _userLikesSubscriptionId = await _subscriptionManager.createSubscription(
+        name: 'user_likes_${currentUserPubkey.substring(0, 8)}',
         filters: [
           Filter(
             authors: [currentUserPubkey],
@@ -345,11 +338,7 @@ class SocialService extends ChangeNotifier {
             h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
-      );
-      
-      // Process user's reaction events
-      subscription.listen(
-        (event) {
+        onEvent: (event) {
           // Only process '+' reactions as likes
           if (event.content.trim() == '+') {
             // Extract the liked event ID from 'e' tags
@@ -365,9 +354,8 @@ class SocialService extends ChangeNotifier {
             }
           }
         },
-        onError: (error) {
-          Log.error('Error loading user likes: $error', name: 'SocialService', category: LogCategory.system);
-        },
+        onError: (error) => Log.error('Error loading user likes: $error', name: 'SocialService', category: LogCategory.system),
+        priority: 3, // Lower priority for historical data
       );
       
     } catch (e) {
@@ -385,8 +373,9 @@ class SocialService extends ChangeNotifier {
       
       Log.debug('Loading user reposted events for: ${currentUserPubkey.substring(0, 8)}...', name: 'SocialService', category: LogCategory.system);
       
-      // Subscribe to current user's reposts (Kind 6)
-      final subscription = _nostrService.subscribeToEvents(
+      // Subscribe to current user's reposts (Kind 6) using SubscriptionManager
+      _userRepostsSubscriptionId = await _subscriptionManager.createSubscription(
+        name: 'user_reposts_${currentUserPubkey.substring(0, 8)}',
         filters: [
           Filter(
             authors: [currentUserPubkey],
@@ -394,11 +383,7 @@ class SocialService extends ChangeNotifier {
             h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
           ),
         ],
-      );
-      
-      // Process user's repost events
-      subscription.listen(
-        (event) {
+        onEvent: (event) {
           // Extract the reposted event ID from 'e' tags
           for (final tag in event.tags) {
             if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
@@ -412,9 +397,8 @@ class SocialService extends ChangeNotifier {
           }
           notifyListeners(); // Notify UI of repost changes
         },
-        onError: (error) {
-          Log.error('Error loading user reposts: $error', name: 'SocialService', category: LogCategory.system);
-        },
+        onError: (error) => Log.error('Error loading user reposts: $error', name: 'SocialService', category: LogCategory.system),
+        priority: 3, // Lower priority for historical data
       );
       
     } catch (e) {
@@ -1221,9 +1205,29 @@ class SocialService extends ChangeNotifier {
   @override
   void dispose() {
     Log.debug('�️ Disposing SocialService', name: 'SocialService', category: LogCategory.system);
-    _likeSubscription?.cancel();
-    _followSubscription?.cancel();
-    _repostSubscription?.cancel();
+    
+    // Cancel all managed subscriptions
+    if (_likeSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_likeSubscriptionId!);
+      _likeSubscriptionId = null;
+    }
+    if (_followSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_followSubscriptionId!);
+      _followSubscriptionId = null;
+    }
+    if (_repostSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_repostSubscriptionId!);
+      _repostSubscriptionId = null;
+    }
+    if (_userLikesSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_userLikesSubscriptionId!);
+      _userLikesSubscriptionId = null;
+    }
+    if (_userRepostsSubscriptionId != null) {
+      _subscriptionManager.cancelSubscription(_userRepostsSubscriptionId!);
+      _userRepostsSubscriptionId = null;
+    }
+    
     super.dispose();
   }
 }

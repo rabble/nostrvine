@@ -9,6 +9,7 @@ import '../services/video_event_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/seen_videos_service.dart';
 import '../services/connection_status_service.dart';
+import '../services/subscription_manager.dart';
 import '../utils/unified_logger.dart';
 
 /// Bridge service that connects Nostr video events to the TDD VideoManager
@@ -44,9 +45,10 @@ class NostrVideoBridge extends ChangeNotifier {
   NostrVideoBridge({
     required IVideoManager videoManager,
     required INostrService nostrService,
+    required SubscriptionManager subscriptionManager,
     SeenVideosService? seenVideosService,
   }) : _videoManager = videoManager,
-       _videoEventService = VideoEventService(nostrService, seenVideosService: seenVideosService),
+       _videoEventService = VideoEventService(nostrService, seenVideosService: seenVideosService, subscriptionManager: subscriptionManager),
        _seenVideosService = seenVideosService;
 
   /// Whether the bridge is actively processing events
@@ -346,12 +348,14 @@ class NostrVideoBridgeFactory {
   static NostrVideoBridge create({
     required IVideoManager videoManager,
     required INostrService nostrService,
+    required SubscriptionManager subscriptionManager,
     SeenVideosService? seenVideosService,
     ConnectionStatusService? connectionService,
   }) {
     return NostrVideoBridge(
       videoManager: videoManager,
       nostrService: nostrService,
+      subscriptionManager: subscriptionManager,
       seenVideosService: seenVideosService,
     );
   }

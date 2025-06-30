@@ -120,12 +120,14 @@ class ProfileVideosProvider extends ChangeNotifier {
       final filter = Filter(
         authors: [pubkey],
         kinds: [22], // NIP-71 short video events
+        h: ['vine'], // Required for vine.hol.is relay
         limit: _pageSize,
       );
 
       Log.debug('Creating filter for profile videos:', name: 'ProfileVideosProvider', category: LogCategory.ui);
       Log.debug('  - Author: $pubkey', name: 'ProfileVideosProvider', category: LogCategory.ui);
       Log.debug('  - Kinds: [22]', name: 'ProfileVideosProvider', category: LogCategory.ui);
+      Log.debug('  - h: [vine]', name: 'ProfileVideosProvider', category: LogCategory.ui);
       Log.verbose('  - Limit: $_pageSize', name: 'ProfileVideosProvider', category: LogCategory.ui);
 
       final completer = Completer<void>();
@@ -230,6 +232,7 @@ class ProfileVideosProvider extends ChangeNotifier {
       final filter = Filter(
         authors: [_currentPubkey!],
         kinds: [22], // NIP-71 short video events
+        h: ['vine'], // Required for vine.hol.is relay
         until: _lastTimestamp, // Get videos older than the last one we have
         limit: _pageSize,
       );

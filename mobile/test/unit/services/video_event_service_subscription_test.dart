@@ -2,16 +2,52 @@
 // ABOUTME: Tests that different subscription parameters are properly allowed and not wrongly rejected as duplicates
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/subscription_manager.dart';
 
 // Mock classes
 class MockNostrService extends Mock implements INostrService {}
 class MockEvent extends Mock implements Event {}
+
+class TestSubscriptionManager extends Mock implements SubscriptionManager {
+  final StreamController<Event> eventStreamController;
+  final List<Map<String, dynamic>> subscriptionCalls = [];
+  
+  TestSubscriptionManager(this.eventStreamController);
+  
+  @override
+  Future<String> createSubscription({
+    required String name,
+    required List<Filter> filters,
+    required Function(Event) onEvent,
+    Function(dynamic)? onError,
+    VoidCallback? onComplete,
+    Duration? timeout,
+    int priority = 5,
+  }) async {
+    // Track the subscription call
+    subscriptionCalls.add({
+      'name': name,
+      'filters': filters,
+      'priority': priority,
+    });
+    
+    // Set up a stream listener that calls onEvent for each event
+    eventStreamController.stream.listen(onEvent);
+    return 'mock_sub_$name';
+  }
+  
+  @override
+  Future<void> cancelSubscription(String subscriptionId) async {
+    // No-op for tests
+  }
+}
 
 // Fake classes for setUpAll
 class FakeFilter extends Fake implements Filter {}
@@ -25,6 +61,7 @@ void main() {
     late VideoEventService videoEventService;
     late MockNostrService mockNostrService;
     late StreamController<Event> eventStreamController;
+    late TestSubscriptionManager testSubscriptionManager;
 
     setUp(() {
       mockNostrService = MockNostrService();
@@ -35,7 +72,12 @@ void main() {
       when(() => mockNostrService.subscribeToEvents(filters: any(named: 'filters')))
           .thenAnswer((_) => eventStreamController.stream);
       
-      videoEventService = VideoEventService(mockNostrService);
+      testSubscriptionManager = TestSubscriptionManager(eventStreamController);
+      
+      videoEventService = VideoEventService(
+        mockNostrService,
+        subscriptionManager: testSubscriptionManager,
+      );
     });
 
     tearDown(() async {
@@ -43,15 +85,6 @@ void main() {
     });
 
     test('should allow different subscriptions with different parameters', () async {
-      // Track subscription calls
-      final subscriptionCalls = <List<Filter>>[];
-      when(() => mockNostrService.subscribeToEvents(filters: any(named: 'filters')))
-          .thenAnswer((invocation) {
-            final filters = invocation.namedArguments[const Symbol('filters')] as List<Filter>;
-            subscriptionCalls.add(filters);
-            return eventStreamController.stream;
-          });
-
       // First subscription: Classic vines from specific author
       await videoEventService.subscribeToVideoFeed(
         authors: ['25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856'],
@@ -60,7 +93,7 @@ void main() {
       );
 
       // Should have created one subscription
-      expect(subscriptionCalls.length, equals(1));
+      expect(testSubscriptionManager.subscriptionCalls.length, equals(1));
       expect(videoEventService.isSubscribed, isTrue);
 
       // Second subscription: Open feed (all videos, no author filter)
@@ -70,16 +103,16 @@ void main() {
       );
 
       // Should have created a second subscription with different parameters
-      expect(subscriptionCalls.length, equals(2), 
+      expect(testSubscriptionManager.subscriptionCalls.length, equals(2), 
         reason: 'Should allow subscription with different parameters (no authors vs specific authors)');
       
       // Verify the subscriptions have different filters
-      final firstFilter = subscriptionCalls[0][0];
-      final secondFilter = subscriptionCalls[1][0];
+      final firstFilters = testSubscriptionManager.subscriptionCalls[0]['filters'] as List<Filter>;
+      final secondFilters = testSubscriptionManager.subscriptionCalls[1]['filters'] as List<Filter>;
       
-      expect(firstFilter.authors, isNotNull);
-      expect(firstFilter.authors!.length, equals(1));
-      expect(secondFilter.authors, isNull);
+      expect(firstFilters[0].authors, isNotNull);
+      expect(firstFilters[0].authors!.length, equals(1));
+      expect(secondFilters[0].authors, isNull);
     });
 
     test('should reject truly duplicate subscriptions', () async {

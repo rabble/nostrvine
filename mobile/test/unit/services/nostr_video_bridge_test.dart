@@ -9,6 +9,7 @@ import 'package:openvine/services/video_manager_interface.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/models/video_event.dart';
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_video_manager.dart';
@@ -17,6 +18,7 @@ import '../../mocks/mock_video_manager.dart';
 class MockNostrService extends Mock implements INostrService {}
 class MockSeenVideosService extends Mock implements SeenVideosService {}
 class MockConnectionStatusService extends Mock implements ConnectionStatusService {}
+class MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
   group('NostrVideoBridge', () {
@@ -25,6 +27,7 @@ void main() {
     late MockNostrService mockNostrService;
     late MockSeenVideosService? mockSeenVideosService;
     late MockConnectionStatusService mockConnectionService;
+    late MockSubscriptionManager mockSubscriptionManager;
 
     setUpAll(() {
       // Register fallback values
@@ -36,6 +39,7 @@ void main() {
       mockNostrService = MockNostrService();
       mockSeenVideosService = MockSeenVideosService();
       mockConnectionService = MockConnectionStatusService();
+      mockSubscriptionManager = MockSubscriptionManager();
 
       // Setup default mock behaviors (only what's actually needed)
       when(() => mockVideoManager.addVideoEvent(any())).thenAnswer((_) async {});
@@ -49,8 +53,8 @@ void main() {
       bridge = NostrVideoBridge(
         videoManager: mockVideoManager,
         nostrService: mockNostrService,
+        subscriptionManager: mockSubscriptionManager,
         seenVideosService: mockSeenVideosService,
-        connectionService: mockConnectionService,
       );
     });
 
@@ -102,6 +106,7 @@ void main() {
         final factoryBridge = NostrVideoBridgeFactory.create(
           videoManager: mockVideoManager,
           nostrService: mockNostrService,
+          subscriptionManager: mockSubscriptionManager,
           seenVideosService: mockSeenVideosService,
           connectionService: mockConnectionService,
         );
@@ -118,6 +123,7 @@ void main() {
         final minimalBridge = NostrVideoBridgeFactory.create(
           videoManager: mockVideoManager,
           nostrService: mockNostrService,
+          subscriptionManager: mockSubscriptionManager,
         );
 
         // ASSERT

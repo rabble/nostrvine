@@ -43,7 +43,7 @@ class AppConfig {
   
   // Nostr configuration
   static const List<String> defaultNostrRelays = [
-    'wss://vine.hol.is',
+    'wss://relay.damus.io',
   ];
   
   // Debugging

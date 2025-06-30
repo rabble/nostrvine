@@ -87,6 +87,9 @@ abstract class INostrService extends ChangeNotifier {
   Map<String, bool> getRelayStatus();
   Future<void> reconnectAll();
   
+  // Subscription management
+  Future<void> closeAllSubscriptions();
+  
   @override
   void dispose();
 }

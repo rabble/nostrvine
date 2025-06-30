@@ -24,7 +24,7 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
-            name: "nostrvine/native_camera",
+            name: "openvine/native_camera",
             binaryMessenger: registrar.messenger
         )
         let instance = NativeCameraPlugin()
@@ -255,13 +255,13 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
         // Create output file URL in app's temporary directory (not user Documents)
         let tempDir = FileManager.default.temporaryDirectory
         let timestamp = Int(Date().timeIntervalSince1970)
-        outputURL = tempDir.appendingPathComponent("nostrvine_\(timestamp).mov")
+        outputURL = tempDir.appendingPathComponent("openvine_\(timestamp).mov")
         
         // Clean up old temporary files (older than 1 hour)
         cleanupOldTempFiles(in: tempDir)
         
         print("🔵 [NativeCamera] Temp directory: \(tempDir)")
-        print("🔵 [NativeCamera] Output file: nostrvine_\(timestamp).mov")
+        print("🔵 [NativeCamera] Output file: openvine_\(timestamp).mov")
         
         guard let outputURL = outputURL else {
             print("❌ [NativeCamera] Failed to create output URL")
@@ -309,7 +309,7 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
         
         // IMPROVED FIX: Wait a moment for file to be written, then return
         isRecording = false
-        let expectedPath = outputURL?.path ?? "/tmp/nostrvine_recording.mov"
+        let expectedPath = outputURL?.path ?? "/tmp/openvine_recording.mov"
         
         print("🔧 [NativeCamera] Waiting for file to be written...")
         
@@ -453,8 +453,8 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             var cleanedCount = 0
             
             for fileURL in files {
-                // Only clean up nostrvine video files
-                if fileURL.lastPathComponent.starts(with: "nostrvine_") && fileURL.pathExtension == "mov" {
+                // Only clean up openvine video files
+                if fileURL.lastPathComponent.starts(with: "openvine_") && fileURL.pathExtension == "mov" {
                     if let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
                        let creationDate = attributes[.creationDate] as? Date,
                        creationDate < oneHourAgo {

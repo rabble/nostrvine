@@ -47,7 +47,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     });
   }
   
-  void _initializeProfile() {
+  
+  Future<void> _initializeProfile() async {
     final authService = context.read<AuthService>();
     final currentUserPubkey = authService.currentPublicKeyHex;
     
@@ -68,7 +69,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       _isOwnProfile = _targetPubkey == currentUserPubkey;
     });
     
-    Log.info('Profile init: widget.profilePubkey=${widget.profilePubkey?.substring(0, 8)}, currentUserPubkey=${currentUserPubkey.substring(0, 8)}, _isOwnProfile=$_isOwnProfile, _targetPubkey=${_targetPubkey?.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.info('🔍 Profile init debug:', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.info('  - widget.profilePubkey: ${widget.profilePubkey?.substring(0, 8) ?? "null"}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.info('  - currentUserPubkey: ${currentUserPubkey.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.info('  - _isOwnProfile: $_isOwnProfile', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.info('  - _targetPubkey: ${_targetPubkey?.substring(0, 8) ?? "null"}', name: 'ProfileScreen', category: LogCategory.ui);
     
     // Log current cached profile
     final userProfileService = context.read<UserProfileService>();
@@ -84,8 +89,29 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       Log.info('📋 ProfileScreen: No cached profile found on init for ${_targetPubkey!.substring(0, 8)}...', name: 'ProfileScreen', category: LogCategory.ui);
     }
     
+    // Debug video count vs stats count mismatch
+    final profileVideosProvider = context.read<ProfileVideosProvider>();
+    final profileStatsProvider = context.read<ProfileStatsProvider>();
+    
+    Log.warning('🔍 ProfileScreen: Debug video count mismatch check:', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.warning('  - ProfileVideosProvider count: ${profileVideosProvider.videoCount}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.warning('  - ProfileStatsProvider count: ${profileStatsProvider.stats?.videoCount ?? "null"}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.warning('  - Current user pubkey: ${context.read<AuthService>().currentPublicKeyHex?.substring(0, 8) ?? "null"}', name: 'ProfileScreen', category: LogCategory.ui);
+    Log.warning('  - Target pubkey: ${_targetPubkey?.substring(0, 8) ?? "null"}', name: 'ProfileScreen', category: LogCategory.ui);
+    
     // Load profile data for the target user
     if (_targetPubkey != null) {
+      // Force refresh both stats and videos to resolve any cache issues
+      Log.info('🔄 Forcing refresh of profile data for ${_targetPubkey!.substring(0, 8)}', name: 'ProfileScreen', category: LogCategory.ui);
+      
+      // Clear any cache and reload
+      try {
+        await profileStatsProvider.refreshStats();
+        await profileVideosProvider.refreshVideos(); 
+      } catch (e) {
+        Log.error('Error during force refresh: $e', name: 'ProfileScreen', category: LogCategory.ui);
+      }
+      
       _loadProfileStats();
       _loadProfileVideos();
       
@@ -153,14 +179,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Consumer5<AuthService, UserProfileService, SocialService, ProfileStatsProvider, ProfileVideosProvider>(
-      builder: (context, authService, userProfileService, socialService, profileStatsProvider, profileVideosProvider, child) {
+    try {
+      return Consumer5<AuthService, UserProfileService, SocialService, ProfileStatsProvider, ProfileVideosProvider>(
+        builder: (context, authService, userProfileService, socialService, profileStatsProvider, profileVideosProvider, child) {
         // Get profile for display name in app bar
         final authProfile = _isOwnProfile ? authService.currentProfile : null;
-        final cachedProfile = !_isOwnProfile ? userProfileService.getCachedProfile(_targetPubkey!) : null;
-        final userName = authProfile?.displayName ?? cachedProfile?.displayName ?? 'Anonymous';
+        final cachedProfile = _targetPubkey != null ? userProfileService.getCachedProfile(_targetPubkey!) : null;
+        final userName = cachedProfile?.bestDisplayName ?? authProfile?.displayName ?? 'Anonymous';
+        
         
         return Scaffold(
+          key: ValueKey('profile_screen_${_targetPubkey ?? 'unknown'}'),
           backgroundColor: VineTheme.backgroundColor,
           appBar: AppBar(
             backgroundColor: VineTheme.vineGreen,
@@ -213,34 +242,77 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              // Profile header
-              _buildProfileHeader(socialService, profileStatsProvider),
-              
-              // Stats row
-              _buildStatsRow(profileStatsProvider),
-              
-              // Action buttons
-              _buildActionButtons(),
-              
-              const SizedBox(height: 20),
-              
-              // Tab bar
-              _buildTabBar(),
-              
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildVinesGrid(),
-                    _buildLikedGrid(),
-                    _buildRepostsGrid(),
-                  ],
+          NestedScrollView(
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Profile header
+                      _buildProfileHeader(socialService, profileStatsProvider),
+                      
+                      // Stats row - wrapped in error boundary
+                      Builder(
+                        builder: (context) {
+                          try {
+                            return _buildStatsRow(profileStatsProvider);
+                          } catch (e) {
+                            Log.error('Error building stats row: $e', name: 'ProfileScreen', category: LogCategory.ui);
+                            return Container(
+                              height: 50,
+                              color: Colors.grey[800],
+                              child: const Center(
+                                child: Text('Stats loading...', style: TextStyle(color: Colors.white)),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      
+                      // Action buttons - wrapped in error boundary
+                      Builder(
+                        builder: (context) {
+                          try {
+                            return _buildActionButtons();
+                          } catch (e) {
+                            Log.error('Error building action buttons: $e', name: 'ProfileScreen', category: LogCategory.ui);
+                            return Container(height: 50);
+                          }
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTabBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      indicatorColor: Colors.white,
+                      indicatorWeight: 2,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.grey,
+                      tabs: const [
+                        Tab(icon: Icon(Icons.grid_on, size: 20)),
+                        Tab(icon: Icon(Icons.favorite_border, size: 20)),
+                        Tab(icon: Icon(Icons.repeat, size: 20)),
+                      ],
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              key: ValueKey('tab_view_${_targetPubkey ?? 'unknown'}'),
+              controller: _tabController,
+              children: [
+                _buildVinesGrid(),
+                _buildLikedGrid(),
+                _buildRepostsGrid(),
+              ],
+            ),
           ),
           
           // Video overlay for full-screen playback
@@ -248,9 +320,40 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             _buildVideoOverlay(),
         ],
       ),
-    );
-      },
-    );
+        );
+        },
+      );
+    } catch (e, stackTrace) {
+      Log.error('ProfileScreen build error: $e', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.error('Stack trace: $stackTrace', name: 'ProfileScreen', category: LogCategory.ui);
+      
+      // Return a simple error screen instead of crashing
+      return Scaffold(
+        backgroundColor: VineTheme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: VineTheme.vineGreen,
+          title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 64),
+              SizedBox(height: 16),
+              Text(
+                'Error loading profile',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Please try again',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildProfileHeader(SocialService socialService, ProfileStatsProvider profileStatsProvider) {
@@ -258,13 +361,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       builder: (context, authService, userProfileService, child) {
         // Get the profile data for the target user (could be current user or another user)
         final authProfile = _isOwnProfile ? authService.currentProfile : null;
-        final cachedProfile = !_isOwnProfile ? userProfileService.getCachedProfile(_targetPubkey!) : null;
+        final cachedProfile = _targetPubkey != null ? userProfileService.getCachedProfile(_targetPubkey!) : null;
         
         final profilePictureUrl = authProfile?.picture ?? cachedProfile?.picture;
-        final displayName = authProfile?.displayName ?? cachedProfile?.displayName;
-        final hasCustomName = displayName != null && 
-                              !displayName.startsWith('npub1') &&
-                              displayName != 'Anonymous';
+        // Always prefer cachedProfile (UserProfileService) over authProfile for display name
+        // because UserProfileService has the most up-to-date data from the relay
+        final displayName = cachedProfile?.bestDisplayName ?? authProfile?.displayName ?? 'Anonymous';
+        final hasCustomName = displayName != 'Anonymous' && 
+                              !displayName.startsWith('npub1');
         
         return Padding(
           padding: const EdgeInsets.all(20),
@@ -693,27 +797,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[800]!, width: 1),
-        ),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: Colors.white,
-        indicatorWeight: 2,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.grey,
-        tabs: const [
-          Tab(icon: Icon(Icons.grid_on, size: 20)),
-          Tab(icon: Icon(Icons.favorite_border, size: 20)),
-          Tab(icon: Icon(Icons.repeat, size: 20)),
-        ],
-      ),
-    );
-  }
 
   Widget _buildVinesGrid() {
     return Consumer<ProfileVideosProvider>(
@@ -866,7 +949,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           crossAxisCount: 3,
           crossAxisSpacing: 2,
           mainAxisSpacing: 2,
-          childAspectRatio: 0.7,
+          childAspectRatio: 1.0, // Square aspect ratio for vine-style videos
         ),
         itemCount: profileVideosProvider.hasMore
             ? profileVideosProvider.videoCount + 1 // +1 for loading indicator
@@ -1551,37 +1634,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     
     Log.info('📝 Returned from ProfileSetupScreen with result: $result', name: 'ProfileScreen', category: LogCategory.ui);
     
-    // Refresh profile data when returning from edit
+    // Refresh profile data when returning from setup
     if (result == true && mounted) {
-      Log.info('🔄 Profile was updated, refreshing...', name: 'ProfileScreen', category: LogCategory.ui);
+      Log.info('✅ Profile update successful, refreshing data...', name: 'ProfileScreen', category: LogCategory.ui);
       
-      setState(() {
-        // Trigger rebuild to show updated profile
-      });
+      // Force refresh the AuthService profile from UserProfileService
+      await authService.refreshCurrentProfile(userProfileService);
       
-      // Refresh profile data
-      if (authService.currentPublicKeyHex != null) {
-        Log.info('🔄 Fetching updated profile for ${currentPubkey.substring(0, 8)}...', name: 'ProfileScreen', category: LogCategory.ui);
-        await userProfileService.fetchProfile(currentPubkey);
-        
-        // Log profile after refresh
-        final profileAfterEdit = userProfileService.getCachedProfile(currentPubkey);
-        if (profileAfterEdit != null) {
-          Log.info('📋 Profile after refresh:', name: 'ProfileScreen', category: LogCategory.ui);
-          Log.info('  - name: ${profileAfterEdit.name}', name: 'ProfileScreen', category: LogCategory.ui);
-          Log.info('  - about: ${profileAfterEdit.about}', name: 'ProfileScreen', category: LogCategory.ui);
-          Log.info('  - eventId: ${profileAfterEdit.eventId}', name: 'ProfileScreen', category: LogCategory.ui);
-        } else {
-          Log.warning('⚠️ No profile found after refresh!', name: 'ProfileScreen', category: LogCategory.ui);
-        }
-      }
-      
-      // Reload profile stats and videos
+      // Also refresh profile stats and videos
       _loadProfileStats();
       _loadProfileVideos();
-    } else {
-      Log.info('❌ Profile edit was cancelled or failed', name: 'ProfileScreen', category: LogCategory.ui);
+      
+      // Force a rebuild to show updated profile
+      setState(() {});
     }
+    
   }
 
   void _shareProfile() {
@@ -2472,5 +2539,36 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ],
       ),
     );
+  }
+}
+
+/// Delegate for creating a sticky tab bar in NestedScrollView
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _StickyTabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: VineTheme.backgroundColor, // Match the main background
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[800]!, width: 1),
+        ),
+      ),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar;
   }
 }

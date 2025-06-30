@@ -9,9 +9,9 @@ class AppConstants {
   // ============================================================================
   
   /// Classic Vines curator account pubkey (hex format)
-  /// npub: npub1944q7fcyxp2efr6w958lyq7szysn3l7njje2rj20nksadktldygsq0dhv0
+  /// npub: npub1qvu80aqgpq6lzc5gqjp9jpmzczn4pzz3az87zexa3ypgwsu3fkjsj7mxlg
   /// Used as fallback content when users aren't following anyone
-  static const String classicVinesPubkey = '2d6a0f27043055948f4e2d0ff203d0112138ffd394b2a1c94f9da1d6d97f6911';
+  static const String classicVinesPubkey = '033877f4080835f162880482590762c0a7508851e88fe164dd89028743914da5';
   
   // ============================================================================
   // FEED CONFIGURATION

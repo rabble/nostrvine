@@ -13,6 +13,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/direct_upload_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/models/user_profile.dart' as model;
 import 'package:nostr_sdk/event.dart';
 
@@ -22,6 +23,7 @@ import 'package:nostr_sdk/event.dart';
   INostrService,
   DirectUploadService,
   ImagePicker,
+  SubscriptionManager,
 ])
 import 'profile_setup_screen_test.mocks.dart';
 

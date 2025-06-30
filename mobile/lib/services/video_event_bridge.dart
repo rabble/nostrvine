@@ -63,7 +63,10 @@ class VideoEventBridge {
           ? followingPubkeys.toSet() 
           : {AppConstants.classicVinesPubkey};
       
-      Log.debug('FOLLOWING_DEBUG: User following=${followingPubkeys.length}, Priority=${priorityPubkeys.length} (${followingPubkeys.isEmpty ? "classic vines fallback" : "user follows"})', name: 'VideoEventBridge', category: LogCategory.video);
+      // Debug: Log the actual pubkeys being used
+      Log.debug('Following pubkeys from social service: ${followingPubkeys.toList()}', name: 'VideoEventBridge', category: LogCategory.video);
+      Log.debug('Using ${priorityPubkeys.length} accounts for following feed${followingPubkeys.isEmpty ? " (classic vines fallback)" : ""}', name: 'VideoEventBridge', category: LogCategory.video);
+      Log.debug('Priority pubkeys: ${priorityPubkeys.toList()}', name: 'VideoEventBridge', category: LogCategory.video);
       
       // Update VideoManager with following list for proper prioritization
       if (_videoManager is VideoManagerService) {
@@ -91,24 +94,24 @@ class VideoEventBridge {
           Log.debug('Setting up discovery fallback timer for classic vines account', name: 'VideoEventBridge', category: LogCategory.video);
           _discoveryFallbackTimer = Timer(const Duration(seconds: 1), () {
             if (!_discoveryFeedLoaded && _videoManager.videos.isEmpty) {
-              Log.debug('� Fallback timer triggered - loading discovery feed due to empty classic vines', name: 'VideoEventBridge', category: LogCategory.video);
+              Log.debug('� Fallback timer triggered - discovery feed disabled, staying with curated content only', name: 'VideoEventBridge', category: LogCategory.video);
               _discoveryFeedLoaded = true;
-              _loadDiscoveryFeed();
+              // _loadDiscoveryFeed(); // Discovery disabled
             }
           });
         }
       } else {
         // No follows, just load discovery feed
         Log.debug('� No following list, loading discovery feed directly', name: 'VideoEventBridge', category: LogCategory.video);
-        await _loadDiscoveryFeed();
+        // await _loadDiscoveryFeed(); // Discovery disabled
       }
       
       // Additional safety net: if no videos after 2 seconds, force load discovery
       Timer(const Duration(seconds: 2), () {
         if (!_discoveryFeedLoaded && _videoManager.videos.isEmpty) {
-          Log.debug('🚨 Emergency fallback - no videos loaded, forcing discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
+          Log.debug('🚨 Emergency fallback - discovery feed disabled, staying with curated content only', name: 'VideoEventBridge', category: LogCategory.video);
           _discoveryFeedLoaded = true;
-          _loadDiscoveryFeed();
+          // _loadDiscoveryFeed(); // Discovery disabled
         }
       });
       
@@ -176,8 +179,8 @@ class VideoEventBridge {
         _addEventsToVideoManagerAsync(_videoEventService.videoEvents);
       }
       
-      // Check if we should trigger discovery feed after following content arrives
-      _checkAndLoadDiscoveryFeed();
+      // Discovery feed disabled - skip discovery loading
+      // _checkAndLoadDiscoveryFeed(); // Discovery disabled
     }
   }
   
@@ -323,23 +326,24 @@ class VideoEventBridge {
   }
   
   /// Trigger discovery feed loading when user reaches end of primary videos
+  /// DISABLED: Discovery feed removed - only show curated vines
   Future<void> triggerDiscoveryFeed() async {
     if (_discoveryFeedLoaded) return;
     
     _discoveryFeedLoaded = true;
-    Log.debug('🔍 User reached end of primary videos - loading discovery feed', name: 'VideoEventBridge', category: LogCategory.video);
-    await _loadDiscoveryFeed();
+    Log.debug('🚫 Discovery feed disabled - only showing curated content', name: 'VideoEventBridge', category: LogCategory.video);
+    // Discovery feed loading intentionally disabled - only curated vines
+    return;
   }
 
   /// Load the discovery feed after following content is established
+  /// DISABLED: Discovery feed removed - only show curated vines
   Future<void> _loadDiscoveryFeed() async {
     try {
       // Load discovery content from everyone else
       Log.debug('� Loading discovery feed (general content) AFTER following content', name: 'VideoEventBridge', category: LogCategory.video);
-      await _videoEventService.subscribeToVideoFeed(
-        limit: 500, // Increased limit to get plenty of discovery content
-        replace: false, // Keep following content AND add discovery
-      );
+      // Discovery feed loading intentionally disabled - only curated vines
+      return;
       
       // Classic vines are already included in following list above, no need to add editor picks separately
     } catch (e) {

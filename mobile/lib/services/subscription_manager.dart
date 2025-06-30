@@ -15,7 +15,7 @@ class SubscriptionManager extends ChangeNotifier {
   final Map<String, Timer> _retryTimers = {};
   
   // Rate limiting
-  static const int _maxConcurrentSubscriptions = 5;
+  static const int _maxConcurrentSubscriptions = 20; // Increased to handle multiple services
   static const int _maxEventsPerMinute = 2000; // Increased to handle profile loads
   static const Duration _subscriptionTimeout = Duration(minutes: 5);
   static const Duration _retryDelay = Duration(seconds: 30);

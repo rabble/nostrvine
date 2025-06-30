@@ -4,7 +4,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:mocktail/mocktail.dart';
 import 'mocks/mock_nostr_service.dart';
+
+class MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
   group('Revine Fix Tests', () {
@@ -134,7 +138,8 @@ void main() {
     
     test('includeReposts flag should be tracked correctly', () async {
       final mockNostrService = MockNostrService();
-      final videoEventService = VideoEventService(mockNostrService);
+      final mockSubscriptionManager = MockSubscriptionManager();
+      final videoEventService = VideoEventService(mockNostrService, subscriptionManager: mockSubscriptionManager);
       
       // Initially reposts should be disabled
       expect(videoEventService.classicVinesPubkey, isNotEmpty);

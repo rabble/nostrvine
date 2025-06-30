@@ -5,9 +5,10 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
 
 // Generate mocks
-@GenerateMocks([INostrService, AuthService])
+@GenerateMocks([INostrService, AuthService, SubscriptionManager])
 import 'social_service_test.mocks.dart';
 
 void main() {
@@ -15,10 +16,12 @@ void main() {
     late SocialService socialService;
     late MockINostrService mockNostrService;
     late MockAuthService mockAuthService;
+    late MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
       mockNostrService = MockINostrService();
       mockAuthService = MockAuthService();
+      mockSubscriptionManager = MockSubscriptionManager();
       
       // Set up default stubs for AuthService
       when(mockAuthService.isAuthenticated).thenReturn(true);
@@ -28,7 +31,7 @@ void main() {
       when(mockNostrService.subscribeToEvents(filters: anyNamed('filters')))
           .thenAnswer((_) => Stream.fromIterable([]));
       
-      socialService = SocialService(mockNostrService, mockAuthService);
+      socialService = SocialService(mockNostrService, mockAuthService, subscriptionManager: mockSubscriptionManager);
     });
 
     tearDown(() {

@@ -3,14 +3,13 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i6;
-import 'dart:ui' as _i8;
+import 'dart:async' as _i5;
+import 'dart:ui' as _i7;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:openvine/models/user_profile.dart' as _i3;
-import 'package:openvine/services/profile_cache_service.dart' as _i5;
-import 'package:openvine/services/subscription_manager.dart' as _i4;
+import 'package:openvine/services/profile_cache_service.dart' as _i4;
 import 'package:openvine/services/user_profile_service.dart' as _i2;
 
 // ignore_for_file: type=lint
@@ -49,17 +48,7 @@ class MockUserProfileService extends _i1.Mock
       ) as bool);
 
   @override
-  void setSubscriptionManager(_i4.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void setPersistentCache(_i5.ProfileCacheService? cacheService) =>
+  void setPersistentCache(_i4.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(
           #setPersistentCache,
@@ -103,28 +92,28 @@ class MockUserProfileService extends _i1.Mock
       );
 
   @override
-  _i6.Future<void> updateCachedProfile(_i3.UserProfile? profile) =>
+  _i5.Future<void> updateCachedProfile(_i3.UserProfile? profile) =>
       (super.noSuchMethod(
         Invocation.method(
           #updateCachedProfile,
           [profile],
         ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i6.Future<void> initialize() => (super.noSuchMethod(
+  _i5.Future<void> initialize() => (super.noSuchMethod(
         Invocation.method(
           #initialize,
           [],
         ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i6.Future<_i3.UserProfile?> fetchProfile(
+  _i5.Future<_i3.UserProfile?> fetchProfile(
     String? pubkey, {
     bool? forceRefresh = false,
   }) =>
@@ -134,11 +123,11 @@ class MockUserProfileService extends _i1.Mock
           [pubkey],
           {#forceRefresh: forceRefresh},
         ),
-        returnValue: _i6.Future<_i3.UserProfile?>.value(),
-      ) as _i6.Future<_i3.UserProfile?>);
+        returnValue: _i5.Future<_i3.UserProfile?>.value(),
+      ) as _i5.Future<_i3.UserProfile?>);
 
   @override
-  _i6.Future<void> fetchMultipleProfiles(
+  _i5.Future<void> fetchMultipleProfiles(
     List<String>? pubkeys, {
     bool? forceRefresh = false,
   }) =>
@@ -148,9 +137,9 @@ class MockUserProfileService extends _i1.Mock
           [pubkeys],
           {#forceRefresh: forceRefresh},
         ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   String getDisplayName(String? pubkey) => (super.noSuchMethod(
@@ -158,7 +147,7 @@ class MockUserProfileService extends _i1.Mock
           #getDisplayName,
           [pubkey],
         ),
-        returnValue: _i7.dummyValue<String>(
+        returnValue: _i6.dummyValue<String>(
           this,
           Invocation.method(
             #getDisplayName,
@@ -216,7 +205,7 @@ class MockUserProfileService extends _i1.Mock
       );
 
   @override
-  void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -225,7 +214,7 @@ class MockUserProfileService extends _i1.Mock
       );
 
   @override
-  void removeListener(_i8.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i7.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],

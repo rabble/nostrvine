@@ -77,12 +77,14 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   
   Widget _buildVideoPreview() {
     if (_isVideoInitialized && _videoController.value.isInitialized) {
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: _videoController.value.size.width,
-          height: _videoController.value.size.height,
-          child: VideoPlayer(_videoController),
+      return ClipRect(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _videoController.value.size.width,
+            height: _videoController.value.size.height,
+            child: VideoPlayer(_videoController),
+          ),
         ),
       );
     }
@@ -194,11 +196,19 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
             ),
           
           // Video preview - smaller to save space
-          Container(
-            height: screenHeight * 0.25, // 25% of screen height
-            width: double.infinity,
-            color: Colors.black,
-            child: _buildVideoPreview(),
+          ClipRect(
+            child: Container(
+              height: screenHeight * 0.25, // 25% of screen height
+              width: double.infinity,
+              color: Colors.black,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: _buildVideoPreview(),
+                  ),
+                ],
+              ),
+            ),
           ),
           
           // Form fields with better spacing

@@ -10,7 +10,9 @@ import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:nostr_sdk/event.dart';
 
-@GenerateMocks([INostrService, AuthService, UserProfileService])
+import 'package:openvine/services/subscription_manager.dart';
+
+@GenerateMocks([INostrService, AuthService, UserProfileService, SubscriptionManager])
 import 'profile_editing_test.mocks.dart';
 
 void main() {

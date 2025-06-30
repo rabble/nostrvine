@@ -51,6 +51,9 @@ class CurationService extends ChangeNotifier {
   void _initializeWithSampleData() {
     _isLoading = true;
     
+    Log.debug('🔄 CurationService initializing...', name: 'CurationService', category: LogCategory.system);
+    Log.debug('  VideoEventService has ${_videoEventService.videoEvents.length} videos', name: 'CurationService', category: LogCategory.system);
+    
     // Load sample curation sets
     for (final sampleSet in SampleCurationSets.all) {
       _curationSets[sampleSet.id] = sampleSet;
@@ -120,14 +123,25 @@ class CurationService extends ChangeNotifier {
     // Editor's Pick: Only show videos from the classic vines curator pubkey
     const editorPubkey = AppConstants.classicVinesPubkey;
     
-    // Selecting editor's picks silently
+    Log.debug('🔍 Selecting Editor\'s Picks...', name: 'CurationService', category: LogCategory.system);
+    Log.debug('  Editor pubkey: $editorPubkey', name: 'CurationService', category: LogCategory.system);
+    Log.debug('  Total videos available: ${_videoEventService.videoEvents.length}', name: 'CurationService', category: LogCategory.system);
     
     // Get all videos from the editor's pubkey
     final editorVideos = _videoEventService.videoEvents
         .where((video) => video.pubkey == editorPubkey)
         .toList();
     
-    // Found videos from editor's pubkey
+    Log.debug('  Found ${editorVideos.length} videos from editor\'s pubkey', name: 'CurationService', category: LogCategory.system);
+    
+    // Debug: Check a few videos to see why they might not be from editor
+    if (editorVideos.isEmpty && _videoEventService.videoEvents.isNotEmpty) {
+      Log.debug('  Sample of available videos:', name: 'CurationService', category: LogCategory.system);
+      for (int i = 0; i < 3 && i < _videoEventService.videoEvents.length; i++) {
+        final video = _videoEventService.videoEvents[i];
+        Log.debug('    Video ${i + 1}: pubkey=${video.pubkey.substring(0, 8)}... title="${video.title}"', name: 'CurationService', category: LogCategory.system);
+      }
+    }
     
     // Sort editor's videos by creation time (newest first)
     editorVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -136,7 +150,7 @@ class CurationService extends ChangeNotifier {
     for (final video in editorVideos) {
       picks.add(video);
       seenIds.add(video.id);
-      // Added editor video silently
+      Log.verbose('  Added editor video: ${video.title ?? video.id.substring(0, 8)}', name: 'CurationService', category: LogCategory.system);
     }
     
     // If no videos from editor, show a message or default content
@@ -158,7 +172,7 @@ class CurationService extends ChangeNotifier {
       }
     }
 
-    // Editor's picks selection complete
+    Log.debug('  Editor\'s picks selection complete: ${picks.length} videos', name: 'CurationService', category: LogCategory.system);
     return picks;
   }
 
@@ -428,6 +442,15 @@ class CurationService extends ChangeNotifier {
 
   /// Handle video data changes
   void _onVideoDataChanged() {
+    Log.debug('📊 CurationService: VideoEventService data changed, updating curation sets...', name: 'CurationService', category: LogCategory.system);
+    Log.debug('  Total videos now: ${_videoEventService.videoEvents.length}', name: 'CurationService', category: LogCategory.system);
+    
+    // Check for Classic Vines videos specifically
+    final classicVinesVideos = _videoEventService.videoEvents
+        .where((v) => v.pubkey == AppConstants.classicVinesPubkey)
+        .toList();
+    Log.debug('  Classic Vines videos: ${classicVinesVideos.length}', name: 'CurationService', category: LogCategory.system);
+    
     _populateSampleSets();
     notifyListeners();
   }

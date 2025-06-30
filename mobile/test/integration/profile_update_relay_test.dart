@@ -9,6 +9,7 @@ import '../../lib/services/nostr_service.dart';
 import '../../lib/services/nostr_key_manager.dart';
 import '../../lib/services/auth_service.dart';
 import '../../lib/services/user_profile_service.dart';
+import '../../lib/services/subscription_manager.dart';
 
 void main() {
   setUpAll(() async {
@@ -20,13 +21,15 @@ void main() {
     late NostrService nostrService;
     late AuthService authService;
     late UserProfileService userProfileService;
+    late SubscriptionManager subscriptionManager;
     late NostrKeyManager keyManager;
 
     setUp(() async {
       keyManager = NostrKeyManager();
       nostrService = NostrService(keyManager);
       authService = AuthService();
-      userProfileService = UserProfileService(nostrService);
+      subscriptionManager = SubscriptionManager(nostrService);
+      userProfileService = UserProfileService(nostrService, subscriptionManager: subscriptionManager);
       
       // Initialize services
       await authService.initialize();
@@ -41,6 +44,7 @@ void main() {
 
     tearDown(() async {
       userProfileService.dispose();
+      subscriptionManager.dispose();
       nostrService.dispose();
       authService.dispose();
     });

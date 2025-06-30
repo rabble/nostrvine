@@ -4,15 +4,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/nostr_service_interface.dart';
 import '../services/direct_upload_service.dart';
 import '../services/nip05_service.dart';
+import '../models/user_profile.dart' as profile_model;
 import '../utils/unified_logger.dart';
 import '../utils/async_utils.dart';
 
@@ -70,7 +73,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           final profile = await userProfileService.fetchProfile(authService.currentPublicKeyHex!);
           if (profile != null && mounted) {
             setState(() {
-              _nameController.text = profile.displayName ?? '';
+              // Use bestDisplayName which handles name/displayName fallback properly
+              _nameController.text = profile.name ?? profile.displayName ?? '';
               _bioController.text = profile.about ?? '';
               _pictureController.text = profile.picture ?? '';
               
@@ -81,6 +85,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 _usernameAvailable = true; // Already registered
               }
             });
+            
+            Log.info('✅ Pre-filled profile setup form with existing data:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - name: ${profile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - displayName: ${profile.displayName}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - about: ${profile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - picture: ${profile.picture}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - banner: ${profile.banner}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - website: ${profile.website}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - nip05: ${profile.nip05}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            Log.info('  - lud16: ${profile.lud16}', name: 'ProfileSetupScreen', category: LogCategory.ui);
           }
         }
       } catch (e) {
@@ -362,9 +376,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton.icon(
-                          onPressed: _isUploadingImage ? null : () => _pickImage(ImageSource.gallery),
+                          onPressed: _isUploadingImage ? null : () {
+                            if (defaultTargetPlatform == TargetPlatform.macOS) {
+                              // Temporary workaround for macOS sandbox issues
+                              _showMacOSFilePickerMessage();
+                            } else {
+                              _pickImage(ImageSource.gallery);
+                            }
+                          },
                           icon: const Icon(Icons.photo_library, size: 20),
-                          label: const Text('Gallery'),
+                          label: Text(_isDesktopPlatform() ? 'Browse Files' : 'Gallery'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(color: Colors.grey[700]!),
@@ -380,13 +401,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     // URL input option
                     ExpansionTile(
                       title: Text(
-                        'Or paste image URL',
+                        defaultTargetPlatform == TargetPlatform.macOS 
+                          ? 'Paste image URL (recommended)'
+                          : 'Or paste image URL',
                         style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
+                          color: defaultTargetPlatform == TargetPlatform.macOS 
+                            ? Colors.white 
+                            : Colors.grey[400],
+                          fontSize: defaultTargetPlatform == TargetPlatform.macOS ? 16 : 14,
+                          fontWeight: defaultTargetPlatform == TargetPlatform.macOS 
+                            ? FontWeight.w500 
+                            : FontWeight.normal,
                         ),
                       ),
                       tilePadding: EdgeInsets.zero,
+                      initiallyExpanded: defaultTargetPlatform == TargetPlatform.macOS,
                       children: [
                         TextFormField(
                           controller: _pictureController,
@@ -425,6 +454,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             return null;
                           },
                         ),
+                        if (defaultTargetPlatform == TargetPlatform.macOS) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tip: Upload your image to imgur.com, cloudinary.com, or any image hosting service to get a URL.',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -652,17 +691,44 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         Log.info('📋 No existing profile found for ${currentPubkey.substring(0, 8)}...', name: 'ProfileSetupScreen', category: LogCategory.ui);
       }
       
-      // Create profile metadata
-      final profileData = <String, dynamic>{
-        'name': _nameController.text.trim(),
-      };
+      // Create profile metadata - start with existing profile data to preserve all fields
+      final profileData = <String, dynamic>{};
+      
+      // Preserve all existing fields from current profile
+      if (existingProfile != null) {
+        // Start with the raw data to preserve unknown fields
+        profileData.addAll(existingProfile.rawData);
+        
+        // Also explicitly preserve known fields
+        if (existingProfile.name != null) profileData['name'] = existingProfile.name;
+        if (existingProfile.displayName != null) profileData['display_name'] = existingProfile.displayName;
+        if (existingProfile.about != null) profileData['about'] = existingProfile.about;
+        if (existingProfile.picture != null) profileData['picture'] = existingProfile.picture;
+        if (existingProfile.banner != null) profileData['banner'] = existingProfile.banner;
+        if (existingProfile.website != null) profileData['website'] = existingProfile.website;
+        if (existingProfile.nip05 != null) profileData['nip05'] = existingProfile.nip05;
+        if (existingProfile.lud16 != null) profileData['lud16'] = existingProfile.lud16;
+        if (existingProfile.lud06 != null) profileData['lud06'] = existingProfile.lud06;
+        
+        Log.info('📋 Preserved existing profile fields:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('  - Preserved fields: ${profileData.keys.toList()}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
+      
+      // Override with form data (only the fields we can edit)
+      profileData['name'] = _nameController.text.trim();
       
       if (_bioController.text.trim().isNotEmpty) {
         profileData['about'] = _bioController.text.trim();
+      } else {
+        // Remove about field if empty (user cleared it)
+        profileData.remove('about');
       }
       
       if (_pictureController.text.trim().isNotEmpty) {
         profileData['picture'] = _pictureController.text.trim();
+      } else {
+        // Remove picture field if empty (user cleared it)
+        profileData.remove('picture');
       }
       
       Log.info('📝 Profile data to publish:', name: 'ProfileSetupScreen', category: LogCategory.ui);
@@ -780,23 +846,25 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Log.info('🔄 Using retry logic to wait for relay to process profile update...', 
                    name: 'ProfileSetupScreen', category: LogCategory.ui);
           
-          final refreshedProfile = await AsyncUtils.retryWithBackoff(
-            operation: () async {
-              Log.info('🔄 Retry attempt: clearing cache and fetching profile...', 
-                       name: 'ProfileSetupScreen', category: LogCategory.ui);
-              
-              // Log current relay status
-              final relayStatus = nostrService.getRelayStatus();
-              Log.info('🔗 Current relay status: $relayStatus', name: 'ProfileSetupScreen', category: LogCategory.ui);
-              
-              userProfileService.removeProfile(currentPubkey);
-              final profile = await userProfileService.fetchProfile(currentPubkey, forceRefresh: true);
-              
-              Log.info('📋 Profile fetch result:', name: 'ProfileSetupScreen', category: LogCategory.ui);
-              Log.info('  - Expected event ID: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
-              Log.info('  - Expected timestamp: ${event.createdAt} (${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)})', name: 'ProfileSetupScreen', category: LogCategory.ui);
-              if (profile != null) {
-                Log.info('  - Fetched profile event ID: ${profile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+          profile_model.UserProfile? refreshedProfile;
+          try {
+            refreshedProfile = await AsyncUtils.retryWithBackoff(
+              operation: () async {
+                Log.info('🔄 Retry attempt: clearing cache and fetching profile...', 
+                         name: 'ProfileSetupScreen', category: LogCategory.ui);
+                
+                // Log current relay status
+                final relayStatus = nostrService.getRelayStatus();
+                Log.info('🔗 Current relay status: $relayStatus', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                
+                userProfileService.removeProfile(currentPubkey);
+                final profile = await userProfileService.fetchProfile(currentPubkey, forceRefresh: true);
+                
+                Log.info('📋 Profile fetch result:', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                Log.info('  - Expected event ID: ${event.id}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                Log.info('  - Expected timestamp: ${event.createdAt} (${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)})', name: 'ProfileSetupScreen', category: LogCategory.ui);
+                if (profile != null) {
+                  Log.info('  - Fetched profile event ID: ${profile.eventId}', name: 'ProfileSetupScreen', category: LogCategory.ui);
                 Log.info('  - Fetched profile timestamp: ${profile.createdAt.millisecondsSinceEpoch ~/ 1000} (${profile.createdAt})', name: 'ProfileSetupScreen', category: LogCategory.ui);
                 Log.info('  - Profile name: ${profile.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
                 Log.info('  - Profile about: ${profile.about}', name: 'ProfileSetupScreen', category: LogCategory.ui);
@@ -824,7 +892,36 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             maxRetries: 3,
             baseDelay: const Duration(seconds: 1),
             debugName: 'profile-refresh-after-publish',
-          );
+            );
+          } catch (retryError) {
+            Log.warning('⚠️ Profile refresh failed after retries: $retryError', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            
+            // If refresh failed due to subscription limits, still treat as success
+            // since the profile was published successfully
+            if (retryError.toString().contains('Maximum number of subscriptions')) {
+              Log.info('ℹ️ Subscription limit reached, but profile was published successfully', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              
+              // Manually update the local cache with what we just published
+              final newProfile = profile_model.UserProfile(
+                pubkey: currentPubkey,
+                eventId: event.id,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+                name: profileData['name'] as String?,
+                displayName: profileData['display_name'] as String?,
+                about: profileData['about'] as String?,
+                picture: profileData['picture'] as String?,
+                nip05: profileData['nip05'] as String?,
+                rawData: profileData,
+              );
+              
+              await userProfileService.updateCachedProfile(newProfile);
+              Log.info('✅ Updated local cache with published profile data', name: 'ProfileSetupScreen', category: LogCategory.ui);
+              
+              // Also update AuthService profile
+              await authService.refreshCurrentProfile(userProfileService);
+              Log.info('✅ Updated AuthService profile cache', name: 'ProfileSetupScreen', category: LogCategory.ui);
+            }
+          }
           
           // Check what we got back
           if (refreshedProfile != null) {
@@ -845,6 +942,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             } else {
               Log.error('❌ Profile NOT in cache after refresh', name: 'ProfileSetupScreen', category: LogCategory.ui);
             }
+          }
+        }
+        
+        // Always try to refresh AuthService profile after publish
+        if (mounted) {
+          final finalProfile = userProfileService.getCachedProfile(currentPubkey);
+          if (finalProfile != null) {
+            await authService.refreshCurrentProfile(userProfileService);
+            Log.info('✅ Updated AuthService profile cache after successful publish', name: 'ProfileSetupScreen', category: LogCategory.ui);
           }
         }
         
@@ -942,7 +1048,103 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
   
+  /// Platform-aware image selection
   Future<void> _pickImage(ImageSource source) async {
+    try {
+      Log.info('🖼️ Attempting to pick image from ${source.name} on ${defaultTargetPlatform.name}', 
+               name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      File? selectedFile;
+      
+      // Use different methods based on platform and source
+      if (source == ImageSource.gallery && _isDesktopPlatform()) {
+        // Use file_selector for desktop gallery/file browsing
+        selectedFile = await _pickImageFromDesktop();
+      } else {
+        // Use image_picker for mobile or camera
+        selectedFile = await _pickImageFromMobile(source);
+      }
+      
+      if (selectedFile != null) {
+        Log.info('✅ Image picked successfully: ${selectedFile.path}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        setState(() {
+          _selectedImage = selectedFile;
+          _uploadedImageUrl = null; // Clear previous upload
+          _pictureController.clear(); // Clear manual URL
+        });
+        
+        // Upload the image
+        await _uploadImage();
+      } else {
+        Log.info('❌ No image selected', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
+    } catch (e) {
+      Log.error('Error picking image: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      // Show user-friendly error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              source == ImageSource.gallery 
+                ? 'Image selection failed. Please paste an image URL below instead.'
+                : 'Camera access failed: $e'
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Got it',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
+  }
+  
+  /// Check if running on desktop platform
+  bool _isDesktopPlatform() {
+    return defaultTargetPlatform == TargetPlatform.macOS ||
+           defaultTargetPlatform == TargetPlatform.windows ||
+           defaultTargetPlatform == TargetPlatform.linux;
+  }
+  
+  /// Use file_selector for desktop platforms
+  Future<File?> _pickImageFromDesktop() async {
+    try {
+      Log.info('🖥️ Starting desktop file picker...', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      const XTypeGroup typeGroup = XTypeGroup(
+        label: 'images',
+        extensions: <String>['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
+      );
+      
+      Log.info('🖥️ Opening file dialog with type group: ${typeGroup.label}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      
+      final XFile? file = await openFile(
+        acceptedTypeGroups: <XTypeGroup>[typeGroup],
+      );
+      
+      if (file != null) {
+        Log.info('✅ Desktop file selected: ${file.path}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('📁 File name: ${file.name}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        Log.info('📁 File size: ${await file.length()} bytes', name: 'ProfileSetupScreen', category: LogCategory.ui);
+        return File(file.path);
+      } else {
+        Log.info('❌ Desktop file picker: User cancelled or no file selected', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      }
+      return null;
+    } catch (e) {
+      Log.error('Desktop file picker error: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.error('Error type: ${e.runtimeType}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      Log.error('Stack trace: ${StackTrace.current}', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      rethrow;
+    }
+  }
+  
+  /// Use image_picker for mobile platforms and camera
+  Future<File?> _pickImageFromMobile(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -952,26 +1154,72 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
       
       if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-          _uploadedImageUrl = null; // Clear previous upload
-          _pictureController.clear(); // Clear manual URL
-        });
-        
-        // Upload the image
-        await _uploadImage();
+        return File(image.path);
       }
+      return null;
     } catch (e) {
-      Log.error('Error picking image: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      Log.error('Mobile image picker error: $e', name: 'ProfileSetupScreen', category: LogCategory.ui);
+      rethrow;
     }
+  }
+  
+  /// Show macOS-specific message about file picker limitations
+  void _showMacOSFilePickerMessage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'File Selection on macOS',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Due to macOS security restrictions, the file picker is currently unavailable.',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Please use one of these alternatives:',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Paste an image URL in the field below',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const Text(
+                '• Upload your image to imgur.com or cloudinary.com first',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const Text(
+                '• Use the camera if available',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Auto-expand the URL input section
+                setState(() {
+                  // This will help user find the URL input
+                });
+              },
+              child: const Text(
+                'Got it',
+                style: TextStyle(color: Colors.purple),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
   
   Future<void> _uploadImage() async {

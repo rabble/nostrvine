@@ -13,6 +13,7 @@ import 'package:openvine/models/nip94_metadata.dart' as _i8;
 import 'package:openvine/services/auth_service.dart' as _i4;
 import 'package:openvine/services/nostr_key_manager.dart' as _i2;
 import 'package:openvine/services/nostr_service_interface.dart' as _i3;
+import 'package:openvine/services/user_profile_service.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -299,6 +300,16 @@ class MockINostrService extends _i1.Mock implements _i3.INostrService {
       ) as _i5.Future<void>);
 
   @override
+  _i5.Future<void> closeAllSubscriptions() => (super.noSuchMethod(
+        Invocation.method(
+          #closeAllSubscriptions,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
@@ -465,6 +476,18 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           ),
         )),
       ) as _i5.Future<_i4.AuthResult>);
+
+  @override
+  _i5.Future<void> refreshCurrentProfile(
+          _i10.UserProfileService? userProfileService) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #refreshCurrentProfile,
+          [userProfileService],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   _i5.Future<void> signOut({bool? deleteKeys = false}) => (super.noSuchMethod(

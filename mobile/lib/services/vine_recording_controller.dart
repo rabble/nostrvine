@@ -10,6 +10,7 @@ import 'package:camera_macos/camera_macos.dart' as macos;
 import 'package:path_provider/path_provider.dart';
 import '../utils/async_utils.dart';
 import 'web_camera_service_stub.dart' if (dart.library.html) 'web_camera_service.dart' as camera_service;
+import 'camera/native_macos_camera.dart';
 import '../utils/unified_logger.dart';
 
 /// Represents a single recording segment in the Vine-style recording
@@ -227,6 +228,9 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
   // Recording completion callback mechanism
   Completer<String>? _recordingCompletionCompleter;
   
+  // Track current camera index
+  int _currentCameraIndex = 0;
+  
   @override
   Future<void> initialize() async {
     startInitialization();
@@ -367,8 +371,29 @@ class MacOSCameraInterface extends CameraPlatformInterface with AsyncInitializat
   
   @override
   Future<void> switchCamera() async {
-    // TODO: Implement camera switching for macOS if multiple cameras are available
-    Log.debug('� Camera switching not yet implemented for macOS', name: 'VineRecordingController', category: LogCategory.system);
+    try {
+      // Get available cameras from native macOS
+      final cameras = await NativeMacOSCamera.getAvailableCameras();
+      
+      if (cameras.length <= 1) {
+        Log.info('� Only one camera available, cannot switch', name: 'VineRecordingController', category: LogCategory.system);
+        return;
+      }
+      
+      // Switch to next camera
+      _currentCameraIndex = (_currentCameraIndex + 1) % cameras.length;
+      final success = await NativeMacOSCamera.switchCamera(_currentCameraIndex);
+      
+      if (success) {
+        Log.info('� Successfully switched to camera $_currentCameraIndex: ${cameras[_currentCameraIndex]['name']}', name: 'VineRecordingController', category: LogCategory.system);
+      } else {
+        // Revert index on failure
+        _currentCameraIndex = (_currentCameraIndex - 1 + cameras.length) % cameras.length;
+        Log.error('Failed to switch camera', name: 'VineRecordingController', category: LogCategory.system);
+      }
+    } catch (e) {
+      Log.error('Error switching macOS camera: $e', name: 'VineRecordingController', category: LogCategory.system);
+    }
   }
   
   @override

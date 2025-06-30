@@ -208,6 +208,18 @@ class TestVideoManager implements IVideoManager {
 
   @override
   Stream<void> get stateChanges => Stream.empty(); // Simplified for tests
+
+  @override
+  bool isAtFeedBoundary(int index) {
+    // Simple implementation for testing
+    return false;
+  }
+
+  @override
+  int get discoveryVideoCount => 0; // For tests, assume no discovery videos
+
+  @override
+  int get primaryVideoCount => _videos.length; // For tests, all videos are primary
 }
 
 void main() {

@@ -2,6 +2,7 @@
 // ABOUTME: Tests that duplicate events are properly filtered to prevent redundant processing
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
@@ -11,10 +12,34 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
-// Mock classes
+// Mock classes  
 class MockNostrService extends Mock implements INostrService {}
-class MockSubscriptionManager extends Mock implements SubscriptionManager {}
 class MockEvent extends Mock implements Event {}
+
+class TestSubscriptionManager extends Mock implements SubscriptionManager {
+  final StreamController<Event> eventStreamController;
+  TestSubscriptionManager(this.eventStreamController);
+  
+  @override
+  Future<String> createSubscription({
+    required String name,
+    required List<Filter> filters,
+    required Function(Event) onEvent,
+    Function(dynamic)? onError,
+    VoidCallback? onComplete,
+    Duration? timeout,
+    int priority = 5,
+  }) async {
+    // Set up a stream listener that calls onEvent for each event
+    eventStreamController.stream.listen(onEvent);
+    return 'mock_sub_$name';
+  }
+  
+  @override
+  Future<void> cancelSubscription(String subscriptionId) async {
+    // No-op for tests
+  }
+}
 
 // Fake classes for setUpAll
 class FakeFilter extends Fake implements Filter {}
@@ -39,7 +64,9 @@ void main() {
       when(() => mockNostrService.subscribeToEvents(filters: any(named: 'filters')))
           .thenAnswer((_) => eventStreamController.stream);
       
-      videoEventService = VideoEventService(mockNostrService);
+      final testSubscriptionManager = TestSubscriptionManager(eventStreamController);
+      
+      videoEventService = VideoEventService(mockNostrService, subscriptionManager: testSubscriptionManager);
     });
 
     tearDown(() async {
@@ -302,7 +329,9 @@ void main() {
       when(() => mockNostrService.subscribeToEvents(filters: any(named: 'filters')))
           .thenAnswer((_) => eventStreamController.stream);
       
-      videoEventService = VideoEventService(mockNostrService);
+      final testSubscriptionManager = TestSubscriptionManager(eventStreamController);
+      
+      videoEventService = VideoEventService(mockNostrService, subscriptionManager: testSubscriptionManager);
     });
 
     tearDown(() async {

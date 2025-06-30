@@ -9,6 +9,7 @@ import 'package:video_player/video_player.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import '../utils/unified_logger.dart';
+import '../utils/string_utils.dart';
 import 'video_manager_interface.dart';
 import 'seen_videos_service.dart';
 import 'content_blocklist_service.dart';
@@ -286,13 +287,13 @@ class VideoManagerService implements IVideoManager {
         if (state != null && 
             state.loadingState == VideoLoadingState.notLoaded && 
             !_activePreloads.contains(videoId)) {
-          Log.info('▶️ Starting preload for video $index: ${videoId.substring(0, 8)}', name: 'VideoManager', category: LogCategory.video);
+          Log.info('▶️ Starting preload for video $index: ${StringUtils.formatIdForLogging(videoId)}', name: 'VideoManager', category: LogCategory.video);
           // Fire and forget - don't await to avoid blocking
           preloadVideo(videoId).catchError((e) {
-            Log.error('❌ Background preload failed for ${videoId.substring(0, 8)}: $e', name: 'VideoManager', error: e);
+            Log.error('❌ Background preload failed for ${StringUtils.formatIdForLogging(videoId)}: $e', name: 'VideoManager', error: e);
           });
         } else {
-          Log.verbose('⏭️ Skipping video $index: ${videoId.substring(0, 8)} (state: ${state?.loadingState})', name: 'VideoManager', category: LogCategory.video);
+          Log.verbose('⏭️ Skipping video $index: ${StringUtils.formatIdForLogging(videoId)} (state: ${state?.loadingState})', name: 'VideoManager', category: LogCategory.video);
         }
       }
     }

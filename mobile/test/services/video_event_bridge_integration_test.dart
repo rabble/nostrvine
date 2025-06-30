@@ -8,12 +8,20 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_manager_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/models/user_profile.dart' as models;
+import 'package:openvine/services/nostr_key_manager.dart';
 
 // Mock classes for testing
 class MockVideoEventService extends VideoEventService {
   List<VideoEvent> _mockEvents = [];
   int _subscribeCallCount = 0;
   List<Map<String, dynamic>> _subscribeCallLog = [];
+  
+  MockVideoEventService(INostrService nostrService, SubscriptionManager subscriptionManager) 
+    : super(nostrService, subscriptionManager: subscriptionManager);
   
   @override
   List<VideoEvent> get videoEvents => _mockEvents;
@@ -34,10 +42,11 @@ class MockVideoEventService extends VideoEventService {
     List<String>? authors,
     List<String>? hashtags,
     String? group,
-    DateTime? since,
-    DateTime? until,
+    int? since,
+    int? until,
     int? limit,
     bool replace = false,
+    bool includeReposts = false,
   }) async {
     _subscribeCallCount++;
     _subscribeCallLog.add({
@@ -48,11 +57,9 @@ class MockVideoEventService extends VideoEventService {
       'until': until,
       'limit': limit,
       'replace': replace,
+      'includeReposts': includeReposts,
       'callNumber': _subscribeCallCount,
     });
-    
-    // Simulate async behavior
-    await Future.delayed(const Duration(milliseconds: 10));
   }
   
   List<Map<String, dynamic>> get subscribeCallLog => _subscribeCallLog;
@@ -66,22 +73,95 @@ class MockVideoEventService extends VideoEventService {
 }
 
 class MockUserProfileService extends UserProfileService {
+  MockUserProfileService(INostrService nostrService, SubscriptionManager subscriptionManager) 
+    : super(nostrService, subscriptionManager: subscriptionManager);
+    
   @override
   bool hasProfile(String pubkey) => true;
   
   @override
-  void fetchProfile(String pubkey) {}
+  Future<models.UserProfile?> fetchProfile(String pubkey, {bool forceRefresh = false}) async {
+    return null;
+  }
 }
 
 class MockSocialService extends SocialService {
   Set<String> _followingPubkeys = {};
   
+  MockSocialService(INostrService nostrService, AuthService authService, SubscriptionManager subscriptionManager) 
+    : super(nostrService, authService, subscriptionManager: subscriptionManager);
+  
   @override
-  Set<String> get followingPubkeys => _followingPubkeys;
+  List<String> get followingPubkeys => _followingPubkeys.toList();
   
   void setFollowing(Set<String> pubkeys) {
     _followingPubkeys = pubkeys;
   }
+}
+
+// Simple mock implementations for testing
+class MockNostrService implements INostrService {
+  @override
+  bool get isInitialized => true;
+  
+  @override
+  bool get isDisposed => false;
+  
+  @override
+  List<String> get connectedRelays => ['wss://test.relay'];
+  
+  @override
+  String? get publicKey => null;
+  
+  @override
+  bool get hasKeys => false;
+  
+  @override
+  NostrKeyManager get keyManager => throw UnimplementedError();
+  
+  @override
+  int get relayCount => 1;
+  
+  @override
+  int get connectedRelayCount => 1;
+  
+  @override
+  List<String> get relays => ['wss://test.relay'];
+  
+  @override
+  Map<String, dynamic> get relayStatuses => {};
+  
+  @override
+  void addListener(listener) {}
+  
+  @override
+  void removeListener(listener) {}
+  
+  @override
+  void dispose() {}
+  
+  @override
+  bool get hasListeners => false;
+  
+  @override
+  void notifyListeners() {}
+  
+  @override
+  Future<void> initialize({List<String>? customRelays}) async {}
+  
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class MockAuthService implements AuthService {
+  @override
+  bool get isAuthenticated => false;
+  
+  @override
+  String? get currentPublicKeyHex => null;
+  
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 void main() {
@@ -91,12 +171,19 @@ void main() {
     late VideoManagerService videoManager;
     late MockUserProfileService mockUserProfileService;
     late MockSocialService mockSocialService;
+    late INostrService mockNostrService;
+    late AuthService mockAuthService;
+    late SubscriptionManager mockSubscriptionManager;
     
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
+      mockNostrService = MockNostrService();
+      mockAuthService = MockAuthService();
+      mockSubscriptionManager = SubscriptionManager(mockNostrService);
+      
+      mockVideoEventService = MockVideoEventService(mockNostrService, mockSubscriptionManager);
       videoManager = VideoManagerService();
-      mockUserProfileService = MockUserProfileService();
-      mockSocialService = MockSocialService();
+      mockUserProfileService = MockUserProfileService(mockNostrService, mockSubscriptionManager);
+      mockSocialService = MockSocialService(mockNostrService, mockAuthService, mockSubscriptionManager);
       
       bridge = VideoEventBridge(
         videoEventService: mockVideoEventService,
@@ -109,6 +196,7 @@ void main() {
     tearDown(() {
       bridge.dispose();
       videoManager.dispose();
+      mockSubscriptionManager.dispose();
     });
     
     VideoEvent createTestVideo({
@@ -147,8 +235,9 @@ void main() {
       expect(firstCall['authors'], contains(followingPubkey1));
       expect(firstCall['authors'], contains(followingPubkey2));
       
-      // Classic vines should be included in following for now
-      expect(firstCall['authors'], contains('25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856'));
+      // When user has follows, classic vines should NOT be included (only fallback when no follows)
+      expect(firstCall['authors'], hasLength(2));
+      expect(firstCall['authors'], isNot(contains('25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856')));
     });
     
     test('should trigger discovery feed after following content arrives', () async {
@@ -161,19 +250,19 @@ void main() {
       expect(mockVideoEventService.subscribeCallCount, 1);
       
       // Add some following videos to trigger discovery feed
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f1', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f1000000000000000000000000000000000000000000000000000000000001', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 20));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f2', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f2000000000000000000000000000000000000000000000000000000000002', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 20));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f3', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f3000000000000000000000000000000000000000000000000000000000003', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 20));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f4', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f4000000000000000000000000000000000000000000000000000000000004', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 20));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f5', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f5000000000000000000000000000000000000000000000000000000000005', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 20));
       
       // Should have triggered discovery feed after reaching 5+ following videos
@@ -191,10 +280,10 @@ void main() {
       
       await bridge.initialize();
       
-      // Should have made discovery feed call directly
+      // Should have made classic vines fallback call
       expect(mockVideoEventService.subscribeCallCount, 1);
       final firstCall = mockVideoEventService.subscribeCallLog[0];
-      expect(firstCall['authors'], isNull); // Open feed
+      expect(firstCall['authors'], contains('033877f4080835f162880482590762c0a7508851e88fe164dd89028743914da5')); // Classic vines fallback
     });
     
     test('should properly prioritize videos in manager', () async {
@@ -205,16 +294,16 @@ void main() {
       await bridge.initialize();
       
       // Add videos in mixed order to simulate real-world scenario
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'd1', pubkey: discoveryPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'd1000000000000000000000000000000000000000000000000000000000001', pubkey: discoveryPubkey));
       await Future.delayed(const Duration(milliseconds: 10));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f1', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f1000000000000000000000000000000000000000000000000000000000001', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 10));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'd2', pubkey: discoveryPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'd2000000000000000000000000000000000000000000000000000000000002', pubkey: discoveryPubkey));
       await Future.delayed(const Duration(milliseconds: 10));
       
-      mockVideoEventService.addMockEvent(createTestVideo(id: 'f2', pubkey: followingPubkey));
+      mockVideoEventService.addMockEvent(createTestVideo(id: 'f2000000000000000000000000000000000000000000000000000000000002', pubkey: followingPubkey));
       await Future.delayed(const Duration(milliseconds: 10));
       
       // Following videos should be at front, discovery at back
@@ -243,7 +332,8 @@ void main() {
       
       // Add many following videos
       for (int i = 1; i <= 10; i++) {
-        mockVideoEventService.addMockEvent(createTestVideo(id: 'f$i', pubkey: followingPubkey));
+        final paddedId = i.toString().padLeft(4, '0');
+        mockVideoEventService.addMockEvent(createTestVideo(id: 'f${paddedId}00000000000000000000000000000000000000000000000000000000$paddedId', pubkey: followingPubkey));
         await Future.delayed(const Duration(milliseconds: 10));
       }
       

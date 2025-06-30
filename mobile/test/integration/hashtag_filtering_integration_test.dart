@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/nostr_key_manager.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/event.dart';
 
@@ -101,12 +102,15 @@ void main() {
       
       // This verifies the method exists in the class definition
       final mockNostrService = MinimalMockNostrService();
-      final videoService = VideoEventService(mockNostrService);
+      final mockSubscriptionManager = SubscriptionManager(mockNostrService);
+      final videoService = VideoEventService(mockNostrService, subscriptionManager: mockSubscriptionManager);
       
       // Quick test without causing disposal issues
       expect(videoService.getVideoEventsByHashtags, isA<Function>());
       
-      // Don't dispose - let it be handled by test framework
+      // Clean up
+      videoService.dispose();
+      mockSubscriptionManager.dispose();
     });
 
   });

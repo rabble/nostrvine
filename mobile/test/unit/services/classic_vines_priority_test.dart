@@ -2,17 +2,41 @@
 // ABOUTME: Verifies that classic vines from special channel are loaded first and displayed at top of feed
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/subscription_manager.dart';
 
 // Mock classes
 class MockNostrService extends Mock implements INostrService {}
 class MockVideoEventService extends Mock implements VideoEventService {}
 class MockEvent extends Mock implements Event {}
+
+class TestSubscriptionManager extends Mock implements SubscriptionManager {
+  final StreamController<Event> eventStreamController;
+  TestSubscriptionManager(this.eventStreamController);
+  
+  @override
+  Future<String> createSubscription({
+    required String name,
+    required List<Filter> filters,
+    required Function(Event) onEvent,
+    Function(dynamic)? onError,
+    VoidCallback? onComplete,
+    Duration? timeout,
+    int priority = 5,
+  }) async {
+    eventStreamController.stream.listen(onEvent);
+    return 'mock_sub_$name';
+  }
+  
+  @override
+  Future<void> cancelSubscription(String subscriptionId) async {}
+}
 
 // Fake classes for setUpAll
 class FakeFilter extends Fake implements Filter {}
@@ -40,7 +64,8 @@ void main() {
       when(() => mockNostrService.subscribeToEvents(filters: any(named: 'filters')))
           .thenAnswer((_) => eventStreamController.stream);
       
-      videoEventService = VideoEventService(mockNostrService);
+      final testSubscriptionManager = TestSubscriptionManager(eventStreamController);
+      videoEventService = VideoEventService(mockNostrService, subscriptionManager: testSubscriptionManager);
     });
 
     tearDown(() async {

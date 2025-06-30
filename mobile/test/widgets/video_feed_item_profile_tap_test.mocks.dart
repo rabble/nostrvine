@@ -7,16 +7,15 @@ import 'dart:async' as _i5;
 import 'dart:ui' as _i10;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i15;
+import 'package:mockito/src/dummies.dart' as _i14;
 import 'package:nostr_sdk/event.dart' as _i9;
 import 'package:openvine/models/user_profile.dart' as _i12;
 import 'package:openvine/models/video_event.dart' as _i4;
 import 'package:openvine/models/video_state.dart' as _i6;
-import 'package:openvine/services/analytics_service.dart' as _i16;
+import 'package:openvine/services/analytics_service.dart' as _i15;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/profile_cache_service.dart' as _i14;
+import 'package:openvine/services/profile_cache_service.dart' as _i13;
 import 'package:openvine/services/social_service.dart' as _i8;
-import 'package:openvine/services/subscription_manager.dart' as _i13;
 import 'package:openvine/services/user_profile_service.dart' as _i11;
 import 'package:openvine/services/video_manager_interface.dart' as _i3;
 import 'package:video_player/video_player.dart' as _i7;
@@ -610,6 +609,18 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       ) as _i5.Future<_i2.AuthResult>);
 
   @override
+  _i5.Future<void> refreshCurrentProfile(
+          _i11.UserProfileService? userProfileService) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #refreshCurrentProfile,
+          [userProfileService],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   _i5.Future<void> signOut({bool? deleteKeys = false}) => (super.noSuchMethod(
         Invocation.method(
           #signOut,
@@ -733,17 +744,7 @@ class MockUserProfileService extends _i1.Mock
       ) as bool);
 
   @override
-  void setSubscriptionManager(_i13.SubscriptionManager? subscriptionManager) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #setSubscriptionManager,
-          [subscriptionManager],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void setPersistentCache(_i14.ProfileCacheService? cacheService) =>
+  void setPersistentCache(_i13.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(
           #setPersistentCache,
@@ -842,7 +843,7 @@ class MockUserProfileService extends _i1.Mock
           #getDisplayName,
           [pubkey],
         ),
-        returnValue: _i15.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #getDisplayName,
@@ -930,7 +931,7 @@ class MockUserProfileService extends _i1.Mock
 /// A class which mocks [AnalyticsService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAnalyticsService extends _i1.Mock implements _i16.AnalyticsService {
+class MockAnalyticsService extends _i1.Mock implements _i15.AnalyticsService {
   MockAnalyticsService() {
     _i1.throwOnMissingStub(this);
   }

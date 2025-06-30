@@ -170,10 +170,10 @@ class OpenVineApp extends StatelessWidget {
           },
         ),
         
-        // Subscription manager - not needed with SDK-based service
-        ChangeNotifierProxyProvider<INostrService, SubscriptionManager?>(
-          create: (context) => null,
-          update: (_, nostrService, previous) => null,
+        // Subscription manager for centralized subscription management
+        ChangeNotifierProxyProvider<INostrService, SubscriptionManager>(
+          create: (context) => SubscriptionManager(context.read<INostrService>()),
+          update: (_, nostrService, previous) => previous ?? SubscriptionManager(nostrService),
         ),
         
         // Profile cache service for persistent profile storage
@@ -195,12 +195,12 @@ class OpenVineApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContentBlocklistService()),
         
         // Video event service depends on Nostr, SeenVideos, Blocklist, and SubscriptionManager services
-        ChangeNotifierProxyProvider4<INostrService, SeenVideosService, ContentBlocklistService, SubscriptionManager?, VideoEventService>(
+        ChangeNotifierProxyProvider4<INostrService, SeenVideosService, ContentBlocklistService, SubscriptionManager, VideoEventService>(
           create: (context) {
             final service = VideoEventService(
               context.read<INostrService>(),
               seenVideosService: context.read<SeenVideosService>(),
-              subscriptionManager: context.read<SubscriptionManager?>(),
+              subscriptionManager: context.read<SubscriptionManager>(),
             );
             service.setBlocklistService(context.read<ContentBlocklistService>());
             return service;
@@ -208,9 +208,6 @@ class OpenVineApp extends StatelessWidget {
           update: (_, nostrService, seenVideosService, blocklistService, subscriptionManager, previous) {
             if (previous != null) {
               previous.setBlocklistService(blocklistService);
-              if (subscriptionManager != null) {
-                previous.setSubscriptionManager(subscriptionManager);
-              }
               return previous;
             }
             final service = VideoEventService(
@@ -230,28 +227,24 @@ class OpenVineApp extends StatelessWidget {
         ),
         
         // User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
-        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager?, ProfileCacheService, UserProfileService>(
+        ChangeNotifierProxyProvider3<INostrService, SubscriptionManager, ProfileCacheService, UserProfileService>(
           create: (context) {
-            final service = UserProfileService(context.read<INostrService>());
-            final subscriptionManager = context.read<SubscriptionManager?>();
-            if (subscriptionManager != null) {
-              service.setSubscriptionManager(subscriptionManager);
-            }
+            final service = UserProfileService(
+              context.read<INostrService>(),
+              subscriptionManager: context.read<SubscriptionManager>(),
+            );
             service.setPersistentCache(context.read<ProfileCacheService>());
             return service;
           },
           update: (_, nostrService, subscriptionManager, profileCache, previous) {
             if (previous != null) {
-              if (subscriptionManager != null) {
-                previous.setSubscriptionManager(subscriptionManager);
-              }
               previous.setPersistentCache(profileCache);
               return previous;
             }
-            final service = UserProfileService(nostrService);
-            if (subscriptionManager != null) {
-              service.setSubscriptionManager(subscriptionManager);
-            }
+            final service = UserProfileService(
+              nostrService,
+              subscriptionManager: subscriptionManager,
+            );
             service.setPersistentCache(profileCache);
             return service;
           },
@@ -260,15 +253,17 @@ class OpenVineApp extends StatelessWidget {
         // NIP-05 service for username registration and verification
         ChangeNotifierProvider(create: (_) => Nip05Service()),
         
-        // Social service depends on Nostr service and Auth service
-        ChangeNotifierProxyProvider2<INostrService, AuthService, SocialService>(
+        // Social service depends on Nostr service, Auth service, and SubscriptionManager
+        ChangeNotifierProxyProvider3<INostrService, AuthService, SubscriptionManager, SocialService>(
           create: (context) => SocialService(
             context.read<INostrService>(),
             context.read<AuthService>(),
+            subscriptionManager: context.read<SubscriptionManager>(),
           ),
-          update: (_, nostrService, authService, previous) => previous ?? SocialService(
+          update: (_, nostrService, authService, subscriptionManager, previous) => previous ?? SocialService(
             nostrService,
             authService,
+            subscriptionManager: subscriptionManager,
           ),
         ),
         
@@ -762,6 +757,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalKey<State<FeedScreenV2>> _feedScreenKey = GlobalKey<State<FeedScreenV2>>();
+  DateTime? _lastFeedTap;
   
   late List<Widget> _screens; // Created once to preserve state
 
@@ -782,6 +778,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onTabTapped(int index) {
+    // Check for double-tap on feed icon
+    if (index == 0 && _currentIndex == 0) {
+      final now = DateTime.now();
+      if (_lastFeedTap != null && now.difference(_lastFeedTap!).inMilliseconds < 500) {
+        // Double tap detected - scroll to top and refresh
+        _scrollToTopAndRefresh();
+        _lastFeedTap = null; // Reset to prevent triple tap
+        return;
+      }
+      _lastFeedTap = now;
+    }
+    
     // Pause videos when leaving any tab that has video playback
     if (_currentIndex != index) {
       if (_currentIndex == 0) {
@@ -838,6 +846,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }
     } catch (e) {
       Log.error('Error pausing explore videos: $e', name: 'Main', category: LogCategory.system);
+    }
+  }
+  
+  void _scrollToTopAndRefresh() {
+    try {
+      // Use the static method to scroll to top and refresh
+      FeedScreenV2.scrollToTopAndRefresh(_feedScreenKey);
+      Log.info('🔄 Double-tap: Scrolling to top and refreshing feed', name: 'Main', category: LogCategory.ui);
+    } catch (e) {
+      Log.error('Error scrolling to top and refreshing: $e', name: 'Main', category: LogCategory.ui);
     }
   }
 

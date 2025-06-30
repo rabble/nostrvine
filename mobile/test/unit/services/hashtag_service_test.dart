@@ -11,8 +11,7 @@ class MockVideoEventService extends Mock implements VideoEventService {
   @override
   List<VideoEvent> get videoEvents => super.noSuchMethod(
     Invocation.getter(#videoEvents),
-    returnValueForMissingStub: <VideoEvent>[],
-  ) as List<VideoEvent>;
+  ) as List<VideoEvent>? ?? <VideoEvent>[];
 }
 
 void main() {

@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 import 'package:nostr_sdk/event.dart';
 import '../models/video_event.dart';
 import '../models/video_state.dart';
 import '../services/video_manager_interface.dart';
-import '../services/video_visibility_manager.dart';
 import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../services/analytics_service.dart';
@@ -87,14 +85,6 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void dispose() {
     _iconAnimationController.dispose();
     
-    // Remove from visibility tracking
-    try {
-      final visibilityManager = context.read<VideoVisibilityManager>();
-      visibilityManager.removeVideo(widget.video.id);
-    } catch (e) {
-      // Visibility manager might not be available
-    }
-    
     // Don't dispose controller here - VideoManager handles lifecycle
     super.dispose();
   }
@@ -132,15 +122,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   void _handleActivationChange() {
     if (!_isInitialized) return;
     
-    // Get visibility manager
-    final visibilityManager = context.read<VideoVisibilityManager>();
-    final shouldPlay = visibilityManager.shouldVideoPlay(widget.video.id);
-    
-    Log.info('🎯 _handleActivationChange called for ${widget.video.id.substring(0, 8)}... isActive: ${widget.isActive}, shouldPlay: $shouldPlay', 
+    Log.info('🎯 _handleActivationChange called for ${widget.video.id.substring(0, 8)}... isActive: ${widget.isActive}', 
         name: 'VideoFeedItem', category: LogCategory.ui);
     
-    // Only proceed if BOTH isActive AND visible
-    if (widget.isActive && shouldPlay) {
+    // Only use isActive prop from parent (PageView index-based control)
+    if (widget.isActive) {
       // Preload video - Consumer<IVideoManager> will trigger _updateController via stream when ready
       try {
         Log.info('📥 Starting preload for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
@@ -242,12 +228,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _playVideo() {
-    // CRITICAL: Double-check visibility before playing
-    final visibilityManager = context.read<VideoVisibilityManager>();
-    final shouldPlay = visibilityManager.shouldVideoPlay(widget.video.id);
-    
-    if (!shouldPlay) {
-      Log.warning('⚠️ Attempted to play video ${widget.video.id.substring(0, 8)} but it\'s not visible!', 
+    // Only play if widget is marked as active by parent
+    if (!widget.isActive) {
+      Log.warning('⚠️ Attempted to play video ${widget.video.id.substring(0, 8)} but widget is not active!', 
           name: 'VideoFeedItem', category: LogCategory.ui);
       return;
     }
@@ -257,9 +240,6 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       _controller!.play();
       // Only loop when the video is active (not in background/comments)
       _controller!.setLooping(widget.isActive);
-      
-      // Notify visibility manager that this video is actively playing (enables auto-play)
-      visibilityManager.setActivelyPlaying(widget.video.id);
       
       // Track video view if analytics is enabled
       _trackVideoView();
@@ -276,13 +256,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     }
   }
   
-  void _checkAutoPlay(VideoVisibilityManager visibilityManager, VideoState videoState) {
-    // Only auto-play if video is ready and should auto-play
-    if (videoState.loadingState == VideoLoadingState.ready &&
+  void _checkAutoPlay(VideoState videoState) {
+    // Only auto-play if video is ready and widget is active
+    if (widget.isActive &&
+        videoState.loadingState == VideoLoadingState.ready &&
         _controller != null && 
         _controller!.value.isInitialized &&
-        !_controller!.value.isPlaying &&
-        visibilityManager.shouldAutoPlay(widget.video.id)) {
+        !_controller!.value.isPlaying) {
       
       Log.info('🎬 Auto-playing video: ${widget.video.id.substring(0, 8)}', 
           name: 'VideoFeedItem', category: LogCategory.ui);
@@ -295,11 +275,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       Log.debug('Pausing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
       _controller!.pause();
       
-      // If user manually paused, disable auto-play
       if (userInitiated) {
-        final visibilityManager = context.read<VideoVisibilityManager>();
-        visibilityManager.disableAutoPlay();
-        Log.info('🛑 User paused video - auto-play disabled', name: 'VideoFeedItem', category: LogCategory.ui);
+        Log.info('🛑 User paused video', name: 'VideoFeedItem', category: LogCategory.ui);
       }
     }
   }
@@ -372,22 +349,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       return _buildErrorState('Video system not available');
     }
 
-    // Wrap with VisibilityDetector for real visibility tracking
-    return VisibilityDetector(
-      key: Key('video-visibility-${widget.video.id}'),
-      onVisibilityChanged: (visibilityInfo) {
-        // Report visibility to centralized manager
-        final visibilityManager = context.read<VideoVisibilityManager>();
-        visibilityManager.updateVideoVisibility(
-          widget.video.id, 
-          visibilityInfo.visibleFraction,
-        );
-        
-        Log.info('👁️ Visibility changed for ${widget.video.id.substring(0, 8)}: ${(visibilityInfo.visibleFraction * 100).toStringAsFixed(1)}%', 
-            name: 'VideoFeedItem', category: LogCategory.ui);
-      },
-      child: Consumer2<IVideoManager, VideoVisibilityManager>(
-        builder: (context, videoManager, visibilityManager, child) {
+    // Simple Consumer without visibility detection for control
+    return Consumer<IVideoManager>(
+        builder: (context, videoManager, child) {
           Log.info('🔵 Consumer rebuild triggered for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
           
           final videoState = videoManager.getVideoState(widget.video.id);
@@ -405,12 +369,11 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             _updateController();
             
             // Check for auto-play after controller update
-            _checkAutoPlay(visibilityManager, videoState);
+            _checkAutoPlay(videoState);
           });
 
           return _buildVideoContent(videoState);
         },
-      ),
     );
   }
 
@@ -1413,6 +1376,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _handleShare(BuildContext context) {
+    // Pause video before showing share menu
+    _pauseVideo();
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1421,7 +1387,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         video: widget.video,
         onDismiss: () => Navigator.of(context).pop(),
       ),
-    );
+    ).then((_) {
+      // Resume video when share menu is dismissed (only if still active)
+      if (widget.isActive && _controller != null) {
+        _playVideo();
+      }
+    });
   }
 
   void _handleFollow(BuildContext context, SocialService socialService) async {

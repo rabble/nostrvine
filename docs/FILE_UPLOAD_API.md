@@ -43,27 +43,25 @@ Uploads a file to the server with NIP-96 compliance.
 ```json
 {
   "status": "success",
-  "nip94_event": {
-    "kind": 1063,
-    "content": "File description",
-    "tags": [
-      ["url", "https://openvine.com/media/{fileId}"],
-      ["m", "video/mp4"],
-      ["x", "sha256hash"],
-      ["size", "1234567"],
-      ["dim", "1920x1080"],
-      ["blurhash", "LEHV6nWB2yk8pyo0adR*.7kCMdnj"]
-    ]
-  },
-  "processing_url": "https://openvine.com/api/status/{jobId}"
+  "message": "File uploaded successfully",
+  "url": "https://api.openvine.co/media/{fileId}",
+  "download_url": "https://api.openvine.co/media/{fileId}",
+  "sha256": "sha256hash",
+  "size": 1234567,
+  "type": "video/mp4",
+  "dimensions": "640x640"
 }
 ```
 
+**Note**: Files are uploaded directly to R2 storage and immediately available. The response includes the direct download URL and file metadata.
+
 **Error Responses:**
 - `400 Bad Request` - Invalid file type or missing file
-- `401 Unauthorized` - Invalid or missing NIP-98 auth
+- `401 Unauthorized` - Invalid or missing NIP-98 auth  
+- `403 Forbidden` - Content policy violation (CSAM, violence, etc.)
 - `413 Payload Too Large` - File exceeds size limit
-- `451 Unavailable For Legal Reasons` - Content safety violation
+- `500 Internal Server Error` - Storage or processing failure
+- `503 Service Unavailable` - Storage not configured
 
 ### 2. Media Serving
 
@@ -88,20 +86,22 @@ Retrieves uploaded media files.
 
 **GET** `/api/status/{jobId}`
 
-Check the status of an async upload processing job.
+Check the status of an upload processing job. Currently returns placeholder data as uploads are processed synchronously.
 
 #### Response
 
 ```json
 {
-  "status": "completed|processing|failed",
-  "progress": 0.75,
-  "error": "Error message if failed",
-  "result": {
-    "url": "https://openvine.com/media/{fileId}"
-  }
+  "job_id": "job_12345",
+  "status": "processing",
+  "progress": 75,
+  "message": "Video transcoding in progress",
+  "created_at": 1640995200000,
+  "updated_at": 1640995230000
 }
 ```
+
+**Note**: This endpoint currently serves placeholder data. Files uploaded via `/api/upload` are processed immediately and don't require status polling.
 
 ### 4. Server Capabilities
 
@@ -113,19 +113,32 @@ Returns server upload capabilities per NIP-96.
 
 ```json
 {
-  "api_url": "https://openvine.com/api/upload",
-  "download_url": "https://openvine.com/media",
+  "api_url": "https://api.openvine.co/api/upload",
+  "download_url": "https://api.openvine.co/media",
   "supported_nips": [96, 98],
-  "tos_url": "https://openvine.com/terms",
+  "tos_url": "https://api.openvine.co/terms",
   "content_types": ["video/mp4", "video/webm", "image/jpeg", "image/png"],
   "plans": {
     "free": {
-      "name": "Free",
-      "is_nip98_required": true,
+      "name": "Free Plan",
       "max_byte_size": 104857600,
-      "file_expiration": [0, 0],
+      "file_expiry": [31536000, "Files deleted after 1 year of inactivity"],
       "media_transformations": {
-        "video": ["vertical"]
+        "gif_conversion": ["Convert videos to optimized GIFs", "Support up to 30 frames for vine-style content"],
+        "video_transcoding": ["Multiple quality levels (480p, 720p, 1080p)", "Adaptive bitrate streaming (HLS/DASH)"],
+        "thumbnail_generation": ["Auto-generated video thumbnails", "Multiple sizes (small, medium, large)"],
+        "blurhash_generation": ["Progressive loading placeholders", "Computed for all visual media"]
+      }
+    },
+    "pro": {
+      "name": "Pro Plan",
+      "max_byte_size": 1073741824,
+      "file_expiry": [63072000, "Files kept for 2 years"],
+      "media_transformations": {
+        "gif_conversion": ["High-quality GIF conversion", "Up to 60 frames with advanced optimization"],
+        "video_transcoding": ["Premium quality up to 4K", "Advanced codec support (AV1, HEVC)", "Custom bitrate profiles"],
+        "thumbnail_generation": ["Custom thumbnail timestamps", "Animated preview clips"],
+        "content_analysis": ["Automatic content tagging", "Scene detection and keyframe extraction"]
       }
     }
   }
@@ -159,7 +172,7 @@ Returns server upload capabilities per NIP-96.
      kind: 27235,
      created_at: Math.floor(Date.now() / 1000),
      tags: [
-       ["u", "https://openvine.com/api/upload"],
+       ["u", "https://api.openvine.co/api/upload"],
        ["method", "POST"]
      ],
      content: "",
@@ -173,7 +186,7 @@ Returns server upload capabilities per NIP-96.
    const formData = new FormData();
    formData.append('file', fileBlob);
    
-   const response = await fetch('https://openvine.com/api/upload', {
+   const response = await fetch('https://api.openvine.co/api/upload', {
      method: 'POST',
      headers: {
        'Authorization': `Nostr ${btoa(JSON.stringify(signedAuthEvent))}`
@@ -222,9 +235,10 @@ Returns server upload capabilities per NIP-96.
 1. **Always include proper NIP-98 authentication**
 2. **Check file size before uploading** to avoid wasted bandwidth
 3. **Handle range requests** for video streaming
-4. **Implement exponential backoff** for retries
+4. **Implement exponential backoff** for retries  
 5. **Cache media URLs** as they are permanent
-6. **Monitor upload job status** for large files
+6. **Use SHA256 deduplication** to avoid re-uploading identical files
+7. **Validate file content** with magic number checks
 
 ## Example Implementation
 
@@ -237,7 +251,7 @@ async function uploadVideo(file, userPrivkey) {
   const formData = new FormData();
   formData.append('file', file);
   
-  const response = await fetch('https://openvine.com/api/upload', {
+  const response = await fetch('https://api.openvine.co/api/upload', {
     method: 'POST',
     headers: {
       'Authorization': `Nostr ${btoa(JSON.stringify(authEvent))}`
@@ -246,13 +260,23 @@ async function uploadVideo(file, userPrivkey) {
   });
   
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.statusText}`);
+    const error = await response.json();
+    throw new Error(`Upload failed: ${error.message}`);
   }
   
   const result = await response.json();
   
-  // 3. Broadcast NIP-94 event
-  const nip94Event = result.nip94_event;
+  // 3. Create and broadcast NIP-94 event using returned data
+  const nip94Event = {
+    kind: 1063,
+    tags: [
+      ['url', result.url],
+      ['x', result.sha256],
+      ['size', result.size.toString()],
+      ['m', result.type]
+    ],
+    content: 'Uploaded video'
+  };
   await broadcastToRelays(nip94Event);
   
   return result;

@@ -158,12 +158,8 @@ class VideoEvent {
                 dimensions ??= value;
                 break;
               case 'thumb':
-                // Skip broken apt.openvine.co URLs as they don't exist
-                if (!value.contains('apt.openvine.co')) {
-                  thumbnailUrl ??= value;
-                } else {
-                  developer.log('⚠️ WARNING: Skipping broken apt.openvine.co thumbnail URL: $value', name: 'VideoEvent');
-                }
+                // Thumbnail URL
+                thumbnailUrl ??= value;
                 break;
               case 'duration':
                 duration ??= double.tryParse(value)?.round();
@@ -193,20 +189,12 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
           break;
         case 'thumb':
-          // Skip broken apt.openvine.co URLs as they don't exist
-          if (!tagValue.contains('apt.openvine.co')) {
-            thumbnailUrl = tagValue;
-          } else {
-            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co thumbnail URL: $tagValue', name: 'VideoEvent');
-          }
+          // Thumbnail URL
+          thumbnailUrl = tagValue;
           break;
         case 'image':
           // Alternative to 'thumb' tag - some clients use 'image' instead
-          if (!tagValue.contains('apt.openvine.co')) {
-            thumbnailUrl ??= tagValue;
-          } else {
-            developer.log('⚠️ WARNING: Skipping broken apt.openvine.co image URL: $tagValue', name: 'VideoEvent');
-          }
+          thumbnailUrl ??= tagValue;
           break;
         case 'd':
           // Replaceable event ID - original vine ID
@@ -236,7 +224,7 @@ class VideoEvent {
             if (type == 'video' && url.isNotEmpty && _isValidVideoUrl(url)) {
               videoUrl ??= url;
               developer.log('✅ Found video URL in r tag with type annotation: $url', name: 'VideoEvent');
-            } else if (type == 'thumbnail' && url.isNotEmpty && !url.contains('apt.openvine.co') && !url.contains('picsum.photos')) {
+            } else if (type == 'thumbnail' && url.isNotEmpty && !url.contains('picsum.photos')) {
               thumbnailUrl ??= url;
               developer.log('✅ Found thumbnail URL in r tag with type annotation: $url', name: 'VideoEvent');
             }

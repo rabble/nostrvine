@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import '../utils/unified_logger.dart';
+import '../../utils/unified_logger.dart';
 
 /// Native macOS camera interface using platform channels
 class NativeMacOSCamera {
