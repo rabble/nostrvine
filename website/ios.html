@@ -3,65 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenVine for iOS - Beta Testing</title>
+    <title>OpenVine for iOS - Beta Testing Available</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="main.css?v=1">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <meta name="description" content="OpenVine for iOS - Join the TestFlight beta and help shape the future of vine-style videos">
+    <meta name="description" content="Download OpenVine for iOS - Join the TestFlight beta and start creating vine-style videos">
     <style>
         .ios-hero {
             background: linear-gradient(135deg, #00bf8f 0%, #00a77d 100%);
             color: white;
-            padding: 80px 40px;
+            padding: 100px 40px 80px;
             text-align: center;
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .ios-content {
-            max-width: 800px;
-            margin: 0 auto;
         }
         
         .ios-hero h1 {
-            font-family: 'Pacifico', cursive;
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin-bottom: 20px;
+            font-weight: bold;
         }
         
-        .ios-hero h2 {
-            font-size: 1.8rem;
-            margin-bottom: 30px;
+        .ios-hero .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
             opacity: 0.9;
         }
         
         .beta-steps {
-            background: white;
-            color: #333;
-            padding: 60px 40px;
-        }
-        
-        .steps-container {
-            max-width: 800px;
+            padding: 80px 40px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         
-        .step {
-            background: #f8f9fa;
+        .step-card {
+            background: white;
             border-radius: 15px;
-            padding: 30px;
+            padding: 40px;
             margin: 30px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             border-left: 5px solid #00bf8f;
         }
         
-        .step h3 {
-            color: #00bf8f;
+        .step-number {
+            display: inline-block;
+            background: #00bf8f;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-right: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .step-card h3 {
             font-size: 1.5rem;
             margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .step-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
         }
         
         .beta-button {
@@ -71,10 +78,9 @@
             border-radius: 25px;
             text-decoration: none;
             font-weight: bold;
-            font-size: 16px;
             display: inline-block;
-            margin: 15px 10px;
             transition: background 0.3s ease;
+            margin-right: 15px;
         }
         
         .beta-button:hover {
@@ -89,11 +95,17 @@
             background: #0056CC;
         }
         
+        .features-section {
+            background: #f8f9fa;
+            padding: 80px 40px;
+        }
+        
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
-            margin: 40px 0;
+            max-width: 1000px;
+            margin: 0 auto;
         }
         
         .feature-card {
@@ -104,99 +116,94 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
-        .feature-emoji {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            display: block;
+        .feature-card h4 {
+            font-size: 1.2rem;
+            margin: 20px 0 15px;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="nav-container">
-                <div class="logo">
-                    <a href="/" style="text-decoration: none; color: inherit;">
-                        <h1 style="font-family: 'Pacifico', cursive; color: #00bf8f;">OpenVine</h1>
-                    </a>
-                </div>
-                <div class="nav-links">
-                    <a href="/" class="nav-button">Home</a>
-                    <a href="/about" class="nav-button">About</a>
-                    <a href="https://app.openvine.co" class="nav-button" target="_blank">Open Web App</a>
-                </div>
+    <header class="vine-header">
+        <div class="vine-header-bg"></div>
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">OpenVine</a>
+            <div class="vine-auth-buttons">
+                <a href="https://app.openvine.co" class="vine-auth-btn vine-login-btn">Log in</a>
             </div>
-        </nav>
+        </div>
     </header>
 
     <main>
-        <div class="ios-hero">
-            <div class="ios-content">
-                <h1>OpenVine for iOS</h1>
-                <h2>🍎 Beta Testing Available Now</h2>
-                <p style="font-size: 1.2rem; margin-bottom: 40px;">
-                    Experience vine-style videos natively on your iPhone! Join our TestFlight beta 
-                    and help shape the future of short-form video sharing.
-                </p>
-                
+        <section class="ios-hero">
+            <h1>OpenVine for iOS</h1>
+            <p class="subtitle">Beta testing available now - Join TestFlight and start creating</p>
+            
+            <div style="margin-top: 40px;">
                 <a href="https://testflight.apple.com/join/phQERxAb" target="_blank" class="beta-button">
-                    📱 Join Beta Test
+                    Join Beta Test
                 </a>
                 <a href="https://apps.apple.com/app/testflight/id899247664" target="_blank" class="beta-button testflight-button">
-                    📲 Get TestFlight
+                    Get TestFlight
                 </a>
-            </div>
-        </div>
-
-        <section class="beta-steps">
-            <div class="steps-container">
-                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 40px; color: #00bf8f;">How to Join the Beta</h2>
-                
-                <div class="step">
-                    <h3>📲 Step 1: Install TestFlight</h3>
-                    <p>TestFlight is Apple's official beta testing app. You need it to access beta versions of apps.</p>
-                    <a href="https://apps.apple.com/app/testflight/id899247664" target="_blank" class="beta-button testflight-button">
-                        Download TestFlight
-                    </a>
-                </div>
-                
-                <div class="step">
-                    <h3>🚀 Step 2: Join OpenVine Beta</h3>
-                    <p>Once TestFlight is installed, tap this link to join the OpenVine beta program:</p>
-                    <a href="https://testflight.apple.com/join/phQERxAb" target="_blank" class="beta-button">
-                        Join OpenVine Beta
-                    </a>
-                </div>
-                
-                <div class="step">
-                    <h3>🎬 Step 3: Start Creating</h3>
-                    <p>That's it! You'll have OpenVine installed and ready to create amazing vine-style videos. Share your feedback to help us improve!</p>
-                </div>
             </div>
         </section>
 
-        <section style="background: #f8f9fa; padding: 60px 40px;">
-            <div style="max-width: 1200px; margin: 0 auto;">
-                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 40px; color: #00bf8f;">App Features</h2>
+        <section class="beta-steps">
+            <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 50px; color: #333;">How to Join</h2>
+            
+            <div class="step-card">
+                <span class="step-number">1</span>
+                <h3>Install TestFlight</h3>
+                <p>TestFlight is Apple's official beta testing app. Download it from the App Store first.</p>
+                <a href="https://apps.apple.com/app/testflight/id899247664" target="_blank" class="beta-button testflight-button">
+                    Download TestFlight
+                </a>
+            </div>
+            
+            <div class="step-card">
+                <span class="step-number">2</span>
+                <h3>Join OpenVine Beta</h3>
+                <p>Once TestFlight is installed, tap this link to join the OpenVine beta program.</p>
+                <a href="https://testflight.apple.com/join/phQERxAb" target="_blank" class="beta-button">
+                    Join OpenVine Beta
+                </a>
+            </div>
+            
+            <div class="step-card">
+                <span class="step-number">3</span>
+                <h3>Start Creating</h3>
+                <p>OpenVine will install through TestFlight. Open the app and start creating vine-style videos. Your feedback helps make the app better!</p>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <div style="max-width: 1000px; margin: 0 auto;">
+                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 50px; color: #333;">App Features</h2>
                 <div class="features-grid">
                     <div class="feature-card">
-                        <span class="feature-emoji">📱</span>
-                        <h3>Native iOS Performance</h3>
-                        <p>Optimized for iPhone with smooth 60fps recording and instant playback</p>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📱</div>
+                        <h4>Native Performance</h4>
+                        <p>Optimized for iPhone with smooth recording and instant playback</p>
                     </div>
                     <div class="feature-card">
-                        <span class="feature-emoji">🎬</span>
-                        <h3>Simple Recording</h3>
-                        <p>Hold to record, release to stop. Just like the original Vine!</p>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🎬</div>
+                        <h4>Simple Recording</h4>
+                        <p>Hold to record, release to stop. Just like the original Vine</p>
                     </div>
                     <div class="feature-card">
-                        <span class="feature-emoji">🔐</span>
-                        <h3>Own Your Identity</h3>
-                        <p>Your keys, your content. Built on Nostr for true decentralization</p>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🔐</div>
+                        <h4>Own Your Content</h4>
+                        <p>Your keys, your videos. Built on Nostr for true decentralization</p>
                     </div>
                     <div class="feature-card">
-                        <span class="feature-emoji">📤</span>
-                        <h3>Share Everywhere</h3>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📤</div>
+                        <h4>Share Everywhere</h4>
                         <p>Native iOS sharing to Messages, social media, and beyond</p>
                     </div>
                 </div>
