@@ -76,34 +76,20 @@ class ExploreVideoManager extends ChangeNotifier {
       // Get videos from curation service
       final curatedVideos = _curationService.getVideosForSetType(type);
       
-      if (curatedVideos.isEmpty) {
-        _availableCollections[type] = [];
-        return;
-      }
+      // FIXED: Return curated videos directly instead of filtering through VideoManager
+      // The CurationService already has access to all videos from VideoEventService
+      _availableCollections[type] = curatedVideos;
       
-      // Check which videos are available in VideoManager
-      final availableVideos = <VideoEvent>[];
-      final missingVideos = <String>[];
-      
-      for (final video in curatedVideos) {
-        // Check if the video is available in VideoManager
-        final videoState = _videoManager.getVideoState(video.id);
-        
-        if (videoState != null) {
-          // Video is available
-          availableVideos.add(video);
-        } else {
-          missingVideos.add(video.id);
+      // Debug: Log what we're getting
+      if (type == CurationSetType.editorsPicks) {
+        Log.debug('ExploreVideoManager: Editor\'s Picks has ${curatedVideos.length} videos', name: 'ExploreVideoManager', category: LogCategory.system);
+        if (curatedVideos.isNotEmpty) {
+          final firstVideo = curatedVideos.first;
+          Log.debug('  First video: ${firstVideo.title ?? firstVideo.id.substring(0, 8)} from pubkey ${firstVideo.pubkey.substring(0, 8)}', name: 'ExploreVideoManager', category: LogCategory.system);
         }
       }
       
-      _availableCollections[type] = availableVideos;
-      Log.verbose('Synced ${availableVideos.length}/${curatedVideos.length} videos for ${type.name}', name: 'ExploreVideoManager', category: LogCategory.system);
-      
-      // Only log missing videos if there are any - this is actually useful debug info
-      if (missingVideos.isNotEmpty) {
-        Log.verbose('Missing ${missingVideos.length} videos for ${type.name}: ${missingVideos.join(', ')}', name: 'ExploreVideoManager', category: LogCategory.system);
-      }
+      Log.verbose('Synced ${curatedVideos.length} videos for ${type.name}', name: 'ExploreVideoManager', category: LogCategory.system);
       
     } catch (e) {
       Log.error('Failed to sync collection ${type.name}: $e', name: 'ExploreVideoManager', category: LogCategory.system);

@@ -3,9 +3,11 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/event.dart';
 import '../models/curation_set.dart';
 import '../models/video_event.dart';
 import '../services/nostr_service_interface.dart';
@@ -143,8 +145,9 @@ class CurationService extends ChangeNotifier {
       }
     }
     
-    // Sort editor's videos by creation time (newest first)
-    editorVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Randomize editor's videos order instead of sorting by time
+    editorVideos.shuffle(Random());
+    Log.debug('  Randomized order of ${editorVideos.length} editor videos', name: 'CurationService', category: LogCategory.system);
     
     // Add all editor's videos to picks
     for (final video in editorVideos) {
@@ -218,7 +221,8 @@ class CurationService extends ChangeNotifier {
   /// Fetch trending videos from analytics API
   Future<void> _fetchTrendingFromAnalytics() async {
     try {
-      Log.debug('Fetching trending videos from analytics API...', name: 'CurationService', category: LogCategory.system);
+      Log.info('📊 Fetching trending videos from analytics API...', name: 'CurationService', category: LogCategory.system);
+      Log.info('  URL: https://analytics.openvine.co/analytics/trending/vines', name: 'CurationService', category: LogCategory.system);
       
       final response = await http.get(
         Uri.parse('https://analytics.openvine.co/analytics/trending/vines'),
@@ -228,18 +232,31 @@ class CurationService extends ChangeNotifier {
         },
       ).timeout(const Duration(seconds: 10));
       
+      Log.info('📊 Trending API response:', name: 'CurationService', category: LogCategory.system);
+      Log.info('  Status: ${response.statusCode}', name: 'CurationService', category: LogCategory.system);
+      Log.info('  Body: ${response.body}', name: 'CurationService', category: LogCategory.system);
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final vinesData = data['vines'] as List<dynamic>?;
         
+        Log.info('  Vines in response: ${vinesData?.length ?? 0}', name: 'CurationService', category: LogCategory.system);
+        
         if (vinesData != null && vinesData.isNotEmpty) {
           final trending = <VideoEvent>[];
           final allVideos = _videoEventService.videoEvents;
+          final missingEventIds = <String>[];
           
-          // Match trending event IDs with local video events
+          Log.info('  Local videos available: ${allVideos.length}', name: 'CurationService', category: LogCategory.system);
+          
+          // First pass: collect videos we have locally and track missing ones
           for (final vineData in vinesData) {
             final eventId = vineData['eventId'] as String?;
+            final viewCount = vineData['views'] ?? 0;
+            
             if (eventId != null) {
+              Log.verbose('  Looking for eventId: $eventId (${viewCount} views)', name: 'CurationService', category: LogCategory.system);
+              
               // Find the video in our local cache
               final localVideo = allVideos.firstWhere(
                 (video) => video.id == eventId,
@@ -254,23 +271,89 @@ class CurationService extends ChangeNotifier {
               
               if (localVideo.id.isNotEmpty) {
                 trending.add(localVideo);
-                Log.verbose('Found trending video: ${localVideo.title ?? localVideo.id.substring(0, 8)} (${vineData['views']} views)', name: 'CurationService', category: LogCategory.system);
+                Log.info('✅ Found trending video: ${localVideo.title ?? localVideo.id.substring(0, 8)} (${viewCount} views)', name: 'CurationService', category: LogCategory.system);
+              } else {
+                Log.warning('❌ Trending video not found locally: $eventId - will fetch from relays', name: 'CurationService', category: LogCategory.system);
+                missingEventIds.add(eventId);
+              }
+            }
+          }
+          
+          // Fetch missing videos from Nostr relays
+          if (missingEventIds.isNotEmpty) {
+            Log.info('📡 Fetching ${missingEventIds.length} missing trending videos from relays...', name: 'CurationService', category: LogCategory.system);
+            
+            try {
+              // Subscribe to fetch specific video events
+              final filter = Filter(
+                kinds: [22],
+                ids: missingEventIds,
+                h: ['vine'], // Required for vine.hol.is relay
+              );
+              
+              final eventStream = _nostrService.subscribeToEvents(
+                filters: [filter],
+              );
+              
+              // Collect fetched videos with a timeout
+              final fetchedVideos = <VideoEvent>[];
+              await for (final event in eventStream.timeout(const Duration(seconds: 5))) {
+                try {
+                  final video = VideoEvent.fromNostrEvent(event);
+                  fetchedVideos.add(video);
+                  Log.info('📹 Fetched trending video from relay: ${video.title ?? video.id.substring(0, 8)}', name: 'CurationService', category: LogCategory.system);
+                  
+                  // Also add to video event service so it's cached
+                  _videoEventService.addVideoEvent(video);
+                } catch (e) {
+                  Log.error('Failed to parse video event: $e', name: 'CurationService', category: LogCategory.system);
+                }
+              }
+              
+              // Add fetched videos to trending list
+              trending.addAll(fetchedVideos);
+              Log.info('✅ Fetched ${fetchedVideos.length} trending videos from relays', name: 'CurationService', category: LogCategory.system);
+              
+            } catch (e) {
+              if (e.toString().contains('TimeoutException')) {
+                Log.info('⏱️ Timeout fetching videos from relays - continuing with what we have', name: 'CurationService', category: LogCategory.system);
+              } else {
+                Log.error('❌ Error fetching videos from relays: $e', name: 'CurationService', category: LogCategory.system);
               }
             }
           }
           
           if (trending.isNotEmpty) {
+            // Sort by the order from analytics API
+            final orderedTrending = <VideoEvent>[];
+            for (final vineData in vinesData) {
+              final eventId = vineData['eventId'] as String?;
+              if (eventId != null) {
+                final video = trending.firstWhere(
+                  (v) => v.id == eventId,
+                  orElse: () => VideoEvent(id: '', pubkey: '', createdAt: 0, content: '', timestamp: DateTime.now()),
+                );
+                if (video.id.isNotEmpty) {
+                  orderedTrending.add(video);
+                }
+              }
+            }
+            
             // Update the trending cache with analytics data
-            _setVideoCache[CurationSetType.trending.id] = trending;
-            Log.info('Updated trending videos from analytics: ${trending.length} videos', name: 'CurationService', category: LogCategory.system);
+            _setVideoCache[CurationSetType.trending.id] = orderedTrending;
+            Log.info('✅ Updated trending videos from analytics: ${orderedTrending.length} videos', name: 'CurationService', category: LogCategory.system);
             notifyListeners();
+          } else {
+            Log.warning('⚠️ No trending videos found after fetching from relays', name: 'CurationService', category: LogCategory.system);
           }
+        } else {
+          Log.warning('⚠️ No vines data in analytics response', name: 'CurationService', category: LogCategory.system);
         }
       } else {
-        Log.warning('Analytics API returned ${response.statusCode}: ${response.body}', name: 'CurationService', category: LogCategory.system);
+        Log.warning('❌ Analytics API returned ${response.statusCode}: ${response.body}', name: 'CurationService', category: LogCategory.system);
       }
     } catch (e) {
-      Log.error('Failed to fetch trending from analytics: $e', name: 'CurationService', category: LogCategory.system);
+      Log.error('❌ Failed to fetch trending from analytics: $e', name: 'CurationService', category: LogCategory.system);
       // Continue with local algorithm fallback
     }
   }

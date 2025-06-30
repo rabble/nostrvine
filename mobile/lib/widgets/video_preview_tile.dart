@@ -7,6 +7,7 @@ import '../models/video_event.dart';
 import '../theme/vine_theme.dart';
 import '../utils/unified_logger.dart';
 import 'video_thumbnail_widget.dart';
+import '../services/global_video_registry.dart';
 
 /// Lightweight video preview widget for explore screens
 /// Automatically plays when visible, pauses when scrolled away
@@ -90,6 +91,12 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
       await controller.initialize();
       
       if (mounted && widget.isActive) {
+        // Register with global registry
+        GlobalVideoRegistry().registerController(controller);
+        
+        // Pause all other videos before playing this one
+        GlobalVideoRegistry().pauseAllExcept(controller);
+        
         await controller.setLooping(true);
         await controller.setVolume(0); // Mute for preview
         await controller.play();
@@ -114,8 +121,11 @@ class _VideoPreviewTileState extends State<VideoPreviewTile> with AutomaticKeepA
 
   void _disposeVideo() {
     Log.debug('�️ Disposing preview for ${widget.video.id.substring(0, 8)}...', name: 'VideoPreviewTile', category: LogCategory.ui);
-    _controller?.dispose();
-    _controller = null;
+    if (_controller != null) {
+      GlobalVideoRegistry().unregisterController(_controller!);
+      _controller!.dispose();
+      _controller = null;
+    }
   }
 
   @override

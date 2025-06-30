@@ -10,6 +10,7 @@ import '../models/pending_upload.dart';
 import '../services/upload_manager.dart';
 import '../services/auth_service.dart';
 import '../utils/unified_logger.dart';
+import '../services/global_video_registry.dart';
 
 class VideoMetadataScreen extends StatefulWidget {
   final File videoFile;
@@ -48,6 +49,8 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
   
   @override
   void dispose() {
+    // Unregister from global registry before disposing
+    GlobalVideoRegistry().unregisterController(_videoController);
     _videoController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
@@ -64,6 +67,13 @@ class _VideoMetadataScreenState extends State<VideoMetadataScreen> {
     try {
       await _videoController.initialize();
       Log.info('Video initialized: ${_videoController.value.size}', name: 'VideoMetadataScreen', category: LogCategory.ui);
+      
+      // Register with global registry
+      GlobalVideoRegistry().registerController(_videoController);
+      
+      // Pause all other videos before playing this one
+      GlobalVideoRegistry().pauseAllExcept(_videoController);
+      
       await _videoController.setLooping(true);
       await _videoController.play();
       setState(() => _isVideoInitialized = true);

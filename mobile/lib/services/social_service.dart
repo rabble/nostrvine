@@ -1062,8 +1062,45 @@ class SocialService extends ChangeNotifier {
       h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
     );
     
-    // Subscribe to comment events
-    return _nostrService.subscribeToEvents(filters: [filter]);
+    // Create a StreamController to emit events
+    final controller = StreamController<Event>();
+    
+    // Create managed subscription for comments
+    _subscriptionManager.createSubscription(
+      name: 'comments_${rootEventId.substring(0, 8)}',
+      filters: [
+        Filter(
+          kinds: filter.kinds,
+          e: filter.e,
+          h: filter.h,
+          limit: 50, // Limit comment fetching
+        ),
+      ],
+      onEvent: (event) {
+        if (!controller.isClosed) {
+          controller.add(event);
+        }
+      },
+      onError: (error) {
+        if (!controller.isClosed) {
+          controller.addError(error);
+        }
+      },
+      onComplete: () {
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      },
+      timeout: const Duration(minutes: 2), // Shorter timeout for comments
+      priority: 6, // Lower priority for comments
+    ).catchError((error) {
+      Log.error('Failed to create comment subscription: $error', name: 'SocialService', category: LogCategory.system);
+      if (!controller.isClosed) {
+        controller.addError(error);
+      }
+    });
+    
+    return controller.stream;
   }
   
   /// Fetches comment count for an event
@@ -1074,28 +1111,39 @@ class SocialService extends ChangeNotifier {
       final completer = Completer<int>();
       int commentCount = 0;
       
-      // Subscribe to comments for this event
-      final subscription = fetchCommentsForEvent(rootEventId).listen(
-        (event) {
+      // Create a dedicated comment count subscription with higher priority and shorter timeout
+      final subscriptionId = await _subscriptionManager.createSubscription(
+        name: 'comment_count_${rootEventId.substring(0, 8)}',
+        filters: [
+          Filter(
+            kinds: [1], // Text notes
+            e: [rootEventId], // Comments that reference this event
+            h: ['vine'], // REQUIRED: vine.hol.is relay only stores events with this tag
+            limit: 100, // Reasonable limit for counting
+          ),
+        ],
+        onEvent: (event) {
           commentCount++;
         },
         onError: (error) {
           Log.error('Error fetching comment count: $error', name: 'SocialService', category: LogCategory.system);
           if (!completer.isCompleted) {
-            completer.complete(0);
+            completer.complete(commentCount);
           }
         },
-        onDone: () {
+        onComplete: () {
           if (!completer.isCompleted) {
             completer.complete(commentCount);
           }
         },
+        timeout: const Duration(seconds: 5), // Short timeout for count
+        priority: 5, // Higher priority for counts
       );
       
-      // Set a timeout
-      Timer(const Duration(seconds: 5), () {
+      // Set a backup timeout
+      Timer(const Duration(seconds: 6), () {
         if (!completer.isCompleted) {
-          subscription.cancel();
+          _subscriptionManager.cancelSubscription(subscriptionId);
           completer.complete(commentCount);
         }
       });
@@ -1108,6 +1156,14 @@ class SocialService extends ChangeNotifier {
       Log.error('Error fetching comment count: $e', name: 'SocialService', category: LogCategory.system);
       return 0;
     }
+  }
+  
+  /// Cancel comment subscriptions for a specific video (call when video scrolls out of view)
+  Future<void> cancelCommentSubscriptions(String rootEventId) async {
+    final shortId = rootEventId.substring(0, 8);
+    await _subscriptionManager.cancelSubscriptionsByName('comments_$shortId');
+    await _subscriptionManager.cancelSubscriptionsByName('comment_count_$shortId');
+    Log.debug('🗑️ Cancelled comment subscriptions for: $shortId', name: 'SocialService', category: LogCategory.system);
   }
   
   // === REPOST SYSTEM (NIP-18) ===

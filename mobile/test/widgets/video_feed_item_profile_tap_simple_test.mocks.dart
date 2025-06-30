@@ -421,6 +421,17 @@ class MockSocialService extends _i1.Mock implements _i8.SocialService {
       ) as _i5.Future<int>);
 
   @override
+  _i5.Future<void> cancelCommentSubscriptions(String? rootEventId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelCommentSubscriptions,
+          [rootEventId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   _i5.Future<void> repostEvent(_i9.Event? eventToRepost) => (super.noSuchMethod(
         Invocation.method(
           #repostEvent,

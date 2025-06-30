@@ -48,6 +48,7 @@ import 'services/video_sharing_service.dart';
 import 'services/content_deletion_service.dart';
 import 'services/content_blocklist_service.dart';
 import 'services/fake_shared_preferences.dart';
+import 'services/global_video_registry.dart';
 import 'services/analytics_service.dart';
 import 'services/subscription_manager.dart';
 import 'services/profile_cache_service.dart';
@@ -58,6 +59,9 @@ import 'providers/profile_stats_provider.dart';
 import 'providers/profile_videos_provider.dart';
 import 'models/video_event.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+// Global navigation key for hashtag navigation
+final GlobalKey<MainNavigationScreenState> mainNavigationKey = GlobalKey<MainNavigationScreenState>();
 
 void main() async {
   // Ensure bindings are initialized
@@ -733,7 +737,7 @@ class _AppInitializerState extends State<AppInitializer> {
               ),
             );
           case AuthState.authenticated:
-            return const MainNavigationScreen();
+            return MainNavigationScreen(key: mainNavigationKey);
         }
       },
     );
@@ -743,23 +747,26 @@ class _AppInitializerState extends State<AppInitializer> {
 class MainNavigationScreen extends StatefulWidget {
   final int? initialTabIndex;
   final VideoEvent? startingVideo;
+  final String? initialHashtag;
   
   const MainNavigationScreen({
     super.key,
     this.initialTabIndex,
     this.startingVideo,
+    this.initialHashtag,
   });
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalKey<State<FeedScreenV2>> _feedScreenKey = GlobalKey<State<FeedScreenV2>>();
   DateTime? _lastFeedTap;
   
   late List<Widget> _screens; // Created once to preserve state
+  final GlobalKey<ExploreScreenState> _exploreScreenKey = GlobalKey<ExploreScreenState>();
 
   @override
   void initState() {
@@ -772,9 +779,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         startingVideo: widget.startingVideo,
       ),
       const ActivityScreen(),
-      const ExploreScreen(),
+      ExploreScreen(key: _exploreScreenKey),
       const ProfileScreen(),
     ];
+    
+    // If initial hashtag is provided, navigate to explore tab after build
+    if (widget.initialHashtag != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigateToHashtag(widget.initialHashtag!);
+      });
+    }
   }
 
   void _onTabTapped(int index) {
@@ -792,6 +806,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Pause videos when leaving any tab that has video playback
     if (_currentIndex != index) {
+      // Pause ALL videos globally when switching tabs
+      GlobalVideoRegistry().pauseAllControllers();
+      Log.info('⏸️ Paused all videos globally when switching tabs', name: 'Main', category: LogCategory.system);
+      
       if (_currentIndex == 0) {
         // Leaving feed screen
         _pauseFeedVideos();
@@ -857,6 +875,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (e) {
       Log.error('Error scrolling to top and refreshing: $e', name: 'Main', category: LogCategory.ui);
     }
+  }
+  
+  void navigateToHashtag(String hashtag) {
+    // Switch to explore tab
+    setState(() {
+      _currentIndex = 2;
+    });
+    
+    // Pass hashtag to explore screen
+    _exploreScreenKey.currentState?.showHashtagVideos(hashtag);
   }
 
   @override

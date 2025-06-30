@@ -2,6 +2,7 @@
 // ABOUTME: Handles real-time feed updates and local caching of video content
 
 import 'dart:async';
+import 'dart:math';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:flutter/foundation.dart';
@@ -1149,22 +1150,26 @@ class VideoEventService extends ChangeNotifier {
     
     // Priority order: 1) Classic Vines, 2) Default videos, 3) Everything else
     if (isClassicVine) {
-      // Classic vine - keep at the very top
+      // Classic vine - keep at the very top but randomize their order
       int insertIndex = 0;
+      int classicVineEndIndex = 0;
+      
+      // Find the range of classic vines
       for (int i = 0; i < _videoEvents.length; i++) {
         if (_videoEvents[i].pubkey == AppConstants.classicVinesPubkey) {
-          // Found another classic vine, sort by timestamp (newest first)
-          if (_videoEvents[i].timestamp.isBefore(videoEvent.timestamp)) {
-            break;
-          }
-          insertIndex = i + 1;
+          classicVineEndIndex = i + 1;
         } else {
-          // Found non-classic vine, insert before it
           break;
         }
       }
+      
+      // Insert at a random position within the classic vines section
+      if (classicVineEndIndex > 0) {
+        insertIndex = Random().nextInt(classicVineEndIndex + 1);
+      }
+      
       _videoEvents.insert(insertIndex, videoEvent);
-      Log.verbose('Added CLASSIC VINE at position $insertIndex: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}', name: 'VideoEventService', category: LogCategory.video);
+      Log.verbose('Added CLASSIC VINE at random position $insertIndex: ${videoEvent.title ?? videoEvent.id.substring(0, 8)}', name: 'VideoEventService', category: LogCategory.video);
     } else if (videoPriority == 0) {
       // Default video - keep after classic vines but before regular videos
       int insertIndex = 0;
@@ -1312,6 +1317,12 @@ class VideoEventService extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+  
+  /// Add a video event to the cache (for external services like CurationService)
+  void addVideoEvent(VideoEvent videoEvent) {
+    _addVideoWithPriority(videoEvent);
+    notifyListeners();
   }
 }
 

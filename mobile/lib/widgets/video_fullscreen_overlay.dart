@@ -15,6 +15,7 @@ import '../screens/profile_screen.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../widgets/share_video_menu.dart';
 import '../utils/unified_logger.dart';
+import '../services/global_video_registry.dart';
 
 /// Full-screen overlay that displays video with proper scaling and interactions
 class VideoFullscreenOverlay extends StatefulWidget {
@@ -129,6 +130,12 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
         Log.debug('   - Duration: ${controller.value.duration}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
         Log.debug('   - Size: ${controller.value.size}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
         Log.debug('   - AspectRatio: ${controller.value.aspectRatio}', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
+        
+        // Register with global registry
+        GlobalVideoRegistry().registerController(controller);
+        
+        // Pause all other videos before playing this one
+        GlobalVideoRegistry().pauseAllExcept(controller);
       }
     } catch (e, stackTrace) {
       Log.error('Fullscreen video initialization failed: $e', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
@@ -153,8 +160,11 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
 
   void _disposeVideo() {
     Log.debug('�️ Disposing fullscreen video', name: 'VideoFullscreenOverlay', category: LogCategory.ui);
-    _controller?.dispose();
-    _controller = null;
+    if (_controller != null) {
+      GlobalVideoRegistry().unregisterController(_controller!);
+      _controller!.dispose();
+      _controller = null;
+    }
   }
 
   void _togglePlayPause() {
@@ -163,6 +173,8 @@ class _VideoFullscreenOverlayState extends State<VideoFullscreenOverlay> with Ti
         if (_controller!.value.isPlaying) {
           _controller!.pause();
         } else {
+          // Pause all other videos before playing this one
+          GlobalVideoRegistry().pauseAllExcept(_controller);
           _controller!.play();
         }
       });

@@ -14,8 +14,8 @@ class SubscriptionManager extends ChangeNotifier {
   final Map<String, ActiveSubscription> _activeSubscriptions = {};
   final Map<String, Timer> _retryTimers = {};
   
-  // Rate limiting
-  static const int _maxConcurrentSubscriptions = 20; // Increased to handle multiple services
+  // Rate limiting  
+  static const int _maxConcurrentSubscriptions = 30; // Further increased for proper comment management
   static const int _maxEventsPerMinute = 2000; // Increased to handle profile loads
   static const Duration _subscriptionTimeout = Duration(minutes: 5);
   static const Duration _retryDelay = Duration(seconds: 30);
@@ -173,7 +173,8 @@ class SubscriptionManager extends ChangeNotifier {
         since: filter.since,
         until: filter.until,
         limit: optimizedLimit,
-        // Remove any other parameters that might cause issues
+        t: filter.t, // Preserve hashtag filters
+        h: filter.h, // Preserve group filters (required for vine.hol.is)
       );
       
       optimized.add(optimizedFilter);

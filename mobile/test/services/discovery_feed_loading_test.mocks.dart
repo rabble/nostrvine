@@ -391,6 +391,15 @@ class MockVideoEventService extends _i1.Mock implements _i2.VideoEventService {
       );
 
   @override
+  void addVideoEvent(_i3.VideoEvent? videoEvent) => super.noSuchMethod(
+        Invocation.method(
+          #addVideoEvent,
+          [videoEvent],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
@@ -999,6 +1008,17 @@ class MockSocialService extends _i1.Mock implements _i14.SocialService {
         ),
         returnValue: _i6.Future<int>.value(0),
       ) as _i6.Future<int>);
+
+  @override
+  _i6.Future<void> cancelCommentSubscriptions(String? rootEventId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cancelCommentSubscriptions,
+          [rootEventId],
+        ),
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
   _i6.Future<void> repostEvent(_i15.Event? eventToRepost) =>

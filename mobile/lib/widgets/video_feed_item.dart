@@ -13,11 +13,13 @@ import '../services/social_service.dart';
 import '../services/auth_service.dart';
 import '../services/analytics_service.dart';
 import '../widgets/share_video_menu.dart';
+import '../widgets/clickable_hashtag_text.dart';
 import '../services/user_profile_service.dart';
 import '../screens/hashtag_feed_screen.dart';
 import '../screens/comments_screen.dart';
 import '../screens/profile_screen.dart';
 import '../utils/unified_logger.dart';
+import '../main.dart';
 
 /// Individual video item widget implementing TDD specifications
 /// 
@@ -49,6 +51,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _showPlayPauseIcon = false;
+  bool _userPaused = false; // Track if user manually paused the video
   late AnimationController _iconAnimationController;
 
   @override
@@ -127,6 +130,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     
     // Only use isActive prop from parent (PageView index-based control)
     if (widget.isActive) {
+      _userPaused = false; // Reset user pause flag when video becomes active
       // Preload video - Consumer<IVideoManager> will trigger _updateController via stream when ready
       try {
         Log.info('📥 Starting preload for ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
@@ -236,8 +240,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
     }
     
     if (_controller != null && _controller!.value.isInitialized && !_controller!.value.isPlaying) {
-      Log.debug('▶️ Playing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
-      _controller!.play();
+      Log.info('🎬 VideoFeedItem playing video: ${widget.video.id.substring(0, 8)} (isActive: ${widget.isActive})', 
+          name: 'VideoFeedItem', category: LogCategory.ui);
+      _videoManager.resumeVideo(widget.video.id);
       // Only loop when the video is active (not in background/comments)
       _controller!.setLooping(widget.isActive);
       
@@ -257,12 +262,13 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
   
   void _checkAutoPlay(VideoState videoState) {
-    // Only auto-play if video is ready and widget is active
+    // Only auto-play if video is ready, widget is active, and user hasn't manually paused
     if (widget.isActive &&
         videoState.loadingState == VideoLoadingState.ready &&
         _controller != null && 
         _controller!.value.isInitialized &&
-        !_controller!.value.isPlaying) {
+        !_controller!.value.isPlaying &&
+        !_userPaused) { // Don't auto-play if user manually paused
       
       Log.info('🎬 Auto-playing video: ${widget.video.id.substring(0, 8)}', 
           name: 'VideoFeedItem', category: LogCategory.ui);
@@ -272,10 +278,12 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
 
   void _pauseVideo({bool userInitiated = false}) {
     if (_controller != null && _controller!.value.isPlaying) {
-      Log.debug('Pausing video: ${widget.video.id.substring(0, 8)}...', name: 'VideoFeedItem', category: LogCategory.ui);
-      _controller!.pause();
+      Log.info('⏸️ VideoFeedItem pausing video: ${widget.video.id.substring(0, 8)} (userInitiated: $userInitiated)', 
+          name: 'VideoFeedItem', category: LogCategory.ui);
+      _videoManager.pauseVideo(widget.video.id);
       
       if (userInitiated) {
+        _userPaused = true; // Set flag to prevent auto-play
         Log.info('🛑 User paused video', name: 'VideoFeedItem', category: LogCategory.ui);
       }
     }
@@ -291,6 +299,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
         Log.debug('Calling _pauseVideo() with userInitiated=true', name: 'VideoFeedItem', category: LogCategory.ui);
         _pauseVideo(userInitiated: true);
       } else {
+        _userPaused = false; // Reset flag when user manually starts video
         Log.debug('▶️ Calling _playVideo()', name: 'VideoFeedItem', category: LogCategory.ui);
         _playVideo();
       }
@@ -325,22 +334,29 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   }
 
   void _navigateToHashtagFeed(String hashtag) {
-    Log.debug('� Navigating to hashtag feed: #$hashtag', name: 'VideoFeedItem', category: LogCategory.ui);
+    Log.debug('📍 Navigating to hashtag feed: #$hashtag', name: 'VideoFeedItem', category: LogCategory.ui);
     
     // Pause video before navigating away
     _pauseVideo();
     
-    // Get the root navigator to ensure we have access to all providers
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) => HashtagFeedScreen(hashtag: hashtag),
-      ),
-    ).then((_) {
-      // Resume video when returning (only if still active)
-      if (widget.isActive && _controller != null) {
-        _playVideo();
-      }
-    });
+    // Use global navigation key for hashtag navigation
+    final mainNavState = mainNavigationKey.currentState;
+    if (mainNavState != null) {
+      // Navigate through main navigation to maintain footer
+      mainNavState.navigateToHashtag(hashtag);
+    } else {
+      // Fallback to direct navigation if not in main navigation context
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (context) => HashtagFeedScreen(hashtag: hashtag),
+        ),
+      ).then((_) {
+        // Resume video when returning (only if still active)
+        if (widget.isActive && _controller != null) {
+          _playVideo();
+        }
+      });
+    }
   }
 
   @override
@@ -750,13 +766,14 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             
             // Video content/description
             if (widget.video.content.isNotEmpty) ...[
-              SelectableText(
-                widget.video.content,
+              ClickableHashtagText(
+                text: widget.video.content,
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
                 maxLines: 3,
+                onVideoStateChange: _pauseVideo,
               ),
               const SizedBox(height: 8),
             ],
@@ -825,13 +842,14 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
           
           // Video content/description
           if (widget.video.content.isNotEmpty) ...[
-            SelectableText(
-              widget.video.content,
+            ClickableHashtagText(
+              text: widget.video.content,
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
               ),
               maxLines: 3,
+              onVideoStateChange: _pauseVideo,
             ),
             const SizedBox(height: 8),
           ],

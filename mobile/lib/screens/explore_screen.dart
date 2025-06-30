@@ -20,10 +20,11 @@ class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
   @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
+  State<ExploreScreen> createState() => ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+// Made public to allow access from MainNavigationScreen
+class ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   String? _selectedHashtag;
   String? _playingVideoId;
@@ -89,7 +90,29 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       _playingVideoId = null;
       _currentVideoIndex = 0;
       _currentTabVideos = [];
+      _selectedHashtag = null; // Clear hashtag when exiting
     });
+  }
+  
+  /// Show videos for a specific hashtag
+  void showHashtagVideos(String hashtag) async {
+    Log.debug('📍 Showing hashtag videos for: #$hashtag', name: 'ExploreScreen', category: LogCategory.ui);
+    
+    // Switch to trending tab for hashtag display
+    _tabController.animateTo(2);
+    
+    setState(() {
+      _selectedHashtag = hashtag;
+    });
+    
+    // Subscribe to hashtag videos and wait for them to load
+    final hashtagService = Provider.of<HashtagService>(context, listen: false);
+    await hashtagService.subscribeToHashtagVideos([hashtag]);
+    
+    // Force a rebuild after subscription is established
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -98,9 +121,15 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     
-    // Pause any playing videos
-    final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
-    exploreVideoManager.pauseAllVideos();
+    // Pause any playing videos - but only if context is still mounted
+    if (mounted) {
+      try {
+        final exploreVideoManager = Provider.of<ExploreVideoManager>(context, listen: false);
+        exploreVideoManager.pauseAllVideos();
+      } catch (e) {
+        // Ignore errors when context is no longer valid
+      }
+    }
     
     super.dispose();
   }
@@ -384,10 +413,18 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
 
   Widget _buildPopularNow() {
-    return Consumer2<ExploreVideoManager, HashtagService>(
-      builder: (context, exploreVideoManager, hashtagService, child) {
+    return Consumer3<ExploreVideoManager, HashtagService, CurationService>(
+      builder: (context, exploreVideoManager, hashtagService, curationService, child) {
         // Get trending videos from explore video manager (managed through VideoManager)
         final videos = exploreVideoManager.getVideosForType(CurationSetType.trending);
+        
+        // DEBUG: Check what's happening with trending data
+        final rawTrending = curationService.getVideosForSetType(CurationSetType.trending);
+        Log.debug('DEBUG: PopularNow UI update:', name: 'ExploreScreen', category: LogCategory.ui);
+        Log.debug('  ExploreVideoManager videos: ${videos.length}', name: 'ExploreScreen', category: LogCategory.ui);
+        Log.debug('  CurationService raw trending: ${rawTrending.length}', name: 'ExploreScreen', category: LogCategory.ui);
+        Log.debug('  ExploreVideoManager isLoading: ${exploreVideoManager.isLoading}', name: 'ExploreScreen', category: LogCategory.ui);
+        Log.debug('  CurationService isLoading: ${curationService.isLoading}', name: 'ExploreScreen', category: LogCategory.ui);
         
         // VideoEventBridge handles subscription during app initialization
         

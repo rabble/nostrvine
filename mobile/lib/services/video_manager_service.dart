@@ -13,6 +13,7 @@ import '../utils/string_utils.dart';
 import 'video_manager_interface.dart';
 import 'seen_videos_service.dart';
 import 'content_blocklist_service.dart';
+import 'global_video_registry.dart';
 
 /// Production implementation of IVideoManager providing comprehensive video lifecycle management
 /// 
@@ -351,6 +352,8 @@ class VideoManagerService implements IVideoManager {
           if (controller.value.isPlaying) {
             controller.pause();
           }
+          // Unregister from global registry
+          GlobalVideoRegistry().unregisterController(controller);
           // Then dispose the controller
           controller.dispose();
           stoppedCount++;
@@ -385,6 +388,9 @@ class VideoManagerService implements IVideoManager {
     final controller = _controllers[videoId];
     if (controller != null && controller.value.isInitialized && !controller.value.isPlaying) {
       try {
+        // Pause all other videos globally (including unmanaged ones)
+        GlobalVideoRegistry().pauseAllExcept(controller);
+        
         controller.play();
         Log.debug('▶️ Resumed video: ${videoId.substring(0, 8)}...', name: 'VideoManagerService', category: LogCategory.video);
       } catch (e) {
@@ -400,7 +406,10 @@ class VideoManagerService implements IVideoManager {
     _activePreloads.remove(videoId);
     
     final controller = _controllers.remove(videoId);
-    controller?.dispose();
+    if (controller != null) {
+      GlobalVideoRegistry().unregisterController(controller);
+      controller.dispose();
+    }
     
     final state = getVideoState(videoId);
     if (state != null && !state.isDisposed) {
@@ -499,6 +508,7 @@ class VideoManagerService implements IVideoManager {
       // Dispose controller if exists
       final controller = _controllers[video.id];
       if (controller != null) {
+        GlobalVideoRegistry().unregisterController(controller);
         controller.dispose();
         _controllers.remove(video.id);
       }
@@ -521,6 +531,7 @@ class VideoManagerService implements IVideoManager {
     
     // Dispose all controllers
     for (final controller in _controllers.values) {
+      GlobalVideoRegistry().unregisterController(controller);
       controller.dispose();
     }
     _controllers.clear();
@@ -611,6 +622,9 @@ class VideoManagerService implements IVideoManager {
           // Don't throw - many videos can still play after timeout
         },
       );
+      
+      // Register with global registry
+      GlobalVideoRegistry().registerController(controller);
       
       Log.debug('📺 Controller initialized - isInitialized: ${controller.value.isInitialized}, hasError: ${controller.value.hasError}', name: 'VideoManager');
       if (controller.value.hasError) {
@@ -733,6 +747,7 @@ class VideoManagerService implements IVideoManager {
         final videoId = video.id;
         final controller = _controllers[videoId];
         if (controller != null) {
+          GlobalVideoRegistry().unregisterController(controller);
           controller.dispose();
           _controllers.remove(videoId);
           

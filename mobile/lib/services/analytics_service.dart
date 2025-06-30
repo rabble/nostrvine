@@ -88,6 +88,11 @@ class AnalyticsService extends ChangeNotifier {
         'title': video.title,
       };
       
+      // Log the request details for debugging
+      Log.info('📊 Sending analytics request:', name: 'AnalyticsService', category: LogCategory.system);
+      Log.info('  URL: $_analyticsEndpoint', name: 'AnalyticsService', category: LogCategory.system);
+      Log.info('  Data: ${jsonEncode(viewData)}', name: 'AnalyticsService', category: LogCategory.system);
+      
       // Send view tracking request
       final response = await _client.post(
         Uri.parse(_analyticsEndpoint),
@@ -98,12 +103,17 @@ class AnalyticsService extends ChangeNotifier {
         body: jsonEncode(viewData),
       ).timeout(_requestTimeout);
       
+      // Log the response details
+      Log.info('📊 Analytics response:', name: 'AnalyticsService', category: LogCategory.system);
+      Log.info('  Status: ${response.statusCode}', name: 'AnalyticsService', category: LogCategory.system);
+      Log.info('  Body: ${response.body}', name: 'AnalyticsService', category: LogCategory.system);
+      
       if (response.statusCode == 200) {
-        Log.debug('Tracked view for video ${video.id.substring(0, 8)}...', name: 'AnalyticsService', category: LogCategory.system);
+        Log.debug('✅ Successfully tracked view for video ${video.id.substring(0, 8)}...', name: 'AnalyticsService', category: LogCategory.system);
       } else if (response.statusCode == 429) {
-        Log.warning('Rate limited by analytics service', name: 'AnalyticsService', category: LogCategory.system);
+        Log.warning('⚠️ Rate limited by analytics service', name: 'AnalyticsService', category: LogCategory.system);
       } else {
-        Log.error('Failed to track view: ${response.statusCode}', name: 'AnalyticsService', category: LogCategory.system);
+        Log.error('❌ Failed to track view: ${response.statusCode} - ${response.body}', name: 'AnalyticsService', category: LogCategory.system);
       }
     } catch (e) {
       // Don't crash the app if analytics fails
