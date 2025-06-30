@@ -53,6 +53,10 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
   bool _showPlayPauseIcon = false;
   bool _userPaused = false; // Track if user manually paused the video
   late AnimationController _iconAnimationController;
+  
+  // Lazy comment loading state
+  bool _hasLoadedComments = false;
+  int? _commentCount;
 
   @override
   void initState() {
@@ -1128,31 +1132,27 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
             },
           ),
           
-          // Comment button with count
-          FutureBuilder<int>(
-            future: _getCommentCount(),
-            builder: (context, snapshot) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  _buildActionButton(
-                    icon: Icons.comment_outlined,
-                    onPressed: () => _openComments(context),
+          // Comment button with lazy loading count
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              _buildActionButton(
+                icon: Icons.comment_outlined,
+                onPressed: () => _handleCommentTap(context),
+              ),
+              Positioned(
+                top: 32,
+                child: Text(
+                  _hasLoadedComments 
+                    ? (_commentCount != null && _commentCount! > 0 ? _commentCount!.toString() : '')
+                    : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
                   ),
-                  if (snapshot.hasData && snapshot.data! > 0)
-                    Positioned(
-                      top: 32,
-                      child: Text(
-                        snapshot.data!.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
+                ),
+              ),
+            ],
           ),
           
           // Repost button
@@ -1365,6 +1365,29 @@ class _VideoFeedItemState extends State<VideoFeedItem> with TickerProviderStateM
       Log.error('Error getting comment count: $e', name: 'VideoFeedItem', category: LogCategory.ui);
       return 0;
     }
+  }
+
+  /// Handle comment icon tap - loads comments lazily and then opens comments screen
+  Future<void> _handleCommentTap(BuildContext context) async {
+    if (!_hasLoadedComments) {
+      try {
+        setState(() {
+          _hasLoadedComments = true; // Show loading state immediately
+        });
+        
+        final count = await _getCommentCount();
+        setState(() {
+          _commentCount = count;
+        });
+      } catch (e) {
+        Log.error('Error loading comment count: $e', name: 'VideoFeedItem', category: LogCategory.ui);
+        setState(() {
+          _commentCount = 0;
+        });
+      }
+    }
+    
+    _openComments(context);
   }
 
   void _handleLike(BuildContext context, SocialService socialService) async {
