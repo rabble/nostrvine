@@ -3,6 +3,7 @@
 # Clean URLs - serve .html files without extension
 /about /about.html 200!
 /ios /ios.html 200!
+/macos /macos.html 200!
 /android /android.html 200!
 /trending /trending.html 200!
 /open-source /open-source.html 200!

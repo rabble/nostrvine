@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVine for macOS - Desktop App Available</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css?v=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="Download OpenVine for macOS - Native desktop app for creating vine-style videos">
+    <style>
+        .macos-hero {
+            background: linear-gradient(135deg, #00bf8f 0%, #00a77d 100%);
+            color: white;
+            padding: 100px 40px 80px;
+            text-align: center;
+        }
+        
+        .macos-hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .macos-hero .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .download-section {
+            padding: 80px 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .download-card {
+            background: white;
+            border-radius: 15px;
+            padding: 50px;
+            margin: 30px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-left: 5px solid #00bf8f;
+            max-width: 600px;
+        }
+        
+        .download-button {
+            background: #00bf8f;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            display: inline-block;
+            transition: background 0.3s ease;
+            margin: 20px 10px;
+        }
+        
+        .download-button:hover {
+            background: #00a77d;
+        }
+        
+        .system-requirements {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 40px 0;
+            text-align: left;
+        }
+        
+        .system-requirements h4 {
+            color: #00bf8f;
+            margin-bottom: 15px;
+        }
+        
+        .system-requirements ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .system-requirements li {
+            padding: 5px 0;
+            color: #666;
+        }
+        
+        .system-requirements li:before {
+            content: "✓ ";
+            color: #00bf8f;
+            font-weight: bold;
+        }
+        
+        .features-section {
+            background: #f8f9fa;
+            padding: 80px 40px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            font-size: 1.2rem;
+            margin: 20px 0 15px;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <header class="vine-header">
+        <div class="vine-header-bg"></div>
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">OpenVine</a>
+            <div class="vine-auth-buttons">
+                <a href="https://app.openvine.co" class="vine-auth-btn vine-login-btn">Log in</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="macos-hero">
+            <h1>OpenVine for macOS</h1>
+            <p class="subtitle">Native desktop app available now - Download and start creating</p>
+            
+            <div style="margin-top: 40px;">
+                <a href="https://nostrvine-backend.protestnet.workers.dev/releases/OpenVine-macOS.dmg" class="download-button">
+                    Download for macOS
+                </a>
+            </div>
+        </section>
+
+        <section class="download-section">
+            <h2 style="font-size: 2.5rem; margin-bottom: 30px; color: #333;">Ready to Install</h2>
+            <p style="font-size: 1.1rem; color: #666; margin-bottom: 40px;">
+                Get the full OpenVine experience on your Mac with our native desktop application.
+            </p>
+            
+            <div class="download-card">
+                <h3 style="color: #00bf8f; margin-bottom: 20px;">macOS Application</h3>
+                <p style="margin-bottom: 30px; color: #666;">
+                    Download the DMG file, open it, and drag OpenVine to your Applications folder.
+                </p>
+                <a href="https://nostrvine-backend.protestnet.workers.dev/releases/OpenVine-macOS.dmg" class="download-button">
+                    Download OpenVine.dmg
+                </a>
+                
+                <div class="system-requirements">
+                    <h4>System Requirements</h4>
+                    <ul>
+                        <li>macOS 10.14 (Mojave) or later</li>
+                        <li>64-bit Intel or Apple Silicon processor</li>
+                        <li>4 GB RAM minimum</li>
+                        <li>200 MB free disk space</li>
+                        <li>Internet connection for Nostr relay access</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <div style="max-width: 1000px; margin: 0 auto;">
+                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 50px; color: #333;">Desktop Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🖥️</div>
+                        <h4>Desktop Optimized</h4>
+                        <p>Full desktop experience with keyboard shortcuts and window management</p>
+                    </div>
+                    <div class="feature-card">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🎬</div>
+                        <h4>Video Creation</h4>
+                        <p>Record and edit vine-style videos with desktop-class tools</p>
+                    </div>
+                    <div class="feature-card">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🔐</div>
+                        <h4>Secure & Private</h4>
+                        <p>Your keys stay on your device. Built on Nostr for decentralization</p>
+                    </div>
+                    <div class="feature-card">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📤</div>
+                        <h4>Easy Sharing</h4>
+                        <p>Share videos directly to social media or export to any format</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>Made with 💚 by <a href="https://rabblelabs.com" target="_blank">Rabble Labs</a> | 
+            Built on <a href="https://nostr.com" target="_blank">Nostr Protocol</a> | 
+            <a href="/about">About OpenVine</a> | 
+            <a href="/privacy">Privacy Policy</a> | 
+            <a href="https://github.com/rabble/nostrvine" target="_blank">Source Code</a></p>
+            <p class="footer-mission">🌱 Liberating Vine, one loop at a time | Building a social media ecosystem where users have <a href="https://rights.social" target="_blank">rights</a></p>
+        </div>
+    </footer>
+</body>
+</html>
