@@ -55,6 +55,8 @@ void main() {
       when(mockProfileVideosProvider.hasError).thenReturn(false);
       when(mockProfileVideosProvider.videoCount).thenReturn(0);
       when(mockProfileVideosProvider.loadingState).thenReturn(ProfileVideosLoadingState.idle);
+      // Add specific getCachedProfile stub for current user
+      when(mockUserProfileService.getCachedProfile('current_user_pubkey')).thenReturn(null);
     });
 
     Widget createTestWidget({String? profilePubkey}) {

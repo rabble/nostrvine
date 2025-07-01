@@ -58,7 +58,7 @@ class ExploreVideoManager extends ChangeNotifier {
   /// Sync all curation collections to VideoManager
   Future<void> _syncAllCollections() async {
     // IMPORTANT: Do NOT add videos to VideoManager here!
-    // VideoEventBridge already handles video additions from Nostr subscriptions.
+    // Riverpod providers handle video additions from Nostr subscriptions.
     // ExploreVideoManager only needs to check which curated videos are available.
     
     

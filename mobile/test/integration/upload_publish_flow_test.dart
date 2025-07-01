@@ -2,6 +2,7 @@
 // ABOUTME: Tests the interaction between VinePreviewScreen, UploadManager, and VideoEventPublisher
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -45,7 +46,7 @@ void main() {
     when(() => mockVideoFile.path).thenReturn('/path/to/test/video.mp4');
     when(() => mockVideoFile.existsSync()).thenReturn(true);
     when(() => mockVideoFile.exists()).thenAnswer((_) async => true);
-    when(() => mockVideoFile.readAsBytes()).thenAnswer((_) async => List.filled(1000, 0));
+    when(() => mockVideoFile.readAsBytes()).thenAnswer((_) async => Uint8List.fromList(List.filled(1000, 0)));
     
     when(() => mockNostrService.userPublicKey).thenReturn('test-pubkey-123');
     when(() => mockProfileVideosProvider.refreshVideos()).thenAnswer((_) async {});
@@ -90,7 +91,8 @@ void main() {
             ],
             child: VinePreviewScreen(
               videoFile: mockVideoFile,
-              isFromGallery: false,
+              frameCount: 30,
+              selectedApproach: 'test_approach',
             ),
           ),
         ),
@@ -156,7 +158,8 @@ void main() {
             ],
             child: VinePreviewScreen(
               videoFile: mockVideoFile,
-              isFromGallery: false,
+              frameCount: 30,
+              selectedApproach: 'test_approach',
             ),
           ),
         ),
@@ -208,7 +211,8 @@ void main() {
             ],
             child: VinePreviewScreen(
               videoFile: mockVideoFile,
-              isFromGallery: false,
+              frameCount: 30,
+              selectedApproach: 'test_approach',
             ),
           ),
         ),
@@ -267,7 +271,8 @@ void main() {
             ],
             child: VinePreviewScreen(
               videoFile: mockVideoFile,
-              isFromGallery: false,
+              frameCount: 30,
+              selectedApproach: 'test_approach',
             ),
           ),
         ),

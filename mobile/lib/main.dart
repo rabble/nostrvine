@@ -38,7 +38,6 @@ import 'services/social_service.dart';
 import 'services/hashtag_service.dart';
 import 'services/video_manager_interface.dart';
 import 'services/video_manager_service.dart';
-import 'services/video_event_bridge.dart';
 import 'services/video_visibility_manager.dart';
 import 'services/curation_service.dart';
 import 'services/explore_video_manager.dart';
@@ -420,17 +419,6 @@ class OpenVineApp extends StatelessWidget {
             cleanupRemoteEvent: (publicId) => apiService.cleanupRemoteEvent(publicId),
           ),
         ),
-        
-        // Video Event Bridge - connects VideoEventService to VideoManager
-        Provider<VideoEventBridge>(
-          create: (context) => VideoEventBridge(
-            videoEventService: context.read<VideoEventService>(),
-            videoManager: context.read<IVideoManager>(),
-            userProfileService: context.read<UserProfileService>(),
-            socialService: context.read<SocialService>(),
-          ),
-          dispose: (_, bridge) => bridge.dispose(),
-        ),
 
         // Curation Service - manages NIP-51 video curation sets
         ChangeNotifierProxyProvider3<INostrService, VideoEventService, SocialService, CurationService>(
@@ -605,7 +593,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Connecting video feed...');
-      await context.read<VideoEventBridge>().initialize();
+      // VideoEventBridge removed - using Riverpod providers for reactive video feeds
 
       if (!mounted) return;
       setState(() => _initializationStatus = 'Loading curated content...');

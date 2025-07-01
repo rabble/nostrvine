@@ -266,7 +266,7 @@ class ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderS
         // Get editor's picks from explore video manager (managed through VideoManager)
         final editorsPicks = exploreVideoManager.getVideosForType(CurationSetType.editorsPicks);
         
-        // VideoEventBridge handles subscription during app initialization
+        // Riverpod providers handle subscription automatically
         
         if (exploreVideoManager.isLoading && editorsPicks.isEmpty) {
           return const Center(
@@ -426,7 +426,7 @@ class ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderS
         Log.debug('  ExploreVideoManager isLoading: ${exploreVideoManager.isLoading}', name: 'ExploreScreen', category: LogCategory.ui);
         Log.debug('  CurationService isLoading: ${curationService.isLoading}', name: 'ExploreScreen', category: LogCategory.ui);
         
-        // VideoEventBridge handles subscription during app initialization
+        // Riverpod providers handle subscription automatically
         
         if (exploreVideoManager.isLoading && videos.isEmpty) {
           return const Center(

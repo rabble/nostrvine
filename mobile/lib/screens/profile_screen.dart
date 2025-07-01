@@ -120,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         _loadUserProfile();
       }
       
-      // Note: Video events are managed globally by VideoEventBridge
+      // Note: Video events are managed globally by Riverpod providers
       // Profile-specific video loading is handled by ProfileVideosProvider
     }
   }

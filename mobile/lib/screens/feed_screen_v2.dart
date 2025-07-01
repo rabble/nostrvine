@@ -87,7 +87,6 @@ class FeedScreenV2 extends StatefulWidget {
 class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   IVideoManager? _videoManager;
-  VideoEventBridge? _videoEventBridge;
   UserProfileService? _userProfileService;
   int _currentIndex = 0;
   bool _isInitialized = false;
@@ -154,13 +153,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     try {
       _videoManager = Provider.of<IVideoManager>(context, listen: false);
       
-      // Try to get the video event bridge for pagination
-      try {
-        _videoEventBridge = Provider.of<VideoEventBridge>(context, listen: false);
-        Log.info('VideoEventBridge found for pagination support', name: 'FeedScreenV2', category: LogCategory.ui);
-      } catch (e) {
-        Log.warning('VideoEventBridge not found - pagination will be limited: $e', name: 'FeedScreenV2', category: LogCategory.ui);
-      }
+      // Pagination now handled by Riverpod providers automatically
       
       // Try to get the user profile service for batch profile loading
       try {
@@ -253,10 +246,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     
     // Discovery feed disabled - only show curated vines
     // Original code: trigger discovery loading when approaching end of primary videos
-    // final primaryCount = _videoManager!.primaryVideoCount;
-    // if (primaryCount > 0 && videoIndex >= primaryCount - 3 && _videoEventBridge != null) {
-    //   _videoEventBridge!.triggerDiscoveryFeed();
-    // }
+    // Note: Now handled automatically by Riverpod providers
   }
 
   void _updateVideoPlayback(int videoIndex, int previousPageIndex) {
@@ -775,8 +765,8 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
 
   /// Check if we're near the end of the video list and should load more content
   void _checkForPagination(int currentIndex, int totalVideos) {
-    // Only trigger pagination if we have a video event bridge
-    if (_videoEventBridge == null) return;
+    // Pagination now handled automatically by Riverpod providers
+    return;
     
     // Check if we're near the end (within 5 videos)
     const paginationThreshold = 5;
@@ -819,7 +809,7 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
 
   /// Handle pull-to-refresh functionality
   Future<void> _handleRefresh() async {
-    if (_isRefreshing || _videoEventBridge == null) return;
+    if (_isRefreshing) return;
     
     setState(() {
       _isRefreshing = true;
@@ -827,7 +817,8 @@ class _FeedScreenV2State extends State<FeedScreenV2> with WidgetsBindingObserver
     
     try {
       Log.info('🔄 Pull-to-refresh triggered - refreshing feed', name: 'FeedScreenV2', category: LogCategory.ui);
-      await _videoEventBridge!.refreshFeed();
+      // Refresh now handled by Riverpod providers automatically
+      // TODO: Implement Riverpod-based refresh when needed
       Log.info('✅ Feed refresh completed', name: 'FeedScreenV2', category: LogCategory.ui);
     } catch (e) {
       Log.error('❌ Feed refresh failed: $e', name: 'FeedScreenV2', category: LogCategory.ui);

@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,6 +12,7 @@ import 'dart:async';
 import 'package:openvine/utils/unified_logger.dart';
 
 class MockNostrService extends Mock implements INostrService {}
+class MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
   setUpAll(() {
@@ -44,7 +46,8 @@ void main() {
         });
     
     // Create VideoEventService
-    final videoEventService = VideoEventService(mockNostrService);
+    final mockSubscriptionManager = MockSubscriptionManager();
+    final videoEventService = VideoEventService(mockNostrService, subscriptionManager: mockSubscriptionManager);
     
     // Step 1: Classic vines subscription
     Log.debug('📱 Step 1: Loading classic vines...');

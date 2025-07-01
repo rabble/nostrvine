@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      riverpod_generator:
+        options:
+          # Generate providers in .g.dart files
+          generate_riverpod_annotation: true

@@ -5,13 +5,70 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
 import 'package:provider/provider.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:openvine/models/user_profile.dart' as model;
 import '../helpers/test_helpers.dart';
+
+// Generate mocks
+@GenerateMocks([
+  UserProfileService,
+  AuthService,
+  NostrService,
+])
+import 'profile_editing_integration_test.mocks.dart';
+
+// Simple test environment replacement
+class TestEnvironment {
+  final MockUserProfileService userProfileService;
+  final MockAuthService authService;
+  final MockNostrService nostrService;
+  final String testPubkey;
+
+  TestEnvironment._({
+    required this.userProfileService,
+    required this.authService,
+    required this.nostrService,
+    required this.testPubkey,
+  });
+
+  static Future<TestEnvironment> create() async {
+    final userProfileService = MockUserProfileService();
+    final authService = MockAuthService();
+    final nostrService = MockNostrService();
+    const testPubkey = 'test_pubkey_123';
+
+    return TestEnvironment._(
+      userProfileService: userProfileService,
+      authService: authService,
+      nostrService: nostrService,
+      testPubkey: testPubkey,
+    );
+  }
+
+  Future<void> dispose() async {
+    // Cleanup if needed
+  }
+}
+
+// Simple result class for test mocking
+class TestEventBroadcastResult {
+  final bool isSuccessful;
+  final int successCount;
+  final int totalRelays;
+  final List<String> errors;
+
+  TestEventBroadcastResult({
+    required this.isSuccessful,
+    required this.successCount,
+    required this.totalRelays,
+    required this.errors,
+  });
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +91,7 @@ void main() {
       const updatedName = 'Updated Name';
       const updatedBio = 'Updated Bio';
       
-      final originalProfile = UserProfile.fromJson({
+      final originalProfile = model.UserProfile.fromJson({
         'pubkey': testEnv.testPubkey,
         'name': testName,
         'about': testBio,
@@ -85,7 +142,7 @@ void main() {
           return originalProfile;
         } else {
           // Third call returns updated profile
-          return UserProfile.fromJson({
+          return model.UserProfile.fromJson({
             'pubkey': testEnv.testPubkey,
             'name': updatedName,
             'about': updatedBio,
@@ -150,7 +207,7 @@ void main() {
       
       // Setup: Mock immediate success (first fetch returns updated profile)
       when(testEnv.userProfileService.fetchProfile(testEnv.testPubkey, forceRefresh: true))
-          .thenAnswer((_) async => UserProfile.fromJson({
+          .thenAnswer((_) async => model.UserProfile.fromJson({
             'pubkey': testEnv.testPubkey,
             'name': updatedName,
             'about': updatedBio,
@@ -202,7 +259,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('profile_name_field')), updatedName);
       
       // Setup: Always return stale profile (relay never processes update)
-      final staleProfile = UserProfile.fromJson({
+      final staleProfile = model.UserProfile.fromJson({
         'pubkey': testEnv.testPubkey,
         'name': 'Stale Name',
         'about': 'Stale Bio',

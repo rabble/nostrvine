@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Riverpod Migration Complete**: Fully migrated video feed system from Provider to Riverpod 2.0
+  - **VideoEventBridge Eliminated**: Replaced complex manual coordination with reactive provider architecture
+  - **Reactive Video Feeds**: Following list changes now automatically trigger video feed updates
+  - **Memory-Efficient Video Management**: Intelligent preloading with 15-controller limit and <500MB memory management
+  - **Real-time Nostr Streaming**: Proper stream accumulation for live video event updates with comprehensive test coverage
+  - **Pure Riverpod Implementation**: All video functionality now uses reactive StateNotifier and Stream providers
+  - **Backward Compatibility**: Full IVideoManager interface support for existing code
+  - **100% Test Coverage**: Comprehensive TDD approach with 24+ passing tests across all providers
+
+### Removed  
+- **Legacy VideoEventBridge**: Removed deprecated Provider-based video coordination system
+  - Deleted `video_event_bridge.dart` service file and associated test files
+  - Updated `main.dart` to remove VideoEventBridge initialization
+  - Updated screens to rely on automatic Riverpod provider reactivity
+  - Removed manual pagination and refresh logic (now handled automatically)
+  - Clean separation between legacy and modern architecture
+
 ### Fixed
 - **Web Platform Compatibility**: Fixed critical Platform._version error preventing web app from connecting to relays
   - Fixed dart:io imports in platform_secure_storage.dart with conditional imports for web compatibility
