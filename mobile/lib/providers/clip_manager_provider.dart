@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/services/clip_manager_service.dart';
 
@@ -36,11 +37,15 @@ class ClipManagerNotifier extends StateNotifier<ClipManagerState> {
     required String filePath,
     required Duration duration,
     String? thumbnailPath,
+    model.AspectRatio? aspectRatio,
+    bool needsCrop = false,
   }) {
     _service.addClip(
       filePath: filePath,
       duration: duration,
       thumbnailPath: thumbnailPath,
+      aspectRatio: aspectRatio,
+      needsCrop: needsCrop,
     );
   }
 

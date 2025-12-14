@@ -1,5 +1,7 @@
 // ABOUTME: Data model for a recorded video segment in the Clip Manager
-// ABOUTME: Supports ordering, thumbnails, and JSON serialization for persistence
+// ABOUTME: Supports ordering, thumbnails, crop metadata, and JSON serialization
+
+import 'package:models/models.dart' as model show AspectRatio;
 
 class RecordingClip {
   RecordingClip({
@@ -9,6 +11,8 @@ class RecordingClip {
     required this.orderIndex,
     required this.recordedAt,
     this.thumbnailPath,
+    this.aspectRatio,
+    this.needsCrop = false,
   });
 
   final String id;
@@ -17,6 +21,13 @@ class RecordingClip {
   final int orderIndex;
   final DateTime recordedAt;
   final String? thumbnailPath;
+
+  /// The target aspect ratio for this clip (used for deferred cropping)
+  final model.AspectRatio? aspectRatio;
+
+  /// Whether this clip needs cropping applied at export time
+  /// On Android, we defer cropping to avoid slow re-encoding during capture
+  final bool needsCrop;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -27,6 +38,8 @@ class RecordingClip {
     int? orderIndex,
     DateTime? recordedAt,
     String? thumbnailPath,
+    model.AspectRatio? aspectRatio,
+    bool? needsCrop,
   }) {
     return RecordingClip(
       id: id ?? this.id,
@@ -35,6 +48,8 @@ class RecordingClip {
       orderIndex: orderIndex ?? this.orderIndex,
       recordedAt: recordedAt ?? this.recordedAt,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      aspectRatio: aspectRatio ?? this.aspectRatio,
+      needsCrop: needsCrop ?? this.needsCrop,
     );
   }
 
@@ -46,10 +61,13 @@ class RecordingClip {
       'orderIndex': orderIndex,
       'recordedAt': recordedAt.toIso8601String(),
       'thumbnailPath': thumbnailPath,
+      'aspectRatio': aspectRatio?.name,
+      'needsCrop': needsCrop,
     };
   }
 
   factory RecordingClip.fromJson(Map<String, dynamic> json) {
+    final aspectRatioName = json['aspectRatio'] as String?;
     return RecordingClip(
       id: json['id'] as String,
       filePath: json['filePath'] as String,
@@ -57,6 +75,13 @@ class RecordingClip {
       orderIndex: json['orderIndex'] as int,
       recordedAt: DateTime.parse(json['recordedAt'] as String),
       thumbnailPath: json['thumbnailPath'] as String?,
+      aspectRatio: aspectRatioName != null
+          ? model.AspectRatio.values.firstWhere(
+              (e) => e.name == aspectRatioName,
+              orElse: () => model.AspectRatio.square,
+            )
+          : null,
+      needsCrop: json['needsCrop'] as bool? ?? false,
     );
   }
 

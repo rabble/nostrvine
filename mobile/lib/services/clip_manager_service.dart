@@ -2,6 +2,7 @@
 // ABOUTME: Handles add, delete, reorder operations with ChangeNotifier pattern
 
 import 'package:flutter/foundation.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -32,6 +33,8 @@ class ClipManagerService extends ChangeNotifier {
     required String filePath,
     required Duration duration,
     String? thumbnailPath,
+    model.AspectRatio? aspectRatio,
+    bool needsCrop = false,
   }) {
     final clip = RecordingClip(
       id: 'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
@@ -40,6 +43,8 @@ class ClipManagerService extends ChangeNotifier {
       orderIndex: _clips.length,
       recordedAt: DateTime.now(),
       thumbnailPath: thumbnailPath,
+      aspectRatio: aspectRatio,
+      needsCrop: needsCrop,
     );
 
     _clips.add(clip);
