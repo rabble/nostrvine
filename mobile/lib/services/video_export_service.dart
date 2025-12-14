@@ -2,7 +2,6 @@
 // ABOUTME: Handles concatenation, text overlays, audio mixing, and thumbnail generation
 
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -12,6 +11,7 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/text_overlay.dart';
 import 'package:openvine/services/text_overlay_renderer.dart';
+import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Export stages for progress reporting
@@ -57,17 +57,16 @@ class VideoExportService {
   }
 
   /// Get platform-appropriate video encoder arguments
+  /// Uses FFmpegEncoder utility for consistent hardware/software selection
   String _getVideoEncoderArgs() {
-    if (defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
-      return '-c:v h264_videotoolbox -b:v 4M';
-    }
-    return '-c:v libx264 -preset fast -crf 23';
+    return FFmpegEncoder.getHardwareEncoderArgs();
   }
 
   /// Concatenates multiple video segments into a single video with optional aspect ratio crop
   ///
   /// If [aspectRatio] is provided, applies the crop filter to the final output.
+  /// If not provided but any clip has [needsCrop] = true, uses that clip's aspectRatio.
+  /// This supports deferred encoding on Android where crop is skipped during capture.
   /// If [muteAudio] is true, strips all audio from the output.
   /// Otherwise uses lossless copy mode.
   Future<String> concatenateSegments(
@@ -79,9 +78,24 @@ class VideoExportService {
       throw ArgumentError('Cannot concatenate empty clip list');
     }
 
+    // Check if any clip needs deferred cropping (Android deferred encoding)
+    final clipsNeedingCrop = clips.where((c) => c.needsCrop).toList();
+    AspectRatio? effectiveAspectRatio = aspectRatio;
+
+    if (effectiveAspectRatio == null && clipsNeedingCrop.isNotEmpty) {
+      // Use the aspect ratio from the first clip that needs cropping
+      effectiveAspectRatio = clipsNeedingCrop.first.aspectRatio;
+      Log.info(
+        'Deferred crop detected: ${clipsNeedingCrop.length}/${clips.length} clips need cropping, '
+        'using aspectRatio=${effectiveAspectRatio?.name ?? "default"}',
+        name: 'VideoExportService',
+        category: LogCategory.system,
+      );
+    }
+
     // If only one clip and no processing needed, return it directly
     // If crop or mute is needed, we still need to process even a single clip
-    if (clips.length == 1 && aspectRatio == null && !muteAudio) {
+    if (clips.length == 1 && effectiveAspectRatio == null && !muteAudio) {
       Log.info(
         'Single clip detected, no processing needed, skipping FFmpeg',
         name: 'VideoExportService',
@@ -92,7 +106,7 @@ class VideoExportService {
 
     try {
       Log.info(
-        'Processing ${clips.length} clips${aspectRatio != null ? " with ${aspectRatio.name} crop" : ""}${muteAudio ? " (muted)" : ""}',
+        'Processing ${clips.length} clips${effectiveAspectRatio != null ? " with ${effectiveAspectRatio.name} crop" : ""}${muteAudio ? " (muted)" : ""}',
         name: 'VideoExportService',
         category: LogCategory.system,
       );
@@ -120,15 +134,75 @@ class VideoExportService {
       );
 
       // Build FFmpeg command - with or without crop filter and audio
-      String command;
       final audioArgs = muteAudio ? '-an' : '-c:a aac';
+      final bool needsEncoding = effectiveAspectRatio != null;
 
-      if (aspectRatio != null) {
-        // With crop: need to re-encode
-        final cropFilter = _buildCropFilter(aspectRatio);
-        command =
-            '-y -f concat -safe 0 -i "$listFilePath" -vf "$cropFilter" ${_getVideoEncoderArgs()} $audioArgs "$outputPath"';
-      } else if (muteAudio) {
+      if (needsEncoding) {
+        // With crop: need to re-encode - use filter_complex for proper per-segment rotation
+        // The concat demuxer (-f concat) doesn't handle per-segment rotation metadata correctly
+        // Using filter_complex ensures each input is decoded with its own rotation (autorotate)
+        final cropFilter = _buildCropFilter(effectiveAspectRatio);
+
+        // Build input arguments for each clip
+        final inputArgs = sortedClips.map((c) => '-i "${c.filePath}"').join(' ');
+
+        // Build filter_complex: concat streams, then apply crop
+        // Each input is decoded with its own rotation metadata (autorotate)
+        String filterComplex;
+        String audioMapping;
+
+        if (muteAudio) {
+          // Video only - no audio streams in concat
+          final streamLabels = List.generate(
+            sortedClips.length,
+            (i) => '[${i}:v]',
+          ).join('');
+          final concatFilter = '${streamLabels}concat=n=${sortedClips.length}:v=1:a=0[v]';
+          final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
+          filterComplex = '$concatFilter;[v]$cropWithFormat[vout]';
+          audioMapping = '';
+        } else {
+          // Video and audio
+          final streamLabels = List.generate(
+            sortedClips.length,
+            (i) => '[${i}:v][${i}:a]',
+          ).join('');
+          final concatFilter = '${streamLabels}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
+          final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
+          filterComplex = '$concatFilter;[v]$cropWithFormat[vout]';
+          audioMapping = '-map "[a]" -c:a aac';
+        }
+
+        final command =
+            '-y $inputArgs -filter_complex "$filterComplex" -map "[vout]" $audioMapping ${_getVideoEncoderArgs()} "$outputPath"';
+
+        Log.info(
+          'Running FFmpeg with filter_complex: $command',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+
+        // Use fallback mechanism for hardware-to-software encoding
+        await FFmpegEncoder.executeCommandWithFallback(
+          command: command,
+          logTag: 'VideoExportService',
+        );
+
+        Log.info(
+          'Successfully processed clips to: $outputPath',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+
+        // Clean up list file (not used but created earlier)
+        await File(listFilePath).delete();
+
+        return outputPath;
+      }
+
+      // No encoding needed - just copy
+      String command;
+      if (muteAudio) {
         // No crop but muting: need to process to strip audio
         command =
             '-y -f concat -safe 0 -i "$listFilePath" -c:v copy $audioArgs "$outputPath"';
@@ -138,13 +212,16 @@ class VideoExportService {
       }
 
       Log.info(
-        'Running FFmpeg: $command',
+        'Running FFmpeg copy: $command',
         name: 'VideoExportService',
         category: LogCategory.system,
       );
 
       final session = await FFmpegKit.execute(command);
       final returnCode = await session.getReturnCode();
+
+      // Clear sessions to free memory
+      await FFmpegEncoder.clearSessions();
 
       if (ReturnCode.isSuccess(returnCode)) {
         Log.info(
@@ -205,8 +282,15 @@ class VideoExportService {
 
       // Run FFmpeg overlay command
       // Use overlay filter to composite PNG on video
+      // Add format=nv12 for Android MediaCodec compatibility
+      final overlayFilter = '[0:v][1:v]overlay=0:0';
+      final effectiveFilter = FFmpegEncoder.isAndroid
+          ? '$overlayFilter,format=nv12'
+          : overlayFilter;
+      final encoderArgs = _getVideoEncoderArgs();
+      // -y flag to overwrite output (needed for fallback retry)
       final command =
-          '-i "$videoPath" -i "$overlayPngPath" -filter_complex "[0:v][1:v]overlay=0:0" -c:a copy "$outputPath"';
+          '-y -i "$videoPath" -i "$overlayPngPath" -filter_complex "$effectiveFilter" $encoderArgs -c:a copy "$outputPath"';
 
       Log.info(
         'Running FFmpeg overlay: $command',
@@ -214,10 +298,13 @@ class VideoExportService {
         category: LogCategory.system,
       );
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
+      // Use fallback mechanism for hardware-to-software encoding
+      try {
+        await FFmpegEncoder.executeCommandWithFallback(
+          command: command,
+          logTag: 'VideoExportService',
+        );
 
-      if (ReturnCode.isSuccess(returnCode)) {
         Log.info(
           'Successfully applied overlay to: $outputPath',
           name: 'VideoExportService',
@@ -228,9 +315,8 @@ class VideoExportService {
         await File(overlayPngPath).delete();
 
         return outputPath;
-      } else {
-        final output = await session.getOutput();
-        throw Exception('FFmpeg overlay failed: $output');
+      } on FFmpegEncoderException catch (e) {
+        throw Exception('FFmpeg overlay failed: ${e.message}');
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -291,13 +377,14 @@ class VideoExportService {
       }
 
       // Run FFmpeg audio mixing command
+      // -y = overwrite output file
       // -c:v copy = copy video codec (no re-encoding)
       // -c:a aac = encode audio to AAC
       // -map 0:v:0 = use video from first input
       // -map 1:a:0 = use audio from second input
       // -shortest = finish when shortest stream ends
       final command =
-          '-i "$videoPath" -i "$audioFilePath" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$outputPath"';
+          '-y -i "$videoPath" -i "$audioFilePath" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$outputPath"';
 
       Log.info(
         'Running FFmpeg audio mix: $command',
@@ -307,6 +394,9 @@ class VideoExportService {
 
       final session = await FFmpegKit.execute(command);
       final returnCode = await session.getReturnCode();
+
+      // Clear sessions to free memory
+      await FFmpegEncoder.clearSessions();
 
       if (ReturnCode.isSuccess(returnCode)) {
         Log.info(
