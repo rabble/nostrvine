@@ -393,10 +393,12 @@ void main() {
           // Clear method calls again to track cleanup calls
           methodCalls.clear();
 
-          // Cleanup files (simulates user pressing "Clear" button)
+          // Cleanup and reset (simulates user pressing "Clear" button)
+          // In real usage, cleanupAndReset() calls cleanupFiles() then reset()
           controller.cleanupFiles();
+          controller.reset();
 
-          // BUG: stopRecording should be called during cleanup to sync native state
+          // BUG FIX: stopRecording should be called during cleanup to sync native state
           // This prevents "Already recording" error when trying to record again
           expect(
             methodCalls.any((call) => call.method == 'stopRecording'),
