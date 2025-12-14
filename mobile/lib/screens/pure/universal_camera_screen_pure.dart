@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/services/vine_recording_controller.dart'
+    show ExtractedSegment;
 import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/services/camera/native_macos_camera.dart';
@@ -38,6 +40,7 @@ class _UniversalCameraScreenPureState
   String? _errorMessage;
   bool _isProcessing = false;
   bool _permissionDenied = false;
+  bool _isInitializing = false;
 
   // Camera control states
   FlashMode _flashMode = FlashMode.off;
@@ -193,6 +196,8 @@ class _UniversalCameraScreenPureState
   }
 
   Future<void> _initializeServices() async {
+    // Mark as initializing to prevent double-initialization from build method
+    _isInitializing = true;
     // Use Future.microtask to safely initialize after build completes
     // This ensures provider reads happen outside the build phase while still completing promptly
     Future.microtask(() => _performAsyncInitialization());
@@ -390,6 +395,15 @@ class _UniversalCameraScreenPureState
           });
         }
       }
+    } finally {
+      // Always reset the initializing flag
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      } else {
+        _isInitializing = false;
+      }
     }
   }
 
@@ -486,6 +500,37 @@ class _UniversalCameraScreenPureState
                 ],
               ),
             );
+          }
+
+          // Auto-reinitialize camera if it was released (e.g., after back navigation)
+          if (!recordingState.isInitialized && !_isInitializing && !_permissionDenied) {
+            // Trigger re-initialization in next microtask to avoid build phase issues
+            _isInitializing = true;
+            Future.microtask(() async {
+              try {
+                Log.info(
+                  '📹 Camera not initialized, triggering re-initialization',
+                  category: LogCategory.video,
+                );
+                await ref.read(vineRecordingProvider.notifier).initialize();
+                if (mounted) {
+                  setState(() {
+                    _isInitializing = false;
+                  });
+                }
+              } catch (e) {
+                Log.error(
+                  '📹 Failed to re-initialize camera: $e',
+                  category: LogCategory.video,
+                );
+                if (mounted) {
+                  setState(() {
+                    _isInitializing = false;
+                    _errorMessage = 'Failed to initialize camera: $e';
+                  });
+                }
+              }
+            });
           }
 
           if (!recordingState.isInitialized) {
@@ -1457,7 +1502,7 @@ class _UniversalCameraScreenPureState
 
   /// Process individual segment files and add each as a separate clip to ClipManager
   /// This allows users to reorder/delete segments before final concatenation at export
-  void _processSegments(List<(File, Duration)> segmentFiles) async {
+  void _processSegments(List<ExtractedSegment> segmentFiles) async {
     try {
       Log.info(
         '📹 Processing ${segmentFiles.length} segments as individual clips',
@@ -1468,7 +1513,7 @@ class _UniversalCameraScreenPureState
       final clipManager = ref.read(clipManagerProvider.notifier);
 
       for (var i = 0; i < segmentFiles.length; i++) {
-        final (file, duration) = segmentFiles[i];
+        final segment = segmentFiles[i];
 
         // Generate thumbnail for this segment
         Log.info(
@@ -1477,18 +1522,24 @@ class _UniversalCameraScreenPureState
         );
 
         final thumbnailPath = await VideoThumbnailService.extractThumbnail(
-          videoPath: file.path,
-          timeMs: VideoThumbnailService.getOptimalTimestamp(duration),
+          videoPath: segment.file.path,
+          timeMs: VideoThumbnailService.getOptimalTimestamp(segment.duration),
         );
 
         clipManager.addClip(
-          filePath: file.path,
-          duration: duration,
+          filePath: segment.file.path,
+          duration: segment.duration,
           thumbnailPath: thumbnailPath,
+          aspectRatio: segment.aspectRatio,
+          needsCrop: segment.needsCrop,
         );
 
         Log.info(
-          '📹 Added segment $i to ClipManager: ${file.path}, duration: ${duration.inMilliseconds}ms, thumbnail: ${thumbnailPath ?? "none"}',
+          '📹 Added segment $i to ClipManager: ${segment.file.path}, '
+          'duration: ${segment.duration.inMilliseconds}ms, '
+          'needsCrop: ${segment.needsCrop}, '
+          'aspectRatio: ${segment.aspectRatio?.name ?? "none"}, '
+          'thumbnail: ${thumbnailPath ?? "none"}',
           category: LogCategory.video,
         );
       }
@@ -1497,6 +1548,10 @@ class _UniversalCameraScreenPureState
         '📹 Added ${segmentFiles.length} clips to ClipManager',
         category: LogCategory.video,
       );
+
+      // Clear segments from provider since they're now in ClipManager
+      // This prevents duplicate processing when user navigates back
+      ref.read(vineRecordingProvider.notifier).clearSegments();
 
       if (mounted) {
         setState(() {
