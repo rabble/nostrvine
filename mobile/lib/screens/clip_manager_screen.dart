@@ -35,6 +35,7 @@ class ClipManagerScreen extends ConsumerStatefulWidget {
 
 class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
   bool _isProcessing = false;
+  bool _isNavigatingAway = false;
   VideoPlayerController? _previewController;
   String? _currentPreviewClipId;
 
@@ -114,7 +115,31 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         setState(() {
           _isProcessing = false;
         });
-        context.push('/edit-video', extra: videoPath);
+
+        // Dispose video preview to free memory
+        _previewController?.dispose();
+        _previewController = null;
+        _currentPreviewClipId = null;
+
+        // Mark that we're navigating away to prevent auto-play during push
+        _isNavigatingAway = true;
+
+        // Release camera resources to free memory before navigating
+        // The user is done recording, so we don't need the camera anymore
+        ref.read(vineRecordingProvider.notifier).releaseCamera();
+
+        await context.push('/edit-video', extra: videoPath);
+
+        // Clear navigation flag now that we've returned
+        _isNavigatingAway = false;
+
+        // Re-initialize preview when returning from video editor
+        if (mounted) {
+          final state = ref.read(clipManagerProvider);
+          if (state.sortedClips.isNotEmpty) {
+            await _loadPreview(state.sortedClips.first);
+          }
+        }
       }
     } catch (e) {
       Log.error(
@@ -176,13 +201,31 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     final state = ref.watch(clipManagerProvider);
     final notifier = ref.read(clipManagerProvider.notifier);
 
-    // Auto-select first clip if none selected
-    if (state.hasClips && state.selectedClipId == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final firstClip = state.sortedClips.first;
-        notifier.selectClip(firstClip.id);
-        _loadPreview(firstClip);
-      });
+    // Auto-select first clip if none selected, or load preview if controller is missing
+    // Skip if we're navigating away (push to video editor) to prevent auto-play
+    if (state.hasClips && !_isNavigatingAway) {
+      if (state.selectedClipId == null) {
+        // No clip selected - select the first one
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isNavigatingAway) {
+            final firstClip = state.sortedClips.first;
+            notifier.selectClip(firstClip.id);
+            _loadPreview(firstClip);
+          }
+        });
+      } else if (_previewController == null && _currentPreviewClipId == null) {
+        // Clip is selected but preview controller is missing (widget was recreated)
+        // Load preview for the currently selected clip
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isNavigatingAway) {
+            final selectedClip = state.sortedClips.firstWhere(
+              (c) => c.id == state.selectedClipId,
+              orElse: () => state.sortedClips.first,
+            );
+            _loadPreview(selectedClip);
+          }
+        });
+      }
     }
 
     return Scaffold(
