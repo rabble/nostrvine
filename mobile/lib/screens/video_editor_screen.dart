@@ -43,6 +43,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   bool _isVideoInitialized = false;
   AudioPlayer? _audioPlayer;
   String? _currentSoundId;
+  Size? _lastPreviewSize; // Store preview size for text overlay scaling
 
   @override
   void initState() {
@@ -217,11 +218,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         // Use the actual video resolution for rendering overlays
         final videoSize = _videoController!.value.size;
 
-        // Render text overlays to PNG
+        // Render text overlays to PNG, scaling fonts from preview to video size
         final renderer = TextOverlayRenderer();
         final overlayImage = await renderer.renderOverlays(
           editorState.textOverlays,
           videoSize,
+          previewSize: _lastPreviewSize,
         );
 
         // Apply overlay to video using FFmpeg
@@ -307,12 +309,32 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       if (mounted) {
+        // Dispose video controller to free memory before navigating
+        // The metadata screen will create its own player
+        _videoController?.dispose();
+        _videoController = null;
+        _audioPlayer?.dispose();
+        _audioPlayer = null;
+        setState(() {
+          _isVideoInitialized = false;
+        });
+
         // Navigate to metadata screen
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => VideoMetadataScreenPure(draftId: draft.id),
           ),
         );
+
+        // Re-initialize video when returning from metadata screen
+        if (mounted) {
+          _audioPlayer = AudioPlayer();
+          await _initializeVideo();
+          // Re-apply sound if one was selected
+          if (_currentSoundId != null) {
+            await _loadAndPlaySound(_currentSoundId);
+          }
+        }
       }
 
       // Call original callback if exists
@@ -396,6 +418,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                               constraints.maxWidth,
                               constraints.maxHeight,
                             );
+                            // Store preview size for text overlay scaling during export
+                            _lastPreviewSize = renderedSize;
                             return Stack(
                               fit: StackFit.expand,
                               children: [
