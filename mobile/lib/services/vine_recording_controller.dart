@@ -2379,7 +2379,18 @@ class VineRecordingController {
   void _cleanupMacOSRecording() {
     final macOSInterface = _cameraInterface as MacOSCameraInterface;
 
-    // Stop any active recording and clean up files
+    // Stop any active native recording to sync state with native layer
+    // This prevents "Already recording" error when trying to record again
+    if (macOSInterface.isRecording || macOSInterface.isSingleRecordingMode) {
+      Log.debug(
+        '🛑 Stopping active native recording during cleanup',
+        name: 'VineRecordingController',
+        category: LogCategory.system,
+      );
+      NativeMacOSCamera.stopRecording();
+    }
+
+    // Clean up recording files
     if (macOSInterface.currentRecordingPath != null) {
       try {
         // Clean up the recording file if it exists
