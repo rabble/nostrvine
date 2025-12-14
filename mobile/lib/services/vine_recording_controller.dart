@@ -8,8 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // camera_macos removed - using NativeMacOSCamera for both preview and recording
 import 'package:path_provider/path_provider.dart';
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/camera/native_macos_camera.dart';
@@ -21,25 +19,15 @@ import 'package:openvine/services/web_camera_service_stub.dart'
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/utils/async_utils.dart';
+import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/macos_camera_preview.dart';
 
 /// Returns the platform-appropriate FFmpeg video encoder arguments.
-/// Uses hardware acceleration on iOS/Android for faster encoding.
-/// - iOS/macOS: h264_videotoolbox (VideoToolbox hardware encoder)
-/// - Android: h264_mediacodec (MediaCodec hardware encoder)
-/// - Other: libx264 with ultrafast preset (software fallback)
+/// Uses hardware acceleration on iOS/macOS and Android (with fallback).
+/// Delegates to FFmpegEncoder utility for consistent hardware/software selection.
 String _getVideoEncoderArgs() {
-  if (Platform.isIOS || Platform.isMacOS) {
-    // VideoToolbox hardware encoder - much faster than software
-    return '-c:v h264_videotoolbox';
-  } else if (Platform.isAndroid) {
-    // MediaCodec hardware encoder
-    return '-c:v h264_mediacodec';
-  } else {
-    // Software fallback for other platforms
-    return '-c:v libx264 -preset ultrafast';
-  }
+  return FFmpegEncoder.getHardwareEncoderArgs();
 }
 
 /// Represents a single recording segment in the Vine-style recording
@@ -60,6 +48,26 @@ class RecordingSegment {
 
   @override
   String toString() => 'Segment(${duration.inMilliseconds}ms)';
+}
+
+/// Result of extracting a segment file, with metadata for deferred processing
+class ExtractedSegment {
+  ExtractedSegment({
+    required this.file,
+    required this.duration,
+    this.needsCrop = false,
+    this.aspectRatio,
+  });
+
+  final File file;
+  final Duration duration;
+
+  /// Whether this segment needs cropping applied at export time
+  /// True on Android where we defer encoding for performance
+  final bool needsCrop;
+
+  /// Target aspect ratio for cropping (if needsCrop is true)
+  final model.AspectRatio? aspectRatio;
 }
 
 /// Recording state for Vine-style segmented recording
@@ -719,6 +727,18 @@ class VineRecordingController {
     _onStateChanged?.call();
   }
 
+/// Clear segments after they've been added to ClipManager
+  /// This prevents duplicate processing when user navigates back
+  void clearSegments() {
+    _segments.clear();
+    _totalRecordedDuration = Duration.zero;
+    Log.info(
+      '📹 Segments cleared (moved to ClipManager)',
+      category: LogCategory.video,
+    );
+    _onStateChanged?.call();
+  }
+
   bool get canRecord {
     bool isCameraReadyToRecord = true;
     final cameraInterface = _cameraInterface;
@@ -1321,10 +1341,12 @@ class VineRecordingController {
           '${tempDir.path}/vine_final_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
       final cropFilter = _buildCropFilter(_aspectRatio);
+      // Inject format=nv12 for Android MediaCodec compatibility
+      final effectiveFilter = FFmpegEncoder.injectFormatFilter(cropFilter);
 
       final audioEncodeFlag = Platform.isAndroid ? '-c:a aac' : '-c:a copy';
       final command =
-          '-hwaccel auto -y -i "$inputPath" -vf "$cropFilter" $audioEncodeFlag "$outputPath"';
+          '-y -i "$inputPath" -vf "$effectiveFilter" ${_getVideoEncoderArgs()} $audioEncodeFlag "$outputPath"';
 
       Log.info(
         '📹 Executing FFmpeg square crop command: $command',
@@ -1332,35 +1354,24 @@ class VineRecordingController {
         category: LogCategory.system,
       );
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
+      // Use fallback mechanism for hardware-to-software encoding
+      await FFmpegEncoder.executeCommandWithFallback(
+        command: command,
+        logTag: 'VineRecordingController',
+      );
 
-      if (ReturnCode.isSuccess(returnCode)) {
-        Log.info(
-          '📹 FFmpeg square cropping successful: $outputPath',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
+      // executeCommandWithFallback throws on failure, so if we get here it succeeded
+      Log.info(
+        '📹 FFmpeg square cropping successful: $outputPath',
+        name: 'VineRecordingController',
+        category: LogCategory.system,
+      );
 
-        final outputFile = File(outputPath);
-        if (await outputFile.exists()) {
-          return outputFile;
-        } else {
-          throw Exception('Output file does not exist after cropping');
-        }
+      final outputFile = File(outputPath);
+      if (await outputFile.exists()) {
+        return outputFile;
       } else {
-        final output = await session.getOutput();
-        Log.error(
-          '📹 FFmpeg square cropping failed with code $returnCode',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        Log.error(
-          '📹 FFmpeg output: $output',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        throw Exception('FFmpeg square cropping failed with code $returnCode');
+        throw Exception('Output file does not exist after cropping');
       }
     }
 
@@ -1406,13 +1417,15 @@ class VineRecordingController {
           category: LogCategory.system,
         );
 
-        final session = await FFmpegKit.execute(normalizeCommand);
-        final returnCode = await session.getReturnCode();
-
-        if (!ReturnCode.isSuccess(returnCode)) {
-          final output = await session.getOutput();
+        // Use fallback mechanism for hardware-to-software encoding
+        try {
+          await FFmpegEncoder.executeCommandWithFallback(
+            command: normalizeCommand,
+            logTag: 'VineRecordingController',
+          );
+        } on FFmpegEncoderException catch (e) {
           Log.error(
-            '📹 Failed to normalize segment $i: $output',
+            '📹 Failed to normalize segment $i: ${e.message}',
             name: 'VineRecordingController',
             category: LogCategory.system,
           );
@@ -1448,8 +1461,10 @@ class VineRecordingController {
       // Re-encode both video and audio to ensure proper A/V sync
       // Use -vsync cfr for constant frame rate and -async 1 to sync audio to video
       final cropFilter = _buildCropFilter(_aspectRatio);
+      // Inject format=nv12 for Android MediaCodec compatibility
+      final effectiveFilter = FFmpegEncoder.injectFormatFilter(cropFilter);
       final command =
-          '-y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" ${_getVideoEncoderArgs()} -vsync cfr -r 30 -c:a aac -b:a 128k -async 1 "$outputPath"';
+          '-y -f concat -safe 0 -i "$concatFilePath" -vf "$effectiveFilter" ${_getVideoEncoderArgs()} -vsync cfr -r 30 -c:a aac -b:a 128k -async 1 "$outputPath"';
 
       Log.info(
         '📹 Executing FFmpeg command: $command',
@@ -1457,57 +1472,45 @@ class VineRecordingController {
         category: LogCategory.system,
       );
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
+      // Use fallback mechanism for hardware-to-software encoding
+      await FFmpegEncoder.executeCommandWithFallback(
+        command: command,
+        logTag: 'VineRecordingController',
+      );
 
-      if (ReturnCode.isSuccess(returnCode)) {
-        Log.info(
-          '📹 FFmpeg concatenation successful: $outputPath',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
+      Log.info(
+        '📹 FFmpeg concatenation successful: $outputPath',
+        name: 'VineRecordingController',
+        category: LogCategory.system,
+      );
 
-        // Clean up concat list file and normalized segments
-        try {
-          await concatFile.delete();
-          for (final normalizedPath in normalizedPaths) {
-            try {
-              await File(normalizedPath).delete();
-            } catch (e) {
-              Log.warning(
-                'Failed to delete normalized segment $normalizedPath: $e',
-                name: 'VineRecordingController',
-                category: LogCategory.system,
-              );
-            }
+      // Clean up concat list file and normalized segments
+      try {
+        await concatFile.delete();
+        for (final normalizedPath in normalizedPaths) {
+          try {
+            await File(normalizedPath).delete();
+          } catch (e) {
+            Log.warning(
+              'Failed to delete normalized segment $normalizedPath: $e',
+              name: 'VineRecordingController',
+              category: LogCategory.system,
+            );
           }
-        } catch (e) {
-          Log.warning(
-            'Failed to delete concat list file: $e',
-            name: 'VineRecordingController',
-            category: LogCategory.system,
-          );
         }
+      } catch (e) {
+        Log.warning(
+          'Failed to delete concat list file: $e',
+          name: 'VineRecordingController',
+          category: LogCategory.system,
+        );
+      }
 
-        final outputFile = File(outputPath);
-        if (await outputFile.exists()) {
-          return outputFile;
-        } else {
-          throw Exception('Output file does not exist after concatenation');
-        }
+      final outputFile = File(outputPath);
+      if (await outputFile.exists()) {
+        return outputFile;
       } else {
-        final output = await session.getOutput();
-        Log.error(
-          '📹 FFmpeg concatenation failed with code $returnCode',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        Log.error(
-          '📹 FFmpeg output: $output',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        throw Exception('FFmpeg concatenation failed with code $returnCode');
+        throw Exception('Output file does not exist after concatenation');
       }
     } catch (e) {
       Log.error(
@@ -1602,8 +1605,10 @@ class VineRecordingController {
         '${tempDir.path}/vine_final_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
     final cropFilter = _buildCropFilter(_aspectRatio);
+    // Inject format=nv12 for Android MediaCodec compatibility
+    final effectiveFilter = FFmpegEncoder.injectFormatFilter(cropFilter);
     final command =
-        '-i "$inputPath" -vf "$cropFilter" ${_getVideoEncoderArgs()} -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 "$outputPath"';
+        '-i "$inputPath" -vf "$effectiveFilter" ${_getVideoEncoderArgs()} -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 "$outputPath"';
 
     Log.info(
       '📹 Executing FFmpeg crop command: $command',
@@ -1611,23 +1616,11 @@ class VineRecordingController {
       category: LogCategory.system,
     );
 
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
-
-    if (!ReturnCode.isSuccess(returnCode)) {
-      final output = await session.getOutput();
-      Log.error(
-        '📹 FFmpeg crop failed with code $returnCode',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      Log.error(
-        '📹 FFmpeg output: $output',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      throw Exception('FFmpeg crop failed with code $returnCode');
-    }
+    // Use fallback mechanism for hardware-to-software encoding
+    await FFmpegEncoder.executeCommandWithFallback(
+      command: command,
+      logTag: 'VineRecordingController',
+    );
 
     final croppedFile = File(outputPath);
     if (!await croppedFile.exists()) {
@@ -1666,10 +1659,12 @@ class VineRecordingController {
       final outputPath =
           '${tempDir.path}/vine_extracted_${DateTime.now().millisecondsSinceEpoch}.mp4';
       final cropFilter = _buildCropFilter(_aspectRatio);
+      // Inject format=nv12 for Android MediaCodec compatibility
+      final effectiveFilter = FFmpegEncoder.injectFormatFilter(cropFilter);
 
       // Use -ss before -i for fast seeking, then -t for duration
       final command =
-          '-y -ss $startSec -i "$inputPath" -t $durationSec -vf "$cropFilter" ${_getVideoEncoderArgs()} -c:a aac "$outputPath"';
+          '-y -ss $startSec -i "$inputPath" -t $durationSec -vf "$effectiveFilter" ${_getVideoEncoderArgs()} -c:a aac "$outputPath"';
 
       Log.info(
         '📹 Extracting single macOS segment: start=${startSec}s, duration=${durationSec}s',
@@ -1682,18 +1677,11 @@ class VineRecordingController {
         category: LogCategory.system,
       );
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
-
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final output = await session.getOutput();
-        Log.error(
-          '📹 FFmpeg segment extraction failed: $output',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        throw Exception('FFmpeg segment extraction failed');
-      }
+      // Use fallback mechanism for hardware-to-software encoding
+      await FFmpegEncoder.executeCommandWithFallback(
+        command: command,
+        logTag: 'VineRecordingController',
+      );
 
       final outputFile = File(outputPath);
       if (!await outputFile.exists()) {
@@ -1735,13 +1723,15 @@ class VineRecordingController {
         category: LogCategory.system,
       );
 
-      final session = await FFmpegKit.execute(extractCommand);
-      final returnCode = await session.getReturnCode();
-
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final output = await session.getOutput();
+      // Use fallback mechanism for hardware-to-software encoding
+      try {
+        await FFmpegEncoder.executeCommandWithFallback(
+          command: extractCommand,
+          logTag: 'VineRecordingController',
+        );
+      } on FFmpegEncoderException catch (e) {
         Log.error(
-          '📹 Failed to extract segment $i: $output',
+          '📹 Failed to extract segment $i: ${e.message}',
           name: 'VineRecordingController',
           category: LogCategory.system,
         );
@@ -1769,8 +1759,10 @@ class VineRecordingController {
     final outputPath =
         '${tempDir.path}/vine_final_${DateTime.now().millisecondsSinceEpoch}.mp4';
     final cropFilter = _buildCropFilter(_aspectRatio);
+    // Inject format=nv12 for Android MediaCodec compatibility
+    final effectiveFilter = FFmpegEncoder.injectFormatFilter(cropFilter);
     final concatCommand =
-        '-y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" ${_getVideoEncoderArgs()} -c:a aac "$outputPath"';
+        '-y -f concat -safe 0 -i "$concatFilePath" -vf "$effectiveFilter" ${_getVideoEncoderArgs()} -c:a aac "$outputPath"';
 
     Log.info(
       '📹 Concatenating extracted segments with crop filter',
@@ -1778,18 +1770,11 @@ class VineRecordingController {
       category: LogCategory.system,
     );
 
-    final concatSession = await FFmpegKit.execute(concatCommand);
-    final concatReturnCode = await concatSession.getReturnCode();
-
-    if (!ReturnCode.isSuccess(concatReturnCode)) {
-      final output = await concatSession.getOutput();
-      Log.error(
-        '📹 FFmpeg concat failed: $output',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      throw Exception('FFmpeg concatenation of extracted segments failed');
-    }
+    // Use fallback mechanism for hardware-to-software encoding
+    await FFmpegEncoder.executeCommandWithFallback(
+      command: concatCommand,
+      logTag: 'VineRecordingController',
+    );
 
     // Cleanup temp files
     try {
@@ -1896,11 +1881,12 @@ class VineRecordingController {
   }
 
   /// Extract individual segment files without concatenating
-  /// Returns a list of (File, Duration) pairs for each segment
+  /// Returns a list of ExtractedSegment with metadata for each segment
   /// For macOS: extracts from continuous recording using virtual segment timing
-  /// For iOS/Android: applies aspect ratio crop to each existing segment file
-  Future<List<(File, Duration)>> extractSegmentFiles() async {
-    final results = <(File, Duration)>[];
+  /// For iOS: applies aspect ratio crop (hardware encoding works)
+  /// For Android: returns original files with needsCrop=true (deferred encoding)
+  Future<List<ExtractedSegment>> extractSegmentFiles() async {
+    final results = <ExtractedSegment>[];
 
     // For macOS single recording mode, extract segments from continuous recording
     if (!kIsWeb &&
@@ -1959,23 +1945,30 @@ class VineRecordingController {
             category: LogCategory.system,
           );
 
-          final session = await FFmpegKit.execute(command);
-          final returnCode = await session.getReturnCode();
+          // Use fallback mechanism for hardware-to-software encoding
+          try {
+            await FFmpegEncoder.executeCommandWithFallback(
+              command: command,
+              logTag: 'VineRecordingController',
+            );
 
-          if (ReturnCode.isSuccess(returnCode)) {
             final outputFile = File(outputPath);
             if (await outputFile.exists()) {
-              results.add((outputFile, segment.duration));
+              results.add(ExtractedSegment(
+                file: outputFile,
+                duration: segment.duration,
+                needsCrop: false,
+                aspectRatio: null,
+              ));
               Log.info(
                 '📹 Segment $i extracted: $outputPath',
                 name: 'VineRecordingController',
                 category: LogCategory.system,
               );
             }
-          } else {
-            final output = await session.getOutput();
+          } on FFmpegEncoderException catch (e) {
             Log.error(
-              '📹 Failed to extract segment $i: $output',
+              '📹 Failed to extract segment $i: ${e.message}',
               name: 'VineRecordingController',
               category: LogCategory.system,
             );
@@ -2023,21 +2016,46 @@ class VineRecordingController {
         continue;
       }
 
-      // Apply aspect ratio crop
-      try {
-        final croppedFile = await _applyAspectRatioCrop(segment.filePath!);
-        results.add((croppedFile, segment.duration));
+      // Platform-specific handling:
+      // Android: Skip encoding, return original file with crop metadata (deferred encoding)
+      // iOS: Apply crop immediately (hardware encoding works fine with filters)
+      if (!kIsWeb && Platform.isAndroid) {
+        // Android: Defer cropping to export time for performance
+        // CameraX already hardware-encoded the file, no need to re-encode
+        results.add(ExtractedSegment(
+          file: file,
+          duration: segment.duration,
+          needsCrop: true,
+          aspectRatio: _aspectRatio,
+        ));
         Log.info(
-          '📹 Segment $i processed: ${croppedFile.path}',
+          '📹 Segment $i: returning original file for deferred crop (Android), '
+          'aspectRatio=${_aspectRatio.name}',
           name: 'VineRecordingController',
           category: LogCategory.system,
         );
-      } catch (e) {
-        Log.error(
-          '📹 Failed to process segment $i: $e',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
+      } else {
+        // iOS and other platforms: Apply aspect ratio crop immediately
+        try {
+          final croppedFile = await _applyAspectRatioCrop(segment.filePath!);
+          results.add(ExtractedSegment(
+            file: croppedFile,
+            duration: segment.duration,
+            needsCrop: false,
+            aspectRatio: null,
+          ));
+          Log.info(
+            '📹 Segment $i processed: ${croppedFile.path}',
+            name: 'VineRecordingController',
+            category: LogCategory.system,
+          );
+        } catch (e) {
+          Log.error(
+            '📹 Failed to process segment $i: $e',
+            name: 'VineRecordingController',
+            category: LogCategory.system,
+          );
+        }
       }
     }
 
@@ -2439,6 +2457,28 @@ class VineRecordingController {
         }
       }
     }
+  }
+
+  /// Release camera resources without fully disposing the controller.
+  ///
+  /// Call this when navigating away from the camera screen to free memory.
+  /// The camera can be re-initialized later if the user returns.
+  void releaseCamera() {
+    Log.info(
+      '📹 Releasing camera resources',
+      name: 'VineRecordingController',
+      category: LogCategory.video,
+    );
+
+    _cameraInterface?.dispose();
+    _cameraInterface = null;
+    _cameraInitialized = false;
+
+    Log.info(
+      '📹 Camera resources released',
+      name: 'VineRecordingController',
+      category: LogCategory.video,
+    );
   }
 
   /// Dispose resources
