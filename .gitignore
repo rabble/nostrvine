@@ -6,7 +6,8 @@
 .buildlog/
 .history
 
-
+# Claude Code
+.claude/settings.local.json
 
 # Flutter repo-specific
 /bin/cache/
