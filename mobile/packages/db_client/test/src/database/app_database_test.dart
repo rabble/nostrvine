@@ -90,7 +90,9 @@ void main() {
       test('deletes expired profile stats', () async {
         // Insert stats with old cachedAt using proper Drift insert
         final oldTime = DateTime.now().subtract(const Duration(minutes: 10));
-        await database.into(database.profileStats).insert(
+        await database
+            .into(database.profileStats)
+            .insert(
               ProfileStatsCompanion.insert(
                 pubkey: testPubkey,
                 videoCount: const Value(10),
@@ -112,7 +114,9 @@ void main() {
       test('deletes expired hashtag stats', () async {
         // Insert stats with old cachedAt using proper Drift insert
         final oldTime = DateTime.now().subtract(const Duration(hours: 2));
-        await database.into(database.hashtagStats).insert(
+        await database
+            .into(database.hashtagStats)
+            .insert(
               HashtagStatsCompanion.insert(
                 hashtag: 'flutter',
                 videoCount: const Value(50),

@@ -75,12 +75,14 @@ class AppDatabase extends _$AppDatabase {
     final expiredHashtagStatsDeleted = await hashtagStatsDao.deleteExpired();
 
     // Delete old notifications (7 day retention)
-    final notificationCutoff = DateTime.now()
+    final notificationCutoff =
+        DateTime.now()
             .subtract(const Duration(days: _notificationRetentionDays))
             .millisecondsSinceEpoch ~/
         1000;
-    final oldNotificationsDeleted =
-        await notificationsDao.deleteOlderThan(notificationCutoff);
+    final oldNotificationsDeleted = await notificationsDao.deleteOlderThan(
+      notificationCutoff,
+    );
 
     return CleanupResult(
       expiredEventsDeleted: expiredEventsDeleted,
