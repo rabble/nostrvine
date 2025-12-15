@@ -75,6 +75,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
 
+  /// Controller params for the current video
+  VideoControllerParams get _controllerParams => VideoControllerParams(
+    videoId: widget.video.id,
+    videoUrl: widget.video.videoUrl!,
+    videoEvent: widget.video,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -120,34 +127,27 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
       // Also listen for controller recreation (e.g., after cache corruption retry)
       // When controller is recreated while video is active, re-trigger play setup
-      if (widget.video.videoUrl != null) {
-        final controllerParams = VideoControllerParams(
-          videoId: widget.video.id,
-          videoUrl: widget.video.videoUrl!,
-          videoEvent: widget.video,
-        );
-        ref.listenManual(
-          individualVideoControllerProvider(controllerParams),
-          (previous, next) {
-            // Only react to actual controller changes (recreation), not initial emission
-            // previous will be null on first emission, non-null on recreation
-            if (previous != null && previous != next) {
-              Log.info(
-                '🔄 Controller recreated for ${widget.video.id}, checking if should auto-play',
-                name: 'VideoFeedItem',
-                category: LogCategory.video,
-              );
-              final isActive = ref.read(isVideoActiveProvider(_stableVideoId));
-              if (isActive) {
-                // Re-trigger play setup - this will attach checkAndPlay listener to NEW controller
-                _handlePlaybackChange(true);
-              }
+      ref.listenManual(
+        individualVideoControllerProvider(_controllerParams),
+        (previous, next) {
+          // Only react to actual controller changes (recreation), not initial emission
+          // previous will be null on first emission, non-null on recreation
+          if (previous != null && previous != next) {
+            Log.info(
+              '🔄 Controller recreated for ${widget.video.id}, checking if should auto-play',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+            final isActive = ref.read(isVideoActiveProvider(_stableVideoId));
+            if (isActive) {
+              // Re-trigger play setup - this will attach checkAndPlay listener to NEW controller
+              _handlePlaybackChange(true);
             }
-          },
-          // Don't fire immediately - we only care about changes (recreation)
-          fireImmediately: false,
-        );
-      }
+          }
+        },
+        // Don't fire immediately - we only care about changes (recreation)
+        fireImmediately: false,
+      );
 
       // THEN check current state (providers may have become ready while listener was setting up)
       // This two-step approach handles the race condition where providers might not be ready initially
@@ -197,13 +197,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       // which might fail if ref is in an inconsistent state during dispose
       // Use safePause to handle "No active player with ID" errors gracefully
       try {
-        final controllerParams = VideoControllerParams(
-          videoId: widget.video.id,
-          videoUrl: widget.video.videoUrl!,
-          videoEvent: widget.video,
-        );
         final controller = ref.read(
-          individualVideoControllerProvider(controllerParams),
+          individualVideoControllerProvider(_controllerParams),
         );
         if (controller.value.isInitialized && controller.value.isPlaying) {
           Log.info(
@@ -240,13 +235,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final stackLines = stackTrace.toString().split('\n').take(5).join('\n');
 
     try {
-      final controllerParams = VideoControllerParams(
-        videoId: widget.video.id,
-        videoUrl: widget.video.videoUrl!,
-        videoEvent: widget.video,
-      );
       final controller = ref.read(
-        individualVideoControllerProvider(controllerParams),
+        individualVideoControllerProvider(_controllerParams),
       );
 
       if (shouldPlay) {
@@ -505,13 +495,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           category: LogCategory.ui,
         );
         try {
-          final controllerParams = VideoControllerParams(
-            videoId: video.id,
-            videoUrl: video.videoUrl!,
-            videoEvent: video,
-          );
           final controller = ref.read(
-            individualVideoControllerProvider(controllerParams),
+            individualVideoControllerProvider(_controllerParams),
           );
 
           Log.debug(
@@ -606,13 +591,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             if (isActive)
               Consumer(
                 builder: (context, ref, child) {
-                  final controllerParams = VideoControllerParams(
-                    videoId: video.id,
-                    videoUrl: video.videoUrl!,
-                    videoEvent: video,
-                  );
                   final controller = ref.watch(
-                    individualVideoControllerProvider(controllerParams),
+                    individualVideoControllerProvider(_controllerParams),
                   );
 
                   // Only track metrics for active videos
@@ -626,7 +606,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       if (value.hasError) {
                         return VideoErrorOverlay(
                           video: video,
-                          controllerParams: controllerParams,
+                          controllerParams: _controllerParams,
                           errorDescription: value.errorDescription ?? '',
                           isActive: isActive,
                         );
