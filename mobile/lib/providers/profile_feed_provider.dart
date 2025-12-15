@@ -21,7 +21,7 @@ part 'profile_feed_provider.g.dart';
 /// final feed = ref.watch(profileFeedProvider(userId));
 /// await ref.read(profileFeedProvider(userId).notifier).loadMore();
 /// ```
-@riverpod
+@Riverpod(keepAlive: true) // Keep alive to prevent reload on tab switches
 class ProfileFeed extends _$ProfileFeed {
   @override
   Future<VideoFeedState> build(String userId) async {
@@ -89,6 +89,16 @@ class ProfileFeed extends _$ProfileFeed {
       videoEventService.authorVideos(userId),
     );
 
+    // Register for video update callbacks to auto-refresh when this user's video is updated
+    final unregister = videoEventService.addVideoUpdateListener((updated) {
+      if (updated.pubkey == userId && ref.mounted) {
+        refreshFromService();
+      }
+    });
+
+    // Clean up callback when provider is disposed
+    ref.onDispose(unregister);
+
     Log.info(
       'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=${userId}...',
       name: 'ProfileFeedProvider',
@@ -100,6 +110,24 @@ class ProfileFeed extends _$ProfileFeed {
       hasMoreContent: authorVideos.length >= 10,
       isLoadingMore: false,
       lastUpdated: DateTime.now(),
+    );
+  }
+
+  /// Refresh state from VideoEventService without re-subscribing to relay
+  /// Call this after a video is updated to sync the provider's state
+  void refreshFromService() {
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final updatedVideos = List<VideoEvent>.from(
+      videoEventService.authorVideos(userId),
+    );
+
+    state = AsyncData(
+      VideoFeedState(
+        videos: updatedVideos,
+        hasMoreContent: updatedVideos.length >= 10,
+        isLoadingMore: false,
+        lastUpdated: DateTime.now(),
+      ),
     );
   }
 

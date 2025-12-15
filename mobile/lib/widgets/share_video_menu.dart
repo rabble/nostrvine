@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -20,6 +22,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 
 // TODO(any): Move this to a reusable widget
 Widget get _buildLoadingIndicator => Padding(
@@ -133,7 +136,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
         ),
         IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.close, color: VineTheme.secondaryText),
         ),
       ],
@@ -211,7 +214,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(); // Close share menu
+        context.pop(); // Close share menu
 
         if (result.success) {
           // Show success confirmation dialog using root navigator
@@ -825,7 +828,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             duration: const Duration(seconds: 2),
           ),
         );
-        Navigator.of(context).pop();
+        context.pop();
       }
     } catch (e) {
       Log.error(
@@ -900,10 +903,17 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     );
   }
 
-  /// Copy event ID to clipboard
+  /// Copy event ID to clipboard as nevent (NIP-19 bech32 encoded)
   Future<void> _copyEventId() async {
     try {
-      await Clipboard.setData(ClipboardData(text: widget.video.id));
+      final nevent = NIP19Tlv.encodeNevent(
+        Nevent(
+          id: widget.video.id,
+          author: widget.video.pubkey,
+          relays: ['wss://relay.divine.video'],
+        ),
+      );
+      await Clipboard.setData(ClipboardData(text: nevent));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -912,7 +922,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             duration: Duration(seconds: 2),
           ),
         );
-        Navigator.of(context).pop();
+        context.pop();
       }
     } catch (e) {
       Log.error(
@@ -931,7 +941,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
     // If list was created successfully, handle closing share menu and showing snackbar
     if (result != null && mounted) {
-      Navigator.of(context).pop();
+      context.pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Created list "$result" and added video')),
@@ -973,13 +983,13 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () {
                 blocklistService.blockUser(widget.video.pubkey);
-                Navigator.of(context).pop();
+                context.pop();
                 if (mounted) {
                   ScaffoldMessenger.of(
                     context,
@@ -1122,7 +1132,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
           ),
         ],
@@ -1154,12 +1164,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     ),
     actions: [
       TextButton(
-        onPressed: () => Navigator.of(dialogContext).pop(),
+        onPressed: () => dialogContext.pop(),
         child: const Text('Cancel'),
       ),
       TextButton(
         onPressed: () {
-          Navigator.of(dialogContext).pop();
+          dialogContext.pop();
           _deleteContent();
         },
         style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -1401,10 +1411,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
       ),
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
     ],
   );
 
@@ -1605,7 +1612,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(); // Close dialog
+        context.pop(); // Close dialog
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1694,10 +1701,7 @@ class _CreateListDialogState extends ConsumerState<_CreateListDialog> {
       ],
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
       TextButton(onPressed: _createList, child: const Text('Create')),
     ],
   );
@@ -1724,7 +1728,7 @@ class _CreateListDialogState extends ConsumerState<_CreateListDialog> {
 
         if (mounted) {
           // Close dialog and return the list name
-          Navigator.of(context).pop();
+          context.pop();
         }
       }
     } catch (e) {
@@ -1742,7 +1746,7 @@ class _CreateListDialogState extends ConsumerState<_CreateListDialog> {
           ),
         );
         // Return null to indicate failure
-        Navigator.of(context).pop();
+        context.pop();
       }
     }
   }
@@ -1811,7 +1815,7 @@ class _SelectListDialog extends StatelessWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 child: const Text('Done'),
               ),
             ],
@@ -1952,10 +1956,7 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       ),
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
       TextButton(onPressed: _handleSubmitReport, child: const Text('Report')),
     ],
   );
@@ -2014,11 +2015,9 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(); // Close report dialog
+        context.pop(); // Close report dialog
         if (widget.isFromShareMenu) {
-          Navigator.of(
-            context,
-          ).pop(); // Close share menu (only if opened from share menu)
+          context.pop(); // Close share menu (only if opened from share menu)
         }
 
         if (result.success) {
@@ -2143,10 +2142,7 @@ class _CreateFollowSetDialogState
       ],
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
       TextButton(onPressed: _createFollowSet, child: const Text('Create')),
     ],
   );
@@ -2166,7 +2162,7 @@ class _CreateFollowSetDialogState
       );
 
       if (newSet != null && mounted) {
-        Navigator.of(context).pop(); // Close dialog
+        context.pop(); // Close dialog
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2243,10 +2239,7 @@ class _SelectFollowSetDialog extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Done'),
-          ),
+          TextButton(onPressed: () => context.pop(), child: const Text('Done')),
         ],
       );
     },
@@ -2373,7 +2366,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
     ),
     actions: [
       TextButton(
-        onPressed: _isUpdating ? null : () => Navigator.of(context).pop(),
+        onPressed: _isUpdating ? null : () => context.pop(),
         child: const Text('Cancel'),
       ),
       TextButton(
@@ -2416,7 +2409,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       final tags = <List<String>>[];
 
       // Required 'd' tag - must use the same identifier
-      tags.add(['d', widget.video.vineId ?? widget.video.id]);
+      tags.add(['d', widget.video.stableId]);
 
       // Build imeta tag components (preserve existing media data)
       final imetaComponents = <String>[];
@@ -2480,7 +2473,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Create and sign the updated event
       final content = _descriptionController.text.trim();
       final event = await authService.createAndSignEvent(
-        kind: 34236, // Addressable short looping video (NIP-71)
+        kind: NIP71VideoKinds.addressableShortVideo, // Kind 34236
         content: content,
         tags: tags,
       );
@@ -2493,8 +2486,21 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       final nostrService = ref.read(nostrServiceProvider);
       await nostrService.broadcast(event);
 
+      // Update local cache for immediate UI update
+      final personalEventCache = ref.read(personalEventCacheServiceProvider);
+      personalEventCache.cacheUserEvent(event);
+
+      // Update VideoEventService to replace old video in all feeds
+      // This triggers callbacks that automatically refresh:
+      // - profileFeedProvider (via addVideoUpdateListener)
+      // - homeFeedProvider (via addVideoUpdateListener)
+      // - exploreTabVideosProvider (via exploreTabVideoUpdateListenerProvider)
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final updatedVideoEvent = VideoEvent.fromNostrEvent(event);
+      videoEventService.updateVideoEvent(updatedVideoEvent);
+
       if (mounted) {
-        Navigator.of(context).pop(); // Close edit dialog
+        context.pop(); // Close edit dialog
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2580,7 +2586,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                       style: TextStyle(color: VineTheme.secondaryText),
                     ),
                     onTap: () {
-                      Navigator.of(context).pop();
+                      context.pop();
                       _showCreateBookmarkSetDialog(context, ref, video);
                     },
                   ),
@@ -2656,7 +2662,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 child: const Text('Done'),
               ),
             ],
@@ -2718,7 +2724,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
             : 'Added to "${set.name}"';
 
         // Close the bookmark sets dialog
-        Navigator.of(context).pop();
+        context.pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2788,10 +2794,7 @@ class _CreateBookmarkSetDialogState
       ],
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
       TextButton(onPressed: _createBookmarkSet, child: const Text('Create')),
     ],
   );
@@ -2818,7 +2821,7 @@ class _CreateBookmarkSetDialogState
         await bookmarkService.addToBookmarkSet(newSet.id, bookmarkItem);
 
         if (mounted) {
-          Navigator.of(context).pop(); // Close create dialog
+          context.pop(); // Close create dialog
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2933,7 +2936,7 @@ class _ReportConfirmationDialog extends StatelessWidget {
     ),
     actions: [
       TextButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => context.pop(),
         child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
       ),
     ],
@@ -3070,10 +3073,7 @@ class _ViewSourceDialog extends ConsumerWidget {
           },
           child: const Text('Copy JSON'),
         ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
-        ),
+        TextButton(onPressed: () => context.pop(), child: const Text('Close')),
       ],
     );
   }

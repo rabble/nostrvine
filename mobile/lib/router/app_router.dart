@@ -20,6 +20,9 @@ import 'package:openvine/screens/followers_screen.dart';
 import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
@@ -43,6 +46,8 @@ final _searchGridKey = GlobalKey<NavigatorState>(debugLabel: 'search-grid');
 final _searchFeedKey = GlobalKey<NavigatorState>(debugLabel: 'search-feed');
 final _hashtagGridKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-grid');
 final _hashtagFeedKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-feed');
+final _profileGridKey = GlobalKey<NavigatorState>(debugLabel: 'profile-grid');
+final _profileFeedKey = GlobalKey<NavigatorState>(debugLabel: 'profile-feed');
 
 /// Maps URL location to bottom nav tab index
 /// Returns -1 for non-tab routes (like search, settings, edit-profile) to hide bottom nav
@@ -62,6 +67,9 @@ int tabIndexFromLocation(String loc) {
       return 3;
     case 'search':
     case 'settings':
+    case 'relay-settings':
+    case 'blossom-settings':
+    case 'notification-settings':
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
@@ -273,28 +281,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile/:npub',
             name: 'profile',
-            pageBuilder: (ctx, st) {
-              // ProfileScreenRouter gets npub from pageContext (router-driven)
-              // Use MaterialPage for swipe-back gesture support
-              return MaterialPage(
-                key: st.pageKey,
-                child: const ProfileScreenRouter(),
-              );
-            },
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _profileGridKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const ProfileScreenRouter(),
+                  settings: const RouteSettings(name: 'ProfileScreen'),
+                ),
+              ),
+            ),
           ),
 
           // PROFILE tab subtree - feed mode (with video index)
-          // Note: /profile/me/:index is handled by ProfileScreenRouter detecting "me" and redirecting
           GoRoute(
             path: '/profile/:npub/:index',
-            pageBuilder: (ctx, st) {
-              // ProfileScreenRouter gets npub from pageContext (router-driven)
-              // Use MaterialPage for swipe-back gesture support
-              return MaterialPage(
-                key: st.pageKey,
-                child: const ProfileScreenRouter(),
-              );
-            },
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _profileFeedKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const ProfileScreenRouter(),
+                  settings: const RouteSettings(name: 'ProfileScreen'),
+                ),
+              ),
+            ),
           ),
 
           // SEARCH route - empty search
@@ -396,6 +407,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         name: 'settings',
         builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/relay-settings',
+        name: 'relay-settings',
+        builder: (_, __) => const RelaySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/blossom-settings',
+        name: 'blossom-settings',
+        builder: (_, __) => const BlossomSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/notification-settings',
+        name: 'notification-settings',
+        builder: (_, __) => const NotificationSettingsScreen(),
       ),
       GoRoute(
         path: '/edit-profile',

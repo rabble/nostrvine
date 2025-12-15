@@ -50,7 +50,7 @@ final class ProfileFeedProvider
   }) : super(
          retry: null,
          name: r'profileFeedProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -80,7 +80,7 @@ final class ProfileFeedProvider
   }
 }
 
-String _$profileFeedHash() => r'6d39504a28e90e826b440d1cda67e2c1f8933034';
+String _$profileFeedHash() => r'702548c62eebf5b8fe740ced987e973a24c16460';
 
 /// Profile feed provider - shows videos for a specific user with pagination
 ///
@@ -108,7 +108,7 @@ final class ProfileFeedFamily extends $Family
         name: r'profileFeedProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   /// Profile feed provider - shows videos for a specific user with pagination

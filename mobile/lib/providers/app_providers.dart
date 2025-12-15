@@ -20,8 +20,11 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
-import 'package:openvine/providers/analytics_providers.dart';
+// Removed legacy explore_video_manager.dart import
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -55,6 +58,9 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/event_router.dart';
+
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart'
+    as ff;
 
 part 'app_providers.g.dart';
 
@@ -252,7 +258,7 @@ Nip05Service nip05Service(Ref ref) {
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
   return DraftStorageService(prefs);
 }
 
@@ -262,11 +268,15 @@ Future<DraftStorageService> draftStorageService(Ref ref) async {
 // DEPENDENT SERVICES (With dependencies)
 // =============================================================================
 
-/// Authentication service depends on secure key storage
+/// Authentication service depends on secure key storage and user data cleanup
 @Riverpod(keepAlive: true)
 AuthService authService(Ref ref) {
   final keyStorage = ref.watch(secureKeyStorageProvider);
-  return AuthService(keyStorage: keyStorage);
+  final userDataCleanupService = ref.watch(userDataCleanupServiceProvider);
+  return AuthService(
+    userDataCleanupService: userDataCleanupService,
+    keyStorage: keyStorage,
+  );
 }
 
 /// Stream provider for reactive auth state changes
@@ -282,7 +292,15 @@ Stream<AuthState> authStateStream(Ref ref) async* {
   yield* authService.authStateStream;
 }
 
-/// Core Nostr client for relay communication
+/// User data cleanup service for handling identity changes
+/// Prevents data leakage between different Nostr accounts
+@riverpod
+UserDataCleanupService userDataCleanupService(Ref ref) {
+  final prefs = ref.watch(ff.sharedPreferencesProvider);
+  return UserDataCleanupService(prefs);
+}
+
+/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
 @Riverpod(keepAlive: true)
 NostrClient nostrService(Ref ref) {
   final keyManager = ref.watch(nostrKeyManagerProvider);
@@ -558,8 +576,7 @@ CurationService curationService(Ref ref) {
 @riverpod
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
     keyManager: keyManager,
@@ -585,7 +602,7 @@ class CuratedListsState extends _$CuratedListsState {
   Future<List<CuratedList>> build() async {
     final nostrService = ref.watch(nostrServiceProvider);
     final authService = ref.watch(authServiceProvider);
-    final prefs = await ref.watch(sharedPreferencesProvider.future);
+    final prefs = ref.watch(sharedPreferencesProvider);
 
     _service = CuratedListService(
       nostrService: nostrService,
@@ -612,7 +629,7 @@ class CuratedListsState extends _$CuratedListsState {
 /// User list service for NIP-51 kind 30000 people lists
 @riverpod
 Future<UserListService> userListService(Ref ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   final service = UserListService(prefs: prefs);
 
@@ -627,7 +644,7 @@ Future<UserListService> userListService(Ref ref) async {
 Future<BookmarkService> bookmarkService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   return BookmarkService(
     nostrService: nostrService,
@@ -641,7 +658,7 @@ Future<BookmarkService> bookmarkService(Ref ref) async {
 Future<MuteService> muteService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   return MuteService(
     nostrService: nostrService,
@@ -668,8 +685,7 @@ VideoSharingService videoSharingService(Ref ref) {
 @riverpod
 Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
     keyManager: keyManager,
