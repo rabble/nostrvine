@@ -118,6 +118,37 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _handlePlaybackChange(next);
       });
 
+      // Also listen for controller recreation (e.g., after cache corruption retry)
+      // When controller is recreated while video is active, re-trigger play setup
+      if (widget.video.videoUrl != null) {
+        final controllerParams = VideoControllerParams(
+          videoId: widget.video.id,
+          videoUrl: widget.video.videoUrl!,
+          videoEvent: widget.video,
+        );
+        ref.listenManual(
+          individualVideoControllerProvider(controllerParams),
+          (previous, next) {
+            // Only react to actual controller changes (recreation), not initial emission
+            // previous will be null on first emission, non-null on recreation
+            if (previous != null && previous != next) {
+              Log.info(
+                '🔄 Controller recreated for ${widget.video.id}, checking if should auto-play',
+                name: 'VideoFeedItem',
+                category: LogCategory.video,
+              );
+              final isActive = ref.read(isVideoActiveProvider(_stableVideoId));
+              if (isActive) {
+                // Re-trigger play setup - this will attach checkAndPlay listener to NEW controller
+                _handlePlaybackChange(true);
+              }
+            }
+          },
+          // Don't fire immediately - we only care about changes (recreation)
+          fireImmediately: false,
+        );
+      }
+
       // THEN check current state (providers may have become ready while listener was setting up)
       // This two-step approach handles the race condition where providers might not be ready initially
       // but become ready shortly after widget mounts
