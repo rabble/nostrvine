@@ -143,6 +143,7 @@ workflows:
       java: 17
       groups:
         - zendesk_credentials
+        - google_play_credentials
       android_signing:
         - divine_keystore
     cache:
@@ -159,3 +160,7 @@ workflows:
       - build/app/outputs/apk/release/*.apk
       - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/mapping/**/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal

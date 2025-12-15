@@ -60,9 +60,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/event_router.dart';
 
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart'
-    as ff;
-
 part 'app_providers.g.dart';
 
 // =============================================================================
@@ -297,7 +294,7 @@ Stream<AuthState> authStateStream(Ref ref) async* {
 /// Prevents data leakage between different Nostr accounts
 @riverpod
 UserDataCleanupService userDataCleanupService(Ref ref) {
-  final prefs = ref.watch(ff.sharedPreferencesProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
   return UserDataCleanupService(prefs);
 }
 
