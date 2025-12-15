@@ -1184,26 +1184,17 @@ final class UserDataCleanupServiceProvider
 String _$userDataCleanupServiceHash() =>
     r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
-///
-/// Requires AuthService to be authenticated with a valid key container.
-/// Throws StateError if accessed before authentication is complete.
+/// Core Nostr service via NostrClient for relay communication
 
 @ProviderFor(nostrService)
 const nostrServiceProvider = NostrServiceProvider._();
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
-///
-/// Requires AuthService to be authenticated with a valid key container.
-/// Throws StateError if accessed before authentication is complete.
+/// Core Nostr service via NostrClient for relay communication
 
 final class NostrServiceProvider
     extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
     with $Provider<NostrClient> {
-  /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
-  ///
-  /// Requires AuthService to be authenticated with a valid key container.
-  /// Throws StateError if accessed before authentication is complete.
+  /// Core Nostr service via NostrClient for relay communication
   const NostrServiceProvider._()
     : super(
         from: null,
@@ -1237,7 +1228,7 @@ final class NostrServiceProvider
   }
 }
 
-String _$nostrServiceHash() => r'5320479a844708e0377dd54b6c5ac446351bad0a';
+String _$nostrServiceHash() => r'25ba3b864cc05900f1dc2363d2014304e06ff5da';
 
 /// Subscription manager for centralized subscription management
 

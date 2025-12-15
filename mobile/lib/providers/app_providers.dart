@@ -298,29 +298,17 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
 }
 
 /// Core Nostr service via NostrClient for relay communication
-///
-/// Works in two modes:
-/// - Authenticated: When AuthService has a valid key container, can sign events
-/// - Read-only: Before authentication, can fetch public data but signing returns null
-///
-/// The signer lazily checks for auth state at signing time, so the same client
-/// works before and after login without needing to rebuild.
 @Riverpod(keepAlive: true)
 NostrClient nostrService(Ref ref) {
   final authService = ref.read(authServiceProvider);
   final statisticsService = ref.watch(relayStatisticsServiceProvider);
   final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
 
-  // Pass a getter that lazily gets the key container at signing time
-  // This allows the client to work before auth and automatically sign after auth
   final client = NostrServiceFactory.create(
     () => authService.currentKeyContainer,
     statisticsService: statisticsService,
     gatewaySettings: gatewaySettings,
   );
-
-  // Note: Initialization is handled explicitly in main.dart
-  // main.dart calls nostrService.initialize() then markInitialized()
 
   // Cleanup on disposal - but only in production, not during development hot reloads
   ref.onDispose(() {

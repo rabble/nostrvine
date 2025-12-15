@@ -4,6 +4,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -341,12 +342,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   const Divider(color: Colors.grey),
                   ...configuredRelays.map((relayUrl) {
                     final isConnected = connectedRelays.contains(relayUrl);
-                    final status =
-                        relayStatuses[relayUrl] as Map<String, dynamic>?;
+                    final status = relayStatuses[relayUrl];
+                    final isAuthenticated =
+                        status?.state == RelayState.authenticated;
                     return _buildRelayRow(
                       relayUrl,
                       isConnected,
-                      status?['authenticated'] ?? false,
+                      isAuthenticated,
                     );
                   }).toList(),
                 ],
