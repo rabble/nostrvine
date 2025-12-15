@@ -1182,7 +1182,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'345374b31e304274527a8109edba3133f499f53a';
+    r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
 /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
 
