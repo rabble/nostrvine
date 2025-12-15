@@ -1258,8 +1258,22 @@ class VineRecordingController {
       _totalRecordedDuration.inMilliseconds /
       maxRecordingDuration.inMilliseconds;
   bool get canRecord =>
+      _cameraInitialized &&
+      _isCameraReadyToRecord() &&
       remainingDuration > minSegmentDuration &&
       _state != VineRecordingState.processing;
+
+  /// Check if the camera interface is actually ready to record
+  /// For CamerAwesome, this requires the widget builder to have set the camera state
+  bool _isCameraReadyToRecord() {
+    if (_cameraInterface == null) return false;
+    if (_cameraInterface is CamerAwesomeMobileCameraInterface) {
+      return (_cameraInterface as CamerAwesomeMobileCameraInterface)
+          .isReadyToRecord;
+    }
+    // Other interfaces (macOS, web, enhanced mobile) don't have this delay
+    return true;
+  }
   bool get hasSegments {
     if (_segments.isNotEmpty) return true;
     // For macOS, also check virtual segments since we use single-recording mode
@@ -1409,6 +1423,19 @@ class VineRecordingController {
     try {
       _setState(VineRecordingState.idle);
 
+      // Properly dispose existing camera interface before creating new one
+      // This is critical for retry scenarios where we need a clean slate
+      if (_cameraInterface != null) {
+        Log.info(
+          'Disposing existing camera interface before re-initialization',
+          name: 'VineRecordingController',
+          category: LogCategory.system,
+        );
+        _cameraInterface!.dispose();
+        _cameraInterface = null;
+        _cameraInitialized = false;
+      }
+
       // Clean up any old recordings from previous sessions
       _cleanupRecordings();
 
@@ -1420,7 +1447,17 @@ class VineRecordingController {
       } else if (Platform.isIOS || Platform.isAndroid) {
         // Use CamerAwesome for iOS with physical sensor switching support
         if (Platform.isIOS) {
-          _cameraInterface = CamerAwesomeMobileCameraInterface();
+          final camerAwesome = CamerAwesomeMobileCameraInterface();
+          // Wire up callback to notify provider when camera becomes ready
+          camerAwesome.onCameraReady = () {
+            Log.info(
+              'CamerAwesome camera ready - notifying state change',
+              name: 'VineRecordingController',
+              category: LogCategory.system,
+            );
+            _onStateChanged?.call();
+          };
+          _cameraInterface = camerAwesome;
           await _cameraInterface!.initialize();
           Log.info(
             'Using CamerAwesome camera with physical sensor switching',
@@ -1430,7 +1467,17 @@ class VineRecordingController {
         } else {
           // Android: Try CamerAwesome, fallback to enhanced camera if needed
           try {
-            _cameraInterface = CamerAwesomeMobileCameraInterface();
+            final camerAwesome = CamerAwesomeMobileCameraInterface();
+            // Wire up callback to notify provider when camera becomes ready
+            camerAwesome.onCameraReady = () {
+              Log.info(
+                'CamerAwesome camera ready - notifying state change',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+              _onStateChanged?.call();
+            };
+            _cameraInterface = camerAwesome;
             await _cameraInterface!.initialize();
             Log.info(
               'Using CamerAwesome camera for Android',
