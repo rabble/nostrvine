@@ -28,7 +28,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
-  String? _currentVideoStableId; // Track the video stableId we're currently viewing
+  String? _currentVideoStableId;
   bool _urlUpdateScheduled = false; // Prevent infinite rebuild loops
 
   @override
@@ -136,8 +136,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               final safeIndex = urlIndex.clamp(0, itemCount - 1);
               _controller = PageController(initialPage: safeIndex);
               _lastUrlIndex = safeIndex;
-              _currentVideoStableId =
-                  videos[safeIndex].stableId; // Remember which video we're showing
+              _currentVideoStableId = videos[safeIndex].stableId;
             }
 
             // Check if video list changed (e.g., reordered due to social provider update)
