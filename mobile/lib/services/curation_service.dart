@@ -485,8 +485,7 @@ class CurationService {
             try {
               // Subscribe to fetch specific video events by ID using proper streaming
               final filter = Filter(ids: missingEventIds);
-              final eventStream = _nostrService.subscribe([filter],
-              );
+              final eventStream = _nostrService.subscribe([filter]);
 
               // Collect fetched videos and process them immediately
               final fetchedVideos = <VideoEvent>[];
@@ -822,9 +821,8 @@ class CurationService {
 
       // Subscribe to receive curation set events
       final eventStream = _nostrService.subscribe([
-          Filter(kinds: [30005], authors: curatorPubkeys, limit: 500),
-        ],
-      );
+        Filter(kinds: [30005], authors: curatorPubkeys, limit: 500),
+      ]);
 
       eventStream.listen(
         (event) {

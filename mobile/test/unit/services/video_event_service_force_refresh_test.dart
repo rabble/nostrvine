@@ -63,10 +63,7 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
         // Simulate EOSE immediately
         Future.microtask(() {

@@ -83,9 +83,9 @@ void main() {
         Filter? capturedFilter;
         final streamController = StreamController<Event>.broadcast();
 
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           final filters = invocation.namedArguments[#filters] as List<Filter>;
           capturedFilter = filters.first;
           return streamController.stream;
@@ -98,9 +98,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
 
         // Assert - Verify that 'until' filter was applied with oldest timestamp
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
         expect(capturedFilter, isNotNull);
         expect(capturedFilter!.until, equals(1704060000));
@@ -127,9 +125,9 @@ void main() {
       Filter? capturedFilter;
       final streamController = StreamController<Event>.broadcast();
 
-      when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((invocation) {
+      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+        invocation,
+      ) {
         final filters = invocation.namedArguments[#filters] as List<Filter>;
         capturedFilter = filters.first;
         return streamController.stream;
@@ -142,9 +140,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Assert - Verify that no 'until' filter was applied
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(1);
+      verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
       expect(capturedFilter, isNotNull);
       expect(
@@ -275,9 +271,9 @@ void main() {
         final capturedFilters = <Filter>[];
         final streamController = StreamController<Event>.broadcast();
 
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           final filters = invocation.namedArguments[#filters] as List<Filter>;
           capturedFilters.add(filters.first);
           return streamController.stream;
@@ -378,9 +374,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Should not make another subscription since hasMore=false
-      verifyNever(
-        mockNostrService.subscribe(argThat(anything)),
-      );
+      verifyNever(mockNostrService.subscribe(argThat(anything)));
 
       // Cleanup
       await streamController.close();

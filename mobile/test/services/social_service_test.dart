@@ -495,9 +495,9 @@ void main() {
 
         // Mock two sequential subscription calls
         var callCount = 0;
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           callCount++;
           if (callCount == 1) {
             // First call returns reactions (kind 7)
@@ -511,9 +511,7 @@ void main() {
         final result = await socialService.fetchLikedEvents(testUserPubkey);
 
         // Verify two subscriptions were called (reactions, then videos)
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(2);
+        verify(mockNostrService.subscribe(argThat(anything))).called(2);
 
         // Should return the actual video events
         expect(result, isA<List<Event>>());
@@ -594,9 +592,7 @@ void main() {
 
         // Verify subscription was called for Kind 3 events
         verify(
-          mockNostrService.subscribe(
-            argThat(isA<List<dynamic>>()),
-          ),
+          mockNostrService.subscribe(argThat(isA<List<dynamic>>())),
         ).called(1);
 
         // Following list should be updated
@@ -680,9 +676,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEmptyContactListEvent);
 
-        when(
-          mockNostrService.broadcast(mockEmptyContactListEvent),
-        ).thenAnswer(
+        when(mockNostrService.broadcast(mockEmptyContactListEvent)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEmptyContactListEvent,
             successCount: 1,
@@ -701,9 +695,7 @@ void main() {
         ).called(1);
 
         // Verify broadcast was called
-        verify(
-          mockNostrService.broadcast(mockEmptyContactListEvent),
-        ).called(1);
+        verify(mockNostrService.broadcast(mockEmptyContactListEvent)).called(1);
 
         // Verify user is no longer followed locally
         expect(socialService.isFollowing(testTargetPubkey), false);
@@ -737,9 +729,7 @@ void main() {
             return event;
           });
 
-          when(mockNostrService.broadcast(any)).thenAnswer((
-            invocation,
-          ) async {
+          when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
             final event = invocation.positionalArguments[0] as Event;
             return NostrBroadcastResult(
               event: event,
@@ -965,9 +955,9 @@ void main() {
         ];
 
         // Mock subscription calls
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           final filters =
               invocation.namedArguments[const Symbol('filters')] as List;
           final filter = filters.first as Filter;
@@ -1070,9 +1060,7 @@ void main() {
 
         // Verify subscription was called for video events
         verify(
-          mockNostrService.subscribe(
-            argThat(isA<List<dynamic>>()),
-          ),
+          mockNostrService.subscribe(argThat(isA<List<dynamic>>())),
         ).called(1);
       });
 
@@ -1219,9 +1207,9 @@ void main() {
           }(),
         ];
 
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           final filters =
               invocation.namedArguments[const Symbol('filters')] as List;
           final filter = filters.first as Filter;
@@ -1243,9 +1231,7 @@ void main() {
         expect(totalLikes, 3); // Only '+' reactions should count
 
         // Should call subscription twice: once for videos, once for likes
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(2);
+        verify(mockNostrService.subscribe(argThat(anything))).called(2);
       });
 
       test('should return zero likes for user with no videos', () async {

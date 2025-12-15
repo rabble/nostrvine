@@ -68,8 +68,7 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => eventStreamController.stream);
 
       final testSubscriptionManager = TestSubscriptionManager(

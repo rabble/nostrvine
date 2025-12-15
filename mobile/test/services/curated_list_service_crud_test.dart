@@ -60,10 +60,7 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
@@ -177,9 +174,7 @@ void main() {
         });
 
         // Mock subscription to return collected lists
-        when(
-          mockNostr.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostr.subscribe(argThat(anything))).thenAnswer((invocation) {
           final filters = invocation.namedArguments[#filters] as List<Filter>;
 
           if (filters.isNotEmpty) {
@@ -273,9 +268,7 @@ void main() {
 
       test('calls fetchUserListsFromRelays during initialization', () async {
         // Mock subscription for relay sync
-        when(
-          mockNostr.subscribe(argThat(anything)),
-        ).thenAnswer(
+        when(mockNostr.subscribe(argThat(anything))).thenAnswer(
           (_) => Stream.value(
             Event.fromJson({
               'id': 'relay_list_event',
@@ -295,9 +288,7 @@ void main() {
         await service.initialize();
 
         // Should have called subscribeToEvents
-        verify(
-          mockNostr.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostr.subscribe(argThat(anything))).called(1);
       });
     });
 

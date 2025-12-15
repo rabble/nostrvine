@@ -28,8 +28,9 @@ void main() {
       // Mock NostrService
       when(mockNostrService.isInitialized).thenReturn(true);
       when(mockNostrService.connectedRelayCount).thenReturn(1);
-      when(mockNostrService.subscribe(argThat(anything)))
-          .thenAnswer((_) => testEventController.stream);
+      when(
+        mockNostrService.subscribe(argThat(anything)),
+      ).thenAnswer((_) => testEventController.stream);
 
       subscriptionManager = SubscriptionManager(mockNostrService);
       videoEventService = VideoEventService(

@@ -48,9 +48,9 @@ void main() {
         // Setup: Mock empty event stream
         final controller = StreamController<Event>();
         List<Filter>? capturedFilters;
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           capturedFilters = invocation.positionalArguments[0] as List<Filter>;
           return controller.stream;
         });
@@ -65,9 +65,7 @@ void main() {
         await future;
 
         // Verify: Called with kind 30005 filter
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, 1);
@@ -121,9 +119,9 @@ void main() {
 
         final controller = StreamController<Event>();
         List<Filter>? capturedFilters;
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           capturedFilters = invocation.positionalArguments[0] as List<Filter>;
           return controller.stream;
         });
@@ -137,9 +135,7 @@ void main() {
         await future;
 
         // Verify: Filter included curator pubkeys
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters![0].authors, curatorPubkeys);

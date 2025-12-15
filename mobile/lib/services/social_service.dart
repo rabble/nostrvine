@@ -699,12 +699,11 @@ class SocialService {
 
       // First, get all reactions by this user
       final reactionSubscription = _nostrService.subscribe([
-          Filter(
-            authors: [pubkey],
-            kinds: [7], // NIP-25 reactions
-          ),
-        ],
-      );
+        Filter(
+          authors: [pubkey],
+          kinds: [7], // NIP-25 reactions
+        ),
+      ]);
 
       final completer = Completer<List<Event>>();
 
@@ -735,8 +734,9 @@ class SocialService {
           // Now fetch the actual liked events
           if (likedEventIds.isNotEmpty) {
             try {
-              final eventSubscription = _nostrService.subscribe([Filter(ids: likedEventIds.toList())],
-              );
+              final eventSubscription = _nostrService.subscribe([
+                Filter(ids: likedEventIds.toList()),
+              ]);
 
               eventSubscription.listen(
                 likedEvents.add,
@@ -809,13 +809,12 @@ class SocialService {
 
       // ✅ Use immediate completion for contact list query
       final eventStream = _nostrService.subscribe([
-          Filter(
-            authors: [currentUserPubkey],
-            kinds: [3], // NIP-02 contact list
-            limit: 1, // Get most recent only
-          ),
-        ],
-      );
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: [3], // NIP-02 contact list
+          limit: 1, // Get most recent only
+        ),
+      ]);
 
       final contactListEvent =
           await ContactListCompletionHelper.queryContactList(
@@ -1093,9 +1092,8 @@ class SocialService {
 
       // 1. ✅ Get following count with immediate completion
       final followingEventStream = _nostrService.subscribe([
-          Filter(authors: [pubkey], kinds: [3], limit: 1),
-        ],
-      );
+        Filter(authors: [pubkey], kinds: [3], limit: 1),
+      ]);
 
       final followingEvent = await ContactListCompletionHelper.queryContactList(
         eventStream: followingEventStream,
@@ -1116,12 +1114,11 @@ class SocialService {
 
       // 2. ✅ Get followers count with immediate completion
       final followersEventStream = _nostrService.subscribe([
-          Filter(
-            kinds: [3],
-            p: [pubkey], // Events that mention this pubkey in p tags
-          ),
-        ],
-      );
+        Filter(
+          kinds: [3],
+          p: [pubkey], // Events that mention this pubkey in p tags
+        ),
+      ]);
 
       // Use exhaustive mode to collect all followers
       final config = CompletionConfig(
@@ -1487,13 +1484,12 @@ class SocialService {
 
       // Subscribe to user's video events using NIP-71 compliant kinds
       final subscription = _nostrService.subscribe([
-          Filter(
-            authors: [pubkey],
-            kinds:
-                NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
-          ),
-        ],
-      );
+        Filter(
+          authors: [pubkey],
+          kinds:
+              NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
+        ),
+      ]);
 
       subscription.listen(
         (event) {
@@ -1547,13 +1543,12 @@ class SocialService {
       final videoCompleter = Completer<List<String>>();
 
       final videoSubscription = _nostrService.subscribe([
-          Filter(
-            authors: [pubkey],
-            kinds:
-                NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
-          ),
-        ],
-      );
+        Filter(
+          authors: [pubkey],
+          kinds:
+              NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
+        ),
+      ]);
 
       videoSubscription.listen(
         (event) {
@@ -1598,12 +1593,11 @@ class SocialService {
       var totalLikes = 0;
 
       final likesSubscription = _nostrService.subscribe([
-          Filter(
-            kinds: [7], // Like events
-            e: videoIds, // Events that reference our videos
-          ),
-        ],
-      );
+        Filter(
+          kinds: [7], // Like events
+          e: videoIds, // Events that reference our videos
+        ),
+      ]);
 
       likesSubscription.listen(
         (event) {

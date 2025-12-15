@@ -1105,8 +1105,7 @@ class SocialNotifier extends _$SocialNotifier {
       final repostEvents = <Event>[];
 
       // Subscribe to both filters
-      final stream = nostrService.subscribe([reactionFilter, repostFilter],
-      );
+      final stream = nostrService.subscribe([reactionFilter, repostFilter]);
 
       late final StreamSubscription<Event> subscription;
 

@@ -69,9 +69,7 @@ void main() {
         missingVideoEvent.id = 'test_trending_video_id';
 
         final streamController = StreamController<Event>();
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((_) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
           // Add the missing video event to the stream
           Timer(const Duration(milliseconds: 100), () {
             streamController.add(missingVideoEvent);
@@ -118,9 +116,7 @@ void main() {
 
       // Mock Nostr subscription that times out
       final streamController = StreamController<Event>();
-      when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((_) {
+      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
         // Don't emit any events, let it timeout
         Timer(const Duration(seconds: 10), streamController.close);
         return streamController.stream;

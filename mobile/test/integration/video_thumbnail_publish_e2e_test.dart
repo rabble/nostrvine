@@ -17,7 +17,10 @@ class MockNostrService implements NostrClient {
   Event? lastBroadcastedEvent;
 
   @override
-  Future<NostrBroadcastResult> broadcast(Event event, {List<String>? targetRelays}) async {
+  Future<NostrBroadcastResult> broadcast(
+    Event event, {
+    List<String>? targetRelays,
+  }) async {
     lastBroadcastedEvent = event;
     return NostrBroadcastResult(
       event: event,

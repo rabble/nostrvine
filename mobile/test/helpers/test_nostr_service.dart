@@ -72,7 +72,10 @@ class TestNostrService implements NostrClient {
   }
 
   @override
-  Future<NostrBroadcastResult> broadcast(Event event, {List<String>? targetRelays}) async {
+  Future<NostrBroadcastResult> broadcast(
+    Event event, {
+    List<String>? targetRelays,
+  }) async {
     if (!_isConnected) throw StateError('Not connected');
     _storedEvents.add(event);
 
@@ -159,7 +162,8 @@ class TestNostrService implements NostrClient {
     bool sendAfterAuth = false,
     void Function()? onEose,
   }) {
-    final subId = subscriptionId ?? 'test_sub_${DateTime.now().millisecondsSinceEpoch}';
+    final subId =
+        subscriptionId ?? 'test_sub_${DateTime.now().millisecondsSinceEpoch}';
 
     if (_subscriptions.containsKey(subId)) {
       throw StateError('Subscription $subId already exists');

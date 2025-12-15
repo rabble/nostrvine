@@ -277,10 +277,7 @@ void main() {
           .fetchProfile(pubkey);
 
       expect(profile, equals(testProfile));
-      verifyNever(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
-      );
+      verifyNever(() => mockNostrService.subscribe(any(named: 'filters')));
     });
 
     test('should handle multiple individual profile fetches', () async {
@@ -365,8 +362,7 @@ void main() {
 
       // Mock empty stream (no profile found)
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => const Stream.empty());
 
       // Fetch profile
@@ -496,8 +492,7 @@ void main() {
       reset(mockNostrService);
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => Stream.error(Exception('Network error')));
 
       // Fetch profile should handle error gracefully

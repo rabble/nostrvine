@@ -72,10 +72,7 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => eventStreamController.stream);
 
       testSubscriptionManager = TestSubscriptionManager(eventStreamController);
@@ -97,14 +94,9 @@ void main() {
         // Track NostrService.subscribeToEvents calls since VideoEventService bypasses SubscriptionManager
         final subscriptionCalls = <List<Filter>>[];
         when(
-          () => mockNostrService.subscribe(
-          any(),
-            onEose: any(named: 'onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((invocation) {
-          final filters =
-              invocation.positionalArguments[0]
-                  as List<Filter>;
+          final filters = invocation.positionalArguments[0] as List<Filter>;
           subscriptionCalls.add(filters);
           return eventStreamController.stream;
         });
@@ -151,13 +143,9 @@ void main() {
     test('should reject truly duplicate subscriptions', () async {
       final subscriptionCalls = <List<Filter>>[];
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
-        final filters =
-            invocation.positionalArguments[0] as List<Filter>;
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         subscriptionCalls.add(filters);
         return eventStreamController.stream;
       });
@@ -189,13 +177,9 @@ void main() {
     test('should allow multiple author-specific subscriptions', () async {
       final subscriptionCalls = <List<Filter>>[];
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
-        final filters =
-            invocation.positionalArguments[0] as List<Filter>;
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         subscriptionCalls.add(filters);
         return eventStreamController.stream;
       });
@@ -233,13 +217,9 @@ void main() {
     test('should correctly handle replace parameter', () async {
       final subscriptionCalls = <List<Filter>>[];
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
-        final filters =
-            invocation.positionalArguments[0] as List<Filter>;
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         subscriptionCalls.add(filters);
         return eventStreamController.stream;
       });
@@ -292,13 +272,9 @@ void main() {
       // This test exposes the current bug where subscription parameters aren't tracked
       final subscriptionCalls = <List<Filter>>[];
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
-        final filters =
-            invocation.positionalArguments[0] as List<Filter>;
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         subscriptionCalls.add(filters);
         return eventStreamController.stream;
       });
@@ -333,13 +309,9 @@ void main() {
       // This is the exact sequence that's failing in production
       final subscriptionCalls = <List<Filter>>[];
       when(
-        () => mockNostrService.subscribe(
-          any(),
-          onEose: any(named: 'onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
-        final filters =
-            invocation.positionalArguments[0] as List<Filter>;
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         subscriptionCalls.add(filters);
         return eventStreamController.stream;
       });

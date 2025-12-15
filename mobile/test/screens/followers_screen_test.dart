@@ -28,9 +28,9 @@ void main() {
       capturedFiltersList = [];
 
       // Setup mock to return stream and capture filters
-      when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((invocation) {
+      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+        invocation,
+      ) {
         capturedFiltersList.add(
           invocation.positionalArguments[0] as List<nostr_sdk.Filter>,
         );
@@ -177,9 +177,7 @@ void main() {
       await tester.pump();
 
       // Verify subscription was called with correct filter
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(1);
+      verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
       expect(capturedFiltersList.length, 1);
       final filters = capturedFiltersList.last;

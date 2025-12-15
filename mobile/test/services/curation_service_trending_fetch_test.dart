@@ -78,9 +78,7 @@ void main() {
       videoEvent.id = 'test123';
 
       final streamController = StreamController<Event>();
-      when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((_) {
+      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
         // Emit the video event
         Timer(const Duration(milliseconds: 100), () {
           streamController.add(videoEvent);

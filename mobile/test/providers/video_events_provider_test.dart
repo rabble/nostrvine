@@ -60,8 +60,7 @@ void main() {
       // Mock stream controller for events
       final streamController = StreamController<Event>();
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => streamController.stream);
 
       // Start listening to the provider
@@ -74,10 +73,7 @@ void main() {
       await pumpEventQueue();
 
       // Verify subscription was created with correct filter
-      verify(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
-      ).called(1);
+      verify(() => mockNostrService.subscribe(any(named: 'filters'))).called(1);
 
       subscription.close();
       await streamController.close();
@@ -94,10 +90,9 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
 
       final streamController = StreamController<Event>();
-      when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
-      ).thenAnswer((invocation) {
+      when(() => mockNostrService.subscribe(any(named: 'filters'))).thenAnswer((
+        invocation,
+      ) {
         final filters = invocation.namedArguments[#filters] as List<Filter>;
         expect(
           filters,
@@ -129,10 +124,9 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
 
       final streamController = StreamController<Event>();
-      when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
-      ).thenAnswer((invocation) {
+      when(() => mockNostrService.subscribe(any(named: 'filters'))).thenAnswer((
+        invocation,
+      ) {
         final filters = invocation.namedArguments[#filters] as List<Filter>;
         expect(
           filters,
@@ -173,8 +167,7 @@ void main() {
 
       final streamController = StreamController<Event>();
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => streamController.stream);
 
       // Track state changes
@@ -288,8 +281,7 @@ void main() {
       }
 
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => createEventStream());
 
       // Track state changes
@@ -372,8 +364,7 @@ void main() {
 
       final streamController = StreamController<Event>();
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => streamController.stream);
 
       // Track state changes

@@ -169,9 +169,7 @@ void main() {
         }
 
         // Should have broadcast one event per reason
-        verify(
-          () => mockNostrService.broadcast(any()),
-        ).called(reasons.length);
+        verify(() => mockNostrService.broadcast(any())).called(reasons.length);
       },
     );
 

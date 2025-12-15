@@ -39,7 +39,9 @@ void main() {
 
       // Setup common mock behaviors
       when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.configuredRelays).thenReturn(['wss://relay.divine.video']);
+      when(
+        mockNostrService.configuredRelays,
+      ).thenReturn(['wss://relay.divine.video']);
       when(mockNostrService.connectedRelayCount).thenReturn(1);
       when(
         mockNostrService.subscribe(

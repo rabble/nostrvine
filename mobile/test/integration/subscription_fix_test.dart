@@ -33,9 +33,7 @@ void main() {
 
       // Track all subscription calls
       final subscriptionCalls = <Map<String, dynamic>>[];
-      when(
-        () => mockNostrService.subscribe(any()),
-      ).thenAnswer((invocation) {
+      when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
         final filters = invocation.positionalArguments[0] as List<Filter>;
         final filter = filters.first;
 

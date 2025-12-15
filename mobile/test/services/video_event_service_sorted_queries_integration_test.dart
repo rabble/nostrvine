@@ -274,13 +274,13 @@ void main() {
           );
 
           verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
-        ).called(1);
+            mockNostrService.subscribe(
+              argThat(anything),
+              onEose: anyNamed('onEose'),
+            ),
+          ).called(1);
 
-        final filters = capturedFiltersList.last;
+          final filters = capturedFiltersList.last;
           final filterJson = filters[0].toJson();
 
           // Should NOT have sort field (fallback to standard)
@@ -304,9 +304,9 @@ void main() {
         // Should still call subscribeToEvents (with standard filter)
         verify(
           mockNostrService.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+            argThat(anything),
+            onEose: anyNamed('onEose'),
+          ),
         ).called(1);
       });
     });
@@ -334,13 +334,13 @@ void main() {
           );
 
           verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
-        ).called(1);
+            mockNostrService.subscribe(
+              argThat(anything),
+              onEose: anyNamed('onEose'),
+            ),
+          ).called(1);
 
-        final filters = capturedFiltersList.last;
+          final filters = capturedFiltersList.last;
           final filterJson = filters[0].toJson();
 
           // Should fall back to standard filter
@@ -367,13 +367,13 @@ void main() {
           );
 
           verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
-        ).called(1);
+            mockNostrService.subscribe(
+              argThat(anything),
+              onEose: anyNamed('onEose'),
+            ),
+          ).called(1);
 
-        final filters = capturedFiltersList.last;
+          final filters = capturedFiltersList.last;
           final filterJson = filters[0].toJson();
 
           // Should use standard filter (builder not available)

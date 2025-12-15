@@ -140,9 +140,7 @@ void main() {
         expect(deliveredEvents[0].id, cachedEvent1.id);
 
         // Assert: No relay subscription created
-        verifyNever(
-          mockNostrService.subscribe(argThat(anything)),
-        );
+        verifyNever(mockNostrService.subscribe(argThat(anything)));
 
         // Assert: onComplete was called immediately
         expect(completeCalled, true);

@@ -52,10 +52,7 @@ void main() {
       });
 
       when(
-        mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       when(

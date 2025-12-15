@@ -54,10 +54,7 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation

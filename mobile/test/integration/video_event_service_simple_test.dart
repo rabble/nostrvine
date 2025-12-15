@@ -108,9 +108,7 @@ void main() {
 
         // Verify that subscribeToEvents was called on the mock
         await subscriptionFuture;
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
         Log.info('✅ Confirmed VideoEventService called subscribeToEvents');
 
         // Verify subscription state

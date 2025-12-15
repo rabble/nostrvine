@@ -57,15 +57,12 @@ void main() {
         await curatedListService.fetchUserListsFromRelays();
 
         // Verify: No relay calls should be made
-        verifyNever(
-          mockNostrService.subscribe(argThat(anything)),
-        );
+        verifyNever(mockNostrService.subscribe(argThat(anything)));
 
         // Verify: Service should handle this gracefully
         expect(curatedListService.lists.length, 0);
       },
     );
-    
 
     test(
       'should create subscription for Kind 30005 events when authenticated',
@@ -254,9 +251,7 @@ void main() {
       await curatedListService.fetchUserListsFromRelays();
 
       // Verify: Subscription was only created once
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(1);
+      verify(mockNostrService.subscribe(argThat(anything))).called(1);
     });
   });
 

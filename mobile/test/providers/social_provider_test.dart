@@ -81,8 +81,7 @@ void main() {
 
       // Mock event streams
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Initialize
@@ -93,8 +92,7 @@ void main() {
 
       // Verify it tried to load user data
       verify(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).called(greaterThan(0));
     });
 
@@ -378,8 +376,7 @@ void main() {
 
       // Mock event streams
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Create new container with authenticated state
@@ -398,8 +395,7 @@ void main() {
 
       // Should have attempted to fetch contacts (verify subscription called)
       verify(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).called(greaterThan(0));
 
       state = container.read(socialProvider);
@@ -414,8 +410,7 @@ void main() {
 
       // Mock event streams
       when(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Call initialize multiple times rapidly (simulating race condition)
@@ -431,8 +426,7 @@ void main() {
       // Verify subscribeToEvents was NOT called 3x (should be called once due to idempotency)
       // The first call should succeed, subsequent calls should see isInitialized=true and return early
       final verificationResult = verify(
-        () =>
-            mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any(named: 'filters')),
       );
 
       // Should be called 2 times (once for followList, once for reactions in the first initialize)

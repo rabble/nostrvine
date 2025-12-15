@@ -122,9 +122,7 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
 
       // Should NOT have called subscribeToEvents
-      verifyNever(
-        mockNostrService.subscribe(argThat(anything)),
-      );
+      verifyNever(mockNostrService.subscribe(argThat(anything)));
     });
 
     testWidgets('shows empty state when no following', (tester) async {

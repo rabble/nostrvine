@@ -111,9 +111,9 @@ void main() {
         const ourPubkey = 'test_our_pubkey_hex';
 
         List<dynamic>? capturedFilters;
-        when(
-          mockNostrService.subscribe(argThat(anything)),
-        ).thenAnswer((invocation) {
+        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+          invocation,
+        ) {
           capturedFilters = invocation.positionalArguments[0] as List;
           return Stream.empty();
         });
@@ -121,9 +121,7 @@ void main() {
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
         // Verify subscribeToEvents was called
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, equals(1));
@@ -146,9 +144,7 @@ void main() {
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
       // Should only subscribe once
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(1);
+      verify(mockNostrService.subscribe(argThat(anything))).called(1);
     });
 
     test(

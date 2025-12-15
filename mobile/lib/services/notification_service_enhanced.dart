@@ -136,11 +136,11 @@ class NotificationServiceEnhanced {
       // NO h filter - we query all relays
     );
 
-    final subscription = _nostrService!
-        .subscribe([filter])
-        .listen((event) async {
-          await _handleReactionEvent(event);
-        });
+    final subscription = _nostrService!.subscribe([filter]).listen((
+      event,
+    ) async {
+      await _handleReactionEvent(event);
+    });
 
     _subscriptions['reactions'] = subscription;
   }
@@ -152,11 +152,11 @@ class NotificationServiceEnhanced {
       // NO h filter - we query all relays
     );
 
-    final subscription = _nostrService!
-        .subscribe([filter])
-        .listen((event) async {
-          await _handleCommentEvent(event);
-        });
+    final subscription = _nostrService!.subscribe([filter]).listen((
+      event,
+    ) async {
+      await _handleCommentEvent(event);
+    });
 
     _subscriptions['comments'] = subscription;
   }
@@ -168,11 +168,11 @@ class NotificationServiceEnhanced {
       // NO h filter - we query all relays
     );
 
-    final subscription = _nostrService!
-        .subscribe([filter])
-        .listen((event) async {
-          await _handleFollowEvent(event);
-        });
+    final subscription = _nostrService!.subscribe([filter]).listen((
+      event,
+    ) async {
+      await _handleFollowEvent(event);
+    });
 
     _subscriptions['follows'] = subscription;
   }
@@ -184,11 +184,11 @@ class NotificationServiceEnhanced {
       // NO h filter - we query all relays
     );
 
-    final subscription = _nostrService!
-        .subscribe([filter])
-        .listen((event) async {
-          await _handleMentionEvent(event);
-        });
+    final subscription = _nostrService!.subscribe([filter]).listen((
+      event,
+    ) async {
+      await _handleMentionEvent(event);
+    });
 
     _subscriptions['mentions'] = subscription;
   }
@@ -200,11 +200,11 @@ class NotificationServiceEnhanced {
       // NO h filter - we query all relays
     );
 
-    final subscription = _nostrService!
-        .subscribe([filter])
-        .listen((event) async {
-          await _handleRepostEvent(event);
-        });
+    final subscription = _nostrService!.subscribe([filter]).listen((
+      event,
+    ) async {
+      await _handleRepostEvent(event);
+    });
 
     _subscriptions['reposts'] = subscription;
   }

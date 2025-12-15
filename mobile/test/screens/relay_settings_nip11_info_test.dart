@@ -40,7 +40,9 @@ void main() {
       List<String> configuredRelays, {
       RelayCapabilities? capabilities,
     }) {
-      when(() => mockNostrService.configuredRelays).thenReturn(configuredRelays);
+      when(
+        () => mockNostrService.configuredRelays,
+      ).thenReturn(configuredRelays);
       when(
         () => mockNostrService.connectedRelayCount,
       ).thenReturn(configuredRelays.length);

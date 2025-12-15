@@ -59,10 +59,7 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
@@ -403,10 +400,7 @@ void main() {
 
         // Setup mock to return list events when queried with #e filter
         when(
-          mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer((_) => Stream.fromIterable([mockListEvent]));
 
         // Act
@@ -416,10 +410,7 @@ void main() {
 
         // Assert: Verify filter includes the video ID
         final captured = verify(
-          mockNostr.subscribe(
-            captureAny(),
-            onEose: anyNamed('onEose'),
-          ),
+          mockNostr.subscribe(captureAny(), onEose: anyNamed('onEose')),
         ).captured;
         expect(captured, isNotEmpty);
         final filters = captured.first as List<Filter>;
@@ -437,10 +428,7 @@ void main() {
 
         // Setup mock to return empty stream
         when(
-          mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer((_) => Stream.empty());
 
         // Act
@@ -483,10 +471,7 @@ void main() {
 
         // Setup mock to return events progressively
         when(
-          mockNostr.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer(
           (_) => Stream.fromIterable([mockListEvent1, mockListEvent2]),
         );

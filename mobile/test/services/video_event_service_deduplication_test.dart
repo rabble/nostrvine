@@ -45,9 +45,7 @@ void main() {
         videoEventService.subscribeToDiscovery(limit: 100);
 
         // Verify NostrService was only called once (reused existing)
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(1);
+        verify(mockNostrService.subscribe(argThat(anything))).called(1);
       });
     });
 
@@ -61,9 +59,7 @@ void main() {
         await videoEventService.subscribeToHomeFeed(['author1'], limit: 100);
 
         // Both should create separate subscriptions
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(2);
+        verify(mockNostrService.subscribe(argThat(anything))).called(2);
       },
     );
 
@@ -81,9 +77,7 @@ void main() {
       ], limit: 100);
 
       // Both should create separate subscriptions
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(2);
+      verify(mockNostrService.subscribe(argThat(anything))).called(2);
     });
 
     test('should generate same ID regardless of author order', () async {
@@ -103,9 +97,7 @@ void main() {
       ], limit: 100);
 
       // Should reuse the subscription pattern (2 calls total, not 3)
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(2);
+      verify(mockNostrService.subscribe(argThat(anything))).called(2);
     });
 
     test('should generate different IDs for different hashtags', () async {
@@ -116,9 +108,7 @@ void main() {
       await videoEventService.subscribeToHashtagVideos(['music'], limit: 100);
 
       // Both should create separate subscriptions
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(2);
+      verify(mockNostrService.subscribe(argThat(anything))).called(2);
     });
 
     test('should not create duplicate subscriptions for rapid calls', () async {
@@ -132,9 +122,7 @@ void main() {
       await Future.wait(futures);
 
       // Should only create one subscription despite 5 calls
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(1);
+      verify(mockNostrService.subscribe(argThat(anything))).called(1);
     });
 
     test('subscription count should stay reasonable', () async {
@@ -162,9 +150,7 @@ void main() {
       await videoEventService.subscribeToDiscovery(limit: 100);
 
       // Should create two subscriptions (old one cancelled, new one created)
-      verify(
-        mockNostrService.subscribe(argThat(anything)),
-      ).called(2);
+      verify(mockNostrService.subscribe(argThat(anything))).called(2);
 
       // But only one should be active
       final status = videoEventService.getConnectionStatus();

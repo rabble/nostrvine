@@ -23,7 +23,9 @@ void main() {
     });
 
     Widget createTestWidget(List<String> configuredRelays) {
-      when(() => mockNostrService.configuredRelays).thenReturn(configuredRelays);
+      when(
+        () => mockNostrService.configuredRelays,
+      ).thenReturn(configuredRelays);
       when(
         () => mockNostrService.connectedRelayCount,
       ).thenReturn(configuredRelays.length);

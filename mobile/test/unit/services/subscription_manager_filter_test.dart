@@ -24,9 +24,9 @@ void main() {
       capturedFiltersList = [];
 
       // Setup default mock behavior with capture
-      when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((invocation) {
+      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
+        invocation,
+      ) {
         capturedFiltersList.add(
           invocation.positionalArguments[0] as List<Filter>,
         );

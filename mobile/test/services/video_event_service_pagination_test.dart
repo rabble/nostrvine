@@ -150,9 +150,7 @@ void main() {
         await secondLoad;
 
         // Assert - should have made two subscription calls
-        verify(
-          mockNostrService.subscribe(argThat(anything)),
-        ).called(2);
+        verify(mockNostrService.subscribe(argThat(anything))).called(2);
       },
     );
 

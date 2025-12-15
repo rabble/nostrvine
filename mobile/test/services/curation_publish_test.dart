@@ -473,9 +473,7 @@ void main() {
         await Future.wait(futures);
 
         // Then: Should coalesce into single publish (or very few)
-        verify(
-          mockNostrService.broadcast(any),
-        ).called(lessThanOrEqualTo(2));
+        verify(mockNostrService.broadcast(any)).called(lessThanOrEqualTo(2));
       });
     });
 

@@ -1093,12 +1093,11 @@ class CuratedListService extends ChangeNotifier {
 
       // Subscribe to user's own Kind 30005 events (NIP-51 curated lists)
       final subscription = _nostrService.subscribe([
-          Filter(
-            authors: [userPubkey],
-            kinds: [30005], // NIP-51 curated lists
-          ),
-        ],
-      );
+        Filter(
+          authors: [userPubkey],
+          kinds: [30005], // NIP-51 curated lists
+        ),
+      ]);
 
       // Set a timeout for the subscription
       Timer? timeoutTimer;

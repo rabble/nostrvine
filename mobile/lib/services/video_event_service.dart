@@ -3533,9 +3533,8 @@ class VideoEventService extends ChangeNotifier {
 
       // Create a one-shot subscription to fetch the specific event
       final eventStream = _nostrService.subscribe([
-          Filter(ids: [originalEventId]),
-        ],
-      );
+        Filter(ids: [originalEventId]),
+      ]);
 
       // Listen for the original event
       late StreamSubscription subscription;
