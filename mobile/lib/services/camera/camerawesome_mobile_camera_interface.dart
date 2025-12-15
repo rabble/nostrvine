@@ -513,7 +513,9 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
         _stateController.add(state);
 
         if (wasNotReady) {
-          onCameraReady?.call();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onCameraReady?.call();
+          });
         }
 
         // Return empty container - preview is shown automatically

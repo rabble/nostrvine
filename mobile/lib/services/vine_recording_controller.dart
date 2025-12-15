@@ -875,11 +875,6 @@ class VineRecordingController {
             final camerAwesome = CamerAwesomeMobileCameraInterface();
             // Wire up callback to notify provider when camera becomes ready
             camerAwesome.onCameraReady = () {
-              Log.info(
-                'CamerAwesome camera ready - notifying state change',
-                name: 'VineRecordingController',
-                category: LogCategory.system,
-              );
               _onStateChanged?.call();
             };
             _cameraInterface = camerAwesome;
