@@ -40,8 +40,6 @@ import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/relay_gateway_service.dart';
-import 'package:openvine/services/relay_gateway_settings.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -127,22 +125,16 @@ class VideoEventService extends ChangeNotifier {
     UserProfileService? userProfileService,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
-    RelayGatewayService? gatewayService,
-    RelayGatewaySettings? gatewaySettings,
   }) : _subscriptionManager = subscriptionManager,
        _userProfileService = userProfileService,
        _eventRouter = eventRouter,
-       _videoFilterBuilder = videoFilterBuilder,
-       _gatewayService = gatewayService,
-       _gatewaySettings = gatewaySettings {
+       _videoFilterBuilder = videoFilterBuilder {
     _initializePaginationStates();
   }
   final NostrClient _nostrService;
   final UserProfileService? _userProfileService;
   final EventRouter? _eventRouter;
   final VideoFilterBuilder? _videoFilterBuilder;
-  final RelayGatewayService? _gatewayService;
-  final RelayGatewaySettings? _gatewaySettings;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
 
   // REFACTORED: Separate event lists per subscription type
@@ -398,59 +390,6 @@ class VideoEventService extends ChangeNotifier {
       _hasScheduledFrameUpdate = false;
       notifyListeners();
     });
-  }
-
-  /// Check if gateway should be used for a subscription type
-  /// Returns false if gateway dependencies are null, type is homeFeed, or settings don't allow
-  bool _shouldUseGateway(SubscriptionType type) {
-    // Gateway dependencies must be available
-    final gatewaySettings = _gatewaySettings;
-    if (_gatewayService == null || gatewaySettings == null) return false;
-
-    // Never use gateway for home feed (personalized, not cacheable)
-    if (type == SubscriptionType.homeFeed) return false;
-
-    // Check settings and relay configuration
-    return gatewaySettings.shouldUseGateway(
-      configuredRelays: _nostrService.configuredRelays,
-    );
-  }
-
-  /// Fetch events via REST gateway and import to embedded relay SQLite
-  /// Falls back to WebSocket on any failure (does not throw)
-  Future<void> _fetchViaGateway(SubscriptionType type, Filter filter) async {
-    // _shouldUseGateway already checks for null, so we can safely assert non-null here
-    final gatewayService = _gatewayService;
-    if (gatewayService == null || !_shouldUseGateway(type)) return;
-
-    try {
-      Log.info(
-        'Gateway: Fetching ${type.name} via REST',
-        name: 'VideoEventService',
-        category: LogCategory.relay,
-      );
-
-      final response = await gatewayService.query(filter);
-
-      if (response.hasEvents) {
-        Log.info(
-          'Gateway: Received ${response.eventCount} events '
-          '(cached: ${response.cached}, age: ${response.cacheAgeSeconds}s)',
-          name: 'VideoEventService',
-          category: LogCategory.relay,
-        );
-
-        // Events will arrive via WebSocket subscription after import
-        // The embedded relay will notify subscribers when events are imported
-      }
-    } on GatewayException catch (e) {
-      Log.warning(
-        'Gateway fetch failed, WebSocket will handle: $e',
-        name: 'VideoEventService',
-        category: LogCategory.relay,
-      );
-      // Fall through to WebSocket - no rethrow
-    }
   }
 
   // REFACTORED: Getters now work with subscription types
@@ -1103,11 +1042,8 @@ class VideoEventService extends ChangeNotifier {
       // Store hashtag filter for event processing
       _activeHashtagFilters[subscriptionType] = hashtags;
 
-      // Try gateway BEFORE WebSocket subscription for eligible feed types
-      // Gateway pre-populates SQLite, WebSocket provides real-time updates
-      if (_shouldUseGateway(subscriptionType)) {
-        await _fetchViaGateway(subscriptionType, videoFilter);
-      }
+      // Gateway handling is now done internally by NostrClient
+      // NostrClient.queryEvents() follows Cache → Gateway → WebSocket flow
 
       // Verify NostrService is ready
       if (!_nostrService.isInitialized) {

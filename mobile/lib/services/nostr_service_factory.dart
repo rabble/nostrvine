@@ -2,9 +2,11 @@
 // ABOUTME: Handles platform-appropriate client creation with proper configuration
 
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/relay_gateway_settings.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -14,6 +16,7 @@ class NostrServiceFactory {
   static NostrClient create(
     SecureKeyContainer keyContainer, {
     RelayStatisticsService? statisticsService,
+    RelayGatewaySettings? gatewaySettings,
   }) {
     UnifiedLogger.info(
       'Creating NostrClient via factory',
@@ -35,8 +38,22 @@ class NostrServiceFactory {
       storage: InMemoryRelayStorage(),
     );
 
+    // Create gateway client if settings enable it
+    GatewayClient? gatewayClient;
+    if (gatewaySettings != null && gatewaySettings.isEnabled) {
+      gatewayClient = GatewayClient(gatewayUrl: gatewaySettings.gatewayUrl);
+      UnifiedLogger.info(
+        'Gateway enabled: ${gatewaySettings.gatewayUrl}',
+        name: 'NostrServiceFactory',
+      );
+    }
+
     // Create the NostrClient
-    return NostrClient(config: config, relayManagerConfig: relayManagerConfig);
+    return NostrClient(
+      config: config,
+      relayManagerConfig: relayManagerConfig,
+      gatewayClient: gatewayClient,
+    );
   }
 
   /// Initialize the created client

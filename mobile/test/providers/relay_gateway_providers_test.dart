@@ -1,11 +1,10 @@
-// ABOUTME: Tests for gateway Riverpod providers
+// ABOUTME: Tests for gateway settings Riverpod provider
 // ABOUTME: Validates provider initialization and dependency injection
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/relay_gateway_service.dart';
 import 'package:openvine/services/relay_gateway_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,21 +37,20 @@ void main() {
       container.dispose();
     });
 
-    test('relayGatewayServiceProvider provides service instance', () async {
+    test('settings uses default gateway URL', () async {
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
 
-      final service = container.read(relayGatewayServiceProvider);
+      final settings = container.read(relayGatewaySettingsProvider);
 
-      expect(service, isA<RelayGatewayService>());
-      expect(service.gatewayUrl, 'https://gateway.divine.video');
+      expect(settings.gatewayUrl, 'https://gateway.divine.video');
 
       container.dispose();
     });
 
-    test('service uses custom URL from settings', () async {
+    test('settings uses custom URL from preferences', () async {
       SharedPreferences.setMockInitialValues({
         'relay_gateway_url': 'https://custom.gateway',
       });
@@ -62,32 +60,14 @@ void main() {
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
 
-      final service = container.read(relayGatewayServiceProvider);
+      final settings = container.read(relayGatewaySettingsProvider);
 
-      expect(service.gatewayUrl, 'https://custom.gateway');
+      expect(settings.gatewayUrl, 'https://custom.gateway');
 
       container.dispose();
     });
 
-    test(
-      'shouldUseGatewayProvider returns true when enabled and using divine relay',
-      () async {
-        final prefs = await SharedPreferences.getInstance();
-        final container = ProviderContainer(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-        );
-
-        final shouldUse = container.read(
-          shouldUseGatewayProvider(['wss://relay.divine.video']),
-        );
-
-        expect(shouldUse, true);
-
-        container.dispose();
-      },
-    );
-
-    test('shouldUseGatewayProvider returns false when disabled', () async {
+    test('settings isEnabled reflects stored preference', () async {
       SharedPreferences.setMockInitialValues({'relay_gateway_enabled': false});
 
       final prefs = await SharedPreferences.getInstance();
@@ -95,52 +75,11 @@ void main() {
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
 
-      final shouldUse = container.read(
-        shouldUseGatewayProvider(['wss://relay.divine.video']),
-      );
+      final settings = container.read(relayGatewaySettingsProvider);
 
-      expect(shouldUse, false);
+      expect(settings.isEnabled, false);
 
       container.dispose();
     });
-
-    test(
-      'shouldUseGatewayProvider returns false when not using divine relay',
-      () async {
-        final prefs = await SharedPreferences.getInstance();
-        final container = ProviderContainer(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-        );
-
-        final shouldUse = container.read(
-          shouldUseGatewayProvider(['wss://other.relay']),
-        );
-
-        expect(shouldUse, false);
-
-        container.dispose();
-      },
-    );
-
-    test(
-      'shouldUseGatewayProvider returns true when divine relay is one of many',
-      () async {
-        final prefs = await SharedPreferences.getInstance();
-        final container = ProviderContainer(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-        );
-
-        final shouldUse = container.read(
-          shouldUseGatewayProvider([
-            'wss://other.relay',
-            'wss://relay.divine.video',
-          ]),
-        );
-
-        expect(shouldUse, true);
-
-        container.dispose();
-      },
-    );
   });
 }

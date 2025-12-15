@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,7 +23,10 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    Widget createTestWidget(List<String> configuredRelays) {
+    Future<Widget> createTestWidget(
+      WidgetTester tester,
+      List<String> configuredRelays,
+    ) async {
       when(
         () => mockNostrService.configuredRelays,
       ).thenReturn(configuredRelays);
@@ -30,8 +34,13 @@ void main() {
         () => mockNostrService.connectedRelayCount,
       ).thenReturn(configuredRelays.length);
 
+      final prefs = await SharedPreferences.getInstance();
+
       final container = ProviderContainer(
-        overrides: [nostrServiceProvider.overrideWithValue(mockNostrService)],
+        overrides: [
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
       );
 
       return UncontrolledProviderScope(
@@ -46,7 +55,9 @@ void main() {
     testWidgets('shows gateway section when divine relay configured', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(['wss://relay.divine.video']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://relay.divine.video']),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('REST Gateway'), findsOneWidget);
@@ -57,7 +68,9 @@ void main() {
     testWidgets('hides gateway section when divine relay not configured', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(['wss://other.relay']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://other.relay']),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('REST Gateway'), findsNothing);
@@ -68,7 +81,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        createTestWidget(['wss://other.relay', 'wss://relay.divine.video']),
+        await createTestWidget(
+          tester,
+          ['wss://other.relay', 'wss://relay.divine.video'],
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -76,7 +92,9 @@ void main() {
     });
 
     testWidgets('toggle starts in enabled state by default', (tester) async {
-      await tester.pumpWidget(createTestWidget(['wss://relay.divine.video']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://relay.divine.video']),
+      );
       await tester.pumpAndSettle();
 
       final switchWidget = tester.widget<Switch>(
@@ -87,7 +105,9 @@ void main() {
     });
 
     testWidgets('toggle changes gateway enabled state', (tester) async {
-      await tester.pumpWidget(createTestWidget(['wss://relay.divine.video']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://relay.divine.video']),
+      );
       await tester.pumpAndSettle();
 
       final switchFinder = find.byKey(const Key('gateway_toggle'));
@@ -107,7 +127,9 @@ void main() {
     });
 
     testWidgets('displays description text', (tester) async {
-      await tester.pumpWidget(createTestWidget(['wss://relay.divine.video']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://relay.divine.video']),
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -123,7 +145,9 @@ void main() {
     });
 
     testWidgets('uses VineTheme.vineGreen for toggle and icon', (tester) async {
-      await tester.pumpWidget(createTestWidget(['wss://relay.divine.video']));
+      await tester.pumpWidget(
+        await createTestWidget(tester, ['wss://relay.divine.video']),
+      );
       await tester.pumpAndSettle();
 
       final switchWidget = tester.widget<Switch>(

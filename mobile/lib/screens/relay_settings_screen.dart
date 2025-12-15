@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_gateway_settings.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Screen for managing Nostr relay settings
@@ -24,24 +24,8 @@ class RelaySettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
-  late RelayGatewaySettings _gatewaySettings;
-  bool _gatewayEnabled = true;
   final Map<String, RelayCapabilities?> _capabilitiesCache = {};
   final Map<String, bool> _capabilitiesLoading = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _initGatewaySettings();
-  }
-
-  Future<void> _initGatewaySettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    _gatewaySettings = RelayGatewaySettings(prefs);
-    setState(() {
-      _gatewayEnabled = _gatewaySettings.isEnabled;
-    });
-  }
 
   Future<void> _fetchCapabilities(String relayUrl) async {
     if (_capabilitiesLoading[relayUrl] == true) return;
@@ -314,6 +298,9 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       return const SizedBox.shrink();
     }
 
+    final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
+    final gatewayEnabled = gatewaySettings.isEnabled;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -339,13 +326,12 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
               const Spacer(),
               Switch(
                 key: const Key('gateway_toggle'),
-                value: _gatewayEnabled,
+                value: gatewayEnabled,
                 activeTrackColor: VineTheme.vineGreen,
                 onChanged: (value) async {
-                  await _gatewaySettings.setEnabled(value);
-                  setState(() {
-                    _gatewayEnabled = value;
-                  });
+                  await gatewaySettings.setEnabled(value);
+                  // Force rebuild to update switch state
+                  ref.invalidate(relayGatewaySettingsProvider);
                 },
               ),
             ],
