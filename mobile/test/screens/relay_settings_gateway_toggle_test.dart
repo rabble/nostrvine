@@ -81,10 +81,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        await createTestWidget(
-          tester,
-          ['wss://other.relay', 'wss://relay.divine.video'],
-        ),
+        await createTestWidget(tester, [
+          'wss://other.relay',
+          'wss://relay.divine.video',
+        ]),
       );
       await tester.pumpAndSettle();
 

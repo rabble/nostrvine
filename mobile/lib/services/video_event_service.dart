@@ -391,6 +391,7 @@ class VideoEventService extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   /// Get videos for a specific subscription type
   List<VideoEvent> getVideos(SubscriptionType type) {
     return List.unmodifiable(_eventLists[type] ?? []);

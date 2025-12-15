@@ -27,10 +27,7 @@ void main() {
       final publicKey = keys.getPublicKey(privateKey);
       final signer = LocalNostrSigner(privateKey);
 
-      final config = NostrClientConfig(
-        signer: signer,
-        publicKey: publicKey,
-      );
+      final config = NostrClientConfig(signer: signer, publicKey: publicKey);
 
       // Use in-memory storage with the test relay
       final storage = InMemoryRelayStorage(['wss://relay3.openvine.co']);
@@ -78,9 +75,7 @@ void main() {
             )
             .forEach((event) {
               events.add(event);
-              Log.debug(
-                'Received event: ${event.kind} - ${event.id}',
-              );
+              Log.debug('Received event: ${event.kind} - ${event.id}');
             });
       } catch (e) {
         Log.debug('Error during subscription: $e');

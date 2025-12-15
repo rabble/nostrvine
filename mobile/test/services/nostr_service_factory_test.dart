@@ -25,13 +25,16 @@ void main() {
         expect(client.publicKey, equals(testPublicKey));
       });
 
-      test('creates client with key container getter returning null (read-only mode)', () {
-        // This should NOT throw - it should create a read-only client
-        final client = NostrServiceFactory.create(() => null);
+      test(
+        'creates client with key container getter returning null (read-only mode)',
+        () {
+          // This should NOT throw - it should create a read-only client
+          final client = NostrServiceFactory.create(() => null);
 
-        expect(client, isA<NostrClient>());
-        expect(client.publicKey, isEmpty);
-      });
+          expect(client, isA<NostrClient>());
+          expect(client.publicKey, isEmpty);
+        },
+      );
 
       test('lazy signer works when key becomes available later', () async {
         // Start with no key

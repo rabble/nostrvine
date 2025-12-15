@@ -50,8 +50,7 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Returns UserProfile domain model or null if not found.
   Future<UserProfile?> getProfile(String pubkey) async {
-    final query = select(userProfiles)
-      ..where((t) => t.pubkey.equals(pubkey));
+    final query = select(userProfiles)..where((t) => t.pubkey.equals(pubkey));
     final row = await query.getSingleOrNull();
     if (row == null) return null;
     return _rowToUserProfile(row);
@@ -79,8 +78,7 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   /// Returns a stream that emits UserProfile domain model whenever
   /// the profile changes in the database.
   Stream<UserProfile?> watchProfile(String pubkey) {
-    final query = select(userProfiles)
-      ..where((t) => t.pubkey.equals(pubkey));
+    final query = select(userProfiles)..where((t) => t.pubkey.equals(pubkey));
     return query.watchSingleOrNull().map((row) {
       if (row == null) return null;
       return _rowToUserProfile(row);

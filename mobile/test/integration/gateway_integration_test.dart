@@ -116,7 +116,9 @@ void main() {
 
     test('isDivineRelayConfigured static method works correctly', () {
       expect(
-        RelayGatewaySettings.isDivineRelayConfigured(['wss://relay.divine.video']),
+        RelayGatewaySettings.isDivineRelayConfigured([
+          'wss://relay.divine.video',
+        ]),
         true,
       );
       expect(
@@ -130,10 +132,7 @@ void main() {
         RelayGatewaySettings.isDivineRelayConfigured(['wss://nos.lol']),
         false,
       );
-      expect(
-        RelayGatewaySettings.isDivineRelayConfigured([]),
-        false,
-      );
+      expect(RelayGatewaySettings.isDivineRelayConfigured([]), false);
     });
   });
 }
