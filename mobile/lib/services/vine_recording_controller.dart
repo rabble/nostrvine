@@ -1257,23 +1257,19 @@ class VineRecordingController {
   double get progress =>
       _totalRecordedDuration.inMilliseconds /
       maxRecordingDuration.inMilliseconds;
-  bool get canRecord =>
-      _cameraInitialized &&
-      _isCameraReadyToRecord() &&
-      remainingDuration > minSegmentDuration &&
-      _state != VineRecordingState.processing;
+  bool get canRecord {
+    bool isCameraReadyToRecord = true;
+    final cameraInterface = _cameraInterface;
 
-  /// Check if the camera interface is actually ready to record
-  /// For CamerAwesome, this requires the widget builder to have set the camera state
-  bool _isCameraReadyToRecord() {
-    if (_cameraInterface == null) return false;
-    if (_cameraInterface is CamerAwesomeMobileCameraInterface) {
-      return (_cameraInterface as CamerAwesomeMobileCameraInterface)
-          .isReadyToRecord;
+    if (cameraInterface is CamerAwesomeMobileCameraInterface) {
+      isCameraReadyToRecord = cameraInterface.isReadyToRecord;
     }
-    // Other interfaces (macOS, web, enhanced mobile) don't have this delay
-    return true;
+    return _cameraInitialized &&
+        isCameraReadyToRecord &&
+        remainingDuration > minSegmentDuration &&
+        _state != VineRecordingState.processing;
   }
+
   bool get hasSegments {
     if (_segments.isNotEmpty) return true;
     // For macOS, also check virtual segments since we use single-recording mode
@@ -1423,14 +1419,7 @@ class VineRecordingController {
     try {
       _setState(VineRecordingState.idle);
 
-      // Properly dispose existing camera interface before creating new one
-      // This is critical for retry scenarios where we need a clean slate
       if (_cameraInterface != null) {
-        Log.info(
-          'Disposing existing camera interface before re-initialization',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
         _cameraInterface!.dispose();
         _cameraInterface = null;
         _cameraInitialized = false;
@@ -1450,11 +1439,6 @@ class VineRecordingController {
           final camerAwesome = CamerAwesomeMobileCameraInterface();
           // Wire up callback to notify provider when camera becomes ready
           camerAwesome.onCameraReady = () {
-            Log.info(
-              'CamerAwesome camera ready - notifying state change',
-              name: 'VineRecordingController',
-              category: LogCategory.system,
-            );
             _onStateChanged?.call();
           };
           _cameraInterface = camerAwesome;

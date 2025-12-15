@@ -38,7 +38,7 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
   // Callback for when camera becomes ready to record
   VoidCallback? onCameraReady;
 
-  /// Check if camera is actually ready to record (state has been set by widget)
+  /// Check if camera is actually ready to record
   bool get isReadyToRecord => _cameraState != null;
 
   @override
@@ -506,20 +506,13 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
       previewFit: CameraPreviewFit.contain,
       builder: (state, preview) {
         // CameraLayoutBuilder signature: (CameraState, AnalysisPreview)
-        // Track if camera was not ready before this update
         final wasNotReady = _cameraState == null;
 
         // Store camera state for use in other methods
         _cameraState = state;
         _stateController.add(state);
 
-        // Notify when camera becomes ready for the first time
         if (wasNotReady) {
-          Log.info(
-            'Camera state set - now ready to record',
-            name: 'CamerAwesomeCamera',
-            category: LogCategory.system,
-          );
           onCameraReady?.call();
         }
 
