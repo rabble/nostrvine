@@ -697,107 +697,157 @@ class _TimelineSegment extends StatefulWidget {
 class _TimelineSegmentState extends State<_TimelineSegment> {
   double _dragOffset = 0;
   bool _isDragging = false;
+  Offset? _dragStartPosition;
+  bool _isVerticalDrag = false;
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _dragStartPosition = event.position;
+    _isVerticalDrag = false;
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    if (_dragStartPosition == null) return;
+
+    final delta = event.position - _dragStartPosition!;
+
+    // Determine drag direction on first significant movement
+    if (!_isDragging && !_isVerticalDrag) {
+      // Need at least 10 pixels of movement to determine direction
+      if (delta.distance > 10) {
+        // If vertical movement is greater than horizontal, treat as vertical drag
+        if (delta.dy.abs() > delta.dx.abs() && delta.dy < 0) {
+          _isVerticalDrag = true;
+          setState(() {
+            _isDragging = true;
+          });
+        }
+      }
+    }
+
+    // Handle vertical drag for delete gesture
+    if (_isVerticalDrag) {
+      setState(() {
+        // Only allow upward swipe (negative values)
+        _dragOffset = delta.dy.clamp(-widget.height, 0.0);
+      });
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    if (_isVerticalDrag) {
+      final deleteThreshold = widget.height * 0.5;
+      if (_dragOffset.abs() > deleteThreshold) {
+        widget.onDelete();
+      }
+    }
+
+    setState(() {
+      _isDragging = false;
+      _dragOffset = 0;
+    });
+    _dragStartPosition = null;
+    _isVerticalDrag = false;
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    setState(() {
+      _isDragging = false;
+      _dragOffset = 0;
+    });
+    _dragStartPosition = null;
+    _isVerticalDrag = false;
+  }
+
+  Widget _buildSegmentContent(bool isDeleting) {
+    return AnimatedContainer(
+      duration: _isDragging ? Duration.zero : const Duration(milliseconds: 200),
+      transform: Matrix4.translationValues(0, _dragOffset, 0),
+      width: widget.width,
+      height: widget.height,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: widget.isSelected
+              ? VineTheme.vineGreen
+              : (isDeleting ? Colors.red : Colors.transparent),
+          width: 2,
+        ),
+        color: isDeleting ? Colors.red.withValues(alpha: 0.3) : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Thumbnail or placeholder
+            if (widget.clip.thumbnailPath != null)
+              Image.file(
+                File(widget.clip.thumbnailPath!),
+                fit: BoxFit.cover,
+              )
+            else
+              Container(
+                color: Colors.grey[800],
+                child: const Icon(Icons.videocam, color: Colors.grey),
+              ),
+            // Delete indicator
+            if (isDeleting)
+              Container(
+                color: Colors.red.withValues(alpha: 0.5),
+                child: const Center(
+                  child: Icon(Icons.delete, color: Colors.white, size: 24),
+                ),
+              ),
+            // Duration badge
+            if (!isDeleting)
+              Positioned(
+                left: 4,
+                bottom: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${widget.clip.durationInSeconds.toStringAsFixed(1)}s',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final deleteThreshold = widget.height * 0.5;
     final isDeleting = _dragOffset.abs() > deleteThreshold;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onVerticalDragStart: (_) {
-        setState(() {
-          _isDragging = true;
-        });
-      },
-      onVerticalDragUpdate: (details) {
-        setState(() {
-          // Only allow upward swipe (negative values)
-          _dragOffset = (_dragOffset + details.delta.dy).clamp(-widget.height, 0.0);
-        });
-      },
-      onVerticalDragEnd: (_) {
-        if (isDeleting) {
-          widget.onDelete();
-        }
-        setState(() {
-          _isDragging = false;
-          _dragOffset = 0;
-        });
-      },
-      onVerticalDragCancel: () {
-        setState(() {
-          _isDragging = false;
-          _dragOffset = 0;
-        });
-      },
-      child: ReorderableDragStartListener(
-        index: widget.index,
-        child: AnimatedContainer(
-          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 200),
-          transform: Matrix4.translationValues(0, _dragOffset, 0),
-          width: widget.width,
-          height: widget.height,
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.isSelected
-                  ? VineTheme.vineGreen
-                  : (isDeleting ? Colors.red : Colors.transparent),
-              width: 2,
-            ),
-            color: isDeleting ? Colors.red.withValues(alpha: 0.3) : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Thumbnail or placeholder
-                if (widget.clip.thumbnailPath != null)
-                  Image.file(
-                    File(widget.clip.thumbnailPath!),
-                    fit: BoxFit.cover,
-                  )
-                else
-                  Container(
-                    color: Colors.grey[800],
-                    child: const Icon(Icons.videocam, color: Colors.grey),
-                  ),
-                // Delete indicator
-                if (isDeleting)
-                  Container(
-                    color: Colors.red.withValues(alpha: 0.5),
-                    child: const Center(
-                      child: Icon(Icons.delete, color: Colors.white, size: 24),
-                    ),
-                  ),
-                // Duration badge
-                if (!isDeleting)
-                  Positioned(
-                    left: 4,
-                    bottom: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${widget.clip.durationInSeconds.toStringAsFixed(1)}s',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+    final content = _buildSegmentContent(isDeleting);
+
+    return Listener(
+      onPointerDown: _handlePointerDown,
+      onPointerMove: _handlePointerMove,
+      onPointerUp: _handlePointerUp,
+      onPointerCancel: _handlePointerCancel,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        // When doing vertical drag, don't wrap with ReorderableDragStartListener
+        // to prevent gesture conflicts
+        child: _isVerticalDrag
+            ? content
+            : ReorderableDragStartListener(
+                index: widget.index,
+                child: content,
+              ),
       ),
     );
   }

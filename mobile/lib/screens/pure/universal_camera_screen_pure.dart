@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/services/vine_recording_controller.dart'
@@ -23,6 +24,7 @@ import 'package:openvine/widgets/dynamic_zoom_selector.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 /// Pure universal camera screen using revolutionary single-controller Riverpod architecture
@@ -481,6 +483,21 @@ class _UniversalCameraScreenPureState
             }
           });
 
+          // Sync clip manager duration with recording provider
+          // This ensures the progress bar updates when clips are deleted in ClipManager
+          ref.listen<ClipManagerState>(clipManagerProvider, (previous, next) {
+            if (previous != null &&
+                previous.totalDuration != next.totalDuration) {
+              Log.info(
+                '📹 ClipManager duration changed: ${previous.totalDuration.inMilliseconds}ms → ${next.totalDuration.inMilliseconds}ms',
+                category: LogCategory.video,
+              );
+              ref
+                  .read(vineRecordingProvider.notifier)
+                  .setPreviouslyRecordedDuration(next.totalDuration);
+            }
+          });
+
           if (recordingState.isError) {
             return _buildErrorScreen(recordingState.errorMessage);
           }
@@ -845,11 +862,18 @@ class _UniversalCameraScreenPureState
             behavior: HitTestBehavior.opaque,
             onTap: () {
               Log.info(
-                '📹 X CANCEL - popping back',
+                '📹 X CANCEL - navigating away from camera',
                 category: LogCategory.video,
               );
-              // Camera is pushed via pushCamera(), so pop() returns to previous screen
-              GoRouter.of(context).pop();
+              // Try to pop if possible, otherwise go home
+              // Camera can be reached via push (from FAB) or go (from ClipManager)
+              final router = GoRouter.of(context);
+              if (router.canPop()) {
+                router.pop();
+              } else {
+                // No screen to pop to (navigated via go), go home instead
+                context.goHome();
+              }
             },
             child: Container(
               width: 44,
