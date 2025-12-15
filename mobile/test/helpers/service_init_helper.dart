@@ -77,7 +77,7 @@ class ServiceInitHelper {
       // Generate a test key container for testing
       final keyContainer = SecureKeyContainer.generate();
 
-      final nostrService = NostrServiceFactory.create(keyContainer);
+      final nostrService = NostrServiceFactory.create(() => keyContainer);
       final subscriptionManager = SubscriptionManager(nostrService);
       final videoEventService = VideoEventService(
         nostrService,

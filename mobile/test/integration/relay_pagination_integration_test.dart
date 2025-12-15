@@ -50,7 +50,7 @@ void main() {
     setUp(() async {
       // Create real services
       final keyContainer = SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer);
+      nostrService = NostrServiceFactory.create(() => keyContainer);
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(
         nostrService,

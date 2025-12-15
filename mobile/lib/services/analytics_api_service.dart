@@ -766,7 +766,7 @@ class AnalyticsApiService {
           category: LogCategory.video,
         );
         Log.error(
-          '   This suggests the embedded relay is not syncing with external relays',
+          '   This suggests relays are not returning video events',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );

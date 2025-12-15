@@ -121,7 +121,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'These external relays sync with your embedded relay to distribute your content across the decentralized Nostr network. You can add or remove relays as you wish.',
+                  'These relays distribute your content across the decentralized Nostr network. You can add or remove relays as you wish.',
                   style: TextStyle(color: Colors.grey, fontSize: 13),
                 ),
                 const SizedBox(height: 8),

@@ -5,26 +5,31 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
+/// Callback type for lazily getting the current key container
+typedef KeyContainerGetter = SecureKeyContainer? Function();
+
 /// NostrSigner implementation that uses SecureKeyContainer from AuthService
 ///
-/// This bridges the gap between NostrClient's signer requirement and
-/// AuthService's secure key management. All cryptographic operations
-/// are performed through the SecureKeyContainer's secure access methods.
+/// This signer checks for the key container at signing time via a getter callback.
+/// This allows the NostrClient to be created before authentication completes,
+/// and signing will work automatically once auth is ready.
 class AuthServiceSigner implements NostrSigner {
-  /// Creates an AuthServiceSigner with the given secure key container
-  AuthServiceSigner(this._keyContainer);
+  /// Creates an AuthServiceSigner with a callback to get the current key container
+  AuthServiceSigner(this._getKeyContainer);
 
-  final SecureKeyContainer _keyContainer;
+  final KeyContainerGetter _getKeyContainer;
 
   @override
   Future<String?> getPublicKey() async {
-    return _keyContainer.publicKeyHex;
+    return _getKeyContainer()?.publicKeyHex ?? '';
   }
 
   @override
   Future<Event?> signEvent(Event event) async {
+    final keyContainer = _getKeyContainer();
+    if (keyContainer == null) return null;
     try {
-      return _keyContainer.withPrivateKey<Event>((privateKeyHex) {
+      return keyContainer.withPrivateKey<Event>((privateKeyHex) {
         event.sign(privateKeyHex);
         return event;
       });
@@ -39,15 +44,14 @@ class AuthServiceSigner implements NostrSigner {
   }
 
   @override
-  Future<Map?> getRelays() async {
-    // AuthService doesn't manage relay preferences
-    return null;
-  }
+  Future<Map?> getRelays() async => null;
 
   @override
   Future<String?> encrypt(String pubkey, String plaintext) async {
+    final keyContainer = _getKeyContainer();
+    if (keyContainer == null) return null;
     try {
-      return _keyContainer.withPrivateKey<String?>((privateKeyHex) {
+      return keyContainer.withPrivateKey<String?>((privateKeyHex) {
         final agreement = NIP04.getAgreement(privateKeyHex);
         return NIP04.encrypt(plaintext, agreement, pubkey);
       });
@@ -63,8 +67,10 @@ class AuthServiceSigner implements NostrSigner {
 
   @override
   Future<String?> decrypt(String pubkey, String ciphertext) async {
+    final keyContainer = _getKeyContainer();
+    if (keyContainer == null) return null;
     try {
-      return _keyContainer.withPrivateKey<String?>((privateKeyHex) {
+      return keyContainer.withPrivateKey<String?>((privateKeyHex) {
         final agreement = NIP04.getAgreement(privateKeyHex);
         return NIP04.decrypt(ciphertext, agreement, pubkey);
       });
@@ -80,8 +86,10 @@ class AuthServiceSigner implements NostrSigner {
 
   @override
   Future<String?> nip44Encrypt(String pubkey, String plaintext) async {
+    final keyContainer = _getKeyContainer();
+    if (keyContainer == null) return null;
     try {
-      return _keyContainer.withPrivateKey<Future<String?>>((
+      return keyContainer.withPrivateKey<Future<String?>>((
         privateKeyHex,
       ) async {
         final conversationKey = NIP44V2.shareSecret(privateKeyHex, pubkey);
@@ -99,8 +107,10 @@ class AuthServiceSigner implements NostrSigner {
 
   @override
   Future<String?> nip44Decrypt(String pubkey, String ciphertext) async {
+    final keyContainer = _getKeyContainer();
+    if (keyContainer == null) return null;
     try {
-      return _keyContainer.withPrivateKey<Future<String?>>((
+      return keyContainer.withPrivateKey<Future<String?>>((
         privateKeyHex,
       ) async {
         final sealKey = NIP44V2.shareSecret(privateKeyHex, pubkey);

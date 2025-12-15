@@ -391,9 +391,6 @@ class VideoEventService extends ChangeNotifier {
       notifyListeners();
     });
   }
-
-  // REFACTORED: Getters now work with subscription types
-
   /// Get videos for a specific subscription type
   List<VideoEvent> getVideos(SubscriptionType type) {
     return List.unmodifiable(_eventLists[type] ?? []);
@@ -5205,12 +5202,12 @@ class VideoEventService extends ChangeNotifier {
 
       if (directQueryEvents.isEmpty) {
         Log.error(
-          '❌ DIAGNOSTIC: Embedded relay database has NO video events!',
+          '❌ DIAGNOSTIC: Relay cache has NO video events!',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
         Log.error(
-          '   This means external relay → embedded relay sync is not working.',
+          '   This means relay connection is not returning video events.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );

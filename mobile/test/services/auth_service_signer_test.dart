@@ -30,7 +30,7 @@ void main() {
   group('AuthServiceSigner', () {
     group('getPublicKey', () {
       test('returns public key from secure container', () async {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
 
         final publicKey = await signer.getPublicKey();
 
@@ -38,15 +38,12 @@ void main() {
         verify(() => mockKeyContainer.publicKeyHex).called(1);
       });
 
-      test('throws when container is disposed', () async {
-        when(() => mockKeyContainer.isDisposed).thenReturn(true);
-        when(
-          () => mockKeyContainer.publicKeyHex,
-        ).thenThrow(const SecureKeyException('Container has been disposed'));
+      test('returns empty string when container is null', () async {
+        final signer = AuthServiceSigner(() => null);
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final publicKey = await signer.getPublicKey();
 
-        expect(() => signer.getPublicKey(), throwsA(isA<SecureKeyException>()));
+        expect(publicKey, isEmpty);
       });
     });
 
@@ -60,7 +57,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         final event = Event(
           testPublicKey,
           EventKind.textNote,
@@ -80,7 +77,7 @@ void main() {
           () => mockKeyContainer.withPrivateKey<Event>(any()),
         ).thenThrow(const SecureKeyException('Failed to sign'));
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         final event = Event(
           testPublicKey,
           EventKind.textNote,
@@ -96,7 +93,7 @@ void main() {
 
     group('getRelays', () {
       test('returns null (no relay config)', () async {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
 
         final relays = await signer.getRelays();
 
@@ -114,7 +111,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         const plaintext = 'Hello, World!';
 
         final ciphertext = await signer.encrypt(testPublicKey, plaintext);
@@ -132,7 +129,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         const plaintext = 'Hello, World!';
 
         // First encrypt
@@ -157,7 +154,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
 
         final ciphertext = await signer.nip44Encrypt(testPublicKey, plaintext);
@@ -176,7 +173,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
 
         // First encrypt
@@ -192,7 +189,7 @@ void main() {
 
     group('close', () {
       test('closes without error', () {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = AuthServiceSigner(() => mockKeyContainer);
 
         expect(() => signer.close(), returnsNormally);
       });

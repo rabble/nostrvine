@@ -1,5 +1,5 @@
 // ABOUTME: Diagnostic screen for debugging relay connectivity issues
-// ABOUTME: Shows embedded relay status, external relay connections, and network health
+// ABOUTME: Shows relay connection status and network health
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -39,7 +39,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
     final nostrService = ref.read(nostrServiceProvider);
 
-    // Get relay stats from embedded relay
+    // Get relay stats from NostrClient
     try {
       final stats = await nostrService.getRelayStats();
       setState(() {
@@ -50,7 +50,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (stats != null && stats['database'] != null) {
         final totalEvents = stats['database']['total_events'] ?? 0;
         Log.info(
-          'Embedded relay has $totalEvents total events in database',
+          'Relay cache has $totalEvents total events',
           name: 'RelayDiagnostic',
         );
 
@@ -60,7 +60,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
             nostr.Filter(kinds: [34236], limit: 10),
           ]);
           Log.info(
-            'Found ${videoEvents.length} video events in embedded relay database',
+            'Found ${videoEvents.length} video events in relay cache',
             name: 'RelayDiagnostic',
           );
         } catch (e) {
@@ -138,7 +138,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     final nostrService = ref.read(nostrServiceProvider);
 
     try {
-      // Query for video events directly from embedded relay database
+      // Query for video events directly from relay
       final videoEvents = await nostrService.queryEvents([
         nostr.Filter(kinds: [34236], limit: 100),
       ]);
@@ -159,7 +159,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         }
       } else {
         Log.warning(
-          '⚠️ No video events found in embedded relay database!',
+          '⚠️ No video events found in relay cache!',
           name: 'RelayDiagnostic',
         );
       }
@@ -297,9 +297,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   ),
                 ),
 
-              // Embedded relay status
+              // Relay status
               _buildSection(
-                title: 'Embedded Relay',
+                title: 'Relay Status',
                 icon: Icons.storage,
                 children: [
                   _buildStatusRow(

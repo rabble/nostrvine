@@ -62,7 +62,7 @@ void main() {
 
     setUpAll(() async {
       final keyContainer = SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer);
+      nostrService = NostrServiceFactory.create(() => keyContainer);
       await nostrService.initialize();
 
       // Wait for connection to stabilize using proper async pattern

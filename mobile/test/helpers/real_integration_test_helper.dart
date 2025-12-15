@@ -31,7 +31,7 @@ class RealIntegrationTestHelper {
     // Generate a test key container
     final keyContainer = SecureKeyContainer.generate();
 
-    final nostrService = NostrServiceFactory.create(keyContainer);
+    final nostrService = NostrServiceFactory.create(() => keyContainer);
     await nostrService.initialize();
 
     // NostrClient handles relay connections internally

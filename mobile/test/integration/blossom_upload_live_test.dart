@@ -51,7 +51,7 @@ void main() {
       final keyContainer = SecureKeyContainer.generate();
       print('Generated test keys: ${keyContainer.publicKeyHex}...');
 
-      nostrService = NostrServiceFactory.create(keyContainer);
+      nostrService = NostrServiceFactory.create(() => keyContainer);
       await NostrServiceFactory.initialize(nostrService);
 
       SharedPreferences.setMockInitialValues({});

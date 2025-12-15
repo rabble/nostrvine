@@ -49,7 +49,7 @@ void main() {
 
       // Initialize real Nostr connection for realistic testing
       keyContainer = SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer);
+      nostrService = NostrServiceFactory.create(() => keyContainer);
       await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);

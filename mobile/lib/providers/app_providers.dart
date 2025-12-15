@@ -297,28 +297,24 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   return UserDataCleanupService(prefs);
 }
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// Core Nostr service via NostrClient for relay communication
 ///
-/// Requires AuthService to be authenticated with a valid key container.
-/// Throws StateError if accessed before authentication is complete.
+/// Works in two modes:
+/// - Authenticated: When AuthService has a valid key container, can sign events
+/// - Read-only: Before authentication, can fetch public data but signing returns null
+///
+/// The signer lazily checks for auth state at signing time, so the same client
+/// works before and after login without needing to rebuild.
 @Riverpod(keepAlive: true)
 NostrClient nostrService(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
+  final authService = ref.read(authServiceProvider);
   final statisticsService = ref.watch(relayStatisticsServiceProvider);
   final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
 
-  // Get key container from AuthService
-  final keyContainer = authService.currentKeyContainer;
-  if (keyContainer == null) {
-    throw StateError(
-      'NostrService accessed before authentication. '
-      'Ensure AuthService.currentKeyContainer is available.',
-    );
-  }
-
-  // Use factory to create client with secure key container and gateway settings
+  // Pass a getter that lazily gets the key container at signing time
+  // This allows the client to work before auth and automatically sign after auth
   final client = NostrServiceFactory.create(
-    keyContainer,
+    () => authService.currentKeyContainer,
     statisticsService: statisticsService,
     gatewaySettings: gatewaySettings,
   );
