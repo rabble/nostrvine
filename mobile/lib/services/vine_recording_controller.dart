@@ -1823,7 +1823,7 @@ class VineRecordingController {
 
       final audioEncodeFlag = Platform.isAndroid ? '-c:a aac' : '-c:a copy';
       final command =
-          '-y -i "$inputPath" -vf "$cropFilter" $audioEncodeFlag "$outputPath"';
+          '-hwaccel auto -y -i "$inputPath" -vf "$cropFilter" $audioEncodeFlag "$outputPath"';
 
       Log.info(
         '📹 Executing FFmpeg square crop command: $command',
@@ -1897,7 +1897,7 @@ class VineRecordingController {
         // Re-encode audio too to ensure proper A/V sync across segments
         // Force 30fps output and use -vsync cfr for consistent timing
         final normalizeCommand =
-            '-y -i "${segment.filePath}" -c:v libx264 -preset ultrafast -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 -metadata:s:v rotate=0 "$normalizedPath"';
+            '-hwaccel auto -y -i "${segment.filePath}" -c:v libx264 -preset ultrafast -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 -metadata:s:v rotate=0 "$normalizedPath"';
 
         Log.info(
           '📹 Normalizing segment $i with command: $normalizeCommand',
@@ -1948,7 +1948,7 @@ class VineRecordingController {
       // Use -vsync cfr for constant frame rate and -async 1 to sync audio to video
       final cropFilter = _buildCropFilter(_aspectRatio);
       final command =
-          '-y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" -c:v libx264 -preset ultrafast -vsync cfr -r 30 -c:a aac -b:a 128k -async 1 "$outputPath"';
+          '-hwaccel auto -y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" -c:v libx264 -preset ultrafast -vsync cfr -r 30 -c:a aac -b:a 128k -async 1 "$outputPath"';
 
       Log.info(
         '📹 Executing FFmpeg command: $command',
@@ -2102,7 +2102,7 @@ class VineRecordingController {
 
     final cropFilter = _buildCropFilter(_aspectRatio);
     final command =
-        '-i "$inputPath" -vf "$cropFilter" -c:v libx264 -preset ultrafast -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 "$outputPath"';
+        '-hwaccel auto -i "$inputPath" -vf "$cropFilter" -c:v libx264 -preset ultrafast -r 30 -vsync cfr -c:a aac -b:a 128k -async 1 "$outputPath"';
 
     Log.info(
       '📹 Executing FFmpeg crop command: $command',
@@ -2168,7 +2168,7 @@ class VineRecordingController {
 
       // Use -ss before -i for fast seeking, then -t for duration
       final command =
-          '-y -ss $startSec -i "$inputPath" -t $durationSec -vf "$cropFilter" -c:v libx264 -preset fast -c:a aac "$outputPath"';
+          '-hwaccel auto -y -ss $startSec -i "$inputPath" -t $durationSec -vf "$cropFilter" -c:v libx264 -preset fast -c:a aac "$outputPath"';
 
       Log.info(
         '📹 Extracting single macOS segment: start=${startSec}s, duration=${durationSec}s',
@@ -2226,7 +2226,7 @@ class VineRecordingController {
 
       // Extract segment without cropping first (will crop during concat)
       final extractCommand =
-          '-y -ss $startSec -i "$inputPath" -t $durationSec -c:v libx264 -preset ultrafast -c:a aac "$extractedPath"';
+          '-hwaccel auto -y -ss $startSec -i "$inputPath" -t $durationSec -c:v libx264 -preset ultrafast -c:a aac "$extractedPath"';
 
       Log.info(
         '📹 Extracting segment $i: start=${startSec}s, duration=${durationSec}s',
@@ -2269,7 +2269,7 @@ class VineRecordingController {
         '${tempDir.path}/vine_final_${DateTime.now().millisecondsSinceEpoch}.mp4';
     final cropFilter = _buildCropFilter(_aspectRatio);
     final concatCommand =
-        '-y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" -c:v libx264 -preset fast -c:a aac "$outputPath"';
+        '-hwaccel auto -y -f concat -safe 0 -i "$concatFilePath" -vf "$cropFilter" -c:v libx264 -preset fast -c:a aac "$outputPath"';
 
     Log.info(
       '📹 Concatenating extracted segments with crop filter',
@@ -2396,195 +2396,211 @@ class VineRecordingController {
 
   /// Finish recording and return the final compiled video with optional native ProofMode data
   Future<(File?, NativeProofData?)> finishRecording() async {
-    try {
-      _setState(VineRecordingState.processing);
+    final startTime = DateTime.now();
+    final returnValue = await (() async {
+      try {
+        _setState(VineRecordingState.processing);
 
-      // For macOS single recording mode, handle specially
-      if (!kIsWeb &&
-          Platform.isMacOS &&
-          _cameraInterface is MacOSCameraInterface) {
-        final macOSInterface = _cameraInterface as MacOSCameraInterface;
+        // For macOS single recording mode, handle specially
+        if (!kIsWeb &&
+            Platform.isMacOS &&
+            _cameraInterface is MacOSCameraInterface) {
+          final macOSInterface = _cameraInterface as MacOSCameraInterface;
 
-        // For single recording mode, extract only the virtual segment portions
-        if (macOSInterface.isSingleRecordingMode) {
-          final virtualSegments = macOSInterface.getVirtualSegments();
-          final recordingStartTime = macOSInterface.recordingStartTime;
+          // For single recording mode, extract only the virtual segment portions
+          if (macOSInterface.isSingleRecordingMode) {
+            final virtualSegments = macOSInterface.getVirtualSegments();
+            final recordingStartTime = macOSInterface.recordingStartTime;
 
-          Log.info(
-            '📱 finishRecording: macOS single mode, isRecording=${macOSInterface.isRecording}, '
-            'virtualSegments=${virtualSegments.length}, recordingStartTime=$recordingStartTime',
-            name: 'VineRecordingController',
-            category: LogCategory.system,
-          );
-
-          // Get the recording path from any available source
-          final recordingPath = await _getMacOSRecordingPath(macOSInterface);
-          if (recordingPath == null) {
-            throw Exception(
-              'No valid recording found for macOS single recording mode',
-            );
-          }
-
-          File finalFile;
-
-          // If we have virtual segments and a valid start time, extract only those portions
-          if (virtualSegments.isNotEmpty && recordingStartTime != null) {
             Log.info(
-              '📱 Extracting ${virtualSegments.length} virtual segments from continuous recording',
+              '📱 finishRecording: macOS single mode, isRecording=${macOSInterface.isRecording}, '
+              'virtualSegments=${virtualSegments.length}, recordingStartTime=$recordingStartTime',
               name: 'VineRecordingController',
               category: LogCategory.system,
             );
 
-            finalFile = await _extractMacOSSegments(
-              recordingPath,
-              virtualSegments,
-              recordingStartTime,
-            );
-          } else {
-            // Fallback: just apply aspect ratio crop (shouldn't normally happen)
-            Log.warning(
-              '📱 No virtual segments found, falling back to full video crop',
-              name: 'VineRecordingController',
-              category: LogCategory.system,
-            );
-            finalFile = await _applyAspectRatioCrop(recordingPath);
+            // Get the recording path from any available source
+            final recordingPath = await _getMacOSRecordingPath(macOSInterface);
+            if (recordingPath == null) {
+              throw Exception(
+                'No valid recording found for macOS single recording mode',
+              );
+            }
+
+            File finalFile;
+
+            // If we have virtual segments and a valid start time, extract only those portions
+            if (virtualSegments.isNotEmpty && recordingStartTime != null) {
+              Log.info(
+                '📱 Extracting ${virtualSegments.length} virtual segments from continuous recording',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+
+              finalFile = await _extractMacOSSegments(
+                recordingPath,
+                virtualSegments,
+                recordingStartTime,
+              );
+            } else {
+              // Fallback: just apply aspect ratio crop (shouldn't normally happen)
+              Log.warning(
+                '📱 No virtual segments found, falling back to full video crop',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+              finalFile = await _applyAspectRatioCrop(recordingPath);
+            }
+
+            _setState(VineRecordingState.completed);
+            macOSInterface.isSingleRecordingMode =
+                false; // Clear flag after successful completion
+
+            // Generate native ProofMode proof
+            final nativeProof = await _generateNativeProof(finalFile);
+
+            return (finalFile, nativeProof);
           }
-
-          _setState(VineRecordingState.completed);
-          macOSInterface.isSingleRecordingMode =
-              false; // Clear flag after successful completion
-
-          // Generate native ProofMode proof
-          final nativeProof = await _generateNativeProof(finalFile);
-
-          return (finalFile, nativeProof);
         }
-      }
 
-      // For non-single recording mode, stop any active recording
-      if (_state == VineRecordingState.recording) {
-        await stopRecording();
-      }
+        // For non-single recording mode, stop any active recording
+        if (_state == VineRecordingState.recording) {
+          await stopRecording();
+        }
 
-      // For multi-segment recording, check virtual segments first
-      if (!kIsWeb &&
-          Platform.isMacOS &&
-          _cameraInterface is MacOSCameraInterface) {
-        final macOSInterface = _cameraInterface as MacOSCameraInterface;
-        final virtualSegments = macOSInterface.getVirtualSegments();
+        // For multi-segment recording, check virtual segments first
+        if (!kIsWeb &&
+            Platform.isMacOS &&
+            _cameraInterface is MacOSCameraInterface) {
+          final macOSInterface = _cameraInterface as MacOSCameraInterface;
+          final virtualSegments = macOSInterface.getVirtualSegments();
 
-        // If we have virtual segments but no main segments, use the virtual ones
-        if (_segments.isEmpty && virtualSegments.isNotEmpty) {
-          _segments.addAll(virtualSegments);
+          // If we have virtual segments but no main segments, use the virtual ones
+          if (_segments.isEmpty && virtualSegments.isNotEmpty) {
+            _segments.addAll(virtualSegments);
+            Log.info(
+              'Using ${virtualSegments.length} virtual segments from macOS recording',
+              name: 'VineRecordingController',
+              category: LogCategory.system,
+            );
+          }
+        }
+
+        Log.info(
+          '📱 finishRecording: hasSegments=$hasSegments, segments count=${_segments.length}',
+          name: 'VineRecordingController',
+          category: LogCategory.system,
+        );
+
+        // Debug: Log all segment details
+        for (int i = 0; i < _segments.length; i++) {
+          final segment = _segments[i];
           Log.info(
-            'Using ${virtualSegments.length} virtual segments from macOS recording',
+            '📱 Segment $i: duration=${segment.duration.inMilliseconds}ms, filePath=${segment.filePath}',
             name: 'VineRecordingController',
             category: LogCategory.system,
           );
         }
-      }
 
-      Log.info(
-        '📱 finishRecording: hasSegments=$hasSegments, segments count=${_segments.length}',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
+        if (!hasSegments) {
+          throw Exception('No valid video segments found for compilation');
+        }
 
-      // Debug: Log all segment details
-      for (int i = 0; i < _segments.length; i++) {
-        final segment = _segments[i];
-        Log.info(
-          '📱 Segment $i: duration=${segment.duration.inMilliseconds}ms, filePath=${segment.filePath}',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-      }
+        // For web platform, handle blob URLs
+        if (kIsWeb &&
+            _segments.length == 1 &&
+            _segments.first.filePath != null) {
+          final filePath = _segments.first.filePath!;
+          if (filePath.startsWith('blob:')) {
+            // For web, we can't return a File object from blob URL
+            // Instead, we'll create a temporary file representation
+            try {
+              // Use the standalone blobUrlToBytes function
+              final bytes = await camera_service.blobUrlToBytes(filePath);
+              if (bytes.isNotEmpty) {
+                // Create a temporary file with the blob data
+                final tempDir = await getTemporaryDirectory();
+                final tempFile = File(
+                  '${tempDir.path}/web_recording_${DateTime.now().millisecondsSinceEpoch}.mp4',
+                );
+                await tempFile.writeAsBytes(bytes);
 
-      if (!hasSegments) {
-        throw Exception('No valid video segments found for compilation');
-      }
+                _setState(VineRecordingState.completed);
 
-      // For web platform, handle blob URLs
-      if (kIsWeb && _segments.length == 1 && _segments.first.filePath != null) {
-        final filePath = _segments.first.filePath!;
-        if (filePath.startsWith('blob:')) {
-          // For web, we can't return a File object from blob URL
-          // Instead, we'll create a temporary file representation
-          try {
-            // Use the standalone blobUrlToBytes function
-            final bytes = await camera_service.blobUrlToBytes(filePath);
-            if (bytes.isNotEmpty) {
-              // Create a temporary file with the blob data
-              final tempDir = await getTemporaryDirectory();
-              final tempFile = File(
-                '${tempDir.path}/web_recording_${DateTime.now().millisecondsSinceEpoch}.mp4',
+                // Generate native ProofMode proof
+                final nativeProof = await _generateNativeProof(tempFile);
+
+                return (tempFile, nativeProof);
+              }
+            } catch (e) {
+              Log.error(
+                'Failed to convert blob to file: $e',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
               );
-              await tempFile.writeAsBytes(bytes);
-
-              _setState(VineRecordingState.completed);
-
-              // Generate native ProofMode proof
-              final nativeProof = await _generateNativeProof(tempFile);
-
-              return (tempFile, nativeProof);
             }
-          } catch (e) {
-            Log.error(
-              'Failed to convert blob to file: $e',
-              name: 'VineRecordingController',
-              category: LogCategory.system,
-            );
           }
         }
-      }
 
-      // For other platforms (iOS, Android), handle single segment with aspect ratio crop
-      if (!kIsWeb &&
-          _segments.length == 1 &&
-          _segments.first.filePath != null) {
-        final file = File(_segments.first.filePath!);
-        if (await file.exists()) {
-          // Apply aspect ratio crop to the video
-          final croppedFile = await _applyAspectRatioCrop(file.path);
+        // For other platforms (iOS, Android), handle single segment with aspect ratio crop
+        if (!kIsWeb &&
+            _segments.length == 1 &&
+            _segments.first.filePath != null) {
+          final file = File(_segments.first.filePath!);
+          if (await file.exists()) {
+            // Apply aspect ratio crop to the video
+            final croppedFile = await _applyAspectRatioCrop(file.path);
 
-          _setState(VineRecordingState.completed);
+            _setState(VineRecordingState.completed);
 
-          // Generate native ProofMode proof
-          final nativeProof = await _generateNativeProof(croppedFile);
+            // Generate native ProofMode proof
+            final nativeProof = await _generateNativeProof(croppedFile);
 
-          return (croppedFile, nativeProof);
+            return (croppedFile, nativeProof);
+          }
         }
-      }
 
-      // Concatenate multiple segments using FFmpeg
-      if (_segments.isNotEmpty) {
-        Log.info(
-          '📹 Concatenating ${_segments.length} segments using FFmpeg',
+        // Concatenate multiple segments using FFmpeg
+        if (_segments.isNotEmpty) {
+          Log.info(
+            '📹 Concatenating ${_segments.length} segments using FFmpeg',
+            name: 'VineRecordingController',
+            category: LogCategory.system,
+          );
+
+          final concatenatedFile = await _concatenateSegments(_segments);
+          if (concatenatedFile != null) {
+            _setState(VineRecordingState.completed);
+
+            // Generate native ProofMode proof
+            final nativeProof = await _generateNativeProof(concatenatedFile);
+
+            return (concatenatedFile, nativeProof);
+          }
+        }
+
+        throw Exception('No valid video segments found for compilation');
+      } catch (e) {
+        _setState(VineRecordingState.error);
+        Log.error(
+          'Failed to finish recording: $e',
           name: 'VineRecordingController',
           category: LogCategory.system,
         );
-
-        final concatenatedFile = await _concatenateSegments(_segments);
-        if (concatenatedFile != null) {
-          _setState(VineRecordingState.completed);
-
-          // Generate native ProofMode proof
-          final nativeProof = await _generateNativeProof(concatenatedFile);
-
-          return (concatenatedFile, nativeProof);
-        }
+        rethrow;
       }
+    })();
 
-      throw Exception('No valid video segments found for compilation');
-    } catch (e) {
-      _setState(VineRecordingState.error);
-      Log.error(
-        'Failed to finish recording: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
+    final endTime = DateTime.now();
+    final duration = endTime.difference(startTime);
+
+    Log.info(
+      'finishRecording completed in ${duration.inMilliseconds}ms',
+      name: 'VineRecordingController',
+      category: LogCategory.system,
+    );
+
+    return returnValue;
   }
 
   /// Clean up recording files and prepare for new recording
