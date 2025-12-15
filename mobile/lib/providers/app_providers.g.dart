@@ -1185,16 +1185,25 @@ String _$userDataCleanupServiceHash() =>
     r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
 /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+///
+/// Requires AuthService to be authenticated with a valid key container.
+/// Throws StateError if accessed before authentication is complete.
 
 @ProviderFor(nostrService)
 const nostrServiceProvider = NostrServiceProvider._();
 
 /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+///
+/// Requires AuthService to be authenticated with a valid key container.
+/// Throws StateError if accessed before authentication is complete.
 
 final class NostrServiceProvider
     extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
     with $Provider<NostrClient> {
   /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+  ///
+  /// Requires AuthService to be authenticated with a valid key container.
+  /// Throws StateError if accessed before authentication is complete.
   const NostrServiceProvider._()
     : super(
         from: null,
@@ -1228,7 +1237,7 @@ final class NostrServiceProvider
   }
 }
 
-String _$nostrServiceHash() => r'3cef9fb4179b84d40e88b0b0125b4b9dfdf82188';
+String _$nostrServiceHash() => r'5320479a844708e0377dd54b6c5ac446351bad0a';
 
 /// Subscription manager for centralized subscription management
 

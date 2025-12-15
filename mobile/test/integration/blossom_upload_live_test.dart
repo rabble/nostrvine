@@ -47,17 +47,12 @@ void main() {
       await testVideoFile.writeAsBytes(testVideoData);
 
       // Create real services for live testing using the factory pattern
-      final keyManager = NostrKeyManager();
-      await keyManager.initialize();
+      // Generate a test key container for live testing
+      final keyContainer = SecureKeyContainer.generate();
+      print('Generated test keys: ${keyContainer.publicKeyHex}...');
 
-      // Generate test keys if none exist (using the actual API)
-      if (keyManager.privateKey == null) {
-        final newKeyPair = await keyManager.generateKeys();
-        print('Generated test keys: ${newKeyPair.public}...');
-      }
-
-      nostrService = NostrServiceFactory.create(keyManager);
-      NostrServiceFactory.initialize(nostrService);
+      nostrService = NostrServiceFactory.create(keyContainer);
+      await NostrServiceFactory.initialize(nostrService);
 
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();

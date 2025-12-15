@@ -4,15 +4,15 @@
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/services/nostr_key_manager_signer.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Factory class for creating NostrClient instances
 class NostrServiceFactory {
-  /// Create a NostrClient for the current platform
+  /// Create a NostrClient for the current platform using SecureKeyContainer
   static NostrClient create(
-    NostrKeyManager keyManager, {
+    SecureKeyContainer keyContainer, {
     RelayStatisticsService? statisticsService,
   }) {
     UnifiedLogger.info(
@@ -20,13 +20,13 @@ class NostrServiceFactory {
       name: 'NostrServiceFactory',
     );
 
-    // Create signer from key manager
-    final signer = NostrKeyManagerSigner(keyManager);
+    // Create signer from secure key container
+    final signer = AuthServiceSigner(keyContainer);
 
     // Create NostrClient config
     final config = NostrClientConfig(
       signer: signer,
-      publicKey: keyManager.publicKey ?? '',
+      publicKey: keyContainer.publicKeyHex,
     );
 
     // Create relay manager config

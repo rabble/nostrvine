@@ -154,8 +154,8 @@ Examples:
       );
 
       // Create Nostr service to connect to relay
-      final keyManager = NostrKeyManager();
-      final nostrService = NostrServiceFactory.create(keyManager);
+      final keyContainer = SecureKeyContainer.generate();
+      final nostrService = NostrServiceFactory.create(keyContainer);
 
       // Initialize
       await nostrService.initialize();

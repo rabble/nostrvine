@@ -28,10 +28,10 @@ class RealIntegrationTestHelper {
   static Future<NostrClient> createRealNostrService() async {
     await setupTestEnvironment();
 
-    final keyManager = NostrKeyManager();
-    // Note: May need to set up test keys differently based on actual API
+    // Generate a test key container
+    final keyContainer = SecureKeyContainer.generate();
 
-    final nostrService = NostrServiceFactory.create(keyManager);
+    final nostrService = NostrServiceFactory.create(keyContainer);
     await nostrService.initialize();
 
     // NostrClient handles relay connections internally
