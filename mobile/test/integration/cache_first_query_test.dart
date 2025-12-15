@@ -185,7 +185,6 @@ void main() {
       await eventRouter.handleEvent(video1);
       await eventRouter.handleEvent(video2);
       await eventRouter.handleEvent(profileEvent);
-      await eventRouter.flush();
 
       // Query for video events only (kind 34236)
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -220,7 +219,6 @@ void main() {
       await eventRouter.handleEvent(user1Video);
       await eventRouter.handleEvent(user2Video);
       await eventRouter.handleEvent(user3Video);
-      await eventRouter.flush();
 
       // Query for user1 and user2 only
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -263,7 +261,6 @@ void main() {
       await eventRouter.handleEvent(catVideo);
       await eventRouter.handleEvent(dogVideo);
       await eventRouter.handleEvent(noHashtagVideo);
-      await eventRouter.flush();
 
       // Query for #cats hashtag
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -294,7 +291,6 @@ void main() {
       await eventRouter.handleEvent(oldVideo);
       await eventRouter.handleEvent(middleVideo);
       await eventRouter.handleEvent(newVideo);
-      await eventRouter.flush();
 
       // Query for events between 200 and 800
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -336,7 +332,6 @@ void main() {
       await eventRouter.handleEvent(wrongAuthor);
       await eventRouter.handleEvent(wrongHashtag);
       await eventRouter.handleEvent(wrongTime);
-      await eventRouter.flush();
 
       // Query with ALL filters
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -365,7 +360,6 @@ void main() {
           ),
         );
       }
-      await eventRouter.flush();
 
       // Query with limit of 5
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -396,7 +390,6 @@ void main() {
       await eventRouter.handleEvent(middle);
       await eventRouter.handleEvent(recent);
       await eventRouter.handleEvent(old);
-      await eventRouter.flush();
 
       final results = await db.nostrEventsDao.getEventsByFilter(
         Filter(limit: 10),
@@ -459,7 +452,6 @@ void main() {
 
       await eventRouter.handleEvent(cachedEvent1);
       await eventRouter.handleEvent(cachedEvent2);
-      await eventRouter.flush();
 
       // Track when events arrive
       final receivedEvents = <String>[];
@@ -506,7 +498,6 @@ void main() {
         createdAt: 100,
       );
       await eventRouter.handleEvent(cachedEvent);
-      await eventRouter.flush();
 
       // Subscribe
       await videoEventService.subscribeToVideoFeed(
@@ -564,7 +555,6 @@ void main() {
 
       await eventRouter.handleEvent(user1Event);
       await eventRouter.handleEvent(user2Event);
-      await eventRouter.flush();
 
       // Subscribe with author filter for user1 only
       await videoEventService.subscribeToVideoFeed(
@@ -599,7 +589,6 @@ void main() {
 
       await eventRouter.handleEvent(catVideo);
       await eventRouter.handleEvent(dogVideo);
-      await eventRouter.flush();
 
       // Subscribe with hashtag filter
       await videoEventService.subscribeToVideoFeed(

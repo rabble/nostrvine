@@ -23,16 +23,6 @@ class EventRouter {
   /// Access to database for cache-first queries
   AppDatabase get db => _db;
 
-  /// Flush any pending events immediately
-  ///
-  /// Useful for tests that need events written before querying.
-  /// In production, batching is preferred for performance.
-  Future<void> flush() async {
-    _batchTimer?.cancel();
-    _batchTimer = null;
-    await _processBatch();
-  }
-
   /// Handle incoming event from relay
   ///
   /// Queues event for batch processing to avoid database locks
