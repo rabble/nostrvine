@@ -769,16 +769,16 @@ class VideoEventService extends ChangeNotifier {
     }
 
     try {
+      final filter = Filter(
+        kinds: kinds,
+        authors: authors,
+        t: hashtags,
+        since: since,
+        until: until,
+        limit: limit,
+      );
       final cachedEvents = await _eventRouter.db.nostrEventsDao
-          .getVideoEventsByFilter(
-            kinds: kinds,
-            authors: authors,
-            hashtags: hashtags,
-            since: since,
-            until: until,
-            limit: limit,
-            sortBy: sortBy?.fieldName,
-          );
+          .getEventsByFilter(filter, sortBy: sortBy?.fieldName);
 
       if (cachedEvents.isNotEmpty) {
         Log.debug(

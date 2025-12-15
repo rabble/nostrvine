@@ -2,9 +2,9 @@
 // ABOUTME: All events go to NostrEvents table, kind-specific processing extracts to denormalized tables
 
 import 'dart:async';
+import 'package:db_client/db_client.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/database/app_database.dart';
-import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Routes incoming Nostr events to appropriate database tables
@@ -22,6 +22,16 @@ class EventRouter {
 
   /// Access to database for cache-first queries
   AppDatabase get db => _db;
+
+  /// Flush any pending events immediately
+  ///
+  /// Useful for tests that need events written before querying.
+  /// In production, batching is preferred for performance.
+  Future<void> flush() async {
+    _batchTimer?.cancel();
+    _batchTimer = null;
+    await _processBatch();
+  }
 
   /// Handle incoming event from relay
   ///

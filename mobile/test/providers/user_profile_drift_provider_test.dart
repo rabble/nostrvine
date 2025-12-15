@@ -2,10 +2,11 @@
 // ABOUTME: Tests provider emits null for missing profiles, emits profiles from DB, and auto-updates
 
 import 'dart:io';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:riverpod/riverpod.dart';
-import 'package:openvine/database/app_database.dart';
-import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/user_profile_drift_provider.dart';
 import 'package:path/path.dart' as p;
@@ -22,7 +23,7 @@ void main() {
         Directory.systemTemp.path,
         'test_user_profile_${DateTime.now().millisecondsSinceEpoch}.db',
       );
-      testDb = AppDatabase.test(testDbPath);
+      testDb = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Create container with test database override
       container = ProviderContainer(

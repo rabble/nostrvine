@@ -633,4 +633,13 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     ).getSingle();
     return result.read<int>('count');
   }
+
+  /// Get total count of all events in the database.
+  Future<int> getEventCount() async {
+    final result = await customSelect(
+      'SELECT COUNT(*) as count FROM event',
+      readsFrom: {nostrEvents},
+    ).getSingle();
+    return result.read<int>('count');
+  }
 }

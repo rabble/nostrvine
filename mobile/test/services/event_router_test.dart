@@ -3,9 +3,10 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:path/path.dart' as p;
 
@@ -19,7 +20,7 @@ void main() {
       // Create temporary database for testing
       final tempDir = Directory.systemTemp.createTempSync('openvine_test_');
       testDbPath = p.join(tempDir.path, 'test.db');
-      db = AppDatabase.test(testDbPath);
+      db = AppDatabase.test(NativeDatabase(File(testDbPath)));
       eventRouter = EventRouter(db);
     });
 
@@ -53,7 +54,7 @@ void main() {
         await eventRouter.handleEvent(videoEvent);
 
         // Verify event was inserted to NostrEvents table
-        final storedEvent = await db.nostrEventsDao.getEvent(
+        final storedEvent = await db.nostrEventsDao.getEventById(
           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         );
         expect(storedEvent, isNotNull);
@@ -97,7 +98,7 @@ void main() {
       await eventRouter.handleEvent(profileEvent);
 
       // Verify event was inserted to NostrEvents table
-      final storedEvent = await db.nostrEventsDao.getEvent(
+      final storedEvent = await db.nostrEventsDao.getEventById(
         'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       );
       expect(storedEvent, isNotNull);
@@ -141,7 +142,7 @@ void main() {
         await eventRouter.handleEvent(contactsEvent);
 
         // Verify event was inserted to NostrEvents table
-        final storedEvent = await db.nostrEventsDao.getEvent(
+        final storedEvent = await db.nostrEventsDao.getEventById(
           '2222222222222222222222222222222222222222222222222222222222222222',
         );
         expect(storedEvent, isNotNull);
@@ -173,7 +174,7 @@ void main() {
         await eventRouter.handleEvent(reactionEvent);
 
         // Verify event was inserted to NostrEvents table
-        final storedEvent = await db.nostrEventsDao.getEvent(
+        final storedEvent = await db.nostrEventsDao.getEventById(
           '5555555555555555555555555555555555555555555555555555555555555555',
         );
         expect(storedEvent, isNotNull);
@@ -209,7 +210,7 @@ void main() {
         await eventRouter.handleEvent(repostEvent);
 
         // Verify event was inserted to NostrEvents table
-        final storedEvent = await db.nostrEventsDao.getEvent(
+        final storedEvent = await db.nostrEventsDao.getEventById(
           '8888888888888888888888888888888888888888888888888888888888888888',
         );
         expect(storedEvent, isNotNull);
@@ -233,7 +234,7 @@ void main() {
       // Insert first time
       await eventRouter.handleEvent(event1);
 
-      final storedEvent1 = await db.nostrEventsDao.getEvent(
+      final storedEvent1 = await db.nostrEventsDao.getEventById(
         'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd',
       );
       expect(storedEvent1, isNotNull);
@@ -254,7 +255,7 @@ void main() {
 
       await eventRouter.handleEvent(event2);
 
-      final storedEvent2 = await db.nostrEventsDao.getEvent(
+      final storedEvent2 = await db.nostrEventsDao.getEventById(
         'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd',
       );
       expect(storedEvent2, isNotNull);
@@ -287,7 +288,7 @@ void main() {
       );
 
       // Event should still be in NostrEvents table
-      final storedEvent = await db.nostrEventsDao.getEvent(
+      final storedEvent = await db.nostrEventsDao.getEventById(
         'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
       );
       expect(storedEvent, isNotNull);
@@ -322,7 +323,7 @@ void main() {
       await eventRouter.handleEvent(unknownKindEvent);
 
       // Verify event was inserted to NostrEvents table
-      final storedEvent = await db.nostrEventsDao.getEvent(
+      final storedEvent = await db.nostrEventsDao.getEventById(
         'd4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4',
       );
       expect(storedEvent, isNotNull);

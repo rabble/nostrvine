@@ -3,10 +3,11 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'package:db_client/db_client.dart' hide Filter;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -80,7 +81,7 @@ void main() {
         'openvine_integration_test_',
       );
       testDbPath = p.join(tempDir.path, 'test.db');
-      db = AppDatabase.test(testDbPath);
+      db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Create EventRouter
       eventRouter = EventRouter(db);
@@ -139,7 +140,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 100));
 
       // Verify event was cached to database via EventRouter
-      final cachedEvent = await db.nostrEventsDao.getEvent(
+      final cachedEvent = await db.nostrEventsDao.getEventById(
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       );
       expect(cachedEvent, isNotNull);
@@ -180,7 +181,7 @@ void main() {
         await Future.delayed(Duration(milliseconds: 100));
 
         // Verify event was cached to NostrEvents table
-        final cachedEvent = await db.nostrEventsDao.getEvent(
+        final cachedEvent = await db.nostrEventsDao.getEventById(
           'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         );
         expect(cachedEvent, isNotNull);
@@ -233,7 +234,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 100));
 
       // Verify event was cached to database
-      final cachedEvent = await db.nostrEventsDao.getEvent(
+      final cachedEvent = await db.nostrEventsDao.getEventById(
         '2222222222222222222222222222222222222222222222222222222222222222',
       );
       expect(cachedEvent, isNotNull);
@@ -272,7 +273,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 100));
 
       // Verify event was cached to database
-      final cachedEvent = await db.nostrEventsDao.getEvent(
+      final cachedEvent = await db.nostrEventsDao.getEventById(
         '5555555555555555555555555555555555555555555555555555555555555555',
       );
       expect(cachedEvent, isNotNull);
@@ -306,7 +307,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 100));
 
       // Verify event was cached to database
-      final cachedEvent = await db.nostrEventsDao.getEvent(
+      final cachedEvent = await db.nostrEventsDao.getEventById(
         '8888888888888888888888888888888888888888888888888888888888888888',
       );
       expect(cachedEvent, isNotNull);
@@ -347,7 +348,7 @@ void main() {
 
       // Verify all events were cached
       for (int i = 0; i < 5; i++) {
-        final cachedEvent = await db.nostrEventsDao.getEvent(
+        final cachedEvent = await db.nostrEventsDao.getEventById(
           'event${i}00000000000000000000000000000000000000000000000000000000000',
         );
         expect(cachedEvent, isNotNull, reason: 'Event $i should be cached');
