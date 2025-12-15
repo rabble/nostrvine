@@ -1182,19 +1182,19 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'345374b31e304274527a8109edba3133f499f53a';
+    r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
 /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
 
 @ProviderFor(nostrService)
 const nostrServiceProvider = NostrServiceProvider._();
 
-/// Core Nostr client for relay communication
+/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
 
 final class NostrServiceProvider
     extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
     with $Provider<NostrClient> {
-  /// Core Nostr client for relay communication
+  /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
   const NostrServiceProvider._()
     : super(
         from: null,
@@ -1984,7 +1984,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'7780155fc9c4c9eeee848c008400349f6075aded';
+    r'9b7b6a7f878adbc5cb38e3584c2ac444e9488cb8';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2268,7 +2268,7 @@ final class ContentDeletionServiceProvider
 }
 
 String _$contentDeletionServiceHash() =>
-    r'7421e7b16a33959dd2cce177c3f54272352dc721';
+    r'8f8bec86fb2c60f058460e18a5df815263f86638';
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 

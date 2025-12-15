@@ -24,7 +24,6 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
 // Removed legacy explore_video_manager.dart import
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -58,9 +57,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/event_router.dart';
-
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart'
-    as ff;
 
 part 'app_providers.g.dart';
 
@@ -296,7 +292,7 @@ Stream<AuthState> authStateStream(Ref ref) async* {
 /// Prevents data leakage between different Nostr accounts
 @riverpod
 UserDataCleanupService userDataCleanupService(Ref ref) {
-  final prefs = ref.watch(ff.sharedPreferencesProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
   return UserDataCleanupService(prefs);
 }
 
@@ -577,6 +573,7 @@ CurationService curationService(Ref ref) {
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
+  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
     keyManager: keyManager,
@@ -686,6 +683,7 @@ VideoSharingService videoSharingService(Ref ref) {
 Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
+  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
     keyManager: keyManager,
