@@ -12,6 +12,7 @@ class UserName extends ConsumerWidget {
     this.maxLines,
     this.overflow,
     this.selectable = false,
+    this.anonymousName,
   });
 
   final String pubkey;
@@ -19,6 +20,7 @@ class UserName extends ConsumerWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final bool selectable;
+  final String? anonymousName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +28,7 @@ class UserName extends ConsumerWidget {
 
     final (displayName, isReserved) = switch (profileAsync) {
       AsyncData(:final value) when value != null => (
-        value.bestDisplayName,
+        value.bestDisplayName(anonymousName: anonymousName),
         _isReserved(value),
       ),
       AsyncData() || AsyncError() => ('Unknown', false),
