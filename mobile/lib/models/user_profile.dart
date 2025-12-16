@@ -140,11 +140,12 @@ class UserProfile {
   final String eventId;
 
   /// Get the best available display name
-  String get bestDisplayName {
+  String bestDisplayName({String? anonymousName}) {
     if (displayName?.isNotEmpty == true) return displayName!;
     if (name?.isNotEmpty == true) return name!;
+    if (anonymousName != null) return anonymousName;
     // Fallback to truncated npub (e.g., "npub1abc...xyz")
-    return truncatedNpub;
+    return anonymousName ?? truncatedNpub;
   }
 
   /// Get shortened pubkey for display

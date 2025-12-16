@@ -213,7 +213,7 @@ class ComposableVideoGrid extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      UserName(pubkey: video.pubkey),
+                      UserName.fromPubKey(video.pubkey),
                       const SizedBox(height: 1),
                       // Title or content
                       Flexible(

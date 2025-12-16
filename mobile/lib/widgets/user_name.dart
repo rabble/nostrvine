@@ -5,9 +5,10 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class UserName extends ConsumerWidget {
-  const UserName({
+  const UserName._({
     super.key,
-    required this.pubkey,
+    this.pubkey,
+    this.userProfile,
     this.style,
     this.maxLines,
     this.overflow,
@@ -15,25 +16,69 @@ class UserName extends ConsumerWidget {
     this.anonymousName,
   });
 
-  final String pubkey;
+  factory UserName.fromPubKey(
+    String pubkey, {
+    key,
+    style,
+    maxLines,
+    overflow,
+    selectable,
+    anonymousName,
+  }) => UserName._(
+    pubkey: pubkey,
+    key: key,
+    style: style,
+    maxLines: maxLines,
+    overflow: overflow,
+    selectable: selectable,
+    anonymousName: anonymousName,
+  );
+
+  factory UserName.fromUserProfile(
+    UserProfile userProfile, {
+    key,
+    style,
+    maxLines,
+    overflow,
+    selectable,
+    anonymousName,
+  }) => UserName._(
+    userProfile: userProfile,
+    key: key,
+    style: style,
+    maxLines: maxLines,
+    overflow: overflow,
+    selectable: selectable,
+    anonymousName: anonymousName,
+  );
+
+  final String? pubkey;
+  final UserProfile? userProfile;
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
-  final bool selectable;
+  final bool? selectable;
   final String? anonymousName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
+    late String displayName;
+    late bool isReserved;
+    if (userProfile case final userProfile?) {
+      displayName = userProfile.bestDisplayName(anonymousName: anonymousName);
+      isReserved = _isReserved(userProfile);
+    } else {
+      final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
 
-    final (displayName, isReserved) = switch (profileAsync) {
-      AsyncData(:final value) when value != null => (
-        value.bestDisplayName(anonymousName: anonymousName),
-        _isReserved(value),
-      ),
-      AsyncData() || AsyncError() => ('Unknown', false),
-      AsyncLoading() => ('Loading...', false),
-    };
+      (displayName, isReserved) = switch (profileAsync) {
+        AsyncData(:final value) when value != null => (
+          value.bestDisplayName(anonymousName: anonymousName),
+          _isReserved(value),
+        ),
+        AsyncData() || AsyncError() => ('Unknown', false),
+        AsyncLoading() => ('Loading...', false),
+      };
+    }
 
     final textStyle =
         style ??
@@ -45,7 +90,7 @@ class UserName extends ConsumerWidget {
 
     return Row(
       children: [
-        selectable
+        selectable == true
             ? SelectableText(
                 displayName,
                 style: textStyle,
@@ -57,16 +102,28 @@ class UserName extends ConsumerWidget {
                 maxLines: maxLines ?? 1,
                 overflow: overflow ?? TextOverflow.ellipsis,
               ),
-        // TODO( any ): replace with real design for reserved user names
-        if (isReserved) Text('✓', style: TextStyle(color: Colors.blue)),
+        if (isReserved) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 10),
+          ),
+        ],
       ],
     );
   }
 }
 
 bool _isReserved(UserProfile? userProfile) {
-  // TODO( any ): replace with real code once available
-  return userProfile?.bestDisplayName == 'Taylor Swift' ||
-      userProfile?.bestDisplayName == 'rabble' ||
-      userProfile?.bestDisplayName == ' Lele';
+  return true;
+
+  // TODO(john): delete line above and uncomment code below
+
+  // if (userProfile?.hasNip05 ?? false) {
+  //   return true;
+  // }
 }

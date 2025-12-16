@@ -1438,7 +1438,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
           contacts.add(
             ShareableUser(
               pubkey: pubkey,
-              displayName: profile?.bestDisplayName,
+              displayName: profile?.bestDisplayName(),
               picture: profile?.picture,
             ),
           );
@@ -1488,13 +1488,9 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
         profile?.nip05 ?? normalizeToNpub(user.pubkey) ?? user.pubkey;
 
     return ListTile(
-      leading: UserAvatar(
-        imageUrl: user.picture,
-        name: user.displayName,
-        size: 40,
-      ),
-      title: UserName(
-        pubkey: user.pubkey,
+      leading: UserAvatar(imageUrl: user.picture, size: 40),
+      title: UserName.fromPubKey(
+        user.pubkey,
         style: const TextStyle(color: VineTheme.whiteText),
         anonymousName: 'Anonymous',
       ),
@@ -1559,7 +1555,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
         searchResults.add(
           ShareableUser(
             pubkey: pubKey,
-            displayName: profile?.bestDisplayName,
+            displayName: profile?.bestDisplayName(),
             picture: profile?.picture,
           ),
         );
@@ -1570,7 +1566,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
             users.map(
               (user) => ShareableUser(
                 pubkey: user.pubkey,
-                displayName: user.bestDisplayName,
+                displayName: user.bestDisplayName(),
                 picture: user.picture,
               ),
             ),

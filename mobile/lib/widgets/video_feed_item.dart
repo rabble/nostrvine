@@ -880,12 +880,6 @@ class VideoOverlayActions extends ConsumerWidget {
                 });
               }
 
-              final display =
-                  profile?.bestDisplayName ??
-                  profile?.displayName ??
-                  profile?.name ??
-                  'Loading...';
-
               final authService = ref.watch(authServiceProvider);
               final currentUserPubkey = authService.currentPublicKeyHex;
               final isOwnVideo = currentUserPubkey == video.pubkey;
@@ -927,8 +921,8 @@ class VideoOverlayActions extends ConsumerWidget {
                             color: Colors.white,
                           ),
                           const SizedBox(width: 6),
-                          UserName(
-                            pubkey: video.pubkey,
+                          UserName.fromPubKey(
+                            video.pubkey,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
