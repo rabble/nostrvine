@@ -1480,6 +1480,60 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
+/// Social repository - single source of truth for follow data
+/// Handles in-memory cache, local storage, and network sync
+
+@ProviderFor(socialRepository)
+const socialRepositoryProvider = SocialRepositoryProvider._();
+
+/// Social repository - single source of truth for follow data
+/// Handles in-memory cache, local storage, and network sync
+
+final class SocialRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SocialRepository,
+          SocialRepository,
+          SocialRepository
+        >
+    with $Provider<SocialRepository> {
+  /// Social repository - single source of truth for follow data
+  /// Handles in-memory cache, local storage, and network sync
+  const SocialRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'socialRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$socialRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SocialRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SocialRepository create(Ref ref) {
+    return socialRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SocialRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SocialRepository>(value),
+    );
+  }
+}
+
+String _$socialRepositoryHash() => r'a5c7899988a37efce657e3ace972c1539dd69a21';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)

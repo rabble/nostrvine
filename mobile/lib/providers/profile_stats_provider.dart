@@ -97,8 +97,13 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     return cached;
   }
 
-  // Get the social service from app providers
+  // Get the social service and repository from app providers
   final socialService = ref.read(socialServiceProvider);
+  final socialRepository = ref.watch(socialRepositoryProvider);
+  final authService = ref.read(authServiceProvider);
+
+  // Check if this is the current user's profile
+  final isCurrentUser = authService.currentPublicKeyHex == pubkey;
 
   try {
     // Get video event service and ensure subscription exists
@@ -124,11 +129,17 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
       totalLikes += video.originalLikes ?? 0;
     }
 
+    // For current user, use SocialRepository as source of truth for following count
+    // This ensures immediate updates when following/unfollowing
+    final followingCount = isCurrentUser
+        ? socialRepository.followingCount
+        : followerStats['following'] ?? 0;
+
     final stats = ProfileStats(
       videoCount: videoCount,
       totalLikes: totalLikes, // Sum of all likes from user's videos
       followers: followerStats['followers'] ?? 0,
-      following: followerStats['following'] ?? 0,
+      following: followingCount,
       totalViews: totalLoops, // Sum of all loops (views) from user's videos
       lastUpdated: DateTime.now(),
     );
