@@ -32,7 +32,8 @@
       "Bash(dart fix:*)",
       "Bash(dart run build_runner build:*)",
       "mcp__dart__run_tests",
-      "mcp__dart__analyze_files"
+      "mcp__dart__analyze_files",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
