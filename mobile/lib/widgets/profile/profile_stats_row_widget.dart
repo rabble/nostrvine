@@ -9,10 +9,7 @@ import 'package:openvine/utils/string_utils.dart';
 
 /// Stats row showing total loops and likes for a profile
 class ProfileStatsRowWidget extends StatelessWidget {
-  const ProfileStatsRowWidget({
-    required this.profileStatsAsync,
-    super.key,
-  });
+  const ProfileStatsRowWidget({required this.profileStatsAsync, super.key});
 
   final AsyncValue<ProfileStats> profileStatsAsync;
 

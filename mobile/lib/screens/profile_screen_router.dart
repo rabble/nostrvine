@@ -377,7 +377,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                           alignment: Alignment.topCenter,
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 600),
-                            child: ProfileStatsRowWidget(profileStatsAsync: profileStatsAsync),
+                            child: ProfileStatsRowWidget(
+                              profileStatsAsync: profileStatsAsync,
+                            ),
                           ),
                         ),
                       ),
@@ -396,7 +398,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                               onShareProfile: () => _shareProfile(userIdHex),
                               onFollowUser: () => _followUser(userIdHex),
                               onUnfollowUser: () => _unfollowUser(userIdHex),
-                              onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
+                              onBlockUser: (isBlocked) =>
+                                  _blockUser(userIdHex, isBlocked),
                             ),
                           ),
                         ),

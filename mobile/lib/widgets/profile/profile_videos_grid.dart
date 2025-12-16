@@ -28,8 +28,10 @@ class ProfileVideosGrid extends ConsumerWidget {
     if (videos.isEmpty) {
       return _ProfileVideosEmptyState(
         userIdHex: userIdHex,
-        isOwnProfile: ref.read(authServiceProvider).currentPublicKeyHex == userIdHex,
-        onRefresh: () => ref.read(profileFeedProvider(userIdHex).notifier).loadMore(),
+        isOwnProfile:
+            ref.read(authServiceProvider).currentPublicKeyHex == userIdHex,
+        onRefresh: () =>
+            ref.read(profileFeedProvider(userIdHex).notifier).loadMore(),
       );
     }
 
@@ -44,21 +46,18 @@ class ProfileVideosGrid extends ConsumerWidget {
               mainAxisSpacing: 2,
               childAspectRatio: 1,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index >= videos.length) {
-                  return const _VideoGridLoadingTile();
-                }
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index >= videos.length) {
+                return const _VideoGridLoadingTile();
+              }
 
-                final videoEvent = videos[index];
-                return _VideoGridTile(
-                  videoEvent: videoEvent,
-                  userIdHex: userIdHex,
-                  index: index,
-                );
-              },
-              childCount: videos.length,
-            ),
+              final videoEvent = videos[index];
+              return _VideoGridTile(
+                videoEvent: videoEvent,
+                userIdHex: userIdHex,
+                index: index,
+              );
+            }, childCount: videos.length),
           ),
         ),
       ],
@@ -103,11 +102,7 @@ class _ProfileVideosEmptyState extends StatelessWidget {
         const SizedBox(height: 32),
         IconButton(
           onPressed: onRefresh,
-          icon: const Icon(
-            Icons.refresh,
-            color: VineTheme.vineGreen,
-            size: 28,
-          ),
+          icon: const Icon(Icons.refresh, color: VineTheme.vineGreen, size: 28),
           tooltip: 'Refresh',
         ),
       ],

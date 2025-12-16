@@ -13,10 +13,7 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
 class ProfileRepostsGrid extends ConsumerWidget {
-  const ProfileRepostsGrid({
-    required this.userIdHex,
-    super.key,
-  });
+  const ProfileRepostsGrid({required this.userIdHex, super.key});
 
   final String userIdHex;
 
@@ -41,21 +38,18 @@ class ProfileRepostsGrid extends ConsumerWidget {
                   mainAxisSpacing: 2,
                   childAspectRatio: 1,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index >= reposts.length) {
-                      return const SizedBox.shrink();
-                    }
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= reposts.length) {
+                    return const SizedBox.shrink();
+                  }
 
-                    final videoEvent = reposts[index];
-                    return _RepostGridTile(
-                      videoEvent: videoEvent,
-                      userIdHex: userIdHex,
-                      index: index,
-                    );
-                  },
-                  childCount: reposts.length,
-                ),
+                  final videoEvent = reposts[index];
+                  return _RepostGridTile(
+                    videoEvent: videoEvent,
+                    userIdHex: userIdHex,
+                    index: index,
+                  );
+                }, childCount: reposts.length),
               ),
             ),
           ],
@@ -184,7 +178,8 @@ class _RepostThumbnail extends StatelessWidget {
         imageUrl: thumbnailUrl!,
         fit: BoxFit.cover,
         placeholder: (context, url) => const _RepostThumbnailPlaceholder(),
-        errorWidget: (context, url, error) => const _RepostThumbnailPlaceholder(),
+        errorWidget: (context, url, error) =>
+            const _RepostThumbnailPlaceholder(),
       );
     }
     return const _RepostThumbnailPlaceholder();
