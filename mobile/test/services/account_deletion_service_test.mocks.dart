@@ -29,19 +29,24 @@ import 'package:openvine/services/user_profile_service.dart' as _i9;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeNostrBroadcastResult_0 extends _i1.SmartFake
+class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
+  _FakeCountResult_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
     implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_0(Object parent, Invocation parentInvocation)
+  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthResult_1 extends _i1.SmartFake implements _i3.AuthResult {
-  _FakeAuthResult_1(Object parent, Invocation parentInvocation)
+class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeKeychain_2 extends _i1.SmartFake implements _i4.Keychain {
-  _FakeKeychain_2(Object parent, Invocation parentInvocation)
+class _FakeKeychain_3 extends _i1.SmartFake implements _i4.Keychain {
+  _FakeKeychain_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -189,6 +194,43 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
             returnValue: _i7.Future<List<_i8.Event>>.value(<_i8.Event>[]),
           )
           as _i7.Future<List<_i8.Event>>);
+
+  @override
+  _i7.Future<_i2.CountResult> countEvents(
+    List<_i8.Filter>? filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int>? relayTypes = const [1, 2, 3, 4],
+    Duration? timeout = const Duration(seconds: 10),
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #countEvents,
+              [filters],
+              {
+                #subscriptionId: subscriptionId,
+                #tempRelays: tempRelays,
+                #relayTypes: relayTypes,
+                #timeout: timeout,
+              },
+            ),
+            returnValue: _i7.Future<_i2.CountResult>.value(
+              _FakeCountResult_0(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i7.Future<_i2.CountResult>);
 
   @override
   _i7.Future<_i8.Event?> fetchEventById(
@@ -441,7 +483,7 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i7.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_0(
+              _FakeNostrBroadcastResult_1(
                 this,
                 Invocation.method(
                   #broadcast,
@@ -527,7 +569,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -549,7 +591,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -573,7 +615,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -696,7 +738,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#generateKeys, []),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_2(this, Invocation.method(#generateKeys, [])),
+              _FakeKeychain_3(this, Invocation.method(#generateKeys, [])),
             ),
           )
           as _i7.Future<_i4.Keychain>);
@@ -706,7 +748,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#importPrivateKey, [privateKey]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_2(
+              _FakeKeychain_3(
                 this,
                 Invocation.method(#importPrivateKey, [privateKey]),
               ),
@@ -719,7 +761,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#importFromNsec, [nsec]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_2(this, Invocation.method(#importFromNsec, [nsec])),
+              _FakeKeychain_3(this, Invocation.method(#importFromNsec, [nsec])),
             ),
           )
           as _i7.Future<_i4.Keychain>);
@@ -787,7 +829,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#restoreFromMnemonic, [mnemonic]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_2(
+              _FakeKeychain_3(
                 this,
                 Invocation.method(#restoreFromMnemonic, [mnemonic]),
               ),

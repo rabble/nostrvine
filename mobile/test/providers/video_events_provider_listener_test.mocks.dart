@@ -33,9 +33,14 @@ import 'package:openvine/services/video_filter_builder.dart' as _i11;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeNostrBroadcastResult_0 extends _i1.SmartFake
+class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
+  _FakeCountResult_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
     implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_0(Object parent, Invocation parentInvocation)
+  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -932,6 +937,43 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as _i10.Future<List<_i9.Event>>);
 
   @override
+  _i10.Future<_i2.CountResult> countEvents(
+    List<_i12.Filter>? filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int>? relayTypes = const [1, 2, 3, 4],
+    Duration? timeout = const Duration(seconds: 10),
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #countEvents,
+              [filters],
+              {
+                #subscriptionId: subscriptionId,
+                #tempRelays: tempRelays,
+                #relayTypes: relayTypes,
+                #timeout: timeout,
+              },
+            ),
+            returnValue: _i10.Future<_i2.CountResult>.value(
+              _FakeCountResult_0(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i10.Future<_i2.CountResult>);
+
+  @override
   _i10.Future<_i9.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
@@ -1182,7 +1224,7 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i10.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_0(
+              _FakeNostrBroadcastResult_1(
                 this,
                 Invocation.method(
                   #broadcast,

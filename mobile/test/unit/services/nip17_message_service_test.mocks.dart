@@ -32,9 +32,14 @@ class _FakeKeychain_0 extends _i1.SmartFake implements _i2.Keychain {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
+class _FakeCountResult_1 extends _i1.SmartFake implements _i3.CountResult {
+  _FakeCountResult_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeNostrBroadcastResult_2 extends _i1.SmartFake
     implements _i3.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
+  _FakeNostrBroadcastResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -346,6 +351,43 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
           as _i4.Future<List<_i7.Event>>);
 
   @override
+  _i4.Future<_i3.CountResult> countEvents(
+    List<_i7.Filter>? filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int>? relayTypes = const [1, 2, 3, 4],
+    Duration? timeout = const Duration(seconds: 10),
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #countEvents,
+              [filters],
+              {
+                #subscriptionId: subscriptionId,
+                #tempRelays: tempRelays,
+                #relayTypes: relayTypes,
+                #timeout: timeout,
+              },
+            ),
+            returnValue: _i4.Future<_i3.CountResult>.value(
+              _FakeCountResult_1(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i4.Future<_i3.CountResult>);
+
+  @override
   _i4.Future<_i7.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
@@ -596,7 +638,7 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i4.Future<_i3.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
+              _FakeNostrBroadcastResult_2(
                 this,
                 Invocation.method(
                   #broadcast,

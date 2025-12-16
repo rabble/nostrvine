@@ -43,41 +43,46 @@ class _FakeAuthResult_0 extends _i1.SmartFake implements _i2.AuthResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
+class _FakeCountResult_1 extends _i1.SmartFake implements _i3.CountResult {
+  _FakeCountResult_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeNostrBroadcastResult_2 extends _i1.SmartFake
     implements _i3.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
+  _FakeNostrBroadcastResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthService_2 extends _i1.SmartFake implements _i2.AuthService {
-  _FakeAuthService_2(Object parent, Invocation parentInvocation)
+class _FakeAuthService_3 extends _i1.SmartFake implements _i2.AuthService {
+  _FakeAuthService_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrClient_3 extends _i1.SmartFake implements _i4.NostrClient {
-  _FakeNostrClient_3(Object parent, Invocation parentInvocation)
+class _FakeNostrClient_4 extends _i1.SmartFake implements _i4.NostrClient {
+  _FakeNostrClient_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeDio_4 extends _i1.SmartFake implements _i5.Dio {
-  _FakeDio_4(Object parent, Invocation parentInvocation)
+class _FakeDio_5 extends _i1.SmartFake implements _i5.Dio {
+  _FakeDio_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBlossomUploadResult_5 extends _i1.SmartFake
+class _FakeBlossomUploadResult_6 extends _i1.SmartFake
     implements _i6.BlossomUploadResult {
-  _FakeBlossomUploadResult_5(Object parent, Invocation parentInvocation)
+  _FakeBlossomUploadResult_6(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBugReportData_6 extends _i1.SmartFake implements _i7.BugReportData {
-  _FakeBugReportData_6(Object parent, Invocation parentInvocation)
+class _FakeBugReportData_7 extends _i1.SmartFake implements _i7.BugReportData {
+  _FakeBugReportData_7(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBugReportResult_7 extends _i1.SmartFake
+class _FakeBugReportResult_8 extends _i1.SmartFake
     implements _i8.BugReportResult {
-  _FakeBugReportResult_7(Object parent, Invocation parentInvocation)
+  _FakeBugReportResult_8(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -423,6 +428,43 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i9.Future<List<_i11.Event>>);
 
   @override
+  _i9.Future<_i3.CountResult> countEvents(
+    List<_i13.Filter>? filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int>? relayTypes = const [1, 2, 3, 4],
+    Duration? timeout = const Duration(seconds: 10),
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #countEvents,
+              [filters],
+              {
+                #subscriptionId: subscriptionId,
+                #tempRelays: tempRelays,
+                #relayTypes: relayTypes,
+                #timeout: timeout,
+              },
+            ),
+            returnValue: _i9.Future<_i3.CountResult>.value(
+              _FakeCountResult_1(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i9.Future<_i3.CountResult>);
+
+  @override
   _i9.Future<_i11.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
@@ -673,7 +715,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i9.Future<_i3.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
+              _FakeNostrBroadcastResult_2(
                 this,
                 Invocation.method(
                   #broadcast,
@@ -708,7 +750,7 @@ class MockBlossomUploadService extends _i1.Mock
   _i2.AuthService get authService =>
       (super.noSuchMethod(
             Invocation.getter(#authService),
-            returnValue: _FakeAuthService_2(
+            returnValue: _FakeAuthService_3(
               this,
               Invocation.getter(#authService),
             ),
@@ -719,7 +761,7 @@ class MockBlossomUploadService extends _i1.Mock
   _i4.NostrClient get nostrService =>
       (super.noSuchMethod(
             Invocation.getter(#nostrService),
-            returnValue: _FakeNostrClient_3(
+            returnValue: _FakeNostrClient_4(
               this,
               Invocation.getter(#nostrService),
             ),
@@ -730,7 +772,7 @@ class MockBlossomUploadService extends _i1.Mock
   _i5.Dio get dio =>
       (super.noSuchMethod(
             Invocation.getter(#dio),
-            returnValue: _FakeDio_4(this, Invocation.getter(#dio)),
+            returnValue: _FakeDio_5(this, Invocation.getter(#dio)),
           )
           as _i5.Dio);
 
@@ -789,7 +831,7 @@ class MockBlossomUploadService extends _i1.Mock
               #onProgress: onProgress,
             }),
             returnValue: _i9.Future<_i6.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_5(
+              _FakeBlossomUploadResult_6(
                 this,
                 Invocation.method(#uploadVideo, [], {
                   #videoFile: videoFile,
@@ -820,7 +862,7 @@ class MockBlossomUploadService extends _i1.Mock
               #onProgress: onProgress,
             }),
             returnValue: _i9.Future<_i6.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_5(
+              _FakeBlossomUploadResult_6(
                 this,
                 Invocation.method(#uploadImage, [], {
                   #imageFile: imageFile,
@@ -1005,7 +1047,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               #additionalContext: additionalContext,
             }),
             returnValue: _i9.Future<_i7.BugReportData>.value(
-              _FakeBugReportData_6(
+              _FakeBugReportData_7(
                 this,
                 Invocation.method(#collectDiagnostics, [], {
                   #userDescription: userDescription,
@@ -1022,7 +1064,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
   _i7.BugReportData sanitizeSensitiveData(_i7.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#sanitizeSensitiveData, [data]),
-            returnValue: _FakeBugReportData_6(
+            returnValue: _FakeBugReportData_7(
               this,
               Invocation.method(#sanitizeSensitiveData, [data]),
             ),
@@ -1042,7 +1084,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
       (super.noSuchMethod(
             Invocation.method(#sendBugReport, [data]),
             returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_8(
                 this,
                 Invocation.method(#sendBugReport, [data]),
               ),
@@ -1061,7 +1103,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               recipientPubkey,
             ]),
             returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_8(
                 this,
                 Invocation.method(#sendBugReportToRecipient, [
                   data,
@@ -1079,7 +1121,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
       (super.noSuchMethod(
             Invocation.method(#sendBugReportViaEmail, [data]),
             returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_8(
                 this,
                 Invocation.method(#sendBugReportViaEmail, [data]),
               ),

@@ -28,14 +28,19 @@ import 'package:openvine/services/user_profile_service.dart' as _i8;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeNostrBroadcastResult_0 extends _i1.SmartFake
-    implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_0(Object parent, Invocation parentInvocation)
+class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
+  _FakeCountResult_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthResult_1 extends _i1.SmartFake implements _i3.AuthResult {
-  _FakeAuthResult_1(Object parent, Invocation parentInvocation)
+class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
+    implements _i2.NostrBroadcastResult {
+  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -210,6 +215,58 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
             ),
           )
           as _i6.Future<List<_i7.Event>>);
+
+  @override
+  _i6.Future<_i2.CountResult> countEvents(
+    List<_i7.Filter>? filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int>? relayTypes = const [1, 2, 3, 4],
+    Duration? timeout = const Duration(seconds: 10),
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #countEvents,
+              [filters],
+              {
+                #subscriptionId: subscriptionId,
+                #tempRelays: tempRelays,
+                #relayTypes: relayTypes,
+                #timeout: timeout,
+              },
+            ),
+            returnValue: _i6.Future<_i2.CountResult>.value(
+              _FakeCountResult_0(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+            returnValueForMissingStub: _i6.Future<_i2.CountResult>.value(
+              _FakeCountResult_0(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<_i2.CountResult>);
 
   @override
   _i6.Future<_i7.Event?> fetchEventById(
@@ -477,7 +534,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i6.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_0(
+              _FakeNostrBroadcastResult_1(
                 this,
                 Invocation.method(
                   #broadcast,
@@ -488,7 +545,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
             ),
             returnValueForMissingStub:
                 _i6.Future<_i2.NostrBroadcastResult>.value(
-                  _FakeNostrBroadcastResult_0(
+                  _FakeNostrBroadcastResult_1(
                     this,
                     Invocation.method(
                       #broadcast,
@@ -575,7 +632,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -583,7 +640,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               ),
             ),
             returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -605,7 +662,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -615,7 +672,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               ),
             ),
             returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -639,7 +696,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -649,7 +706,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               ),
             ),
             returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_1(
+              _FakeAuthResult_2(
                 this,
                 Invocation.method(
                   #importFromHex,
