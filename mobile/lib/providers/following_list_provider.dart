@@ -38,15 +38,13 @@ class FollowingListNotifier extends _$FollowingListNotifier {
   Future<List<String>> _loadCurrentUserFollowing() async {
     final repository = ref.watch(socialRepositoryProvider);
 
-    // Listen for changes to rebuild when following list changes
-    void listener() {
-      // Update state when repository changes
-      state = AsyncData(repository.followingPubkeys);
-    }
+    // Listen for changes via stream to rebuild when following list changes
+    final subscription = repository.followingStream.listen((followingList) {
+      state = AsyncData(followingList);
+    });
 
-    repository.addListener(listener);
     ref.onDispose(() {
-      repository.removeListener(listener);
+      subscription.cancel();
     });
 
     return repository.followingPubkeys;
@@ -133,40 +131,20 @@ Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   // Emit current state immediately
   yield repository.followingPubkeys;
 
-  // Create a stream controller to emit updates when repository changes
-  final controller = StreamController<List<String>>();
-
-  void listener() {
-    if (!controller.isClosed) {
-      controller.add(repository.followingPubkeys);
-    }
-  }
-
-  repository.addListener(listener);
-  ref.onDispose(() {
-    repository.removeListener(listener);
-    controller.close();
-  });
-
-  yield* controller.stream;
+  // Yield updates from repository stream
+  yield* repository.followingStream;
 }
 
 /// Simple provider to check if currently following a specific pubkey
 /// Uses the SocialRepository as source of truth
 @riverpod
 bool isFollowingUser(Ref ref, String pubkey) {
-  final repository = ref.watch(socialRepositoryProvider);
+  // Watch the current user following list stream for reactivity
+  final followingAsync = ref.watch(currentUserFollowingListProvider);
 
-  // Listen for changes to rebuild when following state changes
-  void listener() {
-    ref.invalidateSelf();
-  }
-
-  repository.addListener(listener);
-  ref.onDispose(() {
-    repository.removeListener(listener);
-  });
-
-  return repository.isFollowing(pubkey);
+  return followingAsync.maybeWhen(
+    data: (followingList) => followingList.contains(pubkey),
+    orElse: () => false,
+  );
 }
 

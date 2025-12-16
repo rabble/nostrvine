@@ -1532,7 +1532,7 @@ final class SocialRepositoryProvider
   }
 }
 
-String _$socialRepositoryHash() => r'a5c7899988a37efce657e3ace972c1539dd69a21';
+String _$socialRepositoryHash() => r'1db7b899b5f8f620c85d8f85f0d173246e5d4ea1';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

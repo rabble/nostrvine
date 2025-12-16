@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/following_list_provider.dart';
 import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -91,19 +92,32 @@ Future<void> clearAllProfileStatsCache() async {
 /// Async provider for loading profile statistics
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
-  // Check cache first
+  final authService = ref.read(authServiceProvider);
+  final isCurrentUser = authService.currentPublicKeyHex == pubkey;
+
+  // For current user, watch the following stream for reactive updates
+  // This will cause the provider to rebuild when following list changes
+  int? currentUserFollowingCount;
+  if (isCurrentUser) {
+    final followingAsync = ref.watch(currentUserFollowingListProvider);
+    currentUserFollowingCount = followingAsync.maybeWhen(
+      data: (list) => list.length,
+      orElse: () => null,
+    );
+  }
+
+  // Check cache first (but not for following count if current user)
   final cached = await _getCachedProfileStats(pubkey);
   if (cached != null) {
+    // For current user, update the following count from live data
+    if (isCurrentUser && currentUserFollowingCount != null) {
+      return cached.copyWith(following: currentUserFollowingCount);
+    }
     return cached;
   }
 
-  // Get the social service and repository from app providers
+  // Get the social service from app providers
   final socialService = ref.read(socialServiceProvider);
-  final socialRepository = ref.watch(socialRepositoryProvider);
-  final authService = ref.read(authServiceProvider);
-
-  // Check if this is the current user's profile
-  final isCurrentUser = authService.currentPublicKeyHex == pubkey;
 
   try {
     // Get video event service and ensure subscription exists
@@ -129,10 +143,10 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
       totalLikes += video.originalLikes ?? 0;
     }
 
-    // For current user, use SocialRepository as source of truth for following count
-    // This ensures immediate updates when following/unfollowing
-    final followingCount = isCurrentUser
-        ? socialRepository.followingCount
+    // For current user, use live following count from stream
+    // For other users, use the fetched follower stats
+    final followingCount = isCurrentUser && currentUserFollowingCount != null
+        ? currentUserFollowingCount
         : followerStats['following'] ?? 0;
 
     final stats = ProfileStats(

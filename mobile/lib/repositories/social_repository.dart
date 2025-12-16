@@ -1,9 +1,9 @@
 // ABOUTME: Repository for managing social relationships (follow/unfollow)
 // ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
 
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,9 +21,8 @@ import 'package:openvine/utils/unified_logger.dart';
 /// - Local storage persistence (SharedPreferences)
 /// - Network sync (Nostr Kind 3 events)
 ///
-/// This class extends ChangeNotifier to allow providers to reactively
-/// listen to changes in the following list.
-class SocialRepository extends ChangeNotifier {
+/// Exposes a stream for reactive updates to the following list.
+class SocialRepository {
   SocialRepository({
     required INostrService nostrService,
     required AuthService authService,
@@ -36,6 +35,10 @@ class SocialRepository extends ChangeNotifier {
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
 
+  // Stream controller for reactive updates
+  final _followingStreamController =
+      StreamController<List<String>>.broadcast();
+
   // In-memory cache
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
@@ -45,6 +48,21 @@ class SocialRepository extends ChangeNotifier {
   List<String> get followingPubkeys => List.unmodifiable(_followingPubkeys);
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
+
+  /// Stream of following pubkeys for reactive updates
+  Stream<List<String>> get followingStream => _followingStreamController.stream;
+
+  /// Emit current state to stream
+  void _emitFollowingList() {
+    if (!_followingStreamController.isClosed) {
+      _followingStreamController.add(List.unmodifiable(_followingPubkeys));
+    }
+  }
+
+  /// Dispose resources
+  void dispose() {
+    _followingStreamController.close();
+  }
 
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
@@ -118,7 +136,7 @@ class SocialRepository extends ChangeNotifier {
 
     // 1. Update in-memory cache immediately
     _followingPubkeys = [..._followingPubkeys, pubkey];
-    notifyListeners();
+    _emitFollowingList();
 
     try {
       // 2. Broadcast to network
@@ -135,7 +153,7 @@ class SocialRepository extends ChangeNotifier {
     } catch (e) {
       // Rollback on failure
       _followingPubkeys = previousFollowList;
-      notifyListeners();
+      _emitFollowingList();
 
       Log.error(
         'Error following user: $e',
@@ -177,7 +195,7 @@ class SocialRepository extends ChangeNotifier {
 
     // 1. Update in-memory cache immediately
     _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
-    notifyListeners();
+    _emitFollowingList();
 
     try {
       // 2. Broadcast to network
@@ -194,7 +212,7 @@ class SocialRepository extends ChangeNotifier {
     } catch (e) {
       // Rollback on failure
       _followingPubkeys = previousFollowList;
-      notifyListeners();
+      _emitFollowingList();
 
       Log.error(
         'Error unfollowing user: $e',
@@ -233,7 +251,7 @@ class SocialRepository extends ChangeNotifier {
         if (cached != null) {
           final List<dynamic> decoded = jsonDecode(cached);
           _followingPubkeys = decoded.cast<String>();
-          notifyListeners();
+          _emitFollowingList();
 
           Log.info(
             'Loaded cached following list: ${_followingPubkeys.length} users',
@@ -275,7 +293,7 @@ class SocialRepository extends ChangeNotifier {
         if (pubkeys.isNotEmpty) {
           _followingPubkeys = pubkeys;
           _currentUserContactListEvent = latestContactList;
-          notifyListeners();
+          _emitFollowingList();
 
           Log.debug(
             'Loaded following from PersonalEventCache: ${pubkeys.length} users',
@@ -414,7 +432,7 @@ class SocialRepository extends ChangeNotifier {
       }
 
       _followingPubkeys = followedPubkeys;
-      notifyListeners();
+      _emitFollowingList();
 
       Log.info(
         'Updated follow list from network: ${_followingPubkeys.length} following',

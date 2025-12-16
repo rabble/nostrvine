@@ -438,6 +438,11 @@ SocialRepository socialRepository(Ref ref) {
     );
   });
 
+  // Dispose stream controller when provider is disposed
+  ref.onDispose(() {
+    repository.dispose();
+  });
+
   return repository;
 }
 

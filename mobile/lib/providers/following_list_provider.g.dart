@@ -60,7 +60,7 @@ final class FollowingListNotifierProvider
 }
 
 String _$followingListNotifierHash() =>
-    r'b7aac0bf8a5488e50acef86dfbec1ac6727f78d0';
+    r'2034e5431e30ec32dfabc74f6621d053c10aa1d5';
 
 /// Provider for fetching and managing a user's following list
 /// - For current user: uses SocialRepository (reactive updates)
@@ -167,7 +167,7 @@ final class CurrentUserFollowingListProvider
 }
 
 String _$currentUserFollowingListHash() =>
-    r'600318f6367c10f958d29f88b4836e70aa103ded';
+    r'80dc00739de862442c2526da2dd89c1ed052538d';
 
 /// Simple provider to check if currently following a specific pubkey
 /// Uses the SocialRepository as source of truth
@@ -234,7 +234,7 @@ final class IsFollowingUserProvider
   }
 }
 
-String _$isFollowingUserHash() => r'7e60a496538cf1357de9b7c5c9fe1c1e1f3fc94b';
+String _$isFollowingUserHash() => r'bfeefbd766f64e8e9fb6516dd0293092d634cc6b';
 
 /// Simple provider to check if currently following a specific pubkey
 /// Uses the SocialRepository as source of truth
