@@ -445,13 +445,6 @@ class _UniversalCameraScreenPureState
                   );
                   // Don't show "max time reached" message for manual stops
                 }
-              } else {
-                // No segments = recording failure
-                Log.warning(
-                  '📹 Recording stopped due to error (no segments)',
-                  category: LogCategory.video,
-                );
-                _handleRecordingFailure();
               }
             }
           });
@@ -1365,12 +1358,6 @@ class _UniversalCameraScreenPureState
         category: LogCategory.video,
       );
     }
-  }
-
-  void _handleRecordingFailure() {
-    if (!mounted) return;
-
-    _showErrorSnackBar('Camera recording failed. Please try again.');
   }
 
   void _toggleTimer() {

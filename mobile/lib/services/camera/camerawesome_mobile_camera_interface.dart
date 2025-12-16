@@ -35,6 +35,12 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
   // Stream controller for camera state updates
   final _stateController = StreamController<CameraState>.broadcast();
 
+  // Callback for when camera becomes ready to record
+  VoidCallback? onCameraReady;
+
+  /// Check if camera is actually ready to record
+  bool get isReadyToRecord => _cameraState != null;
+
   @override
   Future<void> initialize() async {
     try {
@@ -500,9 +506,17 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
       previewFit: CameraPreviewFit.contain,
       builder: (state, preview) {
         // CameraLayoutBuilder signature: (CameraState, AnalysisPreview)
+        final wasNotReady = _cameraState == null;
+
         // Store camera state for use in other methods
         _cameraState = state;
         _stateController.add(state);
+
+        if (wasNotReady) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onCameraReady?.call();
+          });
+        }
 
         // Return empty container - preview is shown automatically
         return const SizedBox.shrink();
