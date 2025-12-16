@@ -1310,9 +1310,12 @@ class VideoOverlayActions extends ConsumerWidget {
                           Semantics(
                             identifier: 'repost_button',
                             button: true,
-                            label: isReposted ? 'Remove repost' : 'Repost video',
+                            label: isReposted
+                                ? 'Remove repost'
+                                : 'Repost video',
                             child: _buildCircularIconButton(
-                              onPressed: socialState.isRepostInProgress(video.id)
+                              onPressed:
+                                  socialState.isRepostInProgress(video.id)
                                   ? () {}
                                   : () async {
                                       Log.info(
