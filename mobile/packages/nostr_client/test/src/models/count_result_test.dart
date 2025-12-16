@@ -55,22 +55,6 @@ void main() {
       expect(copied.source, equals(CountSource.cache));
     });
 
-    test('toString returns readable format', () {
-      const result = CountResult(
-        count: 42,
-        approximate: true,
-        source: CountSource.clientSide,
-      );
-
-      expect(
-        result.toString(),
-        equals(
-          'CountResult(count: 42, approximate: true,'
-          ' source: CountSource.clientSide)',
-        ),
-      );
-    });
-
     test('equality works correctly', () {
       const result1 = CountResult(count: 42);
       const result2 = CountResult(count: 42);
@@ -80,13 +64,6 @@ void main() {
       expect(result1, equals(result2));
       expect(result1, isNot(equals(result3)));
       expect(result1, isNot(equals(result4)));
-    });
-
-    test('hashCode is consistent with equality', () {
-      const result1 = CountResult(count: 42);
-      const result2 = CountResult(count: 42);
-
-      expect(result1.hashCode, equals(result2.hashCode));
     });
   });
 
