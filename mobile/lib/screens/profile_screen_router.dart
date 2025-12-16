@@ -18,6 +18,7 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -630,8 +631,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
               children: [
                 Row(
                   children: [
-                    SelectableText(
-                      displayName,
+                    UserName(
+                      pubkey: userIdHex,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

@@ -11,12 +11,14 @@ class UserName extends ConsumerWidget {
     this.style,
     this.maxLines,
     this.overflow,
+    this.selectable = false,
   });
 
   final String pubkey;
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,18 +35,30 @@ class UserName extends ConsumerWidget {
 
     return Row(
       children: [
-        Text(
-          displayName,
-          style:
-              style ??
-              TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 10,
-                fontWeight: FontWeight.w400,
+        selectable
+            ? SelectableText(
+                displayName,
+                style:
+                    style ??
+                    TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                    ),
+                maxLines: maxLines ?? 1,
+              )
+            : Text(
+                displayName,
+                style:
+                    style ??
+                    TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                    ),
+                maxLines: maxLines ?? 1,
+                overflow: overflow ?? TextOverflow.ellipsis,
               ),
-          maxLines: maxLines ?? 1,
-          overflow: overflow ?? TextOverflow.ellipsis,
-        ),
         // TODO( any ): replace with real design for reserved user names
         if (isReserved) Text('✓', style: TextStyle(color: Colors.blue)),
       ],
