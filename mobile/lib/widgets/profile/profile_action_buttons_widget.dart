@@ -9,8 +9,8 @@ import 'package:openvine/theme/vine_theme.dart';
 
 /// Action buttons shown on profile page
 /// Different buttons shown for own profile vs other user profiles
-class ProfileActionButtonsWidget extends StatelessWidget {
-  const ProfileActionButtonsWidget({
+class ProfileActionButtons extends StatelessWidget {
+  const ProfileActionButtons({
     required this.userIdHex,
     required this.isOwnProfile,
     this.onEditProfile,

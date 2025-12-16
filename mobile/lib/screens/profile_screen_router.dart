@@ -390,7 +390,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                           alignment: Alignment.topCenter,
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 600),
-                            child: ProfileActionButtonsWidget(
+                            child: ProfileActionButtons(
                               userIdHex: userIdHex,
                               isOwnProfile: isOwnProfile,
                               onEditProfile: _editProfile,
