@@ -33,29 +33,25 @@ class UserName extends ConsumerWidget {
       AsyncLoading() => ('Loading...', false),
     };
 
+    final textStyle =
+        style ??
+        TextStyle(
+          color: VineTheme.secondaryText,
+          fontSize: 10,
+          fontWeight: FontWeight.w400,
+        );
+
     return Row(
       children: [
         selectable
             ? SelectableText(
                 displayName,
-                style:
-                    style ??
-                    TextStyle(
-                      color: VineTheme.secondaryText,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                    ),
+                style: textStyle,
                 maxLines: maxLines ?? 1,
               )
             : Text(
                 displayName,
-                style:
-                    style ??
-                    TextStyle(
-                      color: VineTheme.secondaryText,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                    ),
+                style: textStyle,
                 maxLines: maxLines ?? 1,
                 overflow: overflow ?? TextOverflow.ellipsis,
               ),
@@ -69,5 +65,6 @@ class UserName extends ConsumerWidget {
 bool _isReserved(UserProfile? userProfile) {
   // TODO( any ): replace with real code once available
   return userProfile?.bestDisplayName == 'Taylor Swift' ||
-      userProfile?.bestDisplayName == 'rabble';
+      userProfile?.bestDisplayName == 'rabble' ||
+      userProfile?.bestDisplayName == ' Lele';
 }

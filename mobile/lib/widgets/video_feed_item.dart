@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -926,8 +927,8 @@ class VideoOverlayActions extends ConsumerWidget {
                             color: Colors.white,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            display,
+                          UserName(
+                            pubkey: video.pubkey,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
