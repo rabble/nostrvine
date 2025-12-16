@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'count_response.dart';
 import 'event.dart';
 import 'event_kind.dart';
 import 'event_mem_box.dart';
@@ -249,6 +250,28 @@ class Nostr {
 
     await completer.future;
     return eventBox.all();
+  }
+
+  /// Sends a COUNT request (NIP-45) to relays and returns the count.
+  ///
+  /// Unlike [queryEvents], this returns a single count rather than
+  /// a list of events. Useful for follower counts, reaction counts, etc.
+  ///
+  /// Throws [CountNotSupportedException] if no relay supports NIP-45.
+  Future<CountResponse> countEvents(
+    List<Map<String, dynamic>> filters, {
+    String? id,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    return _pool.count(
+      filters,
+      id: id,
+      tempRelays: tempRelays,
+      relayTypes: relayTypes,
+      timeout: timeout,
+    );
   }
 
   String query(
