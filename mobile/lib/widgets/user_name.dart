@@ -116,14 +116,8 @@ class UserName extends ConsumerWidget {
       ],
     );
   }
-}
 
-bool _isReserved(UserProfile? userProfile) {
-  return true;
-
-  // TODO(john): delete line above and uncomment code below
-
-  // if (userProfile?.hasNip05 ?? false) {
-  //   return true;
-  // }
+  bool _isReserved(UserProfile? userProfile) {
+    return userProfile?.hasNip05 ?? false;
+  }
 }
