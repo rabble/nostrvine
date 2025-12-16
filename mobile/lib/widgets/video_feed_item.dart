@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/follow_state_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -889,11 +890,12 @@ class VideoOverlayActions extends ConsumerWidget {
               final currentUserPubkey = authService.currentPublicKeyHex;
               final isOwnVideo = currentUserPubkey == video.pubkey;
 
-              final socialState = ref.watch(socialProvider);
-              final isFollowing = socialState.isFollowing(video.pubkey);
-              final isFollowInProgress = socialState.isFollowInProgress(
-                video.pubkey,
+              // Use SocialRepository via providers for follow state
+              final isFollowing = ref.watch(
+                isFollowingUserProvider(video.pubkey),
               );
+              final followOps = ref.watch(followOperationsProvider);
+              final isFollowInProgress = followOps.contains(video.pubkey);
 
               return Row(
                 mainAxisSize: MainAxisSize.min,
@@ -950,15 +952,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                 name: 'VideoFeedItem',
                                 category: LogCategory.ui,
                               );
-                              if (isFollowing) {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .unfollowUser(video.pubkey);
-                              } else {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .followUser(video.pubkey);
-                              }
+                              // Use FollowOperations provider which delegates to SocialRepository
+                              await ref
+                                  .read(followOperationsProvider.notifier)
+                                  .toggle(video.pubkey);
                             },
                       child: Container(
                         padding: const EdgeInsets.symmetric(

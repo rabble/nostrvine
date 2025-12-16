@@ -135,16 +135,3 @@ Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   yield* repository.followingStream;
 }
 
-/// Simple provider to check if currently following a specific pubkey
-/// Uses the SocialRepository as source of truth
-@riverpod
-bool isFollowingUser(Ref ref, String pubkey) {
-  // Watch the current user following list stream for reactivity
-  final followingAsync = ref.watch(currentUserFollowingListProvider);
-
-  return followingAsync.maybeWhen(
-    data: (followingList) => followingList.contains(pubkey),
-    orElse: () => false,
-  );
-}
-
