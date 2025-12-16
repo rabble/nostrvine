@@ -6,6 +6,7 @@ import 'dart:developer';
 
 import 'package:nostr_sdk/utils/relay_addr_util.dart';
 
+import '../count_response.dart';
 import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
@@ -373,6 +374,39 @@ class RelayPool {
             '🔐 Pending ${relay.pendingAuthedMessages.length} messages for after auth confirmation',
           );
         }
+      }
+    } else if (messageType == 'COUNT') {
+      // NIP-45 COUNT response
+      if (json.length < 3) {
+        log('COUNT result malformed');
+        return;
+      }
+
+      final subscriptionId = json[1] as String;
+      final payload = json[2] as Map<String, dynamic>;
+      final count = payload['count'] as int;
+      final approximate = payload['approximate'] as bool? ?? false;
+
+      log('📊 COUNT response: $count (approximate: $approximate)');
+
+      final response = CountResponse(count: count, approximate: approximate);
+
+      relay.completeCountQuery(subscriptionId, response);
+    } else if (messageType == 'CLOSED') {
+      // Handle CLOSED messages - check if it's for a COUNT query
+      if (json.length < 2) {
+        log('CLOSED result malformed');
+        return;
+      }
+
+      final subscriptionId = json[1] as String;
+      final reason = json.length > 2 ? json[2] as String : 'Unknown reason';
+
+      log('📡 CLOSED from ${relay.url}: $subscriptionId - $reason');
+
+      // Check if this is a COUNT query being refused
+      if (relay.hasCountQuery(subscriptionId)) {
+        relay.failCountQuery(subscriptionId, reason);
       }
     }
   }
@@ -928,5 +962,108 @@ class RelayPool {
     });
 
     return completer.future;
+  }
+
+  /// Sends a COUNT query (NIP-45) to relays and returns the count.
+  ///
+  /// Unlike [query], this returns a count rather than events.
+  /// Throws [CountNotSupportedException] if no relay supports NIP-45.
+  ///
+  /// Parameters:
+  /// - [filters]: The filters to count events for (same format as REQ)
+  /// - [id]: Optional subscription ID
+  /// - [tempRelays]: Optional list of temporary relays to query
+  /// - [relayTypes]: Types of relays to query (default: all)
+  /// - [timeout]: How long to wait for a response (default: 10 seconds)
+  Future<CountResponse> count(
+    List<Map<String, dynamic>> filters, {
+    String? id,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    if (filters.isEmpty) {
+      throw ArgumentError('No filters given', 'filters');
+    }
+
+    handleAddrList(tempRelays);
+
+    final subscriptionId = id ?? StringUtil.rndNameStr(16);
+    final message = ['COUNT', subscriptionId, ...filters];
+
+    // Collect all relays to try
+    final relaysToTry = <Relay>[];
+
+    // Add temp relays first
+    if (tempRelays != null &&
+        tempRelays.isNotEmpty &&
+        relayTypes.contains(RelayType.temp)) {
+      for (var tempRelayAddr in tempRelays) {
+        Relay? relay = _relays[tempRelayAddr];
+        relay ??= checkAndGenTempRelay(tempRelayAddr);
+        relaysToTry.add(relay);
+      }
+    }
+
+    // Add normal relays
+    if (relayTypes.contains(RelayType.normal)) {
+      for (var relay in _relays.values) {
+        if (!relaysToTry.contains(relay)) {
+          relaysToTry.add(relay);
+        }
+      }
+    }
+
+    // Add cache relays
+    if (relayTypes.contains(RelayType.cache)) {
+      for (var relay in _cacheRelays.values) {
+        if (!relaysToTry.contains(relay)) {
+          relaysToTry.add(relay);
+        }
+      }
+    }
+
+    // Add local relay
+    if (relayTypes.contains(RelayType.local) && relayLocal != null) {
+      if (!relaysToTry.contains(relayLocal)) {
+        relaysToTry.add(relayLocal!);
+      }
+    }
+
+    // Try each relay until one responds
+    for (final relay in relaysToTry) {
+      if (relay.relayStatus.connected != ClientConnected.connected) {
+        continue;
+      }
+      if (!relay.relayStatus.readAccess) {
+        continue;
+      }
+
+      // Register the query before sending
+      final responseFuture = relay.registerCountQuery(subscriptionId);
+
+      // Send the COUNT request
+      final sent = relay.send(message);
+      if (!sent) {
+        continue;
+      }
+
+      log('📊 COUNT request sent to ${relay.url}');
+
+      // Wait for response with timeout
+      try {
+        final response = await responseFuture.timeout(
+          timeout,
+          onTimeout: () => throw CountNotSupportedException('Timeout'),
+        );
+        return response;
+      } on CountNotSupportedException {
+        // Try next relay
+        log('📊 COUNT not supported or timed out on ${relay.url}');
+        continue;
+      }
+    }
+
+    throw CountNotSupportedException('No relay responded to COUNT');
   }
 }

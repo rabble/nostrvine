@@ -1,8 +1,10 @@
 // ABOUTME: Abstract relay class defining the Nostr relay interface.
-// ABOUTME: Manages subscriptions, queries, and pending messages.
+// ABOUTME: Manages subscriptions, queries, COUNT queries, and pending messages.
 
+import 'dart:async';
 import 'dart:developer';
 
+import '../count_response.dart';
 import '../subscription.dart';
 import 'client_connected.dart';
 import 'relay_info.dart';
@@ -31,6 +33,9 @@ abstract class Relay {
 
   // queries
   final Map<String, Subscription> _queries = {};
+
+  // NIP-45 COUNT queries
+  final Map<String, Completer<CountResponse>> _countQueries = {};
 
   Relay(this.url, this.relayStatus);
 
@@ -131,6 +136,32 @@ abstract class Relay {
 
   Subscription? getRequestSubscription(String id) {
     return _queries[id];
+  }
+
+  // NIP-45 COUNT query methods
+
+  /// Register a COUNT query and return a future that completes with the response
+  Future<CountResponse> registerCountQuery(String id) {
+    final completer = Completer<CountResponse>();
+    _countQueries[id] = completer;
+    return completer.future;
+  }
+
+  /// Check if a COUNT query exists for this ID
+  bool hasCountQuery(String id) {
+    return _countQueries.containsKey(id);
+  }
+
+  /// Complete a COUNT query with the response
+  void completeCountQuery(String id, CountResponse response) {
+    final completer = _countQueries.remove(id);
+    completer?.complete(response);
+  }
+
+  /// Complete a COUNT query with an error (e.g., CLOSED response)
+  void failCountQuery(String id, String reason) {
+    final completer = _countQueries.remove(id);
+    completer?.completeError(CountNotSupportedException(reason));
   }
 
   Function? relayStatusCallback;
