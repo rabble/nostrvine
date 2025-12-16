@@ -671,11 +671,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         ),
                                         child: Semantics(
                                           identifier: 'play_button',
+                                          container: true,
+                                          explicitChildNodes: true,
+                                          label: 'Play video',
                                           child: const Icon(
                                             Icons.play_arrow,
                                             size: 56,
                                             color: Colors.white,
-                                            semanticLabel: 'Play video',
                                           ),
                                         ),
                                       ),
@@ -1042,6 +1044,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     // Video title with clickable hashtags
                     Semantics(
                       identifier: 'video_description',
+                      container: true,
+                      explicitChildNodes: true,
                       label: 'Video description',
                       child: ClickableHashtagText(
                         text: video.content.isNotEmpty
@@ -1093,6 +1097,8 @@ class VideoOverlayActions extends ConsumerWidget {
                         video.originalLoops! > 0) ...[
                       Semantics(
                         identifier: 'loop_count',
+                        container: true,
+                        explicitChildNodes: true,
                         label: 'Video loop count',
                         child: Text(
                           '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
@@ -1138,6 +1144,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     children: [
                       Semantics(
                         identifier: 'like_button',
+                        container: true,
+                        explicitChildNodes: true,
                         button: true,
                         label: isLiked ? 'Unlike video' : 'Like video',
                         child: _buildCircularIconButton(
@@ -1209,6 +1217,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     children: [
                       Semantics(
                         identifier: 'comments_button',
+                        container: true,
+                        explicitChildNodes: true,
                         button: true,
                         label: 'View comments',
                         child: _buildCircularIconButton(
@@ -1309,6 +1319,8 @@ class VideoOverlayActions extends ConsumerWidget {
                         children: [
                           Semantics(
                             identifier: 'repost_button',
+                            container: true,
+                            explicitChildNodes: true,
                             button: true,
                             label: isReposted
                                 ? 'Remove repost'
@@ -1384,6 +1396,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     children: [
                       Semantics(
                         identifier: 'share_button',
+                        container: true,
+                        explicitChildNodes: true,
                         button: true,
                         label: 'Share video',
                         child: _buildCircularIconButton(
@@ -1433,6 +1447,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     children: [
                       Semantics(
                         identifier: 'report_button',
+                        container: true,
+                        explicitChildNodes: true,
                         button: true,
                         label: 'Report video',
                         child: _buildCircularIconButton(
