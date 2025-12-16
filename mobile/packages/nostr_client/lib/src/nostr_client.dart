@@ -212,6 +212,66 @@ class NostrClient {
     return events;
   }
 
+  /// Counts events matching the given filters using NIP-45.
+  ///
+  /// This is more efficient than [queryEvents] when you only need the count,
+  /// not the actual events. Uses NIP-45 COUNT requests to relays.
+  ///
+  /// Falls back to client-side counting if relay doesn't support NIP-45.
+  ///
+  /// Example - Count followers:
+  /// ```dart
+  /// final result = await client.countEvents([
+  ///   Filter(kinds: [3], p: [pubkey]),
+  /// ]);
+  /// print('Follower count: ${result.count}');
+  /// ```
+  ///
+  /// Example - Count reactions on an event:
+  /// ```dart
+  /// final result = await client.countEvents([
+  ///   Filter(kinds: [7], e: [eventId]),
+  /// ]);
+  /// print('Reaction count: ${result.count}');
+  /// ```
+  Future<CountResult> countEvents(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final filtersJson = filters.map((f) => f.toJson()).toList();
+
+    try {
+      // Try NIP-45 COUNT first
+      final response = await _nostr.countEvents(
+        filtersJson,
+        id: subscriptionId,
+        tempRelays: tempRelays,
+        relayTypes: relayTypes,
+        timeout: timeout,
+      );
+
+      return CountResult(
+        count: response.count,
+        approximate: response.approximate,
+      );
+    } on CountNotSupportedException {
+      // Fall back to fetching events and counting client-side
+      final events = await queryEvents(
+        filters,
+        tempRelays: tempRelays,
+        relayTypes: relayTypes,
+      );
+
+      return CountResult(
+        count: events.length,
+        source: CountSource.clientSide,
+      );
+    }
+  }
+
   /// Fetches a single event by ID
   ///
   /// Query flow: **Cache → Gateway → WebSocket**
