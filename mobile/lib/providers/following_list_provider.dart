@@ -170,20 +170,3 @@ bool isFollowingUser(Ref ref, String pubkey) {
   return repository.isFollowing(pubkey);
 }
 
-/// Provider for following count (convenience wrapper)
-@riverpod
-int followingCount(Ref ref) {
-  final repository = ref.watch(socialRepositoryProvider);
-
-  // Listen for changes to rebuild when following list changes
-  void listener() {
-    ref.invalidateSelf();
-  }
-
-  repository.addListener(listener);
-  ref.onDispose(() {
-    repository.removeListener(listener);
-  });
-
-  return repository.followingCount;
-}
