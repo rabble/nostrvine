@@ -389,10 +389,7 @@ class RelayPool {
 
       log('📊 COUNT response: $count (approximate: $approximate)');
 
-      final response = CountResponse(
-        count: count,
-        approximate: approximate,
-      );
+      final response = CountResponse(count: count, approximate: approximate);
 
       relay.completeCountQuery(subscriptionId, response);
     } else if (messageType == 'CLOSED') {

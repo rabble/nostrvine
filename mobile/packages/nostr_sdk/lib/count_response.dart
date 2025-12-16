@@ -9,10 +9,7 @@ class CountResponse {
   /// Whether this count is approximate (probabilistic)
   final bool approximate;
 
-  const CountResponse({
-    required this.count,
-    this.approximate = false,
-  });
+  const CountResponse({required this.count, this.approximate = false});
 
   @override
   String toString() =>
