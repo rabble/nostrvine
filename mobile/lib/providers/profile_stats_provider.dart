@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/following_list_provider.dart';
 import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -93,25 +92,32 @@ Future<void> clearAllProfileStatsCache() async {
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
   final authService = ref.read(authServiceProvider);
+  final socialRepository = ref.watch(socialRepositoryProvider);
   final isCurrentUser = authService.currentPublicKeyHex == pubkey;
 
-  // For current user, watch the following stream for reactive updates
-  // This will cause the provider to rebuild when following list changes
+  // For current user, get following count directly from repository
+  // and listen to stream for reactive updates
   int? currentUserFollowingCount;
   if (isCurrentUser) {
-    final followingAsync = ref.watch(currentUserFollowingListProvider);
-    currentUserFollowingCount = followingAsync.maybeWhen(
-      data: (list) => list.length,
-      orElse: () => null,
-    );
+    currentUserFollowingCount = socialRepository.followingCount;
+
+    // Subscribe to stream for reactive updates when following list changes
+    final subscription = socialRepository.followingStream.listen((list) {
+      // Invalidate this provider when following list changes
+      ref.invalidateSelf();
+    });
+
+    ref.onDispose(() {
+      subscription.cancel();
+    });
   }
 
   // Check cache first (but not for following count if current user)
   final cached = await _getCachedProfileStats(pubkey);
   if (cached != null) {
-    // For current user, update the following count from live data
-    if (isCurrentUser && currentUserFollowingCount != null) {
-      return cached.copyWith(following: currentUserFollowingCount);
+    // For current user, always update the following count from live data
+    if (isCurrentUser) {
+      return cached.copyWith(following: currentUserFollowingCount ?? 0);
     }
     return cached;
   }
@@ -143,10 +149,10 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
       totalLikes += video.originalLikes ?? 0;
     }
 
-    // For current user, use live following count from stream
+    // For current user, use live following count from repository
     // For other users, use the fetched follower stats
-    final followingCount = isCurrentUser && currentUserFollowingCount != null
-        ? currentUserFollowingCount
+    final followingCount = isCurrentUser
+        ? currentUserFollowingCount ?? 0
         : followerStats['following'] ?? 0;
 
     final stats = ProfileStats(
