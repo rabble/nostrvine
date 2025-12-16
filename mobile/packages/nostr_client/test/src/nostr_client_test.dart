@@ -78,6 +78,8 @@ void main() {
     registerFallbackValue(<Map<String, dynamic>>[]);
     registerFallbackValue(<String>[]);
     registerFallbackValue(RelayType.all);
+    registerFallbackValue(const Duration(seconds: 10));
+    registerFallbackValue(const CountResponse(count: 0));
   });
 
   setUp(() {
@@ -2333,6 +2335,249 @@ void main() {
         final filters = captured.first as List<Map<String, dynamic>>;
         expect(filters.first['search'], equals(query));
         expect(filters.first['kinds'], contains(EventKind.metadata));
+      });
+    });
+
+    group('countEvents', () {
+      test('returns count from relay COUNT response', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote], authors: [testPublicKey]),
+        ];
+        const countResponse = CountResponse(count: 42);
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => countResponse);
+
+        final result = await client.countEvents(filters);
+
+        expect(result.count, equals(42));
+        expect(result.approximate, isFalse);
+        expect(result.source, equals(CountSource.websocket));
+      });
+
+      test('handles approximate counts', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        const countResponse = CountResponse(count: 1000, approximate: true);
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => countResponse);
+
+        final result = await client.countEvents(filters);
+
+        expect(result.count, equals(1000));
+        expect(result.approximate, isTrue);
+        expect(result.source, equals(CountSource.websocket));
+      });
+
+      test('falls back to queryEvents when COUNT not supported', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        final events = [
+          _createTestEvent(),
+          _createTestEvent(),
+          _createTestEvent(),
+        ];
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenThrow(CountNotSupportedException('Not supported'));
+        // Mock gateway to return empty so it falls through to websocket
+        when(
+          () => mockGatewayClient.query(any()),
+        ).thenAnswer(
+          (_) async => const GatewayResponse(
+            events: [],
+            eose: true,
+            complete: true,
+            cached: false,
+          ),
+        );
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => events);
+
+        final result = await client.countEvents(filters);
+
+        expect(result.count, equals(3));
+        expect(result.approximate, isFalse);
+        expect(result.source, equals(CountSource.clientSide));
+      });
+
+      test('passes subscriptionId parameter', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        const customId = 'my-count-sub';
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => const CountResponse(count: 10));
+
+        await client.countEvents(filters, subscriptionId: customId);
+
+        verify(
+          () => mockNostr.countEvents(
+            any(),
+            id: customId,
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+      });
+
+      test('passes timeout parameter', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        const customTimeout = Duration(seconds: 5);
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => const CountResponse(count: 10));
+
+        await client.countEvents(filters, timeout: customTimeout);
+
+        verify(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: customTimeout,
+          ),
+        ).called(1);
+      });
+
+      test('passes tempRelays parameter', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        final tempRelays = ['wss://temp.example.com'];
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => const CountResponse(count: 10));
+
+        await client.countEvents(filters, tempRelays: tempRelays);
+
+        verify(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: tempRelays,
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+      });
+
+      test('passes relayTypes parameter', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        final relayTypes = [RelayType.normal];
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => const CountResponse(count: 10));
+
+        await client.countEvents(filters, relayTypes: relayTypes);
+
+        verify(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: relayTypes,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+      });
+
+      test('converts Filter objects to JSON', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote], authors: [testPublicKey]),
+        ];
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => const CountResponse(count: 5));
+
+        await client.countEvents(filters);
+
+        final captured = verify(
+          () => mockNostr.countEvents(
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).captured;
+
+        final capturedFilters = captured.first as List<Map<String, dynamic>>;
+        expect(capturedFilters.first['kinds'], contains(EventKind.textNote));
+        expect(capturedFilters.first['authors'], contains(testPublicKey));
       });
     });
   });
