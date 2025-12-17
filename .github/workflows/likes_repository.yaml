@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    name: DB Client CI
+    name: Likes Repository CI
     runs-on: ubuntu-latest
     defaults:
       run:
