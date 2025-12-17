@@ -1,6 +1,7 @@
 // ABOUTME: Persistent video cache manager for offline playback and bandwidth reduction
 // ABOUTME: Manages local storage of video files with intelligent cleanup and size management
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -30,6 +31,7 @@ class VideoCacheManager extends CacheManager {
   // Cache manifest for synchronous lookups - tracks videoId → cached file path
   // This enables getCachedVideoSync() to avoid async overhead
   final Map<String, String> _cacheManifest = {};
+  final Map<String, Future<File?>> _cacheVideoLock = {};
 
   factory VideoCacheManager() {
     return _instance ??= VideoCacheManager._();
@@ -180,6 +182,17 @@ class VideoCacheManager extends CacheManager {
     BrokenVideoTracker? brokenVideoTracker,
     Map<String, String>? authHeaders,
   }) async {
+    if (_cacheVideoLock.containsKey(videoId)) {
+      Log.debug(
+        '🔒 Waiting for ongoing cache operation for video $videoId',
+        name: 'VideoCacheManager',
+        category: LogCategory.video,
+      );
+      return await _cacheVideoLock[videoId];
+    }
+    final completer = Completer<File?>();
+    _cacheVideoLock[videoId] = completer.future;
+
     try {
       // Check if already cached first - avoid redundant downloads
       final cachedFile = await getCachedVideo(videoId);
@@ -191,6 +204,7 @@ class VideoCacheManager extends CacheManager {
           name: 'VideoCacheManager',
           category: LogCategory.video,
         );
+        completer.complete(cachedFile);
         return cachedFile;
       }
 
@@ -215,6 +229,7 @@ class VideoCacheManager extends CacheManager {
         category: LogCategory.video,
       );
 
+      completer.complete(fileInfo.file);
       return fileInfo.file;
     } catch (error) {
       final errorMessage = error.toString();
@@ -232,6 +247,7 @@ class VideoCacheManager extends CacheManager {
         );
       }
 
+      completer.complete(null);
       return null;
     }
   }
@@ -439,6 +455,7 @@ class VideoCacheManager extends CacheManager {
 
       // Remove from manifest
       _cacheManifest.remove(videoId);
+      _cacheVideoLock.remove(videoId);
 
       Log.info(
         '✅ Corrupted video $videoId removed from cache',
@@ -467,6 +484,7 @@ class VideoCacheManager extends CacheManager {
 
       // Clear manifest
       _cacheManifest.clear();
+      _cacheVideoLock.clear();
 
       Log.info(
         '✅ All cached videos cleared',
@@ -488,6 +506,7 @@ class VideoCacheManager extends CacheManager {
   void resetForTesting() {
     _initialized = false;
     _cacheManifest.clear();
+    _cacheVideoLock.clear();
     Log.debug(
       '🔄 VideoCacheManager reset for testing',
       name: 'VideoCacheManager',
