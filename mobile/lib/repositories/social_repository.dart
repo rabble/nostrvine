@@ -1,6 +1,15 @@
 // ABOUTME: Repository for managing social relationships (follow/unfollow)
 // ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
 
+// TODO(refactor): Extract this to packages/social_repository once dependencies are resolved.
+// Currently blocked by app-level dependencies:
+// - AuthService (needs interface extraction)
+// - INostrService (needs to move to nostr_client package)
+// - PersonalEventCacheService (needs interface extraction)
+// - ImmediateCompletionHelper (needs to move to a shared package)
+// - unified_logger (needs logging abstraction)
+// See packages/nostr_client for the pattern to follow.
+
 import 'dart:async';
 import 'dart:convert';
 
