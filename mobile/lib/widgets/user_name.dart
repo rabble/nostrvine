@@ -90,20 +90,19 @@ class UserName extends ConsumerWidget {
 
     return Row(
       children: [
-        Flexible(
-          child: selectable == true
-              ? SelectableText(
-                  displayName,
-                  style: textStyle,
-                  maxLines: maxLines ?? 1,
-                )
-              : Text(
-                  displayName,
-                  style: textStyle,
-                  maxLines: maxLines ?? 1,
-                  overflow: overflow ?? TextOverflow.ellipsis,
-                ),
-        ),
+        selectable == true
+            ? SelectableText(
+                displayName,
+                style: textStyle,
+                maxLines: maxLines ?? 1,
+              )
+            : Text(
+                displayName,
+                style: textStyle,
+                maxLines: maxLines ?? 1,
+                overflow: overflow ?? TextOverflow.ellipsis,
+              ),
+
         if (isReserved) ...[
           const SizedBox(width: 4),
           Container(
