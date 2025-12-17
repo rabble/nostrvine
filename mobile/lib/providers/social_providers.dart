@@ -188,8 +188,8 @@ class SocialNotifier extends _$SocialNotifier {
 
       // Load follow list and user's own reactions in parallel
       await Future.wait([
-        fetchCurrentUserFollowList(),
-        fetchAllUserReactions(), // Bulk load user's own reactions
+        _fetchCurrentUserFollowList(),
+        _fetchAllUserReactions(), // Bulk load user's own reactions
       ]);
 
       Log.info(
@@ -426,6 +426,196 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
+  /// Follow a user
+  Future<void> followUser(String pubkeyToFollow) async {
+    final authService = ref.read(authServiceProvider);
+
+    if (!authService.isAuthenticated) {
+      Log.error(
+        'Cannot follow - user not authenticated',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (state.isFollowing(pubkeyToFollow)) {
+      Log.debug(
+        'Already following user: $pubkeyToFollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (state.isFollowInProgress(pubkeyToFollow)) {
+      Log.debug(
+        'Follow operation already in progress for $pubkeyToFollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Add to in-progress set
+    state = state.copyWith(
+      followsInProgress: {...state.followsInProgress, pubkeyToFollow},
+    );
+
+    try {
+      final newFollowingList = [...state.followingPubkeys, pubkeyToFollow];
+
+      // Publish updated contact list
+      await _publishContactList(newFollowingList);
+
+      // Check if provider was disposed during async operation
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during follow operation - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Update state
+      state = state.copyWith(followingPubkeys: newFollowingList);
+
+      // Save to cache
+      _saveFollowingListToCache();
+
+      Log.info(
+        'Now following: $pubkeyToFollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+
+      // Trigger home feed refresh to show videos from newly followed user
+      _refreshHomeFeed();
+    } catch (e) {
+      Log.error(
+        'Error following user: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      // Check if provider was disposed during error handling
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during follow error handling - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    } finally {
+      // Check if provider was disposed before cleanup
+      if (ref.mounted) {
+        // Remove from in-progress set
+        final newFollowsInProgress = {...state.followsInProgress}
+          ..remove(pubkeyToFollow);
+        state = state.copyWith(followsInProgress: newFollowsInProgress);
+      }
+    }
+  }
+
+  /// Unfollow a user
+  Future<void> unfollowUser(String pubkeyToUnfollow) async {
+    final authService = ref.read(authServiceProvider);
+
+    if (!authService.isAuthenticated) {
+      Log.error(
+        'Cannot unfollow - user not authenticated',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (!state.isFollowing(pubkeyToUnfollow)) {
+      Log.debug(
+        'Not following user: $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (state.isFollowInProgress(pubkeyToUnfollow)) {
+      Log.debug(
+        'Follow operation already in progress for $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Add to in-progress set
+    state = state.copyWith(
+      followsInProgress: {...state.followsInProgress, pubkeyToUnfollow},
+    );
+
+    try {
+      final newFollowingList = state.followingPubkeys
+          .where((p) => p != pubkeyToUnfollow)
+          .toList();
+
+      // Publish updated contact list
+      await _publishContactList(newFollowingList);
+
+      // Check if provider was disposed during async operation
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during unfollow operation - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Update state
+      state = state.copyWith(followingPubkeys: newFollowingList);
+
+      // Save to cache
+      _saveFollowingListToCache();
+
+      Log.info(
+        'Unfollowed: $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+
+      // Trigger home feed refresh to update feed
+      _refreshHomeFeed();
+    } catch (e) {
+      Log.error(
+        'Error unfollowing user: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      // Check if provider was disposed during error handling
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during unfollow error handling - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    } finally {
+      // Check if provider was disposed before cleanup
+      if (ref.mounted) {
+        // Remove from in-progress set
+        final newFollowsInProgress = {...state.followsInProgress}
+          ..remove(pubkeyToUnfollow);
+        state = state.copyWith(followsInProgress: newFollowsInProgress);
+      }
+    }
+  }
+
   /// Repost an event
   Future<void> repostEvent(Event eventToRepost) async {
     final authService = ref.read(authServiceProvider);
@@ -643,50 +833,8 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
-  /// Update follower stats for a user
-  void updateFollowerStats(String pubkey, Map<String, int> stats) {
-    state = state.copyWith(
-      followerStats: {...state.followerStats, pubkey: stats},
-    );
-  }
-
-  /// Update following list (for testing or external updates)
-  void updateFollowingList(List<String> followingPubkeys) {
-    state = state.copyWith(followingPubkeys: followingPubkeys);
-  }
-
-  /// Manually refresh the contact list
-  Future<void> refreshContactList() async {
-    Log.info(
-      '🔄 Manually refreshing contact list',
-      name: 'SocialNotifier',
-      category: LogCategory.system,
-    );
-
-    state = state.copyWith(isLoading: true);
-
-    try {
-      await fetchCurrentUserFollowList();
-
-      state = state.copyWith(isLoading: false, error: null);
-
-      Log.info(
-        '✅ Contact list refresh complete with ${state.followingPubkeys.length} following',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        '❌ Contact list refresh error: $e',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
   /// Fetch current user's follow list
-  Future<void> fetchCurrentUserFollowList() async {
+  Future<void> _fetchCurrentUserFollowList() async {
     final authService = ref.read(authServiceProvider);
     final nostrService = ref.read(nostrServiceProvider);
 
@@ -861,7 +1009,7 @@ class SocialNotifier extends _$SocialNotifier {
   }
 
   /// Fetch all user's reactions and reposts in bulk on startup
-  Future<void> fetchAllUserReactions() async {
+  Future<void> _fetchAllUserReactions() async {
     final authService = ref.read(authServiceProvider);
     final nostrService = ref.read(nostrServiceProvider);
 
@@ -1091,6 +1239,51 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
+  Future<void> _publishContactList(List<String> followingPubkeys) async {
+    try {
+      final authService = ref.read(authServiceProvider);
+      final nostrService = ref.read(nostrServiceProvider);
+
+      // Build tags for contact list (NIP-02)
+      final tags = followingPubkeys.map((pubkey) => ['p', pubkey]).toList();
+
+      // Create Kind 3 event (contact list)
+      final event = await authService.createAndSignEvent(
+        kind: 3,
+        content: '', // Contact lists typically have empty content
+        tags: tags,
+      );
+
+      if (event == null) {
+        throw Exception('Failed to create contact list event');
+      }
+
+      // Broadcast the contact list event
+      final result = await nostrService.broadcastEvent(event);
+
+      if (!result.isSuccessful) {
+        final errorMessages = result.errors.values.join(', ');
+        throw Exception('Failed to broadcast contact list: $errorMessages');
+      }
+
+      // Update current contact list event
+      state = state.copyWith(currentUserContactListEvent: event);
+
+      Log.debug(
+        'Contact list published with ${followingPubkeys.length} contacts',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Error publishing contact list: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      rethrow;
+    }
+  }
+
   Future<String> _publishRepost(Event eventToRepost) async {
     try {
       final authService = ref.read(authServiceProvider);
@@ -1190,199 +1383,6 @@ class SocialNotifier extends _$SocialNotifier {
         category: LogCategory.system,
       );
     }
-  }
-
-  /// Check if current user has liked/reposted a specific video
-  /// This replaces the bulk loading approach with per-video queries
-  Future<void> checkVideoReactions(String videoId) async {
-    final authService = ref.read(authServiceProvider);
-    final nostrService = ref.read(nostrServiceProvider);
-
-    if (!authService.isAuthenticated ||
-        authService.currentPublicKeyHex == null) {
-      return;
-    }
-
-    // Skip if we already have this video's reaction state
-    if (state.likedEventIds.contains(videoId) ||
-        state.repostedEventIds.contains(videoId)) {
-      return;
-    }
-
-    try {
-      Log.debug(
-        '🔍 Checking reactions for video: ${videoId}...',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-
-      // Query for user's reactions to this specific video
-      final reactionFilter = Filter(
-        kinds: const [7], // reactions
-        authors: [authService.currentPublicKeyHex!],
-        e: [videoId], // reactions to this specific video
-        limit: 1,
-      );
-
-      // Query for user's reposts of this specific video
-      final repostFilter = Filter(
-        kinds: const [16], // Generic reposts (NIP-18)
-        authors: [authService.currentPublicKeyHex!],
-        e: [videoId], // reposts of this specific video
-        limit: 1,
-      );
-
-      // Check both reactions and reposts in parallel
-      final futures = [
-        _queryForSingleReaction(nostrService, reactionFilter, videoId),
-        _queryForSingleRepost(nostrService, repostFilter, videoId),
-      ];
-
-      await Future.wait(futures);
-
-      Log.debug(
-        '✅ Completed reaction check for video: ${videoId}...',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error checking video reactions: $e',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  Future<void> _queryForSingleReaction(
-    dynamic nostrService,
-    Filter filter,
-    String videoId,
-  ) async {
-    final completer = Completer<void>();
-    final events = <Event>[];
-
-    final stream = nostrService.subscribeToEvents(filters: [filter]);
-    late final StreamSubscription<Event> subscription;
-
-    final timer = Timer(const Duration(seconds: 3), () {
-      subscription.cancel();
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-
-    subscription = stream.listen(
-      (event) {
-        // Process reaction immediately when received
-        if (event.content == '+') {
-          // Found a like for this video - update state immediately
-          state = state.copyWith(
-            likedEventIds: {...state.likedEventIds, videoId},
-            likeEventIdToReactionId: {
-              ...state.likeEventIdToReactionId,
-              videoId: event.id,
-            },
-          );
-          Log.debug(
-            'Found existing like for video: ${videoId}... - processed immediately',
-            name: 'SocialNotifier',
-            category: LogCategory.system,
-          );
-
-          // Complete immediately after finding the reaction
-          timer.cancel();
-          subscription.cancel();
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        } else {
-          // Add to events list for other processing if needed
-          events.add(event);
-        }
-      },
-      onDone: () {
-        Log.debug(
-          'Reaction query stream completed - subscription remains open for real-time updates',
-          name: 'SocialNotifier',
-          category: LogCategory.system,
-        );
-        timer.cancel();
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      },
-      onError: (error) {
-        timer.cancel();
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-      },
-    );
-
-    await completer.future;
-  }
-
-  Future<void> _queryForSingleRepost(
-    dynamic nostrService,
-    Filter filter,
-    String videoId,
-  ) async {
-    final completer = Completer<void>();
-
-    final stream = nostrService.subscribeToEvents(filters: [filter]);
-    late final StreamSubscription<Event> subscription;
-
-    final timer = Timer(const Duration(seconds: 3), () {
-      subscription.cancel();
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-
-    subscription = stream.listen(
-      (event) {
-        // Process repost immediately when received
-        state = state.copyWith(
-          repostedEventIds: {...state.repostedEventIds, videoId},
-          repostEventIdToRepostId: {
-            ...state.repostEventIdToRepostId,
-            videoId: event.id,
-          },
-        );
-        Log.debug(
-          'Found existing repost for video: ${videoId}... - processed immediately',
-          name: 'SocialNotifier',
-          category: LogCategory.system,
-        );
-
-        // Complete immediately after finding the repost
-        timer.cancel();
-        subscription.cancel();
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      },
-      onDone: () {
-        Log.debug(
-          'Repost query stream completed - subscription remains open for real-time updates',
-          name: 'SocialNotifier',
-          category: LogCategory.system,
-        );
-        timer.cancel();
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      },
-      onError: (error) {
-        timer.cancel();
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-      },
-    );
-
-    await completer.future;
   }
 
   void _cleanupSubscriptions() {
