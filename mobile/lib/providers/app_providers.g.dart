@@ -1228,7 +1228,7 @@ final class NostrServiceProvider
   }
 }
 
-String _$nostrServiceHash() => r'acfc70446d8ac3fdd34c59318a6063dd380d6800';
+String _$nostrServiceHash() => r'b6baa3f243c7869bde6c729a4c0a87ba305f351e';
 
 /// Subscription manager for centralized subscription management
 
