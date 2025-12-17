@@ -33,7 +33,7 @@ class OptimisticFollowNotifier extends Notifier<Map<String, bool>> {
 
 /// Provider that combines real follow state with optimistic updates
 final isFollowingProvider = Provider.family<bool, String>((ref, pubkey) {
-  final socialService = ref.watch(socialServiceProvider);
+  final repository = ref.watch(followRepositoryProvider);
   final optimisticStates = ref.watch(optimisticFollowStateProvider);
 
   // Check if we have an optimistic state for this user
@@ -41,8 +41,8 @@ final isFollowingProvider = Provider.family<bool, String>((ref, pubkey) {
     return optimisticStates[pubkey]!;
   }
 
-  // Otherwise use the real state from social service
-  return socialService.isFollowing(pubkey);
+  // Otherwise use the real state from repository
+  return repository.isFollowing(pubkey);
 });
 
 /// Enhanced follow/unfollow methods with optimistic updates
@@ -56,7 +56,8 @@ class OptimisticFollowMethods {
   final Ref _ref;
 
   Future<void> followUser(String pubkey) async {
-    final socialService = _ref.read(socialServiceProvider);
+    // Use FollowRepository as the single source of truth
+    final repository = _ref.read(followRepositoryProvider);
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -65,8 +66,8 @@ class OptimisticFollowMethods {
     optimisticNotifier.setOptimisticState(pubkey, true);
 
     try {
-      // Perform actual follow
-      await socialService.followUser(pubkey);
+      // Perform actual follow via repository
+      await repository.follow(pubkey);
 
       // Clear optimistic state on success (real state will take over)
       optimisticNotifier.clearOptimisticState(pubkey);
@@ -78,7 +79,8 @@ class OptimisticFollowMethods {
   }
 
   Future<void> unfollowUser(String pubkey) async {
-    final socialService = _ref.read(socialServiceProvider);
+    // Use FollowRepository as the single source of truth
+    final repository = _ref.read(followRepositoryProvider);
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -87,8 +89,8 @@ class OptimisticFollowMethods {
     optimisticNotifier.setOptimisticState(pubkey, false);
 
     try {
-      // Perform actual unfollow
-      await socialService.unfollowUser(pubkey);
+      // Perform actual unfollow via repository
+      await repository.unfollow(pubkey);
 
       // Clear optimistic state on success (real state will take over)
       optimisticNotifier.clearOptimisticState(pubkey);
