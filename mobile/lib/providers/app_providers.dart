@@ -8,7 +8,6 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
-// Removed legacy explore_video_manager.dart import
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';

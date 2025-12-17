@@ -13,8 +13,7 @@ import 'package:openvine/services/vine_recording_controller.dart'
         VineRecordingState,
         RecordingSegment,
         MacOSCameraInterface,
-        CameraPlatformInterface,
-        MobileCameraInterface;
+        CameraPlatformInterface;
 import 'package:openvine/models/vine_draft.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:models/models.dart' as model show AspectRatio;
@@ -145,14 +144,6 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
   /// Get the actual camera preview aspect ratio to prevent distortion
   /// Returns the real camera sensor aspect ratio, or defaults to 3:4 if unavailable
   double get cameraPreviewAspectRatio {
-    final interface = _controller.cameraInterface;
-    if (interface is MobileCameraInterface) {
-      // Get aspect ratio from mobile camera controller
-      final controller = interface.controller;
-      if (controller != null && controller.value.isInitialized) {
-        return controller.value.aspectRatio;
-      }
-    }
     // Default fallback for macOS/web or uninitialized cameras
     return 3.0 / 4.0;
   }

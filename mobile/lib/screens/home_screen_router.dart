@@ -12,6 +12,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/video_feed_item.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -28,7 +29,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
-  String? _currentVideoId; // Track the video ID we're currently viewing
+  String? _currentVideoStableId;
   bool _urlUpdateScheduled = false; // Prevent infinite rebuild loops
 
   @override
@@ -78,6 +79,15 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           videosAsync,
           onData: (state) {
             final videos = state.videos;
+
+            if (state.lastUpdated == null && state.videos.isEmpty) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: VineTheme.whiteText,
+                  strokeWidth: 2,
+                ),
+              );
+            }
 
             if (videos.isEmpty) {
               // Handle empty videos case - no clamp needed
@@ -136,24 +146,23 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               final safeIndex = urlIndex.clamp(0, itemCount - 1);
               _controller = PageController(initialPage: safeIndex);
               _lastUrlIndex = safeIndex;
-              _currentVideoId =
-                  videos[safeIndex].id; // Remember which video we're showing
+              _currentVideoStableId = videos[safeIndex].stableId;
             }
 
             // Check if video list changed (e.g., reordered due to social provider update)
             // If current video moved to different index, update URL to maintain position
             bool urlUpdatePending = false;
-            if (_currentVideoId != null &&
+            if (_currentVideoStableId != null &&
                 videos.isNotEmpty &&
                 !_urlUpdateScheduled) {
               final currentVideoIndex = videos.indexWhere(
-                (v) => v.id == _currentVideoId,
+                (v) => v.stableId == _currentVideoStableId,
               );
               // Only update URL if video moved to a different index
               if (currentVideoIndex != -1 && currentVideoIndex != urlIndex) {
                 // Video we're viewing is now at a different index - update URL silently
                 Log.debug(
-                  '📍 Video $_currentVideoId moved from index $urlIndex → $currentVideoIndex, updating URL',
+                  '📍 Video $_currentVideoStableId moved from index $urlIndex → $currentVideoIndex, updating URL',
                   name: 'HomeScreenRouter',
                   category: LogCategory.video,
                 );
@@ -191,8 +200,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 category: LogCategory.video,
               );
               _lastUrlIndex = urlIndex;
-              _currentVideoId = videos[urlIndex.clamp(0, itemCount - 1)]
-                  .id; // Update tracked video
+              _currentVideoStableId = videos[urlIndex.clamp(0, itemCount - 1)]
+                  .stableId; // Update tracked video
               syncPageController(
                 controller: _controller!,
                 targetIndex: urlIndex,
@@ -237,8 +246,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 controller: _controller,
                 scrollDirection: Axis.vertical,
                 onPageChanged: (newIndex) {
-                  // Update tracked video ID
-                  _currentVideoId = videos[newIndex].id;
+                  // Update tracked video stableId
+                  _currentVideoStableId = videos[newIndex].stableId;
 
                   // Guard: only navigate if URL doesn't match
                   if (newIndex != urlIndex) {

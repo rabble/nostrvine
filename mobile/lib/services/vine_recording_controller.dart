@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
 // camera_macos removed - using NativeMacOSCamera for both preview and recording
 import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -64,584 +63,6 @@ abstract class CameraPlatformInterface {
   Widget get previewWidget;
   bool get canSwitchCamera;
   void dispose();
-}
-
-/// Mobile camera implementation (iOS/Android)
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class MobileCameraInterface extends CameraPlatformInterface {
-  CameraController? _controller;
-  List<CameraDescription> _availableCameras = [];
-  int _currentCameraIndex = 0;
-  bool isRecording = false;
-
-  // Operation mutex to prevent concurrent start/stop race conditions
-  bool _operationInProgress = false;
-
-  // Zoom support
-  double _minZoomLevel = 1.0;
-  double _maxZoomLevel = 1.0;
-  double _currentZoomLevel = 1.0;
-
-  @override
-  Future<void> initialize() async {
-    _availableCameras = await availableCameras();
-    if (_availableCameras.isEmpty) {
-      throw Exception('No cameras available');
-    }
-
-    // Default to back camera if available
-    _currentCameraIndex = _availableCameras.indexWhere(
-      (cam) => cam.lensDirection == CameraLensDirection.back,
-    );
-    if (_currentCameraIndex == -1) {
-      _currentCameraIndex = 0;
-    }
-
-    await _initializeCurrentCamera();
-  }
-
-  Future<void> _initializeCurrentCamera() async {
-    _controller?.dispose();
-
-    final camera = _availableCameras[_currentCameraIndex];
-    _controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: true,
-    );
-    await _controller!.initialize();
-
-    // Prepare for video recording - critical for iOS
-    try {
-      await _controller!.prepareForVideoRecording();
-      Log.info(
-        'Video recording preparation successful',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.warning(
-        'prepareForVideoRecording failed (may not be supported): $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      // Continue anyway - some platforms don't need this
-    }
-
-    // Initialize zoom levels
-    try {
-      _minZoomLevel = await _controller!.getMinZoomLevel();
-      _maxZoomLevel = await _controller!.getMaxZoomLevel();
-      _currentZoomLevel = _minZoomLevel;
-      Log.info(
-        'Zoom range initialized: $_minZoomLevel - $_maxZoomLevel',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.warning(
-        'Failed to get zoom levels: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      _minZoomLevel = 1.0;
-      _maxZoomLevel = 1.0;
-      _currentZoomLevel = 1.0;
-    }
-  }
-
-  Future<void> _initializeNewCamera() async {
-    // Initialize new camera without disposing (disposal handled separately)
-    final camera = _availableCameras[_currentCameraIndex];
-    _controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: true,
-    );
-    await _controller!.initialize();
-
-    // Prepare for video recording - critical for iOS
-    try {
-      await _controller!.prepareForVideoRecording();
-      Log.info(
-        'Video recording preparation successful after camera switch',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.warning(
-        'prepareForVideoRecording failed during camera switch: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      // Continue anyway - some platforms don't need this
-    }
-
-    // Initialize zoom levels
-    try {
-      _minZoomLevel = await _controller!.getMinZoomLevel();
-      _maxZoomLevel = await _controller!.getMaxZoomLevel();
-      _currentZoomLevel = _minZoomLevel;
-      Log.info(
-        'Zoom range initialized: $_minZoomLevel - $_maxZoomLevel',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.warning(
-        'Failed to get zoom levels: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      _minZoomLevel = 1.0;
-      _maxZoomLevel = 1.0;
-      _currentZoomLevel = 1.0;
-    }
-  }
-
-  @override
-  Future<void> startRecordingSegment(String filePath) async {
-    if (_controller == null) {
-      throw Exception('Camera controller not initialized');
-    }
-
-    // Wait for any in-progress operation to complete with timeout protection
-    // This prevents race conditions from rapid tap sequences
-    int waitCount = 0;
-    const maxWaitMs = 5000; // 5 second timeout
-    while (_operationInProgress) {
-      if (waitCount >= maxWaitMs / 10) {
-        Log.error(
-          'Camera operation timeout after ${maxWaitMs}ms - forcing unlock',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        _operationInProgress = false;
-        throw Exception('Camera operation timeout after ${maxWaitMs}ms');
-      }
-      Log.debug(
-        'Waiting for previous camera operation to complete',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      await Future.delayed(const Duration(milliseconds: 10));
-      waitCount++;
-    }
-
-    if (waitCount > 0) {
-      Log.info(
-        'Waited ${waitCount * 10}ms for camera operation to complete',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    }
-
-    // Already recording - ignore duplicate start request
-    if (isRecording) {
-      Log.warning(
-        'Already recording, ignoring start request',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    _operationInProgress = true;
-    try {
-      await _controller!.startVideoRecording();
-      isRecording = true;
-      Log.info(
-        'Started mobile camera recording',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      isRecording = false;
-      Log.error(
-        'Failed to start mobile camera recording: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      rethrow;
-    } finally {
-      _operationInProgress = false;
-    }
-  }
-
-  @override
-  Future<String?> stopRecordingSegment() async {
-    if (_controller == null) {
-      throw Exception('Camera controller not initialized');
-    }
-
-    // Wait for any in-progress operation to complete with timeout protection
-    int waitCount = 0;
-    const maxWaitMs = 5000; // 5 second timeout
-    while (_operationInProgress) {
-      if (waitCount >= maxWaitMs / 10) {
-        Log.error(
-          'Camera operation timeout after ${maxWaitMs}ms - forcing unlock',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        _operationInProgress = false;
-        throw Exception('Camera operation timeout after ${maxWaitMs}ms');
-      }
-      Log.debug(
-        'Waiting for previous camera operation to complete',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      await Future.delayed(const Duration(milliseconds: 10));
-      waitCount++;
-    }
-
-    if (waitCount > 0) {
-      Log.info(
-        'Waited ${waitCount * 10}ms for camera operation to complete',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    }
-
-    // Not recording - nothing to stop
-    if (!isRecording) {
-      Log.warning(
-        'Not currently recording, skipping stopVideoRecording',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    _operationInProgress = true;
-    try {
-      final xFile = await _controller!.stopVideoRecording();
-      isRecording = false;
-      Log.info(
-        'Stopped mobile camera recording: ${xFile.path}',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return xFile.path;
-    } catch (e) {
-      isRecording = false; // Reset state even on error
-      Log.error(
-        'Failed to stop mobile camera recording: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      // Don't rethrow - return null to indicate no file was saved
-      return null;
-    } finally {
-      _operationInProgress = false;
-    }
-  }
-
-  @override
-  Future<void> switchCamera() async {
-    Log.info(
-      '🔄 switchCamera called, current cameras: ${_availableCameras.length}',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-
-    if (_availableCameras.length <= 1) {
-      Log.warning(
-        'Cannot switch camera - only ${_availableCameras.length} camera(s) available',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    // Wait for any in-progress operation to complete before switching (with timeout)
-    int waitCount = 0;
-    const maxWaitMs = 5000; // 5 second timeout
-    while (_operationInProgress) {
-      if (waitCount >= maxWaitMs / 10) {
-        Log.error(
-          'Camera operation timeout after ${maxWaitMs}ms - forcing unlock',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        _operationInProgress = false;
-        throw Exception('Camera operation timeout after ${maxWaitMs}ms');
-      }
-      Log.debug(
-        'Waiting for camera operation to complete before switch',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      await Future.delayed(const Duration(milliseconds: 10));
-      waitCount++;
-    }
-
-    if (waitCount > 0) {
-      Log.info(
-        'Waited ${waitCount * 10}ms for camera operation before switch',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    }
-
-    // Don't switch if controller is not properly initialized
-    if (_controller == null || !_controller!.value.isInitialized) {
-      Log.warning(
-        'Cannot switch camera - controller not initialized',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    Log.info(
-      '🔄 Current camera index: $_currentCameraIndex, direction: ${_availableCameras[_currentCameraIndex].lensDirection}',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-    Log.info(
-      '🔄 OLD controller state: isInitialized=${_controller!.value.isInitialized}, isRecording=${_controller!.value.isRecordingVideo}, isStreaming=${_controller!.value.isStreamingImages}',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-
-    // Stop any active recording before switching
-    if (isRecording) {
-      Log.info(
-        '🔄 Stopping active recording before camera switch',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      try {
-        await _controller?.stopVideoRecording();
-      } catch (e) {
-        Log.error(
-          'Error stopping recording during camera switch: $e',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-      }
-      isRecording = false;
-    }
-
-    // Store old controller reference for safe disposal
-    final oldController = _controller;
-    _controller = null; // Clear reference to prevent access during switch
-    Log.info(
-      '🔄 OLD controller cleared from _controller reference',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-
-    try {
-      // CRITICAL FIX: Dispose old controller BEFORE initializing new one
-      // AVFoundation requires the capture session to be fully stopped before switching
-      // See: https://stackoverflow.com/questions/5704464/video-freezes-on-camera-switch-with-avfoundation
-      Log.info(
-        '🔄 Disposing OLD controller to stop AVFoundation session...',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      await oldController?.dispose();
-      Log.info(
-        '🔄 OLD controller disposed, AVFoundation session stopped',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-
-      // Switch to the next camera
-      final oldIndex = _currentCameraIndex;
-      _currentCameraIndex =
-          (_currentCameraIndex + 1) % _availableCameras.length;
-
-      Log.info(
-        '🔄 Switching from camera $oldIndex to $_currentCameraIndex',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-
-      Log.info(
-        '🔄 About to call _initializeNewCamera() for camera $_currentCameraIndex',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      await _initializeNewCamera();
-      Log.info(
-        '🔄 _initializeNewCamera() completed',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-
-      if (_controller != null && _controller!.value.isInitialized) {
-        Log.info(
-          '🔄 NEW camera initialized: ${_availableCameras[_currentCameraIndex].lensDirection}',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-        Log.info(
-          '🔄 NEW controller state: isInitialized=${_controller!.value.isInitialized}, isRecording=${_controller!.value.isRecordingVideo}, isStreaming=${_controller!.value.isStreamingImages}',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-      } else {
-        Log.error(
-          '🔄 NEW controller is NULL or not initialized!',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-      }
-
-      Log.info(
-        '✅ Successfully switched to camera $_currentCameraIndex (${_availableCameras[_currentCameraIndex].lensDirection})',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-
-      // CRITICAL: Notify listeners that camera changed to force UI rebuild
-      // The preview widget needs to be re-rendered with new controller
-    } catch (e) {
-      // If switching fails, restore old controller
-      Log.error(
-        '❌ Camera switch failed, restoring previous camera: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      _controller = oldController;
-      rethrow;
-    }
-  }
-
-  @override
-  Widget get previewWidget {
-    final controller = _controller;
-    Log.info(
-      '📸 previewWidget getter called: controller=${controller != null ? "exists" : "null"}, isInitialized=${controller?.value.isInitialized ?? false}, cameraIndex=$_currentCameraIndex',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-
-    if (controller != null && controller.value.isInitialized) {
-      Log.info(
-        '📸 Returning CameraPreview widget with initialized controller for camera $_currentCameraIndex',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      // CRITICAL: Use RepaintBoundary to force complete repaint when key changes
-      // This helps ensure the platform view texture updates properly on iOS
-      return RepaintBoundary(
-        key: ValueKey('camera_boundary_$_currentCameraIndex'),
-        child: CameraPreview(
-          controller,
-          key: ValueKey('camera_preview_$_currentCameraIndex'),
-        ),
-      );
-    }
-
-    Log.info(
-      '📸 Returning loading placeholder (controller not ready)',
-      name: 'VineRecordingController',
-      category: LogCategory.system,
-    );
-    return const ColoredBox(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color(0xFF00B488),
-              ), // Vine green
-              strokeWidth: 3.0,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Divine',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            SizedBox(height: 6),
-            Text(
-              'Initializing camera...',
-              style: TextStyle(
-                color: Color(0xFFBBBBBB),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Set zoom level (clamped to camera's supported range)
-  Future<void> setZoom(double zoomLevel) async {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      Log.warning(
-        'Cannot set zoom - controller not initialized',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    try {
-      final clampedZoom = zoomLevel.clamp(_minZoomLevel, _maxZoomLevel);
-      await _controller!.setZoomLevel(clampedZoom);
-      _currentZoomLevel = clampedZoom;
-
-      Log.debug(
-        'Set zoom level to ${clampedZoom.toStringAsFixed(1)}x',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to set zoom: $e',
-        name: 'VineRecordingController',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Get current zoom level
-  double get currentZoom => _currentZoomLevel;
-
-  /// Get minimum zoom level
-  double get minZoom => _minZoomLevel;
-
-  /// Get maximum zoom level
-  double get maxZoom => _maxZoomLevel;
-
-  @override
-  bool get canSwitchCamera => _availableCameras.length > 1;
-
-  /// Public getter for camera controller to access aspect ratio
-  CameraController? get controller => _controller;
-
-  @override
-  void dispose() {
-    // Stop any active recording before disposal
-    if (isRecording) {
-      try {
-        _controller?.stopVideoRecording();
-      } catch (e) {
-        Log.error(
-          'Error stopping recording during disposal: $e',
-          name: 'VineRecordingController',
-          category: LogCategory.system,
-        );
-      }
-      isRecording = false;
-    }
-    _controller?.dispose();
-  }
 }
 
 /// macOS camera implementation using native platform channels
@@ -1257,9 +678,19 @@ class VineRecordingController {
   double get progress =>
       _totalRecordedDuration.inMilliseconds /
       maxRecordingDuration.inMilliseconds;
-  bool get canRecord =>
-      remainingDuration > minSegmentDuration &&
-      _state != VineRecordingState.processing;
+  bool get canRecord {
+    bool isCameraReadyToRecord = true;
+    final cameraInterface = _cameraInterface;
+
+    if (cameraInterface is CamerAwesomeMobileCameraInterface) {
+      isCameraReadyToRecord = cameraInterface.isReadyToRecord;
+    }
+    return _cameraInitialized &&
+        isCameraReadyToRecord &&
+        remainingDuration > minSegmentDuration &&
+        _state != VineRecordingState.processing;
+  }
+
   bool get hasSegments {
     if (_segments.isNotEmpty) return true;
     // For macOS, also check virtual segments since we use single-recording mode
@@ -1409,6 +840,12 @@ class VineRecordingController {
     try {
       _setState(VineRecordingState.idle);
 
+      if (_cameraInterface != null) {
+        _cameraInterface!.dispose();
+        _cameraInterface = null;
+        _cameraInitialized = false;
+      }
+
       // Clean up any old recordings from previous sessions
       _cleanupRecordings();
 
@@ -1420,7 +857,12 @@ class VineRecordingController {
       } else if (Platform.isIOS || Platform.isAndroid) {
         // Use CamerAwesome for iOS with physical sensor switching support
         if (Platform.isIOS) {
-          _cameraInterface = CamerAwesomeMobileCameraInterface();
+          final camerAwesome = CamerAwesomeMobileCameraInterface();
+          // Wire up callback to notify provider when camera becomes ready
+          camerAwesome.onCameraReady = () {
+            _onStateChanged?.call();
+          };
+          _cameraInterface = camerAwesome;
           await _cameraInterface!.initialize();
           Log.info(
             'Using CamerAwesome camera with physical sensor switching',
@@ -1430,7 +872,12 @@ class VineRecordingController {
         } else {
           // Android: Try CamerAwesome, fallback to enhanced camera if needed
           try {
-            _cameraInterface = CamerAwesomeMobileCameraInterface();
+            final camerAwesome = CamerAwesomeMobileCameraInterface();
+            // Wire up callback to notify provider when camera becomes ready
+            camerAwesome.onCameraReady = () {
+              _onStateChanged?.call();
+            };
+            _cameraInterface = camerAwesome;
             await _cameraInterface!.initialize();
             Log.info(
               'Using CamerAwesome camera for Android',

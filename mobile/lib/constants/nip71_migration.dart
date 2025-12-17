@@ -38,12 +38,3 @@ class NIP71VideoKinds {
     return addressableShortVideo; // Kind 34236 - OpenVine only uses addressable
   }
 }
-
-/// NIP-71 video event configuration
-class VideoEventConfig {
-  /// Application uses NIP-71 kinds exclusively
-  static const bool useNIP71Only = true;
-
-  /// Implementation phase indicator
-  static const String implementationPhase = "nip71_compliant";
-}
