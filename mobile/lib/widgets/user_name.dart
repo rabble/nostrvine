@@ -89,8 +89,9 @@ class UserName extends ConsumerWidget {
         );
 
     return Row(
+      spacing: 4,
       children: [
-        selectable == true
+        selectable ?? false
             ? SelectableText(
                 displayName,
                 style: textStyle,
@@ -103,8 +104,7 @@ class UserName extends ConsumerWidget {
                 overflow: overflow ?? TextOverflow.ellipsis,
               ),
 
-        if (showCheckmark) ...[
-          const SizedBox(width: 4),
+        if (showCheckmark)
           Container(
             padding: const EdgeInsets.all(2),
             decoration: const BoxDecoration(
@@ -113,7 +113,6 @@ class UserName extends ConsumerWidget {
             ),
             child: const Icon(Icons.check, color: Colors.white, size: 10),
           ),
-        ],
       ],
     );
   }
