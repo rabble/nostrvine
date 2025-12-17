@@ -279,6 +279,8 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       context.go('/home/$index');
     }
 
+    preInitializeControllers(ref: ref, currentIndex: index, videos: videos);
+
     // PERFORMANCE FIX: Defer heavy operations to after the frame renders
     // This prevents profile fetching and prefetching from competing with
     // video initialization during swipe transitions
@@ -571,6 +573,17 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       category: LogCategory.ui,
     );
 
+    // Pre-initialize controllers for first few videos on initial build
+    // This starts initialization before user even starts swiping
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      preInitializeControllers(
+        ref: ref,
+        currentIndex: _currentIndex,
+        videos: videos,
+      );
+    });
+
     return PageView.builder(
       itemCount: videos.length,
       controller: _pageController,
@@ -687,9 +700,6 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     // Fetch profile only for the currently visible video
     userProfilesNotifier.prefetchProfilesImmediately(pubkeysToFetch.toList());
   }
-
-  // Note: Keyboard navigation methods removed to avoid unused warnings
-  // Would be implemented for accessibility support when needed
 }
 
 /// Error widget for video loading failures

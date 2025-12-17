@@ -1,9 +1,11 @@
 // ABOUTME: Reusable video prefetch mixin for PageView-based video feeds
-// ABOUTME: Automatically prefetches videos around current index for instant playback
+// ABOUTME: Handles both file caching and controller pre-initialization for instant playback
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -132,5 +134,63 @@ mixin VideoPrefetchMixin {
       name: 'VideoPrefetchMixin',
       category: LogCategory.video,
     );
+  }
+
+  /// Pre-initialize video controllers for adjacent videos
+  ///
+  /// Triggers controller creation and initialization for videos before/after
+  /// the current position. By the time user swipes, the controller should
+  /// already be initialized for instant playback.
+  ///
+  /// This complements [checkForPrefetch] which caches video files to disk.
+  /// Controller initialization happens in memory and includes codec setup.
+  ///
+  /// - [ref]: WidgetRef for reading the controller provider
+  /// - [currentIndex]: Current video index in the feed
+  /// - [videos]: Full list of videos in the feed
+  /// - [preInitBefore]: Number of videos to pre-init before current (default: 1)
+  /// - [preInitAfter]: Number of videos to pre-init after current (default: 2)
+  void preInitializeControllers({
+    required WidgetRef ref,
+    required int currentIndex,
+    required List<VideoEvent> videos,
+    int preInitBefore = 1,
+    int preInitAfter = 2,
+  }) {
+    if (videos.isEmpty) return;
+
+    final startIndex = (currentIndex - preInitBefore).clamp(0, videos.length);
+    final endIndex = (currentIndex + preInitAfter + 1).clamp(0, videos.length);
+
+    var count = 0;
+    for (int i = startIndex; i < endIndex; i++) {
+      // Skip current video (it's already being initialized by its widget)
+      if (i == currentIndex) continue;
+      if (i < 0 || i >= videos.length) continue;
+
+      final video = videos[i];
+      if (video.videoUrl == null || video.videoUrl!.isEmpty) continue;
+
+      // Trigger controller creation by reading the provider
+      // This is fire-and-forget - we just want to start initialization
+      final params = VideoControllerParams(
+        videoId: video.id,
+        videoUrl: video.videoUrl!,
+        videoEvent: video,
+      );
+
+      // Reading the provider triggers controller creation + initialize()
+      // The controller will stay alive due to keepAlive() + 5-min cache
+      ref.read(individualVideoControllerProvider(params));
+      count++;
+    }
+
+    if (count > 0) {
+      Log.info(
+        '🎬 Pre-initializing $count adjacent controllers around index $currentIndex',
+        name: 'VideoPrefetchMixin',
+        category: LogCategory.video,
+      );
+    }
   }
 }
