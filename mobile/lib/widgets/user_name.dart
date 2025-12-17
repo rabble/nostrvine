@@ -121,8 +121,9 @@ class UserName extends ConsumerWidget {
   bool _isReserved(UserProfile? userProfile) {
     if (userProfile == null) return false;
     // TODO(any): We need to determine how we tell if a user's name is
-    // reserved or not. For testing purposes any name containing 'r' will
-    // be displayed as reserved.
-    return userProfile.hasNip05 || userProfile.bestDisplayName.contains('r');
+    // reserved or not. Existing code was adding a check mark if the
+    // user profile hasNip05.
+    // see https://github.com/nostr-protocol/nips/blob/master/05.md
+    return userProfile.hasNip05;
   }
 }
