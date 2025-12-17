@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/following_list_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 class FollowingScreen extends ConsumerWidget {
@@ -24,12 +25,16 @@ class FollowingScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.whiteText,
         title: Text(
           "$displayName's Following",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: followingAsync.when(
         data: (following) => _FollowingListBody(
