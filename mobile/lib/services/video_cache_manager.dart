@@ -205,6 +205,7 @@ class VideoCacheManager extends CacheManager {
           category: LogCategory.video,
         );
         completer.complete(cachedFile);
+        _cacheVideoLock.remove(videoId);
         return cachedFile;
       }
 
@@ -230,6 +231,7 @@ class VideoCacheManager extends CacheManager {
       );
 
       completer.complete(fileInfo.file);
+      _cacheVideoLock.remove(videoId);
       return fileInfo.file;
     } catch (error) {
       final errorMessage = error.toString();
@@ -248,6 +250,7 @@ class VideoCacheManager extends CacheManager {
       }
 
       completer.complete(null);
+      _cacheVideoLock.remove(videoId);
       return null;
     }
   }
