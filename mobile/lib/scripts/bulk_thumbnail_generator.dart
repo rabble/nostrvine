@@ -155,7 +155,9 @@ Examples:
 
       // Create Nostr service to connect to relay
       final keyContainer = SecureKeyContainer.generate();
-      final nostrService = NostrServiceFactory.create(() => keyContainer);
+      final nostrService = NostrServiceFactory.create(
+        keyContainer: keyContainer,
+      );
 
       // Initialize
       await nostrService.initialize();

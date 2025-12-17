@@ -36,7 +36,7 @@ void main() {
 
       // Generate a test key container
       keyContainer = SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(() => keyContainer);
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);

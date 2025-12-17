@@ -129,9 +129,7 @@ void main() {
       // Create services
       final mockAuthService = MockAuthService(testKeychain);
 
-      blossomService = BlossomUploadService(
-        authService: mockAuthService,
-      );
+      blossomService = BlossomUploadService(authService: mockAuthService);
 
       // Configure Blossom server
       await blossomService.setBlossomServer(blossomServer);

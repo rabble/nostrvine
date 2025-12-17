@@ -42,9 +42,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
-      service = BlossomUploadService(
-        authService: mockAuthService,
-      );
+      service = BlossomUploadService(authService: mockAuthService);
     });
 
     group('Configuration', () {
@@ -147,7 +145,7 @@ void main() {
         // Inject the mock Dio into the service
         service = BlossomUploadService(
           authService: mockAuthService,
-                    dio: mockDio, // We need to add this parameter
+          dio: mockDio, // We need to add this parameter
         );
       });
 
@@ -353,7 +351,7 @@ void main() {
         mockDio = MockDio();
         service = BlossomUploadService(
           authService: mockAuthService,
-                    dio: mockDio,
+          dio: mockDio,
         );
       });
 
@@ -464,7 +462,7 @@ void main() {
         final mockAuthService = MockAuthService();
         final testService = BlossomUploadService(
           authService: mockAuthService,
-                    dio: mockDio,
+          dio: mockDio,
         );
 
         // Create test bug report file
@@ -541,7 +539,7 @@ void main() {
         // Create service with mocked Dio
         service = BlossomUploadService(
           authService: mockAuthService,
-                    dio: mockDio,
+          dio: mockDio,
         );
       });
 

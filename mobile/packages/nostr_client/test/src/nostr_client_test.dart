@@ -644,6 +644,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -659,6 +660,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).called(1);
       });
@@ -680,6 +682,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -697,6 +700,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).called(2);
       });
@@ -716,6 +720,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn(customId);
 
@@ -730,6 +735,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).called(1);
       });
@@ -750,6 +756,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -771,6 +778,7 @@ void main() {
             targetRelays: targetRelays,
             relayTypes: [RelayType.normal],
             sendAfterAuth: true,
+            onEose: any(named: 'onEose'),
           ),
         ).called(1);
       });
@@ -790,6 +798,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('nostr-generated-id');
 
@@ -815,6 +824,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn(subscriptionId);
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -854,23 +864,24 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenAnswer((_) => 'sub-${callCount++}');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
 
         client
           ..subscribe(filters1)
-          ..subscribe(filters2)
-          ..closeAllSubscriptions();
+          ..subscribe(filters2);
+        await client.closeAllSubscriptions();
 
         verify(() => mockNostr.unsubscribe(any())).called(2);
       });
 
-      test('handles no active subscriptions', () {
+      test('handles no active subscriptions', () async {
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
 
         // Should not throw
-        client.closeAllSubscriptions();
+        await client.closeAllSubscriptions();
 
         verifyNever(() => mockNostr.unsubscribe(any()));
       });
@@ -1457,6 +1468,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('test-sub-id');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -2210,6 +2222,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenAnswer((invocation) {
           // Get the callback and call it with test event
@@ -2241,6 +2254,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -2261,6 +2275,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).captured;
 
@@ -2288,6 +2303,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenAnswer((invocation) {
           final callback =
@@ -2315,6 +2331,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -2329,6 +2346,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).captured;
 

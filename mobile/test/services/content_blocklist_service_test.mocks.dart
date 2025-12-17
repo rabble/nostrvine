@@ -293,10 +293,13 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
           as _i5.Future<void>);
 
   @override
-  void closeAllSubscriptions() => super.noSuchMethod(
-    Invocation.method(#closeAllSubscriptions, []),
-    returnValueForMissingStub: null,
-  );
+  _i5.Future<void> closeAllSubscriptions() =>
+      (super.noSuchMethod(
+            Invocation.method(#closeAllSubscriptions, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   _i5.Future<bool> addRelay(String? relayUrl) =>

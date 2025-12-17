@@ -52,10 +52,8 @@ class BlossomUploadService {
   final AuthService authService;
   final Dio dio;
 
-  BlossomUploadService({
-    required this.authService,
-    Dio? dio,
-  }) : dio = dio ?? Dio();
+  BlossomUploadService({required this.authService, Dio? dio})
+    : dio = dio ?? Dio();
 
   /// Get the configured Blossom server URL
   Future<String?> getBlossomServer() async {

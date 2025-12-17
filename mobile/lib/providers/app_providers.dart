@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -300,14 +301,45 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
 @Riverpod(keepAlive: true)
 NostrClient nostrService(Ref ref) {
   final authService = ref.read(authServiceProvider);
+
+  // Listen to auth state changes and rebuild when authenticated.
+  // This ensures the NostrClient has a valid pubkey after login,
+  // since the initial creation may happen before auth completes.
+  ref.listen(authServiceProvider, (previous, current) {
+    final previousState = previous?.authState;
+    final currentState = current.authState;
+
+    // Invalidate when transitioning TO authenticated state
+    if (previousState != AuthState.authenticated &&
+        currentState == AuthState.authenticated) {
+      Log.info(
+        'Auth became authenticated - rebuilding nostrService with valid pubkey',
+        name: 'nostrServiceProvider',
+      );
+      // Reset the gate before invalidating - new client needs initialization
+      ref.read(nostrInitializationProvider.notifier).reset();
+      ref.invalidateSelf();
+    }
+  }, fireImmediately: false); // Prevent loop during initial build
+
   final statisticsService = ref.watch(relayStatisticsServiceProvider);
   final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
 
+  // Pass keyContainer directly - provider rebuilds when auth changes
   final client = NostrServiceFactory.create(
-    () => authService.currentKeyContainer,
+    keyContainer: authService.currentKeyContainer,
     statisticsService: statisticsService,
     gatewaySettings: gatewaySettings,
   );
+
+  // Initialize relay connections and signal readiness when complete
+  client.initialize().then((_) {
+    ref.read(nostrInitializationProvider.notifier).markInitialized();
+    Log.info(
+      'NostrClient initialized via provider - gate opened',
+      name: 'nostrServiceProvider',
+    );
+  });
 
   // Cleanup on disposal - but only in production, not during development hot reloads
   ref.onDispose(() {

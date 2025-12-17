@@ -509,10 +509,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         category: LogCategory.system,
       );
 
-      // Initialize Nostr service - THIS IS THE CRITICAL MISSING PIECE
       await ref.read(nostrServiceProvider).initialize();
-      // Mark Nostr as initialized so gates can open
       ref.read(nostrInitializationProvider.notifier).markInitialized();
+
       Log.info(
         '[INIT] ✅ NostrService initialized',
         name: 'Main',

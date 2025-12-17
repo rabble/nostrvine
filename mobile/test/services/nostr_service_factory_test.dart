@@ -1,5 +1,5 @@
 // ABOUTME: Tests for NostrServiceFactory that creates NostrClient instances
-// ABOUTME: Validates client creation with lazy auth signer
+// ABOUTME: Validates client creation with direct key container
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,42 +15,34 @@ void main() {
 
   group('NostrServiceFactory', () {
     group('create', () {
-      test('creates client with key container getter returning valid key', () {
+      test('creates client with valid key container', () {
         final mockKeyContainer = _MockSecureKeyContainer();
         when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
 
-        final client = NostrServiceFactory.create(() => mockKeyContainer);
+        final client = NostrServiceFactory.create(
+          keyContainer: mockKeyContainer,
+        );
 
         expect(client, isA<NostrClient>());
         expect(client.publicKey, equals(testPublicKey));
       });
 
       test(
-        'creates client with key container getter returning null (read-only mode)',
+        'creates client with null key container (read-only mode)',
         () {
           // This should NOT throw - it should create a read-only client
-          final client = NostrServiceFactory.create(() => null);
+          final client = NostrServiceFactory.create();
 
           expect(client, isA<NostrClient>());
           expect(client.publicKey, isEmpty);
         },
       );
 
-      test('lazy signer works when key becomes available later', () async {
-        // Start with no key
-        _MockSecureKeyContainer? keyContainer;
-        final client = NostrServiceFactory.create(() => keyContainer);
+      test('creates client with empty public key when keyContainer is null', () {
+        final client = NostrServiceFactory.create(keyContainer: null);
 
-        // Initially no public key
-        expect(client.publicKey, isEmpty);
-
-        // Now set up the key container
-        keyContainer = _MockSecureKeyContainer();
-        when(() => keyContainer!.publicKeyHex).thenReturn(testPublicKey);
-
-        // The signer should now be able to get the public key
-        // (tested through LazyAuthServiceSigner's getPublicKey method)
         expect(client, isA<NostrClient>());
+        expect(client.publicKey, isEmpty);
       });
     });
   });

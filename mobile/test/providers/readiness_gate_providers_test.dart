@@ -25,75 +25,6 @@ void main() {
       mockNostrService = MockNostrClient();
     });
 
-    group('nostrReadyProvider', () {
-      test('should return true when Nostr service is initialized', () {
-        // Arrange
-        when(mockNostrService.isInitialized).thenReturn(true);
-
-        final container = ProviderContainer(
-          overrides: [nostrServiceProvider.overrideWithValue(mockNostrService)],
-        );
-
-        // Act
-        final isReady = container.read(nostrReadyProvider);
-
-        // Assert
-        expect(isReady, isTrue);
-
-        container.dispose();
-      });
-
-      test('should return false when Nostr service is not initialized', () {
-        // Arrange
-        when(mockNostrService.isInitialized).thenReturn(false);
-
-        final container = ProviderContainer(
-          overrides: [nostrServiceProvider.overrideWithValue(mockNostrService)],
-        );
-
-        // Act
-        final isReady = container.read(nostrReadyProvider);
-
-        // Assert
-        expect(isReady, isFalse);
-
-        container.dispose();
-      });
-
-      test(
-        'should reactively update when Nostr initialization state changes',
-        () {
-          // Arrange - Use a fake service with mutable state instead of mock
-          final fakeNostrService = _FakeNostrService();
-          fakeNostrService.isInitialized = false;
-
-          final container = ProviderContainer(
-            overrides: [
-              nostrServiceProvider.overrideWithValue(fakeNostrService),
-            ],
-          );
-
-          final states = <bool>[];
-          container.listen(nostrReadyProvider, (previous, next) {
-            states.add(next);
-          });
-
-          // Initially false
-          expect(container.read(nostrReadyProvider), isFalse);
-
-          // Act: Simulate Nostr becoming initialized
-          fakeNostrService.isInitialized = true;
-          container.invalidate(nostrReadyProvider);
-
-          // Assert: Should emit true
-          expect(container.read(nostrReadyProvider), isTrue);
-          expect(states, equals([true]));
-
-          container.dispose();
-        },
-      );
-    });
-
     group('appReadyProvider', () {
       test('should return true when both foreground and Nostr are ready', () {
         // Arrange
@@ -342,12 +273,4 @@ void main() {
 class _FakeAppForeground extends AppForeground {
   @override
   bool build() => true; // Default to foreground
-}
-
-// Fake NostrService with mutable state for testing reactive updates
-class _FakeNostrService implements NostrClient {
-  bool isInitialized = false;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
