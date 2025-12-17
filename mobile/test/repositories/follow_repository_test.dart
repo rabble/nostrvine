@@ -414,8 +414,9 @@ void main() {
         await repository.initialize();
 
         final emittedValues = <List<String>>[];
-        final subscription =
-            repository.followingStream.listen(emittedValues.add);
+        final subscription = repository.followingStream.listen(
+          emittedValues.add,
+        );
 
         await repository.follow(testTargetPubkey);
         await Future<void>.delayed(Duration.zero);
@@ -462,8 +463,9 @@ void main() {
         await repository.initialize();
 
         final emittedValues = <List<String>>[];
-        final subscription =
-            repository.followingStream.listen(emittedValues.add);
+        final subscription = repository.followingStream.listen(
+          emittedValues.add,
+        );
 
         await repository.unfollow(testTargetPubkey);
         await Future<void>.delayed(Duration.zero);
