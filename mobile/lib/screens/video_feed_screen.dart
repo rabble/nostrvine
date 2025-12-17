@@ -575,6 +575,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       itemCount: videos.length,
       controller: _pageController,
       scrollDirection: Axis.vertical,
+      allowImplicitScrolling: true,
       onPageChanged: (index) {
         setState(() => _currentIndex = index);
         _onPageChanged(index);
