@@ -302,18 +302,17 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
 NostrClient nostrService(Ref ref) {
   final authService = ref.read(authServiceProvider);
 
-  // Listen to auth state changes and rebuild when authenticated.
-  // This ensures the NostrClient has a valid pubkey after login,
-  // since the initial creation may happen before auth completes.
+  // Listen to auth changes and rebuild when identity (pubkey) changes.
+  // This ensures the NostrClient always uses the correct keypair,
+  // handling both new logins and identity switches during import.
   ref.listen(authServiceProvider, (previous, current) {
-    final previousState = previous?.authState;
-    final currentState = current.authState;
+    final previousPubkey = previous?.currentKeyContainer?.publicKeyHex;
+    final currentPubkey = current.currentKeyContainer?.publicKeyHex;
 
-    // Invalidate when transitioning TO authenticated state
-    if (previousState != AuthState.authenticated &&
-        currentState == AuthState.authenticated) {
+    // Rebuild when pubkey changes (identity change or new login)
+    if (currentPubkey != null && currentPubkey != previousPubkey) {
       Log.info(
-        'Auth became authenticated - rebuilding nostrService with valid pubkey',
+        'Identity changed - rebuilding nostrService',
         name: 'nostrServiceProvider',
       );
       // Reset the gate before invalidating - new client needs initialization
