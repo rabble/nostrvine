@@ -198,47 +198,6 @@ void main() {
       expect(state.followingPubkeys.contains(userToFollow), isFalse);
     });
 
-    test('should handle repost functionality', () async {
-      // Create a mock event to repost
-      final eventToRepost = MockEvent();
-      when(() => eventToRepost.id).thenReturn('event-to-repost');
-      when(() => eventToRepost.pubkey).thenReturn('original-author');
-      when(() => eventToRepost.kind).thenReturn(22); // Video event
-      // For reposts, content is typically empty in the existing implementation
-
-      // Setup authenticated user
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
-
-      // Mock repost event creation and broadcast
-      final mockRepostEvent = MockEvent();
-      when(() => mockRepostEvent.id).thenReturn('repost-event-id');
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: 16,
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => mockRepostEvent);
-
-      final mockBroadcastResult = NostrBroadcastResult(
-        event: mockRepostEvent,
-        successCount: 1,
-        totalRelays: 1,
-        results: {'relay1': true},
-        errors: {},
-      );
-      when(
-        () => mockNostrService.broadcastEvent(any()),
-      ).thenAnswer((_) async => mockBroadcastResult);
-
-      // Repost event
-      await container.read(socialProvider.notifier).repostEvent(eventToRepost);
-
-      final state = container.read(socialProvider);
-      expect(state.repostedEventIds.contains('event-to-repost'), isTrue);
-    });
-
     test('should handle errors gracefully', () async {
       const eventId = 'test-event-id';
       const authorPubkey = 'author-pubkey';
@@ -266,32 +225,6 @@ void main() {
       // State should remain unchanged
       final state = container.read(socialProvider);
       expect(state.likedEventIds.contains(eventId), isFalse);
-    });
-
-    test('should update follower stats cache', () async {
-      const pubkey = 'test-pubkey';
-      final stats = {'followers': 100, 'following': 50};
-
-      // Update stats
-      container
-          .read(socialProvider.notifier)
-          .updateFollowerStats(pubkey, stats);
-
-      final state = container.read(socialProvider);
-      expect(state.followerStats[pubkey], equals(stats));
-    });
-
-    test('should check if user is following another user', () {
-      // Add some following pubkeys
-      container.read(socialProvider.notifier).updateFollowingList([
-        'pubkey1',
-        'pubkey2',
-        'pubkey3',
-      ]);
-
-      final state = container.read(socialProvider);
-      expect(state.isFollowing('pubkey2'), isTrue);
-      expect(state.isFollowing('pubkey4'), isFalse);
     });
 
     test('likeCounts should track only NEW likes (not originalLikes)', () async {

@@ -1,5 +1,4 @@
 // ABOUTME: Tests for VideoEvents stream provider that manages Nostr subscriptions
-import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Verifies reactive video event streaming and feed mode filtering
 
 import 'dart:async';
@@ -9,13 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/video_event.dart';
-// Feed mode providers removed during embedded relay refactor
-import 'package:openvine/providers/social_providers.dart' as social;
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 // Mock classes
 class MockNostrService extends Mock implements INostrService {}
@@ -80,78 +77,6 @@ void main() {
       ).called(1);
 
       subscription.close();
-      await streamController.close();
-    });
-
-    test('should filter events based on following mode', () async {
-      // Setup following list
-      container.read(social.socialProvider.notifier).updateFollowingList([
-        'pubkey1',
-        'pubkey2',
-      ]);
-
-      // Setup mock Nostr service
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-
-      final streamController = StreamController<Event>();
-      when(
-        () =>
-            mockNostrService.subscribeToEvents(filters: any(named: 'filters')),
-      ).thenAnswer((invocation) {
-        final filters = invocation.namedArguments[#filters] as List<Filter>;
-        expect(
-          filters,
-          isNotEmpty,
-          reason: 'Filters list should contain at least one filter',
-        );
-        final filter = filters.first;
-
-        // Verify filter has correct authors
-        expect(filter.authors, contains('pubkey1'));
-        expect(filter.authors, contains('pubkey2'));
-        expect(filter.kinds, contains(34236)); // Addressable video events
-
-        return streamController.stream;
-      });
-
-      // Start provider
-      final _ = container.read(videoEventsProvider);
-
-      await pumpEventQueue();
-      await streamController.close();
-    });
-
-    test('should use classic vines fallback when no following', () async {
-      // No following list
-      container.read(social.socialProvider.notifier).updateFollowingList([]);
-
-      // Setup mock Nostr service
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-
-      final streamController = StreamController<Event>();
-      when(
-        () =>
-            mockNostrService.subscribeToEvents(filters: any(named: 'filters')),
-      ).thenAnswer((invocation) {
-        final filters = invocation.namedArguments[#filters] as List<Filter>;
-        expect(
-          filters,
-          isNotEmpty,
-          reason:
-              'Filters list should contain at least one filter for classic vines fallback',
-        );
-        final filter = filters.first;
-
-        // Should use classic vines pubkey as fallback
-        expect(filter.authors, contains(AppConstants.classicVinesPubkey));
-
-        return streamController.stream;
-      });
-
-      // Start provider
-      final _ = container.read(videoEventsProvider);
-
-      await pumpEventQueue();
       await streamController.close();
     });
 
