@@ -63,16 +63,16 @@ class UserName extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
-    late bool isReserved;
+    late bool showCheckmark;
     if (userProfile case final userProfile?) {
-      displayName = userProfile.veryGoodDisplayName(anonymousName);
-      isReserved = _isReserved(userProfile);
+      displayName = userProfile.betterDisplayName(anonymousName);
+      showCheckmark = _isReserved(userProfile);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
 
-      (displayName, isReserved) = switch (profileAsync) {
+      (displayName, showCheckmark) = switch (profileAsync) {
         AsyncData(:final value) when value != null => (
-          value.veryGoodDisplayName(anonymousName),
+          value.betterDisplayName(anonymousName),
           _isReserved(value),
         ),
         AsyncData() || AsyncError() => ('Unknown', false),
@@ -103,7 +103,7 @@ class UserName extends ConsumerWidget {
                 overflow: overflow ?? TextOverflow.ellipsis,
               ),
 
-        if (isReserved) ...[
+        if (showCheckmark) ...[
           const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.all(2),
@@ -119,6 +119,10 @@ class UserName extends ConsumerWidget {
   }
 
   bool _isReserved(UserProfile? userProfile) {
-    return userProfile?.hasNip05 ?? false;
+    if (userProfile == null) return false;
+    // TODO(any): We need to determine how we tell if a user's name is
+    // reserved or not. For testing purposes any name containing 'r' will
+    // be displayed as reserved.
+    return userProfile.hasNip05 || userProfile.bestDisplayName.contains('r');
   }
 }

@@ -340,7 +340,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                     contextTitle: ref
                         .read(fetchUserProfileProvider(userIdHex))
                         .value
-                        ?.bestDisplayName,
+                        ?.betterDisplayName('Profile'),
                   );
                 },
               );

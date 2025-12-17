@@ -147,7 +147,9 @@ class UserProfile {
     return truncatedNpub;
   }
 
-  String veryGoodDisplayName(String? anonymousPlaceholder) {
+  /// Similar to bestDisplayName. Use when you have default place holder text
+  /// that you want displayed if there isn't a good name to display.
+  String betterDisplayName(String? anonymousPlaceholder) {
     if (displayName?.isNotEmpty == true) return displayName!;
     if (name?.isNotEmpty == true) return name!;
     if (anonymousPlaceholder != null) return anonymousPlaceholder;
