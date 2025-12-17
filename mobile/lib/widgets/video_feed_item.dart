@@ -905,7 +905,6 @@ class VideoOverlayActions extends ConsumerWidget {
               final currentUserPubkey = authService.currentPublicKeyHex;
               final isOwnVideo = currentUserPubkey == video.pubkey;
 
-              // Use SocialRepository via providers for follow state
               final isFollowing = ref.watch(
                 isFollowingUserProvider(video.pubkey),
               );

@@ -45,8 +45,8 @@ class SocialRepository {
   final PersonalEventCacheService? _personalEventCache;
 
   // Stream controller for reactive updates
-  final _followingStreamController =
-      StreamController<List<String>>.broadcast();
+  final _followingStreamController = StreamController<List<String>>.broadcast();
+  Stream<List<String>> get followingStream => _followingStreamController.stream;
 
   // In-memory cache
   List<String> _followingPubkeys = [];
@@ -57,9 +57,6 @@ class SocialRepository {
   List<String> get followingPubkeys => List.unmodifiable(_followingPubkeys);
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
-
-  /// Stream of following pubkeys for reactive updates
-  Stream<List<String>> get followingStream => _followingStreamController.stream;
 
   /// Emit current state to stream
   void _emitFollowingList() {
@@ -232,21 +229,6 @@ class SocialRepository {
     }
   }
 
-  /// Force refresh from network
-  Future<void> refresh() async {
-    if (!_authService.isAuthenticated) return;
-
-    Log.debug(
-      'Refreshing follow list from network',
-      name: 'SocialRepository',
-      category: LogCategory.system,
-    );
-
-    await _syncFromNetwork();
-  }
-
-  // === Private Methods ===
-
   /// Load following list from local storage (SharedPreferences)
   Future<void> _loadFromLocalStorage() async {
     try {
@@ -415,7 +397,6 @@ class SocialRepository {
       throw Exception('Failed to broadcast contact list: $errorMessages');
     }
 
-    // Update the event reference
     _currentUserContactListEvent = event;
 
     Log.debug(
@@ -449,7 +430,6 @@ class SocialRepository {
         category: LogCategory.system,
       );
 
-      // Persist to local storage
       _saveToLocalStorage();
     }
   }
