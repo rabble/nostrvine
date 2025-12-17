@@ -273,17 +273,24 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       return;
     }
 
-    // Batch fetch profiles for videos around current position
-    _batchFetchProfilesAroundIndex(index, videos);
-
-    // Prefetch videos around current position for instant playback
-    checkForPrefetch(currentIndex: index, videos: videos);
-
-    // Update URL to trigger derived provider chain (unless navigation is disabled for deep links)
+    // Update URL immediately to trigger derived provider chain
     // context.go() → routerLocationStream → pageContextProvider → activeVideoIdProvider → VideoFeedItem reacts
     if (!widget.disableNavigation) {
       context.go('/home/$index');
     }
+
+    // PERFORMANCE FIX: Defer heavy operations to after the frame renders
+    // This prevents profile fetching and prefetching from competing with
+    // video initialization during swipe transitions
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      // Batch fetch profiles for videos around current position
+      _batchFetchProfilesAroundIndex(index, videos);
+
+      // Prefetch videos around current position for instant playback
+      checkForPrefetch(currentIndex: index, videos: videos);
+    });
   }
 
   // Legacy methods removed - active video is now derived from URL via activeVideoIdProvider
