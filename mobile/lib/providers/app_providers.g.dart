@@ -1480,6 +1480,60 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
+/// Follow repository - single source of truth for follow data
+/// Handles in-memory cache, local storage, and network sync
+
+@ProviderFor(followRepository)
+const followRepositoryProvider = FollowRepositoryProvider._();
+
+/// Follow repository - single source of truth for follow data
+/// Handles in-memory cache, local storage, and network sync
+
+final class FollowRepositoryProvider
+    extends
+        $FunctionalProvider<
+          FollowRepository,
+          FollowRepository,
+          FollowRepository
+        >
+    with $Provider<FollowRepository> {
+  /// Follow repository - single source of truth for follow data
+  /// Handles in-memory cache, local storage, and network sync
+  const FollowRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'followRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$followRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FollowRepository create(Ref ref) {
+    return followRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FollowRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FollowRepository>(value),
+    );
+  }
+}
+
+String _$followRepositoryHash() => r'a39733409c5a3b7aaf1610b19497276782ed38c9';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)
