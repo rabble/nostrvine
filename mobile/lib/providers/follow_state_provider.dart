@@ -1,5 +1,5 @@
 // ABOUTME: Provider for managing follow state and operations
-// ABOUTME: Uses SocialRepository as source of truth, tracks in-progress operations
+// ABOUTME: Uses FollowRepository as source of truth, tracks in-progress operations
 
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -18,14 +18,14 @@ class FollowOperations extends _$FollowOperations {
 
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) {
-    final repository = ref.read(socialRepositoryProvider);
+    final repository = ref.read(followRepositoryProvider);
     return repository.isFollowing(pubkey);
   }
 
   /// Check if a follow operation is in progress for a pubkey
   bool isInProgress(String pubkey) => state.contains(pubkey);
 
-  /// Follow a user via SocialRepository
+  /// Follow a user via FollowRepository
   Future<void> follow(String pubkey) async {
     if (state.contains(pubkey)) return;
 
@@ -33,7 +33,7 @@ class FollowOperations extends _$FollowOperations {
     state = {...state, pubkey};
 
     try {
-      final repository = ref.read(socialRepositoryProvider);
+      final repository = ref.read(followRepositoryProvider);
       await repository.follow(pubkey);
 
       Log.info(
@@ -47,7 +47,7 @@ class FollowOperations extends _$FollowOperations {
     }
   }
 
-  /// Unfollow a user via SocialRepository
+  /// Unfollow a user via FollowRepository
   Future<void> unfollow(String pubkey) async {
     if (state.contains(pubkey)) return;
 
@@ -55,7 +55,7 @@ class FollowOperations extends _$FollowOperations {
     state = {...state, pubkey};
 
     try {
-      final repository = ref.read(socialRepositoryProvider);
+      final repository = ref.read(followRepositoryProvider);
       await repository.unfollow(pubkey);
 
       Log.info(
@@ -71,7 +71,7 @@ class FollowOperations extends _$FollowOperations {
 
   /// Toggle follow state for a user
   Future<void> toggle(String pubkey) async {
-    final repository = ref.read(socialRepositoryProvider);
+    final repository = ref.read(followRepositoryProvider);
     if (repository.isFollowing(pubkey)) {
       await unfollow(pubkey);
     } else {

@@ -964,7 +964,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                 name: 'VideoFeedItem',
                                 category: LogCategory.ui,
                               );
-                              // Use FollowOperations provider which delegates to SocialRepository
+                              // Use FollowOperations provider which delegates to FollowRepository
                               await ref
                                   .read(followOperationsProvider.notifier)
                                   .toggle(video.pubkey);

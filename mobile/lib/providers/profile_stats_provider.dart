@@ -92,17 +92,17 @@ Future<void> clearAllProfileStatsCache() async {
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
   final authService = ref.read(authServiceProvider);
-  final socialRepository = ref.watch(socialRepositoryProvider);
+  final followRepository = ref.watch(followRepositoryProvider);
   final isCurrentUser = authService.currentPublicKeyHex == pubkey;
 
   // For current user, get following count directly from repository
   // and listen to stream for reactive updates
   int? currentUserFollowingCount;
   if (isCurrentUser) {
-    currentUserFollowingCount = socialRepository.followingCount;
+    currentUserFollowingCount = followRepository.followingCount;
 
     // Subscribe to stream for reactive updates when following list changes
-    final subscription = socialRepository.followingStream.listen((list) {
+    final subscription = followRepository.followingStream.listen((list) {
       // Invalidate this provider when following list changes
       ref.invalidateSelf();
     });

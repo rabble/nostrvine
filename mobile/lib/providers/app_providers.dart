@@ -36,7 +36,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/repositories/social_repository.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
@@ -415,15 +415,15 @@ SocialService socialService(Ref ref) {
   );
 }
 
-/// Social repository - single source of truth for follow data
+/// Follow repository - single source of truth for follow data
 /// Handles in-memory cache, local storage, and network sync
 @Riverpod(keepAlive: true)
-SocialRepository socialRepository(Ref ref) {
+FollowRepository followRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
-  final repository = SocialRepository(
+  final repository = FollowRepository(
     nostrService: nostrService,
     authService: authService,
     personalEventCache: personalEventCache,
@@ -432,7 +432,7 @@ SocialRepository socialRepository(Ref ref) {
   // Initialize asynchronously
   repository.initialize().catchError((e) {
     Log.error(
-      'Failed to initialize SocialRepository',
+      'Failed to initialize FollowRepository',
       name: 'AppProviders',
       error: e,
     );

@@ -1,7 +1,7 @@
-// ABOUTME: Repository for managing social relationships (follow/unfollow)
+// ABOUTME: Repository for managing follow relationships (follow/unfollow)
 // ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
 
-// TODO(refactor): Extract this to packages/social_repository once dependencies are resolved.
+// TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
 // - AuthService (needs interface extraction)
 // - INostrService (needs to move to nostr_client package)
@@ -31,8 +31,8 @@ import 'package:openvine/utils/unified_logger.dart';
 /// - Network sync (Nostr Kind 3 events)
 ///
 /// Exposes a stream for reactive updates to the following list.
-class SocialRepository {
-  SocialRepository({
+class FollowRepository {
+  FollowRepository({
     required INostrService nostrService,
     required AuthService authService,
     PersonalEventCacheService? personalEventCache,
@@ -78,8 +78,8 @@ class SocialRepository {
     if (_isInitialized) return;
 
     Log.debug(
-      'Initializing SocialRepository',
-      name: 'SocialRepository',
+      'Initializing FollowRepository',
+      name: 'FollowRepository',
       category: LogCategory.system,
     );
 
@@ -98,14 +98,14 @@ class SocialRepository {
       _isInitialized = true;
 
       Log.info(
-        'SocialRepository initialized: ${_followingPubkeys.length} following',
-        name: 'SocialRepository',
+        'FollowRepository initialized: ${_followingPubkeys.length} following',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'SocialRepository initialization error: $e',
-        name: 'SocialRepository',
+        'FollowRepository initialization error: $e',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
@@ -116,7 +116,7 @@ class SocialRepository {
     if (!_authService.isAuthenticated) {
       Log.error(
         'Cannot follow - user not authenticated',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       throw Exception('User not authenticated');
@@ -125,7 +125,7 @@ class SocialRepository {
     if (_followingPubkeys.contains(pubkey)) {
       Log.debug(
         'Already following user: $pubkey',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       return;
@@ -133,7 +133,7 @@ class SocialRepository {
 
     Log.debug(
       'Following user: $pubkey',
-      name: 'SocialRepository',
+      name: 'FollowRepository',
       category: LogCategory.system,
     );
 
@@ -153,7 +153,7 @@ class SocialRepository {
 
       Log.info(
         'Successfully followed user: $pubkey',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     } catch (e) {
@@ -163,7 +163,7 @@ class SocialRepository {
 
       Log.error(
         'Error following user: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       rethrow;
@@ -175,7 +175,7 @@ class SocialRepository {
     if (!_authService.isAuthenticated) {
       Log.error(
         'Cannot unfollow - user not authenticated',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       throw Exception('User not authenticated');
@@ -184,7 +184,7 @@ class SocialRepository {
     if (!_followingPubkeys.contains(pubkey)) {
       Log.debug(
         'Not following user: $pubkey',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       return;
@@ -192,7 +192,7 @@ class SocialRepository {
 
     Log.debug(
       'Unfollowing user: $pubkey',
-      name: 'SocialRepository',
+      name: 'FollowRepository',
       category: LogCategory.system,
     );
 
@@ -212,7 +212,7 @@ class SocialRepository {
 
       Log.info(
         'Successfully unfollowed user: $pubkey',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     } catch (e) {
@@ -222,7 +222,7 @@ class SocialRepository {
 
       Log.error(
         'Error unfollowing user: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
       rethrow;
@@ -246,7 +246,7 @@ class SocialRepository {
 
           Log.info(
             'Loaded cached following list: ${_followingPubkeys.length} users',
-            name: 'SocialRepository',
+            name: 'FollowRepository',
             category: LogCategory.system,
           );
         }
@@ -254,7 +254,7 @@ class SocialRepository {
     } catch (e) {
       Log.error(
         'Failed to load following list from cache: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
@@ -288,7 +288,7 @@ class SocialRepository {
 
           Log.debug(
             'Loaded following from PersonalEventCache: ${pubkeys.length} users',
-            name: 'SocialRepository',
+            name: 'FollowRepository',
             category: LogCategory.system,
           );
         }
@@ -296,7 +296,7 @@ class SocialRepository {
     } catch (e) {
       Log.error(
         'Failed to load from PersonalEventCache: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
@@ -314,14 +314,14 @@ class SocialRepository {
 
         Log.debug(
           'Saved following list to cache: ${_followingPubkeys.length} users',
-          name: 'SocialRepository',
+          name: 'FollowRepository',
           category: LogCategory.system,
         );
       }
     } catch (e) {
       Log.error(
         'Failed to save following list to cache: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
@@ -335,7 +335,7 @@ class SocialRepository {
 
       Log.debug(
         'Syncing follow list from network for: $currentUserPubkey',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
 
@@ -362,7 +362,7 @@ class SocialRepository {
     } catch (e) {
       Log.error(
         'Error syncing follow list from network: $e',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
@@ -401,7 +401,7 @@ class SocialRepository {
 
     Log.debug(
       'Broadcasted contact list: ${event.id}',
-      name: 'SocialRepository',
+      name: 'FollowRepository',
       category: LogCategory.system,
     );
   }
@@ -426,7 +426,7 @@ class SocialRepository {
 
       Log.info(
         'Updated follow list from network: ${_followingPubkeys.length} following',
-        name: 'SocialRepository',
+        name: 'FollowRepository',
         category: LogCategory.system,
       );
 

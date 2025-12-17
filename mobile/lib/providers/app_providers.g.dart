@@ -1480,59 +1480,59 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
-/// Social repository - single source of truth for follow data
+/// Follow repository - single source of truth for follow data
 /// Handles in-memory cache, local storage, and network sync
 
-@ProviderFor(socialRepository)
-const socialRepositoryProvider = SocialRepositoryProvider._();
+@ProviderFor(followRepository)
+const followRepositoryProvider = FollowRepositoryProvider._();
 
-/// Social repository - single source of truth for follow data
+/// Follow repository - single source of truth for follow data
 /// Handles in-memory cache, local storage, and network sync
 
-final class SocialRepositoryProvider
+final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          SocialRepository,
-          SocialRepository,
-          SocialRepository
+          FollowRepository,
+          FollowRepository,
+          FollowRepository
         >
-    with $Provider<SocialRepository> {
-  /// Social repository - single source of truth for follow data
+    with $Provider<FollowRepository> {
+  /// Follow repository - single source of truth for follow data
   /// Handles in-memory cache, local storage, and network sync
-  const SocialRepositoryProvider._()
+  const FollowRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'socialRepositoryProvider',
+        name: r'followRepositoryProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$socialRepositoryHash();
+  String debugGetCreateSourceHash() => _$followRepositoryHash();
 
   @$internal
   @override
-  $ProviderElement<SocialRepository> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  SocialRepository create(Ref ref) {
-    return socialRepository(ref);
+  FollowRepository create(Ref ref) {
+    return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SocialRepository value) {
+  Override overrideWithValue(FollowRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<SocialRepository>(value),
+      providerOverride: $SyncValueProvider<FollowRepository>(value),
     );
   }
 }
 
-String _$socialRepositoryHash() => r'1db7b899b5f8f620c85d8f85f0d173246e5d4ea1';
+String _$followRepositoryHash() => r'a39733409c5a3b7aaf1610b19497276782ed38c9';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

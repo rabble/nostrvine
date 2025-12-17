@@ -53,7 +53,7 @@ final class FollowOperationsProvider
   }
 }
 
-String _$followOperationsHash() => r'bc845ee843da4fe36a6f1ab4f71b313521116e85';
+String _$followOperationsHash() => r'ed139061c0195ac40c6817f1bd3dc69c22fc227f';
 
 /// Notifier for managing follow state and operations
 /// - Checks if current user is following a pubkey

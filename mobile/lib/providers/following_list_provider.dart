@@ -1,5 +1,5 @@
 // ABOUTME: Provider for managing following list state
-// ABOUTME: Handles current user (from SocialRepository) and other users (from Nostr)
+// ABOUTME: Handles current user (from FollowRepository) and other users (from Nostr)
 
 import 'dart:async';
 
@@ -11,7 +11,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'following_list_provider.g.dart';
 
 /// Provider for fetching and managing a user's following list
-/// - For current user: uses SocialRepository (reactive updates)
+/// - For current user: uses FollowRepository (reactive updates)
 /// - For other users: fetches from Nostr relays
 @riverpod
 class FollowingListNotifier extends _$FollowingListNotifier {
@@ -34,9 +34,9 @@ class FollowingListNotifier extends _$FollowingListNotifier {
     }
   }
 
-  /// Load current user's following from SocialRepository
+  /// Load current user's following from FollowRepository
   Future<List<String>> _loadCurrentUserFollowing() async {
-    final repository = ref.watch(socialRepositoryProvider);
+    final repository = ref.watch(followRepositoryProvider);
 
     // Listen for changes via stream to rebuild when following list changes
     final subscription = repository.followingStream.listen((followingList) {
@@ -126,7 +126,7 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 /// Use this when you only need the current user's following
 @riverpod
 Stream<List<String>> currentUserFollowingList(Ref ref) async* {
-  final repository = ref.watch(socialRepositoryProvider);
+  final repository = ref.watch(followRepositoryProvider);
 
   // Emit current state immediately
   yield repository.followingPubkeys;

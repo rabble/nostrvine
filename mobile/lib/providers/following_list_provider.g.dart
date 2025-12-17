@@ -9,19 +9,19 @@ part of 'following_list_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider for fetching and managing a user's following list
-/// - For current user: uses SocialRepository (reactive updates)
+/// - For current user: uses FollowRepository (reactive updates)
 /// - For other users: fetches from Nostr relays
 
 @ProviderFor(FollowingListNotifier)
 const followingListProvider = FollowingListNotifierFamily._();
 
 /// Provider for fetching and managing a user's following list
-/// - For current user: uses SocialRepository (reactive updates)
+/// - For current user: uses FollowRepository (reactive updates)
 /// - For other users: fetches from Nostr relays
 final class FollowingListNotifierProvider
     extends $AsyncNotifierProvider<FollowingListNotifier, List<String>> {
   /// Provider for fetching and managing a user's following list
-  /// - For current user: uses SocialRepository (reactive updates)
+  /// - For current user: uses FollowRepository (reactive updates)
   /// - For other users: fetches from Nostr relays
   const FollowingListNotifierProvider._({
     required FollowingListNotifierFamily super.from,
@@ -60,10 +60,10 @@ final class FollowingListNotifierProvider
 }
 
 String _$followingListNotifierHash() =>
-    r'2034e5431e30ec32dfabc74f6621d053c10aa1d5';
+    r'a0c587924e456248d8a1c02de122c879c909edd2';
 
 /// Provider for fetching and managing a user's following list
-/// - For current user: uses SocialRepository (reactive updates)
+/// - For current user: uses FollowRepository (reactive updates)
 /// - For other users: fetches from Nostr relays
 
 final class FollowingListNotifierFamily extends $Family
@@ -85,7 +85,7 @@ final class FollowingListNotifierFamily extends $Family
       );
 
   /// Provider for fetching and managing a user's following list
-  /// - For current user: uses SocialRepository (reactive updates)
+  /// - For current user: uses FollowRepository (reactive updates)
   /// - For other users: fetches from Nostr relays
 
   FollowingListNotifierProvider call(String pubkey) =>
@@ -96,7 +96,7 @@ final class FollowingListNotifierFamily extends $Family
 }
 
 /// Provider for fetching and managing a user's following list
-/// - For current user: uses SocialRepository (reactive updates)
+/// - For current user: uses FollowRepository (reactive updates)
 /// - For other users: fetches from Nostr relays
 
 abstract class _$FollowingListNotifier extends $AsyncNotifier<List<String>> {
@@ -167,4 +167,4 @@ final class CurrentUserFollowingListProvider
 }
 
 String _$currentUserFollowingListHash() =>
-    r'80dc00739de862442c2526da2dd89c1ed052538d';
+    r'a968f625a5695e3000970d84c210bceecb89c25c';

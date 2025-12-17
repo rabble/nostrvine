@@ -33,7 +33,7 @@ class OptimisticFollowNotifier extends Notifier<Map<String, bool>> {
 
 /// Provider that combines real follow state with optimistic updates
 final isFollowingProvider = Provider.family<bool, String>((ref, pubkey) {
-  final repository = ref.watch(socialRepositoryProvider);
+  final repository = ref.watch(followRepositoryProvider);
   final optimisticStates = ref.watch(optimisticFollowStateProvider);
 
   // Check if we have an optimistic state for this user
@@ -56,8 +56,8 @@ class OptimisticFollowMethods {
   final Ref _ref;
 
   Future<void> followUser(String pubkey) async {
-    // Use SocialRepository as the single source of truth
-    final repository = _ref.read(socialRepositoryProvider);
+    // Use FollowRepository as the single source of truth
+    final repository = _ref.read(followRepositoryProvider);
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -79,8 +79,8 @@ class OptimisticFollowMethods {
   }
 
   Future<void> unfollowUser(String pubkey) async {
-    // Use SocialRepository as the single source of truth
-    final repository = _ref.read(socialRepositoryProvider);
+    // Use FollowRepository as the single source of truth
+    final repository = _ref.read(followRepositoryProvider);
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
