@@ -128,11 +128,9 @@ void main() {
 
       // Create services
       final mockAuthService = MockAuthService(testKeychain);
-      final mockNostrService = MockNostrService();
 
       blossomService = BlossomUploadService(
         authService: mockAuthService,
-        nostrService: mockNostrService,
       );
 
       // Configure Blossom server

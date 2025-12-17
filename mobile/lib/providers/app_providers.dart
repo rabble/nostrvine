@@ -504,15 +504,10 @@ MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
 }
 
 /// Blossom upload service (uses user-configured Blossom server)
-/// Blossom upload service (uses user-configured Blossom server)
 @riverpod
 BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  final nostrService = ref.watch(nostrServiceProvider);
-  return BlossomUploadService(
-    authService: authService,
-    nostrService: nostrService,
-  );
+  return BlossomUploadService(authService: authService);
 }
 
 /// Upload manager uses only Blossom upload service

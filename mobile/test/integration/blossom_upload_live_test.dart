@@ -8,8 +8,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/service_init_helper.dart';
 
@@ -19,7 +17,6 @@ void main() {
   group('Blossom Upload Live Integration', () {
     late BlossomUploadService blossomService;
     late AuthService authService;
-    late NostrClient nostrService;
     late File testVideoFile;
 
     const stagingServer =
@@ -50,10 +47,6 @@ void main() {
       // Generate a test key container for live testing
       final keyContainer = SecureKeyContainer.generate();
       print('Generated test keys: ${keyContainer.publicKeyHex}...');
-
-      nostrService = NostrServiceFactory.create(() => keyContainer);
-      await NostrServiceFactory.initialize(nostrService);
-
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final keyStorage = SecureKeyStorage();
@@ -63,10 +56,7 @@ void main() {
       );
       await authService.initialize();
 
-      blossomService = BlossomUploadService(
-        authService: authService,
-        nostrService: nostrService,
-      );
+      blossomService = BlossomUploadService(authService: authService);
 
       // Configure to use staging server
       await blossomService.setBlossomServer(stagingServer);

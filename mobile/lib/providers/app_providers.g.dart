@@ -1692,12 +1692,10 @@ String _$mediaAuthInterceptorHash() =>
     r'adae18db875674843f6ced55608bb65a5ef7f445';
 
 /// Blossom upload service (uses user-configured Blossom server)
-/// Blossom upload service (uses user-configured Blossom server)
 
 @ProviderFor(blossomUploadService)
 const blossomUploadServiceProvider = BlossomUploadServiceProvider._();
 
-/// Blossom upload service (uses user-configured Blossom server)
 /// Blossom upload service (uses user-configured Blossom server)
 
 final class BlossomUploadServiceProvider
@@ -1708,7 +1706,6 @@ final class BlossomUploadServiceProvider
           BlossomUploadService
         >
     with $Provider<BlossomUploadService> {
-  /// Blossom upload service (uses user-configured Blossom server)
   /// Blossom upload service (uses user-configured Blossom server)
   const BlossomUploadServiceProvider._()
     : super(
@@ -1745,7 +1742,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'd57fa3ec36057b410664e0da59b8067e68bebade';
+    r'e5fedc7e9f4a91ea5dcbb1c607b5fa5008b589ba';
 
 /// Upload manager uses only Blossom upload service
 

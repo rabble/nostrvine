@@ -3,24 +3,24 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i9;
+import 'dart:async' as _i8;
 import 'dart:io' as _i14;
 
-import 'package:dio/dio.dart' as _i5;
+import 'package:dio/dio.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i12;
-import 'package:models/models.dart' as _i8;
-import 'package:nostr_client/nostr_client.dart' as _i4;
+import 'package:models/models.dart' as _i7;
+import 'package:nostr_client/nostr_client.dart' as _i11;
 import 'package:nostr_client/src/models/models.dart' as _i3;
-import 'package:nostr_sdk/event.dart' as _i11;
+import 'package:nostr_sdk/event.dart' as _i10;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i13;
-import 'package:openvine/models/bug_report_data.dart' as _i7;
+import 'package:openvine/models/bug_report_data.dart' as _i6;
 import 'package:openvine/models/notification_model.dart' as _i16;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/blossom_upload_service.dart' as _i6;
+import 'package:openvine/services/blossom_upload_service.dart' as _i5;
 import 'package:openvine/services/bug_report_service.dart' as _i18;
 import 'package:openvine/services/notification_service_enhanced.dart' as _i15;
-import 'package:openvine/services/user_profile_service.dart' as _i10;
+import 'package:openvine/services/user_profile_service.dart' as _i9;
 import 'package:openvine/services/video_event_service.dart' as _i17;
 
 // ignore_for_file: type=lint
@@ -59,30 +59,25 @@ class _FakeAuthService_3 extends _i1.SmartFake implements _i2.AuthService {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrClient_4 extends _i1.SmartFake implements _i4.NostrClient {
-  _FakeNostrClient_4(Object parent, Invocation parentInvocation)
+class _FakeDio_4 extends _i1.SmartFake implements _i4.Dio {
+  _FakeDio_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeDio_5 extends _i1.SmartFake implements _i5.Dio {
-  _FakeDio_5(Object parent, Invocation parentInvocation)
+class _FakeBlossomUploadResult_5 extends _i1.SmartFake
+    implements _i5.BlossomUploadResult {
+  _FakeBlossomUploadResult_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBlossomUploadResult_6 extends _i1.SmartFake
-    implements _i6.BlossomUploadResult {
-  _FakeBlossomUploadResult_6(Object parent, Invocation parentInvocation)
+class _FakeBugReportData_6 extends _i1.SmartFake implements _i6.BugReportData {
+  _FakeBugReportData_6(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBugReportData_7 extends _i1.SmartFake implements _i7.BugReportData {
-  _FakeBugReportData_7(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeBugReportResult_8 extends _i1.SmartFake
-    implements _i8.BugReportResult {
-  _FakeBugReportResult_8(Object parent, Invocation parentInvocation)
+class _FakeBugReportResult_7 extends _i1.SmartFake
+    implements _i7.BugReportResult {
+  _FakeBugReportResult_7(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -103,20 +98,20 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i2.AuthState);
 
   @override
-  _i9.Stream<_i2.AuthState> get authStateStream =>
+  _i8.Stream<_i2.AuthState> get authStateStream =>
       (super.noSuchMethod(
             Invocation.getter(#authStateStream),
-            returnValue: _i9.Stream<_i2.AuthState>.empty(),
+            returnValue: _i8.Stream<_i2.AuthState>.empty(),
           )
-          as _i9.Stream<_i2.AuthState>);
+          as _i8.Stream<_i2.AuthState>);
 
   @override
-  _i9.Stream<_i2.UserProfile?> get profileStream =>
+  _i8.Stream<_i2.UserProfile?> get profileStream =>
       (super.noSuchMethod(
             Invocation.getter(#profileStream),
-            returnValue: _i9.Stream<_i2.UserProfile?>.empty(),
+            returnValue: _i8.Stream<_i2.UserProfile?>.empty(),
           )
-          as _i9.Stream<_i2.UserProfile?>);
+          as _i8.Stream<_i2.UserProfile?>);
 
   @override
   bool get isAuthenticated =>
@@ -135,21 +130,21 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as Map<String, dynamic>);
 
   @override
-  _i9.Future<void> initialize() =>
+  _i8.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<_i2.AuthResult> createNewIdentity({String? biometricPrompt}) =>
+  _i8.Future<_i2.AuthResult> createNewIdentity({String? biometricPrompt}) =>
       (super.noSuchMethod(
             Invocation.method(#createNewIdentity, [], {
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i9.Future<_i2.AuthResult>.value(
+            returnValue: _i8.Future<_i2.AuthResult>.value(
               _FakeAuthResult_0(
                 this,
                 Invocation.method(#createNewIdentity, [], {
@@ -158,10 +153,10 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               ),
             ),
           )
-          as _i9.Future<_i2.AuthResult>);
+          as _i8.Future<_i2.AuthResult>);
 
   @override
-  _i9.Future<_i2.AuthResult> importFromNsec(
+  _i8.Future<_i2.AuthResult> importFromNsec(
     String? nsec, {
     String? biometricPrompt,
   }) =>
@@ -171,7 +166,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               [nsec],
               {#biometricPrompt: biometricPrompt},
             ),
-            returnValue: _i9.Future<_i2.AuthResult>.value(
+            returnValue: _i8.Future<_i2.AuthResult>.value(
               _FakeAuthResult_0(
                 this,
                 Invocation.method(
@@ -182,10 +177,10 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               ),
             ),
           )
-          as _i9.Future<_i2.AuthResult>);
+          as _i8.Future<_i2.AuthResult>);
 
   @override
-  _i9.Future<_i2.AuthResult> importFromHex(
+  _i8.Future<_i2.AuthResult> importFromHex(
     String? privateKeyHex, {
     String? biometricPrompt,
   }) =>
@@ -195,7 +190,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               [privateKeyHex],
               {#biometricPrompt: biometricPrompt},
             ),
-            returnValue: _i9.Future<_i2.AuthResult>.value(
+            returnValue: _i8.Future<_i2.AuthResult>.value(
               _FakeAuthResult_0(
                 this,
                 Invocation.method(
@@ -206,59 +201,59 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               ),
             ),
           )
-          as _i9.Future<_i2.AuthResult>);
+          as _i8.Future<_i2.AuthResult>);
 
   @override
-  _i9.Future<void> refreshCurrentProfile(
-    _i10.UserProfileService? userProfileService,
+  _i8.Future<void> refreshCurrentProfile(
+    _i9.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> acceptTermsOfService() =>
+  _i8.Future<void> acceptTermsOfService() =>
       (super.noSuchMethod(
             Invocation.method(#acceptTermsOfService, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> signOut({bool? deleteKeys = false}) =>
+  _i8.Future<void> signOut({bool? deleteKeys = false}) =>
       (super.noSuchMethod(
             Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) =>
+  _i8.Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) =>
       (super.noSuchMethod(
             Invocation.method(#getPrivateKeyForSigning, [], {
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i9.Future<String?>.value(),
+            returnValue: _i8.Future<String?>.value(),
           )
-          as _i9.Future<String?>);
+          as _i8.Future<String?>);
 
   @override
-  _i9.Future<String?> exportNsec({String? biometricPrompt}) =>
+  _i8.Future<String?> exportNsec({String? biometricPrompt}) =>
       (super.noSuchMethod(
             Invocation.method(#exportNsec, [], {
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i9.Future<String?>.value(),
+            returnValue: _i8.Future<String?>.value(),
           )
-          as _i9.Future<String?>);
+          as _i8.Future<String?>);
 
   @override
-  _i9.Future<_i11.Event?> createAndSignEvent({
+  _i8.Future<_i10.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -271,9 +266,9 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               #tags: tags,
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -285,7 +280,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 /// A class which mocks [NostrClient].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
+class MockNostrClient extends _i1.Mock implements _i11.NostrClient {
   MockNostrClient() {
     _i1.throwOnMissingStub(this);
   }
@@ -357,13 +352,13 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as Map<String, _i3.RelayConnectionStatus>);
 
   @override
-  _i9.Stream<Map<String, _i3.RelayConnectionStatus>> get relayStatusStream =>
+  _i8.Stream<Map<String, _i3.RelayConnectionStatus>> get relayStatusStream =>
       (super.noSuchMethod(
             Invocation.getter(#relayStatusStream),
             returnValue:
-                _i9.Stream<Map<String, _i3.RelayConnectionStatus>>.empty(),
+                _i8.Stream<Map<String, _i3.RelayConnectionStatus>>.empty(),
           )
-          as _i9.Stream<Map<String, _i3.RelayConnectionStatus>>);
+          as _i8.Stream<Map<String, _i3.RelayConnectionStatus>>);
 
   @override
   String get primaryRelay =>
@@ -377,17 +372,17 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as String);
 
   @override
-  _i9.Future<void> initialize() =>
+  _i8.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<_i11.Event?> publishEvent(
-    _i11.Event? event, {
+  _i8.Future<_i10.Event?> publishEvent(
+    _i10.Event? event, {
     List<String>? targetRelays,
   }) =>
       (super.noSuchMethod(
@@ -396,12 +391,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [event],
               {#targetRelays: targetRelays},
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<List<_i11.Event>> queryEvents(
+  _i8.Future<List<_i10.Event>> queryEvents(
     List<_i13.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
@@ -423,12 +418,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #useCache: useCache,
               },
             ),
-            returnValue: _i9.Future<List<_i11.Event>>.value(<_i11.Event>[]),
+            returnValue: _i8.Future<List<_i10.Event>>.value(<_i10.Event>[]),
           )
-          as _i9.Future<List<_i11.Event>>);
+          as _i8.Future<List<_i10.Event>>);
 
   @override
-  _i9.Future<_i3.CountResult> countEvents(
+  _i8.Future<_i3.CountResult> countEvents(
     List<_i13.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
@@ -446,7 +441,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #timeout: timeout,
               },
             ),
-            returnValue: _i9.Future<_i3.CountResult>.value(
+            returnValue: _i8.Future<_i3.CountResult>.value(
               _FakeCountResult_1(
                 this,
                 Invocation.method(
@@ -462,10 +457,10 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               ),
             ),
           )
-          as _i9.Future<_i3.CountResult>);
+          as _i8.Future<_i3.CountResult>);
 
   @override
-  _i9.Future<_i11.Event?> fetchEventById(
+  _i8.Future<_i10.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
     bool? useGateway = true,
@@ -481,12 +476,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #useCache: useCache,
               },
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<_i11.Event?> fetchProfile(
+  _i8.Future<_i10.Event?> fetchProfile(
     String? pubkey, {
     bool? useGateway = true,
     bool? useCache = true,
@@ -497,12 +492,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [pubkey],
               {#useGateway: useGateway, #useCache: useCache},
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Stream<_i11.Event> subscribe(
+  _i8.Stream<_i10.Event> subscribe(
     List<_i13.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
@@ -524,18 +519,18 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #onEose: onEose,
               },
             ),
-            returnValue: _i9.Stream<_i11.Event>.empty(),
+            returnValue: _i8.Stream<_i10.Event>.empty(),
           )
-          as _i9.Stream<_i11.Event>);
+          as _i8.Stream<_i10.Event>);
 
   @override
-  _i9.Future<void> unsubscribe(String? subscriptionId) =>
+  _i8.Future<void> unsubscribe(String? subscriptionId) =>
       (super.noSuchMethod(
             Invocation.method(#unsubscribe, [subscriptionId]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
   void closeAllSubscriptions() => super.noSuchMethod(
@@ -544,37 +539,37 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   );
 
   @override
-  _i9.Future<bool> addRelay(String? relayUrl) =>
+  _i8.Future<bool> addRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#addRelay, [relayUrl]),
-            returnValue: _i9.Future<bool>.value(false),
+            returnValue: _i8.Future<bool>.value(false),
           )
-          as _i9.Future<bool>);
+          as _i8.Future<bool>);
 
   @override
-  _i9.Future<bool> removeRelay(String? relayUrl) =>
+  _i8.Future<bool> removeRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
-            returnValue: _i9.Future<bool>.value(false),
+            returnValue: _i8.Future<bool>.value(false),
           )
-          as _i9.Future<bool>);
+          as _i8.Future<bool>);
 
   @override
-  _i9.Future<Map<String, dynamic>?> getRelayStats() =>
+  _i8.Future<Map<String, dynamic>?> getRelayStats() =>
       (super.noSuchMethod(
             Invocation.method(#getRelayStats, []),
-            returnValue: _i9.Future<Map<String, dynamic>?>.value(),
+            returnValue: _i8.Future<Map<String, dynamic>?>.value(),
           )
-          as _i9.Future<Map<String, dynamic>?>);
+          as _i8.Future<Map<String, dynamic>?>);
 
   @override
-  _i9.Future<void> retryDisconnectedRelays() =>
+  _i8.Future<void> retryDisconnectedRelays() =>
       (super.noSuchMethod(
             Invocation.method(#retryDisconnectedRelays, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
   Map<String, bool> getRelayStatus() =>
@@ -585,7 +580,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as Map<String, bool>);
 
   @override
-  _i9.Future<_i11.Event?> sendLike(
+  _i8.Future<_i10.Event?> sendLike(
     String? eventId, {
     String? content,
     List<String>? tempRelays,
@@ -601,12 +596,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #targetRelays: targetRelays,
               },
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<_i11.Event?> sendRepost(
+  _i8.Future<_i10.Event?> sendRepost(
     String? eventId, {
     String? relayAddr,
     String? content = '',
@@ -624,12 +619,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #targetRelays: targetRelays,
               },
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<_i11.Event?> deleteEvent(
+  _i8.Future<_i10.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -640,12 +635,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [eventId],
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<_i11.Event?> deleteEvents(
+  _i8.Future<_i10.Event?> deleteEvents(
     List<String>? eventIds, {
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -656,12 +651,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [eventIds],
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Future<_i11.Event?> sendContactList(
+  _i8.Future<_i10.Event?> sendContactList(
     _i13.ContactList? contacts,
     String? content, {
     List<String>? tempRelays,
@@ -673,12 +668,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [contacts, content],
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
-            returnValue: _i9.Future<_i11.Event?>.value(),
+            returnValue: _i8.Future<_i10.Event?>.value(),
           )
-          as _i9.Future<_i11.Event?>);
+          as _i8.Future<_i10.Event?>);
 
   @override
-  _i9.Stream<_i11.Event> searchVideos(
+  _i8.Stream<_i10.Event> searchVideos(
     String? query, {
     List<String>? authors,
     DateTime? since,
@@ -691,21 +686,21 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [query],
               {#authors: authors, #since: since, #until: until, #limit: limit},
             ),
-            returnValue: _i9.Stream<_i11.Event>.empty(),
+            returnValue: _i8.Stream<_i10.Event>.empty(),
           )
-          as _i9.Stream<_i11.Event>);
+          as _i8.Stream<_i10.Event>);
 
   @override
-  _i9.Stream<_i11.Event> searchUsers(String? query, {int? limit}) =>
+  _i8.Stream<_i10.Event> searchUsers(String? query, {int? limit}) =>
       (super.noSuchMethod(
             Invocation.method(#searchUsers, [query], {#limit: limit}),
-            returnValue: _i9.Stream<_i11.Event>.empty(),
+            returnValue: _i8.Stream<_i10.Event>.empty(),
           )
-          as _i9.Stream<_i11.Event>);
+          as _i8.Stream<_i10.Event>);
 
   @override
-  _i9.Future<_i3.NostrBroadcastResult> broadcast(
-    _i11.Event? event, {
+  _i8.Future<_i3.NostrBroadcastResult> broadcast(
+    _i10.Event? event, {
     List<String>? targetRelays,
   }) =>
       (super.noSuchMethod(
@@ -714,7 +709,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               [event],
               {#targetRelays: targetRelays},
             ),
-            returnValue: _i9.Future<_i3.NostrBroadcastResult>.value(
+            returnValue: _i8.Future<_i3.NostrBroadcastResult>.value(
               _FakeNostrBroadcastResult_2(
                 this,
                 Invocation.method(
@@ -725,23 +720,23 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               ),
             ),
           )
-          as _i9.Future<_i3.NostrBroadcastResult>);
+          as _i8.Future<_i3.NostrBroadcastResult>);
 
   @override
-  _i9.Future<void> dispose() =>
+  _i8.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 }
 
 /// A class which mocks [BlossomUploadService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockBlossomUploadService extends _i1.Mock
-    implements _i6.BlossomUploadService {
+    implements _i5.BlossomUploadService {
   MockBlossomUploadService() {
     _i1.throwOnMissingStub(this);
   }
@@ -758,60 +753,49 @@ class MockBlossomUploadService extends _i1.Mock
           as _i2.AuthService);
 
   @override
-  _i4.NostrClient get nostrService =>
-      (super.noSuchMethod(
-            Invocation.getter(#nostrService),
-            returnValue: _FakeNostrClient_4(
-              this,
-              Invocation.getter(#nostrService),
-            ),
-          )
-          as _i4.NostrClient);
-
-  @override
-  _i5.Dio get dio =>
+  _i4.Dio get dio =>
       (super.noSuchMethod(
             Invocation.getter(#dio),
-            returnValue: _FakeDio_5(this, Invocation.getter(#dio)),
+            returnValue: _FakeDio_4(this, Invocation.getter(#dio)),
           )
-          as _i5.Dio);
+          as _i4.Dio);
 
   @override
-  _i9.Future<String?> getBlossomServer() =>
+  _i8.Future<String?> getBlossomServer() =>
       (super.noSuchMethod(
             Invocation.method(#getBlossomServer, []),
-            returnValue: _i9.Future<String?>.value(),
+            returnValue: _i8.Future<String?>.value(),
           )
-          as _i9.Future<String?>);
+          as _i8.Future<String?>);
 
   @override
-  _i9.Future<void> setBlossomServer(String? serverUrl) =>
+  _i8.Future<void> setBlossomServer(String? serverUrl) =>
       (super.noSuchMethod(
             Invocation.method(#setBlossomServer, [serverUrl]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<bool> isBlossomEnabled() =>
+  _i8.Future<bool> isBlossomEnabled() =>
       (super.noSuchMethod(
             Invocation.method(#isBlossomEnabled, []),
-            returnValue: _i9.Future<bool>.value(false),
+            returnValue: _i8.Future<bool>.value(false),
           )
-          as _i9.Future<bool>);
+          as _i8.Future<bool>);
 
   @override
-  _i9.Future<void> setBlossomEnabled(bool? enabled) =>
+  _i8.Future<void> setBlossomEnabled(bool? enabled) =>
       (super.noSuchMethod(
             Invocation.method(#setBlossomEnabled, [enabled]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<_i6.BlossomUploadResult> uploadVideo({
+  _i8.Future<_i5.BlossomUploadResult> uploadVideo({
     required _i14.File? videoFile,
     required String? nostrPubkey,
     required String? title,
@@ -830,8 +814,8 @@ class MockBlossomUploadService extends _i1.Mock
               #proofManifestJson: proofManifestJson,
               #onProgress: onProgress,
             }),
-            returnValue: _i9.Future<_i6.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_6(
+            returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_5(
                 this,
                 Invocation.method(#uploadVideo, [], {
                   #videoFile: videoFile,
@@ -845,10 +829,10 @@ class MockBlossomUploadService extends _i1.Mock
               ),
             ),
           )
-          as _i9.Future<_i6.BlossomUploadResult>);
+          as _i8.Future<_i5.BlossomUploadResult>);
 
   @override
-  _i9.Future<_i6.BlossomUploadResult> uploadImage({
+  _i8.Future<_i5.BlossomUploadResult> uploadImage({
     required _i14.File? imageFile,
     required String? nostrPubkey,
     String? mimeType = 'image/jpeg',
@@ -861,8 +845,8 @@ class MockBlossomUploadService extends _i1.Mock
               #mimeType: mimeType,
               #onProgress: onProgress,
             }),
-            returnValue: _i9.Future<_i6.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_6(
+            returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_5(
                 this,
                 Invocation.method(#uploadImage, [], {
                   #imageFile: imageFile,
@@ -873,10 +857,10 @@ class MockBlossomUploadService extends _i1.Mock
               ),
             ),
           )
-          as _i9.Future<_i6.BlossomUploadResult>);
+          as _i8.Future<_i5.BlossomUploadResult>);
 
   @override
-  _i9.Future<String?> uploadBugReport({
+  _i8.Future<String?> uploadBugReport({
     required _i14.File? bugReportFile,
     void Function(double)? onProgress,
   }) =>
@@ -885,9 +869,9 @@ class MockBlossomUploadService extends _i1.Mock
               #bugReportFile: bugReportFile,
               #onProgress: onProgress,
             }),
-            returnValue: _i9.Future<String?>.value(),
+            returnValue: _i8.Future<String?>.value(),
           )
-          as _i9.Future<String?>);
+          as _i8.Future<String?>);
 }
 
 /// A class which mocks [NotificationServiceEnhanced].
@@ -926,9 +910,9 @@ class MockNotificationServiceEnhanced extends _i1.Mock
           as bool);
 
   @override
-  _i9.Future<void> initialize({
-    required _i4.NostrClient? nostrService,
-    required _i10.UserProfileService? profileService,
+  _i8.Future<void> initialize({
+    required _i11.NostrClient? nostrService,
+    required _i9.UserProfileService? profileService,
     required _i17.VideoEventService? videoService,
   }) =>
       (super.noSuchMethod(
@@ -937,48 +921,48 @@ class MockNotificationServiceEnhanced extends _i1.Mock
               #profileService: profileService,
               #videoService: videoService,
             }),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> addNotificationForTesting(
+  _i8.Future<void> addNotificationForTesting(
     _i16.NotificationModel? notification,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#addNotificationForTesting, [notification]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> markAsRead(String? notificationId) =>
+  _i8.Future<void> markAsRead(String? notificationId) =>
       (super.noSuchMethod(
             Invocation.method(#markAsRead, [notificationId]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> markAllAsRead() =>
+  _i8.Future<void> markAllAsRead() =>
       (super.noSuchMethod(
             Invocation.method(#markAllAsRead, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> handleNotificationTap(String? notificationId) =>
+  _i8.Future<void> handleNotificationTap(String? notificationId) =>
       (super.noSuchMethod(
             Invocation.method(#handleNotificationTap, [notificationId]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
   List<_i16.NotificationModel> getNotificationsByType(
@@ -991,31 +975,31 @@ class MockNotificationServiceEnhanced extends _i1.Mock
           as List<_i16.NotificationModel>);
 
   @override
-  _i9.Future<void> clearAll() =>
+  _i8.Future<void> clearAll() =>
       (super.noSuchMethod(
             Invocation.method(#clearAll, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> clearOlderThan(Duration? duration) =>
+  _i8.Future<void> clearOlderThan(Duration? duration) =>
       (super.noSuchMethod(
             Invocation.method(#clearOlderThan, [duration]),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
-  _i9.Future<void> refreshNotifications() =>
+  _i8.Future<void> refreshNotifications() =>
       (super.noSuchMethod(
             Invocation.method(#refreshNotifications, []),
-            returnValue: _i9.Future<void>.value(),
-            returnValueForMissingStub: _i9.Future<void>.value(),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
           )
-          as _i9.Future<void>);
+          as _i8.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -1033,7 +1017,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
   }
 
   @override
-  _i9.Future<_i7.BugReportData> collectDiagnostics({
+  _i8.Future<_i6.BugReportData> collectDiagnostics({
     required String? userDescription,
     String? currentScreen,
     String? userPubkey,
@@ -1046,8 +1030,8 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               #userPubkey: userPubkey,
               #additionalContext: additionalContext,
             }),
-            returnValue: _i9.Future<_i7.BugReportData>.value(
-              _FakeBugReportData_7(
+            returnValue: _i8.Future<_i6.BugReportData>.value(
+              _FakeBugReportData_6(
                 this,
                 Invocation.method(#collectDiagnostics, [], {
                   #userDescription: userDescription,
@@ -1058,21 +1042,21 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               ),
             ),
           )
-          as _i9.Future<_i7.BugReportData>);
+          as _i8.Future<_i6.BugReportData>);
 
   @override
-  _i7.BugReportData sanitizeSensitiveData(_i7.BugReportData? data) =>
+  _i6.BugReportData sanitizeSensitiveData(_i6.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#sanitizeSensitiveData, [data]),
-            returnValue: _FakeBugReportData_7(
+            returnValue: _FakeBugReportData_6(
               this,
               Invocation.method(#sanitizeSensitiveData, [data]),
             ),
           )
-          as _i7.BugReportData);
+          as _i6.BugReportData);
 
   @override
-  int estimateReportSize(_i7.BugReportData? data) =>
+  int estimateReportSize(_i6.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#estimateReportSize, [data]),
             returnValue: 0,
@@ -1080,21 +1064,21 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
           as int);
 
   @override
-  _i9.Future<_i8.BugReportResult> sendBugReport(_i7.BugReportData? data) =>
+  _i8.Future<_i7.BugReportResult> sendBugReport(_i6.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#sendBugReport, [data]),
-            returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_8(
+            returnValue: _i8.Future<_i7.BugReportResult>.value(
+              _FakeBugReportResult_7(
                 this,
                 Invocation.method(#sendBugReport, [data]),
               ),
             ),
           )
-          as _i9.Future<_i8.BugReportResult>);
+          as _i8.Future<_i7.BugReportResult>);
 
   @override
-  _i9.Future<_i8.BugReportResult> sendBugReportToRecipient(
-    _i7.BugReportData? data,
+  _i8.Future<_i7.BugReportResult> sendBugReportToRecipient(
+    _i6.BugReportData? data,
     String? recipientPubkey,
   ) =>
       (super.noSuchMethod(
@@ -1102,8 +1086,8 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               data,
               recipientPubkey,
             ]),
-            returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_8(
+            returnValue: _i8.Future<_i7.BugReportResult>.value(
+              _FakeBugReportResult_7(
                 this,
                 Invocation.method(#sendBugReportToRecipient, [
                   data,
@@ -1112,25 +1096,25 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               ),
             ),
           )
-          as _i9.Future<_i8.BugReportResult>);
+          as _i8.Future<_i7.BugReportResult>);
 
   @override
-  _i9.Future<_i8.BugReportResult> sendBugReportViaEmail(
-    _i7.BugReportData? data,
+  _i8.Future<_i7.BugReportResult> sendBugReportViaEmail(
+    _i6.BugReportData? data,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#sendBugReportViaEmail, [data]),
-            returnValue: _i9.Future<_i8.BugReportResult>.value(
-              _FakeBugReportResult_8(
+            returnValue: _i8.Future<_i7.BugReportResult>.value(
+              _FakeBugReportResult_7(
                 this,
                 Invocation.method(#sendBugReportViaEmail, [data]),
               ),
             ),
           )
-          as _i9.Future<_i8.BugReportResult>);
+          as _i8.Future<_i7.BugReportResult>);
 
   @override
-  _i9.Future<bool> exportLogsToFile({
+  _i8.Future<bool> exportLogsToFile({
     String? currentScreen,
     String? userPubkey,
   }) =>
@@ -1139,7 +1123,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               #currentScreen: currentScreen,
               #userPubkey: userPubkey,
             }),
-            returnValue: _i9.Future<bool>.value(false),
+            returnValue: _i8.Future<bool>.value(false),
           )
-          as _i9.Future<bool>);
+          as _i8.Future<bool>);
 }
