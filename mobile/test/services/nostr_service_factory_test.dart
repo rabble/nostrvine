@@ -27,23 +27,23 @@ void main() {
         expect(client.publicKey, equals(testPublicKey));
       });
 
+      test('creates client with null key container (read-only mode)', () {
+        // This should NOT throw - it should create a read-only client
+        final client = NostrServiceFactory.create();
+
+        expect(client, isA<NostrClient>());
+        expect(client.publicKey, isEmpty);
+      });
+
       test(
-        'creates client with null key container (read-only mode)',
+        'creates client with empty public key when keyContainer is null',
         () {
-          // This should NOT throw - it should create a read-only client
-          final client = NostrServiceFactory.create();
+          final client = NostrServiceFactory.create(keyContainer: null);
 
           expect(client, isA<NostrClient>());
           expect(client.publicKey, isEmpty);
         },
       );
-
-      test('creates client with empty public key when keyContainer is null', () {
-        final client = NostrServiceFactory.create(keyContainer: null);
-
-        expect(client, isA<NostrClient>());
-        expect(client.publicKey, isEmpty);
-      });
     });
   });
 }

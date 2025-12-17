@@ -670,6 +670,20 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 fit: StackFit.expand,
                                 children: [
                                   VideoPlayer(controller),
+                                  if (value.isBuffering)
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: const LinearProgressIndicator(
+                                        minHeight: 12,
+                                        backgroundColor: Colors.transparent,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    ),
                                   // Centered play button when paused
                                   if (!value.isPlaying)
                                     Center(

@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/db_client
+  - packages/likes_repository
   - packages/models
   - packages/nostr_sdk
   - packages/nostr_client
