@@ -139,8 +139,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       // Find user profiles for matching the query
       final matchingProfilesKeys = profileService.allProfiles.values
           .where((profile) {
-            final displayNameMatch = profile
-                .bestDisplayName()
+            final displayNameMatch = profile.bestDisplayName
                 .toLowerCase()
                 .contains(query.toLowerCase());
             return displayNameMatch;
@@ -242,8 +241,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       // Find user profiles for matching the query
       final matchingRemoteUsers = profileService.allProfiles.values
           .where((profile) {
-            final displayNameMatch = profile
-                .bestDisplayName()
+            final displayNameMatch = profile.bestDisplayName
                 .toLowerCase()
                 .contains(_currentQuery.toLowerCase());
             return displayNameMatch;
@@ -575,12 +573,12 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       final hasNameA =
           profileA?.bestDisplayName != null &&
-          !profileA!.bestDisplayName().startsWith('npub') &&
-          !profileA.bestDisplayName().startsWith('@');
+          !profileA!.bestDisplayName.startsWith('npub') &&
+          !profileA.bestDisplayName.startsWith('@');
       final hasNameB =
           profileB?.bestDisplayName != null &&
-          !profileB!.bestDisplayName().startsWith('npub') &&
-          !profileB.bestDisplayName().startsWith('@');
+          !profileB!.bestDisplayName.startsWith('npub') &&
+          !profileB.bestDisplayName.startsWith('@');
 
       // Users with names come first
       if (hasNameA && !hasNameB) return -1;

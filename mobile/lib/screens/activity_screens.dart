@@ -360,7 +360,7 @@ class _NotificationItem extends ConsumerWidget {
     final profile = userProfileService.getCachedProfile(
       notification.actorPubkey,
     );
-    final userName = profile?.bestDisplayName() ?? 'Unknown User';
+    final userName = profile?.bestDisplayName ?? 'Unknown User';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -482,7 +482,7 @@ class _FollowingItem extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              profile?.bestDisplayName() ?? 'Unknown User',
+              profile?.bestDisplayName ?? 'Unknown User',
               style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontWeight: FontWeight.bold,

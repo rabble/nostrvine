@@ -65,14 +65,14 @@ class UserName extends ConsumerWidget {
     late String displayName;
     late bool isReserved;
     if (userProfile case final userProfile?) {
-      displayName = userProfile.bestDisplayName(anonymousName: anonymousName);
+      displayName = userProfile.veryGoodDisplayName(anonymousName);
       isReserved = _isReserved(userProfile);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
 
       (displayName, isReserved) = switch (profileAsync) {
         AsyncData(:final value) when value != null => (
-          value.bestDisplayName(anonymousName: anonymousName),
+          value.veryGoodDisplayName(anonymousName),
           _isReserved(value),
         ),
         AsyncData() || AsyncError() => ('Unknown', false),
@@ -90,18 +90,20 @@ class UserName extends ConsumerWidget {
 
     return Row(
       children: [
-        selectable == true
-            ? SelectableText(
-                displayName,
-                style: textStyle,
-                maxLines: maxLines ?? 1,
-              )
-            : Text(
-                displayName,
-                style: textStyle,
-                maxLines: maxLines ?? 1,
-                overflow: overflow ?? TextOverflow.ellipsis,
-              ),
+        Flexible(
+          child: selectable == true
+              ? SelectableText(
+                  displayName,
+                  style: textStyle,
+                  maxLines: maxLines ?? 1,
+                )
+              : Text(
+                  displayName,
+                  style: textStyle,
+                  maxLines: maxLines ?? 1,
+                  overflow: overflow ?? TextOverflow.ellipsis,
+                ),
+        ),
         if (isReserved) ...[
           const SizedBox(width: 4),
           Container(

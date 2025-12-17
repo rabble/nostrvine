@@ -1438,7 +1438,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
           contacts.add(
             ShareableUser(
               pubkey: pubkey,
-              displayName: profile?.bestDisplayName(),
+              displayName: profile?.bestDisplayName,
               picture: profile?.picture,
             ),
           );
@@ -1555,7 +1555,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
         searchResults.add(
           ShareableUser(
             pubkey: pubKey,
-            displayName: profile?.bestDisplayName(),
+            displayName: profile?.bestDisplayName,
             picture: profile?.picture,
           ),
         );
@@ -1566,7 +1566,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
             users.map(
               (user) => ShareableUser(
                 pubkey: user.pubkey,
-                displayName: user.bestDisplayName(),
+                displayName: user.bestDisplayName,
                 picture: user.picture,
               ),
             ),

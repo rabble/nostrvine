@@ -56,7 +56,7 @@ class UserProfileTile extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile?.bestDisplayName() ?? 'Loading...',
+                        profile?.bestDisplayName ?? 'Loading...',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,

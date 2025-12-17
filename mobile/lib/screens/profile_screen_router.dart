@@ -340,7 +340,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                     contextTitle: ref
                         .read(fetchUserProfileProvider(userIdHex))
                         .value
-                        ?.bestDisplayName(),
+                        ?.bestDisplayName,
                   );
                 },
               );
@@ -506,7 +506,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       return SizedBox.shrink();
     }
     final profilePictureUrl = profile.picture;
-    final displayName = profile.bestDisplayName();
+    final displayName = profile.bestDisplayName;
     final hasCustomName =
         profile.name?.isNotEmpty == true ||
         profile.displayName?.isNotEmpty == true;
