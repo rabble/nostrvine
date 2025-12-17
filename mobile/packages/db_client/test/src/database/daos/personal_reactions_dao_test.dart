@@ -1,5 +1,9 @@
 // ABOUTME: Unit tests for PersonalReactionsDao with reaction record operations.
-// ABOUTME: Tests all DAO methods including batch operations and reactive streams.
+// ABOUTME: Tests all DAO methods including batch operations
+// ABOUTME: and reactive streams.
+
+// No need for const constructors in tests
+// ignore_for_file: prefer_const_constructors
 
 import 'dart:io';
 
