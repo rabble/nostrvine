@@ -362,8 +362,9 @@ void main() {
         final stream = storage.watchLikedEventIds();
 
         // Add values to controller
-        controller.add({testTargetEventId});
-        controller.add({testTargetEventId, testTargetEventId2});
+        controller
+          ..add({testTargetEventId})
+          ..add({testTargetEventId, testTargetEventId2});
 
         final emissions = await stream.take(2).toList();
 
