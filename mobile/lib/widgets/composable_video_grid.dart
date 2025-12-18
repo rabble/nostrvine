@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -229,12 +229,11 @@ class ComposableVideoGrid extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      // Stats row - watch social provider for current metrics
+                      // Stats row - watch likes provider for current metrics
                       Consumer(
                         builder: (context, ref, _) {
-                          final socialState = ref.watch(socialProvider);
                           final newLikeCount =
-                              socialState.likeCounts[video.id] ?? 0;
+                              ref.watch(likeCountProvider(video.id));
                           final totalLikes =
                               newLikeCount + (video.originalLikes ?? 0);
 

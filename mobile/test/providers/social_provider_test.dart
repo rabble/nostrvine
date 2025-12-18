@@ -1,5 +1,6 @@
 // ABOUTME: Tests for Riverpod SocialProvider state management and social interactions
-// ABOUTME: Verifies reactive likes, follows, reposts, and comment functionality
+// ABOUTME: Verifies reactive follows, reposts functionality
+// ABOUTME: Note: Likes are now tested in likes_provider_test.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,10 +65,8 @@ void main() {
       final state = container.read(socialProvider);
 
       expect(state, equals(SocialState.initial));
-      expect(state.likedEventIds, isEmpty);
       expect(state.repostedEventIds, isEmpty);
       expect(state.followingPubkeys, isEmpty);
-      expect(state.likeCounts, isEmpty);
       expect(state.followerStats, isEmpty);
       expect(state.isLoading, isFalse);
       expect(state.error, isNull);
@@ -79,9 +78,9 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
 
-      // Mock event streams
+      // Mock event streams (filters is a positional parameter)
       when(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Initialize
@@ -92,66 +91,8 @@ void main() {
 
       // Verify it tried to load user data
       verify(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       ).called(greaterThan(0));
-    });
-
-    test('should toggle like on/off for an event', () async {
-      const eventId = 'test-event-id';
-      const authorPubkey = 'author-pubkey';
-
-      // Setup authenticated user
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
-
-      // Mock successful like event creation and broadcast
-      final mockLikeEvent = MockEvent();
-      when(() => mockLikeEvent.id).thenReturn('like-event-id');
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: 7,
-          content: '+',
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => mockLikeEvent);
-
-      final mockBroadcastResult = NostrBroadcastResult(
-        event: mockLikeEvent,
-        successCount: 1,
-        totalRelays: 1,
-        results: {'relay1': true},
-        errors: {},
-      );
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((_) async => mockBroadcastResult);
-
-      // Toggle like (should add)
-      await container
-          .read(socialProvider.notifier)
-          .toggleLike(eventId, authorPubkey);
-
-      var state = container.read(socialProvider);
-      expect(state.likedEventIds.contains(eventId), isTrue);
-      expect(state.likeCounts[eventId], equals(1));
-
-      // Mock successful unlike (deletion)
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: 5,
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => mockLikeEvent);
-
-      // Toggle like again (should remove)
-      await container
-          .read(socialProvider.notifier)
-          .toggleLike(eventId, authorPubkey);
-
-      state = container.read(socialProvider);
-      expect(state.likedEventIds.contains(eventId), isFalse);
-      expect(state.likeCounts[eventId], equals(0));
     });
 
     test('should follow and unfollow users', () async {
@@ -196,91 +137,6 @@ void main() {
       expect(state.followingPubkeys.contains(userToFollow), isFalse);
     });
 
-    test('should handle errors gracefully', () async {
-      const eventId = 'test-event-id';
-      const authorPubkey = 'author-pubkey';
-
-      // Setup authenticated user
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-
-      // Mock failed event creation
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: any(named: 'kind'),
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenThrow(Exception('Network error'));
-
-      // Try to toggle like
-      await expectLater(
-        () => container
-            .read(socialProvider.notifier)
-            .toggleLike(eventId, authorPubkey),
-        throwsException,
-      );
-
-      // State should remain unchanged
-      final state = container.read(socialProvider);
-      expect(state.likedEventIds.contains(eventId), isFalse);
-    });
-
-    test('likeCounts should track only NEW likes (not originalLikes)', () async {
-      const eventId = 'video-with-original-likes';
-      const authorPubkey = 'author-pubkey';
-
-      // Setup authenticated user
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
-
-      // Mock successful like event creation and broadcast
-      final mockLikeEvent = MockEvent();
-      when(() => mockLikeEvent.id).thenReturn('like-event-id');
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: 7,
-          content: '+',
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => mockLikeEvent);
-
-      final mockBroadcastResult = NostrBroadcastResult(
-        event: mockLikeEvent,
-        successCount: 1,
-        totalRelays: 1,
-        results: {'relay1': true},
-        errors: {},
-      );
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((_) async => mockBroadcastResult);
-
-      // Initial state: no likes tracked
-      var state = container.read(socialProvider);
-      expect(state.likeCounts[eventId], isNull);
-
-      // User 1 likes the video (first new like)
-      await container
-          .read(socialProvider.notifier)
-          .toggleLike(eventId, authorPubkey);
-
-      state = container.read(socialProvider);
-      // likeCounts should be 1 (only NEW likes, originalLikes added separately in UI)
-      expect(state.likeCounts[eventId], equals(1));
-
-      // Simulate another user liking (would come from subscription in real app)
-      // For this test, we manually increment to simulate receiving another like event
-      container.read(socialProvider.notifier).state = state.copyWith(
-        likeCounts: {...state.likeCounts, eventId: 2},
-      );
-
-      state = container.read(socialProvider);
-      // likeCounts should be 2 (two NEW likes)
-      expect(state.likeCounts[eventId], equals(2));
-
-      // Note: In the UI, if video has originalLikes=1000, display shows: 2 + 1000 = 1002
-    });
-
     test('should handle auth race condition during initialization', () async {
       // Test scenario 1: Auth is "checking" - should return early without fetching
       when(() => mockAuthService.authState).thenReturn(AuthState.checking);
@@ -307,9 +163,9 @@ void main() {
         () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('test-pubkey-123');
 
-      // Mock event streams
+      // Mock event streams (filters is a positional parameter)
       when(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Create new container with authenticated state
@@ -328,7 +184,7 @@ void main() {
 
       // Should have attempted to fetch contacts (verify subscription called)
       verify(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       ).called(greaterThan(0));
 
       state = container.read(socialProvider);
@@ -341,9 +197,9 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
 
-      // Mock event streams
+      // Mock event streams (filters is a positional parameter)
       when(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Call initialize multiple times rapidly (simulating race condition)
@@ -359,10 +215,10 @@ void main() {
       // Verify subscribeToEvents was NOT called 3x (should be called once due to idempotency)
       // The first call should succeed, subsequent calls should see isInitialized=true and return early
       final verificationResult = verify(
-        () => mockNostrService.subscribe(any(named: 'filters')),
+        () => mockNostrService.subscribe(any()),
       );
 
-      // Should be called 2 times (once for followList, once for reactions in the first initialize)
+      // Should be called 2 times (once for followList, once for reposts in the first initialize)
       // NOT 6 times (which would be 3 initializes * 2 subscriptions each)
       verificationResult.called(2);
 

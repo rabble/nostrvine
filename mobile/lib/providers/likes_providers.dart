@@ -36,6 +36,7 @@ part 'likes_providers.g.dart';
 @Riverpod(keepAlive: true)
 class LikesNotifier extends _$LikesNotifier {
   StreamSubscription<Set<String>>? _likedIdsSubscription;
+  Completer<void>? _initializationCompleter;
 
   @override
   LikesState build() {
@@ -44,12 +45,24 @@ class LikesNotifier extends _$LikesNotifier {
       final previousAuth = previous?.isAuthenticated ?? false;
       final currentAuth = current.isAuthenticated;
 
+      Log.debug(
+        'LikesNotifier: Auth state changed - '
+        'previous: $previousAuth, current: $currentAuth',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+
       if (!previousAuth && currentAuth) {
-        // User logged in - initialize
+        // User logged in (or already logged in on initial fire)
+        // Only invalidate if there was a previous state (actual login, not initial)
+        if (previous != null) {
+          ref.invalidate(likesRepositoryProvider);
+        }
         _initialize();
       } else if (previousAuth && !currentAuth) {
-        // User logged out - clear state
+        // User logged out - clear state and invalidate repository
         _clearState();
+        ref.invalidate(likesRepositoryProvider);
       }
     }, fireImmediately: true);
 
@@ -62,13 +75,21 @@ class LikesNotifier extends _$LikesNotifier {
   ///
   /// Called when user authenticates. Syncs with local storage and relays.
   Future<void> _initialize() async {
+    // Create a new completer for this initialization
+    _initializationCompleter = Completer<void>();
+
+    // Small delay to allow likesRepositoryProvider to rebuild after invalidation
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
     final repository = ref.read(likesRepositoryProvider);
     if (repository == null) {
       Log.warning(
-        'LikesNotifier: Cannot initialize - repository not available',
+        'LikesNotifier: Cannot initialize - repository not available '
+        '(auth may still be initializing)',
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
+      _initializationCompleter?.complete();
       return;
     }
 
@@ -119,6 +140,21 @@ class LikesNotifier extends _$LikesNotifier {
         category: LogCategory.system,
       );
       state = state.copyWith(isSyncing: false, error: e.toString());
+    } finally {
+      _initializationCompleter?.complete();
+    }
+  }
+
+  /// Wait for initialization to complete (if in progress)
+  Future<void> _waitForInitialization() async {
+    if (_initializationCompleter != null &&
+        !_initializationCompleter!.isCompleted) {
+      Log.debug(
+        'LikesNotifier: Waiting for initialization to complete...',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+      await _initializationCompleter!.future;
     }
   }
 
@@ -175,8 +211,22 @@ class LikesNotifier extends _$LikesNotifier {
     required String eventId,
     required String authorPubkey,
   }) async {
+    Log.debug(
+      'toggleLike called for $eventId (initialized: ${state.isInitialized})',
+      name: 'LikesNotifier',
+      category: LogCategory.system,
+    );
+
+    // Wait for any pending initialization to complete
+    await _waitForInitialization();
+
     final repository = ref.read(likesRepositoryProvider);
     if (repository == null) {
+      Log.error(
+        'toggleLike failed: repository is null (user not authenticated)',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
       throw const NotAuthenticatedException();
     }
 
@@ -266,6 +316,9 @@ class LikesNotifier extends _$LikesNotifier {
     required String eventId,
     required String authorPubkey,
   }) async {
+    // Wait for any pending initialization to complete
+    await _waitForInitialization();
+
     final repository = ref.read(likesRepositoryProvider);
     if (repository == null) {
       throw const NotAuthenticatedException();
@@ -310,6 +363,9 @@ class LikesNotifier extends _$LikesNotifier {
   /// Throws [NotLikedException] if not currently liked.
   /// Throws [UnlikeFailedException] if the operation fails.
   Future<void> unlike(String eventId) async {
+    // Wait for any pending initialization to complete
+    await _waitForInitialization();
+
     final repository = ref.read(likesRepositoryProvider);
     if (repository == null) {
       throw const NotAuthenticatedException();

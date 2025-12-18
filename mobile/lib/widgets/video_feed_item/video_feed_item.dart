@@ -11,6 +11,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
+import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -871,9 +872,9 @@ class VideoOverlayActions extends ConsumerWidget {
     if (!isVisible) return const SizedBox();
 
     final socialState = ref.watch(socialProvider);
-    final isLiked = socialState.isLiked(video.id);
-    final isLikeInProgress = socialState.isLikeInProgress(video.id);
-    final likeCount = socialState.likeCounts[video.id] ?? 0;
+    final isLiked = ref.watch(isEventLikedProvider(video.id));
+    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
+    final likeCount = ref.watch(likeCountProvider(video.id));
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -1181,8 +1182,11 @@ class VideoOverlayActions extends ConsumerWidget {
                                     category: LogCategory.ui,
                                   );
                                   await ref
-                                      .read(socialProvider.notifier)
-                                      .toggleLike(video.id, video.pubkey);
+                                      .read(likesProvider.notifier)
+                                      .toggleLike(
+                                        eventId: video.id,
+                                        authorPubkey: video.pubkey,
+                                      );
                                 },
                           icon: isLikeInProgress
                               ? const SizedBox(
