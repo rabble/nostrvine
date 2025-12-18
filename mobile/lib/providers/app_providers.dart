@@ -452,7 +452,7 @@ FollowRepository followRepository(Ref ref) {
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
-    nostrService: nostrService,
+    nostrClient: nostrService,
     authService: authService,
     personalEventCache: personalEventCache,
   );

@@ -109,11 +109,15 @@ void main() {
         await repository.initialize();
         expect(repository.isInitialized, isTrue);
 
-        // Verify subscribeToEvents was only called once during first init
+        // Verify subscribe was only called once during first init
         verify(
-          mockNostrService.subscribeToEvents(
-            filters: anyNamed('filters'),
-            bypassLimits: anyNamed('bypassLimits'),
+          mockNostrClient.subscribe(
+            any,
+            subscriptionId: anyNamed('subscriptionId'),
+            tempRelays: anyNamed('tempRelays'),
+            targetRelays: anyNamed('targetRelays'),
+            relayTypes: anyNamed('relayTypes'),
+            sendAfterAuth: anyNamed('sendAfterAuth'),
             onEose: anyNamed('onEose'),
           ),
         ).called(1);
@@ -192,7 +196,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -229,7 +233,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 0,
@@ -304,7 +308,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -348,7 +352,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 0,
@@ -405,7 +409,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -454,7 +458,7 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrService.broadcastEvent(any)).thenAnswer(
+        when(mockNostrClient.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
