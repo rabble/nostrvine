@@ -803,7 +803,7 @@ class SocialNotifier extends _$SocialNotifier {
         }
       }
 
-      final stream = nostrService.subscribeToEvents(filters: [filter]);
+      final stream = nostrService.subscribe([filter]);
       subscription = stream.listen(
         (event) {
           // Check if provider was disposed before processing
@@ -969,9 +969,7 @@ class SocialNotifier extends _$SocialNotifier {
       final repostEvents = <Event>[];
 
       // Subscribe to both filters
-      final stream = nostrService.subscribeToEvents(
-        filters: [reactionFilter, repostFilter],
-      );
+      final stream = nostrService.subscribe([reactionFilter, repostFilter]);
 
       late final StreamSubscription<Event> subscription;
 
@@ -1100,7 +1098,7 @@ class SocialNotifier extends _$SocialNotifier {
       }
 
       // Broadcast the like event
-      final result = await nostrService.broadcastEvent(event);
+      final result = await nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -1142,7 +1140,7 @@ class SocialNotifier extends _$SocialNotifier {
       }
 
       // Broadcast the deletion event
-      final result = await nostrService.broadcastEvent(deletionEvent);
+      final result = await nostrService.broadcast(deletionEvent);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -1184,7 +1182,7 @@ class SocialNotifier extends _$SocialNotifier {
       }
 
       // Broadcast the contact list event
-      final result = await nostrService.broadcastEvent(event);
+      final result = await nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');

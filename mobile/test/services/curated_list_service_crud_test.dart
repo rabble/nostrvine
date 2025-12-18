@@ -11,23 +11,23 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'curated_list_service_crud_test.mocks.dart';
 
-@GenerateNiceMocks([MockSpec<INostrService>(), MockSpec<AuthService>()])
+@GenerateNiceMocks([MockSpec<NostrClient>(), MockSpec<AuthService>()])
 void main() {
   group('CuratedListService - CRUD Operations', () {
     late CuratedListService service;
-    late MockINostrService mockNostr;
+    late MockNostrClient mockNostr;
     late MockAuthService mockAuth;
     late SharedPreferences prefs;
 
     setUp(() async {
-      mockNostr = MockINostrService();
+      mockNostr = MockNostrClient();
       mockAuth = MockAuthService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
@@ -39,7 +39,7 @@ void main() {
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event broadcasting
-      when(mockNostr.broadcastEvent(any)).thenAnswer((_) async {
+      when(mockNostr.broadcast(any)).thenAnswer((_) async {
         final event = Event.fromJson({
           'id': 'broadcast_event_id',
           'pubkey': 'test_pubkey_123456789abcdef',
@@ -60,11 +60,7 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribeToEvents(
-          filters: anyNamed('filters'),
-          bypassLimits: anyNamed('bypassLimits'),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
@@ -162,7 +158,7 @@ void main() {
           return Future.value(event);
         });
 
-        when(mockNostr.broadcastEvent(any)).thenAnswer((invocation) {
+        when(mockNostr.broadcast(any)).thenAnswer((invocation) {
           final event = invocation.positionalArguments[0] as Event;
           lists.add(event.toCuratedList());
 
@@ -178,9 +174,7 @@ void main() {
         });
 
         // Mock subscription to return collected lists
-        when(
-          mockNostr.subscribeToEvents(filters: anyNamed('filters')),
-        ).thenAnswer((invocation) {
+        when(mockNostr.subscribe(argThat(anything))).thenAnswer((invocation) {
           final filters = invocation.namedArguments[#filters] as List<Filter>;
 
           if (filters.isNotEmpty) {
@@ -274,9 +268,7 @@ void main() {
 
       test('calls fetchUserListsFromRelays during initialization', () async {
         // Mock subscription for relay sync
-        when(
-          mockNostr.subscribeToEvents(filters: anyNamed('filters')),
-        ).thenAnswer(
+        when(mockNostr.subscribe(argThat(anything))).thenAnswer(
           (_) => Stream.value(
             Event.fromJson({
               'id': 'relay_list_event',
@@ -296,9 +288,7 @@ void main() {
         await service.initialize();
 
         // Should have called subscribeToEvents
-        verify(
-          mockNostr.subscribeToEvents(filters: anyNamed('filters')),
-        ).called(1);
+        verify(mockNostr.subscribe(argThat(anything))).called(1);
       });
     });
 
@@ -362,7 +352,7 @@ void main() {
         ).called(1);
 
         // Should broadcast event
-        verify(mockNostr.broadcastEvent(any)).called(1);
+        verify(mockNostr.broadcast(any)).called(1);
       });
 
       test('does not publish private list to Nostr', () async {
@@ -376,7 +366,7 @@ void main() {
             tags: anyNamed('tags'),
           ),
         );
-        verifyNever(mockNostr.broadcastEvent(any));
+        verifyNever(mockNostr.broadcast(any));
       });
 
       test('does not publish when user not authenticated', () async {
@@ -482,7 +472,7 @@ void main() {
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verify(mockNostr.broadcastEvent(any)).called(1);
+        verify(mockNostr.broadcast(any)).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -494,7 +484,7 @@ void main() {
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verifyNever(mockNostr.broadcastEvent(any));
+        verifyNever(mockNostr.broadcast(any));
       });
 
       test('returns false for non-existent list', () async {

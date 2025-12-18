@@ -30,7 +30,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
@@ -40,8 +40,6 @@ import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/relay_gateway_service.dart';
-import 'package:openvine/services/relay_gateway_settings.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -127,22 +125,16 @@ class VideoEventService extends ChangeNotifier {
     UserProfileService? userProfileService,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
-    RelayGatewayService? gatewayService,
-    RelayGatewaySettings? gatewaySettings,
   }) : _subscriptionManager = subscriptionManager,
        _userProfileService = userProfileService,
        _eventRouter = eventRouter,
-       _videoFilterBuilder = videoFilterBuilder,
-       _gatewayService = gatewayService,
-       _gatewaySettings = gatewaySettings {
+       _videoFilterBuilder = videoFilterBuilder {
     _initializePaginationStates();
   }
-  final INostrService _nostrService;
+  final NostrClient _nostrService;
   final UserProfileService? _userProfileService;
   final EventRouter? _eventRouter;
   final VideoFilterBuilder? _videoFilterBuilder;
-  final RelayGatewayService? _gatewayService;
-  final RelayGatewaySettings? _gatewaySettings;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
 
   // REFACTORED: Separate event lists per subscription type
@@ -400,61 +392,6 @@ class VideoEventService extends ChangeNotifier {
     });
   }
 
-  /// Check if gateway should be used for a subscription type
-  /// Returns false if gateway dependencies are null, type is homeFeed, or settings don't allow
-  bool _shouldUseGateway(SubscriptionType type) {
-    // Gateway dependencies must be available
-    final gatewaySettings = _gatewaySettings;
-    if (_gatewayService == null || gatewaySettings == null) return false;
-
-    // Never use gateway for home feed (personalized, not cacheable)
-    if (type == SubscriptionType.homeFeed) return false;
-
-    // Check settings and relay configuration
-    return gatewaySettings.shouldUseGateway(
-      configuredRelays: _nostrService.relays,
-    );
-  }
-
-  /// Fetch events via REST gateway and import to embedded relay SQLite
-  /// Falls back to WebSocket on any failure (does not throw)
-  Future<void> _fetchViaGateway(SubscriptionType type, Filter filter) async {
-    // _shouldUseGateway already checks for null, so we can safely assert non-null here
-    final gatewayService = _gatewayService;
-    if (gatewayService == null || !_shouldUseGateway(type)) return;
-
-    try {
-      Log.info(
-        'Gateway: Fetching ${type.name} via REST',
-        name: 'VideoEventService',
-        category: LogCategory.relay,
-      );
-
-      final response = await gatewayService.query(filter);
-
-      if (response.hasEvents) {
-        Log.info(
-          'Gateway: Received ${response.eventCount} events '
-          '(cached: ${response.cached}, age: ${response.cacheAgeSeconds}s)',
-          name: 'VideoEventService',
-          category: LogCategory.relay,
-        );
-
-        // Events will arrive via WebSocket subscription after import
-        // The embedded relay will notify subscribers when events are imported
-      }
-    } on GatewayException catch (e) {
-      Log.warning(
-        'Gateway fetch failed, WebSocket will handle: $e',
-        name: 'VideoEventService',
-        category: LogCategory.relay,
-      );
-      // Fall through to WebSocket - no rethrow
-    }
-  }
-
-  // REFACTORED: Getters now work with subscription types
-
   /// Get videos for a specific subscription type
   List<VideoEvent> getVideos(SubscriptionType type) {
     return List.unmodifiable(_eventLists[type] ?? []);
@@ -678,7 +615,7 @@ class VideoEventService extends ChangeNotifier {
       );
 
       // Subscribe to events
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      final eventStream = _nostrService.subscribe([filter]);
       late StreamSubscription<Event> streamSubscription;
 
       // Set timeout for receiving events
@@ -769,16 +706,16 @@ class VideoEventService extends ChangeNotifier {
     }
 
     try {
+      final filter = Filter(
+        kinds: kinds,
+        authors: authors,
+        t: hashtags,
+        since: since,
+        until: until,
+        limit: limit,
+      );
       final cachedEvents = await _eventRouter.db.nostrEventsDao
-          .getVideoEventsByFilter(
-            kinds: kinds,
-            authors: authors,
-            hashtags: hashtags,
-            since: since,
-            until: until,
-            limit: limit,
-            sortBy: sortBy?.fieldName,
-          );
+          .getEventsByFilter(filter, sortBy: sortBy?.fieldName);
 
       if (cachedEvents.isNotEmpty) {
         Log.debug(
@@ -1103,11 +1040,8 @@ class VideoEventService extends ChangeNotifier {
       // Store hashtag filter for event processing
       _activeHashtagFilters[subscriptionType] = hashtags;
 
-      // Try gateway BEFORE WebSocket subscription for eligible feed types
-      // Gateway pre-populates SQLite, WebSocket provides real-time updates
-      if (_shouldUseGateway(subscriptionType)) {
-        await _fetchViaGateway(subscriptionType, videoFilter);
-      }
+      // Gateway handling is now done internally by NostrClient
+      // NostrClient.queryEvents() follows Cache → Gateway → WebSocket flow
 
       // Verify NostrService is ready
       if (!_nostrService.isInitialized) {
@@ -1368,8 +1302,8 @@ class VideoEventService extends ChangeNotifier {
         // 🎯 RELAY DEBUG: Track loop counts from relay
         final relayLoopCounts = <int>[];
 
-        final eventStream = _nostrService.subscribeToEvents(
-          filters: filters,
+        final eventStream = _nostrService.subscribe(
+          filters,
           onEose: () {
             eoseReceived = true;
             feedLoadingTimeout
@@ -2609,7 +2543,7 @@ class VideoEventService extends ChangeNotifier {
 
     try {
       // Stream events from NostrService
-      final eventStream = _nostrService.subscribeToEvents(filters: filters);
+      final eventStream = _nostrService.subscribe(filters);
       late StreamSubscription<Event> streamSubscription;
 
       // Set timeout for receiving events
@@ -3000,7 +2934,7 @@ class VideoEventService extends ChangeNotifier {
 
     try {
       // Use direct NostrService streaming approach like ProfileWebSocketService
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      final eventStream = _nostrService.subscribe([filter]);
       late StreamSubscription<Event> streamSubscription;
 
       // Set a reasonable timeout for receiving events
@@ -3134,7 +3068,7 @@ class VideoEventService extends ChangeNotifier {
         category: LogCategory.video,
       );
 
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      final eventStream = _nostrService.subscribe([filter]);
       late StreamSubscription subscription;
 
       subscription = eventStream.listen(
@@ -3254,7 +3188,7 @@ class VideoEventService extends ChangeNotifier {
       category: LogCategory.video,
     );
 
-    final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+    final eventStream = _nostrService.subscribe([filter]);
     late StreamSubscription subscription;
 
     subscription = eventStream.listen(
@@ -3532,11 +3466,9 @@ class VideoEventService extends ChangeNotifier {
       );
 
       // Create a one-shot subscription to fetch the specific event
-      final eventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(ids: [originalEventId]),
-        ],
-      );
+      final eventStream = _nostrService.subscribe([
+        Filter(ids: [originalEventId]),
+      ]);
 
       // Listen for the original event
       late StreamSubscription subscription;
@@ -3702,7 +3634,7 @@ class VideoEventService extends ChangeNotifier {
       );
 
       // Create a one-shot subscription to fetch the specific event
-      final eventStream = _nostrService.subscribeToEvents(filters: [filter]);
+      final eventStream = _nostrService.subscribe([filter]);
 
       // Listen for the original event
       late StreamSubscription subscription;
@@ -5168,7 +5100,7 @@ class VideoEventService extends ChangeNotifier {
 
     try {
       // 1. Check relay connection status
-      final relays = _nostrService.relays;
+      final relays = _nostrService.configuredRelays;
       final connectedRelays = _nostrService.connectedRelays;
       final connectedCount = _nostrService.connectedRelayCount;
 
@@ -5259,12 +5191,9 @@ class VideoEventService extends ChangeNotifier {
         category: LogCategory.video,
       );
 
-      final directQueryEvents = await _nostrService.getEvents(
-        filters: [
-          Filter(kinds: [34236], limit: 100),
-        ],
-        limit: 100,
-      );
+      final directQueryEvents = await _nostrService.queryEvents([
+        Filter(kinds: [34236], limit: 100),
+      ]);
 
       Log.warning(
         '✅ Direct query returned ${directQueryEvents.length} video events',
@@ -5274,12 +5203,12 @@ class VideoEventService extends ChangeNotifier {
 
       if (directQueryEvents.isEmpty) {
         Log.error(
-          '❌ DIAGNOSTIC: Embedded relay database has NO video events!',
+          '❌ DIAGNOSTIC: Relay cache has NO video events!',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
         Log.error(
-          '   This means external relay → embedded relay sync is not working.',
+          '   This means relay connection is not returning video events.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );

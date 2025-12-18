@@ -498,7 +498,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     bool isOwnProfile,
     AsyncValue<ProfileStats> profileStatsAsync,
   ) {
-    // Watch profile from embedded relay (reactive)
+    // Watch profile from relay (reactive)
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 

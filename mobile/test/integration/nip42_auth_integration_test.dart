@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:openvine/main.dart' as app;
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
@@ -22,20 +22,30 @@ void main() {
       // Access the services directly
       Log.debug('\n=== NIP-42 Authentication Test ===');
 
-      // Create test services
-      final keyManager = NostrKeyManager();
-      await keyManager.initialize();
-      if (!keyManager.hasKeys) {
-        await keyManager.generateKeys();
-      }
+      // Create test NostrClient with generated keys
+      final privateKey = keys.generatePrivateKey();
+      final publicKey = keys.getPublicKey(privateKey);
+      final signer = LocalNostrSigner(privateKey);
 
-      final nostrService = NostrService(keyManager);
+      final config = NostrClientConfig(signer: signer, publicKey: publicKey);
+
+      // Use in-memory storage with the test relay
+      final storage = InMemoryRelayStorage(['wss://relay3.openvine.co']);
+      final relayConfig = RelayManagerConfig(
+        defaultRelayUrl: AppConstants.defaultRelayUrl,
+        storage: storage,
+      );
+
+      final nostrClient = NostrClient(
+        config: config,
+        relayManagerConfig: relayConfig,
+      );
 
       // Test 1: Connect to relay
       Log.debug('\n1. Testing relay connection...');
-      await nostrService.initialize(customRelays: ['wss://relay3.openvine.co']);
-      Log.debug('Connected to relays: ${nostrService.connectedRelays}');
-      Log.debug('Public key: ${nostrService.publicKey}');
+      await nostrClient.initialize();
+      Log.debug('Connected to relays: ${nostrClient.connectedRelays}');
+      Log.debug('Public key: ${nostrClient.publicKey}');
 
       // Test 2: Try to subscribe to events
       Log.debug(
@@ -49,7 +59,7 @@ void main() {
       ];
 
       final events = <Event>[];
-      final subscription = nostrService.subscribeToEvents(filters: filters);
+      final subscription = nostrClient.subscribe(filters);
 
       // Listen for events with timeout
       try {
@@ -65,9 +75,7 @@ void main() {
             )
             .forEach((event) {
               events.add(event);
-              Log.debug(
-                'Received event: ${event.kind} - ${event.id.substring(0, 8)}...',
-              );
+              Log.debug('Received event: ${event.kind} - ${event.id}');
             });
       } catch (e) {
         Log.debug('Error during subscription: $e');
@@ -90,15 +98,15 @@ void main() {
       final profileFilters = [
         Filter(
           kinds: [0], // Profile metadata
-          authors: [nostrService.publicKey!],
+          authors: [nostrClient.publicKey],
           limit: 1,
         ),
       ];
 
       final profileEvents = <Event>[];
       try {
-        await nostrService
-            .subscribeToEvents(filters: profileFilters)
+        await nostrClient
+            .subscribe(profileFilters)
             .take(1)
             .timeout(const Duration(seconds: 3), onTimeout: (sink) {})
             .forEach(profileEvents.add);
@@ -107,6 +115,9 @@ void main() {
       }
 
       Log.debug('Profile events: ${profileEvents.length}');
+
+      // Clean up
+      await nostrClient.dispose();
 
       // Wait a bit to see any notices or errors
       await tester.pump(const Duration(seconds: 2));

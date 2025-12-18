@@ -30,8 +30,10 @@
       "Bash(pod install:*)",
       "Bash(xcrun simctl:*)",
       "Bash(dart fix:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nchore: remove remaining unused files and build artifacts\n\nContinue cleanup of files that shouldn''t be tracked:\n- mobile/web-deploy/ (Flutter web build output)\n- Test video artifacts (test_video_*.mp4, invalid_*.mp4)\n- mobile/screenshots/ placeholder files\n- mobile/pages.toml\n- Root config files (.pre-commit-config.yaml, .repomix-*)\n- AGENTS.md, CHANGELOG.md\n- docs/.private-journal/ entries\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(dart run build_runner build:*)",
+      "mcp__dart__run_tests",
+      "mcp__dart__analyze_files",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

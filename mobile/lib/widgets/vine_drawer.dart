@@ -181,21 +181,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                         ..push('/blossom-settings');
                     },
                   ),
-                  // P2P Sync hidden for release - not ready for production
-                  // _buildDrawerItem(
-                  //   icon: Icons.sync,
-                  //   title: 'P2P Sync',
-                  //   subtitle: 'Peer-to-peer synchronization',
-                  //   onTap: () {
-                  //     Navigator.pop(context); // Close drawer
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (context) => const P2PSyncScreen(),
-                  //       ),
-                  //     );
-                  //   },
-                  // ),
                   _buildDrawerItem(
                     icon: Icons.notifications,
                     title: 'Notifications',

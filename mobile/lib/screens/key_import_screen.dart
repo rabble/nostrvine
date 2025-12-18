@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
   const KeyImportScreen({super.key});
@@ -264,9 +263,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         // Clear the text field for security
         _keyController.clear();
 
-        // Set age verified to avoid redirect to welcome screen
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('age_verified_16_plus', true);
+        // Accept TOS to transition auth state to authenticated
+        // This avoids desync between prefs and auth state
+        await authService.acceptTermsOfService();
 
         // Navigate to home
         context.go('/home/0');

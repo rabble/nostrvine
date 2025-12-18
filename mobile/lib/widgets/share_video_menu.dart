@@ -2482,7 +2482,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Broadcast the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.broadcastEvent(event);
+      await nostrService.broadcast(event);
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);

@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for CuratedListService query operations
 // ABOUTME: Tests searching, filtering, and retrieving lists
 
+// ignore_for_file: invalid_use_of_null_value
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -8,16 +10,16 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'curated_list_service_query_test.mocks.dart';
 
-@GenerateMocks([INostrService, AuthService])
+@GenerateMocks([NostrClient, AuthService])
 void main() {
   group('CuratedListService - Query Operations', () {
     late CuratedListService service;
-    late MockINostrService mockNostr;
+    late MockNostrClient mockNostr;
     late MockAuthService mockAuth;
     late SharedPreferences prefs;
 
@@ -25,7 +27,7 @@ void main() {
       // CRITICAL: Reset SharedPreferences mock completely for each test
       SharedPreferences.setMockInitialValues({});
 
-      mockNostr = MockINostrService();
+      mockNostr = MockNostrClient();
       mockAuth = MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
@@ -36,7 +38,7 @@ void main() {
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event broadcasting
-      when(mockNostr.broadcastEvent(any)).thenAnswer((_) async {
+      when(mockNostr.broadcast(any)).thenAnswer((_) async {
         final event = Event.fromJson({
           'id': 'broadcast_event_id',
           'pubkey': 'test_pubkey_123456789abcdef',
@@ -57,11 +59,7 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribeToEvents(
-          filters: anyNamed('filters'),
-          bypassLimits: anyNamed('bypassLimits'),
-          onEose: anyNamed('onEose'),
-        ),
+        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
@@ -402,11 +400,7 @@ void main() {
 
         // Setup mock to return list events when queried with #e filter
         when(
-          mockNostr.subscribeToEvents(
-            filters: anyNamed('filters'),
-            bypassLimits: anyNamed('bypassLimits'),
-            onEose: anyNamed('onEose'),
-          ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer((_) => Stream.fromIterable([mockListEvent]));
 
         // Act
@@ -416,13 +410,10 @@ void main() {
 
         // Assert: Verify filter includes the video ID
         final captured = verify(
-          mockNostr.subscribeToEvents(
-            filters: captureAnyNamed('filters'),
-            bypassLimits: anyNamed('bypassLimits'),
-            onEose: anyNamed('onEose'),
-          ),
+          mockNostr.subscribe(captureAny(), onEose: anyNamed('onEose')),
         ).captured;
-        final filters = captured[0] as List<Filter>;
+        expect(captured, isNotEmpty);
+        final filters = captured.first as List<Filter>;
         expect(filters[0].kinds, contains(30005));
         expect(filters[0].e, contains(targetVideoId));
 
@@ -437,11 +428,7 @@ void main() {
 
         // Setup mock to return empty stream
         when(
-          mockNostr.subscribeToEvents(
-            filters: anyNamed('filters'),
-            bypassLimits: anyNamed('bypassLimits'),
-            onEose: anyNamed('onEose'),
-          ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer((_) => Stream.empty());
 
         // Act
@@ -484,11 +471,7 @@ void main() {
 
         // Setup mock to return events progressively
         when(
-          mockNostr.subscribeToEvents(
-            filters: anyNamed('filters'),
-            bypassLimits: anyNamed('bypassLimits'),
-            onEose: anyNamed('onEose'),
-          ),
+          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer(
           (_) => Stream.fromIterable([mockListEvent1, mockListEvent2]),
         );

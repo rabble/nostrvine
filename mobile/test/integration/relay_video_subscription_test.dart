@@ -4,9 +4,10 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_event.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -55,19 +56,14 @@ void main() {
       });
 
   group('Real Video Subscription Test', () {
-    late NostrService nostrService;
+    late NostrClient nostrService;
     late SubscriptionManager subscriptionManager;
     late VideoEventService videoEventService;
-    late NostrKeyManager keyManager;
 
     setUpAll(() async {
-      keyManager = NostrKeyManager();
-      await keyManager.initialize();
-
-      nostrService = NostrService(keyManager);
-      await nostrService.initialize(
-        customRelays: ['wss://staging-relay.divine.video'],
-      );
+      final keyContainer = SecureKeyContainer.generate();
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      await nostrService.initialize();
 
       // Wait for connection to stabilize using proper async pattern
       Log.info(
@@ -108,7 +104,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      await nostrService.closeAllSubscriptions();
       nostrService.dispose();
       videoEventService.dispose();
       subscriptionManager.dispose();
