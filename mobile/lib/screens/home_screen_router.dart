@@ -286,6 +286,13 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                     videos: videos,
                   );
 
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
+
                   Log.debug(
                     '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
                     name: 'HomeScreenRouter',

@@ -339,6 +339,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                     currentIndex: newIndex,
                     videos: videos,
                   );
+
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
                 },
                 itemBuilder: (context, index) {
                   if (index >= videos.length) return const SizedBox.shrink();
