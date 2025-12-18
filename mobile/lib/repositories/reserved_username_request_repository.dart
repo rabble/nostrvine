@@ -30,6 +30,7 @@ class ReservedUsernameRequestResult {
 class ReservedUsernameRequestRepository {
   ReservedUsernameRequestRepository(this._httpClient);
 
+  // ignore: unused_field - will be used when backend API is implemented
   final http.Client _httpClient;
 
   /// Submit a request for a reserved username
