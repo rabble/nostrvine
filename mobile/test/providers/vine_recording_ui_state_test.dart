@@ -19,6 +19,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -43,6 +44,7 @@ void main() {
           ),
         ],
         hasSegments: true,
+        segmentCount: 1,
         aspectRatio: AspectRatio.square,
       );
 
@@ -61,6 +63,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -74,6 +77,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -92,6 +96,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -131,6 +136,7 @@ void main() {
         canSwitchCamera: false,
         segments: segments,
         hasSegments: true,
+        segmentCount: 3,
         aspectRatio: AspectRatio.square,
       );
 
@@ -149,6 +155,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -162,6 +169,7 @@ void main() {
         canSwitchCamera: false,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -181,6 +189,7 @@ void main() {
           canSwitchCamera: false,
           segments: [],
           hasSegments: false,
+          segmentCount: 0,
           aspectRatio: AspectRatio.square,
         ),
         VineRecordingUIState(
@@ -193,6 +202,7 @@ void main() {
           canSwitchCamera: false,
           segments: [],
           hasSegments: false,
+          segmentCount: 0,
           aspectRatio: AspectRatio.square,
         ),
         VineRecordingUIState(
@@ -205,6 +215,7 @@ void main() {
           canSwitchCamera: false,
           segments: [],
           hasSegments: false,
+          segmentCount: 0,
           aspectRatio: AspectRatio.square,
         ),
       ];

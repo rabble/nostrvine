@@ -141,6 +141,66 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     context.go('/camera');
   }
 
+  Future<void> _handleBack() async {
+    final state = ref.read(clipManagerProvider);
+
+    if (state.hasClips) {
+      // Show confirmation dialog if there are clips
+      final shouldDiscard = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Discard clips?',
+            style: TextStyle(color: VineTheme.whiteText),
+          ),
+          content: const Text(
+            'You have unsaved clips. What would you like to do?',
+            style: TextStyle(color: VineTheme.whiteText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(null);
+                _saveClipsForLater();
+              },
+              child: const Text('Save to Library'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Discard'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDiscard == true) {
+        ref.read(clipManagerProvider.notifier).clearAll();
+        if (mounted) {
+          // Go back to where user came from, fallback to home
+          if (GoRouter.of(context).canPop()) {
+            context.pop();
+          } else {
+            context.go('/home/0');
+          }
+        }
+      }
+      // If null or false, stay on screen (save handled separately)
+    } else {
+      // No clips, go back to where user came from
+      if (GoRouter.of(context).canPop()) {
+        context.pop();
+      } else {
+        context.go('/home/0');
+      }
+    }
+  }
+
   void _selectClip(RecordingClip clip) {
     ref.read(clipManagerProvider.notifier).selectClip(clip.id);
     _loadPreview(clip);
@@ -191,13 +251,22 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: widget.onDiscard ?? () => Navigator.of(context).pop(),
+          tooltip: 'Back to camera',
+          onPressed: _goToCamera,
         ),
         title: Text(
           '${(state.totalDuration.inMilliseconds / 1000).toStringAsFixed(1)}s / 6.3s',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: state.totalDuration.inMilliseconds > 6300 ? Colors.orange : Colors.white,
+          ),
         ),
         actions: [
+          // Exit flow button (X)
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Exit',
+            onPressed: widget.onDiscard ?? _handleBack,
+          ),
           // Save for later button
           if (state.hasClips)
             IconButton(
@@ -205,6 +274,12 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
               tooltip: 'Save for later',
               onPressed: _saveClipsForLater,
             ),
+          // Add from library button
+          IconButton(
+            icon: const Icon(Icons.video_library, color: Colors.white),
+            tooltip: 'Add from library',
+            onPressed: _showClipLibrary,
+          ),
           // Mute original audio toggle
           IconButton(
             icon: Icon(
@@ -252,6 +327,25 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       body: state.hasClips
           ? Column(
               children: [
+                // Duration warning banner
+                if (state.totalDuration.inMilliseconds > 6300)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.content_cut, color: Colors.orange, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Over limit! Last ${((state.totalDuration.inMilliseconds - 6300) / 1000).toStringAsFixed(1)}s will be cut when you publish.',
+                            style: const TextStyle(color: Colors.orange, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 // Video preview area
                 Expanded(
                   child: _buildPreviewArea(state),

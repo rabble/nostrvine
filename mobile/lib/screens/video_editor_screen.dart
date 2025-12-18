@@ -4,7 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:openvine/theme/vine_theme.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
@@ -333,15 +335,56 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
-  void _handleBack() {
+  Future<void> _handleBack() async {
     // Stop audio preview when going back
     _audioPlayer?.stop();
 
     if (widget.onBack != null) {
       widget.onBack!();
-    } else {
-      Navigator.of(context).pop();
+      return;
     }
+
+    // Show confirmation dialog
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Discard edits?',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: const Text(
+          'Your text and sound edits will be lost. Your clips are saved.',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep Editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldExit == true && mounted) {
+      // Go back to where user came from, fallback to home
+      if (GoRouter.of(context).canPop()) {
+        context.pop();
+      } else {
+        context.go('/home/0');
+      }
+    }
+  }
+
+  void _goToClipManager() {
+    // Stop audio preview when going back
+    _audioPlayer?.stop();
+    context.go('/clip-manager');
   }
 
   void _updateTextOverlayPosition(String id, Offset normalizedPosition) {
@@ -363,13 +406,20 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: _handleBack,
+          tooltip: 'Back to clips',
+          onPressed: _goToClipManager,
         ),
         title: const Text(
           'Edit Video',
           style: TextStyle(color: Colors.white),
         ),
         actions: [
+          // Exit flow button (X)
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Exit',
+            onPressed: _handleBack,
+          ),
           TextButton(
             onPressed: _handleDone,
             child: const Text(

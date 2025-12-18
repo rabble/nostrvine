@@ -1,7 +1,6 @@
 // ABOUTME: Riverpod state management for VineRecordingController
 // ABOUTME: Provides reactive state updates for recording UI without ChangeNotifier
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -13,25 +12,27 @@ import 'package:openvine/services/vine_recording_controller.dart'
         VineRecordingState,
         RecordingSegment,
         MacOSCameraInterface,
-        CameraPlatformInterface;
+        CameraPlatformInterface,
+        MobileCameraInterface;
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/saved_clip.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
-/// Result returned from stopRecording containing video file, draft ID, and native proof
+/// Result returned from stopRecording containing video file and native proof
 class RecordingResult {
   const RecordingResult({
     required this.videoFile,
-    required this.draftId,
     this.nativeProof,
   });
 
   final File? videoFile;
-  final String? draftId;
   final NativeProofData? nativeProof;
 }
 
@@ -138,8 +139,8 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
   // Track whether video was successfully published to prevent auto-save
   bool _wasPublished = false;
 
-  // Track the draft ID we created in stopRecording to prevent duplicate drafts
-  String? _currentDraftId;
+  // Track the session ID for grouping clips from the same recording session
+  String? _currentSessionId;
 
   /// Get the camera preview widget from the controller
   Widget get previewWidget => _controller.previewWidget;
@@ -182,6 +183,16 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
   }
 
   Future<void> startRecording() async {
+    // Generate session ID on first segment start
+    if (_currentSessionId == null) {
+      _currentSessionId = ClipLibraryService.generateSessionId();
+      Log.info(
+        '📹 New recording session: $_currentSessionId',
+        name: 'VineRecordingProvider',
+        category: LogCategory.video,
+      );
+    }
+
     await _controller.startRecording();
     updateState();
   }
@@ -204,84 +215,21 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
       category: LogCategory.video,
     );
 
-    // Auto-create draft immediately after recording finishes
-    if (result.$1 != null) {
-      try {
-        final draftStorage = await _ref.read(
-          draftStorageServiceProvider.future,
-        );
-
-        // Serialize NativeProofData to JSON if available
-        String? proofManifestJson;
-        if (result.$2 != null) {
-          try {
-            proofManifestJson = jsonEncode(result.$2!.toJson());
-            Log.info(
-              '📜 Native ProofMode data attached to draft',
-              category: LogCategory.video,
-            );
-            Log.info(
-              '🔍 Proof JSON length: ${proofManifestJson.length} chars',
-              category: LogCategory.video,
-            );
-            Log.info(
-              '🔍 Proof verification level: ${result.$2!.verificationLevel}',
-              category: LogCategory.video,
-            );
-          } catch (e) {
-            Log.error(
-              'Failed to serialize NativeProofData for draft: $e',
-              category: LogCategory.video,
-            );
-          }
-        } else {
-          Log.warning(
-            '⚠️ NO NATIVE PROOF DATA FROM RECORDING! ProofMode will not be published.',
-            category: LogCategory.video,
-          );
-        }
-
-        final draft = VineDraft.create(
-          videoFile: result.$1!,
-          title: 'Do it for the Vine!',
-          description: '',
-          hashtags: ['openvine', 'vine'],
-          frameCount: _controller.segments.length,
-          selectedApproach: 'native',
-          proofManifestJson: proofManifestJson,
-          aspectRatio: _controller.aspectRatio,
-        );
-
-        await draftStorage.saveDraft(draft);
-        _currentDraftId =
-            draft.id; // Track draft to prevent duplicate on dispose
-        Log.info(
-          '📹 Auto-created draft: ${draft.id}',
-          category: LogCategory.video,
-        );
-
-        return RecordingResult(
-          videoFile: result.$1,
-          draftId: draft.id,
-          nativeProof: result.$2,
-        );
-      } catch (e) {
-        Log.error(
-          '📹 Failed to auto-create draft: $e',
-          category: LogCategory.video,
-        );
-        // Still return the video file so user can manually save
-        return RecordingResult(
-          videoFile: result.$1,
-          draftId: null,
-          nativeProof: result.$2,
-        );
-      }
+    if (result.$2 != null) {
+      Log.info(
+        '🔍 Proof verification level: ${result.$2!.verificationLevel}',
+        category: LogCategory.video,
+      );
+    } else {
+      Log.warning(
+        '⚠️ NO NATIVE PROOF DATA FROM RECORDING! ProofMode will not be published.',
+        category: LogCategory.video,
+      );
     }
 
+    // Clips are saved per-segment in stopSegment(), no draft creation needed
     return RecordingResult(
-      videoFile: null,
-      draftId: null,
+      videoFile: result.$1,
       nativeProof: result.$2,
     );
   }
@@ -291,10 +239,81 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
   Future<void> stopSegment() async {
     await _controller.stopRecording();
     updateState();
+
+    // Get the segment that was just recorded
+    final segments = _controller.segments;
+    if (segments.isNotEmpty) {
+      final lastSegment = segments.last;
+      if (lastSegment.filePath != null) {
+        await _saveSegmentAsClip(lastSegment.filePath!, lastSegment.duration);
+      }
+    }
+
     Log.info(
-      '📹 Segment stopped, total segments: ${_controller.segments.length}',
+      '📹 Segment stopped and saved, total segments: ${_controller.segments.length}',
       category: LogCategory.video,
     );
+  }
+
+  /// Save a recorded segment as a clip in the library
+  Future<void> _saveSegmentAsClip(String videoPath, Duration duration) async {
+    try {
+      final clipService = await _ref.read(clipLibraryServiceProvider.future);
+
+      // Copy to permanent location in clips directory
+      final appDir = await getApplicationSupportDirectory();
+      final clipsDir = Directory(path.join(appDir.path, 'clips'));
+      if (!clipsDir.existsSync()) {
+        clipsDir.createSync(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = path.extension(videoPath);
+      final permanentPath = path.join(clipsDir.path, 'clip_$timestamp$extension');
+
+      final sourceFile = File(videoPath);
+      await sourceFile.copy(permanentPath);
+
+      // Generate thumbnail
+      String? thumbnailPath;
+      try {
+        thumbnailPath = await VideoThumbnailService.extractThumbnail(
+          videoPath: permanentPath,
+          timeMs: 100,
+        );
+      } catch (e) {
+        Log.warning(
+          '📹 Failed to generate thumbnail: $e',
+          name: 'VineRecordingProvider',
+          category: LogCategory.video,
+        );
+      }
+
+      // Create and save the clip
+      final clip = SavedClip(
+        id: 'clip_$timestamp',
+        filePath: permanentPath,
+        thumbnailPath: thumbnailPath,
+        duration: duration,
+        createdAt: DateTime.now(),
+        aspectRatio: _controller.aspectRatio.name,
+        sessionId: _currentSessionId,
+      );
+
+      await clipService.saveClip(clip);
+
+      Log.info(
+        '✅ Segment saved as clip: ${clip.id} (session: $_currentSessionId)',
+        name: 'VineRecordingProvider',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '❌ Failed to save segment as clip: $e',
+        name: 'VineRecordingProvider',
+        category: LogCategory.video,
+      );
+    }
   }
 
   Future<(File?, NativeProofData?)> finishRecording() async {
@@ -336,7 +355,7 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
   void reset() {
     _controller.reset();
     _wasPublished = false; // Reset publish flag for new recording
-    _currentDraftId = null; // Clear draft ID for new recording
+    _currentSessionId = null; // Clear session ID for new recording
     updateState();
   }
 
@@ -358,7 +377,7 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
       // Then reset state
       _controller.reset();
       _wasPublished = false;
-      _currentDraftId = null; // Clear draft ID for new recording
+      _currentSessionId = null; // Clear session ID for new recording
       updateState();
       Log.info(
         'Cleaned up temp files and reset for new recording',
@@ -402,126 +421,23 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
 
   /// Auto-save recording as draft if completed but not published
   Future<void> _autoSaveDraftBeforeDispose() async {
-    try {
-      // Skip auto-save if video was successfully published
-      if (_wasPublished) {
-        Log.info(
-          'Skipping auto-save - video was published',
-          name: 'VineRecordingProvider',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Skip auto-save if we already created a draft in stopRecording()
-      if (_currentDraftId != null) {
-        Log.info(
-          'Skipping auto-save - draft already created: $_currentDraftId',
-          name: 'VineRecordingProvider',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Only auto-save if recording is completed
-      if (_controller.state != VineRecordingState.completed) {
-        return;
-      }
-
-      // Check if we have segments to save
-      if (_controller.segments.isEmpty) {
-        Log.debug(
-          'No segments to auto-save as draft',
-          name: 'VineRecordingProvider',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Get the video file path from macOS single recording mode
-      if (Platform.isMacOS &&
-          _controller.cameraInterface is MacOSCameraInterface) {
-        final macOSInterface =
-            _controller.cameraInterface as MacOSCameraInterface;
-        final videoPath = macOSInterface.currentRecordingPath;
-
-        if (videoPath != null && File(videoPath).existsSync()) {
-          await _saveDraftFromPath(videoPath);
-          return;
-        }
-      }
-
-      // For other platforms or if macOS path not available, check segments
-      final segment = _controller.segments.firstOrNull;
-      if (segment?.filePath != null && File(segment!.filePath!).existsSync()) {
-        await _saveDraftFromPath(segment.filePath!);
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to auto-save draft on dispose: $e',
-        name: 'VineRecordingProvider',
-        category: LogCategory.system,
-      );
-      // Don't rethrow - ensure cleanup continues
-    }
-  }
-
-  /// Save draft from video file path
-  Future<void> _saveDraftFromPath(String videoPath) async {
-    try {
-      final draftStorage = await _ref.read(draftStorageServiceProvider.future);
-
-      // Copy video file to permanent draft location using app support directory (sandboxed)
-      final appDir = await getApplicationSupportDirectory();
-      final draftsDir = Directory(path.join(appDir.path, 'drafts'));
-      if (!draftsDir.existsSync()) {
-        draftsDir.createSync(recursive: true);
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final extension = path.extension(videoPath);
-      final permanentPath = path.join(
-        draftsDir.path,
-        'draft_$timestamp$extension',
-      );
-
-      // Copy the file to permanent location
-      final sourceFile = File(videoPath);
-      final permanentFile = await sourceFile.copy(permanentPath);
-
+    // Clips are now saved per-segment in stopSegment()
+    // No need to save draft on dispose
+    if (_wasPublished) {
       Log.info(
-        '📁 Copied draft video to permanent location: $permanentPath',
+        'Recording was published, no auto-save needed',
         name: 'VineRecordingProvider',
         category: LogCategory.system,
       );
-
-      // Create draft with permanent file path
-      final draft = VineDraft.create(
-        videoFile: permanentFile,
-        title:
-            'Untitled Draft - ${DateTime.now().toLocal().toString().split('.')[0]}',
-        description: '',
-        hashtags: [],
-        frameCount: 0,
-        selectedApproach: 'auto',
-        aspectRatio: _controller.aspectRatio,
-      );
-
-      await draftStorage.saveDraft(draft);
-
-      Log.info(
-        '✅ Auto-saved recording as draft: ${draft.id}',
-        name: 'VineRecordingProvider',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to save draft: $e',
-        name: 'VineRecordingProvider',
-        category: LogCategory.system,
-      );
-      rethrow;
+      return;
     }
+
+    // Clips were already saved during recording
+    Log.info(
+      'Clips saved during recording, no draft auto-save needed',
+      name: 'VineRecordingProvider',
+      category: LogCategory.system,
+    );
   }
 
   // Getters that delegate to controller

@@ -794,16 +794,20 @@ class _UniversalCameraScreenPureState
       color: VineTheme.vineGreen,
       child: Row(
         children: [
-          // X button (close/cancel) on the left - pops back to previous screen
+          // X button (close/cancel) on the left - returns to previous screen
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               Log.info(
-                '📹 X CANCEL - popping back',
+                '📹 X CANCEL - returning to previous screen',
                 category: LogCategory.video,
               );
-              // Camera is pushed via pushCamera(), so pop() returns to previous screen
-              GoRouter.of(context).pop();
+              // Go back to where user came from, fallback to home if nothing to pop
+              if (GoRouter.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/home/0');
+              }
             },
             child: Container(
               width: 44,
@@ -1052,6 +1056,12 @@ class _UniversalCameraScreenPureState
         const SizedBox(height: 12),
         // Aspect ratio toggle
         _buildAspectRatioToggle(recordingState),
+        const SizedBox(height: 12),
+        // Clips library button
+        _buildControlButton(
+          icon: Icons.video_library,
+          onTap: () => context.go('/clips'),
+        ),
       ],
     );
   }

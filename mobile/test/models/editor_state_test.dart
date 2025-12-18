@@ -1,7 +1,6 @@
 // ABOUTME: Unit tests for EditorState model validating state management and export tracking
 // ABOUTME: Tests immutability, copyWith, computed properties, and state transitions
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/editor_state.dart';
 import 'package:openvine/models/text_overlay.dart';

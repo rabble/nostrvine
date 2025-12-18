@@ -458,6 +458,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/drafts',
+        name: 'drafts',
+        builder: (_, __) => const ClipLibraryScreen(),
+      ),
+      GoRoute(
+        path: '/clips',
         name: 'clips',
         builder: (_, __) => const ClipLibraryScreen(),
       ),

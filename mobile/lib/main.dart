@@ -14,6 +14,8 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:db_client/db_client.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/draft_migration_service.dart';
+import 'package:openvine/services/migration_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/config/zendesk_config.dart';
@@ -545,6 +547,43 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         } catch (e) {
           Log.warning(
             '[INIT] SocialProvider failed (non-critical): $e',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        }
+      });
+
+      // Run draft-to-clip migration in background (one-time operation)
+      Future.microtask(() async {
+        try {
+          final prefs = ref.read(sharedPreferencesProvider);
+          final draftService = await ref.read(draftStorageServiceProvider.future);
+          final clipService = await ref.read(clipLibraryServiceProvider.future);
+
+          final migrationService = DraftMigrationService(
+            draftService: draftService,
+            clipService: clipService,
+            prefs: prefs,
+          );
+
+          final result = await migrationService.migrate();
+
+          if (result.alreadyMigrated) {
+            Log.info(
+              '[INIT] ○ Draft migration already completed',
+              name: 'Main',
+              category: LogCategory.system,
+            );
+          } else {
+            Log.info(
+              '[INIT] ✅ Draft migration complete: ${result.migratedCount} migrated, ${result.skippedCount} skipped',
+              name: 'Main',
+              category: LogCategory.system,
+            );
+          }
+        } catch (e) {
+          Log.warning(
+            '[INIT] Draft migration failed (non-critical): $e',
             name: 'Main',
             category: LogCategory.system,
           );

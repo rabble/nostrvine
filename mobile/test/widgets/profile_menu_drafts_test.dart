@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/vine_drafts_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 void main() {
@@ -41,7 +41,7 @@ void main() {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const VineDraftsScreen(),
+                                      const ClipLibraryScreen(),
                                 ),
                               );
                             },
@@ -68,7 +68,7 @@ void main() {
       expect(find.byIcon(Icons.drafts), findsOneWidget);
     });
 
-    testWidgets('should navigate to VineDraftsScreen when tapped', (
+    testWidgets('should navigate to ClipLibraryScreen when tapped', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -100,7 +100,7 @@ void main() {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const VineDraftsScreen(),
+                                      const ClipLibraryScreen(),
                                 ),
                               );
                             },
@@ -125,8 +125,8 @@ void main() {
       await tester.tap(find.text('Drafts'));
       await tester.pumpAndSettle();
 
-      // Should navigate to VineDraftsScreen
-      expect(find.byType(VineDraftsScreen), findsOneWidget);
+      // Should navigate to ClipLibraryScreen
+      expect(find.byType(ClipLibraryScreen), findsOneWidget);
       expect(find.text('Drafts'), findsWidgets); // App bar title
     });
 
@@ -172,7 +172,7 @@ void main() {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const VineDraftsScreen(),
+                                      const ClipLibraryScreen(),
                                 ),
                               );
                             },
@@ -200,7 +200,7 @@ void main() {
 
       // Menu should be closed - Settings should not be visible
       expect(find.text('Settings'), findsNothing);
-      expect(find.byType(VineDraftsScreen), findsOneWidget);
+      expect(find.byType(ClipLibraryScreen), findsOneWidget);
     });
   });
 }

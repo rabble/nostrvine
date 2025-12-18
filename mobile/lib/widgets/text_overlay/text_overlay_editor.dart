@@ -29,8 +29,6 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
   late String _fontFamily;
   late Color _color;
   late double _fontSize;
-  bool _showFontPicker = false;
-  bool _showColorPicker = false;
 
   // Popular fonts shown first, then searchable list of all Google Fonts
   static const List<String> _popularFonts = [
@@ -301,7 +299,7 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
               runSpacing: 8,
               children: [
                 ..._presetColors.map((color) {
-                  final isSelected = _color.value == color.value;
+                  final isSelected = _color == color;
                   return GestureDetector(
                     onTap: () => setState(() => _color = color),
                     child: Container(
