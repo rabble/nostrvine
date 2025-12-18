@@ -23,6 +23,7 @@ environment:
   flutter: ^3.38.3
 
 workspace:
+  - packages/comments_repository
   - packages/db_client
   - packages/likes_repository
   - packages/models
