@@ -659,7 +659,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         child: Container(
                           color: Colors.black,
                           child: FittedBox(
-                            fit: BoxFit.fitHeight,
+                            fit: BoxFit.contain,
                             alignment: Alignment.topCenter,
                             child: SizedBox(
                               width: value.size.width == 0
