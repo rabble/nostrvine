@@ -2,9 +2,10 @@
 // ABOUTME: Ensures AppDatabase lifecycle is managed correctly by Riverpod
 
 import 'dart:io';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -64,7 +65,7 @@ void main() {
         Directory.systemTemp.path,
         'test_db_${DateTime.now().millisecondsSinceEpoch}.db',
       );
-      final testDb = AppDatabase.test(testDbPath);
+      final testDb = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Create container with override
       final overriddenContainer = ProviderContainer(

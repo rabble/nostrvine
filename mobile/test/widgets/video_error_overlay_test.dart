@@ -2,15 +2,15 @@
 // ABOUTME: Verifies error display, 401 age-restricted content handling, and retry functionality
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/widgets/video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 
 import '../builders/test_video_event_builder.dart';
 import 'video_error_overlay_test.mocks.dart';

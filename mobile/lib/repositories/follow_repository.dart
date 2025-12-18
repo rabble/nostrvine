@@ -3,8 +3,6 @@
 
 // TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
-// - AuthService (needs interface extraction)
-// - INostrService (needs to move to nostr_client package)
 // - PersonalEventCacheService (needs interface extraction)
 // - ImmediateCompletionHelper (needs to move to a shared package)
 // - unified_logger (needs logging abstraction)
@@ -13,14 +11,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
@@ -33,15 +29,12 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Exposes a stream for reactive updates to the following list.
 class FollowRepository {
   FollowRepository({
-    required INostrService nostrService,
-    required AuthService authService,
+    required NostrClient nostrClient,
     PersonalEventCacheService? personalEventCache,
-  }) : _nostrService = nostrService,
-       _authService = authService,
+  }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache;
 
-  final INostrService _nostrService;
-  final AuthService _authService;
+  final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
 
   // Stream controller for reactive updates
@@ -91,7 +84,7 @@ class FollowRepository {
       await _loadFromPersonalEventCache();
 
       // 3. Sync from network for latest data
-      if (_authService.isAuthenticated) {
+      if (_nostrClient.hasKeys) {
         await _syncFromNetwork();
       }
 
@@ -113,7 +106,7 @@ class FollowRepository {
 
   /// Follow a user
   Future<void> follow(String pubkey) async {
-    if (!_authService.isAuthenticated) {
+    if (!_nostrClient.hasKeys) {
       Log.error(
         'Cannot follow - user not authenticated',
         name: 'FollowRepository',
@@ -172,7 +165,7 @@ class FollowRepository {
 
   /// Unfollow a user
   Future<void> unfollow(String pubkey) async {
-    if (!_authService.isAuthenticated) {
+    if (!_nostrClient.hasKeys) {
       Log.error(
         'Cannot unfollow - user not authenticated',
         name: 'FollowRepository',
@@ -233,9 +226,9 @@ class FollowRepository {
   Future<void> _loadFromLocalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final currentUserPubkey = _authService.currentPublicKeyHex;
+      final currentUserPubkey = _nostrClient.publicKey;
 
-      if (currentUserPubkey != null) {
+      if (currentUserPubkey.isNotEmpty) {
         final key = 'following_list_$currentUserPubkey';
         final cached = prefs.getString(key);
 
@@ -306,9 +299,9 @@ class FollowRepository {
   Future<void> _saveToLocalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final currentUserPubkey = _authService.currentPublicKeyHex;
+      final currentUserPubkey = _nostrClient.publicKey;
 
-      if (currentUserPubkey != null) {
+      if (currentUserPubkey.isNotEmpty) {
         final key = 'following_list_$currentUserPubkey';
         await prefs.setString(key, jsonEncode(_followingPubkeys));
 
@@ -330,8 +323,8 @@ class FollowRepository {
   /// Sync from network (fetch current user's Kind 3 contact list)
   Future<void> _syncFromNetwork() async {
     try {
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey == null) return;
+      final currentUserPubkey = _nostrClient.publicKey;
+      if (currentUserPubkey.isEmpty) return;
 
       Log.debug(
         'Syncing follow list from network for: $currentUserPubkey',
@@ -339,15 +332,13 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final eventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [currentUserPubkey],
-            kinds: [3], // NIP-02 contact list
-            limit: 1,
-          ),
-        ],
-      );
+      final eventStream = _nostrClient.subscribe([
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [3], // NIP-02 contact list
+          limit: 1,
+        ),
+      ]);
 
       final contactListEvent =
           await ContactListCompletionHelper.queryContactList(
@@ -370,32 +361,24 @@ class FollowRepository {
 
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
-    // Create new Kind 3 event with updated follow list
-    final tags = _followingPubkeys.map((pubkey) => ['p', pubkey]).toList();
+    // Create ContactList with all followed pubkeys
+    final contactList = ContactList();
+    for (final pubkey in _followingPubkeys) {
+      contactList.add(Contact(publicKey: pubkey));
+    }
 
     // Preserve existing content from previous contact list event if available
     final content = _currentUserContactListEvent?.content ?? '';
 
-    final event = await _authService.createAndSignEvent(
-      kind: 3,
-      content: content,
-      tags: tags,
-    );
+    // Send the contact list via NostrClient (creates, signs, and broadcasts)
+    final event = await _nostrClient.sendContactList(contactList, content);
 
     if (event == null) {
-      throw Exception('Failed to create contact list event');
+      throw Exception('Failed to broadcast contact list');
     }
 
-    // Cache the contact list event immediately after creation
+    // Cache the contact list event
     _personalEventCache?.cacheUserEvent(event);
-
-    // Broadcast the updated contact list
-    final result = await _nostrService.broadcastEvent(event);
-
-    if (!result.isSuccessful) {
-      final errorMessages = result.errors.values.join(', ');
-      throw Exception('Failed to broadcast contact list: $errorMessages');
-    }
 
     _currentUserContactListEvent = event;
 

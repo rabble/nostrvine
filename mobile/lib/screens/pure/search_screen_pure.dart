@@ -123,7 +123,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     );
 
     try {
-      // Search local cache ONLY (embedded relay cache)
+      // Search local cache ONLY
       final videoEventService = ref.read(videoEventServiceProvider);
       final videos = videoEventService.discoveryVideos;
 
@@ -229,7 +229,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     try {
       final videoEventService = ref.read(videoEventServiceProvider);
 
-      // Search external relays via embedded relay NIP-50
+      // Search external relays via NIP-50
       await videoEventService.searchVideos(_currentQuery, limit: 100);
 
       // Get remote results

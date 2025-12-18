@@ -117,7 +117,7 @@ void main() {
         final result = await service.registerUsername(username, pubkey, relays);
 
         // Assert
-        expect(result, true);
+        expect(result.isSuccess, true);
         expect(service.currentUsername, username);
         expect(service.isVerified, true);
         expect(service.error, isNull);
@@ -147,7 +147,7 @@ void main() {
         final result = await service.registerUsername(username, pubkey, relays);
 
         // Assert
-        expect(result, false);
+        expect(result.isTaken, true);
         expect(service.error, 'Username already taken');
       });
 
@@ -173,28 +173,33 @@ void main() {
         final result = await service.registerUsername(username, pubkey, relays);
 
         // Assert
-        expect(result, false);
+        expect(result.isReserved, true);
         expect(service.error, contains('Username is reserved'));
       });
 
       test('validates pubkey format', () async {
         // Test invalid pubkeys
-        expect(await service.registerUsername('user', 'invalid', []), false);
+        var result = await service.registerUsername('user', 'invalid', []);
+        expect(result.status, UsernameRegistrationStatus.invalidPubkey);
+
+        result = await service.registerUsername(
+          'user',
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          [],
+        );
         expect(
-          await service.registerUsername(
-            'user',
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            [],
-          ),
-          false,
+          result.status,
+          UsernameRegistrationStatus.invalidPubkey,
         ); // too short (63 chars)
+
+        result = await service.registerUsername(
+          'user',
+          'gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg',
+          [],
+        );
         expect(
-          await service.registerUsername(
-            'user',
-            'gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg',
-            [],
-          ),
-          false,
+          result.status,
+          UsernameRegistrationStatus.invalidPubkey,
         ); // non-hex
 
         // Check error message is set

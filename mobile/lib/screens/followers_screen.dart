@@ -59,14 +59,12 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen>
     final nostrService = ref.read(nostrServiceProvider);
 
     // Subscribe to kind 3 events that mention this pubkey in p tags
-    final subscription = nostrService.subscribeToEvents(
-      filters: [
-        nostr_sdk.Filter(
-          kinds: [3], // Contact lists
-          p: [widget.pubkey], // Events that mention this pubkey
-        ),
-      ],
-    );
+    final subscription = nostrService.subscribe([
+      nostr_sdk.Filter(
+        kinds: [3], // Contact lists
+        p: [widget.pubkey], // Events that mention this pubkey
+      ),
+    ]);
 
     // Apply timeout to detect relay connection issues
     final timeoutSubscription = subscription.timeout(

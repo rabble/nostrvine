@@ -183,7 +183,7 @@ extension VideoEventLogBatcher on LogBatcher {
 extension RelayEventLogBatcher on LogBatcher {
   static void batchRelayEvent({required String subscriptionId}) {
     LogBatcher.batch(
-      pattern: 'Embedded relay returned event',
+      pattern: 'Relay returned event',
       category: LogCategory.relay,
       name: 'NostrService',
       data: {'subscription': subscriptionId},

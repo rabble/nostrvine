@@ -47,6 +47,10 @@ class RelayPool {
 
   final Map<String, Function> _queryCompleteCallbacks = {};
 
+  /// Tracks which relays have sent EOSE for each subscription.
+  /// Used to determine when all relays have finished sending stored events.
+  final Map<String, Set<String>> _subscriptionEoseRelays = {};
+
   RelayLocal? relayLocal;
 
   List<EventFilter> eventFilters;
@@ -289,6 +293,21 @@ class RelayPool {
             _queryCompleteCallbacks.remove(subId);
           }
         }
+      } else {
+        // Handle EOSE for long-running subscriptions
+        final subscription = _subscriptions[subId];
+        if (subscription != null && subscription.onEose != null) {
+          // Track which relays have sent EOSE for this subscription
+          _subscriptionEoseRelays.putIfAbsent(subId, () => <String>{});
+          _subscriptionEoseRelays[subId]!.add(relay.url);
+
+          // Check if all relays that have this subscription have sent EOSE
+          final activeRelays = _getRelaysWithSubscription(subId);
+          if (_subscriptionEoseRelays[subId]!.length >= activeRelays.length) {
+            subscription.onEose!();
+            _subscriptionEoseRelays.remove(subId);
+          }
+        }
       }
     } else if (messageType == "OK") {
       log('📡 OK response from ${relay.url}: $json');
@@ -421,7 +440,7 @@ class RelayPool {
       throw ArgumentError("No filters given", "filters");
     }
 
-    final Subscription subscription = Subscription(filters, onEvent, id);
+    final Subscription subscription = Subscription(filters, onEvent, id: id);
     _initQuery[subscription.id] = subscription;
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
@@ -441,6 +460,7 @@ class RelayPool {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
+    void Function()? onEose,
   }) {
     if (filters.isEmpty) {
       throw ArgumentError("No filters given", "filters");
@@ -449,7 +469,12 @@ class RelayPool {
     handleAddrList(tempRelays);
     handleAddrList(targetRelays);
 
-    final Subscription subscription = Subscription(filters, onEvent, id);
+    final Subscription subscription = Subscription(
+      filters,
+      onEvent,
+      id: id,
+      onEose: onEose,
+    );
     _subscriptions[subscription.id] = subscription;
     // send(subscription.toJson());
 
@@ -562,6 +587,8 @@ class RelayPool {
 
   void unsubscribe(String id) {
     final subscription = _subscriptions.remove(id);
+    // Clean up EOSE tracking for this subscription
+    _subscriptionEoseRelays.remove(id);
     if (subscription != null) {
       // check query and send close
       var it = _relays.values;
@@ -618,7 +645,7 @@ class RelayPool {
 
       var relay = _relays[url];
       if (relay != null) {
-        Subscription subscription = Subscription(filters, onEvent, id);
+        Subscription subscription = Subscription(filters, onEvent, id: id);
         relayDoQuery(relay, subscription, false);
       }
     }
@@ -658,7 +685,7 @@ class RelayPool {
     handleAddrList(tempRelays);
     handleAddrList(targetRelays);
 
-    Subscription subscription = Subscription(filters, onEvent, id);
+    Subscription subscription = Subscription(filters, onEvent, id: id);
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
     }
@@ -1065,5 +1092,35 @@ class RelayPool {
     }
 
     throw CountNotSupportedException('No relay responded to COUNT');
+  }
+
+  /// Returns the set of relay URLs that have an active subscription with the given ID.
+  ///
+  /// This is used to determine when all relays have sent EOSE for a subscription.
+  Set<String> _getRelaysWithSubscription(String subscriptionId) {
+    final relays = <String>{};
+
+    // Check normal relays
+    for (final entry in _relays.entries) {
+      if (entry.value.hasSubscription()) {
+        relays.add(entry.key);
+      }
+    }
+
+    // Check temp relays
+    for (final entry in _tempRelays.entries) {
+      if (entry.value.hasSubscription()) {
+        relays.add(entry.key);
+      }
+    }
+
+    // Check cache relays
+    for (final entry in _cacheRelays.entries) {
+      if (entry.value.hasSubscription()) {
+        relays.add(entry.key);
+      }
+    }
+
+    return relays;
   }
 }

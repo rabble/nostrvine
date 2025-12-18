@@ -195,15 +195,16 @@ class _VideoMetadataScreenPureState
     try {
       final uploadManager = ref.read(uploadManagerProvider);
       final authService = ref.read(authServiceProvider);
-      final pubkey = authService.currentPublicKeyHex;
 
-      if (pubkey == null) {
+      if (!authService.isAuthenticated) {
         Log.error(
-          '📝 Cannot start background upload: not authenticated',
+          '📝 Cannot start background upload: not authenticated (state: ${authService.authState.name})',
           category: LogCategory.video,
         );
         return;
       }
+
+      final pubkey = authService.currentPublicKeyHex!;
 
       Log.info(
         '📝 Starting background upload for draft: ${_currentDraft!.id}',
@@ -1105,13 +1106,14 @@ class _VideoMetadataScreenPureState
         category: LogCategory.video,
       );
 
-      // Get current user's pubkey
+      // Verify user is fully authenticated (not just has keys)
       final authService = ref.read(authServiceProvider);
-      final pubkey = authService.currentPublicKeyHex;
-
-      if (pubkey == null) {
-        throw Exception('Not authenticated - cannot publish video');
+      if (!authService.isAuthenticated) {
+        throw Exception(
+          'Not authenticated (state: ${authService.authState.name}) - cannot publish video',
+        );
       }
+      final pubkey = authService.currentPublicKeyHex!;
 
       // Get video event publisher
       final videoEventPublisher = ref.read(videoEventPublisherProvider);

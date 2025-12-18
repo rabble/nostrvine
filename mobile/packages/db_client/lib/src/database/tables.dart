@@ -308,3 +308,47 @@ class PendingUploads extends Table {
     ),
   ];
 }
+
+/// Stores the current user's own reaction events (Kind 7 likes).
+///
+/// This table tracks the mapping between target events (videos) and the
+/// user's reaction event IDs. This mapping is essential for unlikes, which
+/// require the reaction event ID to create a Kind 5 deletion event.
+///
+/// Only stores reactions created by the current user, not reactions from
+/// others.
+@DataClassName('PersonalReactionRow')
+class PersonalReactions extends Table {
+  @override
+  String get tableName => 'personal_reactions';
+
+  /// The event ID that was liked (e.g., video event ID)
+  TextColumn get targetEventId => text().named('target_event_id')();
+
+  /// The Kind 7 reaction event ID created by the user
+  TextColumn get reactionEventId => text().named('reaction_event_id')();
+
+  /// The pubkey of the user who created this reaction
+  TextColumn get userPubkey => text().named('user_pubkey')();
+
+  /// Unix timestamp when the reaction was created
+  IntColumn get createdAt => integer().named('created_at')();
+
+  @override
+  Set<Column> get primaryKey => {targetEventId, userPubkey};
+
+  List<Index> get indexes => [
+    // Index on user_pubkey for fetching all user's reactions
+    Index(
+      'idx_personal_reactions_user',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_user '
+          'ON personal_reactions (user_pubkey)',
+    ),
+    // Index on reaction_event_id for lookups when processing deletions
+    Index(
+      'idx_personal_reactions_reaction_id',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reactions_reaction_id '
+          'ON personal_reactions (reaction_event_id)',
+    ),
+  ];
+}

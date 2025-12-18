@@ -2,7 +2,30 @@
 // ABOUTME: Manages username availability checking and registration with the backend
 
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
+/// Status of a username registration attempt
+enum UsernameRegistrationStatus {
+  success,
+  taken,
+  reserved,
+  invalidFormat,
+  invalidPubkey,
+  error,
+}
+
+/// Result of a username registration attempt
+class UsernameRegistrationResult {
+  const UsernameRegistrationResult({required this.status, this.errorMessage});
+
+  final UsernameRegistrationStatus status;
+  final String? errorMessage;
+
+  bool get isSuccess => status == UsernameRegistrationStatus.success;
+  bool get isReserved => status == UsernameRegistrationStatus.reserved;
+  bool get isTaken => status == UsernameRegistrationStatus.taken;
+}
 
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class Nip05Service {
@@ -61,7 +84,7 @@ class Nip05Service {
   }
 
   /// Register a NIP-05 username
-  Future<bool> registerUsername(
+  Future<UsernameRegistrationResult> registerUsername(
     String username,
     String pubkey,
     List<String> relays,
@@ -69,13 +92,19 @@ class Nip05Service {
     if (!_isValidUsername(username)) {
       _error = 'Invalid username format';
 
-      return false;
+      return UsernameRegistrationResult(
+        status: UsernameRegistrationStatus.invalidFormat,
+        errorMessage: _error,
+      );
     }
 
     if (!_isValidPubkey(pubkey)) {
       _error = 'Invalid public key format';
 
-      return false;
+      return UsernameRegistrationResult(
+        status: UsernameRegistrationStatus.invalidPubkey,
+        errorMessage: _error,
+      );
     }
 
     _isChecking = true;
@@ -101,7 +130,9 @@ class Nip05Service {
           _isChecking = false;
           _error = null;
 
-          return true;
+          return UsernameRegistrationResult(
+            status: UsernameRegistrationStatus.success,
+          );
         } else {
           throw Exception(data['error'] ?? 'Registration failed');
         }
@@ -109,13 +140,19 @@ class Nip05Service {
         _error = 'Username already taken';
         _isChecking = false;
 
-        return false;
+        return UsernameRegistrationResult(
+          status: UsernameRegistrationStatus.taken,
+          errorMessage: _error,
+        );
       } else if (response.statusCode == 403) {
         _error =
             'Username is reserved. Contact support if you are the original owner.';
         _isChecking = false;
 
-        return false;
+        return UsernameRegistrationResult(
+          status: UsernameRegistrationStatus.reserved,
+          errorMessage: _error,
+        );
       } else {
         final data = jsonDecode(response.body);
         throw Exception(data['error'] ?? 'Registration failed');
@@ -124,7 +161,10 @@ class Nip05Service {
       _error = 'Failed to register username: $e';
       _isChecking = false;
 
-      return false;
+      return UsernameRegistrationResult(
+        status: UsernameRegistrationStatus.error,
+        errorMessage: _error,
+      );
     }
   }
 
@@ -184,9 +224,10 @@ class Nip05Service {
       return;
     }
 
-    // Extract username from identifier
+    // Extract username from identifier (support both domains)
     final parts = nip05Identifier.split('@');
-    if (parts.length == 2 && parts[1] == 'openvine.co') {
+    if (parts.length == 2 &&
+        (parts[1] == 'divine.video' || parts[1] == 'openvine.co')) {
       _currentUsername = parts[0];
       _isVerified = true;
     } else {

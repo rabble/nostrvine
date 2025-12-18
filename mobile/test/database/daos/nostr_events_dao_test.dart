@@ -1,8 +1,9 @@
 // ABOUTME: Tests for NostrEventsDao event count queries
 // ABOUTME: Verifies getEventCount() returns correct count for empty and populated database
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:nostr_sdk/event.dart';
 
 void main() {
@@ -11,7 +12,7 @@ void main() {
 
     setUp(() async {
       // Create in-memory test database
-      db = AppDatabase.test(':memory:');
+      db = AppDatabase.test(NativeDatabase.memory());
     });
 
     tearDown(() async {

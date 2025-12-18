@@ -37,13 +37,9 @@ class FollowingScreen extends ConsumerWidget {
         ),
       ),
       body: followingAsync.when(
-        data: (following) => _FollowingListBody(
-          following: following,
-          pubkey: pubkey,
-        ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        data: (following) =>
+            _FollowingListBody(following: following, pubkey: pubkey),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _FollowingErrorBody(pubkey: pubkey),
       ),
     );
@@ -51,10 +47,7 @@ class FollowingScreen extends ConsumerWidget {
 }
 
 class _FollowingListBody extends ConsumerWidget {
-  const _FollowingListBody({
-    required this.following,
-    required this.pubkey,
-  });
+  const _FollowingListBody({required this.following, required this.pubkey});
 
   final List<String> following;
   final String pubkey;
@@ -92,18 +85,11 @@ class _FollowingEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.person_add_outlined,
-            size: 64,
-            color: Colors.grey[600],
-          ),
+          Icon(Icons.person_add_outlined, size: 64, color: Colors.grey[600]),
           const SizedBox(height: 16),
           Text(
             'Not following anyone yet',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
         ],
       ),
@@ -122,18 +108,11 @@ class _FollowingErrorBody extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.grey[600],
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
           const SizedBox(height: 16),
           Text(
             'Failed to load following list',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
           TextButton(

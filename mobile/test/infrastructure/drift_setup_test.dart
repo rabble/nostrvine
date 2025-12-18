@@ -2,8 +2,9 @@
 // ABOUTME: Verifies AppDatabase can open nostr_sdk's existing SQLite database
 
 import 'dart:io';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -36,13 +37,13 @@ void main() {
     });
 
     test('AppDatabase can be instantiated', () {
-      final db = AppDatabase.test(testDbPath);
+      final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
       expect(db, isNotNull);
       db.close();
     });
 
     test('AppDatabase uses correct shared database path', () async {
-      final db = AppDatabase.test(testDbPath);
+      final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Verify database path matches nostr_sdk pattern
       expect(testDbPath, contains('local_relay.db'));
@@ -52,7 +53,7 @@ void main() {
     });
 
     test('AppDatabase can query existing nostr_sdk event table', () async {
-      final db = AppDatabase.test(testDbPath);
+      final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Create the event table (simulating nostr_sdk schema)
       await db.customStatement('''
@@ -85,7 +86,7 @@ void main() {
     });
 
     test('AppDatabase has correct schema version', () async {
-      final db = AppDatabase.test(testDbPath);
+      final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Schema version should be 3 (nostr_sdk is at 2)
       expect(db.schemaVersion, equals(3));
@@ -94,7 +95,7 @@ void main() {
     });
 
     test('AppDatabase closes cleanly', () async {
-      final db = AppDatabase.test(testDbPath);
+      final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
       // Database should be open initially
       final result = await db.customSelect('SELECT 1').get();

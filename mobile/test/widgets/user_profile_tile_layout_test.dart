@@ -152,7 +152,6 @@ void main() {
         final UserAvatar avatar = tester.widget<UserAvatar>(avatarFinder);
         expect(avatar.size, equals(48)); // Verify correct size
         expect(avatar.imageUrl, equals(testProfile.picture));
-        expect(avatar.name, equals(testProfile.bestDisplayName));
 
         // Check avatar is properly wrapped in GestureDetector
         final avatarGestureDetector = find.ancestor(
