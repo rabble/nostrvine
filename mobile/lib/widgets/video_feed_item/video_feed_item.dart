@@ -655,20 +655,19 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                               fit: StackFit.expand,
                               children: [
                                 VideoPlayer(controller),
-                                  if (value.isBuffering)
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: const LinearProgressIndicator(
-                                        minHeight: 12,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                if (value.isBuffering)
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: const LinearProgressIndicator(
+                                      minHeight: 12,
+                                      backgroundColor: Colors.transparent,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
                                       ),
                                     ),
+                                  ),
                                 // Show play button only when active AND paused
                                 // (inactive videos just show first frame silently)
                                 if (isActive && !value.isPlaying)
