@@ -6,20 +6,15 @@ import 'package:http/http.dart' as http;
 
 /// Result of a reserved username request submission
 class ReservedUsernameRequestResult {
-  const ReservedUsernameRequestResult({
-    required this.success,
-    this.error,
-  });
+  const ReservedUsernameRequestResult({required this.success, this.error});
 
   /// Creates a successful result
-  const ReservedUsernameRequestResult.success()
-      : success = true,
-        error = null;
+  const ReservedUsernameRequestResult.success() : success = true, error = null;
 
   /// Creates a failure result with an error message
   const ReservedUsernameRequestResult.failure(String errorMessage)
-      : success = false,
-        error = errorMessage;
+    : success = false,
+      error = errorMessage;
 
   /// Whether the request was successful
   final bool success;

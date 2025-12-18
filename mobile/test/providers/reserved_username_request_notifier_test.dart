@@ -23,8 +23,9 @@ void main() {
   ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
-        reservedUsernameRequestRepositoryProvider
-            .overrideWithValue(mockRepository),
+        reservedUsernameRequestRepositoryProvider.overrideWithValue(
+          mockRepository,
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -82,7 +83,9 @@ void main() {
 
       test('preserves other fields when updating username', () {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set other fields first
         notifier.setEmail('test@example.com');
@@ -135,7 +138,9 @@ void main() {
 
       test('preserves other fields when updating email', () {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set other fields first
         notifier.setUsername('testuser');
@@ -190,7 +195,9 @@ void main() {
 
       test('preserves other fields when updating justification', () {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set other fields first
         notifier.setUsername('testuser');
@@ -209,7 +216,9 @@ void main() {
     group('reset', () {
       test('returns state to initial values', () {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set up a non-initial state
         notifier.setUsername('testuser');
@@ -236,7 +245,9 @@ void main() {
 
       test('clears error state', () {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Manually set an error state
         notifier.setUsername('testuser');
@@ -257,29 +268,36 @@ void main() {
     });
 
     group('submitRequest', () {
-      test('returns false when canSubmit is false (missing username)', () async {
-        final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+      test(
+        'returns false when canSubmit is false (missing username)',
+        () async {
+          final container = createContainer();
+          final notifier = container.read(
+            reservedUsernameRequestProvider.notifier,
+          );
 
-        // Set only email and justification
-        notifier.setEmail('test@example.com');
-        notifier.setJustification('I am the owner');
+          // Set only email and justification
+          notifier.setEmail('test@example.com');
+          notifier.setJustification('I am the owner');
 
-        final result = await notifier.submitRequest();
+          final result = await notifier.submitRequest();
 
-        expect(result, false);
-        verifyNever(
-          () => mockRepository.submitRequest(
-            username: any(named: 'username'),
-            email: any(named: 'email'),
-            justification: any(named: 'justification'),
-          ),
-        );
-      });
+          expect(result, false);
+          verifyNever(
+            () => mockRepository.submitRequest(
+              username: any(named: 'username'),
+              email: any(named: 'email'),
+              justification: any(named: 'justification'),
+            ),
+          );
+        },
+      );
 
       test('returns false when canSubmit is false (missing email)', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set only username and justification
         notifier.setUsername('testuser');
@@ -299,7 +317,9 @@ void main() {
 
       test('returns false when canSubmit is false (invalid email)', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Set invalid email
         notifier.setUsername('testuser');
@@ -318,29 +338,36 @@ void main() {
         );
       });
 
-      test('returns false when canSubmit is false (missing justification)', () async {
-        final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+      test(
+        'returns false when canSubmit is false (missing justification)',
+        () async {
+          final container = createContainer();
+          final notifier = container.read(
+            reservedUsernameRequestProvider.notifier,
+          );
 
-        // Set only username and email
-        notifier.setUsername('testuser');
-        notifier.setEmail('test@example.com');
+          // Set only username and email
+          notifier.setUsername('testuser');
+          notifier.setEmail('test@example.com');
 
-        final result = await notifier.submitRequest();
+          final result = await notifier.submitRequest();
 
-        expect(result, false);
-        verifyNever(
-          () => mockRepository.submitRequest(
-            username: any(named: 'username'),
-            email: any(named: 'email'),
-            justification: any(named: 'justification'),
-          ),
-        );
-      });
+          expect(result, false);
+          verifyNever(
+            () => mockRepository.submitRequest(
+              username: any(named: 'username'),
+              email: any(named: 'email'),
+              justification: any(named: 'justification'),
+            ),
+          );
+        },
+      );
 
       test('sets status to submitting during request', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -349,18 +376,17 @@ void main() {
             email: 'test@example.com',
             justification: 'I am the owner',
           ),
-        ).thenAnswer(
-          (_) async {
-            // Check state during repository call
-            final stateWhileSubmitting =
-                container.read(reservedUsernameRequestProvider);
-            expect(
-              stateWhileSubmitting.status,
-              ReservedUsernameRequestStatus.submitting,
-            );
-            return const ReservedUsernameRequestResult.success();
-          },
-        );
+        ).thenAnswer((_) async {
+          // Check state during repository call
+          final stateWhileSubmitting = container.read(
+            reservedUsernameRequestProvider,
+          );
+          expect(
+            stateWhileSubmitting.status,
+            ReservedUsernameRequestStatus.submitting,
+          );
+          return const ReservedUsernameRequestResult.success();
+        });
 
         notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
@@ -381,7 +407,9 @@ void main() {
 
       test('calls repository with correct parameters', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -390,7 +418,9 @@ void main() {
             email: 'test@example.com',
             justification: 'I am the brand owner',
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
@@ -411,7 +441,9 @@ void main() {
 
       test('sets status to success on successful response', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -420,7 +452,9 @@ void main() {
             email: any(named: 'email'),
             justification: any(named: 'justification'),
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
@@ -439,7 +473,9 @@ void main() {
 
       test('sets status to error with message on failed response', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         const errorMsg = 'Server error';
@@ -470,7 +506,9 @@ void main() {
 
       test('returns true on success', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -479,7 +517,9 @@ void main() {
             email: any(named: 'email'),
             justification: any(named: 'justification'),
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
@@ -494,7 +534,9 @@ void main() {
 
       test('returns false on error', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -521,7 +563,9 @@ void main() {
 
       test('handles exceptions gracefully', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -549,7 +593,9 @@ void main() {
 
       test('clears previous error message on new submission', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange - first submission fails
         when(
@@ -580,7 +626,9 @@ void main() {
             email: any(named: 'email'),
             justification: any(named: 'justification'),
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         // Act - submit again
         await notifier.submitRequest();
@@ -591,42 +639,49 @@ void main() {
         expect(state.errorMessage, isNull);
       });
 
-      test('uses default error message when failure has no error text', () async {
-        final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+      test(
+        'uses default error message when failure has no error text',
+        () async {
+          final container = createContainer();
+          final notifier = container.read(
+            reservedUsernameRequestProvider.notifier,
+          );
 
-        // Arrange
-        when(
-          () => mockRepository.submitRequest(
-            username: any(named: 'username'),
-            email: any(named: 'email'),
-            justification: any(named: 'justification'),
-          ),
-        ).thenAnswer(
-          (_) async => const ReservedUsernameRequestResult(
-            success: false,
-            error: null, // No error message provided
-          ),
-        );
+          // Arrange
+          when(
+            () => mockRepository.submitRequest(
+              username: any(named: 'username'),
+              email: any(named: 'email'),
+              justification: any(named: 'justification'),
+            ),
+          ).thenAnswer(
+            (_) async => const ReservedUsernameRequestResult(
+              success: false,
+              error: null, // No error message provided
+            ),
+          );
 
-        notifier.setUsername('testuser');
-        notifier.setEmail('test@example.com');
-        notifier.setJustification('I am the owner');
+          notifier.setUsername('testuser');
+          notifier.setEmail('test@example.com');
+          notifier.setJustification('I am the owner');
 
-        // Act
-        final result = await notifier.submitRequest();
+          // Act
+          final result = await notifier.submitRequest();
 
-        // Assert
-        expect(result, false);
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.errorMessage, 'Failed to submit request');
-      });
+          // Assert
+          expect(result, false);
+          final state = container.read(reservedUsernameRequestProvider);
+          expect(state.errorMessage, 'Failed to submit request');
+        },
+      );
     });
 
     group('integration tests', () {
       test('full form submission flow succeeds', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // Arrange
         when(
@@ -635,7 +690,9 @@ void main() {
             email: 'ceo@brand.com',
             justification: 'I am the CEO and founder of Brand Inc.',
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         // Act - simulate user filling out form
         notifier.setUsername('BrandName'); // Will be lowercased
@@ -659,7 +716,9 @@ void main() {
 
       test('form can be reset and resubmitted', () async {
         final container = createContainer();
-        final notifier = container.read(reservedUsernameRequestProvider.notifier);
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
 
         // First submission
         when(
@@ -668,7 +727,9 @@ void main() {
             email: 'first@example.com',
             justification: 'First reason',
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         notifier.setUsername('first');
         notifier.setEmail('first@example.com');
@@ -676,10 +737,7 @@ void main() {
 
         await notifier.submitRequest();
 
-        expect(
-          container.read(reservedUsernameRequestProvider).isSuccess,
-          true,
-        );
+        expect(container.read(reservedUsernameRequestProvider).isSuccess, true);
 
         // Reset form
         notifier.reset();
@@ -695,7 +753,9 @@ void main() {
             email: 'second@example.com',
             justification: 'Second reason',
           ),
-        ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
+        ).thenAnswer(
+          (_) async => const ReservedUsernameRequestResult.success(),
+        );
 
         notifier.setUsername('second');
         notifier.setEmail('second@example.com');

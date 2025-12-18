@@ -139,7 +139,8 @@ void main() {
         final result2 = await repository.submitRequest(
           username: testUsername,
           email: testEmail,
-          justification: 'A much longer and more detailed justification '
+          justification:
+              'A much longer and more detailed justification '
               'explaining why this username should be reserved for this user '
               'with extensive background information.',
         );

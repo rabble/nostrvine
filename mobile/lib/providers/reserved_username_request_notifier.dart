@@ -85,9 +85,7 @@ class ReservedUsernameRequestNotifier
           name: 'ReservedUsernameRequestNotifier',
           category: LogCategory.api,
         );
-        state = state.copyWith(
-          status: ReservedUsernameRequestStatus.success,
-        );
+        state = state.copyWith(status: ReservedUsernameRequestStatus.success);
         return true;
       } else {
         Log.error(

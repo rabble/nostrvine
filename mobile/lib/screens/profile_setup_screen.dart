@@ -1716,9 +1716,8 @@ class _UsernameReservedIndicator extends StatelessWidget {
             onPressed: () {
               showDialog<void>(
                 context: context,
-                builder: (context) => ReservedUsernameRequestDialog(
-                  username: username,
-                ),
+                builder: (context) =>
+                    ReservedUsernameRequestDialog(username: username),
               );
             },
             icon: const Icon(Icons.send, size: 16),

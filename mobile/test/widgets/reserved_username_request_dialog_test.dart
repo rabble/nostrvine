@@ -23,8 +23,9 @@ void main() {
     Widget buildSubject({String username = 'testuser'}) {
       return ProviderScope(
         overrides: [
-          reservedUsernameRequestRepositoryProvider
-              .overrideWithValue(mockRepository),
+          reservedUsernameRequestRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -103,10 +104,7 @@ void main() {
       expect(justificationField, findsOneWidget);
 
       // Enter justification
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       expect(find.text('I am the brand owner'), findsOneWidget);
@@ -124,10 +122,7 @@ void main() {
 
       // Button should be disabled (onPressed is null)
       final button = tester.widget<ElevatedButton>(
-        find.ancestor(
-          of: submitButton,
-          matching: find.byType(ElevatedButton),
-        ),
+        find.ancestor(of: submitButton, matching: find.byType(ElevatedButton)),
       );
       expect(button.onPressed, isNull);
     });
@@ -151,19 +146,13 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Submit button should still be disabled due to invalid email
       final submitButton = find.text('Submit Request');
       final button = tester.widget<ElevatedButton>(
-        find.ancestor(
-          of: submitButton,
-          matching: find.byType(ElevatedButton),
-        ),
+        find.ancestor(of: submitButton, matching: find.byType(ElevatedButton)),
       );
       expect(button.onPressed, isNull);
     });
@@ -187,19 +176,13 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Submit button should be enabled
       final submitButton = find.text('Submit Request');
       final button = tester.widget<ElevatedButton>(
-        find.ancestor(
-          of: submitButton,
-          matching: find.byType(ElevatedButton),
-        ),
+        find.ancestor(of: submitButton, matching: find.byType(ElevatedButton)),
       );
       expect(button.onPressed, isNotNull);
     });
@@ -246,10 +229,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -272,9 +252,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject());
       await openDialog(tester);
@@ -290,10 +268,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -334,10 +309,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -356,9 +328,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject());
       await openDialog(tester);
@@ -377,10 +347,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -436,9 +403,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject());
       await openDialog(tester);
@@ -457,10 +422,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -481,9 +443,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject());
       await openDialog(tester);
@@ -503,10 +463,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -526,9 +483,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject());
       await openDialog(tester);
@@ -544,10 +499,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       await tester.tap(find.text('Submit Request'));
@@ -589,10 +541,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I am the brand owner',
-      );
+      await tester.enterText(justificationField, 'I am the brand owner');
       await tester.pump();
 
       // Tap Submit
@@ -603,8 +552,9 @@ void main() {
       final emailTextFieldWidget = tester.widget<TextField>(emailField);
       expect(emailTextFieldWidget.enabled, isFalse);
 
-      final justificationTextFieldWidget =
-          tester.widget<TextField>(justificationField);
+      final justificationTextFieldWidget = tester.widget<TextField>(
+        justificationField,
+      );
       expect(justificationTextFieldWidget.enabled, isFalse);
 
       // Wait for completion
@@ -618,9 +568,7 @@ void main() {
           email: any(named: 'email'),
           justification: any(named: 'justification'),
         ),
-      ).thenAnswer(
-        (_) async => const ReservedUsernameRequestResult.success(),
-      );
+      ).thenAnswer((_) async => const ReservedUsernameRequestResult.success());
 
       await tester.pumpWidget(buildSubject(username: 'satoshi'));
       await openDialog(tester);
@@ -636,10 +584,7 @@ void main() {
         of: find.text('Why should you have this username?'),
         matching: find.byType(TextField),
       );
-      await tester.enterText(
-        justificationField,
-        'I created Bitcoin',
-      );
+      await tester.enterText(justificationField, 'I created Bitcoin');
       await tester.pump();
 
       // Tap Submit

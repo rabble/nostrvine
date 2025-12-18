@@ -14,10 +14,7 @@ import 'package:openvine/theme/vine_theme.dart';
 /// Shows a form with the reserved username (read-only), email field,
 /// and justification field. Submits via [ReservedUsernameRequestNotifier].
 class ReservedUsernameRequestDialog extends ConsumerStatefulWidget {
-  const ReservedUsernameRequestDialog({
-    super.key,
-    required this.username,
-  });
+  const ReservedUsernameRequestDialog({super.key, required this.username});
 
   /// The reserved username being requested
   final String username;
@@ -138,7 +135,8 @@ class _ReservedUsernameRequestDialogState
                   focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: VineTheme.vineGreen),
                   ),
-                  errorText: _emailController.text.isNotEmpty &&
+                  errorText:
+                      _emailController.text.isNotEmpty &&
                           !_isValidEmail(_emailController.text)
                       ? 'Please enter a valid email'
                       : null,
@@ -195,9 +193,7 @@ class _ReservedUsernameRequestDialogState
                   decoration: BoxDecoration(
                     color: VineTheme.vineGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: VineTheme.vineGreen,
-                    ),
+                    border: Border.all(color: VineTheme.vineGreen),
                   ),
                   child: const Text(
                     'Request submitted! We\'ll review it and contact you at the email provided.',
@@ -227,8 +223,9 @@ class _ReservedUsernameRequestDialogState
         // Cancel button (hide after success)
         if (!state.isSuccess)
           TextButton(
-            onPressed:
-                state.isSubmitting ? null : () => Navigator.of(context).pop(),
+            onPressed: state.isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
 
