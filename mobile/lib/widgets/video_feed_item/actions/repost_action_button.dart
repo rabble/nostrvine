@@ -50,9 +50,7 @@ class RepostActionButton extends ConsumerWidget {
                       name: 'RepostActionButton',
                       category: LogCategory.ui,
                     );
-                    await ref
-                        .read(socialProvider.notifier)
-                        .toggleRepost(video);
+                    await ref.read(socialProvider.notifier).toggleRepost(video);
                   },
             icon: isRepostInProgress
                 ? const SizedBox(

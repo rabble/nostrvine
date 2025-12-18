@@ -126,7 +126,8 @@ class _FollowButton extends ConsumerWidget {
               ?.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: (isFollowing ? Colors.grey[600] : VineTheme.vineGreen)
+            color:
+                (isFollowing ? Colors.grey[600] : VineTheme.vineGreen)
                     ?.withValues(alpha: 0.5) ??
                 Colors.transparent,
           ),

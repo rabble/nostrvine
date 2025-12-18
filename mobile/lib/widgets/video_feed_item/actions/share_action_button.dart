@@ -50,16 +50,8 @@ class ShareActionButton extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.bold,
             shadows: [
-              Shadow(
-                offset: Offset(0, 0),
-                blurRadius: 6,
-                color: Colors.black,
-              ),
-              Shadow(
-                offset: Offset(1, 1),
-                blurRadius: 3,
-                color: Colors.black,
-              ),
+              Shadow(offset: Offset(0, 0), blurRadius: 6, color: Colors.black),
+              Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black),
             ],
           ),
         ),
