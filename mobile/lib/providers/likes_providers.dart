@@ -11,42 +11,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'likes_providers.g.dart';
 
-/// Provider for LikesRepository instance
-///
-/// Creates a LikesRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
-///
-/// Note: This provider requires:
-/// - NostrClient from nostr_client package (for relay communication)
-/// - PersonalReactionsDao from db_client package (for local storage)
-///
-/// Currently returns null as the infrastructure needs to be wired up.
-/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
-@Riverpod(keepAlive: true)
-LikesRepository? likesRepository(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
-
-  // Repository requires authentication
-  if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
-    return null;
-  }
-
-  // TODO(likes): Create the repository with proper dependencies:
-  // final nostrClient = ref.watch(nostrClientProvider);
-  // final dao = ref.watch(personalReactionsDaoProvider);
-  // final localStorage = DbLikesLocalStorage(
-  //   dao: dao,
-  //   userPubkey: authService.currentPublicKeyHex!,
-  // );
-  // return LikesRepository(
-  //   nostrClient: nostrClient,
-  //   userPubkey: authService.currentPublicKeyHex!,
-  //   localStorage: localStorage,
-  // );
-
-  return null;
-}
-
 /// Main likes state notifier
 ///
 /// Manages the reactive state for likes feature, providing:

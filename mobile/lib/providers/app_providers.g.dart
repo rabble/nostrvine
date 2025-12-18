@@ -2470,3 +2470,84 @@ final class BugReportServiceProvider
 }
 
 String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Note: This provider requires:
+/// - NostrClient from nostr_client package (for relay communication)
+/// - PersonalReactionsDao from db_client package (for local storage)
+///
+/// Currently returns null as the infrastructure needs to be wired up.
+/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+
+@ProviderFor(likesRepository)
+const likesRepositoryProvider = LikesRepositoryProvider._();
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Note: This provider requires:
+/// - NostrClient from nostr_client package (for relay communication)
+/// - PersonalReactionsDao from db_client package (for local storage)
+///
+/// Currently returns null as the infrastructure needs to be wired up.
+/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+
+final class LikesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          LikesRepository?,
+          LikesRepository?,
+          LikesRepository?
+        >
+    with $Provider<LikesRepository?> {
+  /// Provider for LikesRepository instance
+  ///
+  /// Creates a LikesRepository when the user is authenticated.
+  /// Returns null when user is not authenticated.
+  ///
+  /// Note: This provider requires:
+  /// - NostrClient from nostr_client package (for relay communication)
+  /// - PersonalReactionsDao from db_client package (for local storage)
+  ///
+  /// Currently returns null as the infrastructure needs to be wired up.
+  /// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+  const LikesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'likesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$likesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LikesRepository?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  LikesRepository? create(Ref ref) {
+    return likesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LikesRepository? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LikesRepository?>(value),
+    );
+  }
+}
+
+String _$likesRepositoryHash() => r'fa945a03bad8c761d7b96d432c3c2b16d1eb9a9b';
