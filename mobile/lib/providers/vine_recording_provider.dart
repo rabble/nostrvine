@@ -11,10 +11,7 @@ import 'package:openvine/services/vine_recording_controller.dart'
         VineRecordingController,
         VineRecordingState,
         RecordingSegment,
-        MacOSCameraInterface,
-        CameraPlatformInterface,
-        MobileCameraInterface;
-import 'package:openvine/models/vine_draft.dart';
+        CameraPlatformInterface;
 import 'package:openvine/models/saved_clip.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:models/models.dart' as model show AspectRatio;

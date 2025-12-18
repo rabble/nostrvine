@@ -15,7 +15,6 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:db_client/db_client.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
-import 'package:openvine/services/migration_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/config/zendesk_config.dart';

@@ -272,7 +272,7 @@ Future<DraftStorageService> draftStorageService(Ref ref) async {
 /// Clip library service for persisting individual video clips
 @riverpod
 Future<ClipLibraryService> clipLibraryService(Ref ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final prefs = ref.watch(sharedPreferencesProvider);
   return ClipLibraryService(prefs);
 }
 

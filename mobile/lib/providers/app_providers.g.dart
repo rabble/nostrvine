@@ -993,6 +993,59 @@ final class Nip05ServiceProvider
 
 String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
+/// Username repository for availability checking and registration
+
+@ProviderFor(usernameRepository)
+const usernameRepositoryProvider = UsernameRepositoryProvider._();
+
+/// Username repository for availability checking and registration
+
+final class UsernameRepositoryProvider
+    extends
+        $FunctionalProvider<
+          UsernameRepository,
+          UsernameRepository,
+          UsernameRepository
+        >
+    with $Provider<UsernameRepository> {
+  /// Username repository for availability checking and registration
+  const UsernameRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'usernameRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$usernameRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<UsernameRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UsernameRepository create(Ref ref) {
+    return usernameRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UsernameRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UsernameRepository>(value),
+    );
+  }
+}
+
+String _$usernameRepositoryHash() =>
+    r'd8dd9d65a89158d8f22672ae325b528e65164e14';
+
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)
@@ -1038,7 +1091,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'e4db2a5863ba06a6c634366edda6e724ea6c67f2';
+    r'33f3e00de2b933fffa49823e6eef306ed15f04cb';
 
 /// Clip library service for persisting individual video clips
 
@@ -1087,17 +1140,17 @@ final class ClipLibraryServiceProvider
 String _$clipLibraryServiceHash() =>
     r'03a82c6ee8d6870afe118d6889eacef5445d2abf';
 
-/// Authentication service depends on secure key storage
+/// Authentication service depends on secure key storage and user data cleanup
 
 @ProviderFor(authService)
 const authServiceProvider = AuthServiceProvider._();
 
-/// Authentication service depends on secure key storage
+/// Authentication service depends on secure key storage and user data cleanup
 
 final class AuthServiceProvider
     extends $FunctionalProvider<AuthService, AuthService, AuthService>
     with $Provider<AuthService> {
-  /// Authentication service depends on secure key storage
+  /// Authentication service depends on secure key storage and user data cleanup
   const AuthServiceProvider._()
     : super(
         from: null,
@@ -1131,7 +1184,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'26555c9f1c9a9a0c322592b6425ac0a6808090d8';
+String _$authServiceHash() => r'79d0e4b6411299b6a291f193d48cf7db53615f5d';
 
 /// Stream provider for reactive auth state changes
 /// Widgets should watch this instead of authService.authState to get rebuilds
@@ -1175,17 +1228,73 @@ final class AuthStateStreamProvider
 
 String _$authStateStreamHash() => r'bd5c1864e57cfd46c9676d3dc1fe3aa358c2a14b';
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// User data cleanup service for handling identity changes
+/// Prevents data leakage between different Nostr accounts
+
+@ProviderFor(userDataCleanupService)
+const userDataCleanupServiceProvider = UserDataCleanupServiceProvider._();
+
+/// User data cleanup service for handling identity changes
+/// Prevents data leakage between different Nostr accounts
+
+final class UserDataCleanupServiceProvider
+    extends
+        $FunctionalProvider<
+          UserDataCleanupService,
+          UserDataCleanupService,
+          UserDataCleanupService
+        >
+    with $Provider<UserDataCleanupService> {
+  /// User data cleanup service for handling identity changes
+  /// Prevents data leakage between different Nostr accounts
+  const UserDataCleanupServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'userDataCleanupServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$userDataCleanupServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<UserDataCleanupService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UserDataCleanupService create(Ref ref) {
+    return userDataCleanupService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UserDataCleanupService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UserDataCleanupService>(value),
+    );
+  }
+}
+
+String _$userDataCleanupServiceHash() =>
+    r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
+
+/// Core Nostr service via NostrClient for relay communication
 
 @ProviderFor(nostrService)
 const nostrServiceProvider = NostrServiceProvider._();
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// Core Nostr service via NostrClient for relay communication
 
 final class NostrServiceProvider
-    extends $FunctionalProvider<INostrService, INostrService, INostrService>
-    with $Provider<INostrService> {
-  /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+    extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
+    with $Provider<NostrClient> {
+  /// Core Nostr service via NostrClient for relay communication
   const NostrServiceProvider._()
     : super(
         from: null,
@@ -1202,24 +1311,24 @@ final class NostrServiceProvider
 
   @$internal
   @override
-  $ProviderElement<INostrService> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<NostrClient> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  INostrService create(Ref ref) {
+  NostrClient create(Ref ref) {
     return nostrService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(INostrService value) {
+  Override overrideWithValue(NostrClient value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<INostrService>(value),
+      providerOverride: $SyncValueProvider<NostrClient>(value),
     );
   }
 }
 
-String _$nostrServiceHash() => r'e83bb74d0adf803fa7119aa120a3572dc5d6b1ec';
+String _$nostrServiceHash() => r'b6baa3f243c7869bde6c729a4c0a87ba305f351e';
 
 /// Subscription manager for centralized subscription management
 
@@ -1683,12 +1792,10 @@ String _$mediaAuthInterceptorHash() =>
     r'adae18db875674843f6ced55608bb65a5ef7f445';
 
 /// Blossom upload service (uses user-configured Blossom server)
-/// Blossom upload service (uses user-configured Blossom server)
 
 @ProviderFor(blossomUploadService)
 const blossomUploadServiceProvider = BlossomUploadServiceProvider._();
 
-/// Blossom upload service (uses user-configured Blossom server)
 /// Blossom upload service (uses user-configured Blossom server)
 
 final class BlossomUploadServiceProvider
@@ -1699,7 +1806,6 @@ final class BlossomUploadServiceProvider
           BlossomUploadService
         >
     with $Provider<BlossomUploadService> {
-  /// Blossom upload service (uses user-configured Blossom server)
   /// Blossom upload service (uses user-configured Blossom server)
   const BlossomUploadServiceProvider._()
     : super(
@@ -1736,7 +1842,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'd57fa3ec36057b410664e0da59b8067e68bebade';
+    r'e5fedc7e9f4a91ea5dcbb1c607b5fa5008b589ba';
 
 /// Upload manager uses only Blossom upload service
 
@@ -1975,7 +2081,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'90600ce05c4cc607ee58bb9166d14fb5982b7430';
+    r'b246ddd7f795dcf5adb837e3530bbc21c2c14fa8';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2005,7 +2111,7 @@ final class CuratedListsStateProvider
   CuratedListsState create() => CuratedListsState();
 }
 
-String _$curatedListsStateHash() => r'81250850e632c5ba622f6e54d2d048e5736d3281';
+String _$curatedListsStateHash() => r'0051dfa40ef5ac983230025a2e4cbd0e2ea0b0e0';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2071,7 +2177,7 @@ final class UserListServiceProvider
   }
 }
 
-String _$userListServiceHash() => r'1b006662ce4e9219818ed3870ed1ecf8f4a6e2fd';
+String _$userListServiceHash() => r'fd9e01e02e1be679106308e3166c3581a80b4b51';
 
 /// Bookmark service for NIP-51 bookmarks
 
@@ -2115,7 +2221,7 @@ final class BookmarkServiceProvider
   }
 }
 
-String _$bookmarkServiceHash() => r'76b3bef0f2b4f8ddd0f84feac179f7b3b62cdcab';
+String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
 
 /// Mute service for NIP-51 mute lists
 
@@ -2159,7 +2265,7 @@ final class MuteServiceProvider
   }
 }
 
-String _$muteServiceHash() => r'43392295e4b533da11963085bd0afb4dae5ec3d7';
+String _$muteServiceHash() => r'a7faf00b4fe5d420db0bff450d444db5aa5d4934';
 
 /// Video sharing service
 
@@ -2259,7 +2365,7 @@ final class ContentDeletionServiceProvider
 }
 
 String _$contentDeletionServiceHash() =>
-    r'8594abe369924c5d080809e29ba7745da70450c0';
+    r'595760368d4f392891586c43959ceba01e02bcd5';
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 
@@ -2411,3 +2517,75 @@ final class BugReportServiceProvider
 }
 
 String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+
+@ProviderFor(likesRepository)
+const likesRepositoryProvider = LikesRepositoryProvider._();
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+
+final class LikesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          LikesRepository?,
+          LikesRepository?,
+          LikesRepository?
+        >
+    with $Provider<LikesRepository?> {
+  /// Provider for LikesRepository instance
+  ///
+  /// Creates a LikesRepository when the user is authenticated.
+  /// Returns null when user is not authenticated.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalReactionsDao from databaseProvider (for local storage)
+  const LikesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'likesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$likesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LikesRepository?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  LikesRepository? create(Ref ref) {
+    return likesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LikesRepository? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LikesRepository?>(value),
+    );
+  }
+}
+
+String _$likesRepositoryHash() => r'00af72833fee780ad5521b90b45735592bc3db5e';
