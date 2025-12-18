@@ -237,8 +237,7 @@ class _PopularVideosTrendingContent extends ConsumerWidget {
                 '🔄 ExploreScreen: Refreshing trending tab',
                 category: LogCategory.video,
               );
-              ref.invalidate(videoEventsProvider);
-              await ref.read(videoEventsProvider.future);
+              await ref.read(videoEventsProvider.notifier).refresh();
             },
             emptyBuilder: () => const _PopularVideosEmptyState(),
           ),
