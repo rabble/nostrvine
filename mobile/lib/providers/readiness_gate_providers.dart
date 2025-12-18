@@ -21,11 +21,16 @@ class NostrInitialization extends _$NostrInitialization {
 
   /// Call this when NostrService completes initialization
   void markInitialized() {
-    state = true; // Triggers reactive update
+    state = true;
+  }
+
+  /// Reset to uninitialized state (e.g., when client is recreated)
+  void reset() {
+    state = false;
   }
 }
 
-/// Provider that checks if Nostr service is fully initialized and ready for subscriptions
+/// Provider that checks if Nostr service is fully initialized and ready
 @Riverpod(keepAlive: true)
 bool nostrReady(Ref ref) {
   return ref.watch(nostrInitializationProvider);

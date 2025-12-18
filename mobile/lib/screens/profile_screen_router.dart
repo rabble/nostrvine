@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/helpers/follow_actions_helper.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -14,27 +15,27 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/followers_screen.dart';
+import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/helpers/follow_actions_helper.dart';
-import 'package:openvine/widgets/user_avatar.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:openvine/screens/followers_screen.dart';
-import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
-import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
-import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
+import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
+import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
 class ProfileScreenRouter extends ConsumerStatefulWidget {
@@ -336,12 +337,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         false, // Fullscreen mode, no bottom nav
                     forceShowOverlay:
                         isOwnProfile, // Show overlay controls on own profile
-                    contextTitle:
-                        ref
-                            .read(fetchUserProfileProvider(userIdHex))
-                            .value
-                            ?.bestDisplayName ??
-                        'Profile',
+                    contextTitle: ref
+                        .read(fetchUserProfileProvider(userIdHex))
+                        .value
+                        ?.betterDisplayName('Profile'),
                   );
                 },
               );
@@ -499,15 +498,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     bool isOwnProfile,
     AsyncValue<ProfileStats> profileStatsAsync,
   ) {
-    // Watch profile from embedded relay (reactive)
+    // Watch profile from relay (reactive)
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    final profilePictureUrl = profile?.picture;
-    final displayName = profile?.bestDisplayName ?? 'Loading user information';
+    if (profile == null) {
+      return SizedBox.shrink();
+    }
+    final profilePictureUrl = profile.picture;
+    final displayName = profile.bestDisplayName;
     final hasCustomName =
-        profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true;
+        profile.name?.isNotEmpty == true ||
+        profile.displayName?.isNotEmpty == true;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -628,44 +630,23 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    SelectableText(
-                      displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    // Add NIP-05 verification badge if verified
-                    if (profile?.nip05 != null &&
-                        profile!.nip05!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 12,
-                        ),
-                      ),
-                    ],
-                  ],
+                UserName.fromPubKey(
+                  userIdHex,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 // Show NIP-05 identifier if present
-                if (profile?.nip05 != null && profile!.nip05!.isNotEmpty)
+                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
                   Text(
                     profile.nip05!,
                     style: TextStyle(color: Colors.grey[400], fontSize: 13),
                   ),
                 const SizedBox(height: 4),
-                if (profile?.about != null && profile!.about!.isNotEmpty)
+                if (profile.about != null && profile.about!.isNotEmpty)
                   SelectableText(
                     profile.about!,
                     style: const TextStyle(

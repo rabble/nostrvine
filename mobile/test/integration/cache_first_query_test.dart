@@ -3,18 +3,19 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'package:db_client/db_client.dart' hide Filter;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/services/event_router.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
 
 /// Mock NostrService that tracks event delivery order
-class MockNostrServiceWithDelay implements INostrService {
+class MockNostrServiceWithDelay implements NostrClient {
   final StreamController<Event> _eventController =
       StreamController<Event>.broadcast();
   final List<String> _eventDeliveryOrder = []; // Track when events arrive
@@ -31,9 +32,13 @@ class MockNostrServiceWithDelay implements INostrService {
   bool get eoseCalled => _eoseCalled;
 
   @override
-  Stream<Event> subscribeToEvents({
-    required List<Filter> filters,
-    bool bypassLimits = false,
+  Stream<Event> subscribe(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+    List<int> relayTypes = const [],
+    bool sendAfterAuth = false,
     void Function()? onEose,
   }) {
     // Simulate relay delay: call onEose after 100ms
@@ -89,6 +94,10 @@ Event createTestVideoEvent({
 }) {
   final tags = <List<String>>[];
 
+  // CRITICAL: Add d-tag for parameterized replaceable events (kind 30000-39999)
+  // Without this, only one event per pubkey+kind is stored
+  tags.add(['d', id]);
+
   // CRITICAL: Add URL tag so VideoEvent.hasVideo returns true
   // Without this, events will be filtered out by _handleNewVideoEvent() at line 1111
   tags.add(['url', 'https://example.com/test-video-$id.mp4']);
@@ -122,7 +131,7 @@ Event createTestVideoEvent({
 }
 
 void main() {
-  group('NostrEventsDao.getVideoEventsByFilter()', () {
+  group('NostrEventsDao.getEventsByFilter()', () {
     late AppDatabase db;
     late EventRouter eventRouter;
     late String testDbPath;
@@ -132,7 +141,7 @@ void main() {
         'cache_first_dao_test_',
       );
       testDbPath = p.join(tempDir.path, 'test.db');
-      db = AppDatabase.test(testDbPath);
+      db = AppDatabase.test(NativeDatabase(File(testDbPath)));
       eventRouter = EventRouter(db);
     });
 
@@ -178,9 +187,8 @@ void main() {
       await eventRouter.handleEvent(profileEvent);
 
       // Query for video events only (kind 34236)
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(
-        kinds: [34236],
-        limit: 100,
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(kinds: [34236], limit: 100),
       );
 
       expect(results.length, 2);
@@ -213,9 +221,11 @@ void main() {
       await eventRouter.handleEvent(user3Video);
 
       // Query for user1 and user2 only
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(
-        authors: [toHex64('user1_pubkey'), toHex64('user2_pubkey')],
-        limit: 100,
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(
+          authors: [toHex64('user1_pubkey'), toHex64('user2_pubkey')],
+          limit: 100,
+        ),
       );
 
       expect(results.length, 2);
@@ -253,9 +263,8 @@ void main() {
       await eventRouter.handleEvent(noHashtagVideo);
 
       // Query for #cats hashtag
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(
-        hashtags: ['cats'],
-        limit: 100,
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(t: ['cats'], limit: 100),
       );
 
       expect(results.length, 1);
@@ -284,10 +293,8 @@ void main() {
       await eventRouter.handleEvent(newVideo);
 
       // Query for events between 200 and 800
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(
-        since: 200,
-        until: 800,
-        limit: 100,
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(since: 200, until: 800, limit: 100),
       );
 
       expect(results.length, 1);
@@ -327,12 +334,14 @@ void main() {
       await eventRouter.handleEvent(wrongTime);
 
       // Query with ALL filters
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(
-        authors: [toHex64('target_user')],
-        hashtags: ['target_tag'],
-        since: 200,
-        until: 800,
-        limit: 100,
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(
+          authors: [toHex64('target_user')],
+          t: ['target_tag'],
+          since: 200,
+          until: 800,
+          limit: 100,
+        ),
       );
 
       // Only the fully matching event should be returned
@@ -353,7 +362,9 @@ void main() {
       }
 
       // Query with limit of 5
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(limit: 5);
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(limit: 5),
+      );
 
       expect(results.length, 5);
     });
@@ -380,7 +391,9 @@ void main() {
       await eventRouter.handleEvent(recent);
       await eventRouter.handleEvent(old);
 
-      final results = await db.nostrEventsDao.getVideoEventsByFilter(limit: 10);
+      final results = await db.nostrEventsDao.getEventsByFilter(
+        Filter(limit: 10),
+      );
 
       // Should be ordered by created_at DESC (newest first)
       expect(results.length, 3);
@@ -403,7 +416,7 @@ void main() {
         'cache_first_integration_test_',
       );
       testDbPath = p.join(tempDir.path, 'test.db');
-      db = AppDatabase.test(testDbPath);
+      db = AppDatabase.test(NativeDatabase(File(testDbPath)));
       eventRouter = EventRouter(db);
       mockNostrService = MockNostrServiceWithDelay();
       subscriptionManager = SubscriptionManager(mockNostrService);

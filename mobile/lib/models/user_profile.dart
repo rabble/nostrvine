@@ -147,6 +147,16 @@ class UserProfile {
     return truncatedNpub;
   }
 
+  /// Similar to bestDisplayName. Use when you have default place holder text
+  /// that you want displayed if there isn't a good name to display.
+  String betterDisplayName(String? anonymousPlaceholder) {
+    if (displayName?.isNotEmpty == true) return displayName!;
+    if (name?.isNotEmpty == true) return name!;
+    if (anonymousPlaceholder != null) return anonymousPlaceholder;
+    // Fallback to truncated npub (e.g., "npub1abc...xyz")
+    return truncatedNpub;
+  }
+
   /// Get shortened pubkey for display
   String get shortPubkey {
     if (pubkey.length <= 16) return pubkey;

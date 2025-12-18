@@ -11,27 +11,31 @@ import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import '../../helpers/real_integration_test_helper.dart';
 
 /// Fake NostrService for testing
-class FakeNostrService implements INostrService {
+class FakeNostrService implements NostrClient {
   final _eventController = StreamController<Event>.broadcast();
   String? _pubkey;
 
   void injectEvent(Event event) => _eventController.add(event);
 
   @override
-  Stream<Event> subscribeToEvents({
-    required List<Filter> filters,
-    bool bypassLimits = false,
+  Stream<Event> subscribe(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+    List<int> relayTypes = const [],
+    bool sendAfterAuth = false,
     void Function()? onEose,
   }) => _eventController.stream;
 
   @override
-  String? get publicKey => _pubkey;
+  String get publicKey => _pubkey ?? '';
 
   @override
   bool get hasKeys => _pubkey != null;

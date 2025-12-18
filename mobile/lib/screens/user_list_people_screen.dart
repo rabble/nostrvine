@@ -231,11 +231,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   child: Column(
                     children: [
-                      UserAvatar(
-                        imageUrl: profile?.picture,
-                        name: profile?.bestDisplayName,
-                        size: 64,
-                      ),
+                      UserAvatar(imageUrl: profile?.picture, size: 64),
                       const SizedBox(height: 6),
                       Text(
                         profile?.bestDisplayName ?? 'Loading...',

@@ -21,12 +21,9 @@ import 'package:nostr_sdk/event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
-
-class MockNostrService extends Mock implements INostrService {}
 
 class MockDio extends Mock implements Dio {}
 
@@ -46,19 +43,16 @@ void main() {
   group('BlossomUploadService ProofMode Integration', () {
     late BlossomUploadService service;
     late MockAuthService mockAuthService;
-    late MockNostrService mockNostrService;
     late MockDio mockDio;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
-      mockNostrService = MockNostrService();
       mockDio = MockDio();
 
       service = BlossomUploadService(
         authService: mockAuthService,
-        nostrService: mockNostrService,
         dio: mockDio,
       );
 

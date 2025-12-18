@@ -4,12 +4,9 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// TODO: Re-enable these imports when provider references are restored
-// import 'package:openvine/providers/app_providers.dart';
-// import 'package:openvine/providers/video_events_providers.dart';
-// import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -77,15 +74,12 @@ class ServiceInitHelper {
     initializeTestEnvironment();
 
     try {
-      final keyManager = NostrKeyManager();
-      await keyManager.initialize();
+      // Generate a test key container for testing
+      final keyContainer = SecureKeyContainer.generate();
 
-      // Generate keys if needed
-      if (!keyManager.hasKeys) {
-        await keyManager.generateKeys();
-      }
-
-      final nostrService = NostrService(keyManager);
+      final nostrService = NostrServiceFactory.create(
+        keyContainer: keyContainer,
+      );
       final subscriptionManager = SubscriptionManager(nostrService);
       final videoEventService = VideoEventService(
         nostrService,
@@ -93,7 +87,7 @@ class ServiceInitHelper {
       );
 
       return ServiceBundle(
-        keyManager: keyManager,
+        keyContainer: keyContainer,
         nostrService: nostrService,
         subscriptionManager: subscriptionManager,
         videoEventService: videoEventService,
@@ -118,7 +112,7 @@ class ServiceInitHelper {
     );
 
     return ServiceBundle(
-      keyManager: null, // Not needed for test service
+      keyContainer: null, // Not needed for test service
       nostrService: testNostrService,
       subscriptionManager: subscriptionManager,
       videoEventService: videoEventService,
@@ -130,7 +124,7 @@ class ServiceInitHelper {
     bundle.videoEventService.dispose();
     bundle.subscriptionManager.dispose();
     bundle.nostrService.dispose();
-    // NostrKeyManager doesn't have dispose method - handles cleanup automatically
+    bundle.keyContainer?.dispose();
   }
 
   /// Create Riverpod provider overrides for test environment
@@ -155,14 +149,14 @@ class ServiceInitHelper {
 /// Bundle of commonly used services for tests
 class ServiceBundle {
   ServiceBundle({
-    this.keyManager,
+    this.keyContainer,
     required this.nostrService,
     required this.subscriptionManager,
     required this.videoEventService,
   });
 
-  final NostrKeyManager? keyManager;
-  final dynamic nostrService; // Can be NostrService or TestNostrService
+  final SecureKeyContainer? keyContainer;
+  final NostrClient nostrService;
   final SubscriptionManager subscriptionManager;
   final VideoEventService videoEventService;
 }

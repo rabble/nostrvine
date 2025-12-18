@@ -12,13 +12,14 @@ import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/social_providers.dart' as social;
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Feed context for filtering videos
 enum FeedContext {
@@ -397,6 +398,8 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           return _buildEmptyState();
         }
 
+        _cacheNextPage(videos);
+
         // Initial active video is derived from pageContextProvider + feed state
         // No manual initialization needed - activeVideoIdProvider handles this automatically
 
@@ -537,6 +540,23 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     ),
   );
 
+  void _cacheNextPage(List<VideoEvent> videos) {
+    // Pre cache the next video event for smoother transitions
+    if (_currentIndex + 1 >= videos.length) return;
+    _cacheVideoEvent(videos[_currentIndex + 1]);
+  }
+
+  void _cacheVideoEvent(VideoEvent video) {
+    final controllerParams = VideoControllerParams(
+      videoId: video.id,
+      videoUrl: video.videoUrl!,
+      videoEvent: video,
+    );
+    // The individual video controller provider automatically caches the video event
+    // when instantiated, so we just need to read it here.
+    ref.read(individualVideoControllerProvider(controllerParams));
+  }
+
   Widget _buildVideoFeed(List<VideoEvent> videos, VideoFeedState feedState) {
     Log.info(
       '🎬 VideoFeedScreen: Building home video feed with ${videos.length} videos from following',
@@ -551,6 +571,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       onPageChanged: (index) {
         setState(() => _currentIndex = index);
         _onPageChanged(index);
+        _cacheNextPage(videos);
 
         // Trigger pagination when near the end using PaginationMixin
         checkForPagination(

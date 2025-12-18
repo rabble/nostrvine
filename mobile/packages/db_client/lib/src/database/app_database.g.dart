@@ -4849,6 +4849,347 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUploadRow> {
   }
 }
 
+class $PersonalReactionsTable extends PersonalReactions
+    with TableInfo<$PersonalReactionsTable, PersonalReactionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PersonalReactionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _targetEventIdMeta = const VerificationMeta(
+    'targetEventId',
+  );
+  @override
+  late final GeneratedColumn<String> targetEventId = GeneratedColumn<String>(
+    'target_event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reactionEventIdMeta = const VerificationMeta(
+    'reactionEventId',
+  );
+  @override
+  late final GeneratedColumn<String> reactionEventId = GeneratedColumn<String>(
+    'reaction_event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
+    'userPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> userPubkey = GeneratedColumn<String>(
+    'user_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    targetEventId,
+    reactionEventId,
+    userPubkey,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'personal_reactions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PersonalReactionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('target_event_id')) {
+      context.handle(
+        _targetEventIdMeta,
+        targetEventId.isAcceptableOrUnknown(
+          data['target_event_id']!,
+          _targetEventIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetEventIdMeta);
+    }
+    if (data.containsKey('reaction_event_id')) {
+      context.handle(
+        _reactionEventIdMeta,
+        reactionEventId.isAcceptableOrUnknown(
+          data['reaction_event_id']!,
+          _reactionEventIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_reactionEventIdMeta);
+    }
+    if (data.containsKey('user_pubkey')) {
+      context.handle(
+        _userPubkeyMeta,
+        userPubkey.isAcceptableOrUnknown(data['user_pubkey']!, _userPubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userPubkeyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {targetEventId, userPubkey};
+  @override
+  PersonalReactionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PersonalReactionRow(
+      targetEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_event_id'],
+      )!,
+      reactionEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reaction_event_id'],
+      )!,
+      userPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_pubkey'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PersonalReactionsTable createAlias(String alias) {
+    return $PersonalReactionsTable(attachedDatabase, alias);
+  }
+}
+
+class PersonalReactionRow extends DataClass
+    implements Insertable<PersonalReactionRow> {
+  /// The event ID that was liked (e.g., video event ID)
+  final String targetEventId;
+
+  /// The Kind 7 reaction event ID created by the user
+  final String reactionEventId;
+
+  /// The pubkey of the user who created this reaction
+  final String userPubkey;
+
+  /// Unix timestamp when the reaction was created
+  final int createdAt;
+  const PersonalReactionRow({
+    required this.targetEventId,
+    required this.reactionEventId,
+    required this.userPubkey,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['target_event_id'] = Variable<String>(targetEventId);
+    map['reaction_event_id'] = Variable<String>(reactionEventId);
+    map['user_pubkey'] = Variable<String>(userPubkey);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  PersonalReactionsCompanion toCompanion(bool nullToAbsent) {
+    return PersonalReactionsCompanion(
+      targetEventId: Value(targetEventId),
+      reactionEventId: Value(reactionEventId),
+      userPubkey: Value(userPubkey),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PersonalReactionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PersonalReactionRow(
+      targetEventId: serializer.fromJson<String>(json['targetEventId']),
+      reactionEventId: serializer.fromJson<String>(json['reactionEventId']),
+      userPubkey: serializer.fromJson<String>(json['userPubkey']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'targetEventId': serializer.toJson<String>(targetEventId),
+      'reactionEventId': serializer.toJson<String>(reactionEventId),
+      'userPubkey': serializer.toJson<String>(userPubkey),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  PersonalReactionRow copyWith({
+    String? targetEventId,
+    String? reactionEventId,
+    String? userPubkey,
+    int? createdAt,
+  }) => PersonalReactionRow(
+    targetEventId: targetEventId ?? this.targetEventId,
+    reactionEventId: reactionEventId ?? this.reactionEventId,
+    userPubkey: userPubkey ?? this.userPubkey,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PersonalReactionRow copyWithCompanion(PersonalReactionsCompanion data) {
+    return PersonalReactionRow(
+      targetEventId: data.targetEventId.present
+          ? data.targetEventId.value
+          : this.targetEventId,
+      reactionEventId: data.reactionEventId.present
+          ? data.reactionEventId.value
+          : this.reactionEventId,
+      userPubkey: data.userPubkey.present
+          ? data.userPubkey.value
+          : this.userPubkey,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalReactionRow(')
+          ..write('targetEventId: $targetEventId, ')
+          ..write('reactionEventId: $reactionEventId, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(targetEventId, reactionEventId, userPubkey, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PersonalReactionRow &&
+          other.targetEventId == this.targetEventId &&
+          other.reactionEventId == this.reactionEventId &&
+          other.userPubkey == this.userPubkey &&
+          other.createdAt == this.createdAt);
+}
+
+class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
+  final Value<String> targetEventId;
+  final Value<String> reactionEventId;
+  final Value<String> userPubkey;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const PersonalReactionsCompanion({
+    this.targetEventId = const Value.absent(),
+    this.reactionEventId = const Value.absent(),
+    this.userPubkey = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PersonalReactionsCompanion.insert({
+    required String targetEventId,
+    required String reactionEventId,
+    required String userPubkey,
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : targetEventId = Value(targetEventId),
+       reactionEventId = Value(reactionEventId),
+       userPubkey = Value(userPubkey),
+       createdAt = Value(createdAt);
+  static Insertable<PersonalReactionRow> custom({
+    Expression<String>? targetEventId,
+    Expression<String>? reactionEventId,
+    Expression<String>? userPubkey,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (targetEventId != null) 'target_event_id': targetEventId,
+      if (reactionEventId != null) 'reaction_event_id': reactionEventId,
+      if (userPubkey != null) 'user_pubkey': userPubkey,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PersonalReactionsCompanion copyWith({
+    Value<String>? targetEventId,
+    Value<String>? reactionEventId,
+    Value<String>? userPubkey,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PersonalReactionsCompanion(
+      targetEventId: targetEventId ?? this.targetEventId,
+      reactionEventId: reactionEventId ?? this.reactionEventId,
+      userPubkey: userPubkey ?? this.userPubkey,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (targetEventId.present) {
+      map['target_event_id'] = Variable<String>(targetEventId.value);
+    }
+    if (reactionEventId.present) {
+      map['reaction_event_id'] = Variable<String>(reactionEventId.value);
+    }
+    if (userPubkey.present) {
+      map['user_pubkey'] = Variable<String>(userPubkey.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalReactionsCompanion(')
+          ..write('targetEventId: $targetEventId, ')
+          ..write('reactionEventId: $reactionEventId, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4859,6 +5200,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HashtagStatsTable hashtagStats = $HashtagStatsTable(this);
   late final $NotificationsTable notifications = $NotificationsTable(this);
   late final $PendingUploadsTable pendingUploads = $PendingUploadsTable(this);
+  late final $PersonalReactionsTable personalReactions =
+      $PersonalReactionsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -4880,6 +5223,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PendingUploadsDao pendingUploadsDao = PendingUploadsDao(
     this as AppDatabase,
   );
+  late final PersonalReactionsDao personalReactionsDao = PersonalReactionsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4892,6 +5238,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     hashtagStats,
     notifications,
     pendingUploads,
+    personalReactions,
   ];
 }
 
@@ -7186,6 +7533,206 @@ typedef $$PendingUploadsTableProcessedTableManager =
       PendingUploadRow,
       PrefetchHooks Function()
     >;
+typedef $$PersonalReactionsTableCreateCompanionBuilder =
+    PersonalReactionsCompanion Function({
+      required String targetEventId,
+      required String reactionEventId,
+      required String userPubkey,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$PersonalReactionsTableUpdateCompanionBuilder =
+    PersonalReactionsCompanion Function({
+      Value<String> targetEventId,
+      Value<String> reactionEventId,
+      Value<String> userPubkey,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$PersonalReactionsTableFilterComposer
+    extends Composer<_$AppDatabase, $PersonalReactionsTable> {
+  $$PersonalReactionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get targetEventId => $composableBuilder(
+    column: $table.targetEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reactionEventId => $composableBuilder(
+    column: $table.reactionEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PersonalReactionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PersonalReactionsTable> {
+  $$PersonalReactionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get targetEventId => $composableBuilder(
+    column: $table.targetEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reactionEventId => $composableBuilder(
+    column: $table.reactionEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PersonalReactionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PersonalReactionsTable> {
+  $$PersonalReactionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get targetEventId => $composableBuilder(
+    column: $table.targetEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reactionEventId => $composableBuilder(
+    column: $table.reactionEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PersonalReactionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PersonalReactionsTable,
+          PersonalReactionRow,
+          $$PersonalReactionsTableFilterComposer,
+          $$PersonalReactionsTableOrderingComposer,
+          $$PersonalReactionsTableAnnotationComposer,
+          $$PersonalReactionsTableCreateCompanionBuilder,
+          $$PersonalReactionsTableUpdateCompanionBuilder,
+          (
+            PersonalReactionRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PersonalReactionsTable,
+              PersonalReactionRow
+            >,
+          ),
+          PersonalReactionRow,
+          PrefetchHooks Function()
+        > {
+  $$PersonalReactionsTableTableManager(
+    _$AppDatabase db,
+    $PersonalReactionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PersonalReactionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PersonalReactionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PersonalReactionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> targetEventId = const Value.absent(),
+                Value<String> reactionEventId = const Value.absent(),
+                Value<String> userPubkey = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalReactionsCompanion(
+                targetEventId: targetEventId,
+                reactionEventId: reactionEventId,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String targetEventId,
+                required String reactionEventId,
+                required String userPubkey,
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalReactionsCompanion.insert(
+                targetEventId: targetEventId,
+                reactionEventId: reactionEventId,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PersonalReactionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PersonalReactionsTable,
+      PersonalReactionRow,
+      $$PersonalReactionsTableFilterComposer,
+      $$PersonalReactionsTableOrderingComposer,
+      $$PersonalReactionsTableAnnotationComposer,
+      $$PersonalReactionsTableCreateCompanionBuilder,
+      $$PersonalReactionsTableUpdateCompanionBuilder,
+      (
+        PersonalReactionRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PersonalReactionsTable,
+          PersonalReactionRow
+        >,
+      ),
+      PersonalReactionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7204,4 +7751,6 @@ class $AppDatabaseManager {
       $$NotificationsTableTableManager(_db, _db.notifications);
   $$PendingUploadsTableTableManager get pendingUploads =>
       $$PendingUploadsTableTableManager(_db, _db.pendingUploads);
+  $$PersonalReactionsTableTableManager get personalReactions =>
+      $$PersonalReactionsTableTableManager(_db, _db.personalReactions);
 }

@@ -2,9 +2,10 @@
 // ABOUTME: Tests database operations, upsert behavior, and stream reactivity
 
 import 'dart:io';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/database/app_database.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
@@ -16,7 +17,7 @@ void main() {
       // Create temporary database for testing
       final tempDir = Directory.systemTemp.createTempSync('openvine_test_');
       testDbPath = p.join(tempDir.path, 'test.db');
-      db = AppDatabase.test(testDbPath);
+      db = AppDatabase.test(NativeDatabase(File(testDbPath)));
     });
 
     tearDown(() async {

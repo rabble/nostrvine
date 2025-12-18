@@ -3,10 +3,11 @@
 
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Wait for a condition to be true with timeout
@@ -38,7 +39,7 @@ Future<void> waitForCondition(
 void main() {
   group('Real Relay Pagination Integration', () {
     late VideoEventService videoEventService;
-    late NostrService nostrService;
+    late NostrClient nostrService;
     late SubscriptionManager subscriptionManager;
 
     setUpAll(() {
@@ -48,10 +49,8 @@ void main() {
 
     setUp(() async {
       // Create real services
-      final keyManager = NostrKeyManager();
-      await keyManager.initialize();
-
-      nostrService = NostrService(keyManager);
+      final keyContainer = SecureKeyContainer.generate();
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(
         nostrService,
@@ -60,9 +59,6 @@ void main() {
 
       // Initialize and connect to real relay
       await nostrService.initialize();
-
-      // Add relay instead of connectToRelay (method doesn't exist)
-      await nostrService.addRelay('wss://staging-relay.divine.video');
 
       // Wait for relay connection to establish
       // Poll for connection status instead of arbitrary delay

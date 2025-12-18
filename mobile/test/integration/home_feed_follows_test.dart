@@ -2,20 +2,21 @@
 // ABOUTME: Tests that events matching both discovery and home feed filters appear in both feeds
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/nostr_service.dart';
-import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Home Feed Follows Integration', () {
-    late NostrKeyManager keyManager;
-    late NostrService nostrService;
+    late SecureKeyContainer keyContainer;
+    late NostrClient nostrService;
     late SubscriptionManager subscriptionManager;
     late VideoEventService videoEventService;
     late ContentBlocklistService blocklistService;
@@ -31,15 +32,11 @@ void main() {
       });
 
       // Initialize services
-      keyManager = NostrKeyManager();
-      await keyManager.initialize();
-
-      if (!keyManager.hasKeys) {
-        await keyManager.generateKeys();
-      }
-
       blocklistService = ContentBlocklistService();
-      nostrService = NostrService(keyManager);
+
+      // Generate a test key container
+      keyContainer = SecureKeyContainer.generate();
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);
