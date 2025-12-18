@@ -111,20 +111,14 @@ class LikesNotifier extends _$LikesNotifier {
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
-      state = state.copyWith(
-        isSyncing: false,
-        error: e.message,
-      );
+      state = state.copyWith(isSyncing: false, error: e.message);
     } catch (e) {
       Log.error(
         'LikesNotifier: Initialization failed - $e',
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
-      state = state.copyWith(
-        isSyncing: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isSyncing: false, error: e.toString());
     }
   }
 
@@ -365,9 +359,7 @@ class LikesNotifier extends _$LikesNotifier {
     try {
       final count = await repository.getLikeCount(eventId);
 
-      state = state.copyWith(
-        likeCounts: {...state.likeCounts, eventId: count},
-      );
+      state = state.copyWith(likeCounts: {...state.likeCounts, eventId: count});
 
       return count;
     } catch (e) {
