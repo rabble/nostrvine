@@ -42,14 +42,17 @@ class ComposableVideoGrid extends ConsumerWidget {
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
     return brokenTrackerAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
+      loading: () =>
+          Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
         return _buildGrid(context, ref, videos);
       },
       data: (tracker) {
         // Filter out broken videos
-        final filteredVideos = videos.where((video) => !tracker.isVideoBroken(video.id)).toList();
+        final filteredVideos = videos
+            .where((video) => !tracker.isVideoBroken(video.id))
+            .toList();
 
         if (filteredVideos.isEmpty && emptyBuilder != null) {
           return emptyBuilder!();
@@ -318,7 +321,9 @@ class ComposableVideoGrid extends ConsumerWidget {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    result.success ? 'Delete request sent successfully' : 'Failed to delete content: ${result.error}',
+                    result.success
+                        ? 'Delete request sent successfully'
+                        : 'Failed to delete content: ${result.error}',
                   ),
                 ),
               ],
@@ -445,21 +450,21 @@ class _VideoDurationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.all(4),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: VineTheme.darkOverlay,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          '${duration}s',
-          style: TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      );
+    margin: const EdgeInsets.all(4),
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    decoration: BoxDecoration(
+      color: VineTheme.darkOverlay,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      '${duration}s',
+      style: TextStyle(
+        color: VineTheme.whiteText,
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
 }
 
 class _VideoThumbnail extends StatelessWidget {
@@ -469,43 +474,43 @@ class _VideoThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Stack(
-        fit: StackFit.expand,
-        alignment: Alignment.center,
-        children: [
-          Container(
-            color: VineTheme.cardBackground,
-            child: video.thumbnailUrl != null
-                ? VideoThumbnailWidget(video: video)
-                : Container(
-                    color: VineTheme.cardBackground,
-                    child: Icon(
-                      Icons.videocam,
-                      size: 40,
-                      color: VineTheme.secondaryText,
-                    ),
-                  ),
-          ),
-          // Play button overlay
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: VineTheme.darkOverlay,
-                shape: BoxShape.circle,
-              ),
-              child: Semantics(
-                identifier: 'play_button',
+    fit: StackFit.expand,
+    alignment: Alignment.center,
+    children: [
+      Container(
+        color: VineTheme.cardBackground,
+        child: video.thumbnailUrl != null
+            ? VideoThumbnailWidget(video: video)
+            : Container(
+                color: VineTheme.cardBackground,
                 child: Icon(
-                  Icons.play_arrow,
-                  size: 24,
-                  color: VineTheme.whiteText,
-                  semanticLabel: 'Play video',
+                  Icons.videocam,
+                  size: 40,
+                  color: VineTheme.secondaryText,
                 ),
               ),
+      ),
+      // Play button overlay
+      Center(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: VineTheme.darkOverlay,
+            shape: BoxShape.circle,
+          ),
+          child: Semantics(
+            identifier: 'play_button',
+            child: Icon(
+              Icons.play_arrow,
+              size: 24,
+              color: VineTheme.whiteText,
+              semanticLabel: 'Play video',
             ),
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }
 
 class _VideoStats extends ConsumerWidget {
