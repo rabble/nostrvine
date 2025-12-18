@@ -771,12 +771,9 @@ BugReportService bugReportService(Ref ref) {
 /// Creates a LikesRepository when the user is authenticated.
 /// Returns null when user is not authenticated.
 ///
-/// Note: This provider requires:
-/// - NostrClient from nostr_client package (for relay communication)
-/// - PersonalReactionsDao from db_client package (for local storage)
-///
-/// Currently returns null as the infrastructure needs to be wired up.
-/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
 @Riverpod(keepAlive: true)
 LikesRepository? likesRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -786,18 +783,20 @@ LikesRepository? likesRepository(Ref ref) {
     return null;
   }
 
-  // TODO(likes): Create the repository with proper dependencies:
-  // final nostrClient = ref.watch(nostrClientProvider);
-  // final dao = ref.watch(personalReactionsDaoProvider);
-  // final localStorage = DbLikesLocalStorage(
-  //   dao: dao,
-  //   userPubkey: authService.currentPublicKeyHex!,
-  // );
-  // return LikesRepository(
-  //   nostrClient: nostrClient,
-  //   userPubkey: authService.currentPublicKeyHex!,
-  //   localStorage: localStorage,
-  // );
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final db = ref.watch(databaseProvider);
+  final localStorage = DbLikesLocalStorage(
+    dao: db.personalReactionsDao,
+    userPubkey: authService.currentPublicKeyHex!,
+  );
 
-  return null;
+  final repository = LikesRepository(
+    nostrClient: nostrClient,
+    userPubkey: authService.currentPublicKeyHex!,
+    localStorage: localStorage,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
 }

@@ -2476,12 +2476,9 @@ String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
 /// Creates a LikesRepository when the user is authenticated.
 /// Returns null when user is not authenticated.
 ///
-/// Note: This provider requires:
-/// - NostrClient from nostr_client package (for relay communication)
-/// - PersonalReactionsDao from db_client package (for local storage)
-///
-/// Currently returns null as the infrastructure needs to be wired up.
-/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
 
 @ProviderFor(likesRepository)
 const likesRepositoryProvider = LikesRepositoryProvider._();
@@ -2491,12 +2488,9 @@ const likesRepositoryProvider = LikesRepositoryProvider._();
 /// Creates a LikesRepository when the user is authenticated.
 /// Returns null when user is not authenticated.
 ///
-/// Note: This provider requires:
-/// - NostrClient from nostr_client package (for relay communication)
-/// - PersonalReactionsDao from db_client package (for local storage)
-///
-/// Currently returns null as the infrastructure needs to be wired up.
-/// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
 
 final class LikesRepositoryProvider
     extends
@@ -2511,12 +2505,9 @@ final class LikesRepositoryProvider
   /// Creates a LikesRepository when the user is authenticated.
   /// Returns null when user is not authenticated.
   ///
-  /// Note: This provider requires:
-  /// - NostrClient from nostr_client package (for relay communication)
-  /// - PersonalReactionsDao from db_client package (for local storage)
-  ///
-  /// Currently returns null as the infrastructure needs to be wired up.
-  /// TODO(likes): Wire up NostrClient and PersonalReactionsDao providers
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalReactionsDao from databaseProvider (for local storage)
   const LikesRepositoryProvider._()
     : super(
         from: null,
@@ -2550,4 +2541,4 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'fa945a03bad8c761d7b96d432c3c2b16d1eb9a9b';
+String _$likesRepositoryHash() => r'6e9d6c107d278aa03a19c3cef9c185a297956e36';
