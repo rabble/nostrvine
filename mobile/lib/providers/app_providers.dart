@@ -4,14 +4,25 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
+import 'package:openvine/providers/relay_gateway_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/blossom_auth_service.dart';
+import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/nostr_service_factory.dart';
+import 'package:openvine/services/broken_video_tracker.dart';
+import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
@@ -19,46 +30,36 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:openvine/services/user_list_service.dart';
-// Removed legacy explore_video_manager.dart import
-import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
+import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/geo_blocking_service.dart';
+import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
+import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-// NostrService now includes embedded relay functionality
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
+import 'package:openvine/services/relay_capability_service.dart';
+import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/hashtag_cache_service.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
-import 'package:openvine/services/media_auth_interceptor.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
 import 'package:openvine/services/web_auth_service.dart';
-import 'package:openvine/services/background_activity_manager.dart';
-import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/services/relay_capability_service.dart';
-import 'package:openvine/services/relay_statistics_service.dart';
-import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:openvine/providers/database_provider.dart';
-import 'package:openvine/services/event_router.dart';
 
 part 'app_providers.g.dart';
 
@@ -253,6 +254,13 @@ Nip05Service nip05Service(Ref ref) {
   return Nip05Service();
 }
 
+/// Username repository for availability checking and registration
+@riverpod
+UsernameRepository usernameRepository(Ref ref) {
+  final nip05Service = ref.watch(nip05ServiceProvider);
+  return UsernameRepository(nip05Service);
+}
+
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
@@ -298,41 +306,61 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   return UserDataCleanupService(prefs);
 }
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// Core Nostr service via NostrClient for relay communication
 @Riverpod(keepAlive: true)
-INostrService nostrService(Ref ref) {
-  final keyManager = ref.watch(nostrKeyManagerProvider);
-  final statisticsService = ref.watch(relayStatisticsServiceProvider);
+NostrClient nostrService(Ref ref) {
+  final authService = ref.read(authServiceProvider);
 
-  // Use factory to create platform-appropriate service with initialization callback
-  final service = NostrServiceFactory.create(
-    keyManager,
-    onInitialized: () {
-      // Mark Nostr as initialized when the service completes initialization
-      ref.read(nostrInitializationProvider.notifier).markInitialized();
-    },
+  // Listen to auth changes and rebuild when identity (pubkey) changes.
+  // This ensures the NostrClient always uses the correct keypair,
+  // handling both new logins and identity switches during import.
+  ref.listen(authServiceProvider, (previous, current) {
+    final previousPubkey = previous?.currentKeyContainer?.publicKeyHex;
+    final currentPubkey = current.currentKeyContainer?.publicKeyHex;
+
+    // Rebuild when pubkey changes (identity change or new login)
+    if (currentPubkey != null && currentPubkey != previousPubkey) {
+      Log.info(
+        'Identity changed - rebuilding nostrService',
+        name: 'nostrServiceProvider',
+      );
+      // Reset the gate before invalidating - new client needs initialization
+      ref.read(nostrInitializationProvider.notifier).reset();
+      ref.invalidateSelf();
+    }
+  }, fireImmediately: false); // Prevent loop during initial build
+
+  final statisticsService = ref.watch(relayStatisticsServiceProvider);
+  final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
+
+  // Pass keyContainer directly - provider rebuilds when auth changes
+  final client = NostrServiceFactory.create(
+    keyContainer: authService.currentKeyContainer,
     statisticsService: statisticsService,
+    gatewaySettings: gatewaySettings,
   );
 
-  // Note: Initialization is handled explicitly in main.dart to ensure proper async timing
-  // Do NOT call NostrServiceFactory.initialize(service) here as it causes double initialization
+  // Initialize relay connections and signal readiness when complete
+  client.initialize().then((_) {
+    ref.read(nostrInitializationProvider.notifier).markInitialized();
+    Log.info(
+      'NostrClient initialized via provider - gate opened',
+      name: 'nostrServiceProvider',
+    );
+  });
 
   // Cleanup on disposal - but only in production, not during development hot reloads
   ref.onDispose(() {
-    // Skip disposal during debug mode to prevent embedded relay shutdown during hot reloads
+    // Skip disposal during debug mode to prevent shutdown during hot reloads
     if (!kDebugMode) {
-      service.dispose();
+      client.dispose();
     } else {
-      // In debug mode, just close subscriptions but keep the relay alive
-      service.closeAllSubscriptions().catchError((e) {
-        UnifiedLogger.warning(
-          'Error closing subscriptions during hot reload: $e',
-        );
-      });
+      // In debug mode, just close subscriptions but keep the client alive
+      client.closeAllSubscriptions();
     }
   });
 
-  return service;
+  return client;
 }
 
 /// Subscription manager for centralized subscription management
@@ -515,15 +543,10 @@ MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
 }
 
 /// Blossom upload service (uses user-configured Blossom server)
-/// Blossom upload service (uses user-configured Blossom server)
 @riverpod
 BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  final nostrService = ref.watch(nostrServiceProvider);
-  return BlossomUploadService(
-    authService: authService,
-    nostrService: nostrService,
-  );
+  return BlossomUploadService(authService: authService);
 }
 
 /// Upload manager uses only Blossom upload service
@@ -580,9 +603,11 @@ CurationService curationService(Ref ref) {
 @riverpod
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -688,9 +713,11 @@ VideoSharingService videoSharingService(Ref ref) {
 @riverpod
 Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -731,4 +758,42 @@ BugReportService bugReportService(Ref ref) {
   );
 
   return BugReportService(nip17MessageService: nip17Service);
+}
+
+// =============================================================================
+// LIKES REPOSITORY
+// =============================================================================
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+@Riverpod(keepAlive: true)
+LikesRepository? likesRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Repository requires authentication
+  if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
+    return null;
+  }
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final db = ref.watch(databaseProvider);
+  final localStorage = DbLikesLocalStorage(
+    dao: db.personalReactionsDao,
+    userPubkey: authService.currentPublicKeyHex!,
+  );
+
+  final repository = LikesRepository(
+    nostrClient: nostrClient,
+    localStorage: localStorage,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
 }

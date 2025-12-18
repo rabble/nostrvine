@@ -3,14 +3,13 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i6;
-import 'dart:io' as _i7;
+import 'dart:async' as _i5;
+import 'dart:io' as _i6;
 
-import 'package:dio/dio.dart' as _i4;
+import 'package:dio/dio.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/blossom_upload_service.dart' as _i5;
-import 'package:openvine/services/nostr_service_interface.dart' as _i3;
+import 'package:openvine/services/blossom_upload_service.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -32,19 +31,14 @@ class _FakeAuthService_0 extends _i1.SmartFake implements _i2.AuthService {
     : super(parent, parentInvocation);
 }
 
-class _FakeINostrService_1 extends _i1.SmartFake implements _i3.INostrService {
-  _FakeINostrService_1(Object parent, Invocation parentInvocation)
+class _FakeDio_1 extends _i1.SmartFake implements _i3.Dio {
+  _FakeDio_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeDio_2 extends _i1.SmartFake implements _i4.Dio {
-  _FakeDio_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeBlossomUploadResult_3 extends _i1.SmartFake
-    implements _i5.BlossomUploadResult {
-  _FakeBlossomUploadResult_3(Object parent, Invocation parentInvocation)
+class _FakeBlossomUploadResult_2 extends _i1.SmartFake
+    implements _i4.BlossomUploadResult {
+  _FakeBlossomUploadResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -52,7 +46,7 @@ class _FakeBlossomUploadResult_3 extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockBlossomUploadService extends _i1.Mock
-    implements _i5.BlossomUploadService {
+    implements _i4.BlossomUploadService {
   MockBlossomUploadService() {
     _i1.throwOnMissingStub(this);
   }
@@ -69,61 +63,50 @@ class MockBlossomUploadService extends _i1.Mock
           as _i2.AuthService);
 
   @override
-  _i3.INostrService get nostrService =>
-      (super.noSuchMethod(
-            Invocation.getter(#nostrService),
-            returnValue: _FakeINostrService_1(
-              this,
-              Invocation.getter(#nostrService),
-            ),
-          )
-          as _i3.INostrService);
-
-  @override
-  _i4.Dio get dio =>
+  _i3.Dio get dio =>
       (super.noSuchMethod(
             Invocation.getter(#dio),
-            returnValue: _FakeDio_2(this, Invocation.getter(#dio)),
+            returnValue: _FakeDio_1(this, Invocation.getter(#dio)),
           )
-          as _i4.Dio);
+          as _i3.Dio);
 
   @override
-  _i6.Future<String?> getBlossomServer() =>
+  _i5.Future<String?> getBlossomServer() =>
       (super.noSuchMethod(
             Invocation.method(#getBlossomServer, []),
-            returnValue: _i6.Future<String?>.value(),
+            returnValue: _i5.Future<String?>.value(),
           )
-          as _i6.Future<String?>);
+          as _i5.Future<String?>);
 
   @override
-  _i6.Future<void> setBlossomServer(String? serverUrl) =>
+  _i5.Future<void> setBlossomServer(String? serverUrl) =>
       (super.noSuchMethod(
             Invocation.method(#setBlossomServer, [serverUrl]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<bool> isBlossomEnabled() =>
+  _i5.Future<bool> isBlossomEnabled() =>
       (super.noSuchMethod(
             Invocation.method(#isBlossomEnabled, []),
-            returnValue: _i6.Future<bool>.value(false),
+            returnValue: _i5.Future<bool>.value(false),
           )
-          as _i6.Future<bool>);
+          as _i5.Future<bool>);
 
   @override
-  _i6.Future<void> setBlossomEnabled(bool? enabled) =>
+  _i5.Future<void> setBlossomEnabled(bool? enabled) =>
       (super.noSuchMethod(
             Invocation.method(#setBlossomEnabled, [enabled]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<_i5.BlossomUploadResult> uploadVideo({
-    required _i7.File? videoFile,
+  _i5.Future<_i4.BlossomUploadResult> uploadVideo({
+    required _i6.File? videoFile,
     required String? nostrPubkey,
     required String? title,
     String? description,
@@ -141,8 +124,8 @@ class MockBlossomUploadService extends _i1.Mock
               #proofManifestJson: proofManifestJson,
               #onProgress: onProgress,
             }),
-            returnValue: _i6.Future<_i5.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_3(
+            returnValue: _i5.Future<_i4.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_2(
                 this,
                 Invocation.method(#uploadVideo, [], {
                   #videoFile: videoFile,
@@ -156,11 +139,11 @@ class MockBlossomUploadService extends _i1.Mock
               ),
             ),
           )
-          as _i6.Future<_i5.BlossomUploadResult>);
+          as _i5.Future<_i4.BlossomUploadResult>);
 
   @override
-  _i6.Future<_i5.BlossomUploadResult> uploadImage({
-    required _i7.File? imageFile,
+  _i5.Future<_i4.BlossomUploadResult> uploadImage({
+    required _i6.File? imageFile,
     required String? nostrPubkey,
     String? mimeType = 'image/jpeg',
     void Function(double)? onProgress,
@@ -172,8 +155,8 @@ class MockBlossomUploadService extends _i1.Mock
               #mimeType: mimeType,
               #onProgress: onProgress,
             }),
-            returnValue: _i6.Future<_i5.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_3(
+            returnValue: _i5.Future<_i4.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_2(
                 this,
                 Invocation.method(#uploadImage, [], {
                   #imageFile: imageFile,
@@ -184,11 +167,11 @@ class MockBlossomUploadService extends _i1.Mock
               ),
             ),
           )
-          as _i6.Future<_i5.BlossomUploadResult>);
+          as _i5.Future<_i4.BlossomUploadResult>);
 
   @override
-  _i6.Future<String?> uploadBugReport({
-    required _i7.File? bugReportFile,
+  _i5.Future<String?> uploadBugReport({
+    required _i6.File? bugReportFile,
     void Function(double)? onProgress,
   }) =>
       (super.noSuchMethod(
@@ -196,7 +179,7 @@ class MockBlossomUploadService extends _i1.Mock
               #bugReportFile: bugReportFile,
               #onProgress: onProgress,
             }),
-            returnValue: _i6.Future<String?>.value(),
+            returnValue: _i5.Future<String?>.value(),
           )
-          as _i6.Future<String?>);
+          as _i5.Future<String?>);
 }

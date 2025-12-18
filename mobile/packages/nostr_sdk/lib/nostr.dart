@@ -208,6 +208,7 @@ class Nostr {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
+    void Function()? onEose,
   }) {
     return _pool.subscribe(
       filters,
@@ -217,6 +218,7 @@ class Nostr {
       targetRelays: targetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      onEose: onEose,
     );
   }
 

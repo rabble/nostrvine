@@ -11,13 +11,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
-
-class MockNostrService extends Mock implements INostrService {}
 
 class MockNostrKeyManager extends Mock implements NostrKeyManager {}
 
@@ -39,18 +36,13 @@ void main() {
   group('BlossomUploadService', () {
     late BlossomUploadService service;
     late MockAuthService mockAuthService;
-    late MockNostrService mockNostrService;
 
     setUp(() async {
       // Initialize SharedPreferences with test values
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
-      mockNostrService = MockNostrService();
-      service = BlossomUploadService(
-        authService: mockAuthService,
-        nostrService: mockNostrService,
-      );
+      service = BlossomUploadService(authService: mockAuthService);
     });
 
     group('Configuration', () {
@@ -153,7 +145,6 @@ void main() {
         // Inject the mock Dio into the service
         service = BlossomUploadService(
           authService: mockAuthService,
-          nostrService: mockNostrService,
           dio: mockDio, // We need to add this parameter
         );
       });
@@ -360,7 +351,6 @@ void main() {
         mockDio = MockDio();
         service = BlossomUploadService(
           authService: mockAuthService,
-          nostrService: mockNostrService,
           dio: mockDio,
         );
       });
@@ -472,7 +462,6 @@ void main() {
         final mockAuthService = MockAuthService();
         final testService = BlossomUploadService(
           authService: mockAuthService,
-          nostrService: mockNostrService,
           dio: mockDio,
         );
 
@@ -550,7 +539,6 @@ void main() {
         // Create service with mocked Dio
         service = BlossomUploadService(
           authService: mockAuthService,
-          nostrService: mockNostrService,
           dio: mockDio,
         );
       });

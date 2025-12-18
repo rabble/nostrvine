@@ -3,14 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
   const HashtagFeedScreen({

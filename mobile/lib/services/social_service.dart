@@ -9,7 +9,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -93,7 +93,7 @@ class SocialService {
        _personalEventCache = personalEventCache {
     _initialize();
   }
-  final INostrService _nostrService;
+  final NostrClient _nostrService;
   final AuthService _authService;
   final SubscriptionManager _subscriptionManager;
   final PersonalEventCacheService? _personalEventCache;
@@ -427,7 +427,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast the like event
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -470,7 +470,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast the deletion event
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -698,14 +698,12 @@ class SocialService {
       final likedEventIds = <String>{};
 
       // First, get all reactions by this user
-      final reactionSubscription = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [pubkey],
-            kinds: [7], // NIP-25 reactions
-          ),
-        ],
-      );
+      final reactionSubscription = _nostrService.subscribe([
+        Filter(
+          authors: [pubkey],
+          kinds: [7], // NIP-25 reactions
+        ),
+      ]);
 
       final completer = Completer<List<Event>>();
 
@@ -736,9 +734,9 @@ class SocialService {
           // Now fetch the actual liked events
           if (likedEventIds.isNotEmpty) {
             try {
-              final eventSubscription = _nostrService.subscribeToEvents(
-                filters: [Filter(ids: likedEventIds.toList())],
-              );
+              final eventSubscription = _nostrService.subscribe([
+                Filter(ids: likedEventIds.toList()),
+              ]);
 
               eventSubscription.listen(
                 likedEvents.add,
@@ -810,15 +808,13 @@ class SocialService {
       );
 
       // ✅ Use immediate completion for contact list query
-      final eventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [currentUserPubkey],
-            kinds: [3], // NIP-02 contact list
-            limit: 1, // Get most recent only
-          ),
-        ],
-      );
+      final eventStream = _nostrService.subscribe([
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: [3], // NIP-02 contact list
+          limit: 1, // Get most recent only
+        ),
+      ]);
 
       final contactListEvent =
           await ContactListCompletionHelper.queryContactList(
@@ -931,7 +927,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast the updated contact list
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         // Revert on failure
@@ -1015,7 +1011,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast the updated contact list
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         // Revert on failure
@@ -1095,11 +1091,9 @@ class SocialService {
       var followersCount = 0;
 
       // 1. ✅ Get following count with immediate completion
-      final followingEventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(authors: [pubkey], kinds: [3], limit: 1),
-        ],
-      );
+      final followingEventStream = _nostrService.subscribe([
+        Filter(authors: [pubkey], kinds: [3], limit: 1),
+      ]);
 
       final followingEvent = await ContactListCompletionHelper.queryContactList(
         eventStream: followingEventStream,
@@ -1119,14 +1113,12 @@ class SocialService {
       }
 
       // 2. ✅ Get followers count with immediate completion
-      final followersEventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            kinds: [3],
-            p: [pubkey], // Events that mention this pubkey in p tags
-          ),
-        ],
-      );
+      final followersEventStream = _nostrService.subscribe([
+        Filter(
+          kinds: [3],
+          p: [pubkey], // Events that mention this pubkey in p tags
+        ),
+      ]);
 
       // Use exhaustive mode to collect all followers
       final config = CompletionConfig(
@@ -1453,7 +1445,7 @@ class SocialService {
         // Cache the follow set event immediately after creation
         _personalEventCache?.cacheUserEvent(event);
 
-        final result = await _nostrService.broadcastEvent(event);
+        final result = await _nostrService.broadcast(event);
         if (result.successCount > 0) {
           // Update local set with Nostr event ID
           final setIndex = _followSets.indexWhere((s) => s.id == set.id);
@@ -1491,15 +1483,13 @@ class SocialService {
       var videoCount = 0;
 
       // Subscribe to user's video events using NIP-71 compliant kinds
-      final subscription = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [pubkey],
-            kinds:
-                NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
-          ),
-        ],
-      );
+      final subscription = _nostrService.subscribe([
+        Filter(
+          authors: [pubkey],
+          kinds:
+              NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
+        ),
+      ]);
 
       subscription.listen(
         (event) {
@@ -1552,15 +1542,13 @@ class SocialService {
       final userVideos = <String>[];
       final videoCompleter = Completer<List<String>>();
 
-      final videoSubscription = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [pubkey],
-            kinds:
-                NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
-          ),
-        ],
-      );
+      final videoSubscription = _nostrService.subscribe([
+        Filter(
+          authors: [pubkey],
+          kinds:
+              NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
+        ),
+      ]);
 
       videoSubscription.listen(
         (event) {
@@ -1604,14 +1592,12 @@ class SocialService {
       final likesCompleter = Completer<int>();
       var totalLikes = 0;
 
-      final likesSubscription = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            kinds: [7], // Like events
-            e: videoIds, // Events that reference our videos
-          ),
-        ],
-      );
+      final likesSubscription = _nostrService.subscribe([
+        Filter(
+          kinds: [7], // Like events
+          e: videoIds, // Events that reference our videos
+        ),
+      ]);
 
       likesSubscription.listen(
         (event) {
@@ -1721,7 +1707,7 @@ class SocialService {
       }
 
       // Broadcast the comment
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -1942,7 +1928,7 @@ class SocialService {
         _personalEventCache?.cacheUserEvent(event);
 
         // Broadcast
-        final result = await _nostrService.broadcastEvent(event);
+        final result = await _nostrService.broadcast(event);
         if (!result.isSuccessful) {
           final errorMessages = result.errors.values.join(', ');
           throw Exception('Failed to broadcast repost: $errorMessages');
@@ -2019,7 +2005,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
         throw Exception('Failed to broadcast unrepost: $errorMessages');
@@ -2099,7 +2085,7 @@ class SocialService {
       _personalEventCache?.cacheUserEvent(event);
 
       // Broadcast the repost event
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
@@ -2169,7 +2155,7 @@ class SocialService {
       }
 
       // Broadcast the deletion request
-      final result = await _nostrService.broadcastEvent(event);
+      final result = await _nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');

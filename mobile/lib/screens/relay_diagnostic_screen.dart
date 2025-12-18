@@ -1,9 +1,10 @@
 // ABOUTME: Diagnostic screen for debugging relay connectivity issues
-// ABOUTME: Shows embedded relay status, external relay connections, and network health
+// ABOUTME: Shows relay connection status and network health
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -39,7 +40,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
     final nostrService = ref.read(nostrServiceProvider);
 
-    // Get relay stats from embedded relay
+    // Get relay stats from NostrClient
     try {
       final stats = await nostrService.getRelayStats();
       setState(() {
@@ -50,20 +51,17 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (stats != null && stats['database'] != null) {
         final totalEvents = stats['database']['total_events'] ?? 0;
         Log.info(
-          'Embedded relay has $totalEvents total events in database',
+          'Relay cache has $totalEvents total events',
           name: 'RelayDiagnostic',
         );
 
         // Query for video events specifically to see if any exist
         try {
-          final videoEvents = await nostrService.getEvents(
-            filters: [
-              nostr.Filter(kinds: [34236]),
-            ],
-            limit: 10,
-          );
+          final videoEvents = await nostrService.queryEvents([
+            nostr.Filter(kinds: [34236], limit: 10),
+          ]);
           Log.info(
-            'Found ${videoEvents.length} video events in embedded relay database',
+            'Found ${videoEvents.length} video events in relay cache',
             name: 'RelayDiagnostic',
           );
         } catch (e) {
@@ -85,7 +83,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     });
 
     final nostrService = ref.read(nostrServiceProvider);
-    final relays = nostrService.relays;
+    final relays = nostrService.configuredRelays;
 
     for (final relayUrl in relays) {
       try {
@@ -141,13 +139,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     final nostrService = ref.read(nostrServiceProvider);
 
     try {
-      // Query for video events directly from embedded relay database
-      final videoEvents = await nostrService.getEvents(
-        filters: [
-          nostr.Filter(kinds: [34236], limit: 100),
-        ],
-        limit: 100,
-      );
+      // Query for video events directly from relay
+      final videoEvents = await nostrService.queryEvents([
+        nostr.Filter(kinds: [34236], limit: 100),
+      ]);
 
       Log.info(
         '✅ Direct query returned ${videoEvents.length} video events',
@@ -165,7 +160,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         }
       } else {
         Log.warning(
-          '⚠️ No video events found in embedded relay database!',
+          '⚠️ No video events found in relay cache!',
           name: 'RelayDiagnostic',
         );
       }
@@ -205,7 +200,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
       Log.info('Retrying relay connections...', name: 'RelayDiagnostic');
 
-      await nostrService.retryInitialization();
+      await nostrService.retryDisconnectedRelays();
 
       // Wait a bit for connections to establish
       await Future.delayed(const Duration(seconds: 2));
@@ -263,7 +258,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     final nostrService = ref.watch(nostrServiceProvider);
     final videoService = ref.watch(videoEventServiceProvider);
 
-    final configuredRelays = nostrService.relays;
+    final configuredRelays = nostrService.configuredRelays;
     final connectedRelays = nostrService.connectedRelays;
     final relayStatuses = nostrService.relayStatuses;
 
@@ -303,9 +298,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   ),
                 ),
 
-              // Embedded relay status
+              // Relay status
               _buildSection(
-                title: 'Embedded Relay',
+                title: 'Relay Status',
                 icon: Icons.storage,
                 children: [
                   _buildStatusRow(
@@ -347,12 +342,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   const Divider(color: Colors.grey),
                   ...configuredRelays.map((relayUrl) {
                     final isConnected = connectedRelays.contains(relayUrl);
-                    final status =
-                        relayStatuses[relayUrl] as Map<String, dynamic>?;
+                    final status = relayStatuses[relayUrl];
+                    final isAuthenticated =
+                        status?.state == RelayState.authenticated;
                     return _buildRelayRow(
                       relayUrl,
                       isConnected,
-                      status?['authenticated'] ?? false,
+                      isAuthenticated,
                     );
                   }).toList(),
                 ],

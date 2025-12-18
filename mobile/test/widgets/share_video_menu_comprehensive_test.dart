@@ -7,18 +7,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
-import 'package:openvine/models/video_event.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/share_video_menu.dart';
 
 @GenerateNiceMocks([
   MockSpec<ContentDeletionService>(),
@@ -32,8 +33,8 @@ void main() {
   _setupPlatformMocks();
 
   group('ShareVideoMenu - Comprehensive TDD Tests', () {
-    late NostrService nostrService;
-    late NostrKeyManager keyManager;
+    late NostrClient nostrService;
+    late SecureKeyContainer keyContainer;
     late VideoEventService videoEventService;
     late SubscriptionManager subscriptionManager;
     late List<VideoEvent> realVideos;
@@ -47,17 +48,9 @@ void main() {
       );
 
       // Initialize real Nostr connection for realistic testing
-      keyManager = NostrKeyManager();
-      await keyManager.initialize();
-
-      nostrService = NostrService(keyManager);
-      await nostrService.initialize(
-        customRelays: [
-          'wss://staging-relay.divine.video',
-          'wss://relay.damus.io',
-          'wss://nos.lol',
-        ],
-      );
+      keyContainer = SecureKeyContainer.generate();
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(
@@ -79,7 +72,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      await nostrService.closeAllSubscriptions();
       nostrService.dispose();
     });
 
@@ -625,7 +617,7 @@ void _setupPlatformMocks() {
       });
 }
 
-Future<void> _waitForRelayConnection(NostrService nostrService) async {
+Future<void> _waitForRelayConnection(NostrClient nostrService) async {
   final connectionCompleter = Completer<void>();
   late Timer timer;
 

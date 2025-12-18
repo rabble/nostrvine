@@ -44,11 +44,7 @@ class UserProfileTile extends ConsumerWidget {
               // Avatar
               GestureDetector(
                 onTap: onTap,
-                child: UserAvatar(
-                  imageUrl: profile?.picture,
-                  name: profile?.bestDisplayName,
-                  size: 48,
-                ),
+                child: UserAvatar(imageUrl: profile?.picture, size: 48),
               ),
               const SizedBox(width: 12),
 

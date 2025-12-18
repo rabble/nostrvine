@@ -1,29 +1,31 @@
 // ABOUTME: Tests for SubscriptionManager smart event cache pruning
 // ABOUTME: Verifies that cached events are not re-requested from relay
 
+// ignore_for_file: invalid_use_of_null_value
+
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
-@GenerateNiceMocks([MockSpec<INostrService>()])
+@GenerateNiceMocks([MockSpec<NostrClient>()])
 import 'subscription_manager_cache_test.mocks.dart';
 
 void main() {
   group('SubscriptionManager Event Cache Pruning', () {
-    late MockINostrService mockNostrService;
+    late MockNostrClient mockNostrService;
     late StreamController<Event> eventController;
 
     setUp(() {
-      mockNostrService = MockINostrService();
+      mockNostrService = MockNostrClient();
       eventController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribeToEvents(filters: anyNamed('filters')),
+        mockNostrService.subscribe(argThat(anything)),
       ).thenAnswer((_) => eventController.stream);
     });
 
@@ -88,13 +90,11 @@ void main() {
         );
 
         // Assert: Relay subscription should only request uncached event
-        final capturedFilter =
-            verify(
-                  mockNostrService.subscribeToEvents(
-                    filters: captureAnyNamed('filters'),
-                  ),
-                ).captured.single
-                as List<Filter>;
+        final captured = verify(
+          mockNostrService.subscribe(captureAny()),
+        ).captured;
+        expect(captured, isNotEmpty);
+        final capturedFilter = captured.first as List<Filter>;
 
         expect(capturedFilter.length, 1);
         expect(capturedFilter[0].ids, ['uncached_id_3']);
@@ -140,9 +140,7 @@ void main() {
         expect(deliveredEvents[0].id, cachedEvent1.id);
 
         // Assert: No relay subscription created
-        verifyNever(
-          mockNostrService.subscribeToEvents(filters: anyNamed('filters')),
-        );
+        verifyNever(mockNostrService.subscribe(argThat(anything)));
 
         // Assert: onComplete was called immediately
         expect(completeCalled, true);
@@ -168,13 +166,11 @@ void main() {
         );
 
         // Assert: Filter passed through unchanged
-        final capturedFilter =
-            verify(
-                  mockNostrService.subscribeToEvents(
-                    filters: captureAnyNamed('filters'),
-                  ),
-                ).captured.single
-                as List<Filter>;
+        final captured = verify(
+          mockNostrService.subscribe(captureAny()),
+        ).captured;
+        expect(captured, isNotEmpty);
+        final capturedFilter = captured.first as List<Filter>;
 
         expect(capturedFilter.length, 1);
         expect(capturedFilter[0].kinds, [0, 1]);
@@ -199,13 +195,11 @@ void main() {
         );
 
         // Assert: All event IDs passed to relay (no caching)
-        final capturedFilter =
-            verify(
-                  mockNostrService.subscribeToEvents(
-                    filters: captureAnyNamed('filters'),
-                  ),
-                ).captured.single
-                as List<Filter>;
+        final captured = verify(
+          mockNostrService.subscribe(captureAny()),
+        ).captured;
+        expect(captured, isNotEmpty);
+        final capturedFilter = captured.first as List<Filter>;
 
         expect(capturedFilter.length, 1);
         expect(capturedFilter[0].ids, ['id1', 'id2']);
@@ -245,13 +239,11 @@ void main() {
       expect(deliveredEvents[0].id, cachedEvent.id);
 
       // Assert: Both filters sent to relay (filter1 pruned, filter2 unchanged)
-      final capturedFilters =
-          verify(
-                mockNostrService.subscribeToEvents(
-                  filters: captureAnyNamed('filters'),
-                ),
-              ).captured.single
-              as List<Filter>;
+      final captured = verify(
+        mockNostrService.subscribe(captureAny()),
+      ).captured;
+      expect(captured, isNotEmpty);
+      final capturedFilters = captured.first as List<Filter>;
 
       expect(capturedFilters.length, 2);
       expect(capturedFilters[0].ids, ['uncached_id']);

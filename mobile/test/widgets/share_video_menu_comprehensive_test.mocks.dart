@@ -8,13 +8,13 @@ import 'dart:ui' as _i12;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:nostr_client/nostr_client.dart' as _i3;
 import 'package:nostr_sdk/event.dart' as _i9;
 import 'package:openvine/models/video_event.dart' as _i8;
 import 'package:openvine/services/auth_service.dart' as _i4;
 import 'package:openvine/services/content_deletion_service.dart' as _i2;
 import 'package:openvine/services/content_moderation_service.dart' as _i5;
 import 'package:openvine/services/curated_list_service.dart' as _i10;
-import 'package:openvine/services/nostr_service_interface.dart' as _i3;
 import 'package:openvine/services/social_service.dart' as _i13;
 import 'package:openvine/services/video_sharing_service.dart' as _i6;
 
@@ -38,8 +38,8 @@ class _FakeDeleteResult_0 extends _i1.SmartFake implements _i2.DeleteResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeINostrService_1 extends _i1.SmartFake implements _i3.INostrService {
-  _FakeINostrService_1(Object parent, Invocation parentInvocation)
+class _FakeNostrClient_1 extends _i1.SmartFake implements _i3.NostrClient {
+  _FakeNostrClient_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -198,19 +198,19 @@ class MockContentDeletionService extends _i1.Mock
 class MockContentModerationService extends _i1.Mock
     implements _i5.ContentModerationService {
   @override
-  _i3.INostrService get nostrService =>
+  _i3.NostrClient get nostrService =>
       (super.noSuchMethod(
             Invocation.getter(#nostrService),
-            returnValue: _FakeINostrService_1(
+            returnValue: _FakeNostrClient_1(
               this,
               Invocation.getter(#nostrService),
             ),
-            returnValueForMissingStub: _FakeINostrService_1(
+            returnValueForMissingStub: _FakeNostrClient_1(
               this,
               Invocation.getter(#nostrService),
             ),
           )
-          as _i3.INostrService);
+          as _i3.NostrClient);
 
   @override
   _i4.AuthService get authService =>

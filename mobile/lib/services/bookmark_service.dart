@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -133,7 +133,7 @@ class BookmarkSet {
 /// Service for managing NIP-51 bookmarks and bookmark sets
 class BookmarkService with NostrListServiceMixin {
   BookmarkService({
-    required INostrService nostrService,
+    required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
   }) : _nostrService = nostrService,
@@ -142,13 +142,13 @@ class BookmarkService with NostrListServiceMixin {
     _loadBookmarksFromSharedPreferences();
   }
 
-  final INostrService _nostrService;
+  final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
 
   // Mixin interface implementations
   @override
-  INostrService get nostrService => _nostrService;
+  NostrClient get nostrService => _nostrService;
   @override
   AuthService get authService => _authService;
 
@@ -184,7 +184,7 @@ class BookmarkService with NostrListServiceMixin {
       // 1. Load from SharedPreferences cache (fast, may be stale)
       _loadBookmarksFromSharedPreferences();
 
-      // 2. Load from embedded relay (authoritative, cached locally)
+      // 2. Load from relay (authoritative)
       await _loadBookmarksFromNostr();
 
       // 3. Update SharedPreferences cache for next startup
@@ -605,7 +605,7 @@ class BookmarkService with NostrListServiceMixin {
       );
 
       if (event != null) {
-        final result = await _nostrService.broadcastEvent(event);
+        final result = await _nostrService.broadcast(event);
         if (result.successCount > 0) {
           Log.debug(
             'Published global bookmarks to Nostr: ${event.id}',
@@ -666,7 +666,7 @@ class BookmarkService with NostrListServiceMixin {
       );
 
       if (event != null) {
-        final result = await _nostrService.broadcastEvent(event);
+        final result = await _nostrService.broadcast(event);
         if (result.successCount > 0) {
           // Update local set with Nostr event ID
           final setIndex = _bookmarkSets.indexWhere((s) => s.id == set.id);
@@ -692,7 +692,7 @@ class BookmarkService with NostrListServiceMixin {
 
   // === NOSTR LOADING ===
 
-  /// Load bookmarks from embedded relay (authoritative)
+  /// Load bookmarks from relay (authoritative)
   Future<void> _loadBookmarksFromNostr() async {
     try {
       // Get all our published events using the universal query
@@ -703,7 +703,7 @@ class BookmarkService with NostrListServiceMixin {
 
       if (bookmarkEvents.isEmpty) {
         Log.debug(
-          'No bookmark events found in embedded relay',
+          'No bookmark events found in relay',
           name: 'BookmarkService',
           category: LogCategory.system,
         );
@@ -732,13 +732,13 @@ class BookmarkService with NostrListServiceMixin {
       }
 
       Log.info(
-        'Loaded ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets from embedded relay',
+        'Loaded ${_globalBookmarks.length} global bookmarks and ${_bookmarkSets.length} bookmark sets from relay',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'Failed to load bookmarks from embedded relay: $e',
+        'Failed to load bookmarks from relay: $e',
         name: 'BookmarkService',
         category: LogCategory.system,
       );

@@ -79,15 +79,13 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen>
     final nostrService = ref.read(nostrServiceProvider);
 
     // Subscribe to the user's kind 3 contact list events
-    final subscription = nostrService.subscribeToEvents(
-      filters: [
-        nostr_sdk.Filter(
-          authors: [pubkey],
-          kinds: [3], // Contact lists
-          limit: 1, // Get most recent only
-        ),
-      ],
-    );
+    final subscription = nostrService.subscribe([
+      nostr_sdk.Filter(
+        authors: [pubkey],
+        kinds: [3], // Contact lists
+        limit: 1, // Get most recent only
+      ),
+    ]);
 
     // Apply timeout to detect relay connection issues
     final timeoutSubscription = subscription.timeout(

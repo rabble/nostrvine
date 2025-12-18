@@ -13,8 +13,8 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
 class HomeScreenRouter extends ConsumerStatefulWidget {

@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:camera/camera.dart' show FlashMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,20 +11,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
+import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
-import 'package:models/models.dart' show NativeProofData;
-import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
-import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/screens/pure/video_metadata_screen_pure.dart';
+import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
+import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
 import 'package:openvine/services/camera/native_macos_camera.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/circular_icon_button.dart';
+import 'package:openvine/widgets/dynamic_zoom_selector.dart';
 import 'package:openvine/widgets/macos_camera_preview.dart'
     show CameraPreviewPlaceholder;
-import 'package:openvine/widgets/dynamic_zoom_selector.dart';
-import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -956,39 +958,36 @@ class _UniversalCameraScreenPureState
       children: [
         // Camera switch button (front/back)
         if (recordingState.canSwitchCamera) ...[
-          _buildControlButton(
-            icon: Icons.flip_camera_ios,
-            onTap: _switchCamera,
+          CircularIconButton(
+            onPressed: _switchCamera,
+            icon: const Icon(
+              Icons.flip_camera_ios,
+              color: Colors.white,
+              size: 26,
+            ),
+            backgroundOpacity: 0.5,
           ),
           const SizedBox(height: 12),
         ],
         // Flash toggle (only show for rear camera - front cameras don't have flash)
         if (!isFrontCamera) ...[
-          _buildControlButton(icon: _getFlashIcon(), onTap: _toggleFlash),
+          CircularIconButton(
+            onPressed: _toggleFlash,
+            icon: Icon(_getFlashIcon(), color: Colors.white, size: 26),
+            backgroundOpacity: 0.5,
+          ),
           const SizedBox(height: 12),
         ],
         // Timer toggle
-        _buildControlButton(icon: _getTimerIcon(), onTap: _toggleTimer),
+        CircularIconButton(
+          onPressed: _toggleTimer,
+          icon: Icon(_getTimerIcon(), color: Colors.white, size: 26),
+          backgroundOpacity: 0.5,
+        ),
         const SizedBox(height: 12),
         // Aspect ratio toggle
         _buildAspectRatioToggle(recordingState),
       ],
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon, color: Colors.white, size: 26),
-      ),
     );
   }
 
