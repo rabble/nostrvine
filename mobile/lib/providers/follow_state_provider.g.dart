@@ -53,7 +53,7 @@ final class FollowingListProvider
   }
 }
 
-String _$followingListHash() => r'f3a25ef6e384ce45eafc96285bea4731728a7f3d';
+String _$followingListHash() => r'86eace4937e4c5dc37150a0798d3cd62fab4a122';
 
 /// Family provider to check if current user is following a specific pubkey
 /// This is reactive - listens to repository's followingStream for updates
@@ -112,7 +112,7 @@ final class IsFollowingProvider
   }
 }
 
-String _$isFollowingHash() => r'a983afa051f9440beb2e8391cc2fa6bfddd8d13d';
+String _$isFollowingHash() => r'319edc2f5ef4a891c06e79019bb5eebbbd61b619';
 
 /// Family provider to check if current user is following a specific pubkey
 /// This is reactive - listens to repository's followingStream for updates
@@ -142,6 +142,9 @@ final class IsFollowingFamily extends $Family
 /// - Checks if current user is following a pubkey
 /// - Tracks which pubkeys have active follow/unfollow operations
 /// - Provides follow/unfollow/toggle actions
+///
+/// Requires authentication - throws [NotAuthenticatedException] if repository
+/// is not available.
 
 @ProviderFor(FollowOperations)
 const followOperationsProvider = FollowOperationsProvider._();
@@ -150,12 +153,18 @@ const followOperationsProvider = FollowOperationsProvider._();
 /// - Checks if current user is following a pubkey
 /// - Tracks which pubkeys have active follow/unfollow operations
 /// - Provides follow/unfollow/toggle actions
+///
+/// Requires authentication - throws [NotAuthenticatedException] if repository
+/// is not available.
 final class FollowOperationsProvider
     extends $NotifierProvider<FollowOperations, Set<String>> {
   /// Notifier for managing follow state and operations
   /// - Checks if current user is following a pubkey
   /// - Tracks which pubkeys have active follow/unfollow operations
   /// - Provides follow/unfollow/toggle actions
+  ///
+  /// Requires authentication - throws [NotAuthenticatedException] if repository
+  /// is not available.
   const FollowOperationsProvider._()
     : super(
         from: null,
@@ -183,12 +192,15 @@ final class FollowOperationsProvider
   }
 }
 
-String _$followOperationsHash() => r'e914a3dd6de16a50d486a43eba01d66c63b1429e';
+String _$followOperationsHash() => r'107756e31f596078d4eee8d2ad137b3324859778';
 
 /// Notifier for managing follow state and operations
 /// - Checks if current user is following a pubkey
 /// - Tracks which pubkeys have active follow/unfollow operations
 /// - Provides follow/unfollow/toggle actions
+///
+/// Requires authentication - throws [NotAuthenticatedException] if repository
+/// is not available.
 
 abstract class _$FollowOperations extends $Notifier<Set<String>> {
   Set<String> build();

@@ -3,8 +3,10 @@
 
 import 'dart:async';
 
-import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/exceptions/auth_exceptions.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -15,7 +17,8 @@ part 'following_list_provider.g.dart';
 /// - For other users: fetches from Nostr relays
 @riverpod
 class FollowingListNotifier extends _$FollowingListNotifier {
-  StreamSubscription<nostr_sdk.Event>? _subscription;
+  StreamSubscription<Event>? _subscription;
+  FollowRepository? _repository;
 
   @override
   Future<List<String>> build(String pubkey) async {
@@ -28,6 +31,12 @@ class FollowingListNotifier extends _$FollowingListNotifier {
     final isCurrentUser = pubkey == authService.currentPublicKeyHex;
 
     if (isCurrentUser) {
+      // Inject repository for current user operations
+      final repository = ref.watch(followRepositoryProvider);
+      if (repository == null) {
+        throw const NotAuthenticatedException();
+      }
+      _repository = repository;
       return _loadCurrentUserFollowing();
     } else {
       return _loadOtherUserFollowing(pubkey);
@@ -36,7 +45,7 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 
   /// Load current user's following from FollowRepository
   Future<List<String>> _loadCurrentUserFollowing() async {
-    final repository = ref.watch(followRepositoryProvider);
+    final repository = _repository!;
 
     // Listen for changes via stream to rebuild when following list changes
     final subscription = repository.followingStream.listen((followingList) {
@@ -56,15 +65,13 @@ class FollowingListNotifier extends _$FollowingListNotifier {
     final completer = Completer<List<String>>();
 
     // Subscribe to the user's kind 3 contact list events
-    final eventStream = nostrService.subscribeToEvents(
-      filters: [
-        nostr_sdk.Filter(
-          authors: [pubkey],
-          kinds: [3], // Contact lists
-          limit: 1, // Get most recent only
-        ),
-      ],
-    );
+    final eventStream = nostrService.subscribe([
+      Filter(
+        authors: [pubkey],
+        kinds: const [3], // Contact lists
+        limit: 1, // Get most recent only
+      ),
+    ]);
 
     // Apply timeout
     final timeoutStream = eventStream.timeout(
@@ -127,6 +134,9 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 @riverpod
 Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   final repository = ref.watch(followRepositoryProvider);
+  if (repository == null) {
+    throw const NotAuthenticatedException();
+  }
 
   // Emit current state immediately
   yield repository.followingPubkeys;
@@ -134,4 +144,3 @@ Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   // Yield updates from repository stream
   yield* repository.followingStream;
 }
-

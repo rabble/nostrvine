@@ -2,6 +2,7 @@
 // ABOUTME: Enables immediate UI feedback when following/unfollowing users
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/exceptions/auth_exceptions.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 /// Tracks optimistic follow states that haven't been confirmed yet
@@ -41,8 +42,8 @@ final isFollowingProvider = Provider.family<bool, String>((ref, pubkey) {
     return optimisticStates[pubkey]!;
   }
 
-  // Otherwise use the real state from repository
-  return repository.isFollowing(pubkey);
+  // Otherwise use the real state from repository (false if not authenticated)
+  return repository?.isFollowing(pubkey) ?? false;
 });
 
 /// Enhanced follow/unfollow methods with optimistic updates
@@ -58,6 +59,10 @@ class OptimisticFollowMethods {
   Future<void> followUser(String pubkey) async {
     // Use FollowRepository as the single source of truth
     final repository = _ref.read(followRepositoryProvider);
+    if (repository == null) {
+      throw const NotAuthenticatedException();
+    }
+
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -81,6 +86,10 @@ class OptimisticFollowMethods {
   Future<void> unfollowUser(String pubkey) async {
     // Use FollowRepository as the single source of truth
     final repository = _ref.read(followRepositoryProvider);
+    if (repository == null) {
+      throw const NotAuthenticatedException();
+    }
+
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );

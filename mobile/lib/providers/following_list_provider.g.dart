@@ -60,7 +60,7 @@ final class FollowingListNotifierProvider
 }
 
 String _$followingListNotifierHash() =>
-    r'a0c587924e456248d8a1c02de122c879c909edd2';
+    r'542abd629dd3bdf8dc9cb937455d6c091546399c';
 
 /// Provider for fetching and managing a user's following list
 /// - For current user: uses FollowRepository (reactive updates)
@@ -167,4 +167,4 @@ final class CurrentUserFollowingListProvider
 }
 
 String _$currentUserFollowingListHash() =>
-    r'a968f625a5695e3000970d84c210bceecb89c25c';
+    r'72567ede8e979faf4db30f6d5083bb4adc81c13d';
