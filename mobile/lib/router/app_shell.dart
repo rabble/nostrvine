@@ -185,8 +185,20 @@ class AppShell extends ConsumerWidget {
     // Watch page context to determine if back button should show
     final pageCtxAsync = ref.watch(pageContextProvider);
     final showBackButton = pageCtxAsync.maybeWhen(
-      data: (ctx) =>
-          ctx.type == RouteType.hashtag || ctx.type == RouteType.search,
+      data: (ctx) {
+        if (ctx.type == RouteType.hashtag || ctx.type == RouteType.search) {
+          return true;
+        }
+
+        if (ctx.type == RouteType.profile) {
+          final authService = ref.read(authServiceProvider);
+          final currentNpub = authService.currentNpub;
+
+          return ctx.npub != currentNpub;
+        }
+
+        return false;
+      },
       orElse: () => false,
     );
 
