@@ -1533,25 +1533,43 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
-/// Follow repository - single source of truth for follow data
-/// Handles in-memory cache, local storage, and network sync
+/// Provider for FollowRepository instance
+///
+/// Creates a FollowRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalEventCacheService (for caching contact list events)
 
 @ProviderFor(followRepository)
 const followRepositoryProvider = FollowRepositoryProvider._();
 
-/// Follow repository - single source of truth for follow data
-/// Handles in-memory cache, local storage, and network sync
+/// Provider for FollowRepository instance
+///
+/// Creates a FollowRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalEventCacheService (for caching contact list events)
 
 final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          FollowRepository,
-          FollowRepository,
-          FollowRepository
+          FollowRepository?,
+          FollowRepository?,
+          FollowRepository?
         >
-    with $Provider<FollowRepository> {
-  /// Follow repository - single source of truth for follow data
-  /// Handles in-memory cache, local storage, and network sync
+    with $Provider<FollowRepository?> {
+  /// Provider for FollowRepository instance
+  ///
+  /// Creates a FollowRepository when the user is authenticated.
+  /// Returns null when user is not authenticated.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalEventCacheService (for caching contact list events)
   const FollowRepositoryProvider._()
     : super(
         from: null,
@@ -1568,24 +1586,25 @@ final class FollowRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<FollowRepository?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  FollowRepository create(Ref ref) {
+  FollowRepository? create(Ref ref) {
     return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FollowRepository value) {
+  Override overrideWithValue(FollowRepository? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FollowRepository>(value),
+      providerOverride: $SyncValueProvider<FollowRepository?>(value),
     );
   }
 }
 
-String _$followRepositoryHash() => r'a39733409c5a3b7aaf1610b19497276782ed38c9';
+String _$followRepositoryHash() => r'd15279e83f515a9499addd53e8c53ee4ae6da359';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

@@ -443,16 +443,28 @@ SocialService socialService(Ref ref) {
   );
 }
 
-/// Follow repository - single source of truth for follow data
-/// Handles in-memory cache, local storage, and network sync
+/// Provider for FollowRepository instance
+///
+/// Creates a FollowRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository followRepository(Ref ref) {
-  final nostrService = ref.watch(nostrServiceProvider);
+FollowRepository? followRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
+
+  // Repository requires authentication
+  if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
+    return null;
+  }
+
+  final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
-    nostrClient: nostrService,
+    nostrClient: nostrClient,
     authService: authService,
     personalEventCache: personalEventCache,
   );
@@ -466,10 +478,7 @@ FollowRepository followRepository(Ref ref) {
     );
   });
 
-  // Dispose stream controller when provider is disposed
-  ref.onDispose(() {
-    repository.dispose();
-  });
+  ref.onDispose(repository.dispose);
 
   return repository;
 }
