@@ -28,6 +28,7 @@ import 'package:openvine/widgets/video_error_overlay.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -1170,7 +1171,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         explicitChildNodes: true,
                         button: true,
                         label: isLiked ? 'Unlike video' : 'Like video',
-                        child: _buildCircularIconButton(
+                        child: CircularIconButton(
                           onPressed: isLikeInProgress
                               ? () {}
                               : () async {
@@ -1243,7 +1244,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         explicitChildNodes: true,
                         button: true,
                         label: 'View comments',
-                        child: _buildCircularIconButton(
+                        child: CircularIconButton(
                           onPressed: () {
                             Log.info(
                               '💬 Comment button tapped for ${video.id}',
@@ -1347,7 +1348,7 @@ class VideoOverlayActions extends ConsumerWidget {
                             label: isReposted
                                 ? 'Remove repost'
                                 : 'Repost video',
-                            child: _buildCircularIconButton(
+                            child: CircularIconButton(
                               onPressed:
                                   socialState.isRepostInProgress(video.id)
                                   ? () {}
@@ -1422,7 +1423,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         explicitChildNodes: true,
                         button: true,
                         label: 'Share video',
-                        child: _buildCircularIconButton(
+                        child: CircularIconButton(
                           onPressed: () {
                             Log.info(
                               '📤 Share button tapped for ${video.id}',
@@ -1473,7 +1474,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         explicitChildNodes: true,
                         button: true,
                         label: 'Report video',
-                        child: _buildCircularIconButton(
+                        child: CircularIconButton(
                           onPressed: () {
                             Log.info(
                               '🚩 Report button tapped for ${video.id}',
@@ -1525,24 +1526,6 @@ class VideoOverlayActions extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  /// Build icon button with semi-transparent circular background
-  Widget _buildCircularIconButton({
-    required VoidCallback onPressed,
-    required Widget icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: icon,
-        padding: EdgeInsets.zero,
-      ),
     );
   }
 
