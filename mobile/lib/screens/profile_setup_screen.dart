@@ -17,7 +17,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:openvine/widgets/reserved_username_request_dialog.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -1708,34 +1708,21 @@ class _UsernameReservedIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'If you are the original owner, contact support to claim it.',
+            'If you are the original owner, you can request to claim it.',
             style: TextStyle(color: Colors.grey[500], fontSize: 11),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () async {
-              // Capture messenger before async gap
-              final messenger = ScaffoldMessenger.of(context);
-              final uri = Uri.parse(
-                'mailto:support@divine.video?subject=Reserved Username Request - $username',
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (context) => ReservedUsernameRequestDialog(
+                  username: username,
+                ),
               );
-              try {
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not open email app'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (_) {
-                // Email launch failed - silently ignore
-              }
             },
-            icon: const Icon(Icons.email, size: 16),
-            label: const Text('Contact Support'),
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('Request Username'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange[400],
               side: BorderSide(color: Colors.orange[400]!),
