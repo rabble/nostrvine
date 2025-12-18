@@ -44,7 +44,9 @@ class LikeActionButton extends ConsumerWidget {
                       category: LogCategory.ui,
                     );
                     try {
-                      await ref.read(likesProvider.notifier).toggleLike(
+                      await ref
+                          .read(likesProvider.notifier)
+                          .toggleLike(
                             eventId: video.id,
                             authorPubkey: video.pubkey,
                           );

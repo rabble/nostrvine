@@ -232,8 +232,9 @@ class ComposableVideoGrid extends ConsumerWidget {
                       // Stats row - watch likes provider for current metrics
                       Consumer(
                         builder: (context, ref, _) {
-                          final newLikeCount =
-                              ref.watch(likeCountProvider(video.id));
+                          final newLikeCount = ref.watch(
+                            likeCountProvider(video.id),
+                          );
                           final totalLikes =
                               newLikeCount + (video.originalLikes ?? 0);
 

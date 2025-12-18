@@ -5,11 +5,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/state/social_state.dart';
 
@@ -90,9 +90,7 @@ void main() {
       expect(state.isInitialized, isTrue);
 
       // Verify it tried to load user data
-      verify(
-        () => mockNostrService.subscribe(any()),
-      ).called(greaterThan(0));
+      verify(() => mockNostrService.subscribe(any())).called(greaterThan(0));
     });
 
     test('should follow and unfollow users', () async {
@@ -183,9 +181,7 @@ void main() {
       await container.read(socialProvider.notifier).initialize();
 
       // Should have attempted to fetch contacts (verify subscription called)
-      verify(
-        () => mockNostrService.subscribe(any()),
-      ).called(greaterThan(0));
+      verify(() => mockNostrService.subscribe(any())).called(greaterThan(0));
 
       state = container.read(socialProvider);
       expect(state.isInitialized, isTrue);
