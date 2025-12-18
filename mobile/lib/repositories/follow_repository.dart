@@ -4,7 +4,6 @@
 // TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
 // - AuthService (needs interface extraction)
-// - INostrService (needs to move to nostr_client package)
 // - PersonalEventCacheService (needs interface extraction)
 // - ImmediateCompletionHelper (needs to move to a shared package)
 // - unified_logger (needs logging abstraction)
@@ -13,14 +12,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
@@ -33,14 +31,14 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Exposes a stream for reactive updates to the following list.
 class FollowRepository {
   FollowRepository({
-    required INostrService nostrService,
+    required NostrClient nostrClient,
     required AuthService authService,
     PersonalEventCacheService? personalEventCache,
-  }) : _nostrService = nostrService,
+  }) : _nostrClient = nostrClient,
        _authService = authService,
        _personalEventCache = personalEventCache;
 
-  final INostrService _nostrService;
+  final NostrClient _nostrClient;
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
 
@@ -339,15 +337,13 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final eventStream = _nostrService.subscribeToEvents(
-        filters: [
-          Filter(
-            authors: [currentUserPubkey],
-            kinds: [3], // NIP-02 contact list
-            limit: 1,
-          ),
-        ],
-      );
+      final eventStream = _nostrClient.subscribe([
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [3], // NIP-02 contact list
+          limit: 1,
+        ),
+      ]);
 
       final contactListEvent =
           await ContactListCompletionHelper.queryContactList(
@@ -390,7 +386,7 @@ class FollowRepository {
     _personalEventCache?.cacheUserEvent(event);
 
     // Broadcast the updated contact list
-    final result = await _nostrService.broadcastEvent(event);
+    final result = await _nostrClient.broadcast(event);
 
     if (!result.isSuccessful) {
       final errorMessages = result.errors.values.join(', ');

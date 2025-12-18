@@ -6,20 +6,20 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([INostrService, AuthService, PersonalEventCacheService])
+@GenerateMocks([NostrClient, AuthService, PersonalEventCacheService])
 import 'follow_repository_test.mocks.dart';
 
 void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
-    late MockINostrService mockNostrService;
+    late MockNostrClient mockNostrClient;
     late MockAuthService mockAuthService;
     late MockPersonalEventCacheService mockPersonalEventCache;
 
@@ -34,7 +34,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
-      mockNostrService = MockINostrService();
+      mockNostrClient = MockNostrClient();
       mockAuthService = MockAuthService();
       mockPersonalEventCache = MockPersonalEventCacheService();
 
@@ -44,11 +44,15 @@ void main() {
         mockAuthService.currentPublicKeyHex,
       ).thenReturn(testCurrentUserPubkey);
 
-      // Default nostr service setup - return empty stream
+      // Default nostr client setup - return empty stream
       when(
-        mockNostrService.subscribeToEvents(
-          filters: anyNamed('filters'),
-          bypassLimits: anyNamed('bypassLimits'),
+        mockNostrClient.subscribe(
+          any,
+          subscriptionId: anyNamed('subscriptionId'),
+          tempRelays: anyNamed('tempRelays'),
+          targetRelays: anyNamed('targetRelays'),
+          relayTypes: anyNamed('relayTypes'),
+          sendAfterAuth: anyNamed('sendAfterAuth'),
           onEose: anyNamed('onEose'),
         ),
       ).thenAnswer((_) => const Stream<Event>.empty());
@@ -57,7 +61,7 @@ void main() {
       when(mockPersonalEventCache.isInitialized).thenReturn(false);
 
       repository = FollowRepository(
-        nostrService: mockNostrService,
+        nostrClient: mockNostrClient,
         authService: mockAuthService,
         personalEventCache: mockPersonalEventCache,
       );
@@ -85,7 +89,7 @@ void main() {
 
         // Recreate repository to pick up the cached data
         repository = FollowRepository(
-          nostrService: mockNostrService,
+          nostrClient: mockNostrClient,
           authService: mockAuthService,
           personalEventCache: mockPersonalEventCache,
         );
