@@ -79,4 +79,31 @@ class ClipLibraryService {
     final jsonString = json.encode(jsonList);
     await _prefs.setString(_storageKey, jsonString);
   }
+
+  /// Get all clips grouped by session ID
+  /// Returns Map<sessionId, List<SavedClip>>
+  /// Clips without sessionId are grouped under 'ungrouped'
+  Future<Map<String, List<SavedClip>>> getClipsGroupedBySession() async {
+    final clips = await getAllClips();
+    final grouped = <String, List<SavedClip>>{};
+
+    for (final clip in clips) {
+      final key = clip.sessionId ?? 'ungrouped';
+      grouped.putIfAbsent(key, () => []);
+      grouped[key]!.add(clip);
+    }
+
+    return grouped;
+  }
+
+  /// Get clips for a specific session
+  Future<List<SavedClip>> getClipsBySession(String sessionId) async {
+    final clips = await getAllClips();
+    return clips.where((c) => c.sessionId == sessionId).toList();
+  }
+
+  /// Generate a unique session ID for grouping clips
+  static String generateSessionId() {
+    return 'session_${DateTime.now().millisecondsSinceEpoch}';
+  }
 }
