@@ -2,8 +2,9 @@
 // ABOUTME: Tests immediate local results followed by remote NIP-50 search
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/nostr_service.dart';
+import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
@@ -11,22 +12,18 @@ import '../test_setup.dart';
 
 void main() {
   group('Hybrid Search with Real Relay Integration', () {
-    late NostrKeyManager keyManager;
-    late NostrService nostrService;
+    late SecureKeyContainer keyContainer;
+    late NostrClient nostrService;
     late VideoEventService videoEventService;
     late SubscriptionManager subscriptionManager;
 
     setUp(() async {
       setupTestEnvironment();
 
-      // Initialize key manager and Nostr service
-      keyManager = NostrKeyManager();
-      await keyManager.initialize();
-
-      nostrService = NostrService(keyManager);
-      await nostrService.initialize(
-        customRelays: ['wss://staging-relay.divine.video'],
-      );
+      // Generate a test key container
+      keyContainer = SecureKeyContainer.generate();
+      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(

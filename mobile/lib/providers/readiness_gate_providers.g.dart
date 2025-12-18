@@ -48,7 +48,7 @@ final class NostrInitializationProvider
 }
 
 String _$nostrInitializationHash() =>
-    r'c2bf07fd5276b7f1749f087d5a231544aa985a54';
+    r'd3d3032e00a4972f3d9fd132fecaaf92bc085128';
 
 /// State notifier that tracks Nostr service initialization status
 /// Provides reactive updates when initialization state changes
@@ -72,16 +72,16 @@ abstract class _$NostrInitialization extends $Notifier<bool> {
   }
 }
 
-/// Provider that checks if Nostr service is fully initialized and ready for subscriptions
+/// Provider that checks if Nostr service is fully initialized and ready
 
 @ProviderFor(nostrReady)
 const nostrReadyProvider = NostrReadyProvider._();
 
-/// Provider that checks if Nostr service is fully initialized and ready for subscriptions
+/// Provider that checks if Nostr service is fully initialized and ready
 
 final class NostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  /// Provider that checks if Nostr service is fully initialized and ready for subscriptions
+  /// Provider that checks if Nostr service is fully initialized and ready
   const NostrReadyProvider._()
     : super(
         from: null,

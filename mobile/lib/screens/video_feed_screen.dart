@@ -13,13 +13,13 @@ import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/social_providers.dart' as social;
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Feed context for filtering videos
 enum FeedContext {

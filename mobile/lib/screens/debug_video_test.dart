@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class DebugVideoTestScreen extends ConsumerStatefulWidget {
   const DebugVideoTestScreen({super.key});

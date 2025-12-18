@@ -2,9 +2,9 @@
 // ABOUTME: All events go to NostrEvents table, kind-specific processing extracts to denormalized tables
 
 import 'dart:async';
+import 'package:db_client/db_client.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/database/app_database.dart';
-import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Routes incoming Nostr events to appropriate database tables

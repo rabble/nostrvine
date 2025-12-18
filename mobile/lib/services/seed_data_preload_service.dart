@@ -1,8 +1,8 @@
 // ABOUTME: Service for loading seed data into database on first launch
 // ABOUTME: Executes bundled SQL INSERT statements when database is empty
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter/services.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class SeedDataPreloadService {

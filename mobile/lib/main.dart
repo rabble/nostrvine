@@ -7,16 +7,16 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:db_client/db_client.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/migration_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/config/zendesk_config.dart';
-import 'package:openvine/database/app_database.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
@@ -359,36 +359,6 @@ Future<void> _startOpenVineApp() async {
   await Hive.initFlutter();
   StartupPerformanceService.instance.completePhase('hive_storage');
 
-  // Run Hive → Drift migration if needed
-  StartupPerformanceService.instance.startPhase('data_migration');
-  AppDatabase? migrationDb;
-  try {
-    migrationDb = AppDatabase();
-    final migrationService = MigrationService(migrationDb);
-    await migrationService.runMigrations();
-    Log.info(
-      '[MIGRATION] ✅ Data migration complete',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  } catch (e, stack) {
-    // Don't block app startup on migration failures
-    Log.error(
-      '[MIGRATION] ❌ Migration failed (non-critical): $e',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-    Log.verbose(
-      '[MIGRATION] Stack: $stack',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  } finally {
-    // Close migration database to prevent multiple instances warning
-    await migrationDb?.close();
-  }
-  StartupPerformanceService.instance.completePhase('data_migration');
-
   // Load seed data if database is empty (first install only)
   StartupPerformanceService.instance.startPhase('seed_data_preload');
   AppDatabase? seedDb;
@@ -539,8 +509,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         category: LogCategory.system,
       );
 
-      // Initialize Nostr service - THIS IS THE CRITICAL MISSING PIECE
       await ref.read(nostrServiceProvider).initialize();
+      ref.read(nostrInitializationProvider.notifier).markInitialized();
+
       Log.info(
         '[INIT] ✅ NostrService initialized',
         name: 'Main',

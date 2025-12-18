@@ -41,7 +41,7 @@ class AppConfig {
   static const String appName = 'divine';
   static const String appVersion = '1.0.0';
 
-  // External relay configuration DELETED - using embedded relay only
+  // Relay configuration handled by NostrClient
 
   // Debugging
   static bool get enableDebugLogs => isDevelopment;

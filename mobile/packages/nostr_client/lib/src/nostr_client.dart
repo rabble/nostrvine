@@ -455,6 +455,7 @@ class NostrClient {
       targetRelays: targetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      onEose: onEose,
     );
 
     // If nostr_sdk generated a different ID, update our mapping
@@ -478,8 +479,14 @@ class NostrClient {
   }
 
   /// Closes all subscriptions
-  void closeAllSubscriptions() {
-    _subscriptionStreams.keys.toList().forEach(unsubscribe);
+  ///
+  /// Properly awaits each subscription's stream controller closure to ensure
+  /// all resources are cleaned up before returning.
+  Future<void> closeAllSubscriptions() async {
+    final subscriptionIds = _subscriptionStreams.keys.toList();
+    for (final id in subscriptionIds) {
+      await unsubscribe(id);
+    }
   }
 
   /// Adds a relay connection
@@ -755,7 +762,7 @@ class NostrClient {
   /// Closes all subscriptions, disconnects from relays, and cleans up
   /// internal state. After calling this, the client should not be used.
   Future<void> dispose() async {
-    closeAllSubscriptions();
+    await closeAllSubscriptions();
     await _relayManager.dispose();
     _nostr.close();
     _subscriptionFilters.clear();

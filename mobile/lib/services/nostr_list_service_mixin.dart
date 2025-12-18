@@ -1,17 +1,17 @@
-// ABOUTME: Universal mixin for loading all published events from embedded relay
+// ABOUTME: Universal mixin for loading all published events from relay
 // ABOUTME: Provides cached access to user's own published events for all list services
 
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_service_interface.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr;
 
 // Import Event from nostr_sdk
 typedef Event = nostr.Event;
 
-/// Mixin that provides universal access to user's published events from embedded relay
+/// Mixin that provides universal access to user's published events from relay
 ///
-/// This mixin fetches ALL events published by the current user from the embedded relay
+/// This mixin fetches ALL events published by the current user from the relay
 /// with a single query, then caches them for use by multiple list services (bookmarks,
 /// mutes, curated lists, etc.). This is much more efficient than each service making
 /// separate queries for specific event kinds.
@@ -22,10 +22,10 @@ mixin NostrListServiceMixin {
   static DateTime? _lastCacheTime;
 
   // Services must provide these dependencies
-  INostrService get nostrService;
+  NostrClient get nostrService;
   AuthService get authService;
 
-  /// Get all events published by the current user from embedded relay
+  /// Get all events published by the current user from relay
   ///
   /// This method fetches ALL events we've ever published with a single query:
   /// Filter(authors: [ourPubkey])
@@ -61,14 +61,14 @@ mixin NostrListServiceMixin {
       }
 
       Log.info(
-        'Fetching all published events from embedded relay for pubkey: ${ourPubkey}...',
+        'Fetching all published events from relay for pubkey: ${ourPubkey}...',
         name: 'NostrListServiceMixin',
         category: LogCategory.system,
       );
 
-      // Query embedded relay for ALL our published events
+      // Query relay for ALL our published events
       final filter = nostr.Filter(authors: [ourPubkey]);
-      final events = await nostrService.getEvents(filters: [filter]);
+      final events = await nostrService.queryEvents([filter]);
 
       // Cache the results
       _cachedMyEvents = events;
@@ -76,7 +76,7 @@ mixin NostrListServiceMixin {
       _lastCacheTime = now;
 
       Log.info(
-        'Loaded ${events.length} published events from embedded relay',
+        'Loaded ${events.length} published events from relay',
         name: 'NostrListServiceMixin',
         category: LogCategory.system,
       );
@@ -84,7 +84,7 @@ mixin NostrListServiceMixin {
       return events;
     } catch (e) {
       Log.error(
-        'Failed to load published events from embedded relay: $e',
+        'Failed to load published events from relay: $e',
         name: 'NostrListServiceMixin',
         category: LogCategory.system,
       );

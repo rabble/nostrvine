@@ -1237,17 +1237,17 @@ final class UserDataCleanupServiceProvider
 String _$userDataCleanupServiceHash() =>
     r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// Core Nostr service via NostrClient for relay communication
 
 @ProviderFor(nostrService)
 const nostrServiceProvider = NostrServiceProvider._();
 
-/// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+/// Core Nostr service via NostrClient for relay communication
 
 final class NostrServiceProvider
-    extends $FunctionalProvider<INostrService, INostrService, INostrService>
-    with $Provider<INostrService> {
-  /// Core Nostr service with platform-aware embedded relay functionality and P2P capabilities
+    extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
+    with $Provider<NostrClient> {
+  /// Core Nostr service via NostrClient for relay communication
   const NostrServiceProvider._()
     : super(
         from: null,
@@ -1264,24 +1264,24 @@ final class NostrServiceProvider
 
   @$internal
   @override
-  $ProviderElement<INostrService> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<NostrClient> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  INostrService create(Ref ref) {
+  NostrClient create(Ref ref) {
     return nostrService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(INostrService value) {
+  Override overrideWithValue(NostrClient value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<INostrService>(value),
+      providerOverride: $SyncValueProvider<NostrClient>(value),
     );
   }
 }
 
-String _$nostrServiceHash() => r'e83bb74d0adf803fa7119aa120a3572dc5d6b1ec';
+String _$nostrServiceHash() => r'b6baa3f243c7869bde6c729a4c0a87ba305f351e';
 
 /// Subscription manager for centralized subscription management
 
@@ -1745,12 +1745,10 @@ String _$mediaAuthInterceptorHash() =>
     r'adae18db875674843f6ced55608bb65a5ef7f445';
 
 /// Blossom upload service (uses user-configured Blossom server)
-/// Blossom upload service (uses user-configured Blossom server)
 
 @ProviderFor(blossomUploadService)
 const blossomUploadServiceProvider = BlossomUploadServiceProvider._();
 
-/// Blossom upload service (uses user-configured Blossom server)
 /// Blossom upload service (uses user-configured Blossom server)
 
 final class BlossomUploadServiceProvider
@@ -1761,7 +1759,6 @@ final class BlossomUploadServiceProvider
           BlossomUploadService
         >
     with $Provider<BlossomUploadService> {
-  /// Blossom upload service (uses user-configured Blossom server)
   /// Blossom upload service (uses user-configured Blossom server)
   const BlossomUploadServiceProvider._()
     : super(
@@ -1798,7 +1795,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'd57fa3ec36057b410664e0da59b8067e68bebade';
+    r'e5fedc7e9f4a91ea5dcbb1c607b5fa5008b589ba';
 
 /// Upload manager uses only Blossom upload service
 
@@ -2037,7 +2034,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'7780155fc9c4c9eeee848c008400349f6075aded';
+    r'9b7b6a7f878adbc5cb38e3584c2ac444e9488cb8';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2321,7 +2318,7 @@ final class ContentDeletionServiceProvider
 }
 
 String _$contentDeletionServiceHash() =>
-    r'7421e7b16a33959dd2cce177c3f54272352dc721';
+    r'8f8bec86fb2c60f058460e18a5df815263f86638';
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 
@@ -2374,7 +2371,7 @@ final class AccountDeletionServiceProvider
 }
 
 String _$accountDeletionServiceHash() =>
-    r'659c0ee712559ba34e462dc9b236c40c80651240';
+    r'1c48ec2012838ad7a6611f430dc5a24f44cc1dab';
 
 /// Broken video tracker service for filtering non-functional videos
 
