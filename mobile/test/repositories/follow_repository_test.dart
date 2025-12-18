@@ -50,8 +50,9 @@ void main() {
 
       // Default auth setup
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex)
-          .thenReturn(testCurrentUserPubkey);
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(testCurrentUserPubkey);
 
       // Default nostr client setup - return empty stream
       when(
@@ -207,8 +208,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
@@ -240,8 +242,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
@@ -312,8 +315,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
@@ -353,8 +357,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
@@ -405,8 +410,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
 
@@ -451,8 +457,9 @@ void main() {
           ),
         );
 
-        when(() => mockPersonalEventCache.cacheUserEvent(any()))
-            .thenReturn(null);
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
 
         await repository.initialize();
 
