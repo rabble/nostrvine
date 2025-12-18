@@ -39,12 +39,7 @@ import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
-<<<<<<< HEAD
 import 'package:openvine/services/nip17_message_service.dart';
-=======
-import 'package:openvine/repositories/username_repository.dart';
-import 'package:openvine/repositories/reserved_username_request_repository.dart';
->>>>>>> c9bc0825 (feat(username): add reserved username request state, repository, and notifier)
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
