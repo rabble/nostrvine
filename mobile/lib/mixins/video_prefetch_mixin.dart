@@ -162,7 +162,6 @@ mixin VideoPrefetchMixin {
     final startIndex = (currentIndex - preInitBefore).clamp(0, videos.length);
     final endIndex = (currentIndex + preInitAfter + 1).clamp(0, videos.length);
 
-    var count = 0;
     for (int i = startIndex; i < endIndex; i++) {
       // Skip current video (it's already being initialized by its widget)
       if (i == currentIndex) continue;
@@ -182,15 +181,6 @@ mixin VideoPrefetchMixin {
       // Reading the provider triggers controller creation + initialize()
       // The controller will stay alive due to keepAlive() + 5-min cache
       ref.read(individualVideoControllerProvider(params));
-      count++;
-    }
-
-    if (count > 0) {
-      Log.info(
-        '🎬 Pre-initializing $count adjacent controllers around index $currentIndex',
-        name: 'VideoPrefetchMixin',
-        category: LogCategory.video,
-      );
     }
   }
 }
