@@ -164,7 +164,7 @@ class HomeFeed extends _$HomeFeed {
         hasMoreContent: false,
         isLoadingMore: false,
         error: null,
-        lastUpdated: null,
+        lastUpdated: DateTime.now(),
       );
     }
 
