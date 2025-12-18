@@ -4,8 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -13,15 +12,21 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([NostrClient, AuthService, PersonalEventCacheService])
-import 'follow_repository_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockPersonalEventCacheService extends Mock
+    implements PersonalEventCacheService {}
+
+class _MockEvent extends Mock implements Event {}
 
 void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
-    late MockNostrClient mockNostrClient;
-    late MockAuthService mockAuthService;
-    late MockPersonalEventCacheService mockPersonalEventCache;
+    late _MockNostrClient mockNostrClient;
+    late _MockAuthService mockAuthService;
+    late _MockPersonalEventCacheService mockPersonalEventCache;
 
     // Valid 64-character hex pubkeys for testing
     const testCurrentUserPubkey =
@@ -31,34 +36,38 @@ void main() {
     const testTargetPubkey2 =
         'c3d4e5f6789012345678901234567890abcdef123456789012345678901234ab12';
 
+    setUpAll(() {
+      registerFallbackValue(_MockEvent());
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
-      mockNostrClient = MockNostrClient();
-      mockAuthService = MockAuthService();
-      mockPersonalEventCache = MockPersonalEventCacheService();
+      mockNostrClient = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+      mockPersonalEventCache = _MockPersonalEventCacheService();
 
       // Default auth setup
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(
-        mockAuthService.currentPublicKeyHex,
-      ).thenReturn(testCurrentUserPubkey);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex)
+          .thenReturn(testCurrentUserPubkey);
 
       // Default nostr client setup - return empty stream
       when(
-        mockNostrClient.subscribe(
-          any,
-          subscriptionId: anyNamed('subscriptionId'),
-          tempRelays: anyNamed('tempRelays'),
-          targetRelays: anyNamed('targetRelays'),
-          relayTypes: anyNamed('relayTypes'),
-          sendAfterAuth: anyNamed('sendAfterAuth'),
-          onEose: anyNamed('onEose'),
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
         ),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Default personal event cache setup
-      when(mockPersonalEventCache.isInitialized).thenReturn(false);
+      when(() => mockPersonalEventCache.isInitialized).thenReturn(false);
 
       repository = FollowRepository(
         nostrClient: mockNostrClient,
@@ -111,14 +120,14 @@ void main() {
 
         // Verify subscribe was only called once during first init
         verify(
-          mockNostrClient.subscribe(
-            any,
-            subscriptionId: anyNamed('subscriptionId'),
-            tempRelays: anyNamed('tempRelays'),
-            targetRelays: anyNamed('targetRelays'),
-            relayTypes: anyNamed('relayTypes'),
-            sendAfterAuth: anyNamed('sendAfterAuth'),
-            onEose: anyNamed('onEose'),
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).called(1);
       });
@@ -144,7 +153,7 @@ void main() {
 
     group('follow', () {
       test('throws when not authenticated', () async {
-        when(mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
         await repository.initialize();
 
@@ -176,27 +185,19 @@ void main() {
       });
 
       test('successfully follows a user', () async {
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': [
-            ['p', testTargetPubkey],
-          ],
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -205,6 +206,10 @@ void main() {
             errors: {},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
+
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
         await repository.follow(testTargetPubkey);
@@ -213,27 +218,19 @@ void main() {
       });
 
       test('rolls back on broadcast failure', () async {
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': [
-            ['p', testTargetPubkey],
-          ],
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 0,
@@ -242,6 +239,9 @@ void main() {
             errors: {'relay1': 'Connection failed'},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
@@ -263,7 +263,7 @@ void main() {
 
     group('unfollow', () {
       test('throws when not authenticated', () async {
-        when(mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
         await repository.initialize();
 
@@ -290,25 +290,19 @@ void main() {
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': <List<String>>[], // Empty tags after unfollow
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -317,6 +311,9 @@ void main() {
             errors: {},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
@@ -334,25 +331,19 @@ void main() {
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': <List<String>>[],
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 0,
@@ -361,6 +352,9 @@ void main() {
             errors: {'relay1': 'Connection failed'},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
@@ -389,27 +383,19 @@ void main() {
       });
 
       test('emits updated list when follow succeeds', () async {
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': [
-            ['p', testTargetPubkey],
-          ],
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -418,6 +404,9 @@ void main() {
             errors: {},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
 
         await repository.initialize();
 
@@ -440,25 +429,19 @@ void main() {
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
-        final mockEvent = Event.fromJson({
-          'id': testCurrentUserPubkey,
-          'pubkey': testCurrentUserPubkey,
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 3,
-          'tags': <List<String>>[],
-          'content': '',
-          'sig': '${testCurrentUserPubkey}${testCurrentUserPubkey}',
-        });
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(mockNostrClient.broadcast(any)).thenAnswer(
+        when(() => mockNostrClient.broadcast(any())).thenAnswer(
           (_) async => NostrBroadcastResult(
             event: mockEvent,
             successCount: 1,
@@ -467,6 +450,9 @@ void main() {
             errors: {},
           ),
         );
+
+        when(() => mockPersonalEventCache.cacheUserEvent(any()))
+            .thenReturn(null);
 
         await repository.initialize();
 
