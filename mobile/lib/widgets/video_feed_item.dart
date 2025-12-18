@@ -1519,59 +1519,11 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
 
                   // Edit button (only show for owned videos when feature is enabled)
-                  _buildEditButton(context, ref, video),
+                  _VideoEditButton(video: video),
                 ],
               ),
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  /// Build edit button if video is owned by current user and feature flag is enabled
-  Widget _buildEditButton(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-  ) {
-    // Check feature flag
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
-
-    if (!isEditorEnabled) {
-      return const SizedBox.shrink();
-    }
-
-    // Check ownership
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    final isOwnVideo =
-        currentUserPubkey != null && currentUserPubkey == video.pubkey;
-
-    if (!isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    // Show edit button
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        IconButton(
-          onPressed: () {
-            Log.info(
-              '✏️ Edit button tapped for ${video.id}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-
-            // Show edit dialog directly (works on all platforms)
-            showEditDialogForVideo(context, video);
-          },
-          tooltip: 'Edit video',
-          icon: const Icon(Icons.edit, color: Colors.white, size: 32),
         ),
       ],
     );
@@ -1673,5 +1625,63 @@ class VideoOverlayActions extends ConsumerWidget {
         }
       }
     }
+  }
+}
+
+/// Edit button shown only for owned videos when feature flag is enabled.
+///
+/// This widget checks:
+/// 1. Feature flag `enableVideoEditorV1` is enabled
+/// 2. Current user owns the video
+///
+/// If both conditions are met, displays an edit button that opens the
+/// video edit dialog.
+class _VideoEditButton extends ConsumerWidget {
+  const _VideoEditButton({required this.video});
+
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check feature flag
+    final featureFlagService = ref.watch(featureFlagServiceProvider);
+    final isEditorEnabled = featureFlagService.isEnabled(
+      FeatureFlag.enableVideoEditorV1,
+    );
+
+    if (!isEditorEnabled) {
+      return const SizedBox.shrink();
+    }
+
+    // Check ownership
+    final authService = ref.watch(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    final isOwnVideo =
+        currentUserPubkey != null && currentUserPubkey == video.pubkey;
+
+    if (!isOwnVideo) {
+      return const SizedBox.shrink();
+    }
+
+    // Show edit button
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        IconButton(
+          onPressed: () {
+            Log.info(
+              '✏️ Edit button tapped for ${video.id}',
+              name: 'VideoFeedItem',
+              category: LogCategory.ui,
+            );
+
+            // Show edit dialog directly (works on all platforms)
+            showEditDialogForVideo(context, video);
+          },
+          tooltip: 'Edit video',
+          icon: const Icon(Icons.edit, color: Colors.white, size: 32),
+        ),
+      ],
+    );
   }
 }
