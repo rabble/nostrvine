@@ -7,6 +7,34 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'follow_state_provider.g.dart';
 
+/// Stream provider for current user's following list (reactive)
+/// Widgets should watch this to rebuild when following state changes
+@Riverpod(keepAlive: true)
+Stream<List<String>> followingList(Ref ref) async* {
+  final repository = ref.watch(followRepositoryProvider);
+
+  // Emit current state immediately
+  yield repository.followingPubkeys;
+
+  // Yield updates from repository stream
+  yield* repository.followingStream;
+}
+
+/// Family provider to check if current user is following a specific pubkey
+/// This is reactive - listens to repository's followingStream for updates
+@riverpod
+Stream<bool> isFollowing(Ref ref, String pubkey) async* {
+  final repository = ref.read(followRepositoryProvider);
+
+  // Emit current state immediately
+  yield repository.isFollowing(pubkey);
+
+  // Yield updates when following list changes
+  await for (final followingList in repository.followingStream) {
+    yield followingList.contains(pubkey);
+  }
+}
+
 /// Notifier for managing follow state and operations
 /// - Checks if current user is following a pubkey
 /// - Tracks which pubkeys have active follow/unfollow operations
@@ -15,12 +43,6 @@ part 'follow_state_provider.g.dart';
 class FollowOperations extends _$FollowOperations {
   @override
   Set<String> build() => {};
-
-  /// Check if current user is following a specific pubkey
-  bool isFollowing(String pubkey) {
-    final repository = ref.read(followRepositoryProvider);
-    return repository.isFollowing(pubkey);
-  }
 
   /// Check if a follow operation is in progress for a pubkey
   bool isInProgress(String pubkey) => state.contains(pubkey);

@@ -905,9 +905,12 @@ class VideoOverlayActions extends ConsumerWidget {
               final currentUserPubkey = authService.currentPublicKeyHex;
               final isOwnVideo = currentUserPubkey == video.pubkey;
 
-              final followOps = ref.watch(followOperationsProvider.notifier);
-              final isFollowing = followOps.isFollowing(video.pubkey);
-              final isFollowInProgress = followOps.isInProgress(video.pubkey);
+              // Watch in-progress set for loading state updates
+              final inProgressSet = ref.watch(followOperationsProvider);
+              final isFollowInProgress = inProgressSet.contains(video.pubkey);
+              // Watch reactive isFollowing stream provider for follow state updates
+              final isFollowingAsync = ref.watch(isFollowingProvider(video.pubkey));
+              final isFollowing = isFollowingAsync.asData?.value ?? false;
 
               return Row(
                 mainAxisSize: MainAxisSize.min,
