@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/exceptions/auth_exceptions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -34,7 +33,8 @@ class FollowingListNotifier extends _$FollowingListNotifier {
       // Inject repository for current user operations
       final repository = ref.watch(followRepositoryProvider);
       if (repository == null) {
-        throw const NotAuthenticatedException();
+        // Not authenticated - return empty list
+        return [];
       }
       _repository = repository;
       return _loadCurrentUserFollowing();
@@ -135,7 +135,9 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   final repository = ref.watch(followRepositoryProvider);
   if (repository == null) {
-    throw const NotAuthenticatedException();
+    // Not authenticated - emit empty list
+    yield [];
+    return;
   }
 
   // Emit current state immediately

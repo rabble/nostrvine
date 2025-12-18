@@ -454,9 +454,11 @@ SocialService socialService(Ref ref) {
 @Riverpod(keepAlive: true)
 FollowRepository? followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  // Watch nostrReadyProvider to rebuild when NostrClient finishes initialization
+  final isNostrReady = ref.watch(nostrReadyProvider);
 
-  // Repository requires authentication (user must have keys)
-  if (!nostrClient.hasKeys) {
+  // Repository requires authentication (user must have keys) and NostrClient must be initialized
+  if (!isNostrReady || !nostrClient.hasKeys) {
     return null;
   }
 

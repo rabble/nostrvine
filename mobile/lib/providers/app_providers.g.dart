@@ -1604,7 +1604,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'5a0d57c56192a481600775bbade90ecd8359f03a';
+String _$followRepositoryHash() => r'8a2ff389ab969a44c22b5825bfd66b7cc9f806ca';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

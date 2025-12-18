@@ -1,7 +1,6 @@
 // ABOUTME: Provider for managing follow state and operations
 // ABOUTME: Uses FollowRepository as source of truth, tracks in-progress operations
 
-import 'package:openvine/exceptions/auth_exceptions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -14,7 +13,9 @@ part 'follow_state_provider.g.dart';
 Stream<List<String>> followingList(Ref ref) async* {
   final repository = ref.watch(followRepositoryProvider);
   if (repository == null) {
-    throw const NotAuthenticatedException();
+    // Not authenticated - emit empty list
+    yield [];
+    return;
   }
 
   // Emit current state immediately
@@ -28,9 +29,11 @@ Stream<List<String>> followingList(Ref ref) async* {
 /// This is reactive - listens to repository's followingStream for updates
 @riverpod
 Stream<bool> isFollowing(Ref ref, String pubkey) async* {
-  final repository = ref.read(followRepositoryProvider);
+  final repository = ref.watch(followRepositoryProvider);
   if (repository == null) {
-    throw const NotAuthenticatedException();
+    // Not authenticated - emit false (not following)
+    yield false;
+    return;
   }
 
   // Emit current state immediately
@@ -47,34 +50,33 @@ Stream<bool> isFollowing(Ref ref, String pubkey) async* {
 /// - Tracks which pubkeys have active follow/unfollow operations
 /// - Provides follow/unfollow/toggle actions
 ///
-/// Requires authentication - throws [NotAuthenticatedException] if repository
-/// is not available.
+/// Returns empty set and no-ops when not authenticated.
 @Riverpod(keepAlive: true)
 class FollowOperations extends _$FollowOperations {
-  late final FollowRepository _repository;
-
   @override
   Set<String> build() {
-    final repository = ref.watch(followRepositoryProvider);
-    if (repository == null) {
-      throw const NotAuthenticatedException();
-    }
-    _repository = repository;
+    // Watch repository to rebuild when it becomes available
+    ref.watch(followRepositoryProvider);
+    // Return empty set - this tracks in-progress operations only
     return {};
   }
+
+  /// Get the current repository (reads fresh value each time)
+  FollowRepository? get _repository => ref.read(followRepositoryProvider);
 
   /// Check if a follow operation is in progress for a pubkey
   bool isInProgress(String pubkey) => state.contains(pubkey);
 
   /// Follow a user via FollowRepository
   Future<void> follow(String pubkey) async {
-    if (state.contains(pubkey)) return;
+    final repository = _repository;
+    if (repository == null || state.contains(pubkey)) return;
 
     // Mark operation as in progress
     state = {...state, pubkey};
 
     try {
-      await _repository.follow(pubkey);
+      await repository.follow(pubkey);
 
       Log.info(
         'Followed user via repository: $pubkey',
@@ -89,13 +91,14 @@ class FollowOperations extends _$FollowOperations {
 
   /// Unfollow a user via FollowRepository
   Future<void> unfollow(String pubkey) async {
-    if (state.contains(pubkey)) return;
+    final repository = _repository;
+    if (repository == null || state.contains(pubkey)) return;
 
     // Mark operation as in progress
     state = {...state, pubkey};
 
     try {
-      await _repository.unfollow(pubkey);
+      await repository.unfollow(pubkey);
 
       Log.info(
         'Unfollowed user via repository: $pubkey',
@@ -110,7 +113,10 @@ class FollowOperations extends _$FollowOperations {
 
   /// Toggle follow state for a user
   Future<void> toggle(String pubkey) async {
-    if (_repository.isFollowing(pubkey)) {
+    final repository = _repository;
+    if (repository == null) return;
+
+    if (repository.isFollowing(pubkey)) {
       await unfollow(pubkey);
     } else {
       await follow(pubkey);
