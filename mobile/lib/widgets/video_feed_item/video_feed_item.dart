@@ -591,9 +591,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // PERFORMANCE FIX: Always watch controller to enable preloading
-            // This ensures adjacent videos have their controllers initialized
-            // so first frames are visible during swipe transitions
+            // Always watch controller to enable preloading
             Consumer(
               builder: (context, ref, child) {
                 final controller = ref.watch(
@@ -649,9 +647,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                           fit: BoxFit.contain,
                           alignment: Alignment.topCenter,
                           child: SizedBox(
-                            width: value.size.width == 0
-                                ? 1
-                                : value.size.width,
+                            width: value.size.width == 0 ? 1 : value.size.width,
                             height: value.size.height == 0
                                 ? 1
                                 : value.size.height,

@@ -279,8 +279,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   // Prefetch videos around current index
                   checkForPrefetch(currentIndex: newIndex, videos: videos);
 
-                  // CRITICAL: Pre-initialize controllers for adjacent videos
-                  // This ensures controllers are ready BEFORE user swipes to them
+                  // Pre-initialize controllers for adjacent videos
                   preInitializeControllers(
                     ref: ref,
                     currentIndex: newIndex,

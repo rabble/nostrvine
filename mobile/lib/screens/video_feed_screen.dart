@@ -281,9 +281,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
 
     preInitializeControllers(ref: ref, currentIndex: index, videos: videos);
 
-    // PERFORMANCE FIX: Defer heavy operations to after the frame renders
-    // This prevents profile fetching and prefetching from competing with
-    // video initialization during swipe transitions
+    // Defer heavy operations to after the frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
@@ -573,8 +571,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       category: LogCategory.ui,
     );
 
-    // Pre-initialize controllers for first few videos on initial build
-    // This starts initialization before user even starts swiping
+    // Pre-initialize controllers on initial build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       preInitializeControllers(

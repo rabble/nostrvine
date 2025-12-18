@@ -333,7 +333,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   // Prefetch videos around current index
                   checkForPrefetch(currentIndex: newIndex, videos: videos);
 
-                  // CRITICAL: Pre-initialize controllers for adjacent videos
+                  // Pre-initialize controllers for adjacent videos
                   preInitializeControllers(
                     ref: ref,
                     currentIndex: newIndex,
