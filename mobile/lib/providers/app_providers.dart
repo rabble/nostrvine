@@ -453,19 +453,17 @@ SocialService socialService(Ref ref) {
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
 FollowRepository? followRepository(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
 
-  // Repository requires authentication
-  if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
+  // Repository requires authentication (user must have keys)
+  if (!nostrClient.hasKeys) {
     return null;
   }
 
-  final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
     nostrClient: nostrClient,
-    authService: authService,
     personalEventCache: personalEventCache,
   );
 

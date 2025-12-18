@@ -8,53 +8,49 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
-
-class _MockAuthService extends Mock implements AuthService {}
 
 class _MockPersonalEventCacheService extends Mock
     implements PersonalEventCacheService {}
 
 class _MockEvent extends Mock implements Event {}
 
+class _FakeContactList extends Fake implements ContactList {}
+
 void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
     late _MockNostrClient mockNostrClient;
-    late _MockAuthService mockAuthService;
     late _MockPersonalEventCacheService mockPersonalEventCache;
 
     // Valid 64-character hex pubkeys for testing
     const testCurrentUserPubkey =
-        'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+        'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
     const testTargetPubkey =
-        'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1';
+        'b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012a1';
     const testTargetPubkey2 =
-        'c3d4e5f6789012345678901234567890abcdef123456789012345678901234ab12';
+        'c3d4e5f6789012345678901234567890abcdef1234567890123456789012ab12';
 
     setUpAll(() {
       registerFallbackValue(_MockEvent());
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(_FakeContactList());
     });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
       mockNostrClient = _MockNostrClient();
-      mockAuthService = _MockAuthService();
       mockPersonalEventCache = _MockPersonalEventCacheService();
 
-      // Default auth setup
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(
-        () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn(testCurrentUserPubkey);
+      // Default nostr client setup
+      when(() => mockNostrClient.hasKeys).thenReturn(true);
+      when(() => mockNostrClient.publicKey).thenReturn(testCurrentUserPubkey);
 
-      // Default nostr client setup - return empty stream
+      // Default nostr client subscribe - return empty stream
       when(
         () => mockNostrClient.subscribe(
           any(),
@@ -72,7 +68,6 @@ void main() {
 
       repository = FollowRepository(
         nostrClient: mockNostrClient,
-        authService: mockAuthService,
         personalEventCache: mockPersonalEventCache,
       );
     });
@@ -100,7 +95,6 @@ void main() {
         // Recreate repository to pick up the cached data
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          authService: mockAuthService,
           personalEventCache: mockPersonalEventCache,
         );
 
@@ -154,7 +148,7 @@ void main() {
 
     group('follow', () {
       test('throws when not authenticated', () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
 
         await repository.initialize();
 
@@ -191,22 +185,13 @@ void main() {
         when(() => mockEvent.content).thenReturn('');
 
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
 
         when(
           () => mockPersonalEventCache.cacheUserEvent(any()),
@@ -220,31 +205,14 @@ void main() {
       });
 
       test('rolls back on broadcast failure', () async {
-        final mockEvent = _MockEvent();
-        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
-        when(() => mockEvent.content).thenReturn('');
-
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: {'relay1': false},
-            errors: {'relay1': 'Connection failed'},
-          ),
-        );
-
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
+        ).thenAnswer((_) async => null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
@@ -266,7 +234,7 @@ void main() {
 
     group('unfollow', () {
       test('throws when not authenticated', () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
 
         await repository.initialize();
 
@@ -298,22 +266,13 @@ void main() {
         when(() => mockEvent.content).thenReturn('');
 
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
 
         when(
           () => mockPersonalEventCache.cacheUserEvent(any()),
@@ -335,31 +294,14 @@ void main() {
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
-        final mockEvent = _MockEvent();
-        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
-        when(() => mockEvent.content).thenReturn('');
-
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: {'relay1': false},
-            errors: {'relay1': 'Connection failed'},
-          ),
-        );
-
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
+        ).thenAnswer((_) async => null);
 
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
@@ -393,22 +335,13 @@ void main() {
         when(() => mockEvent.content).thenReturn('');
 
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
 
         when(
           () => mockPersonalEventCache.cacheUserEvent(any()),
@@ -440,22 +373,13 @@ void main() {
         when(() => mockEvent.content).thenReturn('');
 
         when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-
-        when(() => mockNostrClient.broadcast(any())).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
 
         when(
           () => mockPersonalEventCache.cacheUserEvent(any()),
