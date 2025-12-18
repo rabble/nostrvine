@@ -54,7 +54,7 @@ class UserProfileChip extends ConsumerWidget {
               name: 'UserProfileChip',
               category: LogCategory.ui,
             );
-            context.goProfileGrid(pubkey);
+            context.pushProfileGrid(pubkey);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

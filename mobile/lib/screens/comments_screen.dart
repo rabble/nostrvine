@@ -320,7 +320,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                             GestureDetector(
                               onTap: () {
                                 // Navigate to profile screen
-                                context.goProfileGrid(comment.authorPubkey);
+                                context.pushProfileGrid(comment.authorPubkey);
                               },
                               child: profile == null
                                   ? Text('Unknown', style: style)

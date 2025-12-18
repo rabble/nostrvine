@@ -931,7 +931,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         name: 'VideoFeedItem',
                         category: LogCategory.ui,
                       );
-                      context.goProfileGrid(video.pubkey);
+                      context.pushProfileGrid(video.pubkey);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(

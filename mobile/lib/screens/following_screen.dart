@@ -160,6 +160,6 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen>
   }
 
   void _navigateToProfile(String pubkey) {
-    context.goProfile(pubkey, 0);
+    context.pushProfile(pubkey, 0);
   }
 }
