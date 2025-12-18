@@ -1,5 +1,5 @@
 // ABOUTME: Data model for a saved video clip in the clip library
-// ABOUTME: Supports JSON serialization, thumbnails, and display formatting
+// ABOUTME: Supports JSON serialization, thumbnails, session grouping, and display formatting
 
 class SavedClip {
   const SavedClip({
@@ -9,6 +9,7 @@ class SavedClip {
     required this.duration,
     required this.createdAt,
     required this.aspectRatio,
+    this.sessionId,
   });
 
   final String id;
@@ -17,6 +18,7 @@ class SavedClip {
   final Duration duration;
   final DateTime createdAt;
   final String aspectRatio;
+  final String? sessionId;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -40,6 +42,7 @@ class SavedClip {
     Duration? duration,
     DateTime? createdAt,
     String? aspectRatio,
+    String? sessionId,
   }) {
     return SavedClip(
       id: id ?? this.id,
@@ -48,6 +51,7 @@ class SavedClip {
       duration: duration ?? this.duration,
       createdAt: createdAt ?? this.createdAt,
       aspectRatio: aspectRatio ?? this.aspectRatio,
+      sessionId: sessionId ?? this.sessionId,
     );
   }
 
@@ -59,6 +63,7 @@ class SavedClip {
       'durationMs': duration.inMilliseconds,
       'createdAt': createdAt.toIso8601String(),
       'aspectRatio': aspectRatio,
+      'sessionId': sessionId,
     };
   }
 
@@ -70,11 +75,12 @@ class SavedClip {
       duration: Duration(milliseconds: json['durationMs'] as int),
       createdAt: DateTime.parse(json['createdAt'] as String),
       aspectRatio: json['aspectRatio'] as String,
+      sessionId: json['sessionId'] as String?,
     );
   }
 
   @override
   String toString() {
-    return 'SavedClip(id: $id, duration: ${durationInSeconds}s, aspectRatio: $aspectRatio)';
+    return 'SavedClip(id: $id, duration: ${durationInSeconds}s, aspectRatio: $aspectRatio, sessionId: $sessionId)';
   }
 }
