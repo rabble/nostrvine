@@ -14,7 +14,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:openvine/models/user_profile.dart' as profile_model;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/username_notifier.dart';
+import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -76,7 +79,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
               // Extract username from NIP-05 if present
               if (profile.nip05 != null &&
-                  profile.nip05!.endsWith('@openvine.co')) {
+                  (profile.nip05!.endsWith('@divine.video') ||
+                      profile.nip05!.endsWith('@openvine.co'))) {
                 final username = profile.nip05!.split('@')[0];
                 _nip05Controller.text = username;
               }
@@ -141,24 +145,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // /edit-profile and /setup-profile are standalone routes outside the ShellRoute
-    // They should ALWAYS show their own AppBar
-    print('🟪 PROFILE_SETUP DEBUG: build called');
-    print('🟪 PROFILE_SETUP DEBUG: isNewUser = ${widget.isNewUser}');
-
-    // Debug navigation state
-    final navigator = Navigator.of(context);
-    final canPop = navigator.canPop();
-    print('🟪 PROFILE_SETUP DEBUG: Navigator.canPop = $canPop');
-
-    // Debug modal route
-    final route = ModalRoute.of(context);
-    print('🟪 PROFILE_SETUP DEBUG: ModalRoute.isFirst = ${route?.isFirst}');
-    print('🟪 PROFILE_SETUP DEBUG: ModalRoute.isCurrent = ${route?.isCurrent}');
-    print('🟪 PROFILE_SETUP DEBUG: ModalRoute.isActive = ${route?.isActive}');
-    print(
-      '🟪 PROFILE_SETUP DEBUG: ModalRoute.settings.name = ${route?.settings.name}',
-    );
+    // Watch username controller state for reactive updates
+    final usernameState = ref.watch(usernameProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -329,103 +317,78 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // NIP-05 Username (optional) - HIDDEN until @divine.video is ready
-                        // TODO: Re-enable when @divine.video NIP-05 service is available
-                        // TextFormField(
-                        //   controller: _nip05Controller,
-                        //   style: const TextStyle(color: Colors.white),
-                        //   decoration: InputDecoration(
-                        //     labelText: 'Username (Optional)',
-                        //     labelStyle: const TextStyle(color: Colors.grey),
-                        //     hintText: 'username',
-                        //     hintStyle: TextStyle(color: Colors.grey[600]),
-                        //     filled: true,
-                        //     fillColor: Colors.grey[900],
-                        //     border: OutlineInputBorder(
-                        //       borderRadius: BorderRadius.circular(12),
-                        //       borderSide: BorderSide.none,
-                        //     ),
-                        //     enabledBorder: OutlineInputBorder(
-                        //       borderRadius: BorderRadius.circular(12),
-                        //       borderSide:
-                        //           BorderSide(color: Colors.grey[700]!, width: 1),
-                        //     ),
-                        //     focusedBorder: OutlineInputBorder(
-                        //       borderRadius: BorderRadius.circular(12),
-                        //       borderSide: const BorderSide(
-                        //           color: VineTheme.vineGreen, width: 2),
-                        //     ),
-                        //     prefixIcon: const Icon(Icons.verified_user,
-                        //         color: Colors.grey),
-                        //     suffixText: '@divine.video',
-                        //     suffixStyle: TextStyle(color: Colors.grey[500]),
-                        //     errorMaxLines: 2,
-                        //   ),
-                        //   textInputAction: TextInputAction.next,
-                        //   onFieldSubmitted: (_) =>
-                        //       FocusScope.of(context).nextFocus(),
-                        //   onChanged: _onUsernameChanged,
-                        //   validator: (value) {
-                        //     if (value == null || value.isEmpty) {
-                        //       return null; // Optional field
-                        //     }
-                        //
-                        //     final regex =
-                        //         RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);
-                        //     if (!regex.hasMatch(value)) {
-                        //       return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                        //     }
-                        //     if (value.length < 3) {
-                        //       return 'Username must be at least 3 characters';
-                        //     }
-                        //     if (value.length > 20) {
-                        //       return 'Username must be 20 characters or less';
-                        //     }
-                        //     if (_usernameError != null) {
-                        //       return _usernameError;
-                        //     }
-                        //     return null;
-                        //   },
-                        // ),
-                        // if (_isCheckingUsername)
-                        //   Padding(
-                        //     padding: const EdgeInsets.only(top: 8),
-                        //     child: Row(
-                        //       children: [
-                        //         const SizedBox(
-                        //           width: 16,
-                        //           height: 16,
-                        //           child:
-                        //               CircularProgressIndicator(strokeWidth: 2),
-                        //         ),
-                        //         const SizedBox(width: 8),
-                        //         Text(
-                        //           'Checking availability...',
-                        //           style: TextStyle(
-                        //               color: Colors.grey[400], fontSize: 12),
-                        //         ),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // if (_usernameAvailable == true &&
-                        //     !_isCheckingUsername &&
-                        //     _nip05Controller.text.isNotEmpty)
-                        //   Padding(
-                        //     padding: const EdgeInsets.only(top: 8),
-                        //     child: Row(
-                        //       children: [
-                        //         const Icon(Icons.check_circle,
-                        //             color: VineTheme.vineGreen, size: 16),
-                        //         const SizedBox(width: 8),
-                        //         Text(
-                        //           'Username available!',
-                        //           style: TextStyle(
-                        //               color: VineTheme.vineGreen, fontSize: 12),
-                        //         ),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // const SizedBox(height: 16),
+                        // NIP-05 Username (optional)
+                        TextFormField(
+                          controller: _nip05Controller,
+                          style: const TextStyle(color: Colors.white),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          decoration: InputDecoration(
+                            labelText: 'Username (Optional)',
+                            labelStyle: const TextStyle(color: Colors.grey),
+                            hintText: 'username',
+                            hintStyle: TextStyle(color: Colors.grey[600]),
+                            filled: true,
+                            fillColor: Colors.grey[900],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey[700]!,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: VineTheme.vineGreen,
+                                width: 2,
+                              ),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.verified_user,
+                              color: Colors.grey,
+                            ),
+                            suffixText: '@divine.video',
+                            suffixStyle: TextStyle(color: Colors.grey[500]),
+                            errorMaxLines: 2,
+                          ),
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              FocusScope.of(context).nextFocus(),
+                          onChanged: (value) => ref
+                              .read(usernameProvider.notifier)
+                              .onUsernameChanged(value),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return null; // Optional field
+                            }
+
+                            final regex = RegExp(
+                              r'^[a-z0-9\-_.]+$',
+                              caseSensitive: false,
+                            );
+                            if (!regex.hasMatch(value)) {
+                              return 'Username can only contain letters, numbers, dash, underscore, and dot';
+                            }
+                            if (value.length < kMinUsernameLength) {
+                              return 'Username must be at least $kMinUsernameLength characters';
+                            }
+                            if (value.length > kMaxUsernameLength) {
+                              return 'Username must be $kMaxUsernameLength characters or less';
+                            }
+                            // Show error from controller state if taken
+                            if (usernameState.isTaken) {
+                              return 'Username already taken';
+                            }
+                            return null;
+                          },
+                        ),
+                        // Username status indicators
+                        UsernameStatusIndicator(state: usernameState),
+                        const SizedBox(height: 16),
 
                         // Profile Picture Section
                         Column(
@@ -893,33 +856,69 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         category: LogCategory.ui,
       );
 
-      // Handle NIP-05 registration if username provided - DISABLED until @divine.video is ready
-      // TODO: Re-enable when @divine.video NIP-05 service is available
-      // String? nip05Identifier;
-      // if (_nip05Controller.text.trim().isNotEmpty &&
-      //     _usernameAvailable == true) {
-      //   try {
-      //     final nip05Service = Nip05Service();
-      //     final username = _nip05Controller.text.trim();
-      //     final nostrService = ref.read(nostrServiceProvider);
-      //     final relays = nostrService.connectedRelays.toList();
-      //
-      //     final registered = await nip05Service.registerUsername(
-      //       username,
-      //       authService.currentPublicKeyHex!,
-      //       relays,
-      //     );
-      //
-      //     if (registered) {
-      //       nip05Identifier = '$username@divine.video';
-      //       profileData['nip05'] = nip05Identifier;
-      //     }
-      //   } catch (e) {
-      //     Log.error('Failed to register NIP-05: $e',
-      //         name: 'ProfileSetupScreen', category: LogCategory.ui);
-      //     // Continue with profile creation even if NIP-05 fails
-      //   }
-      // }
+      // Handle NIP-05 registration if username is available
+      final usernameState = ref.read(usernameProvider);
+      if (usernameState.canRegister) {
+        try {
+          final relays = nostrService.connectedRelays.toList();
+
+          final registrationResult = await ref
+              .read(usernameProvider.notifier)
+              .registerUsername(
+                pubkey: authService.currentPublicKeyHex!,
+                relays: relays,
+              );
+
+          if (registrationResult.isSuccess) {
+            final nip05Identifier = '${usernameState.username}@divine.video';
+            profileData['nip05'] = nip05Identifier;
+            Log.info(
+              '✅ Registered NIP-05: $nip05Identifier',
+              name: 'ProfileSetupScreen',
+              category: LogCategory.ui,
+            );
+          } else if (registrationResult.isReserved) {
+            // Show reserved error - user needs to contact support
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Username is reserved. Contact support to claim it.',
+                  ),
+                  backgroundColor: Colors.orange[700],
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+            // Continue with profile creation without NIP-05
+          } else if (registrationResult.isTaken) {
+            // Username was taken between check and registration
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Username was just taken. Please choose another.',
+                  ),
+                  backgroundColor: Colors.red[700],
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+            // Don't continue - let user choose new username
+            setState(() {
+              _isPublishing = false;
+            });
+            return;
+          }
+        } catch (e) {
+          Log.error(
+            'Failed to register NIP-05: $e',
+            name: 'ProfileSetupScreen',
+            category: LogCategory.ui,
+          );
+          // Continue with profile creation even if NIP-05 fails
+        }
+      }
 
       // Create NIP-01 kind 0 profile event
       Log.info(
@@ -1578,62 +1577,197 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
     }
   }
+}
 
-  // NIP-05 username checking - DISABLED until @divine.video is ready
-  // TODO: Re-enable when @divine.video NIP-05 service is available
-  // Timer? _usernameCheckTimer;
-  //
-  // void _onUsernameChanged(String value) {
-  //   // Cancel any existing timer
-  //   _usernameCheckTimer?.cancel();
-  //
-  //   // Reset state
-  //   setState(() {
-  //     _usernameAvailable = null;
-  //     _usernameError = null;
-  //   });
-  //
-  //   // Don't check if empty or too short
-  //   if (value.isEmpty || value.length < 3) {
-  //     return;
-  //   }
-  //
-  //   // Validate format locally first
-  //   final regex = RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);
-  //   if (!regex.hasMatch(value)) {
-  //     return;
-  //   }
-  //
-  //   // Debounce the check
-  //   _usernameCheckTimer = Timer(const Duration(milliseconds: 500), () {
-  //     _checkUsernameAvailability(value);
-  //   });
-  // }
-  //
-  // Future<void> _checkUsernameAvailability(String username) async {
-  //   setState(() {
-  //     _isCheckingUsername = true;
-  //   });
-  //
-  //   try {
-  //     final nip05Service = Nip05Service();
-  //     final isAvailable =
-  //         await nip05Service.checkUsernameAvailability(username);
-  //
-  //     if (mounted) {
-  //       setState(() {
-  //         _usernameAvailable = isAvailable;
-  //         _usernameError = isAvailable ? null : 'Username already taken';
-  //         _isCheckingUsername = false;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       setState(() {
-  //         _usernameError = 'Failed to check username';
-  //         _isCheckingUsername = false;
-  //       });
-  //     }
-  //   }
-  // }
+/// Displays username availability status (checking, available, taken, reserved, error)
+class UsernameStatusIndicator extends StatelessWidget {
+  const UsernameStatusIndicator({required this.state, super.key});
+
+  final UsernameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.status == UsernameCheckStatus.idle || state.username.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (state.isChecking) {
+      return const _UsernameCheckingIndicator();
+    }
+
+    if (state.isAvailable) {
+      return const _UsernameAvailableIndicator();
+    }
+
+    if (state.isTaken) {
+      return const _UsernameTakenIndicator();
+    }
+
+    if (state.isReserved) {
+      return _UsernameReservedIndicator(username: state.username);
+    }
+
+    if (state.hasError) {
+      return _UsernameErrorIndicator(
+        message: state.errorMessage ?? 'Failed to check availability',
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+class _UsernameCheckingIndicator extends StatelessWidget {
+  const _UsernameCheckingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Checking availability...',
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsernameAvailableIndicator extends StatelessWidget {
+  const _UsernameAvailableIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Username available!',
+            style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsernameTakenIndicator extends StatelessWidget {
+  const _UsernameTakenIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.cancel, color: Colors.red[400], size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Username already taken',
+            style: TextStyle(color: Colors.red[400], fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsernameReservedIndicator extends StatelessWidget {
+  const _UsernameReservedIndicator({required this.username});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock, color: Colors.orange[400], size: 16),
+              const SizedBox(width: 8),
+              Text(
+                'Username is reserved',
+                style: TextStyle(color: Colors.orange[400], fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'If you are the original owner, contact support to claim it.',
+            style: TextStyle(color: Colors.grey[500], fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () async {
+              // Capture messenger before async gap
+              final messenger = ScaffoldMessenger.of(context);
+              final uri = Uri.parse(
+                'mailto:support@divine.video?subject=Reserved Username Request - $username',
+              );
+              try {
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                } else {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not open email app'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (_) {
+                // Email launch failed - silently ignore
+              }
+            },
+            icon: const Icon(Icons.email, size: 16),
+            label: const Text('Contact Support'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.orange[400],
+              side: BorderSide(color: Colors.orange[400]!),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              textStyle: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsernameErrorIndicator extends StatelessWidget {
+  const _UsernameErrorIndicator({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.orange[400], size: 16),
+          const SizedBox(width: 8),
+          Text(
+            message,
+            style: TextStyle(color: Colors.orange[400], fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
 }

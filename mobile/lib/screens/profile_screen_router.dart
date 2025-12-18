@@ -18,6 +18,7 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -336,12 +337,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         false, // Fullscreen mode, no bottom nav
                     forceShowOverlay:
                         isOwnProfile, // Show overlay controls on own profile
-                    contextTitle:
-                        ref
-                            .read(fetchUserProfileProvider(userIdHex))
-                            .value
-                            ?.bestDisplayName ??
-                        'Profile',
+                    contextTitle: ref
+                        .read(fetchUserProfileProvider(userIdHex))
+                        .value
+                        ?.betterDisplayName('Profile'),
                   );
                 },
               );
@@ -503,11 +502,14 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    final profilePictureUrl = profile?.picture;
-    final displayName = profile?.bestDisplayName ?? 'Loading user information';
+    if (profile == null) {
+      return SizedBox.shrink();
+    }
+    final profilePictureUrl = profile.picture;
+    final displayName = profile.bestDisplayName;
     final hasCustomName =
-        profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true;
+        profile.name?.isNotEmpty == true ||
+        profile.displayName?.isNotEmpty == true;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -628,44 +630,23 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    SelectableText(
-                      displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    // Add NIP-05 verification badge if verified
-                    if (profile?.nip05 != null &&
-                        profile!.nip05!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 12,
-                        ),
-                      ),
-                    ],
-                  ],
+                UserName.fromPubKey(
+                  userIdHex,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 // Show NIP-05 identifier if present
-                if (profile?.nip05 != null && profile!.nip05!.isNotEmpty)
+                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
                   Text(
                     profile.nip05!,
                     style: TextStyle(color: Colors.grey[400], fontSize: 13),
                   ),
                 const SizedBox(height: 4),
-                if (profile?.about != null && profile!.about!.isNotEmpty)
+                if (profile.about != null && profile.about!.isNotEmpty)
                   SelectableText(
                     profile.about!,
                     style: const TextStyle(

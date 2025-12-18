@@ -370,7 +370,7 @@ class _NotificationItem extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              UserAvatar(imageUrl: profile?.picture, name: userName, size: 40),
+              UserAvatar(imageUrl: profile?.picture, size: 40),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -477,11 +477,7 @@ class _FollowingItem extends StatelessWidget {
     color: Colors.grey[900],
     child: ListTile(
       onTap: onTap,
-      leading: UserAvatar(
-        imageUrl: profile?.picture,
-        name: profile?.bestDisplayName,
-        size: 40,
-      ),
+      leading: UserAvatar(imageUrl: profile?.picture, size: 40),
       title: Row(
         children: [
           Flexible(

@@ -36,6 +36,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
+import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
@@ -250,6 +251,13 @@ ContentBlocklistService contentBlocklistService(Ref ref) {
 @riverpod
 Nip05Service nip05Service(Ref ref) {
   return Nip05Service();
+}
+
+/// Username repository for availability checking and registration
+@riverpod
+UsernameRepository usernameRepository(Ref ref) {
+  final nip05Service = ref.watch(nip05ServiceProvider);
+  return UsernameRepository(nip05Service);
 }
 
 /// Draft storage service for persisting vine drafts

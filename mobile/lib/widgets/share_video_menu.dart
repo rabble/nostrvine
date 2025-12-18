@@ -19,6 +19,7 @@ import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1487,14 +1488,11 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
         profile?.nip05 ?? normalizeToNpub(user.pubkey) ?? user.pubkey;
 
     return ListTile(
-      leading: UserAvatar(
-        imageUrl: user.picture,
-        name: user.displayName,
-        size: 40,
-      ),
-      title: Text(
-        user.displayName ?? 'Anonymous',
+      leading: UserAvatar(imageUrl: user.picture, size: 40),
+      title: UserName.fromPubKey(
+        user.pubkey,
         style: const TextStyle(color: VineTheme.whiteText),
+        anonymousName: 'Anonymous',
       ),
       subtitle: Text(
         displayId,

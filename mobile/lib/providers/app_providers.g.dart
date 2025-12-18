@@ -993,6 +993,59 @@ final class Nip05ServiceProvider
 
 String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
+/// Username repository for availability checking and registration
+
+@ProviderFor(usernameRepository)
+const usernameRepositoryProvider = UsernameRepositoryProvider._();
+
+/// Username repository for availability checking and registration
+
+final class UsernameRepositoryProvider
+    extends
+        $FunctionalProvider<
+          UsernameRepository,
+          UsernameRepository,
+          UsernameRepository
+        >
+    with $Provider<UsernameRepository> {
+  /// Username repository for availability checking and registration
+  const UsernameRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'usernameRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$usernameRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<UsernameRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UsernameRepository create(Ref ref) {
+    return usernameRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UsernameRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UsernameRepository>(value),
+    );
+  }
+}
+
+String _$usernameRepositoryHash() =>
+    r'd8dd9d65a89158d8f22672ae325b528e65164e14';
+
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)

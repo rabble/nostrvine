@@ -9,6 +9,7 @@ import 'package:openvine/providers/comments_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item.dart';
 
 class CommentsScreen extends ConsumerStatefulWidget {
@@ -291,13 +292,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                         });
                       }
 
-                      final display =
-                          profile?.bestDisplayName ??
-                          profile?.displayName ??
-                          profile?.name ??
-                          'Loading...';
-
-                      return UserAvatar(name: display, size: 32);
+                      return UserAvatar(size: 32);
                     },
                   ),
                   const SizedBox(width: 12),
@@ -312,11 +307,12 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                           comment.authorPubkey,
                         );
 
-                        final display =
-                            profile?.bestDisplayName ??
-                            profile?.displayName ??
-                            profile?.name ??
-                            'Loading...';
+                        final style = const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white54,
+                        );
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,15 +322,12 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                                 // Navigate to profile screen
                                 context.goProfileGrid(comment.authorPubkey);
                               },
-                              child: Text(
-                                display,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: Colors.white54,
-                                ),
-                              ),
+                              child: profile == null
+                                  ? Text('Unknown', style: style)
+                                  : UserName.fromUserProfile(
+                                      profile,
+                                      style: style,
+                                    ),
                             ),
                             Text(
                               comment.relativeTime,
