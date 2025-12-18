@@ -414,7 +414,7 @@ class _VideoInfoSection extends StatelessWidget {
             spacing: 1,
             children: [
               // Creator name
-              _CreatorName(pubkey: video.pubkey),
+              UserName.fromPubKey(video.pubkey, maxLines: 1),
               // Title or content
               Flexible(
                 child: Text(
@@ -538,34 +538,6 @@ class _VideoStats extends ConsumerWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _CreatorName extends ConsumerWidget {
-  const _CreatorName({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
-
-    final displayName = switch (profileAsync) {
-      AsyncData(:final value) when value != null => value.bestDisplayName,
-      AsyncData() || AsyncError() => 'Unknown',
-      AsyncLoading() => 'Loading...',
-    };
-
-    return Text(
-      displayName,
-      style: TextStyle(
-        color: VineTheme.secondaryText,
-        fontSize: 10,
-        fontWeight: FontWeight.w400,
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }
