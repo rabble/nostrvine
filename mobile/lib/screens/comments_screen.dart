@@ -10,7 +10,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
-import 'package:openvine/widgets/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class CommentsScreen extends ConsumerStatefulWidget {
   const CommentsScreen({required this.videoEvent, super.key});
