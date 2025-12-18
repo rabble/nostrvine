@@ -1046,6 +1046,63 @@ final class UsernameRepositoryProvider
 String _$usernameRepositoryHash() =>
     r'd8dd9d65a89158d8f22672ae325b528e65164e14';
 
+/// Reserved username request repository for claiming reserved usernames
+
+@ProviderFor(reservedUsernameRequestRepository)
+const reservedUsernameRequestRepositoryProvider =
+    ReservedUsernameRequestRepositoryProvider._();
+
+/// Reserved username request repository for claiming reserved usernames
+
+final class ReservedUsernameRequestRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ReservedUsernameRequestRepository,
+          ReservedUsernameRequestRepository,
+          ReservedUsernameRequestRepository
+        >
+    with $Provider<ReservedUsernameRequestRepository> {
+  /// Reserved username request repository for claiming reserved usernames
+  const ReservedUsernameRequestRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reservedUsernameRequestRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$reservedUsernameRequestRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReservedUsernameRequestRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ReservedUsernameRequestRepository create(Ref ref) {
+    return reservedUsernameRequestRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReservedUsernameRequestRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReservedUsernameRequestRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$reservedUsernameRequestRepositoryHash() =>
+    r'5c70d268d858f7509ce9cb6bfc297493efea65c2';
+
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)

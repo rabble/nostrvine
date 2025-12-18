@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -11,6 +12,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/reserved_username_request_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -37,7 +39,12 @@ import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
+<<<<<<< HEAD
 import 'package:openvine/services/nip17_message_service.dart';
+=======
+import 'package:openvine/repositories/username_repository.dart';
+import 'package:openvine/repositories/reserved_username_request_repository.dart';
+>>>>>>> c9bc0825 (feat(username): add reserved username request state, repository, and notifier)
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
@@ -259,6 +266,12 @@ Nip05Service nip05Service(Ref ref) {
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);
   return UsernameRepository(nip05Service);
+}
+
+/// Reserved username request repository for claiming reserved usernames
+@riverpod
+ReservedUsernameRequestRepository reservedUsernameRequestRepository(Ref ref) {
+  return ReservedUsernameRequestRepository(http.Client());
 }
 
 /// Draft storage service for persisting vine drafts
