@@ -602,11 +602,11 @@ CurationService curationService(Ref ref) {
 @riverpod
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
-    keyManager: keyManager,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -712,11 +712,11 @@ VideoSharingService videoSharingService(Ref ref) {
 @riverpod
 Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
-    keyManager: keyManager,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -730,11 +730,9 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
 @riverpod
 AccountDeletionService accountDeletionService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final authService = ref.watch(authServiceProvider);
   return AccountDeletionService(
     nostrService: nostrService,
-    keyManager: keyManager,
     authService: authService,
   );
 }
