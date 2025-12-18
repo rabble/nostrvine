@@ -220,7 +220,14 @@ class AppShell extends ConsumerWidget {
                   if (ctx == null) return;
 
                   // Determine where to navigate based on current context
-                  if (ctx.videoIndex != null) {
+                  if (ctx.type == RouteType.profile && ctx.npub != 'me') {
+                    // Viewing another user's profile - go back to previous page
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/explore');
+                    }
+                  } else if (ctx.videoIndex != null) {
                     // In feed mode - go to grid mode (remove videoIndex)
                     final gridCtx = RouteContext(
                       type: ctx.type,
