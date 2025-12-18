@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/reserved_username_request_notifier.dart';
 import 'package:openvine/state/reserved_username_request_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -40,9 +39,13 @@ class _ReservedUsernameRequestDialogState
     super.initState();
     // Initialize the notifier with the username
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(reservedUsernameRequestProvider.notifier)
-          .setUsername(widget.username);
+      if (mounted) {
+        // Reset state first, then set username
+        ref.read(reservedUsernameRequestProvider.notifier).reset();
+        ref
+            .read(reservedUsernameRequestProvider.notifier)
+            .setUsername(widget.username);
+      }
     });
   }
 
@@ -52,8 +55,8 @@ class _ReservedUsernameRequestDialogState
     _closeTimer?.cancel();
     _emailController.dispose();
     _justificationController.dispose();
-    // Reset the notifier state when dialog closes
-    ref.read(reservedUsernameRequestProvider.notifier).reset();
+    // Note: We don't reset the notifier here to avoid using ref in dispose
+    // The notifier will be reset when the dialog is reopened
     super.dispose();
   }
 
@@ -70,7 +73,7 @@ class _ReservedUsernameRequestDialogState
       // Close dialog after delay on success
       _closeTimer = Timer(const Duration(milliseconds: 1500), () {
         if (!_isDisposed && mounted) {
-          context.pop();
+          Navigator.of(context).pop();
         }
       });
     }
@@ -224,14 +227,15 @@ class _ReservedUsernameRequestDialogState
         // Cancel button (hide after success)
         if (!state.isSuccess)
           TextButton(
-            onPressed: state.isSubmitting ? null : () => context.pop(),
+            onPressed:
+                state.isSubmitting ? null : () => Navigator.of(context).pop(),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
 
         // Submit/Close button
         ElevatedButton(
           onPressed: state.isSuccess
-              ? () => context.pop()
+              ? () => Navigator.of(context).pop()
               : (_canSubmit(state) ? _submitRequest : null),
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.vineGreen,
