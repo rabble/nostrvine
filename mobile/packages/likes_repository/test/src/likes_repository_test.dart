@@ -40,6 +40,7 @@ void main() {
       mockLocalStorage = MockLikesLocalStorage();
 
       // Default mock behaviors
+      when(() => mockNostrClient.publicKey).thenReturn(testUserPubkey);
       when(
         () => mockLocalStorage.getAllLikeRecords(),
       ).thenAnswer((_) async => []);
@@ -56,7 +57,6 @@ void main() {
       test('creates repository without local storage', () {
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
         );
         expect(repository, isNotNull);
       });
@@ -64,7 +64,6 @@ void main() {
       test('creates repository with local storage', () {
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
         expect(repository, isNotNull);
@@ -75,7 +74,6 @@ void main() {
       test('returns false when event is not liked', () async {
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -96,7 +94,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -109,7 +106,6 @@ void main() {
       test('returns empty set when no likes', () async {
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -137,7 +133,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -165,7 +160,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -191,7 +185,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -217,7 +210,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -257,7 +249,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -275,7 +266,6 @@ void main() {
       test('throws NotLikedException when not liked', () async {
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -302,7 +292,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -334,7 +323,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -368,7 +356,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -392,7 +379,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -409,7 +395,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 
@@ -431,7 +416,6 @@ void main() {
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
-          userPubkey: testUserPubkey,
           localStorage: mockLocalStorage,
         );
 

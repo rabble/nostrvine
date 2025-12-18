@@ -45,18 +45,14 @@ class LikesRepository {
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
-  /// - [userPubkey]: The current user's public key (hex format)
   /// - [localStorage]: Optional local storage for persistence
   LikesRepository({
     required NostrClient nostrClient,
-    required String userPubkey,
     LikesLocalStorage? localStorage,
   }) : _nostrClient = nostrClient,
-       _userPubkey = userPubkey,
        _localStorage = localStorage;
 
   final NostrClient _nostrClient;
-  final String _userPubkey;
   final LikesLocalStorage? _localStorage;
 
   /// In-memory cache of like records keyed by target event ID.
@@ -243,7 +239,7 @@ class LikesRepository {
     // Then, fetch from relays (authoritative)
     final filter = Filter(
       kinds: const [_reactionKind],
-      authors: [_userPubkey],
+      authors: [_nostrClient.publicKey],
       limit: _defaultReactionFetchLimit,
     );
 
