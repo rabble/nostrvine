@@ -44,6 +44,7 @@ import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -380,6 +381,44 @@ SocialService socialService(Ref ref) {
     subscriptionManager: subscriptionManager,
     personalEventCache: personalEventCache,
   );
+}
+
+/// Provider for FollowRepository instance
+///
+/// Creates a FollowRepository for managing follow relationships.
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalEventCacheService (for caching contact list events)
+@Riverpod(keepAlive: true)
+FollowRepository followRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  assert(
+    nostrClient.hasKeys,
+    'FollowRepository accessed without authentication',
+  );
+
+  final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+
+  final repository = FollowRepository(
+    nostrClient: nostrClient,
+    personalEventCache: personalEventCache,
+  );
+
+  // Initialize asynchronously
+  repository.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize FollowRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod

@@ -91,7 +91,7 @@ class RelayIsolate extends Relay {
   }
 
   @override
-  bool send(List message, {bool? forceSend}) {
+  Future<bool> send(List message, {bool? forceSend}) async {
     if (forceSend == true ||
         (mainToSubSendPort != null &&
             relayStatus.connected == ClientConnected.connected)) {

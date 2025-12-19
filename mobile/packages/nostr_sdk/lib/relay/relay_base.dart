@@ -117,11 +117,11 @@ class RelayBase extends Relay {
   }
 
   @override
-  bool send(
+  Future<bool> send(
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
-  }) {
+  }) async {
     if (_connectionManager == null) {
       return false;
     }
@@ -135,7 +135,7 @@ class RelayBase extends Relay {
 
         // Defensive serialization: Ensure all data is JSON-serializable
         final sanitizedMessage = sanitizeForJson(message);
-        return _connectionManager!.sendJson(sanitizedMessage);
+        return await _connectionManager!.sendJson(sanitizedMessage);
       } catch (e) {
         onError(e.toString(), reconnect: true);
       }
