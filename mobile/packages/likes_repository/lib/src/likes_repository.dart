@@ -193,7 +193,8 @@ class LikesRepository {
 
     // Query the database directly as source of truth to avoid cache/db
     // inconsistency after app restart
-    final isCurrentlyLiked = await _localStorage?.isLiked(eventId) ??
+    final isCurrentlyLiked =
+        await _localStorage?.isLiked(eventId) ??
         _likeRecords.containsKey(eventId);
 
     if (isCurrentlyLiked) {
