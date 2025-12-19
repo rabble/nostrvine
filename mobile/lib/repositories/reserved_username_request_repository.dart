@@ -24,9 +24,6 @@ class ReservedUsernameRequestResult {
 }
 
 /// Repository that handles reserved username request operations
-///
-/// This sits between the notifier and service layers, providing
-/// a clean interface for the presentation layer to use.
 class ReservedUsernameRequestRepository {
   ReservedUsernameRequestRepository(this._httpClient);
 

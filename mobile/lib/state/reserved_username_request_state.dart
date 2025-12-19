@@ -21,15 +21,11 @@ enum ReservedUsernameRequestStatus {
 /// Immutable state for reserved username request form
 class ReservedUsernameRequestState extends Equatable {
   const ReservedUsernameRequestState({
-    this.username = '',
     this.email = '',
     this.justification = '',
     this.status = ReservedUsernameRequestStatus.idle,
     this.errorMessage,
   });
-
-  /// The reserved username being requested
-  final String username;
 
   /// User's contact email for support to respond
   final String email;
@@ -52,32 +48,13 @@ class ReservedUsernameRequestState extends Equatable {
   /// Whether there was an error submitting
   bool get hasError => status == ReservedUsernameRequestStatus.error;
 
-  /// Whether the form can be submitted (has required fields and not submitting)
-  bool get canSubmit =>
-      username.isNotEmpty &&
-      email.isNotEmpty &&
-      _isValidEmail(email) &&
-      justification.isNotEmpty &&
-      !isSubmitting;
-
-  /// Validates email format
-  bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-    return emailRegex.hasMatch(email);
-  }
-
-  /// Whether the email format is valid (for showing validation errors)
-  bool get isEmailValid => email.isEmpty || _isValidEmail(email);
-
   /// Create a copy with updated fields
   ReservedUsernameRequestState copyWith({
-    String? username,
     String? email,
     String? justification,
     ReservedUsernameRequestStatus? status,
     String? errorMessage,
   }) => ReservedUsernameRequestState(
-    username: username ?? this.username,
     email: email ?? this.email,
     justification: justification ?? this.justification,
     status: status ?? this.status,
@@ -85,11 +62,5 @@ class ReservedUsernameRequestState extends Equatable {
   );
 
   @override
-  List<Object?> get props => [
-    username,
-    email,
-    justification,
-    status,
-    errorMessage,
-  ];
+  List<Object?> get props => [email, justification, status, errorMessage];
 }

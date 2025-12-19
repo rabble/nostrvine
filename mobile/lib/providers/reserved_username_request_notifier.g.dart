@@ -59,7 +59,7 @@ final class ReservedUsernameRequestNotifierProvider
 }
 
 String _$reservedUsernameRequestNotifierHash() =>
-    r'e35a245114cac47b1c0b738d01438b3e6f5b493f';
+    r'6627d27ae5284f862db9528fc27994811e3f20d3';
 
 /// Notifier for managing reserved username request form and submission
 ///

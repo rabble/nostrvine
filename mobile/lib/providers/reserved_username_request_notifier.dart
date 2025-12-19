@@ -15,17 +15,27 @@ part 'reserved_username_request_notifier.g.dart';
 @riverpod
 class ReservedUsernameRequestNotifier
     extends _$ReservedUsernameRequestNotifier {
+  /// Whether the form can be submitted (has required fields and not submitting)
+  bool get canSubmit =>
+      state.email.isNotEmpty &&
+      _isValidEmail(state.email) &&
+      state.justification.isNotEmpty &&
+      !state.isSubmitting;
+
+  /// Validates email format
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(email);
+  }
+
+  /// Whether the email format is valid (for showing validation errors)
+  bool get isEmailValid => state.email.isEmpty || _isValidEmail(state.email);
+
   @override
   ReservedUsernameRequestState build() {
     return const ReservedUsernameRequestState();
-  }
-
-  /// Set the reserved username being requested
-  ///
-  /// This is typically pre-filled from the UI when the user tries
-  /// to register a reserved username.
-  void setUsername(String username) {
-    state = state.copyWith(username: username.trim().toLowerCase());
   }
 
   /// Set the contact email for the request
@@ -49,8 +59,8 @@ class ReservedUsernameRequestNotifier
   /// and updates state based on the result (success or error).
   ///
   /// Returns true if submission was successful, false otherwise.
-  Future<bool> submitRequest() async {
-    if (!state.canSubmit) {
+  Future<bool> submitRequest({required String username}) async {
+    if (!canSubmit) {
       Log.warning(
         'Attempted to submit invalid reserved username request form',
         name: 'ReservedUsernameRequestNotifier',
@@ -66,7 +76,7 @@ class ReservedUsernameRequestNotifier
     );
 
     Log.info(
-      'Submitting reserved username request for: ${state.username}',
+      'Submitting reserved username request for: ${username}',
       name: 'ReservedUsernameRequestNotifier',
       category: LogCategory.api,
     );
@@ -74,14 +84,14 @@ class ReservedUsernameRequestNotifier
     try {
       final repository = ref.read(reservedUsernameRequestRepositoryProvider);
       final result = await repository.submitRequest(
-        username: state.username,
+        username: username,
         email: state.email,
         justification: state.justification,
       );
 
       if (result.success) {
         Log.info(
-          'Reserved username request submitted successfully for: ${state.username}',
+          'Reserved username request submitted successfully for: ${username}',
           name: 'ReservedUsernameRequestNotifier',
           category: LogCategory.api,
         );
@@ -112,13 +122,5 @@ class ReservedUsernameRequestNotifier
       );
       return false;
     }
-  }
-
-  /// Reset the form to initial state
-  ///
-  /// Clears all fields and resets status to idle.
-  /// Useful when dismissing the form or starting a new request.
-  void reset() {
-    state = const ReservedUsernameRequestState();
   }
 }
