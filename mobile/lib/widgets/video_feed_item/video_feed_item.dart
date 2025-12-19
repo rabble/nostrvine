@@ -12,8 +12,8 @@ import 'package:openvine/providers/active_video_provider.dart'; // For isVideoAc
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/social_providers.dart';
-import 'package:openvine/providers/follow_state_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -881,17 +881,6 @@ class VideoOverlayActions extends ConsumerWidget {
                 });
               }
 
-              final authService = ref.watch(authServiceProvider);
-              final currentUserPubkey = authService.currentPublicKeyHex;
-              final isOwnVideo = currentUserPubkey == video.pubkey;
-
-              // Watch in-progress set for loading state updates
-              final inProgressSet = ref.watch(followOperationsProvider);
-              final isFollowInProgress = inProgressSet.contains(video.pubkey);
-              // Watch reactive isFollowing stream provider for follow state updates
-              final isFollowingAsync = ref.watch(isFollowingProvider(video.pubkey));
-              final isFollowing = isFollowingAsync.asData?.value ?? false;
-
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -935,65 +924,9 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Follow button next to username (only for other users' videos)
-                  if (!isOwnVideo) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: isFollowInProgress
-                          ? null
-                          : () async {
-                              Log.info(
-                                '👤 Follow button tapped for ${video.pubkey}',
-                                name: 'VideoFeedItem',
-                                category: LogCategory.ui,
-                              );
-                              // Use FollowOperations provider which delegates to FollowRepository
-                              await ref
-                                  .read(followOperationsProvider.notifier)
-                                  .toggle(video.pubkey);
-                            },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isFollowing
-                                      ? Colors.grey[800]
-                                      : VineTheme.vineGreen)
-                                  ?.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                (isFollowing
-                                        ? Colors.grey[600]
-                                        : VineTheme.vineGreen)
-                                    ?.withValues(alpha: 0.5) ??
-                                Colors.transparent,
-                            width: 1,
-                          ),
-                        ),
-                        child: isFollowInProgress
-                            ? const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                isFollowing ? 'Following' : 'Follow',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
+                  // Follow button (handles own video check internally)
+                  const SizedBox(width: 8),
+                  VideoFollowButton(pubkey: video.pubkey),
                 ],
               );
             },
