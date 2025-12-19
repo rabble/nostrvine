@@ -49,6 +49,7 @@ dependencies:
   # State management
   flutter_riverpod: ^3.0.0
   riverpod_annotation: ^3.0.0
+  flutter_bloc: ^9.0.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
 
@@ -156,6 +157,7 @@ dev_dependencies:
   # Testing
   mocktail: ^1.0.3
   mockito: ^5.4.4
+  bloc_test: ^10.0.0
 
   # Code generation
   build_runner: ^2.7.1
