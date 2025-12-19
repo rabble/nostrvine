@@ -1489,8 +1489,8 @@ String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
 /// Provider for FollowRepository instance
 ///
-/// Always creates a FollowRepository. The repository handles auth state
-/// internally - operations become no-ops when not authenticated.
+/// Creates a FollowRepository for managing follow relationships.
+/// Requires authentication.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1501,8 +1501,8 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 
 /// Provider for FollowRepository instance
 ///
-/// Always creates a FollowRepository. The repository handles auth state
-/// internally - operations become no-ops when not authenticated.
+/// Creates a FollowRepository for managing follow relationships.
+/// Requires authentication.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1518,8 +1518,8 @@ final class FollowRepositoryProvider
     with $Provider<FollowRepository> {
   /// Provider for FollowRepository instance
   ///
-  /// Always creates a FollowRepository. The repository handles auth state
-  /// internally - operations become no-ops when not authenticated.
+  /// Creates a FollowRepository for managing follow relationships.
+  /// Requires authentication.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1557,7 +1557,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'88dc3984036427ad42cd7768e84feb0015c5e581';
+String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
