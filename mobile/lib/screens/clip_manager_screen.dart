@@ -11,6 +11,7 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -134,17 +135,23 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           _isProcessing = false;
         });
 
-        // Navigate directly using context.push - don't await as we don't need
-        // to wait for the user to return. The navigation flag will be cleared
-        // when this screen becomes visible again via didChangeDependencies.
+        // Navigate using GoRouter directly from Riverpod to avoid context issues
+        // The context might become invalid after async operations + setState
         Log.info(
-          '📹 Calling context.push for /edit-video',
+          '📹 Getting GoRouter from Riverpod and pushing to /edit-video',
           category: LogCategory.video,
         );
+        print('🟢🟢🟢 GETTING ROUTER FROM RIVERPOD 🟢🟢🟢');
+
+        // Get the router directly - this avoids any context invalidation issues
+        final router = ref.read(goRouterProvider);
+        print('🟢 Got router: $router');
+        print('🟢 Calling router.push(/edit-video, extra: $videoPath)');
 
         // Use unawaited push to avoid blocking this function
         // ignore: unawaited_futures
-        context.push('/edit-video', extra: videoPath).then((result) {
+        router.push('/edit-video', extra: videoPath).then((result) {
+          print('🟢 Navigation returned from /edit-video, result: $result');
           Log.info(
             '📹 Navigation returned from /edit-video, result: $result',
             category: LogCategory.video,
@@ -161,12 +168,14 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
             }
           }
         }).catchError((navError, navStack) {
+          print('🟢 Navigation FAILED: $navError');
           Log.error(
             '📹 Navigation to /edit-video failed: $navError',
             category: LogCategory.video,
           );
         });
 
+        print('🟢 Navigation push initiated (not awaited)');
         Log.info(
           '📹 Navigation initiated (not awaited)',
           category: LogCategory.video,

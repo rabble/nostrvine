@@ -1094,6 +1094,15 @@ class _VideoMetadataScreenPureState
   Future<void> _publishVideo() async {
     if (_currentDraft == null) return;
 
+    // Stop video playback when publishing starts
+    if (_videoController != null && _videoController!.value.isPlaying) {
+      await _videoController!.pause();
+      Log.info(
+        '📝 Paused video playback for publishing',
+        category: LogCategory.video,
+      );
+    }
+
     // Get upload manager and check if background upload exists
     final uploadManager = ref.read(uploadManagerProvider);
 

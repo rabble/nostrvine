@@ -264,6 +264,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'AppRouter',
         category: LogCategory.ui,
       );
+      print('🔵🔵🔵 REDIRECT RETURNING NULL for $location - route builder should be called next 🔵🔵🔵');
       return null;
     },
     routes: [
@@ -600,39 +601,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/edit-video',
         name: 'edit-video',
         builder: (ctx, st) {
+          // Use print for guaranteed output - debugging route builder execution
+          print('🔴🔴🔴 /edit-video ROUTE BUILDER CALLED 🔴🔴🔴');
           Log.debug(
             '/edit-video route builder called',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          Log.debug(
-            '/edit-video extra type = ${st.extra?.runtimeType}',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          Log.debug(
-            '/edit-video extra = ${st.extra}',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
+          print('🔴 extra type = ${st.extra?.runtimeType}');
+          print('🔴 extra = ${st.extra}');
           final videoPath = st.extra as String?;
           if (videoPath == null) {
-            Log.debug(
-              '/edit-video videoPath is null, showing error',
-              name: 'AppRouter',
-              category: LogCategory.ui,
-            );
+            print('🔴 videoPath is NULL - showing error screen');
             // If no video provided, show error screen
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: const Center(child: Text('No video selected for editing')),
             );
           }
-          Log.debug(
-            'Creating VideoEditorScreen with path: $videoPath',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
+          print('🔴 Creating VideoEditorScreen with path: $videoPath');
           return VideoEditorScreen(videoPath: videoPath);
         },
       ),
