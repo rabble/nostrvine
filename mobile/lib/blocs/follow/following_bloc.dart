@@ -30,8 +30,7 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
         super(const FollowingState()) {
     on<FollowingListLoadRequested>(_onLoadRequested);
     on<FollowingListRefreshRequested>(_onRefreshRequested);
-    on<FollowRequested>(_onFollowRequested);
-    on<UnfollowRequested>(_onUnfollowRequested);
+    on<FollowToggleRequested>(_onFollowToggleRequested);
   }
 
   final FollowRepository _followRepository;
@@ -174,44 +173,33 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     add(FollowingListLoadRequested(event.pubkey));
   }
 
-  /// Handle follow request
-  Future<void> _onFollowRequested(
-    FollowRequested event,
+  /// Handle follow toggle request.
+  /// Determines whether to follow or unfollow based on current state.
+  Future<void> _onFollowToggleRequested(
+    FollowToggleRequested event,
     Emitter<FollowingState> emit,
   ) async {
-    try {
-      await _followRepository.follow(event.pubkey);
+    final isCurrentlyFollowing = _followRepository.isFollowing(event.pubkey);
 
-      Log.info(
-        'Successfully followed user: ${event.pubkey}',
-        name: 'FollowingBloc',
-        category: LogCategory.system,
-      );
+    try {
+      if (isCurrentlyFollowing) {
+        await _followRepository.unfollow(event.pubkey);
+        Log.info(
+          'Successfully unfollowed user: ${event.pubkey}',
+          name: 'FollowingBloc',
+          category: LogCategory.system,
+        );
+      } else {
+        await _followRepository.follow(event.pubkey);
+        Log.info(
+          'Successfully followed user: ${event.pubkey}',
+          name: 'FollowingBloc',
+          category: LogCategory.system,
+        );
+      }
     } catch (e) {
       Log.error(
-        'Failed to follow user: $e',
-        name: 'FollowingBloc',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Handle unfollow request
-  Future<void> _onUnfollowRequested(
-    UnfollowRequested event,
-    Emitter<FollowingState> emit,
-  ) async {
-    try {
-      await _followRepository.unfollow(event.pubkey);
-
-      Log.info(
-        'Successfully unfollowed user: ${event.pubkey}',
-        name: 'FollowingBloc',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to unfollow user: $e',
+        'Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user: $e',
         name: 'FollowingBloc',
         category: LogCategory.system,
       );

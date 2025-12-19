@@ -24,18 +24,11 @@ final class FollowingListRefreshRequested extends FollowingEvent {
   final String pubkey;
 }
 
-/// Request to follow a user
-final class FollowRequested extends FollowingEvent {
-  const FollowRequested(this.pubkey);
+/// Request to toggle follow status for a user.
+/// The bloc will determine whether to follow or unfollow based on current state.
+final class FollowToggleRequested extends FollowingEvent {
+  const FollowToggleRequested(this.pubkey);
 
-  /// The public key of the user to follow
-  final String pubkey;
-}
-
-/// Request to unfollow a user
-final class UnfollowRequested extends FollowingEvent {
-  const UnfollowRequested(this.pubkey);
-
-  /// The public key of the user to unfollow
+  /// The public key of the user to follow/unfollow
   final String pubkey;
 }
