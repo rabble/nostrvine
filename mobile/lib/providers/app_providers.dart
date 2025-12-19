@@ -445,23 +445,15 @@ SocialService socialService(Ref ref) {
 
 /// Provider for FollowRepository instance
 ///
-/// Creates a FollowRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Always creates a FollowRepository. The repository handles auth state
+/// internally - operations become no-ops when not authenticated.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository? followRepository(Ref ref) {
+FollowRepository followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  // Watch nostrReadyProvider to rebuild when NostrClient finishes initialization
-  final isNostrReady = ref.watch(nostrReadyProvider);
-
-  // Repository requires authentication (user must have keys) and NostrClient must be initialized
-  if (!isNostrReady || !nostrClient.hasKeys) {
-    return null;
-  }
-
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
@@ -469,7 +461,7 @@ FollowRepository? followRepository(Ref ref) {
     personalEventCache: personalEventCache,
   );
 
-  // Initialize asynchronously
+  // Initialize asynchronously (handles auth state internally)
   repository.initialize().catchError((e) {
     Log.error(
       'Failed to initialize FollowRepository',

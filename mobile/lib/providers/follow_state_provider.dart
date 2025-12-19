@@ -12,11 +12,6 @@ part 'follow_state_provider.g.dart';
 @Riverpod(keepAlive: true)
 Stream<List<String>> followingList(Ref ref) async* {
   final repository = ref.watch(followRepositoryProvider);
-  if (repository == null) {
-    // Not authenticated - emit empty list
-    yield [];
-    return;
-  }
 
   // Emit current state immediately
   yield repository.followingPubkeys;
@@ -30,11 +25,6 @@ Stream<List<String>> followingList(Ref ref) async* {
 @riverpod
 Stream<bool> isFollowing(Ref ref, String pubkey) async* {
   final repository = ref.watch(followRepositoryProvider);
-  if (repository == null) {
-    // Not authenticated - emit false (not following)
-    yield false;
-    return;
-  }
 
   // Emit current state immediately
   yield repository.isFollowing(pubkey);
@@ -50,33 +40,32 @@ Stream<bool> isFollowing(Ref ref, String pubkey) async* {
 /// - Tracks which pubkeys have active follow/unfollow operations
 /// - Provides follow/unfollow/toggle actions
 ///
-/// Returns empty set and no-ops when not authenticated.
+/// Operations become no-ops when not authenticated (handled by repository).
 @Riverpod(keepAlive: true)
 class FollowOperations extends _$FollowOperations {
   @override
   Set<String> build() {
-    // Watch repository to rebuild when it becomes available
+    // Watch repository to rebuild when it changes
     ref.watch(followRepositoryProvider);
     // Return empty set - this tracks in-progress operations only
     return {};
   }
 
-  /// Get the current repository (reads fresh value each time)
-  FollowRepository? get _repository => ref.read(followRepositoryProvider);
+  /// Get the current repository
+  FollowRepository get _repository => ref.read(followRepositoryProvider);
 
   /// Check if a follow operation is in progress for a pubkey
   bool isInProgress(String pubkey) => state.contains(pubkey);
 
   /// Follow a user via FollowRepository
   Future<void> follow(String pubkey) async {
-    final repository = _repository;
-    if (repository == null || state.contains(pubkey)) return;
+    if (state.contains(pubkey)) return;
 
     // Mark operation as in progress
     state = {...state, pubkey};
 
     try {
-      await repository.follow(pubkey);
+      await _repository.follow(pubkey);
 
       Log.info(
         'Followed user via repository: $pubkey',
@@ -91,14 +80,13 @@ class FollowOperations extends _$FollowOperations {
 
   /// Unfollow a user via FollowRepository
   Future<void> unfollow(String pubkey) async {
-    final repository = _repository;
-    if (repository == null || state.contains(pubkey)) return;
+    if (state.contains(pubkey)) return;
 
     // Mark operation as in progress
     state = {...state, pubkey};
 
     try {
-      await repository.unfollow(pubkey);
+      await _repository.unfollow(pubkey);
 
       Log.info(
         'Unfollowed user via repository: $pubkey',
@@ -113,10 +101,7 @@ class FollowOperations extends _$FollowOperations {
 
   /// Toggle follow state for a user
   Future<void> toggle(String pubkey) async {
-    final repository = _repository;
-    if (repository == null) return;
-
-    if (repository.isFollowing(pubkey)) {
+    if (_repository.isFollowing(pubkey)) {
       await unfollow(pubkey);
     } else {
       await follow(pubkey);

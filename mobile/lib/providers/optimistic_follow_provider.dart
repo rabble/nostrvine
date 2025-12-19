@@ -41,8 +41,8 @@ final isFollowingProvider = Provider.family<bool, String>((ref, pubkey) {
     return optimisticStates[pubkey]!;
   }
 
-  // Otherwise use the real state from repository (false if not authenticated)
-  return repository?.isFollowing(pubkey) ?? false;
+  // Otherwise use the real state from repository
+  return repository.isFollowing(pubkey);
 });
 
 /// Enhanced follow/unfollow methods with optimistic updates
@@ -56,13 +56,7 @@ class OptimisticFollowMethods {
   final Ref _ref;
 
   Future<void> followUser(String pubkey) async {
-    // Use FollowRepository as the single source of truth
     final repository = _ref.read(followRepositoryProvider);
-    if (repository == null) {
-      // Not authenticated - no-op
-      return;
-    }
-
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -71,7 +65,7 @@ class OptimisticFollowMethods {
     optimisticNotifier.setOptimisticState(pubkey, true);
 
     try {
-      // Perform actual follow via repository
+      // Perform actual follow via repository (no-op if not authenticated)
       await repository.follow(pubkey);
 
       // Clear optimistic state on success (real state will take over)
@@ -84,13 +78,7 @@ class OptimisticFollowMethods {
   }
 
   Future<void> unfollowUser(String pubkey) async {
-    // Use FollowRepository as the single source of truth
     final repository = _ref.read(followRepositoryProvider);
-    if (repository == null) {
-      // Not authenticated - no-op
-      return;
-    }
-
     final optimisticNotifier = _ref.read(
       optimisticFollowStateProvider.notifier,
     );
@@ -99,7 +87,7 @@ class OptimisticFollowMethods {
     optimisticNotifier.setOptimisticState(pubkey, false);
 
     try {
-      // Perform actual unfollow via repository
+      // Perform actual unfollow via repository (no-op if not authenticated)
       await repository.unfollow(pubkey);
 
       // Clear optimistic state on success (real state will take over)

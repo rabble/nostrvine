@@ -98,7 +98,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
   // For current user, get following count directly from repository
   // and listen to stream for reactive updates
   int? currentUserFollowingCount;
-  if (isCurrentUser && followRepository != null) {
+  if (isCurrentUser) {
     currentUserFollowingCount = followRepository.followingCount;
 
     // Subscribe to stream for reactive updates when following list changes

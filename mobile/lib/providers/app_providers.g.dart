@@ -1535,8 +1535,8 @@ String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
 
 /// Provider for FollowRepository instance
 ///
-/// Creates a FollowRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Always creates a FollowRepository. The repository handles auth state
+/// internally - operations become no-ops when not authenticated.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1547,8 +1547,8 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 
 /// Provider for FollowRepository instance
 ///
-/// Creates a FollowRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Always creates a FollowRepository. The repository handles auth state
+/// internally - operations become no-ops when not authenticated.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1557,15 +1557,15 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          FollowRepository?,
-          FollowRepository?,
-          FollowRepository?
+          FollowRepository,
+          FollowRepository,
+          FollowRepository
         >
-    with $Provider<FollowRepository?> {
+    with $Provider<FollowRepository> {
   /// Provider for FollowRepository instance
   ///
-  /// Creates a FollowRepository when the user is authenticated.
-  /// Returns null when user is not authenticated.
+  /// Always creates a FollowRepository. The repository handles auth state
+  /// internally - operations become no-ops when not authenticated.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -1586,25 +1586,24 @@ final class FollowRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FollowRepository?> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  FollowRepository? create(Ref ref) {
+  FollowRepository create(Ref ref) {
     return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FollowRepository? value) {
+  Override overrideWithValue(FollowRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FollowRepository?>(value),
+      providerOverride: $SyncValueProvider<FollowRepository>(value),
     );
   }
 }
 
-String _$followRepositoryHash() => r'8a2ff389ab969a44c22b5825bfd66b7cc9f806ca';
+String _$followRepositoryHash() => r'88dc3984036427ad42cd7768e84feb0015c5e581';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

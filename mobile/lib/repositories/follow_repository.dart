@@ -105,14 +105,16 @@ class FollowRepository {
   }
 
   /// Follow a user
+  ///
+  /// No-op if user is not authenticated.
   Future<void> follow(String pubkey) async {
     if (!_nostrClient.hasKeys) {
-      Log.error(
+      Log.warning(
         'Cannot follow - user not authenticated',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      throw Exception('User not authenticated');
+      return;
     }
 
     if (_followingPubkeys.contains(pubkey)) {
@@ -164,14 +166,16 @@ class FollowRepository {
   }
 
   /// Unfollow a user
+  ///
+  /// No-op if user is not authenticated.
   Future<void> unfollow(String pubkey) async {
     if (!_nostrClient.hasKeys) {
-      Log.error(
+      Log.warning(
         'Cannot unfollow - user not authenticated',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      throw Exception('User not authenticated');
+      return;
     }
 
     if (!_followingPubkeys.contains(pubkey)) {

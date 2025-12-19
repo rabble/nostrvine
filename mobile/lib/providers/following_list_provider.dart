@@ -31,12 +31,7 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 
     if (isCurrentUser) {
       // Inject repository for current user operations
-      final repository = ref.watch(followRepositoryProvider);
-      if (repository == null) {
-        // Not authenticated - return empty list
-        return [];
-      }
-      _repository = repository;
+      _repository = ref.watch(followRepositoryProvider);
       return _loadCurrentUserFollowing();
     } else {
       return _loadOtherUserFollowing(pubkey);
@@ -134,11 +129,6 @@ class FollowingListNotifier extends _$FollowingListNotifier {
 @riverpod
 Stream<List<String>> currentUserFollowingList(Ref ref) async* {
   final repository = ref.watch(followRepositoryProvider);
-  if (repository == null) {
-    // Not authenticated - emit empty list
-    yield [];
-    return;
-  }
 
   // Emit current state immediately
   yield repository.followingPubkeys;
