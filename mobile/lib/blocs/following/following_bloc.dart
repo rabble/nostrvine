@@ -24,10 +24,10 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     required FollowRepository followRepository,
     required NostrClient nostrClient,
     required AuthService authService,
-  })  : _followRepository = followRepository,
-        _nostrClient = nostrClient,
-        _authService = authService,
-        super(const FollowingState()) {
+  }) : _followRepository = followRepository,
+       _nostrClient = nostrClient,
+       _authService = authService,
+       super(const FollowingState()) {
     on<FollowingListLoadRequested>(_onLoadRequested);
     on<FollowingListRefreshRequested>(_onRefreshRequested);
     on<FollowToggleRequested>(_onFollowToggleRequested);
@@ -46,10 +46,12 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     FollowingListLoadRequested event,
     Emitter<FollowingState> emit,
   ) async {
-    emit(state.copyWith(
-      status: FollowingStatus.loading,
-      targetPubkey: event.pubkey,
-    ));
+    emit(
+      state.copyWith(
+        status: FollowingStatus.loading,
+        targetPubkey: event.pubkey,
+      ),
+    );
 
     try {
       if (_isCurrentUser(event.pubkey)) {
@@ -71,10 +73,12 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   /// Uses emit.forEach to listen to the repository stream
   Future<void> _loadCurrentUserFollowing(Emitter<FollowingState> emit) async {
     // Emit current state immediately
-    emit(state.copyWith(
-      status: FollowingStatus.success,
-      followingPubkeys: _followRepository.followingPubkeys,
-    ));
+    emit(
+      state.copyWith(
+        status: FollowingStatus.success,
+        followingPubkeys: _followRepository.followingPubkeys,
+      ),
+    );
 
     // Listen to repository stream for reactive updates
     await emit.forEach<List<String>>(
@@ -159,10 +163,12 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     );
 
     final following = await completer.future;
-    emit(state.copyWith(
-      status: FollowingStatus.success,
-      followingPubkeys: following,
-    ));
+    emit(
+      state.copyWith(
+        status: FollowingStatus.success,
+        followingPubkeys: following,
+      ),
+    );
   }
 
   /// Handle refresh request

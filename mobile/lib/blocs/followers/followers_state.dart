@@ -49,9 +49,5 @@ final class FollowersState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        status,
-        followersPubkeys,
-        targetPubkey,
-      ];
+  List<Object?> get props => [status, followersPubkeys, targetPubkey];
 }

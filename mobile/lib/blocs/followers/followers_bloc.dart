@@ -21,9 +21,9 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
   FollowersBloc({
     required FollowRepository followRepository,
     required NostrClient nostrClient,
-  })  : _followRepository = followRepository,
-        _nostrClient = nostrClient,
-        super(const FollowersState()) {
+  }) : _followRepository = followRepository,
+       _nostrClient = nostrClient,
+       super(const FollowersState()) {
     on<FollowersListLoadRequested>(_onLoadRequested);
     on<FollowersListRefreshRequested>(_onRefreshRequested);
     on<FollowerToggleFollowRequested>(_onToggleFollowRequested);
@@ -38,11 +38,13 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
     FollowersListLoadRequested event,
     Emitter<FollowersState> emit,
   ) async {
-    emit(state.copyWith(
-      status: FollowersStatus.loading,
-      targetPubkey: event.pubkey,
-      followersPubkeys: [], // Clear previous list
-    ));
+    emit(
+      state.copyWith(
+        status: FollowersStatus.loading,
+        targetPubkey: event.pubkey,
+        followersPubkeys: [], // Clear previous list
+      ),
+    );
 
     try {
       await _loadFollowers(event.pubkey, emit);
@@ -93,10 +95,12 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
           followers.add(event.pubkey);
 
           // Emit updated state with new follower
-          emit(state.copyWith(
-            status: FollowersStatus.success,
-            followersPubkeys: List.from(followers),
-          ));
+          emit(
+            state.copyWith(
+              status: FollowersStatus.success,
+              followersPubkeys: List.from(followers),
+            ),
+          );
         }
       },
       onError: (Object error) {
@@ -120,10 +124,9 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
 
     // If no followers were found, ensure we're in success state with empty list
     if (followers.isEmpty) {
-      emit(state.copyWith(
-        status: FollowersStatus.success,
-        followersPubkeys: [],
-      ));
+      emit(
+        state.copyWith(status: FollowersStatus.success, followersPubkeys: []),
+      );
     }
   }
 

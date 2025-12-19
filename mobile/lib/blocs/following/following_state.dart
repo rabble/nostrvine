@@ -52,9 +52,5 @@ final class FollowingState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        status,
-        followingPubkeys,
-        targetPubkey,
-      ];
+  List<Object?> get props => [status, followingPubkeys, targetPubkey];
 }

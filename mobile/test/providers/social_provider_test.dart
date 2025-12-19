@@ -155,7 +155,6 @@ void main() {
       expect(state.likeCounts[eventId], equals(0));
     });
 
-
     test('should handle errors gracefully', () async {
       const eventId = 'test-event-id';
       const authorPubkey = 'author-pubkey';
