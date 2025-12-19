@@ -1,15 +1,23 @@
 // ABOUTME: Screen displaying list of users followed by the profile being viewed
-// ABOUTME: Shows user profiles with follow/unfollow buttons and navigation to their profiles
+// ABOUTME: Uses Page/View pattern - Page creates BLoC, View consumes it
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/following_list_provider.dart';
+import 'package:openvine/blocs/follow/following_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
-class FollowingScreen extends ConsumerWidget {
-  const FollowingScreen({
+/// Page widget that creates the [FollowingBloc] and provides it to the view.
+///
+/// Follows the VGV Page/View pattern:
+/// - Page: Creates and provides BLoC with dependencies
+/// - View: Consumes BLoC state and renders UI
+class FollowingPage extends ConsumerWidget {
+  const FollowingPage({
     super.key,
     required this.pubkey,
     required this.displayName,
@@ -20,8 +28,37 @@ class FollowingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final followingAsync = ref.watch(followingListProvider(pubkey));
+    // Get dependencies from Riverpod
+    final followRepository = ref.watch(followRepositoryProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final authService = ref.watch(authServiceProvider);
 
+    return BlocProvider(
+      create: (_) => FollowingBloc(
+        followRepository: followRepository,
+        nostrClient: nostrClient,
+        authService: authService,
+      )..add(FollowingListLoadRequested(pubkey)),
+      child: FollowingView(pubkey: pubkey, displayName: displayName),
+    );
+  }
+}
+
+/// View widget that consumes [FollowingBloc] state and renders the UI.
+///
+/// Stateless widget that uses [BlocBuilder] to react to state changes.
+class FollowingView extends StatelessWidget {
+  const FollowingView({
+    super.key,
+    required this.pubkey,
+    required this.displayName,
+  });
+
+  final String pubkey;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -36,31 +73,41 @@ class FollowingScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: followingAsync.when(
-        data: (following) =>
-            _FollowingListBody(following: following, pubkey: pubkey),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _FollowingErrorBody(pubkey: pubkey),
+      body: BlocBuilder<FollowingBloc, FollowingState>(
+        builder: (context, state) {
+          return switch (state.status) {
+            FollowingStatus.initial || FollowingStatus.loading => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            FollowingStatus.success => _FollowingListBody(
+              following: state.followingPubkeys,
+              pubkey: pubkey,
+            ),
+            FollowingStatus.failure => _FollowingErrorBody(pubkey: pubkey),
+          };
+        },
       ),
     );
   }
 }
 
-class _FollowingListBody extends ConsumerWidget {
+class _FollowingListBody extends StatelessWidget {
   const _FollowingListBody({required this.following, required this.pubkey});
 
   final List<String> following;
   final String pubkey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (following.isEmpty) {
       return const _FollowingEmptyState();
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(followingListProvider(pubkey));
+        context.read<FollowingBloc>().add(
+          FollowingListRefreshRequested(pubkey),
+        );
       },
       child: ListView.builder(
         itemCount: following.length,
@@ -97,13 +144,13 @@ class _FollowingEmptyState extends StatelessWidget {
   }
 }
 
-class _FollowingErrorBody extends ConsumerWidget {
+class _FollowingErrorBody extends StatelessWidget {
   const _FollowingErrorBody({required this.pubkey});
 
   final String pubkey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -117,7 +164,9 @@ class _FollowingErrorBody extends ConsumerWidget {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              ref.invalidate(followingListProvider(pubkey));
+              context.read<FollowingBloc>().add(
+                FollowingListRefreshRequested(pubkey),
+              );
             },
             child: const Text('Retry'),
           ),

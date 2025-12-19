@@ -10,9 +10,8 @@ import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
-import 'package:openvine/models/video_event.dart' as _i10;
+import 'package:openvine/repositories/follow_repository.dart' as _i9;
 import 'package:openvine/services/auth_service.dart' as _i3;
-import 'package:openvine/services/social_service.dart' as _i9;
 import 'package:openvine/services/user_profile_service.dart' as _i8;
 
 // ignore_for_file: type=lint
@@ -700,21 +699,21 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   );
 }
 
-/// A class which mocks [SocialService].
+/// A class which mocks [FollowRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSocialService extends _i1.Mock implements _i9.SocialService {
-  MockSocialService() {
+class MockFollowRepository extends _i1.Mock implements _i9.FollowRepository {
+  MockFollowRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  Set<String> get likedEventIds =>
+  _i6.Stream<List<String>> get followingStream =>
       (super.noSuchMethod(
-            Invocation.getter(#likedEventIds),
-            returnValue: <String>{},
+            Invocation.getter(#followingStream),
+            returnValue: _i6.Stream<List<String>>.empty(),
           )
-          as Set<String>);
+          as _i6.Stream<List<String>>);
 
   @override
   List<String> get followingPubkeys =>
@@ -725,37 +724,20 @@ class MockSocialService extends _i1.Mock implements _i9.SocialService {
           as List<String>);
 
   @override
-  List<_i9.FollowSet> get followSets =>
-      (super.noSuchMethod(
-            Invocation.getter(#followSets),
-            returnValue: <_i9.FollowSet>[],
-          )
-          as List<_i9.FollowSet>);
-
-  @override
-  bool isLiked(String? eventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#isLiked, [eventId]),
-            returnValue: false,
-          )
+  bool get isInitialized =>
+      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
           as bool);
 
   @override
-  bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #hasReposted,
-              [eventId],
-              {#pubkey: pubkey, #dTag: dTag},
-            ),
-            returnValue: false,
-          )
-          as bool);
+  int get followingCount =>
+      (super.noSuchMethod(Invocation.getter(#followingCount), returnValue: 0)
+          as int);
 
   @override
-  int? getCachedLikeCount(String? eventId) =>
-      (super.noSuchMethod(Invocation.method(#getCachedLikeCount, [eventId]))
-          as int?);
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   bool isFollowing(String? pubkey) =>
@@ -766,237 +748,29 @@ class MockSocialService extends _i1.Mock implements _i9.SocialService {
           as bool);
 
   @override
-  Map<String, int>? getCachedFollowerStats(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getCachedFollowerStats, [pubkey]))
-          as Map<String, int>?);
-
-  @override
-  _i9.FollowSet? getFollowSetById(String? setId) =>
-      (super.noSuchMethod(Invocation.method(#getFollowSetById, [setId]))
-          as _i9.FollowSet?);
-
-  @override
-  bool isInFollowSet(String? setId, String? pubkey) =>
+  _i6.Future<void> initialize() =>
       (super.noSuchMethod(
-            Invocation.method(#isInFollowSet, [setId, pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  _i6.Future<void> toggleLike(String? eventId, String? authorPubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleLike, [eventId, authorPubkey]),
+            Invocation.method(#initialize, []),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )
           as _i6.Future<void>);
 
   @override
-  _i6.Future<Map<String, dynamic>> getLikeStatus(String? eventId) =>
+  _i6.Future<void> follow(String? pubkey) =>
       (super.noSuchMethod(
-            Invocation.method(#getLikeStatus, [eventId]),
-            returnValue: _i6.Future<Map<String, dynamic>>.value(
-              <String, dynamic>{},
-            ),
-          )
-          as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<List<_i7.Event>> fetchLikedEvents(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchLikedEvents, [pubkey]),
-            returnValue: _i6.Future<List<_i7.Event>>.value(<_i7.Event>[]),
-          )
-          as _i6.Future<List<_i7.Event>>);
-
-  @override
-  _i6.Future<void> fetchCurrentUserFollowList() =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCurrentUserFollowList, []),
+            Invocation.method(#follow, [pubkey]),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )
           as _i6.Future<void>);
 
   @override
-  _i6.Future<void> followUser(String? pubkeyToFollow) =>
+  _i6.Future<void> unfollow(String? pubkey) =>
       (super.noSuchMethod(
-            Invocation.method(#followUser, [pubkeyToFollow]),
+            Invocation.method(#unfollow, [pubkey]),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )
           as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> unfollowUser(String? pubkeyToUnfollow) =>
-      (super.noSuchMethod(
-            Invocation.method(#unfollowUser, [pubkeyToUnfollow]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getFollowerStats, [pubkey]),
-            returnValue: _i6.Future<Map<String, int>>.value(<String, int>{}),
-          )
-          as _i6.Future<Map<String, int>>);
-
-  @override
-  _i6.Future<_i9.FollowSet?> createFollowSet({
-    required String? name,
-    String? description,
-    String? imageUrl,
-    List<String>? initialPubkeys = const [],
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#createFollowSet, [], {
-              #name: name,
-              #description: description,
-              #imageUrl: imageUrl,
-              #initialPubkeys: initialPubkeys,
-            }),
-            returnValue: _i6.Future<_i9.FollowSet?>.value(),
-          )
-          as _i6.Future<_i9.FollowSet?>);
-
-  @override
-  _i6.Future<bool> addToFollowSet(String? setId, String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#addToFollowSet, [setId, pubkey]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> removeFromFollowSet(String? setId, String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeFromFollowSet, [setId, pubkey]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> updateFollowSet({
-    required String? setId,
-    String? name,
-    String? description,
-    String? imageUrl,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateFollowSet, [], {
-              #setId: setId,
-              #name: name,
-              #description: description,
-              #imageUrl: imageUrl,
-            }),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> deleteFollowSet(String? setId) =>
-      (super.noSuchMethod(
-            Invocation.method(#deleteFollowSet, [setId]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<int> getUserVideoCount(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getUserVideoCount, [pubkey]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<int> getUserTotalLikes(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getUserTotalLikes, [pubkey]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<void> postComment({
-    required String? content,
-    required String? rootEventId,
-    required String? rootEventAuthorPubkey,
-    String? replyToEventId,
-    String? replyToAuthorPubkey,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#postComment, [], {
-              #content: content,
-              #rootEventId: rootEventId,
-              #rootEventAuthorPubkey: rootEventAuthorPubkey,
-              #replyToEventId: replyToEventId,
-              #replyToAuthorPubkey: replyToAuthorPubkey,
-            }),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Stream<_i7.Event> fetchCommentsForEvent(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCommentsForEvent, [rootEventId]),
-            returnValue: _i6.Stream<_i7.Event>.empty(),
-          )
-          as _i6.Stream<_i7.Event>);
-
-  @override
-  _i6.Future<int> getCommentCount(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getCommentCount, [rootEventId]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<void> cancelCommentSubscriptions(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#cancelCommentSubscriptions, [rootEventId]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> toggleRepost(_i10.VideoEvent? videoToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleRepost, [videoToRepost]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> repostEvent(_i7.Event? eventToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#repostEvent, [eventToRepost]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> publishRightToBeForgotten() =>
-      (super.noSuchMethod(
-            Invocation.method(#publishRightToBeForgotten, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
 }

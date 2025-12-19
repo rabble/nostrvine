@@ -113,7 +113,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) =>
-            FollowingScreen(pubkey: pubkey, displayName: displayName),
+            FollowingPage(pubkey: pubkey, displayName: displayName),
       ),
     );
   }
