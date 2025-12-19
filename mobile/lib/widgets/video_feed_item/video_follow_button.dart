@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/follow/following_bloc.dart';
+import 'package:openvine/blocs/following/following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -71,7 +71,8 @@ class _VideoFollowButtonView extends StatelessWidget {
                   ?.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: (isFollowing ? Colors.grey[600] : VineTheme.vineGreen)
+                color:
+                    (isFollowing ? Colors.grey[600] : VineTheme.vineGreen)
                         ?.withValues(alpha: 0.5) ??
                     Colors.transparent,
                 width: 1,

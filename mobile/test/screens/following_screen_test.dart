@@ -11,7 +11,7 @@ import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/blocs/follow/following_bloc.dart';
+import 'package:openvine/blocs/following/following_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -36,8 +36,9 @@ void main() {
 
   // Helper to create valid hex pubkeys (64 hex characters)
   String validPubkey(String suffix) {
-    final hexSuffix =
-        suffix.codeUnits.map((c) => c.toRadixString(16).padLeft(2, '0')).join();
+    final hexSuffix = suffix.codeUnits
+        .map((c) => c.toRadixString(16).padLeft(2, '0'))
+        .join();
     return hexSuffix.padLeft(64, '0');
   }
 
@@ -45,8 +46,9 @@ void main() {
     mockFollowingBloc = MockFollowingBloc();
     mockSharedPreferences = createMockSharedPreferences();
     // Add missing SharedPreferences stubs for relay gateway
-    when(mockSharedPreferences.getBool('relay_gateway_enabled'))
-        .thenReturn(false);
+    when(
+      mockSharedPreferences.getBool('relay_gateway_enabled'),
+    ).thenReturn(false);
   });
 
   /// Creates a test widget for the FollowingView.
@@ -60,18 +62,16 @@ void main() {
       child: MaterialApp(
         home: BlocProvider<FollowingBloc>.value(
           value: mockFollowingBloc,
-          child: FollowingView(
-            pubkey: testPubkey,
-            displayName: 'Test User',
-          ),
+          child: FollowingView(pubkey: testPubkey, displayName: 'Test User'),
         ),
       ),
     );
   }
 
   group('FollowingView', () {
-    testWidgets('displays loading indicator when status is initial',
-        (tester) async {
+    testWidgets('displays loading indicator when status is initial', (
+      tester,
+    ) async {
       whenListen(
         mockFollowingBloc,
         Stream.value(const FollowingState(status: FollowingStatus.loading)),
@@ -84,8 +84,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('displays loading indicator when status is loading',
-        (tester) async {
+    testWidgets('displays loading indicator when status is loading', (
+      tester,
+    ) async {
       whenListen(
         mockFollowingBloc,
         const Stream<FollowingState>.empty(),
@@ -98,8 +99,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('displays following list when status is success',
-        (tester) async {
+    testWidgets('displays following list when status is success', (
+      tester,
+    ) async {
       final followingPubkeys = [
         validPubkey('following1'),
         validPubkey('following2'),
@@ -129,8 +131,9 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
     });
 
-    testWidgets('shows empty state when following list is empty',
-        (tester) async {
+    testWidgets('shows empty state when following list is empty', (
+      tester,
+    ) async {
       whenListen(
         mockFollowingBloc,
         Stream.value(
@@ -155,14 +158,8 @@ void main() {
     testWidgets('shows error state when status is failure', (tester) async {
       whenListen(
         mockFollowingBloc,
-        Stream.value(
-          const FollowingState(
-            status: FollowingStatus.failure,
-          ),
-        ),
-        initialState: const FollowingState(
-          status: FollowingStatus.failure,
-        ),
+        Stream.value(const FollowingState(status: FollowingStatus.failure)),
+        initialState: const FollowingState(status: FollowingStatus.failure),
       );
 
       await tester.pumpWidget(createTestWidget());
@@ -186,8 +183,9 @@ void main() {
       expect(find.text("Test User's Following"), findsOneWidget);
     });
 
-    testWidgets('retry button dispatches FollowingListRefreshRequested',
-        (tester) async {
+    testWidgets('retry button dispatches FollowingListRefreshRequested', (
+      tester,
+    ) async {
       final testPubkey = validPubkey('test');
 
       whenListen(
@@ -212,9 +210,9 @@ void main() {
       await tester.pump();
 
       // Verify the correct event was dispatched
-      final captured = mocktail.verify(
-        () => mockFollowingBloc.add(mocktail.captureAny()),
-      ).captured;
+      final captured = mocktail
+          .verify(() => mockFollowingBloc.add(mocktail.captureAny()))
+          .captured;
 
       expect(captured.length, 1);
       expect(captured.first, isA<FollowingListRefreshRequested>());
@@ -230,7 +228,8 @@ void main() {
     // dispatch mechanism works correctly.
     testWidgets(
       'refresh indicator dispatches FollowingListRefreshRequested',
-      skip: true, // UserProfileTile Riverpod dependencies require extensive mocking
+      skip:
+          true, // UserProfileTile Riverpod dependencies require extensive mocking
       (tester) async {
         final testPubkey = validPubkey('test');
         final followingPubkeys = [validPubkey('following1')];
@@ -255,17 +254,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // Pull to refresh - fling on the ListView
-        await tester.fling(
-          find.byType(ListView),
-          const Offset(0, 300),
-          1000,
-        );
+        await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
         await tester.pump();
 
         // Verify the correct event was dispatched
-        final captured = mocktail.verify(
-          () => mockFollowingBloc.add(mocktail.captureAny()),
-        ).captured;
+        final captured = mocktail
+            .verify(() => mockFollowingBloc.add(mocktail.captureAny()))
+            .captured;
 
         expect(captured.length, 1);
         expect(captured.first, isA<FollowingListRefreshRequested>());
@@ -289,8 +284,9 @@ void main() {
       mockFollowRepository = MockFollowRepository();
       followingStreamController = StreamController<List<String>>.broadcast();
 
-      when(mockFollowRepository.followingStream)
-          .thenAnswer((_) => followingStreamController.stream);
+      when(
+        mockFollowRepository.followingStream,
+      ).thenAnswer((_) => followingStreamController.stream);
       when(mockFollowRepository.followingPubkeys).thenReturn([]);
     });
 
@@ -301,10 +297,12 @@ void main() {
     blocTest<FollowingBloc, FollowingState>(
       'emits [loading, success] when loading current user following list',
       build: () {
-        when(mockAuthService.currentPublicKeyHex)
-            .thenReturn(validPubkey('current'));
-        when(mockFollowRepository.followingPubkeys)
-            .thenReturn([validPubkey('following1')]);
+        when(
+          mockAuthService.currentPublicKeyHex,
+        ).thenReturn(validPubkey('current'));
+        when(
+          mockFollowRepository.followingPubkeys,
+        ).thenReturn([validPubkey('following1')]);
         return FollowingBloc(
           followRepository: mockFollowRepository,
           nostrClient: mockNostrClient,
@@ -329,8 +327,9 @@ void main() {
     blocTest<FollowingBloc, FollowingState>(
       'updates state when repository stream emits new following list',
       build: () {
-        when(mockAuthService.currentPublicKeyHex)
-            .thenReturn(validPubkey('current'));
+        when(
+          mockAuthService.currentPublicKeyHex,
+        ).thenReturn(validPubkey('current'));
         when(mockFollowRepository.followingPubkeys).thenReturn([]);
         return FollowingBloc(
           followRepository: mockFollowRepository,
