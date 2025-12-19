@@ -4,18 +4,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/optimistic_follow_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/helpers/follow_actions_helper.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///
-/// Supports two modes for follow button behavior:
-/// 1. **Callback mode** (for BLoC integration): Pass [isFollowing] and
-///    [onToggleFollow] to control follow state externally.
-/// 2. **Riverpod mode** (default): Uses [isFollowingProvider] and
-///    [FollowActionsHelper] internally.
+/// Uses callback mode for follow button behavior - the parent widget
+/// controls the follow state via [isFollowing] and [onToggleFollow].
 ///
 /// Set [showFollowButton] to false to hide the follow button entirely.
 class UserProfileTile extends ConsumerWidget {
@@ -37,16 +32,13 @@ class UserProfileTile extends ConsumerWidget {
   /// Whether to show the follow button. Defaults to true.
   final bool showFollowButton;
 
-  /// External follow state. When provided with [onToggleFollow],
-  /// the tile uses callback mode instead of Riverpod mode.
+  /// Whether the current user is following this user.
+  /// Required when [showFollowButton] is true.
   final bool? isFollowing;
 
-  /// Callback to toggle follow state. When provided with [isFollowing],
-  /// the tile uses callback mode instead of Riverpod mode.
+  /// Callback to toggle follow state.
+  /// Required when [showFollowButton] is true.
   final VoidCallback? onToggleFollow;
-
-  /// Whether the tile is using callback mode (BLoC integration).
-  bool get _usesCallbackMode => isFollowing != null && onToggleFollow != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,14 +98,15 @@ class UserProfileTile extends ConsumerWidget {
               ),
 
               // Follow button
-              if (showFollowButton && !isCurrentUser) ...[
+              if (showFollowButton &&
+                  !isCurrentUser &&
+                  isFollowing != null &&
+                  onToggleFollow != null) ...[
                 const SizedBox(width: 12),
-                _usesCallbackMode
-                    ? _CallbackFollowButton(
-                        isFollowing: isFollowing!,
-                        onToggleFollow: onToggleFollow!,
-                      )
-                    : _RiverpodFollowButton(pubkey: pubkey),
+                _FollowButton(
+                  isFollowing: isFollowing!,
+                  onToggleFollow: onToggleFollow!,
+                ),
               ],
             ],
           ),
@@ -123,9 +116,9 @@ class UserProfileTile extends ConsumerWidget {
   }
 }
 
-/// Follow button that uses external callbacks (for BLoC integration).
-class _CallbackFollowButton extends StatelessWidget {
-  const _CallbackFollowButton({
+/// Follow button widget for user profile tiles.
+class _FollowButton extends StatelessWidget {
+  const _FollowButton({
     required this.isFollowing,
     required this.onToggleFollow,
   });
@@ -152,51 +145,6 @@ class _CallbackFollowButton extends StatelessWidget {
           style: const TextStyle(fontSize: 12),
         ),
       ),
-    );
-  }
-}
-
-/// Follow button that uses Riverpod providers (default mode).
-class _RiverpodFollowButton extends ConsumerWidget {
-  const _RiverpodFollowButton({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isFollowing = ref.watch(isFollowingProvider(pubkey));
-
-    return SizedBox(
-      height: 32,
-      child: ElevatedButton(
-        onPressed: () => _toggleFollow(context, ref, isFollowing),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isFollowing ? Colors.white : VineTheme.vineGreen,
-          foregroundColor: isFollowing ? VineTheme.vineGreen : Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(
-          isFollowing ? 'Following' : 'Follow',
-          style: const TextStyle(fontSize: 12),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _toggleFollow(
-    BuildContext context,
-    WidgetRef ref,
-    bool isCurrentlyFollowing,
-  ) async {
-    await FollowActionsHelper.toggleFollow(
-      ref: ref,
-      context: context,
-      pubkey: pubkey,
-      isCurrentlyFollowing: isCurrentlyFollowing,
-      contextName: 'UserProfileTile',
     );
   }
 }

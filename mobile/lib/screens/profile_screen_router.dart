@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/helpers/follow_actions_helper.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -419,8 +418,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                               onEditProfile: _editProfile,
                               onOpenDrafts: _openDrafts,
                               onShareProfile: () => _shareProfile(userIdHex),
-                              onFollowUser: () => _followUser(userIdHex),
-                              onUnfollowUser: () => _unfollowUser(userIdHex),
                               onBlockUser: (isBlocked) =>
                                   _blockUser(userIdHex, isBlocked),
                             ),
@@ -882,24 +879,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openDrafts() {
     context.go('/drafts');
-  }
-
-  Future<void> _followUser(String pubkey) async {
-    await FollowActionsHelper.followUser(
-      ref: ref,
-      context: context,
-      pubkey: pubkey,
-      contextName: 'ProfileScreenRouter',
-    );
-  }
-
-  Future<void> _unfollowUser(String pubkey) async {
-    await FollowActionsHelper.unfollowUser(
-      ref: ref,
-      context: context,
-      pubkey: pubkey,
-      contextName: 'ProfileScreenRouter',
-    );
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {

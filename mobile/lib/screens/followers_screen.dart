@@ -1,15 +1,23 @@
 // ABOUTME: Screen displaying list of users who follow the profile being viewed
-// ABOUTME: Shows user profiles with follow/unfollow buttons and navigation to their profiles
+// ABOUTME: Uses BLoC pattern with Page/View separation
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
-import 'package:openvine/mixins/nostr_list_fetch_mixin.dart';
+import 'package:openvine/blocs/follow/followers_bloc.dart';
+import 'package:openvine/blocs/follow/following_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/widgets/user_profile_tile.dart';
 
-class FollowersScreen extends ConsumerStatefulWidget {
+/// Page widget that creates the BLoCs and provides them to the view.
+///
+/// Follows the VGV Page/View pattern:
+/// - Page: Creates and provides BLoCs with dependencies
+/// - View: Consumes BLoC state and renders UI
+class FollowersScreen extends ConsumerWidget {
   const FollowersScreen({
     super.key,
     required this.pubkey,
@@ -20,116 +28,146 @@ class FollowersScreen extends ConsumerStatefulWidget {
   final String displayName;
 
   @override
-  ConsumerState<FollowersScreen> createState() => _FollowersScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final followRepository = ref.watch(followRepositoryProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final authService = ref.watch(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+
+    return MultiBlocProvider(
+      providers: [
+        // FollowersBloc for fetching the followers list
+        BlocProvider(
+          create: (_) => FollowersBloc(
+            followRepository: followRepository,
+            nostrClient: nostrClient,
+          )..add(FollowersListLoadRequested(pubkey)),
+        ),
+        // FollowingBloc for tracking current user's following state
+        BlocProvider(
+          create: (_) => FollowingBloc(
+            followRepository: followRepository,
+            nostrClient: nostrClient,
+            authService: authService,
+          )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
+        ),
+      ],
+      child: _FollowersScreenView(
+        pubkey: pubkey,
+        displayName: displayName,
+      ),
+    );
+  }
 }
 
-class _FollowersScreenState extends ConsumerState<FollowersScreen>
-    with NostrListFetchMixin {
-  // Mixin state variables
-  List<String> _followers = [];
-  bool _isLoading = true;
-  String? _error;
+/// View widget that consumes BLoC state and renders the followers list.
+class _FollowersScreenView extends StatelessWidget {
+  const _FollowersScreenView({
+    required this.pubkey,
+    required this.displayName,
+  });
 
-  @override
-  List<String> get userList => _followers;
-
-  @override
-  set userList(List<String> value) => _followers = value;
-
-  @override
-  bool get isLoading => _isLoading;
-
-  @override
-  set isLoading(bool value) => _isLoading = value;
-
-  @override
-  String? get error => _error;
-
-  @override
-  set error(String? value) => _error = value;
-
-  @override
-  void initState() {
-    super.initState();
-    loadList();
-  }
-
-  @override
-  Future<void> fetchList() async {
-    final nostrService = ref.read(nostrServiceProvider);
-
-    // Subscribe to kind 3 events that mention this pubkey in p tags
-    final subscription = nostrService.subscribe([
-      nostr_sdk.Filter(
-        kinds: [3], // Contact lists
-        p: [widget.pubkey], // Events that mention this pubkey
-      ),
-    ]);
-
-    // Apply timeout to detect relay connection issues
-    final timeoutSubscription = subscription.timeout(
-      const Duration(seconds: 5),
-      onTimeout: (sink) {
-        // No data received within 5 seconds - likely connection issue
-        if (mounted && _followers.isEmpty) {
-          setError(
-            'Failed to connect to relay server. Please check your connection and try again.',
-          );
-        } else {
-          completeLoading();
-        }
-        sink.close();
-      },
-    );
-
-    // Process events immediately as they arrive for real-time updates
-    timeoutSubscription.listen(
-      (event) {
-        // Each author who has this pubkey in their contact list is a follower
-        if (!_followers.contains(event.pubkey)) {
-          if (mounted) {
-            setState(() {
-              _followers.add(event.pubkey);
-              completeLoading(); // Stop loading as soon as we have first follower
-            });
-          }
-        }
-      },
-      onError: (error) {
-        Log.error(
-          'Error in followers subscription: $error',
-          name: 'FollowersScreen',
-          category: LogCategory.relay,
-        );
-        setError(
-          'Failed to connect to relay server. Please check your connection and try again.',
-        );
-      },
-      onDone: () {
-        // Stream completed naturally
-        if (mounted) {
-          completeLoading();
-        }
-      },
-    );
-  }
+  final String pubkey;
+  final String displayName;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: buildAppBar(context, '${widget.displayName}\'s Followers'),
-      body: buildListBody(
-        context,
-        _followers,
-        _navigateToProfile,
-        emptyMessage: 'No followers yet',
-        emptyIcon: Icons.people_outline,
+      appBar: AppBar(
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: Colors.white,
+        title: Text(
+          "$displayName's Followers",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: BlocBuilder<FollowersBloc, FollowersState>(
+        builder: (context, state) {
+          return switch (state.status) {
+            FollowersStatus.initial ||
+            FollowersStatus.loading => const Center(
+                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              ),
+            FollowersStatus.failure => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load followers',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<FollowersBloc>().add(
+                              FollowersListRefreshRequested(pubkey),
+                            );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: VineTheme.vineGreen,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            FollowersStatus.success => state.followersPubkeys.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline, color: Colors.grey, size: 48),
+                        SizedBox(height: 16),
+                        Text(
+                          'No followers yet',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: state.followersPubkeys.length,
+                    itemBuilder: (context, index) {
+                      final followerPubkey = state.followersPubkeys[index];
+                      return BlocSelector<FollowingBloc, FollowingState, bool>(
+                        selector: (followingState) =>
+                            followingState.isFollowing(followerPubkey),
+                        builder: (context, isFollowing) {
+                          return UserProfileTile(
+                            pubkey: followerPubkey,
+                            onTap: () => context.goProfile(followerPubkey, 0),
+                            isFollowing: isFollowing,
+                            onToggleFollow: () {
+                              context.read<FollowingBloc>().add(
+                                    FollowToggleRequested(followerPubkey),
+                                  );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+          };
+        },
       ),
     );
-  }
-
-  void _navigateToProfile(String pubkey) {
-    context.goProfile(pubkey, 0);
   }
 }
