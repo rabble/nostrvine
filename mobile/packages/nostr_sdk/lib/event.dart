@@ -162,6 +162,9 @@ class Event {
   @override
   int get hashCode => id.hashCode;
 
+  DateTime get createdAtDateTime =>
+      DateTime.fromMillisecondsSinceEpoch(createdAt * 1000);
+
   static int _secondsSinceEpoch() {
     final now = clock.now();
     final secondsSinceEpoch = now.millisecondsSinceEpoch ~/ 1000;

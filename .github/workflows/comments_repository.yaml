@@ -1,0 +1,50 @@
+# ABOUTME: CI workflow for the likes_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when comments_repository files change.
+
+name: Comments Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/comments_repository/**"
+      - ".github/workflows/comments_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/comments_repository/**"
+      - ".github/workflows/comments_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Comments Repository CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/packages/comments_repository/
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.3"
+          channel: "stable"
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: ✨ Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: 🕵️ Analyze code
+        run: flutter analyze lib test
+
+      - name: 🧪 Run tests
+        run: flutter test
