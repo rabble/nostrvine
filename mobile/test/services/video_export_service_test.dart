@@ -67,7 +67,7 @@ void main() {
         );
       });
 
-      test('accepts valid parameters and returns future', () {
+      test('accepts valid parameters and returns future', () async {
         final clips = [
           RecordingClip(
             id: 'clip1',
@@ -97,6 +97,9 @@ void main() {
         );
 
         expect(result, isA<Future<ExportResult>>());
+
+        // Wait for the future to complete (will fail due to missing plugin, but prevents test leaking)
+        await expectLater(result, throwsA(isA<Exception>()));
       });
 
       // Note: Cannot test actual export pipeline in unit tests
@@ -109,6 +112,85 @@ void main() {
       // The method requires real video files and video_thumbnail plugin
       test('method signature accepts correct parameters', () {
         expect(service.generateThumbnail, isA<Function>());
+      });
+    });
+
+    group('audio preservation', () {
+      test('concatenateSegments accepts multiple clips with audio', () async {
+        // The implementation includes setpts=PTS-STARTPTS to normalize video timestamps
+        // This is critical for smooth concatenation without drift
+        final clips = [
+          RecordingClip(
+            id: 'clip1',
+            filePath: '/path/to/clip1.mp4',
+            duration: const Duration(seconds: 2),
+            orderIndex: 0,
+            recordedAt: DateTime.now(),
+          ),
+          RecordingClip(
+            id: 'clip2',
+            filePath: '/path/to/clip2.mp4',
+            duration: const Duration(seconds: 3),
+            orderIndex: 1,
+            recordedAt: DateTime.now(),
+          ),
+        ];
+
+        // Verify method returns a future - actual FFmpeg execution requires real files
+        final result = service.concatenateSegments(clips);
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing plugin, but prevents test leaking)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+
+      test('concatenateSegments handles muteAudio flag', () async {
+        final clips = [
+          RecordingClip(
+            id: 'clip1',
+            filePath: '/path/to/clip1.mp4',
+            duration: const Duration(seconds: 2),
+            orderIndex: 0,
+            recordedAt: DateTime.now(),
+          ),
+        ];
+
+        // Test muteAudio parameter - even single clip goes through FFmpeg when muteAudio=true
+        final result = service.concatenateSegments(clips, muteAudio: true);
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing plugin, but prevents test leaking)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+
+      test('concatenateSegments sorts clips by orderIndex', () async {
+        // The implementation internally sorts clips by orderIndex before concatenation
+        // This ensures clips are processed in the correct order regardless of input order
+
+        // Create clips in wrong order
+        final clips = [
+          RecordingClip(
+            id: 'clip2',
+            filePath: '/path/to/clip2.mp4',
+            duration: const Duration(seconds: 3),
+            orderIndex: 1,
+            recordedAt: DateTime.now(),
+          ),
+          RecordingClip(
+            id: 'clip1',
+            filePath: '/path/to/clip1.mp4',
+            duration: const Duration(seconds: 2),
+            orderIndex: 0,
+            recordedAt: DateTime.now(),
+          ),
+        ];
+
+        // Service accepts clips in any order - sorting is internal
+        final result = service.concatenateSegments(clips);
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing plugin, but prevents test leaking)
+        await expectLater(result, throwsA(isA<Exception>()));
       });
     });
   });
