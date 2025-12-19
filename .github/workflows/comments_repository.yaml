@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    name: Likes Repository CI
+    name: Comments Repository CI
     runs-on: ubuntu-latest
     defaults:
       run:
