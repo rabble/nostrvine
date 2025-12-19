@@ -367,13 +367,18 @@ class WebSocketConnectionManager {
       }
     });
 
+    // Send REQ immediately followed by CLOSE to avoid receiving any events.
+    // The relay will still respond with EOSE or CLOSED, confirming the
+    // connection is alive, but no events can be delivered through the
+    // already-closed subscription.
     final pingMsg = jsonEncode([
       'REQ',
       _pingSubId,
-      {'limit': 0},
+      {'limit': 1, 'since': 4294967295}, // Far future timestamp, no events match
     ]);
+    final closeMsg = jsonEncode(['CLOSE', _pingSubId]);
 
-    if (send(pingMsg)) {
+    if (send(pingMsg) && send(closeMsg)) {
       log('Ping sent');
     } else {
       log('Ping failed to send');
