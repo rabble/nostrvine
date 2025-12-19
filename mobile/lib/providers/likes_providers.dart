@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/state/likes_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -40,35 +41,47 @@ class LikesNotifier extends _$LikesNotifier {
 
   @override
   LikesState build() {
-    // Listen to auth state changes
+    // Listen to auth state changes (like SocialNotifier pattern)
+    // This is more reliable than listening to repository because auth state
+    // transitions are explicit enums, not null-checks on repository instances
     ref.listen(authServiceProvider, (previous, current) {
-      final previousAuth = previous?.isAuthenticated ?? false;
-      final currentAuth = current.isAuthenticated;
+      final previousState = previous?.authState;
+      final currentState = current.authState;
 
       Log.debug(
-        'LikesNotifier: Auth state changed - '
-        'previous: $previousAuth, current: $currentAuth',
+        'LikesNotifier: Auth state: '
+        '${previousState?.name ?? 'null'} → ${currentState.name}',
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
 
-      if (!previousAuth && currentAuth) {
-        // User logged in (or already logged in on initial fire)
-        // Only invalidate if there was a previous state (actual login, not initial)
-        if (previous != null) {
-          ref.invalidate(likesRepositoryProvider);
-        }
-        _initialize();
-      } else if (previousAuth && !currentAuth) {
-        // User logged out - clear state and invalidate repository
+      if (currentState == AuthState.authenticated) {
+        // Schedule initialization for after build() completes
+        // This is necessary because fireImmediately triggers during build(),
+        // before state is available
+        Future.microtask(_initializeIfNeeded);
+      } else if (previousState == AuthState.authenticated &&
+          currentState != AuthState.authenticated) {
+        // User logged out
         _clearState();
-        ref.invalidate(likesRepositoryProvider);
       }
     }, fireImmediately: true);
 
     ref.onDispose(_cleanup);
 
     return LikesState.initial;
+  }
+
+  /// Initialize if not already initialized
+  void _initializeIfNeeded() {
+    if (!state.isInitialized) {
+      Log.info(
+        'LikesNotifier: Starting initialization',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+      _initialize();
+    }
   }
 
   /// Initialize the likes state
@@ -78,19 +91,11 @@ class LikesNotifier extends _$LikesNotifier {
     // Prevent concurrent initialization - if already in progress, skip
     if (_initializationCompleter != null &&
         !_initializationCompleter!.isCompleted) {
-      Log.debug(
-        'LikesNotifier: Initialization already in progress, skipping',
-        name: 'LikesNotifier',
-        category: LogCategory.system,
-      );
       return;
     }
 
     // Create a new completer for this initialization
     _initializationCompleter = Completer<void>();
-
-    // Small delay to allow likesRepositoryProvider to rebuild after invalidation
-    await Future<void>.delayed(const Duration(milliseconds: 50));
 
     final repository = ref.read(likesRepositoryProvider);
     if (repository == null) {
@@ -106,34 +111,37 @@ class LikesNotifier extends _$LikesNotifier {
 
     state = state.copyWith(isSyncing: true, error: null);
 
+    // CRITICAL: Load state from local storage IMMEDIATELY before any async ops
+    // This ensures UI shows correct liked state right away on app restart
     try {
-      // Sync user's reactions from relays
+      await _updateStateFromRepository(repository);
+      Log.info(
+        'LikesNotifier: Initial load complete - ${state.likedEventIds.length} '
+        'likes loaded from storage',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'LikesNotifier: Failed to load from storage: $e\n$stackTrace',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+    }
+
+    // Subscribe to reactive updates for live changes
+    _subscribeToLikedIds(repository);
+
+    try {
+      // Sync user's reactions from relays (may fetch newer data)
       await repository.syncUserReactions();
 
-      // Get initial liked IDs
-      final likedIds = await repository.getLikedEventIds();
-
-      // Build eventIdToReactionId map
-      final eventIdToReactionId = <String, String>{};
-      for (final eventId in likedIds) {
-        final record = await repository.getLikeRecord(eventId);
-        if (record != null) {
-          eventIdToReactionId[eventId] = record.reactionEventId;
-        }
-      }
-
-      state = state.copyWith(
-        likedEventIds: likedIds,
-        eventIdToReactionId: eventIdToReactionId,
-        isInitialized: true,
-        isSyncing: false,
-      );
-
-      // Subscribe to reactive updates
-      _subscribeTeLikedIds(repository);
+      // Update state again with any new data from relays
+      await _updateStateFromRepository(repository, markInitialized: true);
 
       Log.info(
-        'LikesNotifier: Initialized with ${likedIds.length} liked events',
+        'LikesNotifier: Initialized with ${state.likedEventIds.length} '
+        'liked events',
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
@@ -143,17 +151,60 @@ class LikesNotifier extends _$LikesNotifier {
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
-      state = state.copyWith(isSyncing: false, error: e.message);
+      // Still mark as initialized since we have local data
+      state = state.copyWith(
+        isInitialized: true,
+        isSyncing: false,
+        error: e.message,
+      );
     } catch (e) {
       Log.error(
         'LikesNotifier: Initialization failed - $e',
         name: 'LikesNotifier',
         category: LogCategory.system,
       );
-      state = state.copyWith(isSyncing: false, error: e.toString());
+      // Still mark as initialized since we have local data
+      state = state.copyWith(
+        isInitialized: true,
+        isSyncing: false,
+        error: e.toString(),
+      );
     } finally {
       _initializationCompleter?.complete();
     }
+  }
+
+  /// Updates state with current data from repository
+  ///
+  /// Loads liked IDs and reaction ID mappings from the repository's cache
+  /// (which is backed by local storage).
+  Future<void> _updateStateFromRepository(
+    LikesRepository repository, {
+    bool markInitialized = false,
+  }) async {
+    final likedIds = await repository.getLikedEventIds();
+
+    // Build eventIdToReactionId map
+    final eventIdToReactionId = <String, String>{};
+    for (final eventId in likedIds) {
+      final record = await repository.getLikeRecord(eventId);
+      if (record != null) {
+        eventIdToReactionId[eventId] = record.reactionEventId;
+      }
+    }
+
+    state = state.copyWith(
+      likedEventIds: likedIds,
+      eventIdToReactionId: eventIdToReactionId,
+      isInitialized: markInitialized ? true : state.isInitialized,
+      isSyncing: markInitialized ? false : state.isSyncing,
+    );
+
+    Log.debug(
+      'LikesNotifier: Loaded ${likedIds.length} likes from storage',
+      name: 'LikesNotifier',
+      category: LogCategory.system,
+    );
   }
 
   /// Wait for initialization to complete (if in progress)
@@ -170,7 +221,7 @@ class LikesNotifier extends _$LikesNotifier {
   }
 
   /// Subscribe to reactive liked IDs stream from repository
-  void _subscribeTeLikedIds(LikesRepository repository) {
+  void _subscribeToLikedIds(LikesRepository repository) {
     _likedIdsSubscription?.cancel();
     _likedIdsSubscription = repository.watchLikedEventIds().listen(
       (likedIds) {

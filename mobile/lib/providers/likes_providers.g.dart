@@ -107,7 +107,7 @@ final class LikesNotifierProvider
   }
 }
 
-String _$likesNotifierHash() => r'2dde4684b1571e4c39346cbb47b67cd1260abf90';
+String _$likesNotifierHash() => r'9de5d4c690768716b3abada93cd68330397289bd';
 
 /// Main likes state notifier
 ///
