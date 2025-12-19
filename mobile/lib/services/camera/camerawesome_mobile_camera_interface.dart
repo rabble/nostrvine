@@ -35,6 +35,11 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
   // Stream controller for camera state updates
   final _stateController = StreamController<CameraState>.broadcast();
 
+  // Cached preview widget to prevent duplicate GlobalKey errors during rebuilds
+  // CamerAwesome's PreviewFitWidget uses internal GlobalKeys that conflict if
+  // multiple CameraAwesomeBuilder instances exist in the widget tree
+  Widget? _cachedPreviewWidget;
+
   // Callback for when camera becomes ready to record
   VoidCallback? onCameraReady;
 
@@ -476,7 +481,10 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
 
   @override
   Widget get previewWidget {
-    return CameraAwesomeBuilder.custom(
+    // Return cached widget to prevent duplicate GlobalKey errors
+    // CamerAwesome's PreviewFitWidget uses internal GlobalKeys that conflict
+    // if multiple CameraAwesomeBuilder instances exist during widget rebuilds
+    return _cachedPreviewWidget ??= CameraAwesomeBuilder.custom(
       saveConfig: SaveConfig.video(
         pathBuilder: (sensors) async {
           // Use static path to avoid closure capture issues
@@ -604,6 +612,7 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
     _cameraState = null;
     _isRecording = false;
     _currentRecordingPath = null;
+    _cachedPreviewWidget = null; // Clear cached widget to allow fresh creation on reinit
 
     Log.info(
       'CamerAwesome camera interface disposed',
