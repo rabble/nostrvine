@@ -112,10 +112,6 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       );
 
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-
         // Dispose video preview to free memory
         _previewController?.dispose();
         _previewController = null;
@@ -128,18 +124,65 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         // The user is done recording, so we don't need the camera anymore
         ref.read(vineRecordingProvider.notifier).releaseCamera();
 
-        await context.push('/edit-video', extra: videoPath);
+        Log.info(
+          '📹 About to navigate to /edit-video with path: $videoPath',
+          category: LogCategory.video,
+        );
 
-        // Clear navigation flag now that we've returned
-        _isNavigatingAway = false;
+        // Update processing state before navigation
+        setState(() {
+          _isProcessing = false;
+        });
 
-        // Re-initialize preview when returning from video editor
-        if (mounted) {
-          final state = ref.read(clipManagerProvider);
-          if (state.sortedClips.isNotEmpty) {
-            await _loadPreview(state.sortedClips.first);
+        // Use Future.microtask to ensure navigation happens in a clean
+        // event loop iteration. This is more reliable than addPostFrameCallback
+        // which depends on frame rendering (which may not occur after async ops).
+        await Future.microtask(() async {
+          if (!mounted) {
+            Log.warning(
+              '📹 Widget unmounted before navigation, aborting',
+              category: LogCategory.video,
+            );
+            return;
           }
-        }
+
+          Log.info(
+            '📹 Microtask: context.mounted=${context.mounted}',
+            category: LogCategory.video,
+          );
+
+          try {
+            Log.info(
+              '📹 Calling context.push NOW',
+              category: LogCategory.video,
+            );
+            final result = await context.push('/edit-video', extra: videoPath);
+            Log.info(
+              '📹 Navigation returned from /edit-video, result: $result',
+              category: LogCategory.video,
+            );
+          } catch (navError, navStack) {
+            Log.error(
+              '📹 Navigation to /edit-video failed: $navError',
+              category: LogCategory.video,
+            );
+            Log.error(
+              '📹 Navigation stack: $navStack',
+              category: LogCategory.video,
+            );
+          }
+
+          // Clear navigation flag now that we've returned
+          if (mounted) {
+            _isNavigatingAway = false;
+
+            // Re-initialize preview when returning from video editor
+            final state = ref.read(clipManagerProvider);
+            if (state.sortedClips.isNotEmpty) {
+              await _loadPreview(state.sortedClips.first);
+            }
+          }
+        });
       }
     } catch (e) {
       Log.error(
