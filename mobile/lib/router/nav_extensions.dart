@@ -28,6 +28,7 @@ extension NavX on BuildContext {
 
   void goMyProfile() => goProfile('me');
 
+  // TODO(548): Move all of the "me" logic into the router or the profile page
   void goProfile(String identifier, [int index = 0]) {
     debugPrint('🧭 goProfile called: identifier=$identifier, index=$index');
 
