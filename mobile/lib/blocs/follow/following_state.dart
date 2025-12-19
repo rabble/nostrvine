@@ -35,6 +35,9 @@ final class FollowingState extends Equatable {
   /// The pubkey whose following list is being viewed
   final String? targetPubkey;
 
+  /// Check if the current user is following a specific pubkey
+  bool isFollowing(String pubkey) => followingPubkeys.contains(pubkey);
+
   /// Create a copy with updated values
   FollowingState copyWith({
     FollowingStatus? status,

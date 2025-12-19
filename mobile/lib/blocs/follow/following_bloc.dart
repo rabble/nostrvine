@@ -1,5 +1,5 @@
-// ABOUTME: BLoC for displaying a user's following list
-// ABOUTME: Scoped to FollowingScreen - handles loading and refreshing the list
+// ABOUTME: BLoC for displaying a user's following list and handling follow/unfollow
+// ABOUTME: Scoped to FollowingScreen - handles loading, refreshing, and operations
 
 import 'dart:async';
 
@@ -14,7 +14,7 @@ import 'package:openvine/utils/unified_logger.dart';
 part 'following_event.dart';
 part 'following_state.dart';
 
-/// BLoC for displaying a user's following list.
+/// BLoC for displaying a user's following list and handling follow/unfollow.
 ///
 /// Scoped to [FollowingScreen]. Supports two modes:
 /// - Current user: Uses [FollowRepository] for reactive updates via emit.forEach
@@ -30,6 +30,8 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
         super(const FollowingState()) {
     on<FollowingListLoadRequested>(_onLoadRequested);
     on<FollowingListRefreshRequested>(_onRefreshRequested);
+    on<FollowRequested>(_onFollowRequested);
+    on<UnfollowRequested>(_onUnfollowRequested);
   }
 
   final FollowRepository _followRepository;
@@ -170,6 +172,50 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     Emitter<FollowingState> emit,
   ) async {
     add(FollowingListLoadRequested(event.pubkey));
+  }
+
+  /// Handle follow request
+  Future<void> _onFollowRequested(
+    FollowRequested event,
+    Emitter<FollowingState> emit,
+  ) async {
+    try {
+      await _followRepository.follow(event.pubkey);
+
+      Log.info(
+        'Successfully followed user: ${event.pubkey}',
+        name: 'FollowingBloc',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to follow user: $e',
+        name: 'FollowingBloc',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Handle unfollow request
+  Future<void> _onUnfollowRequested(
+    UnfollowRequested event,
+    Emitter<FollowingState> emit,
+  ) async {
+    try {
+      await _followRepository.unfollow(event.pubkey);
+
+      Log.info(
+        'Successfully unfollowed user: ${event.pubkey}',
+        name: 'FollowingBloc',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to unfollow user: $e',
+        name: 'FollowingBloc',
+        category: LogCategory.system,
+      );
+    }
   }
 
   @override
