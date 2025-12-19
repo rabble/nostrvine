@@ -5,10 +5,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 
+import 'nav_extensions_test.mocks.dart';
+
+@GenerateMocks([AuthService, NostrClient, VideoEventService])
 void main() {
+  late MockAuthService mockAuthService;
+  late MockNostrClient mockNostrService;
+  late MockVideoEventService mockVideoEventService;
+
+  setUp(() {
+    mockAuthService = MockAuthService();
+    mockNostrService = MockNostrClient();
+    mockVideoEventService = MockVideoEventService();
+
+    // Setup basic stubs
+    when(mockAuthService.isAuthenticated).thenReturn(false);
+    when(mockAuthService.currentKeyContainer).thenReturn(null);
+    when(mockNostrService.isInitialized).thenReturn(false);
+  });
+
   group('NavX.goSearch() - Phase 4 TDD', () {
     testWidgets('goSearch("flutter") navigates to /search/flutter', (
       tester,
@@ -17,13 +41,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 
@@ -77,13 +97,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 
@@ -137,13 +153,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 
@@ -197,13 +209,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 
@@ -257,13 +265,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 

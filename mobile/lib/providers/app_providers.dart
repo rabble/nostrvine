@@ -5,11 +5,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
-import 'package:openvine/providers/relay_gateway_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -39,7 +37,6 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -304,63 +301,6 @@ Stream<AuthState> authStateStream(Ref ref) async* {
 UserDataCleanupService userDataCleanupService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return UserDataCleanupService(prefs);
-}
-
-/// Core Nostr service via NostrClient for relay communication
-@Riverpod(keepAlive: true)
-NostrClient nostrService(Ref ref) {
-  final authService = ref.read(authServiceProvider);
-
-  // Listen to auth changes and rebuild when identity (pubkey) changes.
-  // This ensures the NostrClient always uses the correct keypair,
-  // handling both new logins and identity switches during import.
-  ref.listen(authServiceProvider, (previous, current) {
-    final previousPubkey = previous?.currentKeyContainer?.publicKeyHex;
-    final currentPubkey = current.currentKeyContainer?.publicKeyHex;
-
-    // Rebuild when pubkey changes (identity change or new login)
-    if (currentPubkey != null && currentPubkey != previousPubkey) {
-      Log.info(
-        'Identity changed - rebuilding nostrService',
-        name: 'nostrServiceProvider',
-      );
-      // Reset the gate before invalidating - new client needs initialization
-      ref.read(nostrInitializationProvider.notifier).reset();
-      ref.invalidateSelf();
-    }
-  }, fireImmediately: false); // Prevent loop during initial build
-
-  final statisticsService = ref.watch(relayStatisticsServiceProvider);
-  final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
-
-  // Pass keyContainer directly - provider rebuilds when auth changes
-  final client = NostrServiceFactory.create(
-    keyContainer: authService.currentKeyContainer,
-    statisticsService: statisticsService,
-    gatewaySettings: gatewaySettings,
-  );
-
-  // Initialize relay connections and signal readiness when complete
-  client.initialize().then((_) {
-    ref.read(nostrInitializationProvider.notifier).markInitialized();
-    Log.info(
-      'NostrClient initialized via provider - gate opened',
-      name: 'nostrServiceProvider',
-    );
-  });
-
-  // Cleanup on disposal - but only in production, not during development hot reloads
-  ref.onDispose(() {
-    // Skip disposal during debug mode to prevent shutdown during hot reloads
-    if (!kDebugMode) {
-      client.dispose();
-    } else {
-      // In debug mode, just close subscriptions but keep the client alive
-      client.closeAllSubscriptions();
-    }
-  });
-
-  return client;
 }
 
 /// Subscription manager for centralized subscription management

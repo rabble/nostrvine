@@ -4,22 +4,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 
+import 'search_navigation_test.mocks.dart';
+
+@GenerateMocks([AuthService, NostrClient, VideoEventService])
 void main() {
+  late MockAuthService mockAuthService;
+  late MockNostrClient mockNostrService;
+  late MockVideoEventService mockVideoEventService;
+
+  setUp(() {
+    mockAuthService = MockAuthService();
+    mockNostrService = MockNostrClient();
+    mockVideoEventService = MockVideoEventService();
+
+    // Setup basic stubs
+    when(mockAuthService.isAuthenticated).thenReturn(false);
+    when(mockAuthService.currentKeyContainer).thenReturn(null);
+    when(mockNostrService.isInitialized).thenReturn(false);
+  });
+
   group('Search Navigation', () {
     testWidgets('pushSearch() navigates to search screen', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 
@@ -65,13 +85,9 @@ void main() {
     testWidgets('Back button returns from search screen', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          authServiceProvider.overrideWith((ref) => throw UnimplementedError()),
-          nostrServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
-          videoEventServiceProvider.overrideWith(
-            (ref) => throw UnimplementedError(),
-          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          nostrServiceProvider.overrideWithValue(mockNostrService),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
       );
 

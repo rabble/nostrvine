@@ -75,6 +75,17 @@ class LikesNotifier extends _$LikesNotifier {
   ///
   /// Called when user authenticates. Syncs with local storage and relays.
   Future<void> _initialize() async {
+    // Prevent concurrent initialization - if already in progress, skip
+    if (_initializationCompleter != null &&
+        !_initializationCompleter!.isCompleted) {
+      Log.debug(
+        'LikesNotifier: Initialization already in progress, skipping',
+        name: 'LikesNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     // Create a new completer for this initialization
     _initializationCompleter = Completer<void>();
 
