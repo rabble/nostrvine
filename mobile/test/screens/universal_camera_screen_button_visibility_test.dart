@@ -22,6 +22,7 @@ void main() {
         isCameraInitialized: true,
         canSwitchCamera: true,
         aspectRatio: model.AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(state.canSwitchCamera, isTrue);
@@ -39,6 +40,7 @@ void main() {
         isCameraInitialized: true,
         canSwitchCamera: false,
         aspectRatio: model.AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(state.canSwitchCamera, isFalse);
@@ -56,6 +58,7 @@ void main() {
         isCameraInitialized: true,
         canSwitchCamera: true,
         aspectRatio: model.AspectRatio.square,
+        segmentCount: 0,
       );
 
       final copied = state.copyWith(progress: 0.5);
@@ -76,6 +79,7 @@ void main() {
         isCameraInitialized: true,
         canSwitchCamera: true,
         aspectRatio: model.AspectRatio.square,
+        segmentCount: 0,
       );
 
       final copied = state.copyWith(canSwitchCamera: false);

@@ -1,7 +1,6 @@
 // ABOUTME: Unit tests for EditorProvider (Riverpod) validating state mutations and provider behavior
 // ABOUTME: Tests all EditorNotifier methods and state transitions using ProviderContainer
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/editor_state.dart';

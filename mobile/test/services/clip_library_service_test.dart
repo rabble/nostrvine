@@ -1,8 +1,6 @@
 // ABOUTME: Tests for ClipLibraryService - persistent storage for video clips
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';

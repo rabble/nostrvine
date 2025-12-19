@@ -1430,7 +1430,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               name: 'VideoFeedItem',
                               category: LogCategory.ui,
                             );
-                            _showShareMenu(context, video);
+                            _showShareMenu(context, ref, video);
                           },
                           icon: const Icon(
                             Icons.share_outlined,
@@ -1529,13 +1529,89 @@ class VideoOverlayActions extends ConsumerWidget {
     );
   }
 
-  void _showShareMenu(BuildContext context, VideoEvent video) {
-    showModalBottomSheet<void>(
+  Future<void> _showShareMenu(
+    BuildContext context,
+    WidgetRef ref,
+    VideoEvent video,
+  ) async {
+    // Pause video before showing share menu
+    bool wasPaused = false;
+    try {
+      final controllerParams = VideoControllerParams(
+        videoId: video.id,
+        videoUrl: video.videoUrl!,
+        videoEvent: video,
+      );
+      final controller = ref.read(
+        individualVideoControllerProvider(controllerParams),
+      );
+      if (controller.value.isInitialized && controller.value.isPlaying) {
+        wasPaused = await safePause(controller, video.id);
+        if (wasPaused) {
+          Log.info(
+            '🎬 Paused video for share menu',
+            name: 'VideoFeedItem',
+            category: LogCategory.ui,
+          );
+        }
+      }
+    } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (!errorStr.contains('no active player') &&
+          !errorStr.contains('disposed')) {
+        Log.error(
+          'Failed to pause video for share menu: $e',
+          name: 'VideoFeedItem',
+          category: LogCategory.ui,
+        );
+      }
+    }
+
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ShareVideoMenu(video: video),
     );
+
+    // Resume video after share menu closes if it was playing
+    if (wasPaused) {
+      try {
+        final controllerParams = VideoControllerParams(
+          videoId: video.id,
+          videoUrl: video.videoUrl!,
+          videoEvent: video,
+        );
+        final controller = ref.read(
+          individualVideoControllerProvider(controllerParams),
+        );
+        final stableId = video.vineId ?? video.id;
+        final isActive = ref.read(isVideoActiveProvider(stableId));
+
+        if (isActive &&
+            controller.value.isInitialized &&
+            !controller.value.isPlaying) {
+          final resumed = await safePlay(controller, video.id);
+          if (resumed) {
+            Log.info(
+              '🎬 Resumed video after share menu closed',
+              name: 'VideoFeedItem',
+              category: LogCategory.ui,
+            );
+          }
+        }
+      } catch (e) {
+        final errorStr = e.toString().toLowerCase();
+        if (!errorStr.contains('no active player') &&
+            !errorStr.contains('disposed')) {
+          Log.error(
+            'Failed to resume video after share menu: $e',
+            name: 'VideoFeedItem',
+            category: LogCategory.ui,
+          );
+        }
+      }
+    }
   }
 
   Future<void> _showBadgeExplanationModal(

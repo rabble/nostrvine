@@ -18,6 +18,7 @@ void main() {
         isCameraInitialized: controller.isCameraInitialized,
         canSwitchCamera: controller.canSwitchCamera,
         aspectRatio: controller.aspectRatio,
+        segmentCount: controller.segmentCount,
       );
 
       expect(state.aspectRatio, equals(AspectRatio.square));
@@ -36,6 +37,7 @@ void main() {
         isCameraInitialized: controller.isCameraInitialized,
         canSwitchCamera: controller.canSwitchCamera,
         aspectRatio: AspectRatio.square,
+        segmentCount: controller.segmentCount,
       );
 
       final updated = state.copyWith(aspectRatio: AspectRatio.vertical);

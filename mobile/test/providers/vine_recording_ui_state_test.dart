@@ -20,6 +20,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(state.hasSegments, isFalse, reason: 'Should have no segments');
@@ -44,6 +45,7 @@ void main() {
         ],
         hasSegments: true,
         aspectRatio: AspectRatio.square,
+        segmentCount: 1,
       );
 
       expect(state.hasSegments, isTrue, reason: 'Should have segments');
@@ -62,6 +64,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       final idleState = VineRecordingUIState(
@@ -75,6 +78,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(recordingState.isRecording, isTrue);
@@ -93,6 +97,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(state.recordingDuration, equals(const Duration(seconds: 3)));
@@ -132,6 +137,7 @@ void main() {
         segments: segments,
         hasSegments: true,
         aspectRatio: AspectRatio.square,
+        segmentCount: 3,
       );
 
       expect(state.segments.length, equals(3));
@@ -150,6 +156,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       final cannotRecordState = VineRecordingUIState(
@@ -163,6 +170,7 @@ void main() {
         segments: [],
         hasSegments: false,
         aspectRatio: AspectRatio.square,
+        segmentCount: 0,
       );
 
       expect(canRecordState.canRecord, isTrue);
@@ -182,6 +190,7 @@ void main() {
           segments: [],
           hasSegments: false,
           aspectRatio: AspectRatio.square,
+          segmentCount: 0,
         ),
         VineRecordingUIState(
           recordingState: VineRecordingState.recording,
@@ -194,6 +203,7 @@ void main() {
           segments: [],
           hasSegments: false,
           aspectRatio: AspectRatio.square,
+          segmentCount: 0,
         ),
         VineRecordingUIState(
           recordingState: VineRecordingState.completed,
@@ -206,6 +216,7 @@ void main() {
           segments: [],
           hasSegments: false,
           aspectRatio: AspectRatio.square,
+          segmentCount: 0,
         ),
       ];
 

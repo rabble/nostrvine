@@ -24,7 +24,7 @@ void main() {
     Widget buildTestWidget() {
       return ProviderScope(
         overrides: [
-          clipLibraryServiceProvider.overrideWith((ref) async => clipService),
+          clipLibraryServiceProvider.overrideWith((ref) => clipService),
         ],
         child: const MaterialApp(
           home: ClipLibraryScreen(),

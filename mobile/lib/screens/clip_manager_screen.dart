@@ -533,7 +533,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       final aspectRatio = recordingState.aspectRatio;
 
       // Save each clip individually to the clip library
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
 
       for (final clip in state.sortedClips) {
         final savedClip = SavedClip(

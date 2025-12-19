@@ -47,7 +47,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     });
 
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
       final clips = await clipService.getAllClips();
 
       if (mounted) {
@@ -290,7 +290,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _deleteClip(SavedClip clip) async {
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
       await clipService.deleteClip(clip.id);
 
       // Delete video file
@@ -364,7 +364,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _clearAllClips() async {
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
 
       // Delete all video and thumbnail files
       for (final clip in _clips) {
