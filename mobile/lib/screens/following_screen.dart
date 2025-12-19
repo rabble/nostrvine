@@ -110,12 +110,24 @@ class _FollowingListBody extends StatelessWidget {
         );
       },
       child: ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: following.length,
         itemBuilder: (context, index) {
           final userPubkey = following[index];
-          return UserProfileTile(
-            pubkey: userPubkey,
-            onTap: () => context.goProfile(userPubkey, 0),
+          return BlocSelector<FollowingBloc, FollowingState, bool>(
+            selector: (state) => state.isFollowing(userPubkey),
+            builder: (context, isFollowing) {
+              return UserProfileTile(
+                pubkey: userPubkey,
+                onTap: () => context.goProfile(userPubkey, 0),
+                isFollowing: isFollowing,
+                onToggleFollow: () {
+                  context.read<FollowingBloc>().add(
+                    FollowToggleRequested(userPubkey),
+                  );
+                },
+              );
+            },
           );
         },
       ),
