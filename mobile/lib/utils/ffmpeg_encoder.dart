@@ -312,28 +312,26 @@ class FFmpegEncoder {
       return hardwareSession;
     }
 
-    // If not on Android, no fallback needed - just fail
-    if (!isAndroid) {
-      final output = await hardwareSession.getOutput();
-      await clearSessions();
-      throw FFmpegEncoderException(
-        'FFmpeg command failed',
-        hardwareOutput: output,
-      );
-    }
-
-    // On Android, try replacing h264_mediacodec with libx264
+    // Hardware failed - try software fallback on all platforms
     final hardwareOutput = await hardwareSession.getOutput();
     Log.warning(
-      'Command failed (code: ${hardwareReturnCode?.getValue()}), attempting software fallback. Output: $hardwareOutput',
+      'Command failed (code: ${hardwareReturnCode?.getValue()}), attempting software fallback',
       name: logTag,
       category: LogCategory.system,
     );
 
-    // Replace hardware encoder with software encoder
-    // Must handle the full h264_mediacodec args string including options
+    // Build software command by replacing encoder args
     String softwareCommand = command;
 
+    // Replace Apple VideoToolbox encoder with libx264
+    if (isApplePlatform) {
+      softwareCommand = softwareCommand
+          .replaceAll('-c:v h264_videotoolbox -b:v 4M', getSoftwareEncoderArgs())
+          .replaceAll('-c:v h264_videotoolbox', getSoftwareEncoderArgs())
+          .replaceAll('h264_videotoolbox', 'libx264');
+    }
+
+    // On Android, replace h264_mediacodec with libx264
     // Replace the full h264_mediacodec encoder string with libx264
     // The hardware args are: -c:v h264_mediacodec -b:v 4M -g 30 -bf 0 -profile:v baseline -level 3.1
     // Replace with simpler libx264 args

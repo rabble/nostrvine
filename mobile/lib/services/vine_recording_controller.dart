@@ -424,8 +424,9 @@ class MacOSCameraInterface extends CameraPlatformInterface
       NativeMacOSCamera.stopRecording();
       isRecording = false;
     }
-    // Stop preview
+    // Stop preview and dispose native camera resources
     NativeMacOSCamera.stopPreview();
+    NativeMacOSCamera.dispose();
   }
 
   /// Reset the interface state (for reuse)

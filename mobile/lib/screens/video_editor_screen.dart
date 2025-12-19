@@ -48,21 +48,68 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '📹 VideoEditorScreen.initState() START - videoPath: ${widget.videoPath}',
+      category: LogCategory.video,
+    );
     _initializeVideo();
     _audioPlayer = AudioPlayer();
+    Log.info(
+      '📹 VideoEditorScreen.initState() END',
+      category: LogCategory.video,
+    );
   }
 
   Future<void> _initializeVideo() async {
-    final controller = VideoPlayerController.file(File(widget.videoPath));
-    await controller.initialize();
-    await controller.setLooping(true);
-    await controller.play();
+    Log.info(
+      '📹 _initializeVideo() START',
+      category: LogCategory.video,
+    );
+    try {
+      final file = File(widget.videoPath);
+      Log.info(
+        '📹 Video file exists: ${file.existsSync()}, path: ${widget.videoPath}',
+        category: LogCategory.video,
+      );
 
-    if (mounted) {
-      setState(() {
-        _videoController = controller;
-        _isVideoInitialized = true;
-      });
+      final controller = VideoPlayerController.file(file);
+      Log.info(
+        '📹 VideoPlayerController created, calling initialize()...',
+        category: LogCategory.video,
+      );
+
+      await controller.initialize();
+      Log.info(
+        '📹 VideoPlayerController initialized, size: ${controller.value.size}',
+        category: LogCategory.video,
+      );
+
+      await controller.setLooping(true);
+      await controller.play();
+      Log.info(
+        '📹 Video started playing',
+        category: LogCategory.video,
+      );
+
+      if (mounted) {
+        setState(() {
+          _videoController = controller;
+          _isVideoInitialized = true;
+        });
+        Log.info(
+          '📹 _initializeVideo() COMPLETE - video is ready',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '📹 _initializeVideo() FAILED: $e',
+        category: LogCategory.video,
+      );
+      Log.error(
+        '📹 Stack trace: $stackTrace',
+        category: LogCategory.video,
+      );
     }
   }
 
@@ -375,10 +422,18 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Log.info(
+      '📹 VideoEditorScreen.build() START - isVideoInitialized: $_isVideoInitialized',
+      category: LogCategory.video,
+    );
     final editorState = ref.watch(videoEditorProvider(widget.videoPath));
     final soundServiceAsync = ref.watch(soundLibraryServiceProvider);
     final soundService = soundServiceAsync.value;
 
+    Log.info(
+      '📹 VideoEditorScreen.build() returning Scaffold',
+      category: LogCategory.video,
+    );
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

@@ -146,8 +146,9 @@ class VideoExportService {
         // Build input arguments for each clip
         final inputArgs = sortedClips.map((c) => '-i "${c.filePath}"').join(' ');
 
-        // Build filter_complex: concat streams, then apply crop
-        // Each input is decoded with its own rotation metadata (autorotate)
+        // Check which clips have audio by probing them
+        // For now, use video-only concat to avoid the missing audio issue
+        // This is simpler and more reliable than trying to detect/generate silence
         String filterComplex;
         String audioMapping;
 
@@ -162,14 +163,29 @@ class VideoExportService {
           filterComplex = '$concatFilter;[v]$cropWithFormat[vout]';
           audioMapping = '';
         } else {
-          // Video and audio
-          final streamLabels = List.generate(
-            sortedClips.length,
-            (i) => '[${i}:v][${i}:a]',
-          ).join('');
-          final concatFilter = '${streamLabels}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
+          // Build filter to concatenate video and audio streams
+          // Try using actual audio from input files first
+          final filterParts = <String>[];
+          final concatInputs = <String>[];
+
+          for (var i = 0; i < sortedClips.length; i++) {
+            // Video stream - always present, normalize PTS
+            filterParts.add('[${i}:v]setpts=PTS-STARTPTS[v$i]');
+
+            // Audio stream - use actual audio from input, normalize PTS
+            filterParts.add('[${i}:a]asetpts=PTS-STARTPTS[a$i]');
+
+            concatInputs.add('[v$i][a$i]');
+          }
+
+          final concatFilter =
+              '${concatInputs.join('')}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
+          filterParts.add(concatFilter);
+
           final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
-          filterComplex = '$concatFilter;[v]$cropWithFormat[vout]';
+          filterParts.add('[v]$cropWithFormat[vout]');
+
+          filterComplex = filterParts.join(';');
           audioMapping = '-map "[a]" -c:a aac';
         }
 
@@ -182,11 +198,65 @@ class VideoExportService {
           category: LogCategory.system,
         );
 
-        // Use fallback mechanism for hardware-to-software encoding
-        await FFmpegEncoder.executeCommandWithFallback(
-          command: command,
-          logTag: 'VideoExportService',
-        );
+        // Try with real audio first, fall back to silent audio if clips lack audio streams
+        try {
+          await FFmpegEncoder.executeCommandWithFallback(
+            command: command,
+            logTag: 'VideoExportService',
+          );
+        } on FFmpegEncoderException catch (e) {
+          // Check if failure is due to missing audio stream
+          final output = e.softwareOutput ?? e.hardwareOutput ?? '';
+          if (output.contains('does not have audio') ||
+              output.contains('Invalid stream specifier') ||
+              output.contains('Stream map') && output.contains(':a')) {
+            Log.warning(
+              'Some clips lack audio, retrying with silent audio fallback',
+              name: 'VideoExportService',
+              category: LogCategory.system,
+            );
+
+            // Rebuild filter with anullsrc for silent audio
+            final fallbackFilterParts = <String>[];
+            final fallbackConcatInputs = <String>[];
+
+            for (var i = 0; i < sortedClips.length; i++) {
+              final clip = sortedClips[i];
+              final durationSec = clip.duration.inMilliseconds / 1000.0;
+
+              fallbackFilterParts.add('[${i}:v]setpts=PTS-STARTPTS[v$i]');
+              fallbackFilterParts.add(
+                'anullsrc=channel_layout=mono:sample_rate=48000:d=$durationSec[silence$i]',
+              );
+              fallbackConcatInputs.add('[v$i][silence$i]');
+            }
+
+            final fallbackConcatFilter =
+                '${fallbackConcatInputs.join('')}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
+            fallbackFilterParts.add(fallbackConcatFilter);
+
+            final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
+            fallbackFilterParts.add('[v]$cropWithFormat[vout]');
+
+            final fallbackFilterComplex = fallbackFilterParts.join(';');
+            final fallbackCommand =
+                '-y $inputArgs -filter_complex "$fallbackFilterComplex" -map "[vout]" $audioMapping ${_getVideoEncoderArgs()} "$outputPath"';
+
+            Log.info(
+              'Retrying with silent audio fallback: $fallbackCommand',
+              name: 'VideoExportService',
+              category: LogCategory.system,
+            );
+
+            await FFmpegEncoder.executeCommandWithFallback(
+              command: fallbackCommand,
+              logTag: 'VideoExportService',
+            );
+          } else {
+            // Not an audio issue, rethrow
+            rethrow;
+          }
+        }
 
         Log.info(
           'Successfully processed clips to: $outputPath',

@@ -134,55 +134,43 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           _isProcessing = false;
         });
 
-        // Use Future.microtask to ensure navigation happens in a clean
-        // event loop iteration. This is more reliable than addPostFrameCallback
-        // which depends on frame rendering (which may not occur after async ops).
-        await Future.microtask(() async {
-          if (!mounted) {
-            Log.warning(
-              '📹 Widget unmounted before navigation, aborting',
-              category: LogCategory.video,
-            );
-            return;
-          }
+        // Navigate directly using context.push - don't await as we don't need
+        // to wait for the user to return. The navigation flag will be cleared
+        // when this screen becomes visible again via didChangeDependencies.
+        Log.info(
+          '📹 Calling context.push for /edit-video',
+          category: LogCategory.video,
+        );
 
+        // Use unawaited push to avoid blocking this function
+        // ignore: unawaited_futures
+        context.push('/edit-video', extra: videoPath).then((result) {
           Log.info(
-            '📹 Microtask: context.mounted=${context.mounted}',
+            '📹 Navigation returned from /edit-video, result: $result',
             category: LogCategory.video,
           );
-
-          try {
-            Log.info(
-              '📹 Calling context.push NOW',
-              category: LogCategory.video,
-            );
-            final result = await context.push('/edit-video', extra: videoPath);
-            Log.info(
-              '📹 Navigation returned from /edit-video, result: $result',
-              category: LogCategory.video,
-            );
-          } catch (navError, navStack) {
-            Log.error(
-              '📹 Navigation to /edit-video failed: $navError',
-              category: LogCategory.video,
-            );
-            Log.error(
-              '📹 Navigation stack: $navStack',
-              category: LogCategory.video,
-            );
-          }
 
           // Clear navigation flag now that we've returned
           if (mounted) {
             _isNavigatingAway = false;
 
             // Re-initialize preview when returning from video editor
-            final state = ref.read(clipManagerProvider);
-            if (state.sortedClips.isNotEmpty) {
-              await _loadPreview(state.sortedClips.first);
+            final currentState = ref.read(clipManagerProvider);
+            if (currentState.sortedClips.isNotEmpty) {
+              _loadPreview(currentState.sortedClips.first);
             }
           }
+        }).catchError((navError, navStack) {
+          Log.error(
+            '📹 Navigation to /edit-video failed: $navError',
+            category: LogCategory.video,
+          );
         });
+
+        Log.info(
+          '📹 Navigation initiated (not awaited)',
+          category: LogCategory.video,
+        );
       }
     } catch (e) {
       Log.error(
