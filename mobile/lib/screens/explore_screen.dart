@@ -901,7 +901,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         return _buildVideoGrid(
           videos,
           'New Videos',
-          childAspectRatio: 0.50, // Taller grid cells for portrait videos
           thumbnailAspectRatio: 9 / 16, // Portrait thumbnail (0.5625)
         );
       },
@@ -980,16 +979,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   Widget _buildVideoGrid(
     List<VideoEvent> videos,
     String tabName, {
-    double? childAspectRatio,
     double? thumbnailAspectRatio,
   }) {
     // Default aspect ratios - square thumbnails with standard grid height
-    final gridAspectRatio = childAspectRatio ?? 0.72;
     final thumbAspectRatio = thumbnailAspectRatio ?? 1.0;
 
     return ComposableVideoGrid(
       videos: videos,
-      childAspectRatio: gridAspectRatio,
       thumbnailAspectRatio: thumbAspectRatio,
       onVideoTap: (videos, index) {
         Log.info(

@@ -9,6 +9,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -35,7 +36,6 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
@@ -769,7 +769,6 @@ LikesRepository? likesRepository(Ref ref) {
 
   final repository = LikesRepository(
     nostrClient: nostrClient,
-    userPubkey: authService.currentPublicKeyHex!,
     localStorage: localStorage,
   );
 

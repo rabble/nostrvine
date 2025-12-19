@@ -11,7 +11,6 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 
 /// Active video ID derived from router state and app lifecycle
 /// Returns null when app is backgrounded or no valid video at current index
@@ -132,30 +131,4 @@ final activeVideoIdProvider = Provider<String?>((ref) {
 final isVideoActiveProvider = Provider.family<bool, String>((ref, videoId) {
   final activeVideoId = ref.watch(activeVideoIdProvider);
   return activeVideoId == videoId;
-});
-
-/// Auto-cleanup provider that disposes all video controllers when active video changes
-/// This ensures only one video can be playing at a time
-/// Must be watched at app level to activate
-final videoControllerAutoCleanupProvider = Provider<void>((ref) {
-  // This variable updates with the next value in activeVideoIdProvider.
-  // ignore: unused_local_variable
-  String? previousActiveVideoId;
-
-  // Listen to active video changes and dispose all controllers when it changes
-  ref.listen<String?>(activeVideoIdProvider, (previous, next) {
-    // When active video changes, dispose all controllers to ensure clean state
-    if (previous != next && previous != null) {
-      Log.info(
-        '🧹 Active video changed ($previous → $next), disposing all video controllers',
-        name: 'VideoControllerCleanup',
-        category: LogCategory.video,
-      );
-
-      // Dispose all controllers to force clean state
-      // The new active video will create its controller fresh
-      disposeAllVideoControllers(ref.container);
-    }
-    previousActiveVideoId = next;
-  }, fireImmediately: false);
 });
