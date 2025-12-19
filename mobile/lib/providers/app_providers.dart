@@ -385,20 +385,20 @@ SocialService socialService(Ref ref) {
 
 /// Provider for FollowRepository instance
 ///
-/// Creates a FollowRepository when the user is authenticated.
-/// Returns null when user is not authenticated.
+/// Creates a FollowRepository for managing follow relationships.
+/// Requires authentication.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository? followRepository(Ref ref) {
+FollowRepository followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
 
-  // Repository requires authentication (user must have keys)
-  if (!nostrClient.hasKeys) {
-    return null;
-  }
+  assert(
+    nostrClient.hasKeys,
+    'FollowRepository accessed without authentication',
+  );
 
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
