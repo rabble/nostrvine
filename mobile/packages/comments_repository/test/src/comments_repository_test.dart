@@ -338,8 +338,7 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event;
-          return capturedEvent;
+          return capturedEvent = inv.positionalArguments.first as Event;
         });
 
         await repository.postComment(
@@ -354,18 +353,20 @@ void main() {
 
         // Check tags
         final eTags = capturedEvent!.tags
-            .where((t) => t[0].toString() == 'e')
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'e')
             .toList();
         final pTags = capturedEvent!.tags
-            .where((t) => t[0].toString() == 'p')
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'p')
             .toList();
 
         expect(eTags.length, equals(1));
-        expect(eTags.first[1].toString(), equals(testRootEventId));
-        expect(eTags.first[3].toString(), equals('root'));
+        expect(eTags.first[1], equals(testRootEventId));
+        expect(eTags.first[3], equals('root'));
 
         expect(pTags.length, equals(1));
-        expect(pTags.first[1].toString(), equals(testRootAuthorPubkey));
+        expect(pTags.first[1], equals(testRootAuthorPubkey));
       });
 
       test('posts reply with correct tags', () async {
@@ -376,8 +377,7 @@ void main() {
             'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event;
-          return capturedEvent;
+          return capturedEvent = inv.positionalArguments.first as Event;
         });
 
         await repository.postComment(
@@ -391,23 +391,25 @@ void main() {
         expect(capturedEvent, isNotNull);
 
         final eTags = capturedEvent!.tags
-            .where((t) => t[0].toString() == 'e')
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'e')
             .toList();
         final pTags = capturedEvent!.tags
-            .where((t) => t[0].toString() == 'p')
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'p')
             .toList();
 
         // Should have both root and reply e tags
         expect(eTags.length, equals(2));
-        expect(eTags[0][1].toString(), equals(testRootEventId));
-        expect(eTags[0][3].toString(), equals('root'));
-        expect(eTags[1][1].toString(), equals(parentCommentId));
-        expect(eTags[1][3].toString(), equals('reply'));
+        expect(eTags[0][1], equals(testRootEventId));
+        expect(eTags[0][3], equals('root'));
+        expect(eTags[1][1], equals(parentCommentId));
+        expect(eTags[1][3], equals('reply'));
 
         // Should have both root author and reply author p tags
         expect(pTags.length, equals(2));
-        expect(pTags[0][1].toString(), equals(testRootAuthorPubkey));
-        expect(pTags[1][1].toString(), equals(parentAuthorPubkey));
+        expect(pTags[0][1], equals(testRootAuthorPubkey));
+        expect(pTags[1][1], equals(parentAuthorPubkey));
       });
 
       test('returns created Comment', () async {
@@ -457,8 +459,7 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event;
-          return capturedEvent;
+          return capturedEvent = inv.positionalArguments.first as Event;
         });
 
         await repository.postComment(
