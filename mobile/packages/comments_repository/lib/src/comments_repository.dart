@@ -9,7 +9,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Kind 1 is the NIP-10 text note kind used for comments.
-const _textNoteKind = 1;
+const int _textNoteKind = EventKind.textNote;
 
 /// Default limit for comment queries.
 const _defaultLimit = 100;
@@ -168,9 +168,7 @@ class CommentsRepository {
         id: sentEvent.id,
         content: trimmedContent,
         authorPubkey: sentEvent.pubkey,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(
-          sentEvent.createdAt * 1000,
-        ),
+        createdAt: event.createdAtDateTime,
         rootEventId: rootEventId,
         rootAuthorPubkey: rootEventAuthorPubkey,
         replyToEventId: replyToEventId,
@@ -254,7 +252,7 @@ class CommentsRepository {
         id: event.id,
         content: event.content,
         authorPubkey: event.pubkey,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+        createdAt: event.createdAtDateTime,
         rootEventId: parsedRootEventId ?? rootEventId,
         replyToEventId: replyToEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
