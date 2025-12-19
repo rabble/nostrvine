@@ -564,13 +564,9 @@ class _UniversalCameraScreenPureState
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Camera preview - wrapped in StatefulWidget to prevent rebuilds
-              // This fixes GlobalKey conflicts and recording state issues
+              // Camera preview - EXACTLY matching experimental app structure
               if (recordingState.isInitialized)
-                CameraPreviewHolder(
-                  key: const ValueKey('camera_preview_holder'),
-                  notifier: ref.read(vineRecordingProvider.notifier),
-                )
+                ref.read(vineRecordingProvider.notifier).previewWidget
               else
                 CameraPreviewPlaceholder(
                   isRecording: recordingState.isRecording,
@@ -1838,49 +1834,3 @@ class _UniversalCameraScreenPureState
 
 /// Timer duration options for delayed recording
 enum TimerDuration { off, threeSeconds, tenSeconds }
-
-/// Holds the camera preview widget to prevent it from being recreated on parent rebuilds.
-/// This fixes two issues:
-/// 1. GlobalKey conflicts from multiple CameraAwesomeBuilder instances during rebuilds
-/// 2. Recording state confusion from cached widget state mismatches
-///
-/// The preview is captured once when the camera is initialized and held stable
-/// until the widget is disposed.
-class CameraPreviewHolder extends StatefulWidget {
-  final VineRecordingNotifier notifier;
-
-  const CameraPreviewHolder({super.key, required this.notifier});
-
-  @override
-  State<CameraPreviewHolder> createState() => _CameraPreviewHolderState();
-}
-
-class _CameraPreviewHolderState extends State<CameraPreviewHolder> {
-  Widget? _preview;
-
-  @override
-  void initState() {
-    super.initState();
-    // Capture the preview widget once - it will not be recreated on parent rebuilds
-    _preview = widget.notifier.previewWidget;
-    Log.info(
-      '📷 CameraPreviewHolder: Captured preview widget',
-      category: LogCategory.video,
-    );
-  }
-
-  @override
-  void dispose() {
-    Log.info(
-      '📷 CameraPreviewHolder: Disposed',
-      category: LogCategory.video,
-    );
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Return the captured preview - never recreate it
-    return _preview ?? const SizedBox.shrink();
-  }
-}

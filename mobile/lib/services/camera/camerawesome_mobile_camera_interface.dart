@@ -35,7 +35,6 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
   // Stream controller for camera state updates
   final _stateController = StreamController<CameraState>.broadcast();
 
-
   // Callback for when camera becomes ready to record
   VoidCallback? onCameraReady;
 
