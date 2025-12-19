@@ -152,8 +152,8 @@ class LikesRepository {
   Future<void> unlikeEvent(String eventId) async {
     await _ensureInitialized();
 
-    // Try cache first, then fall back to database to handle cache/db
-    // inconsistency after app restart
+    // Try in-memory cache first, then fall back to database
+    // This handles the case where the cache hasn't been populated yet
     var record = _likeRecords[eventId];
     if (record == null && _localStorage != null) {
       record = await _localStorage.getLikeRecord(eventId);
