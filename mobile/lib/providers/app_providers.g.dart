@@ -1237,52 +1237,6 @@ final class UserDataCleanupServiceProvider
 String _$userDataCleanupServiceHash() =>
     r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
 
-/// Core Nostr service via NostrClient for relay communication
-
-@ProviderFor(nostrService)
-const nostrServiceProvider = NostrServiceProvider._();
-
-/// Core Nostr service via NostrClient for relay communication
-
-final class NostrServiceProvider
-    extends $FunctionalProvider<NostrClient, NostrClient, NostrClient>
-    with $Provider<NostrClient> {
-  /// Core Nostr service via NostrClient for relay communication
-  const NostrServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'nostrServiceProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$nostrServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<NostrClient> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  NostrClient create(Ref ref) {
-    return nostrService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(NostrClient value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<NostrClient>(value),
-    );
-  }
-}
-
-String _$nostrServiceHash() => r'b6baa3f243c7869bde6c729a4c0a87ba305f351e';
-
 /// Subscription manager for centralized subscription management
 
 @ProviderFor(subscriptionManager)
@@ -2034,7 +1988,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'9b7b6a7f878adbc5cb38e3584c2ac444e9488cb8';
+    r'b246ddd7f795dcf5adb837e3530bbc21c2c14fa8';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2318,7 +2272,7 @@ final class ContentDeletionServiceProvider
 }
 
 String _$contentDeletionServiceHash() =>
-    r'8f8bec86fb2c60f058460e18a5df815263f86638';
+    r'595760368d4f392891586c43959ceba01e02bcd5';
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 
@@ -2371,7 +2325,7 @@ final class AccountDeletionServiceProvider
 }
 
 String _$accountDeletionServiceHash() =>
-    r'1c48ec2012838ad7a6611f430dc5a24f44cc1dab';
+    r'659c0ee712559ba34e462dc9b236c40c80651240';
 
 /// Broken video tracker service for filtering non-functional videos
 
@@ -2470,3 +2424,75 @@ final class BugReportServiceProvider
 }
 
 String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+
+@ProviderFor(likesRepository)
+const likesRepositoryProvider = LikesRepositoryProvider._();
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+
+final class LikesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          LikesRepository?,
+          LikesRepository?,
+          LikesRepository?
+        >
+    with $Provider<LikesRepository?> {
+  /// Provider for LikesRepository instance
+  ///
+  /// Creates a LikesRepository when the user is authenticated.
+  /// Returns null when user is not authenticated.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalReactionsDao from databaseProvider (for local storage)
+  const LikesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'likesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$likesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LikesRepository?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  LikesRepository? create(Ref ref) {
+    return likesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LikesRepository? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LikesRepository?>(value),
+    );
+  }
+}
+
+String _$likesRepositoryHash() => r'00af72833fee780ad5521b90b45735592bc3db5e';

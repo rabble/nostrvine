@@ -1,10 +1,9 @@
 // ABOUTME: Account deletion service implementing NIP-62 Request to Vanish
 // ABOUTME: Handles network-wide account deletion by publishing kind 62 events to all relays
 
-import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Result of account deletion operation
@@ -30,21 +29,18 @@ class DeleteAccountResult {
 class AccountDeletionService {
   AccountDeletionService({
     required NostrClient nostrService,
-    required NostrKeyManager keyManager,
     required AuthService authService,
   }) : _nostrService = nostrService,
-       _keyManager = keyManager,
        _authService = authService;
 
   final NostrClient _nostrService;
-  final NostrKeyManager _keyManager;
   final AuthService _authService;
 
   /// Delete user's account using NIP-62 Request to Vanish
   Future<DeleteAccountResult> deleteAccount({String? customReason}) async {
     try {
-      if (!_nostrService.hasKeys) {
-        return DeleteAccountResult.failure('No keys available for signing');
+      if (!_authService.isAuthenticated) {
+        return DeleteAccountResult.failure('Not authenticated');
       }
 
       // Create NIP-62 event
@@ -91,23 +87,9 @@ class AccountDeletionService {
   /// Create NIP-62 kind 62 event with ALL_RELAYS tag
   Future<Event?> createNip62Event({required String reason}) async {
     try {
-      if (!_nostrService.hasKeys) {
+      if (!_authService.isAuthenticated) {
         Log.error(
-          'Cannot create NIP-62 event: no keys available',
-          name: 'AccountDeletionService',
-          category: LogCategory.system,
-        );
-        return null;
-      }
-
-      // Get keyManager
-      final keyManager = _keyManager;
-
-      // Check keyPair exists
-      final keyPair = keyManager.keyPair;
-      if (keyPair == null) {
-        Log.error(
-          'Cannot create NIP-62 event: keyPair is null',
+          'Cannot create NIP-62 event: not authenticated',
           name: 'AccountDeletionService',
           category: LogCategory.system,
         );
@@ -115,19 +97,9 @@ class AccountDeletionService {
       }
 
       final pubkey = _authService.currentPublicKeyHex;
-      if (pubkey == null) {
+      if (pubkey == null || pubkey.isEmpty) {
         Log.error(
           'Cannot create NIP-62 event: no pubkey available',
-          name: 'AccountDeletionService',
-          category: LogCategory.system,
-        );
-        return null;
-      }
-
-      // Verify pubkey matches keyPair (sanity check)
-      if (pubkey != keyPair.public) {
-        Log.error(
-          'Cannot create NIP-62 event: pubkey mismatch (authService: $pubkey, keyPair: ${keyPair.public})',
           name: 'AccountDeletionService',
           category: LogCategory.system,
         );
@@ -145,32 +117,29 @@ class AccountDeletionService {
         category: LogCategory.system,
       );
 
-      // Create kind 62 event using nostr_sdk (same pattern as other events)
-      final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final event = Event(
-        keyPair.public,
-        62, // NIP-62 account deletion kind
-        tags,
-        reason,
-        createdAt: createdAt,
+      // Create and sign event via AuthService
+      final signedEvent = await _authService.createAndSignEvent(
+        kind: 62, // NIP-62 account deletion kind
+        content: reason,
+        tags: tags,
       );
 
+      if (signedEvent == null) {
+        Log.error(
+          'Failed to create and sign NIP-62 event',
+          name: 'AccountDeletionService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+
       Log.info(
-        'Event created, now signing with private key',
+        'Created NIP-62 deletion event (kind 62): ${signedEvent.id}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
 
-      // Sign the event
-      event.sign(keyPair.private);
-
-      Log.info(
-        'Created NIP-62 deletion event (kind 62): ${event.id}',
-        name: 'AccountDeletionService',
-        category: LogCategory.system,
-      );
-
-      return event;
+      return signedEvent;
     } catch (e, stackTrace) {
       Log.error(
         'Failed to create NIP-62 event: $e\nStack trace: $stackTrace',

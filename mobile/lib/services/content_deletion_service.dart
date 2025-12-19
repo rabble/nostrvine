@@ -3,11 +3,11 @@
 
 import 'dart:convert';
 
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,15 +73,15 @@ class ContentDeletion {
 class ContentDeletionService {
   ContentDeletionService({
     required NostrClient nostrService,
-    required NostrKeyManager keyManager,
+    required AuthService authService,
     required SharedPreferences prefs,
   }) : _nostrService = nostrService,
-       _keyManager = keyManager,
+       _authService = authService,
        _prefs = prefs {
     _loadDeletionHistory();
   }
   final NostrClient _nostrService;
-  final NostrKeyManager _keyManager;
+  final AuthService _authService;
   final SharedPreferences _prefs;
 
   static const String deletionsStorageKey = 'content_deletions_history';
@@ -254,9 +254,9 @@ class ContentDeletionService {
     String? additionalContext,
   }) async {
     try {
-      if (!_nostrService.hasKeys) {
+      if (!_authService.isAuthenticated) {
         Log.error(
-          'Cannot create delete event: no keys available',
+          'Cannot create delete event: not authenticated',
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
@@ -285,21 +285,24 @@ class ContentDeletionService {
         additionalContext,
       );
 
-      // Create kind 5 event using nostr_sdk (same pattern as other events)
-      final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final event = Event(
-        _keyManager.keyPair!.public,
-        5, // NIP-09 delete event kind
-        tags,
-        deleteContent,
-        createdAt: createdAt,
+      // Create and sign event via AuthService
+      final signedEvent = await _authService.createAndSignEvent(
+        kind: 5, // NIP-09 delete event kind
+        content: deleteContent,
+        tags: tags,
       );
 
-      // Sign the event
-      event.sign(_keyManager.keyPair!.private);
+      if (signedEvent == null) {
+        Log.error(
+          'Failed to create and sign NIP-09 delete event',
+          name: 'ContentDeletionService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
 
       Log.info(
-        '📱️ Created NIP-09 delete event (kind 5): ${event.id}',
+        'Created NIP-09 delete event (kind 5): ${signedEvent.id}',
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
@@ -309,7 +312,7 @@ class ContentDeletionService {
         category: LogCategory.system,
       );
 
-      return event;
+      return signedEvent;
     } catch (e) {
       Log.error(
         'Failed to create NIP-09 delete event: $e',
@@ -338,7 +341,7 @@ class ContentDeletionService {
 
   /// Check if this is the user's own content
   bool _isUserOwnContent(VideoEvent video) {
-    final userPubkey = _nostrService.publicKey;
+    final userPubkey = _authService.currentPublicKeyHex;
 
     return video.pubkey == userPubkey;
   }

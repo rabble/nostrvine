@@ -4,49 +4,64 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'content_deletion_service_test.mocks.dart';
 
-@GenerateMocks([NostrClient, NostrKeyManager])
+@GenerateMocks([NostrClient, AuthService])
 void main() {
   group('ContentDeletionService', () {
     late MockNostrClient mockNostrService;
-    late MockNostrKeyManager mockKeyManager;
+    late MockAuthService mockAuthService;
     late ContentDeletionService service;
     late SharedPreferences prefs;
     late String testPrivateKey;
     late String testPublicKey;
-    late Keychain testKeychain;
+
+    Event createTestEvent({
+      required String pubkey,
+      required int kind,
+      required List<List<String>> tags,
+      required String content,
+    }) {
+      final event = Event(
+        pubkey,
+        kind,
+        tags,
+        content,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      event.id = 'test_event_${DateTime.now().millisecondsSinceEpoch}';
+      event.sig = 'test_signature';
+      return event;
+    }
 
     setUp(() async {
       // Generate valid keys for testing
       testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
-      testKeychain = Keychain(testPrivateKey);
 
       // Setup SharedPreferences mock
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
       mockNostrService = MockNostrClient();
-      mockKeyManager = MockNostrKeyManager();
+      mockAuthService = MockAuthService();
 
-      // Setup common mocks with valid keys
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
+      // Setup common mocks
+      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn(testPublicKey);
 
       service = ContentDeletionService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
+        authService: mockAuthService,
         prefs: prefs,
       );
 
@@ -73,18 +88,27 @@ void main() {
       // Arrange
       final video = createTestVideoEvent(testPublicKey);
 
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
+      );
+
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
       when(mockNostrService.broadcast(any)).thenAnswer(
         (_) async => NostrBroadcastResult(
-          event: Event(
-            testPublicKey,
-            5, // Delete event kind
-            [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            'CONTENT DELETION',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
+          event: deleteEvent,
           successCount: 3,
           totalRelays: 3,
           results: {'relay1': true, 'relay2': true, 'relay3': true},
@@ -102,11 +126,14 @@ void main() {
       expect(result.success, isTrue);
       expect(result.deleteEventId, isNotNull);
 
-      // Verify broadcast was called with kind 5 event
-      final capturedEvent =
-          verify(mockNostrService.broadcast(captureAny)).captured.single
-              as Event;
-      expect(capturedEvent.kind, equals(5));
+      // Verify createAndSignEvent was called with kind 5
+      verify(
+        mockAuthService.createAndSignEvent(
+          kind: 5,
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).called(1);
     });
 
     test(
@@ -115,18 +142,27 @@ void main() {
         // Arrange
         final video = createTestVideoEvent(testPublicKey);
 
+        final deleteEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', video.id],
+            ['k', '34236'],
+          ],
+          content: 'CONTENT DELETION',
+        );
+
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => deleteEvent);
+
         when(mockNostrService.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
-            event: Event(
-              testPublicKey,
-              5,
-              [
-                ['e', video.id],
-                ['k', '34236'],
-              ],
-              'CONTENT DELETION',
-              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            ),
+            event: deleteEvent,
             successCount: 1,
             totalRelays: 1,
             results: {'relay1': true},
@@ -137,13 +173,17 @@ void main() {
         // Act
         await service.deleteContent(video: video, reason: 'Personal choice');
 
-        // Assert - verify the delete event has the 'k' tag
-        final capturedEvent =
-            verify(mockNostrService.broadcast(captureAny)).captured.single
-                as Event;
+        // Assert - verify the tags include 'k' tag
+        final captured = verify(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: captureAnyNamed('tags'),
+          ),
+        ).captured;
 
-        // Find the 'k' tag
-        final kTag = capturedEvent.tags.firstWhere(
+        final tags = captured.first as List<List<String>>;
+        final kTag = tags.firstWhere(
           (tag) => tag.isNotEmpty && tag[0] == 'k',
           orElse: () => <String>[],
         );
@@ -161,18 +201,27 @@ void main() {
       // Arrange
       final video = createTestVideoEvent(testPublicKey);
 
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
+      );
+
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
       when(mockNostrService.broadcast(any)).thenAnswer(
         (_) async => NostrBroadcastResult(
-          event: Event(
-            testPublicKey,
-            5,
-            [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            'CONTENT DELETION',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
+          event: deleteEvent,
           successCount: 1,
           totalRelays: 1,
           results: {'relay1': true},
@@ -207,8 +256,14 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('Can only delete your own content'));
 
-        // Verify broadcast was NOT called
-        verifyNever(mockNostrService.broadcast(any));
+        // Verify createAndSignEvent was NOT called
+        verifyNever(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        );
       },
     );
 
@@ -218,18 +273,27 @@ void main() {
         // Arrange
         final video = createTestVideoEvent(testPublicKey);
 
+        final deleteEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', video.id],
+            ['k', '34236'],
+          ],
+          content: 'CONTENT DELETION',
+        );
+
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => deleteEvent);
+
         when(mockNostrService.broadcast(any)).thenAnswer(
           (_) async => NostrBroadcastResult(
-            event: Event(
-              testPublicKey,
-              5,
-              [
-                ['e', video.id],
-                ['k', '34236'],
-              ],
-              'CONTENT DELETION',
-              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            ),
+            event: deleteEvent,
             successCount: 0, // Broadcast failed
             totalRelays: 3,
             results: {'relay1': false, 'relay2': false, 'relay3': false},
@@ -253,18 +317,27 @@ void main() {
       // Arrange
       final video = createTestVideoEvent(testPublicKey);
 
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
+      );
+
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
       when(mockNostrService.broadcast(any)).thenAnswer(
         (_) async => NostrBroadcastResult(
-          event: Event(
-            testPublicKey,
-            5,
-            [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            'CONTENT DELETION',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
+          event: deleteEvent,
           successCount: 1,
           totalRelays: 1,
           results: {'relay1': true},
@@ -299,7 +372,7 @@ void main() {
       // Arrange - create new service without initializing
       final uninitializedService = ContentDeletionService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
+        authService: mockAuthService,
         prefs: prefs,
       );
 

@@ -9,8 +9,9 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_client/src/nostr_client.dart' as _i4;
-import 'package:nostr_key_manager/src/nostr_key_manager.dart' as _i3;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
+import 'package:openvine/services/auth_service.dart' as _i3;
+import 'package:openvine/services/user_profile_service.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -38,8 +39,8 @@ class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeKeychain_2 extends _i1.SmartFake implements _i3.Keychain {
-  _FakeKeychain_2(Object parent, Invocation parentInvocation)
+class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -501,28 +502,53 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<void>);
 }
 
-/// A class which mocks [NostrKeyManager].
+/// A class which mocks [AuthService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNostrKeyManager extends _i1.Mock implements _i3.NostrKeyManager {
-  MockNostrKeyManager() {
+class MockAuthService extends _i1.Mock implements _i3.AuthService {
+  MockAuthService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  bool get isInitialized =>
-      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
+  _i3.AuthState get authState =>
+      (super.noSuchMethod(
+            Invocation.getter(#authState),
+            returnValue: _i3.AuthState.unauthenticated,
+          )
+          as _i3.AuthState);
+
+  @override
+  _i6.Stream<_i3.AuthState> get authStateStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#authStateStream),
+            returnValue: _i6.Stream<_i3.AuthState>.empty(),
+          )
+          as _i6.Stream<_i3.AuthState>);
+
+  @override
+  _i6.Stream<_i3.UserProfile?> get profileStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#profileStream),
+            returnValue: _i6.Stream<_i3.UserProfile?>.empty(),
+          )
+          as _i6.Stream<_i3.UserProfile?>);
+
+  @override
+  bool get isAuthenticated =>
+      (super.noSuchMethod(
+            Invocation.getter(#isAuthenticated),
+            returnValue: false,
+          )
           as bool);
 
   @override
-  bool get hasKeys =>
-      (super.noSuchMethod(Invocation.getter(#hasKeys), returnValue: false)
-          as bool);
-
-  @override
-  bool get hasBackup =>
-      (super.noSuchMethod(Invocation.getter(#hasBackup), returnValue: false)
-          as bool);
+  Map<String, dynamic> get userStats =>
+      (super.noSuchMethod(
+            Invocation.getter(#userStats),
+            returnValue: <String, dynamic>{},
+          )
+          as Map<String, dynamic>);
 
   @override
   _i6.Future<void> initialize() =>
@@ -534,131 +560,140 @@ class MockNostrKeyManager extends _i1.Mock implements _i3.NostrKeyManager {
           as _i6.Future<void>);
 
   @override
-  _i6.Future<_i3.Keychain> generateKeys() =>
+  _i6.Future<_i3.AuthResult> createNewIdentity({String? biometricPrompt}) =>
       (super.noSuchMethod(
-            Invocation.method(#generateKeys, []),
-            returnValue: _i6.Future<_i3.Keychain>.value(
-              _FakeKeychain_2(this, Invocation.method(#generateKeys, [])),
-            ),
-          )
-          as _i6.Future<_i3.Keychain>);
-
-  @override
-  _i6.Future<_i3.Keychain> importPrivateKey(String? privateKey) =>
-      (super.noSuchMethod(
-            Invocation.method(#importPrivateKey, [privateKey]),
-            returnValue: _i6.Future<_i3.Keychain>.value(
-              _FakeKeychain_2(
+            Invocation.method(#createNewIdentity, [], {
+              #biometricPrompt: biometricPrompt,
+            }),
+            returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
                 this,
-                Invocation.method(#importPrivateKey, [privateKey]),
+                Invocation.method(#createNewIdentity, [], {
+                  #biometricPrompt: biometricPrompt,
+                }),
               ),
             ),
           )
-          as _i6.Future<_i3.Keychain>);
+          as _i6.Future<_i3.AuthResult>);
 
   @override
-  _i6.Future<_i3.Keychain> importFromNsec(String? nsec) =>
+  _i6.Future<_i3.AuthResult> importFromNsec(
+    String? nsec, {
+    String? biometricPrompt,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#importFromNsec, [nsec]),
-            returnValue: _i6.Future<_i3.Keychain>.value(
-              _FakeKeychain_2(this, Invocation.method(#importFromNsec, [nsec])),
+            Invocation.method(
+              #importFromNsec,
+              [nsec],
+              {#biometricPrompt: biometricPrompt},
             ),
-          )
-          as _i6.Future<_i3.Keychain>);
-
-  @override
-  String exportPrivateKey() =>
-      (super.noSuchMethod(
-            Invocation.method(#exportPrivateKey, []),
-            returnValue: _i5.dummyValue<String>(
-              this,
-              Invocation.method(#exportPrivateKey, []),
-            ),
-          )
-          as String);
-
-  @override
-  String exportAsNsec() =>
-      (super.noSuchMethod(
-            Invocation.method(#exportAsNsec, []),
-            returnValue: _i5.dummyValue<String>(
-              this,
-              Invocation.method(#exportAsNsec, []),
-            ),
-          )
-          as String);
-
-  @override
-  _i6.Future<Map<String, dynamic>> replaceKeyWithBackup() =>
-      (super.noSuchMethod(
-            Invocation.method(#replaceKeyWithBackup, []),
-            returnValue: _i6.Future<Map<String, dynamic>>.value(
-              <String, dynamic>{},
-            ),
-          )
-          as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<void> restoreFromBackup() =>
-      (super.noSuchMethod(
-            Invocation.method(#restoreFromBackup, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> clearBackup() =>
-      (super.noSuchMethod(
-            Invocation.method(#clearBackup, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<List<String>> createMnemonicBackup() =>
-      (super.noSuchMethod(
-            Invocation.method(#createMnemonicBackup, []),
-            returnValue: _i6.Future<List<String>>.value(<String>[]),
-          )
-          as _i6.Future<List<String>>);
-
-  @override
-  _i6.Future<_i3.Keychain> restoreFromMnemonic(List<String>? mnemonic) =>
-      (super.noSuchMethod(
-            Invocation.method(#restoreFromMnemonic, [mnemonic]),
-            returnValue: _i6.Future<_i3.Keychain>.value(
-              _FakeKeychain_2(
+            returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
                 this,
-                Invocation.method(#restoreFromMnemonic, [mnemonic]),
+                Invocation.method(
+                  #importFromNsec,
+                  [nsec],
+                  {#biometricPrompt: biometricPrompt},
+                ),
               ),
             ),
           )
-          as _i6.Future<_i3.Keychain>);
+          as _i6.Future<_i3.AuthResult>);
 
   @override
-  _i6.Future<bool> verifyBackup(List<String>? mnemonic, String? privateKey) =>
+  _i6.Future<_i3.AuthResult> importFromHex(
+    String? privateKeyHex, {
+    String? biometricPrompt,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#verifyBackup, [mnemonic, privateKey]),
-            returnValue: _i6.Future<bool>.value(false),
+            Invocation.method(
+              #importFromHex,
+              [privateKeyHex],
+              {#biometricPrompt: biometricPrompt},
+            ),
+            returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
+                this,
+                Invocation.method(
+                  #importFromHex,
+                  [privateKeyHex],
+                  {#biometricPrompt: biometricPrompt},
+                ),
+              ),
+            ),
           )
-          as _i6.Future<bool>);
+          as _i6.Future<_i3.AuthResult>);
 
   @override
-  _i6.Future<void> clearKeys() =>
+  _i6.Future<void> refreshCurrentProfile(
+    _i8.UserProfileService? userProfileService,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#clearKeys, []),
+            Invocation.method(#refreshCurrentProfile, [userProfileService]),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )
           as _i6.Future<void>);
 
   @override
-  Map<String, dynamic> getIdentitySummary() =>
+  _i6.Future<void> acceptTermsOfService() =>
       (super.noSuchMethod(
-            Invocation.method(#getIdentitySummary, []),
-            returnValue: <String, dynamic>{},
+            Invocation.method(#acceptTermsOfService, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as Map<String, dynamic>);
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> signOut({bool? deleteKeys = false}) =>
+      (super.noSuchMethod(
+            Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) =>
+      (super.noSuchMethod(
+            Invocation.method(#getPrivateKeyForSigning, [], {
+              #biometricPrompt: biometricPrompt,
+            }),
+            returnValue: _i6.Future<String?>.value(),
+          )
+          as _i6.Future<String?>);
+
+  @override
+  _i6.Future<String?> exportNsec({String? biometricPrompt}) =>
+      (super.noSuchMethod(
+            Invocation.method(#exportNsec, [], {
+              #biometricPrompt: biometricPrompt,
+            }),
+            returnValue: _i6.Future<String?>.value(),
+          )
+          as _i6.Future<String?>);
+
+  @override
+  _i6.Future<_i7.Event?> createAndSignEvent({
+    required int? kind,
+    required String? content,
+    List<List<String>>? tags,
+    String? biometricPrompt,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createAndSignEvent, [], {
+              #kind: kind,
+              #content: content,
+              #tags: tags,
+              #biometricPrompt: biometricPrompt,
+            }),
+            returnValue: _i6.Future<_i7.Event?>.value(),
+          )
+          as _i6.Future<_i7.Event?>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
 }

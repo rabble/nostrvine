@@ -2,85 +2,75 @@
 // ABOUTME: Tests NIP-56 content reporting including AI-generated content reports
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/content_moderation_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nostr_sdk/event.dart';
 
-// Mock classes
-class MockNostrService extends Mock implements NostrClient {}
+import 'content_reporting_service_test.mocks.dart';
 
-class MockNostrKeyManager extends Mock implements NostrKeyManager {}
-
-// Fake Event for fallback values
-class FakeEvent extends Fake implements Event {}
-
-// Helper to create successful broadcast result
-NostrBroadcastResult _successfulBroadcast(Event event) {
-  return NostrBroadcastResult(
-    event: event,
-    successCount: 1,
-    totalRelays: 1,
-    results: {'wss://test.relay.com': true},
-    errors: {},
-  );
-}
-
-// Helper to create failed broadcast result
-NostrBroadcastResult _failedBroadcast(Event event) {
-  return NostrBroadcastResult(
-    event: event,
-    successCount: 0,
-    totalRelays: 1,
-    results: {'wss://test.relay.com': false},
-    errors: {'wss://test.relay.com': 'Failed to broadcast'},
-  );
-}
-
+@GenerateMocks([NostrClient, AuthService])
 void main() {
-  // Register fallback values for mocktail
-  setUpAll(() {
-    registerFallbackValue(FakeEvent());
-  });
-
   group('ContentReportingService', () {
-    late MockNostrService mockNostrService;
-    late MockNostrKeyManager mockKeyManager;
-    late SharedPreferences prefs;
+    late MockNostrClient mockNostrService;
+    late MockAuthService mockAuthService;
     late ContentReportingService service;
+    late SharedPreferences prefs;
+    late String testPrivateKey;
+    late String testPublicKey;
+
+    Event createTestEvent({
+      required String pubkey,
+      required int kind,
+      required List<List<String>> tags,
+      required String content,
+    }) {
+      final event = Event(
+        pubkey,
+        kind,
+        tags,
+        content,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      event.id = 'test_event_${DateTime.now().millisecondsSinceEpoch}';
+      event.sig = 'test_signature';
+      return event;
+    }
 
     setUp(() async {
+      // Generate valid keys for testing
+      testPrivateKey = generatePrivateKey();
+      testPublicKey = getPublicKey(testPrivateKey);
+
+      // Setup SharedPreferences mock
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      mockNostrService = MockNostrService();
-      mockKeyManager = MockNostrKeyManager();
 
-      // Generate a REAL Nostr keypair for testing (required for signing)
-      final realKeyPair = Keychain.generate();
+      mockNostrService = MockNostrClient();
+      mockAuthService = MockAuthService();
 
-      // Mock NostrService as initialized with proper mocktail syntax
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockNostrService.publicKey).thenReturn(realKeyPair.public);
-      when(() => mockNostrService.hasKeys).thenReturn(true);
-
-      // Mock KeyManager with real keypair
-      when(() => mockKeyManager.keyPair).thenReturn(realKeyPair);
+      // Setup common mocks
+      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(mockNostrService.isInitialized).thenReturn(true);
 
       service = ContentReportingService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
+        authService: mockAuthService,
         prefs: prefs,
       );
+
+      await service.initialize();
     });
 
     test(
       'initialize() sets service ready when Nostr service is ready',
       () async {
-        await service.initialize();
-
         // Service should be initialized (report history starts empty)
         expect(service.reportHistory, isEmpty);
       },
@@ -89,11 +79,11 @@ void main() {
     test(
       'initialize() fails gracefully when Nostr service not ready',
       () async {
-        when(() => mockNostrService.isInitialized).thenReturn(false);
+        when(mockNostrService.isInitialized).thenReturn(false);
 
         final uninitializedService = ContentReportingService(
           nostrService: mockNostrService,
-          keyManager: mockKeyManager,
+          authService: mockAuthService,
           prefs: prefs,
         );
 
@@ -105,9 +95,14 @@ void main() {
     );
 
     test('reportContent() fails when service not initialized', () async {
-      // Don't call initialize()
+      // Create new service without initializing
+      final uninitializedService = ContentReportingService(
+        nostrService: mockNostrService,
+        authService: mockAuthService,
+        prefs: prefs,
+      );
 
-      final result = await service.reportContent(
+      final result = await uninitializedService.reportContent(
         eventId: 'test_event_id',
         authorPubkey: 'test_author',
         reason: ContentFilterReason.spam,
@@ -121,13 +116,36 @@ void main() {
     test(
       'reportContent() succeeds for AI-generated content after initialization',
       () async {
-        await service.initialize();
+        // Arrange
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [
+            ['e', 'ai_video_event_id'],
+            ['p', 'suspicious_author'],
+          ],
+          content: 'Suspected AI-generated content',
+        );
 
-        // Mock successful event broadcast
         when(
-          () => mockNostrService.broadcast(any()),
-        ).thenAnswer((inv) async => _successfulBroadcast(FakeEvent()));
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
 
+        when(mockNostrService.broadcast(any)).thenAnswer(
+          (_) async => NostrBroadcastResult(
+            event: reportEvent,
+            successCount: 1,
+            totalRelays: 1,
+            results: {'wss://test.relay.com': true},
+            errors: {},
+          ),
+        );
+
+        // Act
         final result = await service.reportContent(
           eventId: 'ai_video_event_id',
           authorPubkey: 'suspicious_author',
@@ -135,21 +153,52 @@ void main() {
           details: 'Suspected AI-generated content',
         );
 
+        // Assert
         expect(result.success, true);
         expect(result.error, isNull);
 
+        // Verify createAndSignEvent was called with kind 1984 (NIP-56)
+        verify(
+          mockAuthService.createAndSignEvent(
+            kind: 1984,
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).called(1);
+
         // Verify Nostr event was broadcast
-        verify(() => mockNostrService.broadcast(any())).called(1);
+        verify(mockNostrService.broadcast(any)).called(1);
       },
     );
 
     test(
       'reportContent() handles all ContentFilterReason types including aiGenerated',
       () async {
-        await service.initialize();
+        // Arrange
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [],
+          content: 'Test report',
+        );
+
         when(
-          () => mockNostrService.broadcast(any()),
-        ).thenAnswer((inv) async => _successfulBroadcast(FakeEvent()));
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
+
+        when(mockNostrService.broadcast(any)).thenAnswer(
+          (_) async => NostrBroadcastResult(
+            event: reportEvent,
+            successCount: 1,
+            totalRelays: 1,
+            results: {'wss://test.relay.com': true},
+            errors: {},
+          ),
+        );
 
         final reasons = ContentFilterReason.values;
 
@@ -168,18 +217,48 @@ void main() {
           );
         }
 
-        // Should have broadcast one event per reason
-        verify(() => mockNostrService.broadcast(any())).called(reasons.length);
+        // Should have called createAndSignEvent once per reason
+        verify(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).called(reasons.length);
       },
     );
 
     test('reportContent() specifically tests aiGenerated reason', () async {
-      await service.initialize();
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((inv) async => _successfulBroadcast(FakeEvent()));
+      // Arrange
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [
+          ['e', 'ai_content'],
+          ['p', 'ai_creator'],
+        ],
+        content: 'Detected AI generation patterns',
+      );
 
-      // This should not throw an exception due to missing switch case
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(mockNostrService.broadcast(any)).thenAnswer(
+        (_) async => NostrBroadcastResult(
+          event: reportEvent,
+          successCount: 1,
+          totalRelays: 1,
+          results: {'wss://test.relay.com': true},
+          errors: {},
+        ),
+      );
+
+      // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
         eventId: 'ai_content',
         authorPubkey: 'ai_creator',
@@ -187,18 +266,40 @@ void main() {
         details: 'Detected AI generation patterns',
       );
 
+      // Assert
       expect(result.success, true);
       expect(result.error, isNull);
     });
 
     test('reportContent() handles broadcast failures gracefully', () async {
-      await service.initialize();
+      // Arrange
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [],
+        content: 'Spam content',
+      );
+
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
 
       // Mock failed broadcast
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((inv) async => _failedBroadcast(FakeEvent()));
+      when(mockNostrService.broadcast(any)).thenAnswer(
+        (_) async => NostrBroadcastResult(
+          event: reportEvent,
+          successCount: 0,
+          totalRelays: 1,
+          results: {'wss://test.relay.com': false},
+          errors: {'wss://test.relay.com': 'Failed to broadcast'},
+        ),
+      );
 
+      // Act
       final result = await service.reportContent(
         eventId: 'event_123',
         authorPubkey: 'author_456',
@@ -206,7 +307,7 @@ void main() {
         details: 'Spam content',
       );
 
-      // Service is resilient: saves report locally even if broadcast fails
+      // Assert - Service is resilient: saves report locally even if broadcast fails
       expect(result.success, true);
       expect(result.error, isNull);
       expect(result.reportId, isNotNull);
@@ -216,11 +317,33 @@ void main() {
     });
 
     test('reportContent() stores report in history on success', () async {
-      await service.initialize();
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((inv) async => _successfulBroadcast(FakeEvent()));
+      // Arrange
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [],
+        content: 'AI detection',
+      );
 
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(mockNostrService.broadcast(any)).thenAnswer(
+        (_) async => NostrBroadcastResult(
+          event: reportEvent,
+          successCount: 1,
+          totalRelays: 1,
+          results: {'wss://test.relay.com': true},
+          errors: {},
+        ),
+      );
+
+      // Act
       await service.reportContent(
         eventId: 'reported_event',
         authorPubkey: 'bad_actor',
@@ -228,12 +351,68 @@ void main() {
         details: 'AI detection',
       );
 
+      // Assert
       expect(service.reportHistory, isNotEmpty);
       expect(
         service.reportHistory.first.reason,
         ContentFilterReason.aiGenerated,
       );
     });
+
+    test('reportContent() fails when not authenticated', () async {
+      // Arrange
+      when(mockAuthService.isAuthenticated).thenReturn(false);
+
+      // Act
+      final result = await service.reportContent(
+        eventId: 'test_event',
+        authorPubkey: 'test_author',
+        reason: ContentFilterReason.spam,
+        details: 'Test',
+      );
+
+      // Assert
+      expect(result.success, false);
+      expect(result.error, contains('Not authenticated'));
+
+      // Verify createAndSignEvent was NOT called
+      verifyNever(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      );
+    });
+
+    test(
+      'reportContent() fails when createAndSignEvent returns null',
+      () async {
+        // Arrange
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Act
+        final result = await service.reportContent(
+          eventId: 'test_event',
+          authorPubkey: 'test_author',
+          reason: ContentFilterReason.spam,
+          details: 'Test',
+        );
+
+        // Assert
+        expect(result.success, false);
+        expect(result.error, contains('Failed to create report event'));
+
+        // Verify broadcast was NOT called
+        verifyNever(mockNostrService.broadcast(any));
+      },
+    );
   });
 
   group('ContentReportingService Provider Integration', () {
@@ -243,30 +422,55 @@ void main() {
 
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      final mockNostrService = MockNostrService();
-      final mockKeyManager = MockNostrKeyManager();
+      final mockNostrService = MockNostrClient();
+      final mockAuthService = MockAuthService();
 
-      // Generate a REAL Nostr keypair for this test too
-      final realKeyPair = Keychain.generate();
+      // Generate valid keys
+      final testPrivateKey = generatePrivateKey();
+      final testPublicKey = getPublicKey(testPrivateKey);
 
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockNostrService.publicKey).thenReturn(realKeyPair.public);
-      when(() => mockNostrService.hasKeys).thenReturn(true);
-      when(() => mockKeyManager.keyPair).thenReturn(realKeyPair);
+      when(mockNostrService.isInitialized).thenReturn(true);
+      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
 
       // Simulate what the provider does
       final service = ContentReportingService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
+        authService: mockAuthService,
         prefs: prefs,
       );
       await service.initialize(); // This is what the provider now does
 
-      // Now reportContent should work
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((inv) async => _successfulBroadcast(FakeEvent()));
+      // Setup mocks for reportContent
+      final reportEvent = Event(
+        testPublicKey,
+        1984,
+        [],
+        'test',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      reportEvent.id = 'test_id';
+      reportEvent.sig = 'test_sig';
 
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(mockNostrService.broadcast(any)).thenAnswer(
+        (_) async => NostrBroadcastResult(
+          event: reportEvent,
+          successCount: 1,
+          totalRelays: 1,
+          results: {'wss://test.relay.com': true},
+          errors: {},
+        ),
+      );
+
+      // Now reportContent should work
       final result = await service.reportContent(
         eventId: 'test',
         authorPubkey: 'test',

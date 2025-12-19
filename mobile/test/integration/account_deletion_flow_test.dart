@@ -78,7 +78,6 @@ void main() {
 
       final deletionService = AccountDeletionService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
         authService: mockAuthService,
       );
 
@@ -152,7 +151,6 @@ void main() {
 
       final deletionService = AccountDeletionService(
         nostrService: mockNostrService,
-        keyManager: mockKeyManager,
         authService: mockAuthService,
       );
 

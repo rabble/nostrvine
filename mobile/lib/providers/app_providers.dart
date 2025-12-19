@@ -4,12 +4,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:nostr_client/nostr_client.dart';
+import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
-import 'package:openvine/providers/relay_gateway_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -36,9 +36,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -305,63 +303,6 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   return UserDataCleanupService(prefs);
 }
 
-/// Core Nostr service via NostrClient for relay communication
-@Riverpod(keepAlive: true)
-NostrClient nostrService(Ref ref) {
-  final authService = ref.read(authServiceProvider);
-
-  // Listen to auth changes and rebuild when identity (pubkey) changes.
-  // This ensures the NostrClient always uses the correct keypair,
-  // handling both new logins and identity switches during import.
-  ref.listen(authServiceProvider, (previous, current) {
-    final previousPubkey = previous?.currentKeyContainer?.publicKeyHex;
-    final currentPubkey = current.currentKeyContainer?.publicKeyHex;
-
-    // Rebuild when pubkey changes (identity change or new login)
-    if (currentPubkey != null && currentPubkey != previousPubkey) {
-      Log.info(
-        'Identity changed - rebuilding nostrService',
-        name: 'nostrServiceProvider',
-      );
-      // Reset the gate before invalidating - new client needs initialization
-      ref.read(nostrInitializationProvider.notifier).reset();
-      ref.invalidateSelf();
-    }
-  }, fireImmediately: false); // Prevent loop during initial build
-
-  final statisticsService = ref.watch(relayStatisticsServiceProvider);
-  final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
-
-  // Pass keyContainer directly - provider rebuilds when auth changes
-  final client = NostrServiceFactory.create(
-    keyContainer: authService.currentKeyContainer,
-    statisticsService: statisticsService,
-    gatewaySettings: gatewaySettings,
-  );
-
-  // Initialize relay connections and signal readiness when complete
-  client.initialize().then((_) {
-    ref.read(nostrInitializationProvider.notifier).markInitialized();
-    Log.info(
-      'NostrClient initialized via provider - gate opened',
-      name: 'nostrServiceProvider',
-    );
-  });
-
-  // Cleanup on disposal - but only in production, not during development hot reloads
-  ref.onDispose(() {
-    // Skip disposal during debug mode to prevent shutdown during hot reloads
-    if (!kDebugMode) {
-      client.dispose();
-    } else {
-      // In debug mode, just close subscriptions but keep the client alive
-      client.closeAllSubscriptions();
-    }
-  });
-
-  return client;
-}
-
 /// Subscription manager for centralized subscription management
 @Riverpod(keepAlive: true)
 SubscriptionManager subscriptionManager(Ref ref) {
@@ -602,11 +543,11 @@ CurationService curationService(Ref ref) {
 @riverpod
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
-    keyManager: keyManager,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -712,11 +653,11 @@ VideoSharingService videoSharingService(Ref ref) {
 @riverpod
 Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
-    keyManager: keyManager,
+    authService: authService,
     prefs: prefs,
   );
 
@@ -730,11 +671,9 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
 @riverpod
 AccountDeletionService accountDeletionService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
   final authService = ref.watch(authServiceProvider);
   return AccountDeletionService(
     nostrService: nostrService,
-    keyManager: keyManager,
     authService: authService,
   );
 }
@@ -759,4 +698,42 @@ BugReportService bugReportService(Ref ref) {
   );
 
   return BugReportService(nip17MessageService: nip17Service);
+}
+
+// =============================================================================
+// LIKES REPOSITORY
+// =============================================================================
+
+/// Provider for LikesRepository instance
+///
+/// Creates a LikesRepository when the user is authenticated.
+/// Returns null when user is not authenticated.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalReactionsDao from databaseProvider (for local storage)
+@Riverpod(keepAlive: true)
+LikesRepository? likesRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Repository requires authentication
+  if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
+    return null;
+  }
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final db = ref.watch(databaseProvider);
+  final localStorage = DbLikesLocalStorage(
+    dao: db.personalReactionsDao,
+    userPubkey: authService.currentPublicKeyHex!,
+  );
+
+  final repository = LikesRepository(
+    nostrClient: nostrClient,
+    localStorage: localStorage,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
 }

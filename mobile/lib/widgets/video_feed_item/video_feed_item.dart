@@ -591,158 +591,128 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Per-item video controller rendering when active
-            if (isActive)
-              Consumer(
-                builder: (context, ref, child) {
-                  final controller = ref.watch(
-                    individualVideoControllerProvider(_controllerParams),
-                  );
+            // Always watch controller to enable preloading
+            Consumer(
+              builder: (context, ref, child) {
+                final controller = ref.watch(
+                  individualVideoControllerProvider(_controllerParams),
+                );
 
-                  // Only track metrics for active videos
-                  final videoWidget = ValueListenableBuilder<VideoPlayerValue>(
-                    valueListenable: controller,
-                    builder: (context, value, _) {
-                      // Let the individual controller handle autoplay based on active state
-                      // Don't interfere with playback control here
+                final videoWidget = ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    // Check for video error state
+                    if (value.hasError) {
+                      return VideoErrorOverlay(
+                        video: video,
+                        controllerParams: _controllerParams,
+                        errorDescription: value.errorDescription ?? '',
+                        isActive: isActive,
+                      );
+                    }
 
-                      // Check for video error state
-                      if (value.hasError) {
-                        return VideoErrorOverlay(
-                          video: video,
-                          controllerParams: _controllerParams,
-                          errorDescription: value.errorDescription ?? '',
-                          isActive: isActive,
-                        );
-                      }
-
-                      // Show thumbnail ONLY while video is not initialized
-                      // Once initialized, show the video player immediately (even at 0ms)
-                      // This avoids showing thumbnails that may be from the wrong timestamp (backend issue)
-                      final shouldShowThumbnail = !value.isInitialized;
-
-                      if (shouldShowThumbnail) {
-                        Log.debug(
-                          '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.video,
-                        );
-                        // Show black screen with loading indicator while video initializes
-                        // We don't show the thumbnail because backend thumbnails are from wrong timestamps
-                        return Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Black background
-                            Container(color: Colors.black),
-                            // Loading indicator for active video
-                            if (isActive)
-                              const Center(
-                                child: SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
+                    // Show loading state while video initializes
+                    if (!value.isInitialized) {
+                      Log.debug(
+                        '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
+                        name: 'VideoFeedItem',
+                        category: LogCategory.video,
+                      );
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Container(color: Colors.black),
+                          // Only show loading spinner for active video
+                          if (isActive)
+                            const Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
                                 ),
                               ),
-                          ],
-                        );
-                      }
+                            ),
+                        ],
+                      );
+                    }
 
-                      // Video player is initialized and rendering
-                      // (Removed per-frame log to reduce console spam)
-
-                      // Always use BoxFit.contain to show the full video without cropping
-                      // This applies to all aspect ratios: portrait, landscape, and square
-                      return SizedBox.expand(
-                        child: Container(
-                          color: Colors.black,
-                          child: FittedBox(
-                            fit: BoxFit.contain,
-                            alignment: Alignment.topCenter,
-                            child: SizedBox(
-                              width: value.size.width == 0
-                                  ? 1
-                                  : value.size.width,
-                              height: value.size.height == 0
-                                  ? 1
-                                  : value.size.height,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  VideoPlayer(controller),
-                                  if (value.isBuffering)
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: const LinearProgressIndicator(
-                                        minHeight: 12,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                    // Video is initialized - show first frame (even if not active)
+                    // This enables seeing the video during swipe transitions
+                    return SizedBox.expand(
+                      child: Container(
+                        color: Colors.black,
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          alignment: Alignment.topCenter,
+                          child: SizedBox(
+                            width: value.size.width == 0 ? 1 : value.size.width,
+                            height: value.size.height == 0
+                                ? 1
+                                : value.size.height,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                VideoPlayer(controller),
+                                if (value.isBuffering)
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: const LinearProgressIndicator(
+                                      minHeight: 12,
+                                      backgroundColor: Colors.transparent,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
                                       ),
                                     ),
-                                  // Centered play button when paused
-                                  if (!value.isPlaying)
-                                    Center(
-                                      child: Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.6,
-                                          ),
-                                          shape: BoxShape.circle,
+                                  ),
+                                // Show play button only when active AND paused
+                                // (inactive videos just show first frame silently)
+                                if (isActive && !value.isPlaying)
+                                  Center(
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
                                         ),
-                                        child: Semantics(
-                                          identifier: 'play_button',
-                                          container: true,
-                                          explicitChildNodes: true,
-                                          label: 'Play video',
-                                          child: const Icon(
-                                            Icons.play_arrow,
-                                            size: 56,
-                                            color: Colors.white,
-                                          ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Semantics(
+                                        identifier: 'play_button',
+                                        container: true,
+                                        explicitChildNodes: true,
+                                        label: 'Play video',
+                                        child: const Icon(
+                                          Icons.play_arrow,
+                                          size: 56,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
-                                ],
-                              ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
-                      );
-                    },
-                  );
+                      ),
+                    );
+                  },
+                );
 
-                  // Wrap with VideoMetricsTracker only for active videos
-                  return isActive
-                      ? VideoMetricsTracker(
-                          video: video,
-                          controller: controller,
-                          child: videoWidget,
-                        )
-                      : videoWidget;
-                },
-              )
-            else
-              // Not active: show black screen instead of thumbnail
-              // (thumbnails are from wrong timestamp - backend issue)
-              Container(
-                color: Colors.black,
-                child: const Center(
-                  child: Icon(
-                    Icons.play_circle_outline,
-                    size: 64,
-                    color: Colors.white54,
-                  ),
-                ),
-              ),
+                // Wrap with VideoMetricsTracker only for active videos
+                return isActive
+                    ? VideoMetricsTracker(
+                        video: video,
+                        controller: controller,
+                        child: videoWidget,
+                      )
+                    : videoWidget;
+              },
+            ),
 
             // Video overlay with actions
             VideoOverlayActions(
