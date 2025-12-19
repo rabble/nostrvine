@@ -140,7 +140,7 @@ class Nostr {
       }
     }
 
-    var result = _pool.send(
+    var result = await _pool.send(
       ["EVENT", event.toJson()],
       tempRelays: tempRelays,
       targetRelays: targetRelays,
@@ -165,12 +165,12 @@ class Nostr {
     }
   }
 
-  Event? broadcase(
+  Future<Event?> broadcase(
     Event event, {
     List<String>? tempRelays,
     List<String>? targetRelays,
-  }) {
-    var result = _pool.send(
+  }) async {
+    final result = await _pool.send(
       ["EVENT", event.toJson()],
       tempRelays: tempRelays,
       targetRelays: targetRelays,
@@ -276,7 +276,7 @@ class Nostr {
     );
   }
 
-  String query(
+  Future<String> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
     String? id,
@@ -285,8 +285,8 @@ class Nostr {
     List<String>? targetRelays,
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
-  }) {
-    return _pool.query(
+  }) async {
+    return await _pool.query(
       filters,
       onEvent,
       id: id,

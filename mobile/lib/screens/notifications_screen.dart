@@ -346,6 +346,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     );
 
     // Navigate to profile screen
-    context.goProfile(userPubkey, 0);
+    context.pushProfile(userPubkey, 0);
   }
 }

@@ -52,20 +52,14 @@ class FollowersScreen extends ConsumerWidget {
           )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
         ),
       ],
-      child: _FollowersScreenView(
-        pubkey: pubkey,
-        displayName: displayName,
-      ),
+      child: _FollowersScreenView(pubkey: pubkey, displayName: displayName),
     );
   }
 }
 
 /// View widget that consumes BLoC state and renders the followers list.
 class _FollowersScreenView extends StatelessWidget {
-  const _FollowersScreenView({
-    required this.pubkey,
-    required this.displayName,
-  });
+  const _FollowersScreenView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String displayName;
@@ -93,78 +87,82 @@ class _FollowersScreenView extends StatelessWidget {
       body: BlocBuilder<FollowersBloc, FollowersState>(
         builder: (context, state) {
           return switch (state.status) {
-            FollowersStatus.initial ||
-            FollowersStatus.loading => const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
-              ),
+            FollowersStatus.initial || FollowersStatus.loading => const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            ),
             FollowersStatus.failure => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Failed to load followers',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<FollowersBloc>().add(
-                              FollowersListRefreshRequested(pubkey),
-                            );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VineTheme.vineGreen,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            FollowersStatus.success => state.followersPubkeys.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.people_outline, color: Colors.grey, size: 48),
-                        SizedBox(height: 16),
-                        Text(
-                          'No followers yet',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.followersPubkeys.length,
-                    itemBuilder: (context, index) {
-                      final followerPubkey = state.followersPubkeys[index];
-                      return BlocSelector<FollowingBloc, FollowingState, bool>(
-                        selector: (followingState) =>
-                            followingState.isFollowing(followerPubkey),
-                        builder: (context, isFollowing) {
-                          return UserProfileTile(
-                            pubkey: followerPubkey,
-                            onTap: () => context.goProfile(followerPubkey, 0),
-                            isFollowing: isFollowing,
-                            onToggleFollow: () {
-                              context.read<FollowingBloc>().add(
-                                    FollowToggleRequested(followerPubkey),
-                                  );
-                            },
-                          );
-                        },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to load followers',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<FollowersBloc>().add(
+                        FollowersListRefreshRequested(pubkey),
                       );
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.vineGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Retry'),
                   ),
+                ],
+              ),
+            ),
+            FollowersStatus.success =>
+              state.followersPubkeys.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            color: Colors.grey,
+                            size: 48,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No followers yet',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: state.followersPubkeys.length,
+                      itemBuilder: (context, index) {
+                        final followerPubkey = state.followersPubkeys[index];
+                        return BlocSelector<
+                          FollowingBloc,
+                          FollowingState,
+                          bool
+                        >(
+                          selector: (followingState) =>
+                              followingState.isFollowing(followerPubkey),
+                          builder: (context, isFollowing) {
+                            return UserProfileTile(
+                              pubkey: followerPubkey,
+                              onTap: () => context.goProfile(followerPubkey, 0),
+                              isFollowing: isFollowing,
+                              onToggleFollow: () {
+                                context.read<FollowingBloc>().add(
+                                  FollowToggleRequested(followerPubkey),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
           };
         },
       ),
