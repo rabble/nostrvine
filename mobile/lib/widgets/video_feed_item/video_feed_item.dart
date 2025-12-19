@@ -16,7 +16,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/comments_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
@@ -1252,12 +1251,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                 }
                               }
                             }
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CommentsScreen(videoEvent: video),
-                              ),
-                            );
+                            context.pushComments(video);
                           },
                           icon: const Icon(
                             Icons.comment_outlined,
