@@ -474,9 +474,17 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
     }
   }
 
+  // Unique key to force full rebuild of camera widget when needed
+  // This helps avoid GlobalKey conflicts in CamerAwesome's PreviewFitWidget
+  final _cameraKey = GlobalKey();
+
   @override
   Widget get previewWidget {
-    return CameraAwesomeBuilder.custom(
+    // Wrap in RepaintBoundary to isolate the camera from parent layout changes
+    // This helps prevent the "RenderPadding was mutated" error in CamerAwesome
+    return RepaintBoundary(
+      child: CameraAwesomeBuilder.custom(
+        key: _cameraKey,
       saveConfig: SaveConfig.video(
         pathBuilder: (sensors) async {
           // Use static path to avoid closure capture issues
@@ -521,6 +529,7 @@ class CamerAwesomeMobileCameraInterface extends CameraPlatformInterface {
         // Return empty container - preview is shown automatically
         return const SizedBox.shrink();
       },
+      ),
     );
   }
 
