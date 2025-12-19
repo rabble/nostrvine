@@ -13,11 +13,11 @@ class MockRelay extends RelayBase {
   MockRelay(String url) : super(url, RelayStatus(url));
 
   @override
-  bool send(
+  Future<bool> send(
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
-  }) {
+  }) async {
     sentMessages.add(message);
 
     // Simulate auth challenge response if configured

@@ -47,7 +47,6 @@ export 'relay/relay_status.dart';
 export 'relay/relay_type.dart';
 export 'relay/web_socket_connection_manager.dart';
 // Local storage
-export 'relay_local/relay_local.dart';
 export 'signer/local_nostr_signer.dart';
 // Signing implementations
 export 'signer/nostr_signer.dart';
