@@ -137,15 +137,15 @@ class HomeFeed extends _$HomeFeed {
     final socialData = ref.read(social.socialProvider);
     final followingPubkeys = socialData.followingPubkeys;
 
-    // Listen to social provider and invalidate ONLY when following list changes
+    // Listen to social provider and invalidate when following list changes
+    // or when social becomes initialized
     ref.listen(social.socialProvider, (prev, next) {
-      // Only invalidate if the following list actually changed
-      if (prev?.followingPubkeys != next.followingPubkeys) {
-        Log.info(
-          '🏠 HomeFeed: Following list changed (${prev?.followingPubkeys.length ?? 0} → ${next.followingPubkeys.length}), invalidating...',
-          name: 'HomeFeedProvider',
-          category: LogCategory.video,
-        );
+      final followingListChanged =
+          prev?.followingPubkeys != next.followingPubkeys;
+      final socialJustInitialized =
+          next.isInitialized && !(prev?.isInitialized ?? false);
+
+      if (followingListChanged || socialJustInitialized) {
         ref.invalidateSelf();
       }
     });
@@ -164,7 +164,7 @@ class HomeFeed extends _$HomeFeed {
         hasMoreContent: false,
         isLoadingMore: false,
         error: null,
-        lastUpdated: null,
+        lastUpdated: socialData.isInitialized ? DateTime.now() : null,
       );
     }
 

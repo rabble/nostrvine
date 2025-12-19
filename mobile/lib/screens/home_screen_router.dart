@@ -236,6 +236,16 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               }
             }
 
+            // Pre-initialize controllers for adjacent videos on initial build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              preInitializeControllers(
+                ref: ref,
+                currentIndex: urlIndex,
+                videos: videos,
+              );
+            });
+
             return RefreshIndicator(
               semanticsLabel: 'searching for more videos',
               onRefresh: () =>
@@ -268,6 +278,20 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
                   // Prefetch videos around current index
                   checkForPrefetch(currentIndex: newIndex, videos: videos);
+
+                  // Pre-initialize controllers for adjacent videos
+                  preInitializeControllers(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
+
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
 
                   Log.debug(
                     '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',

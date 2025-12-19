@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic device info and logs included in reports
 
 ### Fixed
+- **Video Thumbnails Overflow**: Fixed video thumbnail overflow in grid layouts
+  - ComposableVideoGrid now uses AspectRatio wrapper for consistent sizing
+  - Extracted _VideoItem widget with proper aspect ratio constraints
+  - Added integration test for grid rendering with real Nostr connections
 - **Share Video Menu**: Fixed null pubkey crash when sharing videos
   - Added proper null check for pubkeyToSearch parameter
 - **Bug Report Dialog**: Fixed layout overflow in bug report form

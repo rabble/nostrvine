@@ -3,8 +3,8 @@
 
 import 'dart:convert';
 
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -88,15 +88,15 @@ class ContentReport {
 class ContentReportingService {
   ContentReportingService({
     required NostrClient nostrService,
-    required NostrKeyManager keyManager,
+    required AuthService authService,
     required SharedPreferences prefs,
   }) : _nostrService = nostrService,
-       _keyManager = keyManager,
+       _authService = authService,
        _prefs = prefs {
     _loadReportHistory();
   }
   final NostrClient _nostrService;
-  final NostrKeyManager _keyManager;
+  final AuthService _authService;
   final SharedPreferences _prefs;
 
   // divine moderation relay for reports
@@ -153,6 +153,10 @@ class ContentReportingService {
         return ReportResult.failure('Reporting service not initialized');
       }
 
+      if (!_authService.isAuthenticated) {
+        return ReportResult.failure('Not authenticated');
+      }
+
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -167,22 +171,24 @@ class ContentReportingService {
         hashtags: hashtags,
       );
 
-      if (reportEvent != null) {
-        final broadcastResult = await _nostrService.broadcast(reportEvent);
-        if (broadcastResult.successCount == 0) {
-          Log.error(
-            'Failed to broadcast report to relays',
-            name: 'ContentReportingService',
-            category: LogCategory.system,
-          );
-          // Still save locally even if broadcast fails
-        } else {
-          Log.info(
-            'Report broadcast to ${broadcastResult.successCount} relays',
-            name: 'ContentReportingService',
-            category: LogCategory.system,
-          );
-        }
+      if (reportEvent == null) {
+        return ReportResult.failure('Failed to create report event');
+      }
+
+      final broadcastResult = await _nostrService.broadcast(reportEvent);
+      if (broadcastResult.successCount == 0) {
+        Log.error(
+          'Failed to broadcast report to relays',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+        // Still save locally even if broadcast fails
+      } else {
+        Log.info(
+          'Report broadcast to ${broadcastResult.successCount} relays',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
       }
 
       // Create Zendesk ticket silently for moderation tracking
@@ -334,9 +340,9 @@ class ContentReportingService {
     List<String> hashtags = const [],
   }) async {
     try {
-      if (!_nostrService.hasKeys) {
+      if (!_authService.isAuthenticated) {
         Log.error(
-          'Cannot create report event: no keys available',
+          'Cannot create report event: not authenticated',
           name: 'ContentReportingService',
           category: LogCategory.system,
         );
@@ -368,21 +374,24 @@ class ContentReportingService {
         additionalContext,
       );
 
-      // Create kind 1984 event using nostr_sdk (same pattern as video events)
-      final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final event = Event(
-        _keyManager.keyPair!.public,
-        1984, // NIP-56 reporting event kind
-        tags,
-        reportContent,
-        createdAt: createdAt,
+      // Create and sign event via AuthService
+      final signedEvent = await _authService.createAndSignEvent(
+        kind: 1984, // NIP-56 reporting event kind
+        content: reportContent,
+        tags: tags,
       );
 
-      // Sign the event
-      event.sign(_keyManager.keyPair!.private);
+      if (signedEvent == null) {
+        Log.error(
+          'Failed to create and sign NIP-56 report event',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
 
       Log.info(
-        'Created NIP-56 report event (kind 1984): ${event.id}',
+        'Created NIP-56 report event (kind 1984): ${signedEvent.id}',
         name: 'ContentReportingService',
         category: LogCategory.system,
       );
@@ -397,7 +406,7 @@ class ContentReportingService {
         category: LogCategory.system,
       );
 
-      return event;
+      return signedEvent;
     } catch (e) {
       Log.error(
         'Failed to create NIP-56 report event: $e',
