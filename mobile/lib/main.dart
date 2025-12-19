@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/services/back_button_handler.dart';
@@ -411,16 +411,77 @@ Future<void> _startOpenVineApp() async {
 
   StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
+  // Create ProviderContainer to initialize services BEFORE runApp
+  final container = ProviderContainer(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+  );
+
+  // Initialize critical services at app startup level (not UI level)
+  StartupPerformanceService.instance.startPhase('core_services');
+  await _initializeCoreServices(container);
+  StartupPerformanceService.instance.completePhase('core_services');
+
   Log.info('divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
 
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      ],
-      child: const DivineApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const DivineApp()),
+  );
+}
+
+/// Initialize critical services before the UI renders.
+/// This ensures services are ready when widgets first build.
+Future<void> _initializeCoreServices(ProviderContainer container) async {
+  Log.info(
+    '[INIT] Starting service initialization...',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize key manager first (needed for NIP-17 bug reports and auth)
+  await container.read(nostrKeyManagerProvider).initialize();
+  Log.info(
+    '[INIT] ✅ NostrKeyManager initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize auth service
+  await container.read(authServiceProvider).initialize();
+  Log.info(
+    '[INIT] ✅ AuthService initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize nostr service (depends on auth)
+  await container.read(nostrServiceProvider).initialize();
+  Log.info(
+    '[INIT] ✅ NostrService initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize seen videos service
+  await container.read(seenVideosServiceProvider).initialize();
+  Log.info(
+    '[INIT] ✅ SeenVideosService initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize upload manager
+  await container.read(uploadManagerProvider).initialize();
+  Log.info(
+    '[INIT] ✅ UploadManager initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  Log.info(
+    '[INIT] ✅ All critical services initialized',
+    name: 'Main',
+    category: LogCategory.system,
   );
 }
 
@@ -451,18 +512,18 @@ class DivineApp extends ConsumerStatefulWidget {
 }
 
 class _DivineAppState extends ConsumerState<DivineApp> {
-  bool _servicesInitialized = false;
+  bool _backgroundInitDone = false;
 
   @override
   void initState() {
     super.initState();
-    // Trigger service initialization on first frame
+    // Initialize non-critical background services after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return; // Safety check: don't access widget if disposed
-      if (!_servicesInitialized) {
-        _servicesInitialized = true;
-        _initializeServices();
+      if (!mounted) return;
+      if (!_backgroundInitDone) {
+        _backgroundInitDone = true;
         _initializeDeepLinkService();
+        _initializeBackgroundServices();
       }
     });
   }
@@ -474,7 +535,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       category: LogCategory.ui,
     );
 
-    // Initialize the deep link service
     final service = ref.read(deepLinkServiceProvider);
     service.initialize();
 
@@ -485,117 +545,54 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     );
   }
 
-  Future<void> _initializeServices() async {
-    try {
-      Log.info(
-        '[INIT] Starting service initialization...',
-        name: 'Main',
-        category: LogCategory.system,
-      );
+  /// Initialize non-critical background services.
+  /// Critical services are already initialized before runApp in _initializeCoreServices.
+  void _initializeBackgroundServices() {
+    // Initialize social provider in background
+    Future.microtask(() async {
+      try {
+        await ref.read(social_providers.socialProvider.notifier).initialize();
+        Log.info(
+          '[INIT] ✅ SocialProvider initialized (background)',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      } catch (e) {
+        Log.warning(
+          '[INIT] SocialProvider failed (non-critical): $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      }
+    });
 
-      // Initialize key manager first (needed for NIP-17 bug reports and auth)
-      await ref.read(nostrKeyManagerProvider).initialize();
-      Log.info(
-        '[INIT] ✅ NostrKeyManager initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
+    // Initialize mutual mute list sync in background
+    Future.microtask(() async {
+      try {
+        final keyManager = ref.read(nostrKeyManagerProvider);
+        final nostrService = ref.read(nostrServiceProvider);
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
 
-      // Initialize auth service
-      await ref.read(authServiceProvider).initialize();
-      Log.info(
-        '[INIT] ✅ AuthService initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-
-      await ref.read(nostrServiceProvider).initialize();
-      ref.read(nostrInitializationProvider.notifier).markInitialized();
-
-      Log.info(
-        '[INIT] ✅ NostrService initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-
-      // Initialize other services
-      await ref.read(seenVideosServiceProvider).initialize();
-      Log.info(
-        '[INIT] ✅ SeenVideosService initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-
-      await ref.read(uploadManagerProvider).initialize();
-      Log.info(
-        '[INIT] ✅ UploadManager initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-
-      // Initialize social provider in background
-      Future.microtask(() async {
-        try {
-          await ref.read(social_providers.socialProvider.notifier).initialize();
+        // Only sync if user is logged in
+        if (keyManager.publicKey != null) {
+          await blocklistService.syncMuteListsInBackground(
+            nostrService,
+            keyManager.publicKey!,
+          );
           Log.info(
-            '[INIT] ✅ SocialProvider initialized (background)',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        } catch (e) {
-          Log.warning(
-            '[INIT] SocialProvider failed (non-critical): $e',
+            '[INIT] ✅ Mutual mute list sync started (background)',
             name: 'Main',
             category: LogCategory.system,
           );
         }
-      });
-
-      // Initialize mutual mute list sync in background
-      Future.microtask(() async {
-        try {
-          final keyManager = ref.read(nostrKeyManagerProvider);
-          final nostrService = ref.read(nostrServiceProvider);
-          final blocklistService = ref.read(contentBlocklistServiceProvider);
-
-          // Only sync if user is logged in
-          if (keyManager.publicKey != null) {
-            await blocklistService.syncMuteListsInBackground(
-              nostrService,
-              keyManager.publicKey!,
-            );
-            Log.info(
-              '[INIT] ✅ Mutual mute list sync started (background)',
-              name: 'Main',
-              category: LogCategory.system,
-            );
-          }
-        } catch (e) {
-          Log.warning(
-            '[INIT] Mutual mute sync failed (non-critical): $e',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        }
-      });
-
-      Log.info(
-        '[INIT] ✅ All critical services initialized',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-    } catch (e, stack) {
-      Log.error(
-        '[INIT] Service initialization failed: $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      Log.verbose(
-        '[INIT] Stack: $stack',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-    }
+      } catch (e) {
+        Log.warning(
+          '[INIT] Mutual mute sync failed (non-critical): $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      }
+    });
   }
 
   @override

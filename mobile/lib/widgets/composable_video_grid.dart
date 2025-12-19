@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/theme/vine_theme.dart';

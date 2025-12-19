@@ -9,44 +9,16 @@ import 'package:openvine/utils/unified_logger.dart';
 
 part 'readiness_gate_providers.g.dart';
 
-/// State notifier that tracks Nostr service initialization status
-/// Provides reactive updates when initialization state changes
-@Riverpod(keepAlive: true)
-class NostrInitialization extends _$NostrInitialization {
-  @override
-  bool build() {
-    // Start as uninitialized
-    return false;
-  }
-
-  /// Call this when NostrService completes initialization
-  void markInitialized() {
-    state = true;
-  }
-
-  /// Reset to uninitialized state (e.g., when client is recreated)
-  void reset() {
-    state = false;
-  }
-}
-
-/// Provider that checks if Nostr service is fully initialized and ready
-@Riverpod(keepAlive: true)
-bool nostrReady(Ref ref) {
-  return ref.watch(nostrInitializationProvider);
-}
-
 /// Provider that combines all readiness gates to determine if app is ready for subscriptions
 @riverpod
 bool appReady(Ref ref) {
   final isForegrounded = ref.watch(appForegroundProvider);
-  final isNostrReady = ref.watch(nostrReadyProvider);
 
-  final ready = isForegrounded && isNostrReady;
+  final ready = isForegrounded;
 
   // Debug logging to track gate state changes
   Log.debug(
-    '[GATE] 🚦 appReady: $ready (foreground: $isForegrounded, nostr: $isNostrReady)',
+    '[GATE] 🚦 appReady: $ready (foreground: $isForegrounded)',
     name: 'ReadinessGates',
     category: LogCategory.system,
   );
