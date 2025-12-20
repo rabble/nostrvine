@@ -20,8 +20,11 @@ import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
@@ -69,8 +72,11 @@ int tabIndexFromLocation(String loc) {
     case 'search':
     case 'settings':
     case 'relay-settings':
+    case 'relay-diagnostic':
     case 'blossom-settings':
     case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
@@ -491,6 +497,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/notification-settings',
         name: 'notification-settings',
         builder: (_, __) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/key-management',
+        name: 'key-management',
+        builder: (_, __) => const KeyManagementScreen(),
+      ),
+      GoRoute(
+        path: '/relay-diagnostic',
+        name: 'relay-diagnostic',
+        builder: (_, __) => const RelayDiagnosticScreen(),
+      ),
+      GoRoute(
+        path: '/safety-settings',
+        name: 'safety-settings',
+        builder: (_, __) => const SafetySettingsScreen(),
       ),
       GoRoute(
         path: '/edit-profile',
