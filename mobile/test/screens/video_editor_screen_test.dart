@@ -126,9 +126,7 @@ void main() {
     }
 
     testWidgets('renders app bar with title and Done button', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       // Don't wait for video to initialize, just check UI elements
       await tester.pump();
 
@@ -138,27 +136,21 @@ void main() {
     });
 
     testWidgets('renders Add Text button', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pumpAndSettle();
 
       expect(find.text('Add Text'), findsOneWidget);
     });
 
     testWidgets('renders Add Sound button', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pumpAndSettle();
 
       expect(find.text('Add Sound'), findsOneWidget);
     });
 
     testWidgets('displays video preview area', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pumpAndSettle();
 
       // Video preview should be present
@@ -167,9 +159,7 @@ void main() {
     });
 
     testWidgets('shows dark theme colors', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pump();
 
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
@@ -211,9 +201,7 @@ void main() {
     });
 
     testWidgets('opens TextOverlayEditor when Add Text tapped', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Add Text'));
@@ -262,7 +250,9 @@ void main() {
       expect(find.text('Test Overlay'), findsOneWidget);
     });
 
-    testWidgets('displays selected sound name when sound is chosen', (tester) async {
+    testWidgets('displays selected sound name when sound is chosen', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -288,9 +278,7 @@ void main() {
     });
 
     testWidgets('can add multiple text overlays', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
       await tester.pumpAndSettle();
 
       // Check that Add Text button exists
@@ -306,9 +294,7 @@ void main() {
     });
 
     testWidgets('uses dark theme for all UI elements', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(videoPath: '/test/video.mp4'),
-      );
+      await tester.pumpWidget(createTestWidget(videoPath: '/test/video.mp4'));
 
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, Colors.black);

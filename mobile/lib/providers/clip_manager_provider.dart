@@ -15,9 +15,9 @@ final clipManagerServiceProvider = Provider<ClipManagerService>((ref) {
 
 final clipManagerProvider =
     StateNotifierProvider<ClipManagerNotifier, ClipManagerState>((ref) {
-  final service = ref.watch(clipManagerServiceProvider);
-  return ClipManagerNotifier(service);
-});
+      final service = ref.watch(clipManagerServiceProvider);
+      return ClipManagerNotifier(service);
+    });
 
 class ClipManagerNotifier extends StateNotifier<ClipManagerState> {
   ClipManagerNotifier(this._service) : super(ClipManagerState()) {
@@ -28,9 +28,7 @@ class ClipManagerNotifier extends StateNotifier<ClipManagerState> {
   final ClipManagerService _service;
 
   void _updateState() {
-    state = state.copyWith(
-      clips: _service.clips,
-    );
+    state = state.copyWith(clips: _service.clips);
   }
 
   void addClip({

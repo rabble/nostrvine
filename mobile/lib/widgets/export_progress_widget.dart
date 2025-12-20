@@ -66,8 +66,8 @@ class ExportProgressWidget extends StatelessWidget {
                   color: stage == ExportStage.complete
                       ? Colors.green
                       : stage == ExportStage.error
-                          ? Colors.red
-                          : Colors.white,
+                      ? Colors.red
+                      : Colors.white,
                 ),
                 const SizedBox(height: 24),
 
@@ -94,10 +94,7 @@ class ExportProgressWidget extends StatelessWidget {
                 // Percentage
                 Text(
                   percentageText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
 
                 // Cancel button (if provided)

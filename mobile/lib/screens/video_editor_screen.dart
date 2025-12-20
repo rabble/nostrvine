@@ -62,10 +62,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _initializeVideo() async {
-    Log.info(
-      '📹 _initializeVideo() START',
-      category: LogCategory.video,
-    );
+    Log.info('📹 _initializeVideo() START', category: LogCategory.video);
     try {
       final file = File(widget.videoPath);
       Log.info(
@@ -87,10 +84,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       await controller.setLooping(true);
       await controller.play();
-      Log.info(
-        '📹 Video started playing',
-        category: LogCategory.video,
-      );
+      Log.info('📹 Video started playing', category: LogCategory.video);
 
       if (mounted) {
         setState(() {
@@ -107,10 +101,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         '📹 _initializeVideo() FAILED: $e',
         category: LogCategory.video,
       );
-      Log.error(
-        '📹 Stack trace: $stackTrace',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Stack trace: $stackTrace', category: LogCategory.video);
     }
   }
 
@@ -143,10 +134,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final sound = soundService.getSoundById(soundId);
 
     if (sound == null) {
-      Log.warning(
-        'Sound not found: $soundId',
-        category: LogCategory.video,
-      );
+      Log.warning('Sound not found: $soundId', category: LogCategory.video);
       return;
     }
 
@@ -154,7 +142,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       String filePath;
 
       // Load the audio - handle both asset paths and file paths
-      if (sound.assetPath.startsWith('/') || sound.assetPath.startsWith('file://')) {
+      if (sound.assetPath.startsWith('/') ||
+          sound.assetPath.startsWith('file://')) {
         // Custom sound - file path
         filePath = sound.assetPath.replaceFirst('file://', '');
       } else {
@@ -178,15 +167,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       // Play the audio
       await _audioPlayer?.play();
 
-      Log.info(
-        'Playing sound: ${sound.title}',
-        category: LogCategory.video,
-      );
+      Log.info('Playing sound: ${sound.title}', category: LogCategory.video);
     } catch (e) {
-      Log.error(
-        'Failed to play sound: $e',
-        category: LogCategory.video,
-      );
+      Log.error('Failed to play sound: $e', category: LogCategory.video);
       // Unmute video on error
       await _videoController?.setVolume(1.0);
     }
@@ -199,7 +182,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => TextOverlayEditor(
         onSave: (overlay) {
-          ref.read(videoEditorProvider(widget.videoPath).notifier).addTextOverlay(overlay);
+          ref
+              .read(videoEditorProvider(widget.videoPath).notifier)
+              .addTextOverlay(overlay);
           Navigator.of(context).pop();
         },
         onCancel: () => Navigator.of(context).pop(),
@@ -213,7 +198,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     await _audioPlayer?.pause();
 
     // Wait for sounds to load
-    final soundServiceAsync = await ref.read(soundLibraryServiceProvider.future);
+    final soundServiceAsync = await ref.read(
+      soundLibraryServiceProvider.future,
+    );
 
     if (!mounted) return;
 
@@ -221,8 +208,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       MaterialPageRoute(
         builder: (context) => SoundPickerModal(
           sounds: soundServiceAsync.sounds,
-          selectedSoundId:
-              ref.read(videoEditorProvider(widget.videoPath)).selectedSoundId,
+          selectedSoundId: ref
+              .read(videoEditorProvider(widget.videoPath))
+              .selectedSoundId,
           onSoundSelected: (soundId) {
             ref
                 .read(videoEditorProvider(widget.videoPath).notifier)
@@ -257,7 +245,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       String finalVideoPath = widget.videoPath;
 
       // Apply text overlays if any exist
-      if (editorState.textOverlays.isNotEmpty && _isVideoInitialized && _videoController != null) {
+      if (editorState.textOverlays.isNotEmpty &&
+          _isVideoInitialized &&
+          _videoController != null) {
         Log.info(
           '📹 Burning ${editorState.textOverlays.length} text overlays into video',
           category: LogCategory.video,
@@ -388,10 +378,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       // Call original callback if exists
       widget.onExport?.call();
     } catch (e) {
-      Log.error(
-        'Failed to create draft: $e',
-        category: LogCategory.video,
-      );
+      Log.error('Failed to create draft: $e', category: LogCategory.video);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -418,8 +405,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   void _updateTextOverlayPosition(String id, Offset normalizedPosition) {
     final state = ref.read(videoEditorProvider(widget.videoPath));
     final overlay = state.textOverlays.firstWhere((o) => o.id == id);
-    final updatedOverlay = overlay.copyWith(normalizedPosition: normalizedPosition);
-    ref.read(videoEditorProvider(widget.videoPath).notifier).updateTextOverlay(id, updatedOverlay);
+    final updatedOverlay = overlay.copyWith(
+      normalizedPosition: normalizedPosition,
+    );
+    ref
+        .read(videoEditorProvider(widget.videoPath).notifier)
+        .updateTextOverlay(id, updatedOverlay);
   }
 
   @override
@@ -444,10 +435,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: _handleBack,
         ),
-        title: const Text(
-          'Edit Video',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Edit Video', style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: _handleDone,
@@ -488,9 +476,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                                     videoSize: renderedSize,
                                     onPositionChanged: (position) =>
                                         _updateTextOverlayPosition(
-                                      overlay.id,
-                                      position,
-                                    ),
+                                          overlay.id,
+                                          position,
+                                        ),
                                   );
                                 }),
                               ],

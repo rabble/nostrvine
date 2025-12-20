@@ -160,14 +160,16 @@ void main() {
     group('clearAllClips', () {
       test('removes all clips', () async {
         for (var i = 0; i < 5; i++) {
-          await service.saveClip(SavedClip(
-            id: 'clip_$i',
-            filePath: '/tmp/video_$i.mp4',
-            thumbnailPath: null,
-            duration: const Duration(seconds: 1),
-            createdAt: DateTime.now(),
-            aspectRatio: 'square',
-          ));
+          await service.saveClip(
+            SavedClip(
+              id: 'clip_$i',
+              filePath: '/tmp/video_$i.mp4',
+              thumbnailPath: null,
+              duration: const Duration(seconds: 1),
+              createdAt: DateTime.now(),
+              aspectRatio: 'square',
+            ),
+          );
         }
 
         expect((await service.getAllClips()).length, 5);

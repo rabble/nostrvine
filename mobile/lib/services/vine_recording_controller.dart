@@ -689,7 +689,8 @@ class VineRecordingController {
 
   // Progress tracking
   Duration _totalRecordedDuration = Duration.zero;
-  Duration _previouslyRecordedDuration = Duration.zero; // From ClipManager clips
+  Duration _previouslyRecordedDuration =
+      Duration.zero; // From ClipManager clips
   bool _disposed = false;
 
   // Getters
@@ -728,7 +729,7 @@ class VineRecordingController {
     _onStateChanged?.call();
   }
 
-/// Clear segments after they've been added to ClipManager
+  /// Clear segments after they've been added to ClipManager
   /// This prevents duplicate processing when user navigates back
   void clearSegments() {
     _segments.clear();
@@ -1978,12 +1979,14 @@ class VineRecordingController {
 
             final outputFile = File(outputPath);
             if (await outputFile.exists()) {
-              results.add(ExtractedSegment(
-                file: outputFile,
-                duration: segment.duration,
-                needsCrop: false,
-                aspectRatio: null,
-              ));
+              results.add(
+                ExtractedSegment(
+                  file: outputFile,
+                  duration: segment.duration,
+                  needsCrop: false,
+                  aspectRatio: null,
+                ),
+              );
               Log.info(
                 '📹 Segment $i extracted: $outputPath',
                 name: 'VineRecordingController',
@@ -2046,12 +2049,14 @@ class VineRecordingController {
       if (!kIsWeb && Platform.isAndroid) {
         // Android: Defer cropping to export time for performance
         // CameraX already hardware-encoded the file, no need to re-encode
-        results.add(ExtractedSegment(
-          file: file,
-          duration: segment.duration,
-          needsCrop: true,
-          aspectRatio: _aspectRatio,
-        ));
+        results.add(
+          ExtractedSegment(
+            file: file,
+            duration: segment.duration,
+            needsCrop: true,
+            aspectRatio: _aspectRatio,
+          ),
+        );
         Log.info(
           '📹 Segment $i: returning original file for deferred crop (Android), '
           'aspectRatio=${_aspectRatio.name}',
@@ -2062,12 +2067,14 @@ class VineRecordingController {
         // iOS and other platforms: Apply aspect ratio crop immediately
         try {
           final croppedFile = await _applyAspectRatioCrop(segment.filePath!);
-          results.add(ExtractedSegment(
-            file: croppedFile,
-            duration: segment.duration,
-            needsCrop: false,
-            aspectRatio: null,
-          ));
+          results.add(
+            ExtractedSegment(
+              file: croppedFile,
+              duration: segment.duration,
+              needsCrop: false,
+              aspectRatio: null,
+            ),
+          );
           Log.info(
             '📹 Segment $i processed: ${croppedFile.path}',
             name: 'VineRecordingController',

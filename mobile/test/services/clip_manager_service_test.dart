@@ -53,9 +53,18 @@ void main() {
     });
 
     test('reorderClips updates orderIndex values', () {
-      service.addClip(filePath: '/path/1.mp4', duration: const Duration(seconds: 1));
-      service.addClip(filePath: '/path/2.mp4', duration: const Duration(seconds: 1));
-      service.addClip(filePath: '/path/3.mp4', duration: const Duration(seconds: 1));
+      service.addClip(
+        filePath: '/path/1.mp4',
+        duration: const Duration(seconds: 1),
+      );
+      service.addClip(
+        filePath: '/path/2.mp4',
+        duration: const Duration(seconds: 1),
+      );
+      service.addClip(
+        filePath: '/path/3.mp4',
+        duration: const Duration(seconds: 1),
+      );
 
       final ids = service.clips.map((c) => c.id).toList();
       // Reverse the order
@@ -66,15 +75,27 @@ void main() {
     });
 
     test('totalDuration sums all clips', () {
-      service.addClip(filePath: '/path/1.mp4', duration: const Duration(seconds: 2));
-      service.addClip(filePath: '/path/2.mp4', duration: const Duration(milliseconds: 1500));
+      service.addClip(
+        filePath: '/path/1.mp4',
+        duration: const Duration(seconds: 2),
+      );
+      service.addClip(
+        filePath: '/path/2.mp4',
+        duration: const Duration(milliseconds: 1500),
+      );
 
       expect(service.totalDuration, equals(const Duration(milliseconds: 3500)));
     });
 
     test('clearAll removes all clips', () {
-      service.addClip(filePath: '/path/1.mp4', duration: const Duration(seconds: 1));
-      service.addClip(filePath: '/path/2.mp4', duration: const Duration(seconds: 1));
+      service.addClip(
+        filePath: '/path/1.mp4',
+        duration: const Duration(seconds: 1),
+      );
+      service.addClip(
+        filePath: '/path/2.mp4',
+        duration: const Duration(seconds: 1),
+      );
 
       service.clearAll();
 

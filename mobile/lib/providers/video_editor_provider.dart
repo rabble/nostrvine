@@ -6,8 +6,8 @@ import 'package:openvine/models/text_overlay.dart';
 
 final videoEditorProvider = StateNotifierProvider.autoDispose
     .family<VideoEditorNotifier, VideoEditorState, String>(
-  (ref, videoPath) => VideoEditorNotifier(videoPath: videoPath),
-);
+      (ref, videoPath) => VideoEditorNotifier(videoPath: videoPath),
+    );
 
 class VideoEditorState {
   final String videoPath;
@@ -29,19 +29,19 @@ class VideoEditorState {
     return VideoEditorState(
       videoPath: videoPath ?? this.videoPath,
       textOverlays: textOverlays ?? this.textOverlays,
-      selectedSoundId: clearSound ? null : (selectedSoundId ?? this.selectedSoundId),
+      selectedSoundId: clearSound
+          ? null
+          : (selectedSoundId ?? this.selectedSoundId),
     );
   }
 }
 
 class VideoEditorNotifier extends StateNotifier<VideoEditorState> {
   VideoEditorNotifier({required String videoPath})
-      : super(VideoEditorState(videoPath: videoPath));
+    : super(VideoEditorState(videoPath: videoPath));
 
   void addTextOverlay(TextOverlay overlay) {
-    state = state.copyWith(
-      textOverlays: [...state.textOverlays, overlay],
-    );
+    state = state.copyWith(textOverlays: [...state.textOverlays, overlay]);
   }
 
   void updateTextOverlay(String id, TextOverlay updatedOverlay) {

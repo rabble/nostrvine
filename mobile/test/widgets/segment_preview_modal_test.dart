@@ -20,10 +20,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SegmentPreviewModal(
-              clip: testClip,
-              onClose: () {},
-            ),
+            body: SegmentPreviewModal(clip: testClip, onClose: () {}),
           ),
         ),
       );
@@ -53,10 +50,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SegmentPreviewModal(
-              clip: testClip,
-              onClose: () {},
-            ),
+            body: SegmentPreviewModal(clip: testClip, onClose: () {}),
           ),
         ),
       );

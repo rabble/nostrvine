@@ -142,29 +142,28 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           category: LogCategory.video,
         );
 
-        navigator.push<void>(
-          MaterialPageRoute(
-            builder: (ctx) => VideoEditorScreen(videoPath: videoPath),
-          ),
-        ).then((_) {
-          // Clear navigation flag now that we've returned
-          _isNavigatingAway = false;
-          _isProcessing = false;
+        navigator
+            .push<void>(
+              MaterialPageRoute(
+                builder: (ctx) => VideoEditorScreen(videoPath: videoPath),
+              ),
+            )
+            .then((_) {
+              // Clear navigation flag now that we've returned
+              _isNavigatingAway = false;
+              _isProcessing = false;
 
-          // Re-initialize preview when returning from video editor
-          if (mounted) {
-            final currentState = ref.read(clipManagerProvider);
-            if (currentState.sortedClips.isNotEmpty) {
-              _loadPreview(currentState.sortedClips.first);
-            }
-          }
-        });
+              // Re-initialize preview when returning from video editor
+              if (mounted) {
+                final currentState = ref.read(clipManagerProvider);
+                if (currentState.sortedClips.isNotEmpty) {
+                  _loadPreview(currentState.sortedClips.first);
+                }
+              }
+            });
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to process clips: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to process clips: $e', category: LogCategory.video);
 
       if (mounted) {
         setState(() {
@@ -200,7 +199,9 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       final currentIndex = clips.indexWhere((c) => c.id == clipId);
       if (clips.length > 1) {
         // Select the next clip, or previous if this was the last one
-        final newIndex = currentIndex < clips.length - 1 ? currentIndex + 1 : currentIndex - 1;
+        final newIndex = currentIndex < clips.length - 1
+            ? currentIndex + 1
+            : currentIndex - 1;
         notifier.selectClip(clips[newIndex].id);
         _loadPreview(clips[newIndex]);
       } else {
@@ -271,14 +272,18 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           IconButton(
             icon: Icon(
               state.muteOriginalAudio ? Icons.volume_off : Icons.volume_up,
-              color: state.muteOriginalAudio ? VineTheme.vineGreen : Colors.white,
+              color: state.muteOriginalAudio
+                  ? VineTheme.vineGreen
+                  : Colors.white,
             ),
             tooltip: state.muteOriginalAudio ? 'Sound muted' : 'Mute sound',
             onPressed: () {
               ref.read(clipManagerProvider.notifier).toggleMuteOriginalAudio();
               // Also update preview player volume
               if (_previewController != null) {
-                _previewController!.setVolume(state.muteOriginalAudio ? 1.0 : 0.0);
+                _previewController!.setVolume(
+                  state.muteOriginalAudio ? 1.0 : 0.0,
+                );
               }
             },
           ),
@@ -315,9 +320,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           ? Column(
               children: [
                 // Video preview area
-                Expanded(
-                  child: _buildPreviewArea(state),
-                ),
+                Expanded(child: _buildPreviewArea(state)),
                 // Horizontal timeline at bottom
                 _buildTimeline(state, notifier),
               ],
@@ -340,7 +343,9 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     return Container(
       color: Colors.black,
       child: Center(
-        child: _previewController != null && _previewController!.value.isInitialized
+        child:
+            _previewController != null &&
+                _previewController!.value.isInitialized
             ? AspectRatio(
                 // Use target aspect ratio (9:16 vertical or 1:1 square)
                 aspectRatio: targetRatio,
@@ -412,7 +417,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
                 double segmentWidth;
                 if (totalMs > 0) {
                   final proportion = clip.duration.inMilliseconds / totalMs;
-                  segmentWidth = (availableWidth * proportion).clamp(minSegmentWidth, availableWidth);
+                  segmentWidth = (availableWidth * proportion).clamp(
+                    minSegmentWidth,
+                    availableWidth,
+                  );
                 } else {
                   segmentWidth = minSegmentWidth;
                 }
@@ -456,7 +464,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         width: 60,
         height: 20,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 1),
+          border: Border.all(
+            color: Colors.grey.withValues(alpha: 0.5),
+            width: 1,
+          ),
           borderRadius: BorderRadius.circular(4),
         ),
         child: const Center(
@@ -497,11 +508,13 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       }
 
       // Add to clip manager
-      ref.read(clipManagerProvider.notifier).addClip(
-        filePath: clip.filePath,
-        duration: clip.duration,
-        thumbnailPath: clip.thumbnailPath,
-      );
+      ref
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            filePath: clip.filePath,
+            duration: clip.duration,
+            thumbnailPath: clip.thumbnailPath,
+          );
 
       Log.info(
         '📹 Added clip from library: ${clip.filePath}, duration: ${clip.duration.inMilliseconds}ms',
@@ -517,10 +530,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         );
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to import clip: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to import clip: $e', category: LogCategory.video);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -595,10 +605,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         context.go('/camera');
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to save clips: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to save clips: $e', category: LogCategory.video);
 
       if (mounted) {
         setState(() {
@@ -634,10 +641,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
             const Icon(Icons.add, color: VineTheme.vineGreen, size: 24),
             Text(
               '${seconds.toStringAsFixed(1)}s',
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 10,
-              ),
+              style: const TextStyle(color: VineTheme.vineGreen, fontSize: 10),
             ),
           ],
         ),
@@ -650,26 +654,16 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.videocam_off,
-            color: Colors.grey,
-            size: 64,
-          ),
+          const Icon(Icons.videocam_off, color: Colors.grey, size: 64),
           const SizedBox(height: 16),
           const Text(
             'No clips recorded',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 18,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 18),
           ),
           const SizedBox(height: 8),
           const Text(
             'Tap below to start recording',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -801,10 +795,7 @@ class _TimelineSegmentState extends State<_TimelineSegment> {
           children: [
             // Thumbnail or placeholder
             if (widget.clip.thumbnailPath != null)
-              Image.file(
-                File(widget.clip.thumbnailPath!),
-                fit: BoxFit.cover,
-              )
+              Image.file(File(widget.clip.thumbnailPath!), fit: BoxFit.cover)
             else
               Container(
                 color: Colors.grey[800],
@@ -824,7 +815,10 @@ class _TimelineSegmentState extends State<_TimelineSegment> {
                 left: 4,
                 bottom: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(4),
@@ -863,10 +857,7 @@ class _TimelineSegmentState extends State<_TimelineSegment> {
         // to prevent gesture conflicts
         child: _isVerticalDrag
             ? content
-            : ReorderableDragStartListener(
-                index: widget.index,
-                child: content,
-              ),
+            : ReorderableDragStartListener(index: widget.index, child: content),
       ),
     );
   }

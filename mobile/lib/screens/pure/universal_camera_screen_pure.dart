@@ -515,7 +515,9 @@ class _UniversalCameraScreenPureState
           }
 
           // Auto-reinitialize camera if it was released (e.g., after back navigation)
-          if (!recordingState.isInitialized && !_isInitializing && !_permissionDenied) {
+          if (!recordingState.isInitialized &&
+              !_isInitializing &&
+              !_permissionDenied) {
             // Trigger re-initialization in next microtask to avoid build phase issues
             _isInitializing = true;
             Future.microtask(() async {
@@ -990,17 +992,23 @@ class _UniversalCameraScreenPureState
                   ),
                 ),
                 // Clear/Reset button - appears when there are segments or clips
-                if (recordingState.hasSegments || ref.watch(clipManagerProvider).hasClips)
+                if (recordingState.hasSegments ||
+                    ref.watch(clipManagerProvider).hasClips)
                   Padding(
                     padding: const EdgeInsets.only(left: 12),
                     child: GestureDetector(
                       onTap: _showClearConfirmation,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1571,10 +1579,7 @@ class _UniversalCameraScreenPureState
         // Navigate to ClipManager screen
         context.push('/clip-manager');
 
-        Log.info(
-          '📹 Navigated to clip-manager',
-          category: LogCategory.video,
-        );
+        Log.info('📹 Navigated to clip-manager', category: LogCategory.video);
       }
     } catch (e) {
       Log.error(
@@ -1782,20 +1787,14 @@ class _UniversalCameraScreenPureState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _clearAllRecordings();
             },
-            child: const Text(
-              'Clear',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

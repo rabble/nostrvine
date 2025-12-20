@@ -18,7 +18,10 @@ void main() {
       test('handles empty clip list gracefully', () async {
         final clips = <RecordingClip>[];
 
-        expect(() => service.concatenateSegments(clips), throwsA(isA<ArgumentError>()));
+        expect(
+          () => service.concatenateSegments(clips),
+          throwsA(isA<ArgumentError>()),
+        );
       });
 
       test('handles single clip by returning it directly', () async {
@@ -59,10 +62,7 @@ void main() {
         void onProgress(ExportStage stage, double progress) {}
 
         expect(
-          () => service.export(
-            clips: [],
-            onProgress: onProgress,
-          ),
+          () => service.export(clips: [], onProgress: onProgress),
           throwsA(isA<ArgumentError>()),
         );
       });

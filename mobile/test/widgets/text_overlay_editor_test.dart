@@ -11,11 +11,7 @@ void main() {
     testWidgets('displays dark theme modal', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -30,11 +26,7 @@ void main() {
     testWidgets('shows text input field', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -48,11 +40,7 @@ void main() {
     testWidgets('displays font family selector with presets', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -66,11 +54,7 @@ void main() {
     testWidgets('displays color picker with preset colors', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -84,11 +68,7 @@ void main() {
     testWidgets('displays size slider', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -133,11 +113,7 @@ void main() {
     testWidgets('updates preview when text changes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -152,11 +128,7 @@ void main() {
     testWidgets('updates preview when font family changes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -173,11 +145,7 @@ void main() {
     testWidgets('updates preview when size changes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-            ),
-          ),
+          home: Scaffold(body: TextOverlayEditor(onSave: (_) {})),
         ),
       );
 
@@ -204,10 +172,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TextOverlayEditor(
-              overlay: existingOverlay,
-              onSave: (_) {},
-            ),
+            body: TextOverlayEditor(overlay: existingOverlay, onSave: (_) {}),
           ),
         ),
       );
@@ -243,10 +208,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TextOverlayEditor(
-              onSave: (_) {},
-              onCancel: () {},
-            ),
+            body: TextOverlayEditor(onSave: (_) {}, onCancel: () {}),
           ),
         ),
       );

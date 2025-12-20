@@ -302,11 +302,7 @@ class FFmpegEncoder {
     final hardwareReturnCode = await hardwareSession.getReturnCode();
 
     if (ReturnCode.isSuccess(hardwareReturnCode)) {
-      Log.info(
-        'Command succeeded',
-        name: logTag,
-        category: LogCategory.system,
-      );
+      Log.info('Command succeeded', name: logTag, category: LogCategory.system);
       // Clear sessions to free memory
       await clearSessions();
       return hardwareSession;
@@ -326,7 +322,10 @@ class FFmpegEncoder {
     // Replace Apple VideoToolbox encoder with libx264
     if (isApplePlatform) {
       softwareCommand = softwareCommand
-          .replaceAll('-c:v h264_videotoolbox -b:v 4M', getSoftwareEncoderArgs())
+          .replaceAll(
+            '-c:v h264_videotoolbox -b:v 4M',
+            getSoftwareEncoderArgs(),
+          )
           .replaceAll('-c:v h264_videotoolbox', getSoftwareEncoderArgs())
           .replaceAll('h264_videotoolbox', 'libx264');
     }
@@ -344,9 +343,13 @@ class FFmpegEncoder {
     if (softwareCommand.contains('h264_mediacodec')) {
       softwareCommand = softwareCommand
           .replaceAll(
-              '-c:v h264_mediacodec -b:v 4M -g 30 -bf 0 -profile:v baseline -level 3.1',
-              '-c:v libx264 -preset ultrafast -crf 23')
-          .replaceAll('-c:v h264_mediacodec', '-c:v libx264 -preset ultrafast -crf 23')
+            '-c:v h264_mediacodec -b:v 4M -g 30 -bf 0 -profile:v baseline -level 3.1',
+            '-c:v libx264 -preset ultrafast -crf 23',
+          )
+          .replaceAll(
+            '-c:v h264_mediacodec',
+            '-c:v libx264 -preset ultrafast -crf 23',
+          )
           .replaceAll('h264_mediacodec', 'libx264');
     }
 

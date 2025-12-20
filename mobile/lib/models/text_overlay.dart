@@ -21,9 +21,9 @@ class TextOverlay {
     this.alignment = TextAlign.center,
     this.fontFamily = 'Roboto',
   }) : normalizedPosition = Offset(
-          normalizedPosition.dx.clamp(0.0, 1.0),
-          normalizedPosition.dy.clamp(0.0, 1.0),
-        );
+         normalizedPosition.dx.clamp(0.0, 1.0),
+         normalizedPosition.dy.clamp(0.0, 1.0),
+       );
 
   Map<String, dynamic> toJson() {
     return {

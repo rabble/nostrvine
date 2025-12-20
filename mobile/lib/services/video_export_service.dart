@@ -145,7 +145,8 @@ class VideoExportService {
           category: LogCategory.system,
         );
       }
-      final bool needsEncoding = effectiveAspectRatio != null && !skipCropOnMacOS;
+      final bool needsEncoding =
+          effectiveAspectRatio != null && !skipCropOnMacOS;
 
       if (needsEncoding) {
         // With crop: need to re-encode
@@ -228,8 +229,9 @@ class VideoExportService {
         }
 
         // Step 2: Concat cropped clips using simple concat demuxer
-        final croppedListContent =
-            croppedPaths.map((p) => "file '$p'").join('\n');
+        final croppedListContent = croppedPaths
+            .map((p) => "file '$p'")
+            .join('\n');
         final croppedListPath = '${tempDir.path}/cropped_list_$timestamp.txt';
         await File(croppedListPath).writeAsString(croppedListContent);
 
@@ -405,10 +407,7 @@ class VideoExportService {
   /// For bundled assets, copies from Flutter assets to temp file.
   /// For custom sounds (file paths), uses the file directly.
   /// Runs: `ffmpeg -i video.mp4 -i audio.mp3 -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest output.mp4`
-  Future<String> mixAudio(
-    String videoPath,
-    String audioPath,
-  ) async {
+  Future<String> mixAudio(String videoPath, String audioPath) async {
     try {
       Log.info(
         'Mixing audio: $audioPath with video: $videoPath',
@@ -436,9 +435,7 @@ class VideoExportService {
         // Bundled asset - copy to temp file
         audioFilePath = '${tempDir.path}/audio_$timestamp.mp3';
         final audioBytes = await rootBundle.load(audioPath);
-        await File(audioFilePath).writeAsBytes(
-          audioBytes.buffer.asUint8List(),
-        );
+        await File(audioFilePath).writeAsBytes(audioBytes.buffer.asUint8List());
         Log.info(
           'Copied asset to: $audioFilePath',
           name: 'VideoExportService',
@@ -588,7 +585,10 @@ class VideoExportService {
         );
 
         final previousPath = currentVideoPath;
-        currentVideoPath = await applyTextOverlay(currentVideoPath, overlayImage);
+        currentVideoPath = await applyTextOverlay(
+          currentVideoPath,
+          overlayImage,
+        );
 
         // Clean up previous file if it was a temp file
         if (previousPath != clips.first.filePath) {

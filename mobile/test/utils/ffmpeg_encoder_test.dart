@@ -11,7 +11,10 @@ void main() {
     group('platform detection', () {
       test('isApplePlatform returns correct value', () {
         // This will be true on macOS/iOS, false otherwise
-        expect(FFmpegEncoder.isApplePlatform, equals(Platform.isIOS || Platform.isMacOS));
+        expect(
+          FFmpegEncoder.isApplePlatform,
+          equals(Platform.isIOS || Platform.isMacOS),
+        );
       });
 
       test('isAndroid returns correct value', () {

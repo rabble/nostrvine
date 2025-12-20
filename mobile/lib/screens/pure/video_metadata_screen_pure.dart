@@ -522,7 +522,8 @@ class _VideoMetadataScreenPureState
                                               // Video with proper aspect ratio cropping
                                               AspectRatio(
                                                 aspectRatio:
-                                                    _currentDraft!.aspectRatio ==
+                                                    _currentDraft!
+                                                            .aspectRatio ==
                                                         vine.AspectRatio.square
                                                     ? 1.0
                                                     : 9.0 / 16.0,
@@ -530,8 +531,14 @@ class _VideoMetadataScreenPureState
                                                   child: FittedBox(
                                                     fit: BoxFit.cover,
                                                     child: SizedBox(
-                                                      width: _videoController!.value.size.width,
-                                                      height: _videoController!.value.size.height,
+                                                      width: _videoController!
+                                                          .value
+                                                          .size
+                                                          .width,
+                                                      height: _videoController!
+                                                          .value
+                                                          .size
+                                                          .height,
                                                       child: VideoPlayer(
                                                         _videoController!,
                                                       ),
@@ -541,14 +548,21 @@ class _VideoMetadataScreenPureState
                                               ),
                                               // Play/pause overlay icon
                                               AnimatedOpacity(
-                                                opacity: _isVideoPlaying ? 0.0 : 1.0,
-                                                duration: const Duration(milliseconds: 200),
+                                                opacity: _isVideoPlaying
+                                                    ? 0.0
+                                                    : 1.0,
+                                                duration: const Duration(
+                                                  milliseconds: 200,
+                                                ),
                                                 child: Container(
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black.withValues(alpha: 0.5),
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.5),
                                                     shape: BoxShape.circle,
                                                   ),
-                                                  padding: const EdgeInsets.all(12),
+                                                  padding: const EdgeInsets.all(
+                                                    12,
+                                                  ),
                                                   child: const Icon(
                                                     Icons.play_arrow,
                                                     color: Colors.white,

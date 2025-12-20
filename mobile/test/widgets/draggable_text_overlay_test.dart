@@ -42,7 +42,9 @@ void main() {
       expect(textWidget.style?.fontFamily, 'Roboto');
     });
 
-    testWidgets('positions text based on normalized coordinates', (tester) async {
+    testWidgets('positions text based on normalized coordinates', (
+      tester,
+    ) async {
       final overlay = TextOverlay(
         id: 'test-id',
         text: 'Centered',

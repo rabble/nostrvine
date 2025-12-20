@@ -264,7 +264,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'AppRouter',
         category: LogCategory.ui,
       );
-      print('🔵🔵🔵 REDIRECT RETURNING NULL for $location - route builder should be called next 🔵🔵🔵');
+      print(
+        '🔵🔵🔵 REDIRECT RETURNING NULL for $location - route builder should be called next 🔵🔵🔵',
+      );
       return null;
     },
     routes: [

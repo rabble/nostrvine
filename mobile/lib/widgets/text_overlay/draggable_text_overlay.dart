@@ -33,8 +33,11 @@ class _DraggableTextOverlayState extends State<DraggableTextOverlay> {
   @override
   void didUpdateWidget(DraggableTextOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.overlay.normalizedPosition != widget.overlay.normalizedPosition) {
-      _currentPosition = _normalizedToAbsolute(widget.overlay.normalizedPosition);
+    if (oldWidget.overlay.normalizedPosition !=
+        widget.overlay.normalizedPosition) {
+      _currentPosition = _normalizedToAbsolute(
+        widget.overlay.normalizedPosition,
+      );
     }
   }
 
@@ -51,17 +54,20 @@ class _DraggableTextOverlayState extends State<DraggableTextOverlay> {
       absolute.dy / widget.videoSize.height,
     );
 
-    return Offset(
-      normalized.dx.clamp(0.0, 1.0),
-      normalized.dy.clamp(0.0, 1.0),
-    );
+    return Offset(normalized.dx.clamp(0.0, 1.0), normalized.dy.clamp(0.0, 1.0));
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
     setState(() {
       _currentPosition = Offset(
-        (_currentPosition.dx + details.delta.dx).clamp(0.0, widget.videoSize.width),
-        (_currentPosition.dy + details.delta.dy).clamp(0.0, widget.videoSize.height),
+        (_currentPosition.dx + details.delta.dx).clamp(
+          0.0,
+          widget.videoSize.width,
+        ),
+        (_currentPosition.dy + details.delta.dy).clamp(
+          0.0,
+          widget.videoSize.height,
+        ),
       );
     });
   }

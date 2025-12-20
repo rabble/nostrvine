@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/services/sound_library_service.dart';
 
 /// Async provider that loads sounds (bundled + custom) when first accessed
-final soundLibraryServiceProvider =
-    FutureProvider<SoundLibraryService>((ref) async {
+final soundLibraryServiceProvider = FutureProvider<SoundLibraryService>((
+  ref,
+) async {
   final service = SoundLibraryService();
   await service.loadSounds();
   await service.loadCustomSounds();

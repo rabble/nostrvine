@@ -16,9 +16,7 @@ class EditorNotifier extends Notifier<EditorState> {
   }
 
   void addTextOverlay(TextOverlay overlay) {
-    state = state.copyWith(
-      textOverlays: [...state.textOverlays, overlay],
-    );
+    state = state.copyWith(textOverlays: [...state.textOverlays, overlay]);
   }
 
   void updateTextOverlay(String id, TextOverlay overlay) {
@@ -49,7 +47,8 @@ class EditorNotifier extends Notifier<EditorState> {
   }
 
   void setExportStage(ExportStage stage, double progress) {
-    final isProcessing = stage != ExportStage.complete && stage != ExportStage.error;
+    final isProcessing =
+        stage != ExportStage.complete && stage != ExportStage.error;
 
     state = state.copyWith(
       exportStage: stage,

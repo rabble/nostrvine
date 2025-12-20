@@ -153,7 +153,10 @@ void main() {
       test('should not error when removing nonexistent id', () {
         final notifier = container.read(editorProvider.notifier);
 
-        expect(() => notifier.removeTextOverlay('nonexistent'), returnsNormally);
+        expect(
+          () => notifier.removeTextOverlay('nonexistent'),
+          returnsNormally,
+        );
 
         final state = container.read(editorProvider);
         expect(state.textOverlays, isEmpty);

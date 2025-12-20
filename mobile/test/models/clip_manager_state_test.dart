@@ -33,7 +33,10 @@ void main() {
       final state = ClipManagerState(clips: [clip1, clip2]);
 
       // Max is 6.3 seconds = 6300ms, used is 3500ms, remaining is 2800ms
-      expect(state.remainingDuration, equals(const Duration(milliseconds: 2800)));
+      expect(
+        state.remainingDuration,
+        equals(const Duration(milliseconds: 2800)),
+      );
     });
 
     test('canRecordMore is true when under limit', () {

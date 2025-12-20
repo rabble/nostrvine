@@ -80,9 +80,7 @@ class _SegmentPreviewModalState extends State<SegmentPreviewModal> {
         child: Stack(
           children: [
             // Video player
-            Center(
-              child: _buildVideoPlayer(),
-            ),
+            Center(child: _buildVideoPlayer()),
 
             // Close button
             Positioned(
@@ -90,11 +88,7 @@ class _SegmentPreviewModalState extends State<SegmentPreviewModal> {
               right: 16,
               child: IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
               ),
             ),
 
@@ -115,10 +109,7 @@ class _SegmentPreviewModalState extends State<SegmentPreviewModal> {
                   ),
                   child: Text(
                     '${widget.clip.durationInSeconds.toStringAsFixed(1)}s',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ),
@@ -131,10 +122,7 @@ class _SegmentPreviewModalState extends State<SegmentPreviewModal> {
 
   Widget _buildVideoPlayer() {
     if (_errorMessage != null) {
-      return Text(
-        _errorMessage!,
-        style: const TextStyle(color: Colors.red),
-      );
+      return Text(_errorMessage!, style: const TextStyle(color: Colors.red));
     }
 
     if (!_isInitialized || _controller == null) {
