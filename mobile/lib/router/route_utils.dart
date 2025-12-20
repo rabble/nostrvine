@@ -141,6 +141,12 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.editVideo);
 
     case 'settings':
+    case 'relay-settings':
+    case 'relay-diagnostic':
+    case 'blossom-settings':
+    case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
       return const RouteContext(type: RouteType.settings);
 
     case 'edit-profile':

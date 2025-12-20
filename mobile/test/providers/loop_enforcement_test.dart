@@ -34,12 +34,6 @@ void main() {
   });
 
   group('Loop Enforcement Logic', () {
-    late MockVideoPlayerController mockController;
-
-    setUp(() {
-      mockController = MockVideoPlayerController();
-    });
-
     test('videos under 6.3s should not trigger loop enforcement', () {
       // Arrange - video is 5 seconds (under limit)
       final videoDuration = const Duration(seconds: 5);
