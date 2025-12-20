@@ -287,6 +287,39 @@ class RelayManager {
     _notifyStatusChange();
   }
 
+  /// Force reconnect all relays (disconnect first, then reconnect)
+  ///
+  /// Use this when WebSocket connections may have been silently dropped
+  /// (e.g., after app backgrounding).
+  Future<void> forceReconnectAll() async {
+    _log('Force reconnecting all relays');
+
+    // First disconnect all
+    for (final url in _configuredRelays) {
+      _relayPool.remove(url);
+      _updateRelayStatus(url, RelayState.connecting);
+    }
+    _notifyStatusChange();
+
+    // Then reconnect all
+    for (final url in _configuredRelays) {
+      final success = await _connectToRelay(url);
+      if (success) {
+        _updateRelayStatus(url, RelayState.connected);
+        _log('Force reconnected to $url');
+      } else {
+        _updateRelayStatus(
+          url,
+          RelayState.error,
+          errorMessage: 'Force reconnection failed',
+        );
+        _log('Force reconnection failed for $url');
+      }
+    }
+
+    _notifyStatusChange();
+  }
+
   /// Reconnect to a specific relay
   Future<bool> reconnectRelay(String url) async {
     final normalizedUrl = _normalizeUrl(url);

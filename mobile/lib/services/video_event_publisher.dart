@@ -69,6 +69,88 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
+      // Log relay diagnostics
+      Log.info(
+        '🔍 Relay diagnostics: isInitialized=${_nostrService.isInitialized}, '
+        'configured=${_nostrService.configuredRelayCount}, '
+        'connected=${_nostrService.connectedRelayCount}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      Log.info(
+        '🔍 Configured relays: ${_nostrService.configuredRelays}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      Log.info(
+        '🔍 Connected relays: ${_nostrService.connectedRelays}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Ensure NostrClient is initialized before attempting broadcast
+      if (!_nostrService.isInitialized) {
+        Log.warning(
+          '⚠️ NostrClient not initialized, initializing now...',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        await _nostrService.initialize();
+        // Wait for connections to establish
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        Log.info(
+          '🔍 After init: connected=${_nostrService.connectedRelayCount}, '
+          'relays=${_nostrService.connectedRelays}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+
+      // Check relay connectivity before attempting broadcast
+      final connectedCount = _nostrService.connectedRelayCount;
+      if (connectedCount == 0) {
+        Log.warning(
+          '⚠️ No relays connected, force reconnecting all relays...',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        // Use forceReconnectAll to handle stale WebSocket connections
+        // (e.g., after app was backgrounded)
+        await _nostrService.forceReconnectAll();
+
+        // Wait for connections to establish
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        final newConnectedCount = _nostrService.connectedRelayCount;
+        Log.info(
+          '🔍 After force reconnect: connected=$newConnectedCount, '
+          'relays=${_nostrService.connectedRelays}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+
+        if (newConnectedCount == 0) {
+          Log.error(
+            '❌ No relays available after force reconnection attempt',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          return false;
+        }
+        Log.info(
+          '✅ Force reconnected to $newConnectedCount relay(s)',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.info(
+          '📡 $connectedCount relay(s) connected',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+
       // Log the complete event details
       Log.info(
         '📤 FULL EVENT TO PUBLISH:',
@@ -622,13 +704,47 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Publish to Nostr relays
+      // Publish to Nostr relays with retry logic
       Log.info(
         '🚀 Starting relay publication for event ${event.id}',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      final publishResult = await _publishEventToNostr(event);
+
+      // Retry up to 3 times with exponential backoff
+      const maxRetries = 3;
+      var publishResult = false;
+
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        publishResult = await _publishEventToNostr(event);
+
+        if (publishResult) {
+          if (attempt > 1) {
+            Log.info(
+              '✅ Publish succeeded on attempt $attempt',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+          break;
+        }
+
+        if (attempt < maxRetries) {
+          final delaySeconds = attempt * 2; // 2s, 4s backoff
+          Log.warning(
+            '⚠️ Publish attempt $attempt failed, retrying in ${delaySeconds}s...',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          await Future<void>.delayed(Duration(seconds: delaySeconds));
+        } else {
+          Log.error(
+            '❌ All $maxRetries publish attempts failed',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
 
       if (publishResult) {
         // Update upload status
