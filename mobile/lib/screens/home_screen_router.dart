@@ -41,6 +41,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
   static int _buildCount = 0;
   static DateTime? _lastBuildTime;
+  static int _wrongRouteRedirectCount = 0;
+  static const _maxWrongRouteRedirects = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -66,15 +68,31 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
       onData: (ctx) {
         // Only handle home routes - if we get here with wrong route, recover gracefully
         if (ctx.type != RouteType.home) {
+          _wrongRouteRedirectCount++;
+
           // Log to Crashlytics as this indicates a routing bug
           final errorMessage =
-              'HomeScreenRouter received non-home route: ${ctx.type.name}';
+              'HomeScreenRouter received non-home route: ${ctx.type.name} (redirect attempt $_wrongRouteRedirectCount)';
           Log.error(errorMessage, name: 'HomeScreenRouter');
           CrashReportingService.instance.recordError(
             StateError(errorMessage),
             StackTrace.current,
             reason: 'Router delivered wrong route type to HomeScreenRouter',
           );
+
+          // Prevent infinite redirect loop
+          if (_wrongRouteRedirectCount > _maxWrongRouteRedirects) {
+            Log.error(
+              'Max wrong route redirects exceeded ($_wrongRouteRedirectCount) - stopping to prevent infinite loop',
+              name: 'HomeScreenRouter',
+            );
+            return const Center(
+              child: Text(
+                'Navigation error - please restart the app',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
 
           // Redirect to home on next frame to avoid build-phase navigation
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,6 +106,9 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           );
         }
+
+        // Reset redirect counter on successful home route
+        _wrongRouteRedirectCount = 0;
 
         int urlIndex = 0;
 
