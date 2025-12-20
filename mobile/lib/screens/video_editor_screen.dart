@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
@@ -45,25 +44,64 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   bool _isVideoInitialized = false;
   AudioPlayer? _audioPlayer;
   String? _currentSoundId;
+  Size? _lastPreviewSize; // Store preview size for text overlay scaling
 
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '📹 VideoEditorScreen.initState() START - videoPath: ${widget.videoPath}',
+      category: LogCategory.video,
+    );
     _initializeVideo();
     _audioPlayer = AudioPlayer();
+    Log.info(
+      '📹 VideoEditorScreen.initState() END',
+      category: LogCategory.video,
+    );
   }
 
   Future<void> _initializeVideo() async {
-    final controller = VideoPlayerController.file(File(widget.videoPath));
-    await controller.initialize();
-    await controller.setLooping(true);
-    await controller.play();
+    Log.info('📹 _initializeVideo() START', category: LogCategory.video);
+    try {
+      final file = File(widget.videoPath);
+      Log.info(
+        '📹 Video file exists: ${file.existsSync()}, path: ${widget.videoPath}',
+        category: LogCategory.video,
+      );
 
-    if (mounted) {
-      setState(() {
-        _videoController = controller;
-        _isVideoInitialized = true;
-      });
+      final controller = VideoPlayerController.file(file);
+      Log.info(
+        '📹 VideoPlayerController created, calling initialize()...',
+        category: LogCategory.video,
+      );
+
+      await controller.initialize();
+      Log.info(
+        '📹 VideoPlayerController initialized, size: ${controller.value.size}',
+        category: LogCategory.video,
+      );
+
+      await controller.setLooping(true);
+      await controller.play();
+      Log.info('📹 Video started playing', category: LogCategory.video);
+
+      if (mounted) {
+        setState(() {
+          _videoController = controller;
+          _isVideoInitialized = true;
+        });
+        Log.info(
+          '📹 _initializeVideo() COMPLETE - video is ready',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '📹 _initializeVideo() FAILED: $e',
+        category: LogCategory.video,
+      );
+      Log.error('📹 Stack trace: $stackTrace', category: LogCategory.video);
     }
   }
 
@@ -96,10 +134,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final sound = soundService.getSoundById(soundId);
 
     if (sound == null) {
-      Log.warning(
-        'Sound not found: $soundId',
-        category: LogCategory.video,
-      );
+      Log.warning('Sound not found: $soundId', category: LogCategory.video);
       return;
     }
 
@@ -107,7 +142,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       String filePath;
 
       // Load the audio - handle both asset paths and file paths
-      if (sound.assetPath.startsWith('/') || sound.assetPath.startsWith('file://')) {
+      if (sound.assetPath.startsWith('/') ||
+          sound.assetPath.startsWith('file://')) {
         // Custom sound - file path
         filePath = sound.assetPath.replaceFirst('file://', '');
       } else {
@@ -131,15 +167,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       // Play the audio
       await _audioPlayer?.play();
 
-      Log.info(
-        'Playing sound: ${sound.title}',
-        category: LogCategory.video,
-      );
+      Log.info('Playing sound: ${sound.title}', category: LogCategory.video);
     } catch (e) {
-      Log.error(
-        'Failed to play sound: $e',
-        category: LogCategory.video,
-      );
+      Log.error('Failed to play sound: $e', category: LogCategory.video);
       // Unmute video on error
       await _videoController?.setVolume(1.0);
     }
@@ -152,7 +182,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => TextOverlayEditor(
         onSave: (overlay) {
-          ref.read(videoEditorProvider(widget.videoPath).notifier).addTextOverlay(overlay);
+          ref
+              .read(videoEditorProvider(widget.videoPath).notifier)
+              .addTextOverlay(overlay);
           Navigator.of(context).pop();
         },
         onCancel: () => Navigator.of(context).pop(),
@@ -166,7 +198,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     await _audioPlayer?.pause();
 
     // Wait for sounds to load
-    final soundServiceAsync = await ref.read(soundLibraryServiceProvider.future);
+    final soundServiceAsync = await ref.read(
+      soundLibraryServiceProvider.future,
+    );
 
     if (!mounted) return;
 
@@ -174,8 +208,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       MaterialPageRoute(
         builder: (context) => SoundPickerModal(
           sounds: soundServiceAsync.sounds,
-          selectedSoundId:
-              ref.read(videoEditorProvider(widget.videoPath)).selectedSoundId,
+          selectedSoundId: ref
+              .read(videoEditorProvider(widget.videoPath))
+              .selectedSoundId,
           onSoundSelected: (soundId) {
             ref
                 .read(videoEditorProvider(widget.videoPath).notifier)
@@ -210,7 +245,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       String finalVideoPath = widget.videoPath;
 
       // Apply text overlays if any exist
-      if (editorState.textOverlays.isNotEmpty && _isVideoInitialized && _videoController != null) {
+      if (editorState.textOverlays.isNotEmpty &&
+          _isVideoInitialized &&
+          _videoController != null) {
         Log.info(
           '📹 Burning ${editorState.textOverlays.length} text overlays into video',
           category: LogCategory.video,
@@ -219,11 +256,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         // Use the actual video resolution for rendering overlays
         final videoSize = _videoController!.value.size;
 
-        // Render text overlays to PNG
+        // Render text overlays to PNG, scaling fonts from preview to video size
         final renderer = TextOverlayRenderer();
         final overlayImage = await renderer.renderOverlays(
           editorState.textOverlays,
           videoSize,
+          previewSize: _lastPreviewSize,
         );
 
         // Apply overlay to video using FFmpeg
@@ -309,21 +347,38 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       if (mounted) {
+        // Dispose video controller to free memory before navigating
+        // The metadata screen will create its own player
+        _videoController?.dispose();
+        _videoController = null;
+        _audioPlayer?.dispose();
+        _audioPlayer = null;
+        setState(() {
+          _isVideoInitialized = false;
+        });
+
         // Navigate to metadata screen
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => VideoMetadataScreenPure(draftId: draft.id),
           ),
         );
+
+        // Re-initialize video when returning from metadata screen
+        if (mounted) {
+          _audioPlayer = AudioPlayer();
+          await _initializeVideo();
+          // Re-apply sound if one was selected
+          if (_currentSoundId != null) {
+            await _loadAndPlaySound(_currentSoundId);
+          }
+        }
       }
 
       // Call original callback if exists
       widget.onExport?.call();
     } catch (e) {
-      Log.error(
-        'Failed to create draft: $e',
-        category: LogCategory.video,
-      );
+      Log.error('Failed to create draft: $e', category: LogCategory.video);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -335,91 +390,53 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
-  Future<void> _handleBack() async {
+  void _handleBack() {
     // Stop audio preview when going back
     _audioPlayer?.stop();
 
     if (widget.onBack != null) {
       widget.onBack!();
-      return;
+    } else {
+      // Pop back to ClipManager since we got here via push
+      context.pop();
     }
-
-    // Show confirmation dialog
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Discard edits?',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
-        content: const Text(
-          'Your text and sound edits will be lost. Your clips are saved.',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep Editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Discard'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldExit == true && mounted) {
-      // Go back to where user came from, fallback to home
-      if (GoRouter.of(context).canPop()) {
-        context.pop();
-      } else {
-        context.go('/home/0');
-      }
-    }
-  }
-
-  void _goToClipManager() {
-    // Stop audio preview when going back
-    _audioPlayer?.stop();
-    context.go('/clip-manager');
   }
 
   void _updateTextOverlayPosition(String id, Offset normalizedPosition) {
     final state = ref.read(videoEditorProvider(widget.videoPath));
     final overlay = state.textOverlays.firstWhere((o) => o.id == id);
-    final updatedOverlay = overlay.copyWith(normalizedPosition: normalizedPosition);
-    ref.read(videoEditorProvider(widget.videoPath).notifier).updateTextOverlay(id, updatedOverlay);
+    final updatedOverlay = overlay.copyWith(
+      normalizedPosition: normalizedPosition,
+    );
+    ref
+        .read(videoEditorProvider(widget.videoPath).notifier)
+        .updateTextOverlay(id, updatedOverlay);
   }
 
   @override
   Widget build(BuildContext context) {
+    Log.info(
+      '📹 VideoEditorScreen.build() START - isVideoInitialized: $_isVideoInitialized',
+      category: LogCategory.video,
+    );
     final editorState = ref.watch(videoEditorProvider(widget.videoPath));
     final soundServiceAsync = ref.watch(soundLibraryServiceProvider);
     final soundService = soundServiceAsync.value;
 
+    Log.info(
+      '📹 VideoEditorScreen.build() returning Scaffold',
+      category: LogCategory.video,
+    );
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          tooltip: 'Back to clips',
-          onPressed: _goToClipManager,
+          onPressed: _handleBack,
         ),
-        title: const Text(
-          'Edit Video',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Edit Video', style: TextStyle(color: Colors.white)),
         actions: [
-          // Exit flow button (X)
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            tooltip: 'Exit',
-            onPressed: _handleBack,
-          ),
           TextButton(
             onPressed: _handleDone,
             child: const Text(
@@ -446,6 +463,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                               constraints.maxWidth,
                               constraints.maxHeight,
                             );
+                            // Store preview size for text overlay scaling during export
+                            _lastPreviewSize = renderedSize;
                             return Stack(
                               fit: StackFit.expand,
                               children: [
@@ -457,9 +476,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                                     videoSize: renderedSize,
                                     onPositionChanged: (position) =>
                                         _updateTextOverlayPosition(
-                                      overlay.id,
-                                      position,
-                                    ),
+                                          overlay.id,
+                                          position,
+                                        ),
                                   );
                                 }),
                               ],

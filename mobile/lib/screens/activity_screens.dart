@@ -277,7 +277,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
 
   void _openUserProfile(String pubkey) {
     // Navigate to profile tab using GoRouter
-    context.goProfile(pubkey, 0);
+    context.pushProfile(pubkey, 0);
   }
 
   void _openComments(VideoEvent video) {

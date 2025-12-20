@@ -23,6 +23,7 @@ environment:
   flutter: ^3.38.3
 
 workspace:
+  - packages/comments_repository
   - packages/db_client
   - packages/likes_repository
   - packages/models
@@ -50,6 +51,7 @@ dependencies:
   riverpod_annotation: ^3.0.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
+  rxdart: ^0.28.0
 
   # Networking
   http: ^1.5.0

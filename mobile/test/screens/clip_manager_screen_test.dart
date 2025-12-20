@@ -10,11 +10,7 @@ void main() {
   group('ClipManagerScreen', () {
     testWidgets('shows empty state when no clips', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: ClipManagerScreen(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: ClipManagerScreen())),
       );
 
       expect(find.text('No clips recorded'), findsOneWidget);
@@ -23,11 +19,7 @@ void main() {
 
     testWidgets('shows header with duration', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: ClipManagerScreen(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: ClipManagerScreen())),
       );
 
       expect(find.text('0.0s / 6.3s'), findsOneWidget);
@@ -35,11 +27,7 @@ void main() {
 
     testWidgets('shows Next button', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: ClipManagerScreen(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: ClipManagerScreen())),
       );
 
       expect(find.text('Next'), findsOneWidget);

@@ -82,7 +82,10 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text('Pick a Color', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Pick a Color',
+          style: TextStyle(color: Colors.white),
+        ),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: _color,
@@ -115,9 +118,9 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
           final filteredFonts = searchQuery.isEmpty
               ? _popularFonts
               : GoogleFonts.asMap().keys
-                  .where((font) => font.toLowerCase().contains(searchQuery))
-                  .take(50)
-                  .toList();
+                    .where((font) => font.toLowerCase().contains(searchQuery))
+                    .take(50)
+                    .toList();
 
           return DraggableScrollableSheet(
             initialChildSize: 0.7,
@@ -202,7 +205,8 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
       text: _textController.text,
       fontSize: _fontSize,
       color: _color,
-      normalizedPosition: widget.overlay?.normalizedPosition ?? const Offset(0.5, 0.5),
+      normalizedPosition:
+          widget.overlay?.normalizedPosition ?? const Offset(0.5, 0.5),
       fontFamily: _fontFamily,
       alignment: widget.overlay?.alignment ?? TextAlign.center,
     );
@@ -258,13 +262,20 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
             // Font Family Selector
             const Text(
               'Font',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _showFontPickerDialog,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[800],
                   borderRadius: BorderRadius.circular(8),
@@ -290,7 +301,11 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
             // Color Picker
             const Text(
               'Color',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             // Preset colors row
@@ -337,7 +352,11 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.grey[700]!, width: 1),
                     ),
-                    child: const Icon(Icons.colorize, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.colorize,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ],
@@ -357,7 +376,11 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
             // Size Slider
             const Text(
               'Size',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Slider(

@@ -138,6 +138,20 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
 
           // Prefetch videos around current index
           checkForPrefetch(currentIndex: index, videos: videos);
+
+          // Pre-initialize controllers for adjacent videos
+          preInitializeControllers(
+            ref: ref,
+            currentIndex: index,
+            videos: videos,
+          );
+
+          // Dispose controllers outside the keep range to free memory
+          disposeControllersOutsideRange(
+            ref: ref,
+            currentIndex: index,
+            videos: videos,
+          );
         },
         itemBuilder: (context, index) {
           return VideoFeedItem(

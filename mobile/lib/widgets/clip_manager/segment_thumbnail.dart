@@ -27,9 +27,7 @@ class SegmentThumbnail extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: Colors.green, width: 2)
-              : null,
+          border: isSelected ? Border.all(color: Colors.green, width: 2) : null,
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -82,11 +80,7 @@ class SegmentThumbnail extends StatelessWidget {
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 16),
                 ),
               ),
             ),
@@ -98,21 +92,14 @@ class SegmentThumbnail extends StatelessWidget {
 
   Widget _buildThumbnail() {
     if (clip.thumbnailPath != null && File(clip.thumbnailPath!).existsSync()) {
-      return Image.file(
-        File(clip.thumbnailPath!),
-        fit: BoxFit.cover,
-      );
+      return Image.file(File(clip.thumbnailPath!), fit: BoxFit.cover);
     }
 
     // Placeholder when no thumbnail
     return Container(
       color: Colors.grey[800],
       child: const Center(
-        child: Icon(
-          Icons.videocam,
-          color: Colors.grey,
-          size: 32,
-        ),
+        child: Icon(Icons.videocam, color: Colors.grey, size: 32),
       ),
     );
   }

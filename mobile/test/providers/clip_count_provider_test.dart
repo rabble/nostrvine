@@ -28,7 +28,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
-          clipLibraryServiceProvider.overrideWith((ref) async => clipService),
+          clipLibraryServiceProvider.overrideWith((ref) => clipService),
         ],
       );
     });
@@ -61,22 +61,26 @@ void main() {
       final file1 = createTempVideoFile('video1');
       final file2 = createTempVideoFile('video2');
 
-      await clipService.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: file1.path,
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
-      await clipService.saveClip(SavedClip(
-        id: 'clip_2',
-        filePath: file2.path,
-        thumbnailPath: null,
-        duration: const Duration(seconds: 2),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_1',
+          filePath: file1.path,
+          thumbnailPath: null,
+          duration: const Duration(seconds: 1),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_2',
+          filePath: file2.path,
+          thumbnailPath: null,
+          duration: const Duration(seconds: 2),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
 
       container.invalidate(clipCountProvider);
       final count = await container.read(clipCountProvider.future);
@@ -87,22 +91,26 @@ void main() {
     test('should only count clips with existing video files', () async {
       final existingFile = createTempVideoFile('existing');
 
-      await clipService.saveClip(SavedClip(
-        id: 'clip_valid',
-        filePath: existingFile.path,
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
-      await clipService.saveClip(SavedClip(
-        id: 'clip_orphan',
-        filePath: '/nonexistent/path.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_valid',
+          filePath: existingFile.path,
+          thumbnailPath: null,
+          duration: const Duration(seconds: 1),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_orphan',
+          filePath: '/nonexistent/path.mp4',
+          thumbnailPath: null,
+          duration: const Duration(seconds: 1),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
 
       container.invalidate(clipCountProvider);
       final count = await container.read(clipCountProvider.future);

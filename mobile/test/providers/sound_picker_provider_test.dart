@@ -151,7 +151,10 @@ void main() {
 
       final state = container.read(soundPickerProvider);
       expect(state.filteredSounds.length, equals(2));
-      expect(state.filteredSounds.every((s) => s.title.contains('New')), isTrue);
+      expect(
+        state.filteredSounds.every((s) => s.title.contains('New')),
+        isTrue,
+      );
     });
   });
 }

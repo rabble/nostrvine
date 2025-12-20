@@ -141,8 +141,9 @@ void main() {
       expect(selectedId, equals('sound-1'));
     });
 
-    testWidgets('calls onSoundSelected with null when None tapped',
-        (tester) async {
+    testWidgets('calls onSoundSelected with null when None tapped', (
+      tester,
+    ) async {
       String? selectedId = 'initial';
 
       await tester.pumpWidget(
@@ -199,8 +200,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final scaffold =
-          tester.widget<Scaffold>(find.byType(Scaffold).first);
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
       expect(scaffold.backgroundColor, equals(Colors.black));
     });
 

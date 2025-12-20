@@ -97,8 +97,12 @@ class ClipLibraryService {
   }
 
   /// Get clips for a specific session
+  /// Use 'ungrouped' to retrieve clips with null sessionId
   Future<List<SavedClip>> getClipsBySession(String sessionId) async {
     final clips = await getAllClips();
+    if (sessionId == 'ungrouped') {
+      return clips.where((c) => c.sessionId == null).toList();
+    }
     return clips.where((c) => c.sessionId == sessionId).toList();
   }
 

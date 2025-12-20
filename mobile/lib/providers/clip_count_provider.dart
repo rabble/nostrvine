@@ -12,7 +12,7 @@ part 'clip_count_provider.g.dart';
 /// Only counts clips where the video file still exists on disk.
 @riverpod
 Future<int> clipCount(Ref ref) async {
-  final clipService = await ref.watch(clipLibraryServiceProvider.future);
+  final clipService = ref.watch(clipLibraryServiceProvider);
   final clips = await clipService.getAllClips();
   return clips.where((c) => File(c.filePath).existsSync()).length;
 }

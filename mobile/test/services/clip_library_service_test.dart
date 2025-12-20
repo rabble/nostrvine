@@ -160,14 +160,16 @@ void main() {
     group('clearAllClips', () {
       test('removes all clips', () async {
         for (var i = 0; i < 5; i++) {
-          await service.saveClip(SavedClip(
-            id: 'clip_$i',
-            filePath: '/tmp/video_$i.mp4',
-            thumbnailPath: null,
-            duration: const Duration(seconds: 1),
-            createdAt: DateTime.now(),
-            aspectRatio: 'square',
-          ));
+          await service.saveClip(
+            SavedClip(
+              id: 'clip_$i',
+              filePath: '/tmp/video_$i.mp4',
+              thumbnailPath: null,
+              duration: const Duration(seconds: 1),
+              createdAt: DateTime.now(),
+              aspectRatio: 'square',
+            ),
+          );
         }
 
         expect((await service.getAllClips()).length, 5);
@@ -251,152 +253,6 @@ void main() {
       );
 
       expect(oldClip.displayDuration, '2d ago');
-    });
-  });
-
-  group('ClipLibraryService - Session Grouping', () {
-    late ClipLibraryService service;
-
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      service = ClipLibraryService(prefs);
-    });
-
-    test('should return clips grouped by session', () async {
-      final now = DateTime.now();
-
-      // Save clips from two sessions
-      await service.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: '/path/1.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_A',
-      ));
-      await service.saveClip(SavedClip(
-        id: 'clip_2',
-        filePath: '/path/2.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 2),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_A',
-      ));
-      await service.saveClip(SavedClip(
-        id: 'clip_3',
-        filePath: '/path/3.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: now.subtract(const Duration(hours: 1)),
-        aspectRatio: 'square',
-        sessionId: 'session_B',
-      ));
-
-      final grouped = await service.getClipsGroupedBySession();
-
-      expect(grouped.length, 2);
-      expect(grouped['session_A']?.length, 2);
-      expect(grouped['session_B']?.length, 1);
-    });
-
-    test('should group clips without sessionId under "ungrouped"', () async {
-      final now = DateTime.now();
-
-      await service.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: '/path/1.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_A',
-      ));
-      await service.saveClip(SavedClip(
-        id: 'clip_2',
-        filePath: '/path/2.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 2),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: null,
-      ));
-
-      final grouped = await service.getClipsGroupedBySession();
-
-      expect(grouped.length, 2);
-      expect(grouped['session_A']?.length, 1);
-      expect(grouped['ungrouped']?.length, 1);
-    });
-
-    test('should return clips by session ID', () async {
-      final now = DateTime.now();
-
-      await service.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: '/path/1.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_X',
-      ));
-      await service.saveClip(SavedClip(
-        id: 'clip_2',
-        filePath: '/path/2.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 2),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_Y',
-      ));
-
-      final sessionXClips = await service.getClipsBySession('session_X');
-
-      expect(sessionXClips.length, 1);
-      expect(sessionXClips.first.id, 'clip_1');
-    });
-
-    test('should return empty list for non-existent session', () async {
-      final now = DateTime.now();
-
-      await service.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: '/path/1.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: now,
-        aspectRatio: 'square',
-        sessionId: 'session_X',
-      ));
-
-      final sessionZClips = await service.getClipsBySession('session_Z');
-
-      expect(sessionZClips, isEmpty);
-    });
-
-    test('should generate unique session ID', () async {
-      final id1 = ClipLibraryService.generateSessionId();
-      // Small delay to ensure different timestamps
-      await Future.delayed(const Duration(milliseconds: 1));
-      final id2 = ClipLibraryService.generateSessionId();
-
-      expect(id1, isNot(equals(id2)));
-      expect(id1, startsWith('session_'));
-      expect(id2, startsWith('session_'));
-    });
-
-    test('generateSessionId should use timestamp', () {
-      final id = ClipLibraryService.generateSessionId();
-
-      // Extract timestamp from ID (format: session_<timestamp>)
-      final timestampStr = id.substring('session_'.length);
-      final timestamp = int.tryParse(timestampStr);
-
-      expect(timestamp, isNotNull);
-      expect(timestamp, greaterThan(0));
     });
   });
 }

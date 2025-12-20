@@ -20,7 +20,7 @@ void main() {
               title: const Text('Record Video'),
               actions: [
                 IconButton(
-                  key: const Key('drafts-button'),
+                  key: const Key('clips-button'),
                   icon: const Icon(Icons.video_library),
                   onPressed: () {},
                 ),
@@ -31,11 +31,11 @@ void main() {
       );
 
       // Assert: Button exists with correct key and icon
-      expect(find.byKey(const Key('drafts-button')), findsOneWidget);
+      expect(find.byKey(const Key('clips-button')), findsOneWidget);
       expect(find.byIcon(Icons.video_library), findsOneWidget);
 
       final iconButton = tester.widget<IconButton>(
-        find.byKey(const Key('drafts-button')),
+        find.byKey(const Key('clips-button')),
       );
       expect(iconButton.onPressed, isNotNull);
     });

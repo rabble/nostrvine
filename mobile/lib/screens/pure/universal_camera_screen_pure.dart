@@ -9,9 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
+import 'package:openvine/services/vine_recording_controller.dart'
+    show ExtractedSegment;
 import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
 import 'package:openvine/services/camera/native_macos_camera.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -23,6 +26,7 @@ import 'package:openvine/widgets/macos_camera_preview.dart'
     show CameraPreviewPlaceholder;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 /// Pure universal camera screen using revolutionary single-controller Riverpod architecture
@@ -40,6 +44,7 @@ class _UniversalCameraScreenPureState
   String? _errorMessage;
   bool _isProcessing = false;
   bool _permissionDenied = false;
+  bool _isInitializing = false;
 
   // Camera control states
   FlashMode _flashMode = FlashMode.off;
@@ -195,6 +200,8 @@ class _UniversalCameraScreenPureState
   }
 
   Future<void> _initializeServices() async {
+    // Mark as initializing to prevent double-initialization from build method
+    _isInitializing = true;
     // Use Future.microtask to safely initialize after build completes
     // This ensures provider reads happen outside the build phase while still completing promptly
     Future.microtask(() => _performAsyncInitialization());
@@ -392,6 +399,15 @@ class _UniversalCameraScreenPureState
           });
         }
       }
+    } finally {
+      // Always reset the initializing flag
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      } else {
+        _isInitializing = false;
+      }
     }
   }
 
@@ -462,6 +478,21 @@ class _UniversalCameraScreenPureState
             }
           });
 
+          // Sync clip manager duration with recording provider
+          // This ensures the progress bar updates when clips are deleted in ClipManager
+          ref.listen<ClipManagerState>(clipManagerProvider, (previous, next) {
+            if (previous != null &&
+                previous.totalDuration != next.totalDuration) {
+              Log.info(
+                '📹 ClipManager duration changed: ${previous.totalDuration.inMilliseconds}ms → ${next.totalDuration.inMilliseconds}ms',
+                category: LogCategory.video,
+              );
+              ref
+                  .read(vineRecordingProvider.notifier)
+                  .setPreviouslyRecordedDuration(next.totalDuration);
+            }
+          });
+
           if (recordingState.isError) {
             return _buildErrorScreen(recordingState.errorMessage);
           }
@@ -481,6 +512,39 @@ class _UniversalCameraScreenPureState
                 ],
               ),
             );
+          }
+
+          // Auto-reinitialize camera if it was released (e.g., after back navigation)
+          if (!recordingState.isInitialized &&
+              !_isInitializing &&
+              !_permissionDenied) {
+            // Trigger re-initialization in next microtask to avoid build phase issues
+            _isInitializing = true;
+            Future.microtask(() async {
+              try {
+                Log.info(
+                  '📹 Camera not initialized, triggering re-initialization',
+                  category: LogCategory.video,
+                );
+                await ref.read(vineRecordingProvider.notifier).initialize();
+                if (mounted) {
+                  setState(() {
+                    _isInitializing = false;
+                  });
+                }
+              } catch (e) {
+                Log.error(
+                  '📹 Failed to re-initialize camera: $e',
+                  category: LogCategory.video,
+                );
+                if (mounted) {
+                  setState(() {
+                    _isInitializing = false;
+                    _errorMessage = 'Failed to initialize camera: $e';
+                  });
+                }
+              }
+            });
           }
 
           if (!recordingState.isInitialized) {
@@ -790,19 +854,22 @@ class _UniversalCameraScreenPureState
       color: VineTheme.vineGreen,
       child: Row(
         children: [
-          // X button (close/cancel) on the left - returns to previous screen
+          // X button (close/cancel) on the left - pops back to previous screen
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               Log.info(
-                '📹 X CANCEL - returning to previous screen',
+                '📹 X CANCEL - navigating away from camera',
                 category: LogCategory.video,
               );
-              // Go back to where user came from, fallback to home if nothing to pop
-              if (GoRouter.of(context).canPop()) {
-                context.pop();
+              // Try to pop if possible, otherwise go home
+              // Camera can be reached via push (from FAB) or go (from ClipManager)
+              final router = GoRouter.of(context);
+              if (router.canPop()) {
+                router.pop();
               } else {
-                context.go('/home/0');
+                // No screen to pop to (navigated via go), go home instead
+                context.goHome();
               }
             },
             child: Container(
@@ -925,17 +992,23 @@ class _UniversalCameraScreenPureState
                   ),
                 ),
                 // Clear/Reset button - appears when there are segments or clips
-                if (recordingState.hasSegments || ref.watch(clipManagerProvider).hasClips)
+                if (recordingState.hasSegments ||
+                    ref.watch(clipManagerProvider).hasClips)
                   Padding(
                     padding: const EdgeInsets.only(left: 12),
                     child: GestureDetector(
                       onTap: _showClearConfirmation,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1054,12 +1127,22 @@ class _UniversalCameraScreenPureState
         _buildAspectRatioToggle(recordingState),
         const SizedBox(height: 12),
         // Clips library button
-        CircularIconButton(
-          onPressed: () => context.go('/clips'),
-          icon: const Icon(Icons.video_library, color: Colors.white, size: 26),
-          backgroundOpacity: 0.5,
-        ),
+        _buildClipsLibraryButton(),
       ],
+    );
+  }
+
+  Widget _buildClipsLibraryButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        icon: const Icon(Icons.video_library, color: Colors.white, size: 28),
+        tooltip: 'View clips library',
+        onPressed: () => context.push('/clips'),
+      ),
     );
   }
 
@@ -1454,7 +1537,7 @@ class _UniversalCameraScreenPureState
 
   /// Process individual segment files and add each as a separate clip to ClipManager
   /// This allows users to reorder/delete segments before final concatenation at export
-  void _processSegments(List<(File, Duration)> segmentFiles) async {
+  void _processSegments(List<ExtractedSegment> segmentFiles) async {
     try {
       Log.info(
         '📹 Processing ${segmentFiles.length} segments as individual clips',
@@ -1465,7 +1548,7 @@ class _UniversalCameraScreenPureState
       final clipManager = ref.read(clipManagerProvider.notifier);
 
       for (var i = 0; i < segmentFiles.length; i++) {
-        final (file, duration) = segmentFiles[i];
+        final segment = segmentFiles[i];
 
         // Generate thumbnail for this segment
         Log.info(
@@ -1474,18 +1557,24 @@ class _UniversalCameraScreenPureState
         );
 
         final thumbnailPath = await VideoThumbnailService.extractThumbnail(
-          videoPath: file.path,
-          timeMs: VideoThumbnailService.getOptimalTimestamp(duration),
+          videoPath: segment.file.path,
+          timeMs: VideoThumbnailService.getOptimalTimestamp(segment.duration),
         );
 
         clipManager.addClip(
-          filePath: file.path,
-          duration: duration,
+          filePath: segment.file.path,
+          duration: segment.duration,
           thumbnailPath: thumbnailPath,
+          aspectRatio: segment.aspectRatio,
+          needsCrop: segment.needsCrop,
         );
 
         Log.info(
-          '📹 Added segment $i to ClipManager: ${file.path}, duration: ${duration.inMilliseconds}ms, thumbnail: ${thumbnailPath ?? "none"}',
+          '📹 Added segment $i to ClipManager: ${segment.file.path}, '
+          'duration: ${segment.duration.inMilliseconds}ms, '
+          'needsCrop: ${segment.needsCrop}, '
+          'aspectRatio: ${segment.aspectRatio?.name ?? "none"}, '
+          'thumbnail: ${thumbnailPath ?? "none"}',
           category: LogCategory.video,
         );
       }
@@ -1495,6 +1584,10 @@ class _UniversalCameraScreenPureState
         category: LogCategory.video,
       );
 
+      // Clear segments from provider since they're now in ClipManager
+      // This prevents duplicate processing when user navigates back
+      ref.read(vineRecordingProvider.notifier).clearSegments();
+
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -1503,10 +1596,7 @@ class _UniversalCameraScreenPureState
         // Navigate to ClipManager screen
         context.push('/clip-manager');
 
-        Log.info(
-          '📹 Navigated to clip-manager',
-          category: LogCategory.video,
-        );
+        Log.info('📹 Navigated to clip-manager', category: LogCategory.video);
       }
     } catch (e) {
       Log.error(
@@ -1714,20 +1804,14 @@ class _UniversalCameraScreenPureState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _clearAllRecordings();
             },
-            child: const Text(
-              'Clear',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

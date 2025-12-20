@@ -12,6 +12,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -35,6 +36,7 @@ class ClipManagerScreen extends ConsumerStatefulWidget {
 
 class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
   bool _isProcessing = false;
+  bool _isNavigatingAway = false;
   VideoPlayerController? _previewController;
   String? _currentPreviewClipId;
 
@@ -84,6 +86,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     final state = ref.read(clipManagerProvider);
     if (!state.hasClips) return;
 
+    // Capture ROOT navigator BEFORE async work - context may become stale
+    // Use rootNavigator: true to bypass GoRouter's nested navigators
+    final navigator = Navigator.of(context, rootNavigator: true);
+
     setState(() {
       _isProcessing = true;
     });
@@ -111,16 +117,53 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       );
 
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-        context.push('/edit-video', extra: videoPath);
+        // Dispose video preview to free memory
+        _previewController?.dispose();
+        _previewController = null;
+        _currentPreviewClipId = null;
+
+        // Mark that we're navigating away to prevent auto-play during push
+        _isNavigatingAway = true;
+
+        // Release camera resources to free memory before navigating
+        // The user is done recording, so we don't need the camera anymore
+        ref.read(vineRecordingProvider.notifier).releaseCamera();
+
+        Log.info(
+          '📹 About to navigate to /edit-video with path: $videoPath',
+          category: LogCategory.video,
+        );
+
+        // Navigate directly without scheduling - FFmpeg is done and the navigator
+        // was captured before async work. Scheduling with Future.delayed or
+        // addPostFrameCallback hangs on macOS after FFmpeg operations.
+        Log.info(
+          '📹 Calling navigator.push directly',
+          category: LogCategory.video,
+        );
+
+        navigator
+            .push<void>(
+              MaterialPageRoute(
+                builder: (ctx) => VideoEditorScreen(videoPath: videoPath),
+              ),
+            )
+            .then((_) {
+              // Clear navigation flag now that we've returned
+              _isNavigatingAway = false;
+              _isProcessing = false;
+
+              // Re-initialize preview when returning from video editor
+              if (mounted) {
+                final currentState = ref.read(clipManagerProvider);
+                if (currentState.sortedClips.isNotEmpty) {
+                  _loadPreview(currentState.sortedClips.first);
+                }
+              }
+            });
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to process clips: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to process clips: $e', category: LogCategory.video);
 
       if (mounted) {
         setState(() {
@@ -141,66 +184,6 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     context.go('/camera');
   }
 
-  Future<void> _handleBack() async {
-    final state = ref.read(clipManagerProvider);
-
-    if (state.hasClips) {
-      // Show confirmation dialog if there are clips
-      final shouldDiscard = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.grey[900],
-          title: const Text(
-            'Discard clips?',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          content: const Text(
-            'You have unsaved clips. What would you like to do?',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(null);
-                _saveClipsForLater();
-              },
-              child: const Text('Save to Library'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Discard'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldDiscard == true) {
-        ref.read(clipManagerProvider.notifier).clearAll();
-        if (mounted) {
-          // Go back to where user came from, fallback to home
-          if (GoRouter.of(context).canPop()) {
-            context.pop();
-          } else {
-            context.go('/home/0');
-          }
-        }
-      }
-      // If null or false, stay on screen (save handled separately)
-    } else {
-      // No clips, go back to where user came from
-      if (GoRouter.of(context).canPop()) {
-        context.pop();
-      } else {
-        context.go('/home/0');
-      }
-    }
-  }
-
   void _selectClip(RecordingClip clip) {
     ref.read(clipManagerProvider.notifier).selectClip(clip.id);
     _loadPreview(clip);
@@ -216,7 +199,9 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       final currentIndex = clips.indexWhere((c) => c.id == clipId);
       if (clips.length > 1) {
         // Select the next clip, or previous if this was the last one
-        final newIndex = currentIndex < clips.length - 1 ? currentIndex + 1 : currentIndex - 1;
+        final newIndex = currentIndex < clips.length - 1
+            ? currentIndex + 1
+            : currentIndex - 1;
         notifier.selectClip(clips[newIndex].id);
         _loadPreview(clips[newIndex]);
       } else {
@@ -236,13 +221,31 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     final state = ref.watch(clipManagerProvider);
     final notifier = ref.read(clipManagerProvider.notifier);
 
-    // Auto-select first clip if none selected
-    if (state.hasClips && state.selectedClipId == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final firstClip = state.sortedClips.first;
-        notifier.selectClip(firstClip.id);
-        _loadPreview(firstClip);
-      });
+    // Auto-select first clip if none selected, or load preview if controller is missing
+    // Skip if we're navigating away (push to video editor) to prevent auto-play
+    if (state.hasClips && !_isNavigatingAway) {
+      if (state.selectedClipId == null) {
+        // No clip selected - select the first one
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isNavigatingAway) {
+            final firstClip = state.sortedClips.first;
+            notifier.selectClip(firstClip.id);
+            _loadPreview(firstClip);
+          }
+        });
+      } else if (_previewController == null && _currentPreviewClipId == null) {
+        // Clip is selected but preview controller is missing (widget was recreated)
+        // Load preview for the currently selected clip
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isNavigatingAway) {
+            final selectedClip = state.sortedClips.firstWhere(
+              (c) => c.id == state.selectedClipId,
+              orElse: () => state.sortedClips.first,
+            );
+            _loadPreview(selectedClip);
+          }
+        });
+      }
     }
 
     return Scaffold(
@@ -251,22 +254,13 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          tooltip: 'Back to camera',
-          onPressed: _goToCamera,
+          onPressed: widget.onDiscard ?? () => Navigator.of(context).pop(),
         ),
         title: Text(
           '${(state.totalDuration.inMilliseconds / 1000).toStringAsFixed(1)}s / 6.3s',
-          style: TextStyle(
-            color: state.totalDuration.inMilliseconds > 6300 ? Colors.orange : Colors.white,
-          ),
+          style: const TextStyle(color: Colors.white),
         ),
         actions: [
-          // Exit flow button (X)
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            tooltip: 'Exit',
-            onPressed: widget.onDiscard ?? _handleBack,
-          ),
           // Save for later button
           if (state.hasClips)
             IconButton(
@@ -274,24 +268,22 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
               tooltip: 'Save for later',
               onPressed: _saveClipsForLater,
             ),
-          // Add from library button
-          IconButton(
-            icon: const Icon(Icons.video_library, color: Colors.white),
-            tooltip: 'Add from library',
-            onPressed: _showClipLibrary,
-          ),
           // Mute original audio toggle
           IconButton(
             icon: Icon(
               state.muteOriginalAudio ? Icons.volume_off : Icons.volume_up,
-              color: state.muteOriginalAudio ? VineTheme.vineGreen : Colors.white,
+              color: state.muteOriginalAudio
+                  ? VineTheme.vineGreen
+                  : Colors.white,
             ),
             tooltip: state.muteOriginalAudio ? 'Sound muted' : 'Mute sound',
             onPressed: () {
               ref.read(clipManagerProvider.notifier).toggleMuteOriginalAudio();
               // Also update preview player volume
               if (_previewController != null) {
-                _previewController!.setVolume(state.muteOriginalAudio ? 1.0 : 0.0);
+                _previewController!.setVolume(
+                  state.muteOriginalAudio ? 1.0 : 0.0,
+                );
               }
             },
           ),
@@ -327,29 +319,8 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       body: state.hasClips
           ? Column(
               children: [
-                // Duration warning banner
-                if (state.totalDuration.inMilliseconds > 6300)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    color: Colors.orange.withValues(alpha: 0.2),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.content_cut, color: Colors.orange, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Over limit! Last ${((state.totalDuration.inMilliseconds - 6300) / 1000).toStringAsFixed(1)}s will be cut when you publish.',
-                            style: const TextStyle(color: Colors.orange, fontSize: 13),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 // Video preview area
-                Expanded(
-                  child: _buildPreviewArea(state),
-                ),
+                Expanded(child: _buildPreviewArea(state)),
                 // Horizontal timeline at bottom
                 _buildTimeline(state, notifier),
               ],
@@ -372,7 +343,9 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     return Container(
       color: Colors.black,
       child: Center(
-        child: _previewController != null && _previewController!.value.isInitialized
+        child:
+            _previewController != null &&
+                _previewController!.value.isInitialized
             ? AspectRatio(
                 // Use target aspect ratio (9:16 vertical or 1:1 square)
                 aspectRatio: targetRatio,
@@ -444,7 +417,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
                 double segmentWidth;
                 if (totalMs > 0) {
                   final proportion = clip.duration.inMilliseconds / totalMs;
-                  segmentWidth = (availableWidth * proportion).clamp(minSegmentWidth, availableWidth);
+                  segmentWidth = (availableWidth * proportion).clamp(
+                    minSegmentWidth,
+                    availableWidth,
+                  );
                 } else {
                   segmentWidth = minSegmentWidth;
                 }
@@ -488,7 +464,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         width: 60,
         height: 20,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 1),
+          border: Border.all(
+            color: Colors.grey.withValues(alpha: 0.5),
+            width: 1,
+          ),
           borderRadius: BorderRadius.circular(4),
         ),
         child: const Center(
@@ -529,11 +508,13 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       }
 
       // Add to clip manager
-      ref.read(clipManagerProvider.notifier).addClip(
-        filePath: clip.filePath,
-        duration: clip.duration,
-        thumbnailPath: clip.thumbnailPath,
-      );
+      ref
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            filePath: clip.filePath,
+            duration: clip.duration,
+            thumbnailPath: clip.thumbnailPath,
+          );
 
       Log.info(
         '📹 Added clip from library: ${clip.filePath}, duration: ${clip.duration.inMilliseconds}ms',
@@ -549,10 +530,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         );
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to import clip: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to import clip: $e', category: LogCategory.video);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -584,7 +562,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       final aspectRatio = recordingState.aspectRatio;
 
       // Save each clip individually to the clip library
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
 
       for (final clip in state.sortedClips) {
         final savedClip = SavedClip(
@@ -627,10 +605,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         context.go('/camera');
       }
     } catch (e) {
-      Log.error(
-        '📹 Failed to save clips: $e',
-        category: LogCategory.video,
-      );
+      Log.error('📹 Failed to save clips: $e', category: LogCategory.video);
 
       if (mounted) {
         setState(() {
@@ -666,10 +641,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
             const Icon(Icons.add, color: VineTheme.vineGreen, size: 24),
             Text(
               '${seconds.toStringAsFixed(1)}s',
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 10,
-              ),
+              style: const TextStyle(color: VineTheme.vineGreen, fontSize: 10),
             ),
           ],
         ),
@@ -682,26 +654,16 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.videocam_off,
-            color: Colors.grey,
-            size: 64,
-          ),
+          const Icon(Icons.videocam_off, color: Colors.grey, size: 64),
           const SizedBox(height: 16),
           const Text(
             'No clips recorded',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 18,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 18),
           ),
           const SizedBox(height: 8),
           const Text(
             'Tap below to start recording',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -748,107 +710,154 @@ class _TimelineSegment extends StatefulWidget {
 class _TimelineSegmentState extends State<_TimelineSegment> {
   double _dragOffset = 0;
   bool _isDragging = false;
+  Offset? _dragStartPosition;
+  bool _isVerticalDrag = false;
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _dragStartPosition = event.position;
+    _isVerticalDrag = false;
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    if (_dragStartPosition == null) return;
+
+    final delta = event.position - _dragStartPosition!;
+
+    // Determine drag direction on first significant movement
+    if (!_isDragging && !_isVerticalDrag) {
+      // Need at least 10 pixels of movement to determine direction
+      if (delta.distance > 10) {
+        // If vertical movement is greater than horizontal, treat as vertical drag
+        if (delta.dy.abs() > delta.dx.abs() && delta.dy < 0) {
+          _isVerticalDrag = true;
+          setState(() {
+            _isDragging = true;
+          });
+        }
+      }
+    }
+
+    // Handle vertical drag for delete gesture
+    if (_isVerticalDrag) {
+      setState(() {
+        // Only allow upward swipe (negative values)
+        _dragOffset = delta.dy.clamp(-widget.height, 0.0);
+      });
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    if (_isVerticalDrag) {
+      final deleteThreshold = widget.height * 0.5;
+      if (_dragOffset.abs() > deleteThreshold) {
+        widget.onDelete();
+      }
+    }
+
+    setState(() {
+      _isDragging = false;
+      _dragOffset = 0;
+    });
+    _dragStartPosition = null;
+    _isVerticalDrag = false;
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    setState(() {
+      _isDragging = false;
+      _dragOffset = 0;
+    });
+    _dragStartPosition = null;
+    _isVerticalDrag = false;
+  }
+
+  Widget _buildSegmentContent(bool isDeleting) {
+    return AnimatedContainer(
+      duration: _isDragging ? Duration.zero : const Duration(milliseconds: 200),
+      transform: Matrix4.translationValues(0, _dragOffset, 0),
+      width: widget.width,
+      height: widget.height,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: widget.isSelected
+              ? VineTheme.vineGreen
+              : (isDeleting ? Colors.red : Colors.transparent),
+          width: 2,
+        ),
+        color: isDeleting ? Colors.red.withValues(alpha: 0.3) : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Thumbnail or placeholder
+            if (widget.clip.thumbnailPath != null)
+              Image.file(File(widget.clip.thumbnailPath!), fit: BoxFit.cover)
+            else
+              Container(
+                color: Colors.grey[800],
+                child: const Icon(Icons.videocam, color: Colors.grey),
+              ),
+            // Delete indicator
+            if (isDeleting)
+              Container(
+                color: Colors.red.withValues(alpha: 0.5),
+                child: const Center(
+                  child: Icon(Icons.delete, color: Colors.white, size: 24),
+                ),
+              ),
+            // Duration badge
+            if (!isDeleting)
+              Positioned(
+                left: 4,
+                bottom: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${widget.clip.durationInSeconds.toStringAsFixed(1)}s',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final deleteThreshold = widget.height * 0.5;
     final isDeleting = _dragOffset.abs() > deleteThreshold;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onVerticalDragStart: (_) {
-        setState(() {
-          _isDragging = true;
-        });
-      },
-      onVerticalDragUpdate: (details) {
-        setState(() {
-          // Only allow upward swipe (negative values)
-          _dragOffset = (_dragOffset + details.delta.dy).clamp(-widget.height, 0.0);
-        });
-      },
-      onVerticalDragEnd: (_) {
-        if (isDeleting) {
-          widget.onDelete();
-        }
-        setState(() {
-          _isDragging = false;
-          _dragOffset = 0;
-        });
-      },
-      onVerticalDragCancel: () {
-        setState(() {
-          _isDragging = false;
-          _dragOffset = 0;
-        });
-      },
-      child: ReorderableDragStartListener(
-        index: widget.index,
-        child: AnimatedContainer(
-          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 200),
-          transform: Matrix4.translationValues(0, _dragOffset, 0),
-          width: widget.width,
-          height: widget.height,
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.isSelected
-                  ? VineTheme.vineGreen
-                  : (isDeleting ? Colors.red : Colors.transparent),
-              width: 2,
-            ),
-            color: isDeleting ? Colors.red.withValues(alpha: 0.3) : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Thumbnail or placeholder
-                if (widget.clip.thumbnailPath != null)
-                  Image.file(
-                    File(widget.clip.thumbnailPath!),
-                    fit: BoxFit.cover,
-                  )
-                else
-                  Container(
-                    color: Colors.grey[800],
-                    child: const Icon(Icons.videocam, color: Colors.grey),
-                  ),
-                // Delete indicator
-                if (isDeleting)
-                  Container(
-                    color: Colors.red.withValues(alpha: 0.5),
-                    child: const Center(
-                      child: Icon(Icons.delete, color: Colors.white, size: 24),
-                    ),
-                  ),
-                // Duration badge
-                if (!isDeleting)
-                  Positioned(
-                    left: 4,
-                    bottom: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${widget.clip.durationInSeconds.toStringAsFixed(1)}s',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+    final content = _buildSegmentContent(isDeleting);
+
+    return Listener(
+      onPointerDown: _handlePointerDown,
+      onPointerMove: _handlePointerMove,
+      onPointerUp: _handlePointerUp,
+      onPointerCancel: _handlePointerCancel,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        // When doing vertical drag, don't wrap with ReorderableDragStartListener
+        // to prevent gesture conflicts
+        child: _isVerticalDrag
+            ? content
+            : ReorderableDragStartListener(index: widget.index, child: content),
       ),
     );
   }

@@ -24,11 +24,9 @@ void main() {
     Widget buildTestWidget() {
       return ProviderScope(
         overrides: [
-          clipLibraryServiceProvider.overrideWith((ref) async => clipService),
+          clipLibraryServiceProvider.overrideWith((ref) => clipService),
         ],
-        child: const MaterialApp(
-          home: ClipLibraryScreen(),
-        ),
+        child: const MaterialApp(home: ClipLibraryScreen()),
       );
     }
 
@@ -42,23 +40,27 @@ void main() {
 
     testWidgets('displays clips in grid with thumbnails', (tester) async {
       // Add test clips
-      await clipService.saveClip(SavedClip(
-        id: 'clip_1',
-        filePath: '/tmp/video1.mp4',
-        thumbnailPath: null, // No thumbnail, will show placeholder
-        duration: const Duration(seconds: 2),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_1',
+          filePath: '/tmp/video1.mp4',
+          thumbnailPath: null, // No thumbnail, will show placeholder
+          duration: const Duration(seconds: 2),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
 
-      await clipService.saveClip(SavedClip(
-        id: 'clip_2',
-        filePath: '/tmp/video2.mp4',
-        thumbnailPath: null,
-        duration: const Duration(milliseconds: 1500),
-        createdAt: DateTime.now(),
-        aspectRatio: 'vertical',
-      ));
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_2',
+          filePath: '/tmp/video2.mp4',
+          thumbnailPath: null,
+          duration: const Duration(milliseconds: 1500),
+          createdAt: DateTime.now(),
+          aspectRatio: 'vertical',
+        ),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -68,35 +70,43 @@ void main() {
       expect(find.text('1.5s'), findsOneWidget);
     });
 
-    testWidgets('shows delete confirmation dialog', (tester) async {
-      await clipService.saveClip(SavedClip(
-        id: 'clip_to_delete',
-        filePath: '/tmp/video.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
+    testWidgets('shows delete icon in preview sheet on long press', (
+      tester,
+    ) async {
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_to_delete',
+          filePath: '/tmp/video.mp4',
+          thumbnailPath: null,
+          duration: const Duration(seconds: 1),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Long press to show delete option
+      // Long press to show preview sheet
       await tester.longPress(find.byType(ClipThumbnailCard));
-      await tester.pumpAndSettle();
+      // Use pump instead of pumpAndSettle since VideoPlayer may not initialize
+      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Delete'), findsOneWidget);
+      // Preview sheet should have delete icon button
+      expect(find.byIcon(Icons.delete), findsOneWidget);
     });
 
     testWidgets('deletes clip when confirmed', (tester) async {
-      await clipService.saveClip(SavedClip(
-        id: 'clip_to_delete',
-        filePath: '/tmp/video.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
-      ));
+      await clipService.saveClip(
+        SavedClip(
+          id: 'clip_to_delete',
+          filePath: '/tmp/video.mp4',
+          thumbnailPath: null,
+          duration: const Duration(seconds: 1),
+          createdAt: DateTime.now(),
+          aspectRatio: 'square',
+        ),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -104,15 +114,19 @@ void main() {
       // Initially has 1 clip
       expect((await clipService.getAllClips()).length, 1);
 
-      // Long press and delete
+      // Long press to show preview sheet
       await tester.longPress(find.byType(ClipThumbnailCard));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Tap delete icon in preview sheet
+      await tester.tap(find.byIcon(Icons.delete));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
+      // Confirmation dialog should appear
+      expect(find.text('Delete Clip?'), findsOneWidget);
 
       // Confirm deletion
-      await tester.tap(find.text('Delete').last);
+      await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
       // Clip should be deleted

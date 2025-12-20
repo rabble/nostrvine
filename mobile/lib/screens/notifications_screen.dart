@@ -136,6 +136,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                 color: Colors.black,
                 child: RefreshIndicator(
                   semanticsLabel: 'checking for new notifications',
+                  color: VineTheme.vineGreen,
                   onRefresh: () async {
                     await service.refreshNotifications();
                   },
@@ -345,6 +346,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     );
 
     // Navigate to profile screen
-    context.goProfile(userPubkey, 0);
+    context.pushProfile(userPubkey, 0);
   }
 }

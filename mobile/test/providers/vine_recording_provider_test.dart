@@ -187,9 +187,9 @@ void main() {
         // This is a structural test to verify the API exists
 
         // For now, just verify the RecordingResult class exists and has the right fields
-        // Note: draftId removed - clips are saved per-segment during recording
         final result = RecordingResult(
           videoFile: File('/path/to/video.mp4'),
+          draftId: 'test_draft_123',
           nativeProof: null,
         );
 

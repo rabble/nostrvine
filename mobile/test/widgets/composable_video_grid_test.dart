@@ -1,5 +1,23 @@
 // ABOUTME: Tests for ComposableVideoGrid widget
 // ABOUTME: Verifies grid rendering, broken video filtering, and user interactions
+//
+// NOTE: These tests fail because ComposableVideoGrid uses UserName widget which
+// triggers the Nostr provider chain (userProfileReactive -> userProfileService ->
+// nostrService) that attempts real WebSocket connections to relays.
+//
+// Flutter's TestWidgetsFlutterBinding automatically intercepts and mocks all
+// HTTP/WebSocket connections, returning "Mocked response" errors. This is built
+// into Flutter's test framework, not something we control.
+//
+// For tests with real Nostr connections, see the integration test version at:
+// test/integration/composable_video_grid_test.dart
+//
+// That version uses IntegrationTestWidgetsFlutterBinding which allows real
+// network connections and tests the widget in the context of the running app.
+//
+// These widget tests are kept for reference and potential future refactoring
+// where ComposableVideoGrid could accept profile data as props instead of
+// fetching via providers, which would allow isolated widget testing.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -188,7 +206,6 @@ void main() {
                 videos: testVideos.take(2).toList(),
                 onVideoTap: (videos, index) {},
                 crossAxisCount: 3,
-                childAspectRatio: 1.0,
               ),
             ),
           ),

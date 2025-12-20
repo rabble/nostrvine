@@ -26,10 +26,9 @@ void main() {
         fontFamily: 'Roboto',
       );
 
-      final result = await renderer.renderOverlays(
-        [overlay],
-        const Size(1920, 1080),
-      );
+      final result = await renderer.renderOverlays([
+        overlay,
+      ], const Size(1920, 1080));
 
       expect(result, isA<Uint8List>());
       expect(result.isNotEmpty, true);
@@ -68,10 +67,7 @@ void main() {
     });
 
     test('handles empty overlay list', () async {
-      final result = await renderer.renderOverlays(
-        [],
-        const Size(1920, 1080),
-      );
+      final result = await renderer.renderOverlays([], const Size(1920, 1080));
 
       expect(result, isA<Uint8List>());
       expect(result.isNotEmpty, true);
@@ -99,10 +95,9 @@ void main() {
           normalizedPosition: pos,
         );
 
-        final result = await renderer.renderOverlays(
-          [overlay],
-          const Size(1920, 1080),
-        );
+        final result = await renderer.renderOverlays([
+          overlay,
+        ], const Size(1920, 1080));
 
         expect(result.isNotEmpty, true);
       }
@@ -117,10 +112,9 @@ void main() {
           alignment: align,
         );
 
-        final result = await renderer.renderOverlays(
-          [overlay],
-          const Size(1920, 1080),
-        );
+        final result = await renderer.renderOverlays([
+          overlay,
+        ], const Size(1920, 1080));
 
         expect(result.isNotEmpty, true);
       }
@@ -137,10 +131,9 @@ void main() {
           normalizedPosition: const Offset(0.5, 0.5),
         );
 
-        final result = await renderer.renderOverlays(
-          [overlay],
-          const Size(1920, 1080),
-        );
+        final result = await renderer.renderOverlays([
+          overlay,
+        ], const Size(1920, 1080));
 
         expect(result.isNotEmpty, true);
       }
@@ -164,10 +157,9 @@ void main() {
           normalizedPosition: const Offset(0.5, 0.5),
         );
 
-        final result = await renderer.renderOverlays(
-          [overlay],
-          const Size(1920, 1080),
-        );
+        final result = await renderer.renderOverlays([
+          overlay,
+        ], const Size(1920, 1080));
 
         expect(result.isNotEmpty, true);
       }
@@ -176,8 +168,8 @@ void main() {
     test('handles different video sizes', () async {
       final sizes = [
         const Size(1920, 1080), // 1080p
-        const Size(1280, 720),  // 720p
-        const Size(640, 640),   // Square
+        const Size(1280, 720), // 720p
+        const Size(640, 640), // Square
         const Size(1080, 1920), // Vertical
       ];
 
@@ -200,10 +192,9 @@ void main() {
         normalizedPosition: const Offset(0.5, 0.5),
       );
 
-      final result = await renderer.renderOverlays(
-        [overlay],
-        const Size(1920, 1080),
-      );
+      final result = await renderer.renderOverlays([
+        overlay,
+      ], const Size(1920, 1080));
 
       expect(result.isNotEmpty, true);
     });
@@ -215,10 +206,9 @@ void main() {
         normalizedPosition: const Offset(0.5, 0.5),
       );
 
-      final result = await renderer.renderOverlays(
-        [overlay],
-        const Size(1920, 1080),
-      );
+      final result = await renderer.renderOverlays([
+        overlay,
+      ], const Size(1920, 1080));
 
       expect(result.isNotEmpty, true);
     });

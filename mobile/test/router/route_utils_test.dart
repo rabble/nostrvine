@@ -66,20 +66,6 @@ void main() {
       expect(result.videoIndex, isNull);
     });
 
-    test('parses clips route', () {
-      final result = parseRoute('/clips');
-
-      expect(result.type, RouteType.clips);
-      expect(result.videoIndex, isNull);
-    });
-
-    test('parses legacy drafts route as clips', () {
-      final result = parseRoute('/drafts');
-
-      expect(result.type, RouteType.clips);
-      expect(result.videoIndex, isNull);
-    });
-
     test('defaults to home/0 for unknown route', () {
       final result = parseRoute('/unknown/path');
 
@@ -152,12 +138,6 @@ void main() {
       expect(buildRoute(context), '/edit-video');
     });
 
-    test('builds clips route', () {
-      final context = RouteContext(type: RouteType.clips);
-
-      expect(buildRoute(context), '/clips');
-    });
-
     test('defaults missing index to 0 for video routes', () {
       final context = RouteContext(type: RouteType.home);
 
@@ -176,7 +156,6 @@ void main() {
         '/settings',
         '/clip-manager',
         '/edit-video',
-        '/clips',
       ];
 
       for (final url in urls) {

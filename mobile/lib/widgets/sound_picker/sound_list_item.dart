@@ -23,7 +23,9 @@ class SoundListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: isSelected ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
+      color: isSelected
+          ? Colors.green.withValues(alpha: 0.2)
+          : Colors.transparent,
       child: ListTile(
         onTap: onTap,
         leading: IconButton(
@@ -46,11 +48,7 @@ class SoundListItem extends StatelessWidget {
           style: const TextStyle(color: Colors.grey),
         ),
         trailing: isSelected
-            ? const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 28,
-              )
+            ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
             : Text(
                 '${sound.durationInSeconds.round()}s',
                 style: const TextStyle(color: Colors.grey),

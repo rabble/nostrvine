@@ -50,7 +50,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     });
 
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
       final clips = await clipService.getAllClips();
 
       if (mounted) {
@@ -95,26 +95,28 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   }
 
   Future<void> _createVideoFromSelected() async {
-    final selectedClips = _clips.where((clip) => _selectedClipIds.contains(clip.id)).toList();
+    final selectedClips = _clips
+        .where((clip) => _selectedClipIds.contains(clip.id))
+        .toList();
     if (selectedClips.isEmpty) return;
 
     // Add selected clips to ClipManager
-    final clipManagerService = ref.read(clipManagerServiceProvider);
+    final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
 
     // Clear existing clips first
-    clipManagerService.clearAll();
+    clipManagerNotifier.clearAll();
 
     // Add each selected clip
     for (final clip in selectedClips) {
-      clipManagerService.addClip(
+      clipManagerNotifier.addClip(
         filePath: clip.filePath,
-        duration: Duration(milliseconds: (clip.durationInSeconds * 1000).toInt()),
+        duration: clip.duration,
         thumbnailPath: clip.thumbnailPath,
       );
     }
 
-    // Navigate to ClipManager screen
-    context.go('/clip-manager');
+    // Navigate to ClipManager screen (push to preserve back navigation)
+    context.push('/clip-manager');
 
     // Clear selection
     _clearSelection();
@@ -122,154 +124,155 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: VineTheme.vineGreen,
-          foregroundColor: VineTheme.whiteText,
-          title: Text(_buildAppBarTitle()),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-            onPressed: () {
-              if (_selectedClipIds.isNotEmpty && !widget.selectionMode) {
-                // Clear selection first
-                _clearSelection();
-              } else if (widget.selectionMode) {
-                Navigator.of(context).pop();
-              } else {
-                final authService = ref.read(authServiceProvider);
-                final npub = authService.currentNpub;
-                if (npub != null) {
-                  context.go('/profile/$npub');
-                } else {
-                  context.go('/home/0');
-                }
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: VineTheme.vineGreen,
+      foregroundColor: VineTheme.whiteText,
+      title: Text(_buildAppBarTitle()),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+        onPressed: () {
+          if (_selectedClipIds.isNotEmpty && !widget.selectionMode) {
+            // Clear selection first
+            _clearSelection();
+          } else if (widget.selectionMode) {
+            Navigator.of(context).pop();
+          } else {
+            final authService = ref.read(authServiceProvider);
+            final npub = authService.currentNpub;
+            if (npub != null) {
+              context.go('/profile/$npub');
+            } else {
+              context.go('/home/0');
+            }
+          }
+        },
+      ),
+      actions: [
+        // Clear selection button when clips are selected
+        if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
+          TextButton(
+            onPressed: _clearSelection,
+            child: const Text(
+              'Clear',
+              style: TextStyle(color: VineTheme.whiteText),
+            ),
+          ),
+        if (_selectedClipIds.isEmpty &&
+            _clips.isNotEmpty &&
+            !widget.selectionMode)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: VineTheme.whiteText),
+            onSelected: (value) {
+              if (value == 'clear_all') {
+                _showClearAllConfirmation();
               }
             },
-          ),
-          actions: [
-            // Clear selection button when clips are selected
-            if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
-              TextButton(
-                onPressed: _clearSelection,
-                child: const Text(
-                  'Clear',
-                  style: TextStyle(color: VineTheme.whiteText),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'clear_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_sweep, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Clear All Clips'),
+                  ],
                 ),
               ),
-            if (_selectedClipIds.isEmpty && _clips.isNotEmpty && !widget.selectionMode)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: VineTheme.whiteText),
-                onSelected: (value) {
-                  if (value == 'clear_all') {
-                    _showClearAllConfirmation();
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'clear_all',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_sweep, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear All Clips'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
-              )
-            : _clips.isEmpty
-                ? _buildEmptyState()
-                : _buildClipsGrid(),
-        floatingActionButton: _selectedClipIds.isNotEmpty
-            ? FloatingActionButton.extended(
-                onPressed: _createVideoFromSelected,
-                icon: const Icon(Icons.movie_creation),
-                label: const Text('Create Video'),
-                backgroundColor: VineTheme.vineGreen,
-              )
-            : null,
-      );
+            ],
+          ),
+      ],
+    ),
+    body: _isLoading
+        ? const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          )
+        : _clips.isEmpty
+        ? _buildEmptyState()
+        : _buildClipsGrid(),
+    floatingActionButton: _selectedClipIds.isNotEmpty
+        ? FloatingActionButton.extended(
+            onPressed: _createVideoFromSelected,
+            icon: const Icon(Icons.movie_creation),
+            label: const Text('Create Video'),
+            backgroundColor: VineTheme.vineGreen,
+          )
+        : null,
+  );
 
   Widget _buildEmptyState() => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey[800],
-                border: Border.all(color: Colors.grey[600]!, width: 2),
-              ),
-              child: const Icon(
-                Icons.video_library_outlined,
-                size: 60,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'No Clips Yet',
-              style: TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your recorded video clips will appear here',
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.pushCamera();
-              },
-              icon: const Icon(Icons.videocam),
-              label: const Text('Record a Video'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.whiteText,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey[800],
+            border: Border.all(color: Colors.grey[600]!, width: 2),
+          ),
+          child: const Icon(
+            Icons.video_library_outlined,
+            size: 60,
+            color: Colors.grey,
+          ),
         ),
-      );
+        const SizedBox(height: 24),
+        const Text(
+          'No Clips Yet',
+          style: TextStyle(
+            color: VineTheme.whiteText,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Your recorded video clips will appear here',
+          style: TextStyle(color: Colors.grey[400], fontSize: 16),
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: () {
+            context.pushCamera();
+          },
+          icon: const Icon(Icons.videocam),
+          label: const Text('Record a Video'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.vineGreen,
+            foregroundColor: VineTheme.whiteText,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildClipsGrid() => GridView.builder(
-        padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-          childAspectRatio: 1.0,
-        ),
-        itemCount: _clips.length,
-        itemBuilder: (context, index) {
-          final clip = _clips[index];
-          return ClipThumbnailCard(
-            clip: clip,
-            isSelected: _selectedClipIds.contains(clip.id),
-            // Show checkboxes when not in single-selection mode
-            showCheckbox: !widget.selectionMode,
-            onTap: () => _handleClipTap(clip),
-            onLongPress: () => _showClipPreview(clip),
-          );
-        },
+    padding: const EdgeInsets.all(8),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 3,
+      crossAxisSpacing: 4,
+      mainAxisSpacing: 4,
+      childAspectRatio: 1.0,
+    ),
+    itemCount: _clips.length,
+    itemBuilder: (context, index) {
+      final clip = _clips[index];
+      return ClipThumbnailCard(
+        clip: clip,
+        isSelected: _selectedClipIds.contains(clip.id),
+        // Show checkboxes when not in single-selection mode
+        showCheckbox: !widget.selectionMode,
+        onTap: () => _handleClipTap(clip),
+        onLongPress: () => _showClipPreview(clip),
       );
+    },
+  );
 
   void _handleClipTap(SavedClip clip) {
     if (widget.selectionMode) {
@@ -330,7 +333,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _deleteClip(SavedClip clip) async {
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
       await clipService.deleteClip(clip.id);
 
       // Delete video file
@@ -404,7 +407,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _clearAllClips() async {
     try {
-      final clipService = await ref.read(clipLibraryServiceProvider.future);
+      final clipService = ref.read(clipLibraryServiceProvider);
 
       // Delete all video and thumbnail files
       for (final clip in _clips) {
@@ -487,11 +490,9 @@ class ClipThumbnailCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               // Thumbnail or placeholder
-              if (clip.thumbnailPath != null && File(clip.thumbnailPath!).existsSync())
-                Image.file(
-                  File(clip.thumbnailPath!),
-                  fit: BoxFit.cover,
-                )
+              if (clip.thumbnailPath != null &&
+                  File(clip.thumbnailPath!).existsSync())
+                Image.file(File(clip.thumbnailPath!), fit: BoxFit.cover)
               else
                 Container(
                   color: Colors.grey[800],
@@ -506,7 +507,10 @@ class ClipThumbnailCard extends StatelessWidget {
                 left: 4,
                 bottom: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(4),
@@ -526,13 +530,18 @@ class ClipThumbnailCard extends StatelessWidget {
                 right: 4,
                 top: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
-                    clip.aspectRatio == 'vertical' ? Icons.crop_portrait : Icons.crop_square,
+                    clip.aspectRatio == 'vertical'
+                        ? Icons.crop_portrait
+                        : Icons.crop_square,
                     color: Colors.white,
                     size: 12,
                   ),
@@ -548,18 +557,13 @@ class ClipThumbnailCard extends StatelessWidget {
                     height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isSelected ? VineTheme.vineGreen : Colors.black.withValues(alpha: 0.7),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
+                      color: isSelected
+                          ? VineTheme.vineGreen
+                          : Colors.black.withValues(alpha: 0.7),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: isSelected
-                        ? const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 16,
-                          )
+                        ? const Icon(Icons.check, color: Colors.white, size: 16)
                         : null,
                   ),
                 ),
@@ -650,7 +654,9 @@ class _ClipPreviewSheetState extends State<ClipPreviewSheet> {
                     ),
                   )
                 : const Center(
-                    child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                    child: CircularProgressIndicator(
+                      color: VineTheme.vineGreen,
+                    ),
                   ),
           ),
           // Info and actions
@@ -672,10 +678,7 @@ class _ClipPreviewSheetState extends State<ClipPreviewSheet> {
                       ),
                       Text(
                         widget.clip.displayDuration,
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
                     ],
                   ),

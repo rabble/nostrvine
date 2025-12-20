@@ -104,7 +104,10 @@ void main() {
       await service.addCustomSound(customSound);
 
       expect(service.sounds.any((s) => s.id == 'custom_001'), isTrue);
-      expect(service.getSoundById('custom_001')?.title, equals('My Custom Sound'));
+      expect(
+        service.getSoundById('custom_001')?.title,
+        equals('My Custom Sound'),
+      );
     });
 
     test('addCustomSound persists custom sounds', () async {

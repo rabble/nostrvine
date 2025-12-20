@@ -137,7 +137,10 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
               rethrow;
             }
           } else {
-            Log.info('🔊 Using cached file: $filePath', name: 'SoundPickerModal');
+            Log.info(
+              '🔊 Using cached file: $filePath',
+              name: 'SoundPickerModal',
+            );
           }
         }
 
@@ -157,10 +160,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
         setState(() => _playingSoundId = soundId);
         await _audioPlayer?.play();
 
-        Log.info(
-          '🔊 Playing sound: ${sound.title}',
-          name: 'SoundPickerModal',
-        );
+        Log.info('🔊 Playing sound: ${sound.title}', name: 'SoundPickerModal');
       } catch (e, stackTrace) {
         Log.error(
           '🔊 Failed to play sound ${sound.assetPath}: $e\n$stackTrace',
@@ -270,10 +270,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
         );
       }
     } catch (e) {
-      Log.error(
-        '🔊 Failed to import audio: $e',
-        name: 'SoundPickerModal',
-      );
+      Log.error('🔊 Failed to import audio: $e', name: 'SoundPickerModal');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -352,14 +349,20 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
                     onTap: () => _handleSoundTap(null),
                     leading: Icon(
                       Icons.music_off,
-                      color: widget.selectedSoundId == null ? Colors.green : Colors.white,
+                      color: widget.selectedSoundId == null
+                          ? Colors.green
+                          : Colors.white,
                       size: 32,
                     ),
                     title: Text(
                       'None',
                       style: TextStyle(
-                        color: widget.selectedSoundId == null ? Colors.green : Colors.white,
-                        fontWeight: widget.selectedSoundId == null ? FontWeight.bold : FontWeight.normal,
+                        color: widget.selectedSoundId == null
+                            ? Colors.green
+                            : Colors.white,
+                        fontWeight: widget.selectedSoundId == null
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     subtitle: const Text(

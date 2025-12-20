@@ -15,7 +15,8 @@ class SoundLibraryService {
   List<VineSound> _customSounds = [];
   bool _isLoaded = false;
 
-  List<VineSound> get sounds => List.unmodifiable([..._sounds, ..._customSounds]);
+  List<VineSound> get sounds =>
+      List.unmodifiable([..._sounds, ..._customSounds]);
   List<VineSound> get customSounds => List.unmodifiable(_customSounds);
   bool get isLoaded => _isLoaded;
 
@@ -128,9 +129,6 @@ class SoundLibraryService {
     _customSounds.removeWhere((s) => s.id == soundId);
     await _saveCustomSounds();
 
-    Log.info(
-      '🔊 Removed custom sound: $soundId',
-      name: 'SoundLibraryService',
-    );
+    Log.info('🔊 Removed custom sound: $soundId', name: 'SoundLibraryService');
   }
 }

@@ -47,4 +47,4 @@ final class ClipCountProvider
   }
 }
 
-String _$clipCountHash() => r'9ed676dc7d5b1f9b9684c00155653dfa62b747b2';
+String _$clipCountHash() => r'f7f39a4a7d24bdbb6d08ea92d79f69fc92898f68';

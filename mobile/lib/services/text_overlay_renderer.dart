@@ -13,12 +13,14 @@ class TextOverlayRenderer {
   ///
   /// [overlays] - List of TextOverlay objects to render
   /// [videoSize] - Size of the video canvas in pixels
+  /// [previewSize] - Size of the preview where text was positioned (for scaling)
   ///
   /// Returns PNG image data as Uint8List
   Future<Uint8List> renderOverlays(
     List<TextOverlay> overlays,
-    Size videoSize,
-  ) async {
+    Size videoSize, {
+    Size? previewSize,
+  }) async {
     try {
       Log.info(
         'Rendering ${overlays.length} overlays to ${videoSize.width}x${videoSize.height} canvas',
@@ -33,9 +35,21 @@ class TextOverlayRenderer {
         Rect.fromLTWH(0, 0, videoSize.width, videoSize.height),
       );
 
+      // Calculate scale factor for font sizing
+      // If previewSize is provided, scale fonts from preview size to video size
+      final scaleFactor = previewSize != null
+          ? videoSize.width / previewSize.width
+          : 1.0;
+
+      Log.info(
+        'Font scale factor: $scaleFactor (preview: ${previewSize?.width ?? 'N/A'}, video: ${videoSize.width})',
+        name: 'TextOverlayRenderer',
+        category: LogCategory.system,
+      );
+
       // Render each overlay
       for (final overlay in overlays) {
-        _renderSingleOverlay(canvas, overlay, videoSize);
+        _renderSingleOverlay(canvas, overlay, videoSize, scaleFactor);
       }
 
       // Convert canvas to image
@@ -78,17 +92,21 @@ class TextOverlayRenderer {
     Canvas canvas,
     TextOverlay overlay,
     Size videoSize,
+    double scaleFactor,
   ) {
     // Calculate absolute position from normalized position
     final absoluteX = overlay.normalizedPosition.dx * videoSize.width;
     final absoluteY = overlay.normalizedPosition.dy * videoSize.height;
+
+    // Scale font size from preview to video resolution
+    final scaledFontSize = overlay.fontSize * scaleFactor;
 
     // Create text painter with Google Fonts
     final textSpan = TextSpan(
       text: overlay.text,
       style: GoogleFonts.getFont(
         overlay.fontFamily,
-        fontSize: overlay.fontSize,
+        fontSize: scaledFontSize,
         color: overlay.color,
       ),
     );
@@ -102,25 +120,10 @@ class TextOverlayRenderer {
     // Layout the text
     textPainter.layout();
 
-    // Calculate offset based on alignment
-    double offsetX = absoluteX;
-
-    switch (overlay.alignment) {
-      case TextAlign.left:
-        // No adjustment needed
-        break;
-      case TextAlign.center:
-        offsetX = absoluteX - (textPainter.width / 2);
-        break;
-      case TextAlign.right:
-        offsetX = absoluteX - textPainter.width;
-        break;
-      default:
-        offsetX = absoluteX - (textPainter.width / 2);
-    }
-
-    // Center vertically at the position
-    final offsetY = absoluteY - (textPainter.height / 2);
+    // Use top-left positioning to match DraggableTextOverlay preview behavior
+    // The normalized position represents the top-left corner of the text
+    final offsetX = absoluteX;
+    final offsetY = absoluteY;
 
     // Paint the text
     textPainter.paint(canvas, Offset(offsetX, offsetY));

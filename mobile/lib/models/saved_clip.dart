@@ -1,5 +1,5 @@
 // ABOUTME: Data model for a saved video clip in the clip library
-// ABOUTME: Supports JSON serialization, thumbnails, session grouping, and display formatting
+// ABOUTME: Supports JSON serialization, thumbnails, and display formatting
 
 class SavedClip {
   const SavedClip({
@@ -81,6 +81,6 @@ class SavedClip {
 
   @override
   String toString() {
-    return 'SavedClip(id: $id, duration: ${durationInSeconds}s, aspectRatio: $aspectRatio, sessionId: $sessionId)';
+    return 'SavedClip(id: $id, duration: ${durationInSeconds}s, aspectRatio: $aspectRatio)';
   }
 }

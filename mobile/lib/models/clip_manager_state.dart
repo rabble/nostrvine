@@ -25,10 +25,7 @@ class ClipManagerState {
   static const Duration maxDuration = Duration(milliseconds: 6300);
 
   Duration get totalDuration {
-    return clips.fold(
-      Duration.zero,
-      (sum, clip) => sum + clip.duration,
-    );
+    return clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
   }
 
   Duration get remainingDuration {
@@ -80,8 +77,12 @@ class ClipManagerState {
   }) {
     return ClipManagerState(
       clips: clips ?? this.clips,
-      selectedClipId: clearSelection ? null : (selectedClipId ?? this.selectedClipId),
-      previewingClipId: clearPreview ? null : (previewingClipId ?? this.previewingClipId),
+      selectedClipId: clearSelection
+          ? null
+          : (selectedClipId ?? this.selectedClipId),
+      previewingClipId: clearPreview
+          ? null
+          : (previewingClipId ?? this.previewingClipId),
       isReordering: isReordering ?? this.isReordering,
       isProcessing: isProcessing ?? this.isProcessing,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
