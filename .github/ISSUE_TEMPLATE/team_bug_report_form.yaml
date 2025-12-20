@@ -7,18 +7,6 @@ assignees:
 projects:
   - divine/2  # diVine Program project number
 body:
-  - type: dropdown
-    id: platform
-    attributes:
-      label: Platform
-      description: Where did this bug occur?
-      options:
-        - iOS
-        - Android
-#        - Web
-#        - Multiple platforms
-    validations:
-      required: true
 
 # TODO: align with Adam on severity questions for liz/eng  
   - type: dropdown
@@ -72,6 +60,19 @@ body:
       placeholder: "Describe what you expected to happen."
     validations:
       required: true
+
+# TODO: Is this clarifying or redundant?
+# - type: dropdown
+#   id: platform
+#   attributes:
+#     label: Platform
+#     description: Where did this bug occur?
+#     options:
+#       - iOS
+#       - Android
+#       - Multiple platforms
+#   validations:
+#     required: true
 
   - type: textarea
     id: environment
