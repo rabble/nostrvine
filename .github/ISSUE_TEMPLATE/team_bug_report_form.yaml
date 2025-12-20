@@ -15,11 +15,12 @@ body:
       options:
         - iOS
         - Android
-        - Web
-        - Multiple platforms
+#        - Web
+#        - Multiple platforms
     validations:
       required: true
-  
+
+# TODO: align with Adam on severity questions for liz/eng  
   - type: dropdown
     id: severity
     attributes:
@@ -96,6 +97,7 @@ body:
     validations:
       required: true
 
+
   - type: textarea
     id: evidence
     attributes:
@@ -106,7 +108,7 @@ body:
       required: false
 
 
-#
+# TODO: Think through if this can help the zendesk route too
 #  - type: input
 #    id: zendesk-ticket
 #    attributes:
