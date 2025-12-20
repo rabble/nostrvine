@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -409,7 +410,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     if (widget.onBack != null) {
       widget.onBack!();
     } else {
-      Navigator.of(context).pop();
+      // Pop back to ClipManager since we got here via push
+      context.pop();
     }
   }
 

@@ -11,8 +11,8 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -86,6 +86,10 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     final state = ref.read(clipManagerProvider);
     if (!state.hasClips) return;
 
+    // Capture ROOT navigator BEFORE async work - context may become stale
+    // Use rootNavigator: true to bypass GoRouter's nested navigators
+    final navigator = Navigator.of(context, rootNavigator: true);
+
     setState(() {
       _isProcessing = true;
     });
@@ -130,56 +134,31 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           category: LogCategory.video,
         );
 
-        // Update processing state before navigation
-        setState(() {
-          _isProcessing = false;
-        });
-
-        // Navigate using GoRouter directly from Riverpod to avoid context issues
-        // The context might become invalid after async operations + setState
+        // Navigate directly without scheduling - FFmpeg is done and the navigator
+        // was captured before async work. Scheduling with Future.delayed or
+        // addPostFrameCallback hangs on macOS after FFmpeg operations.
         Log.info(
-          '📹 Getting GoRouter from Riverpod and pushing to /edit-video',
+          '📹 Calling navigator.push directly',
           category: LogCategory.video,
         );
-        print('🟢🟢🟢 GETTING ROUTER FROM RIVERPOD 🟢🟢🟢');
 
-        // Get the router directly - this avoids any context invalidation issues
-        final router = ref.read(goRouterProvider);
-        print('🟢 Got router: $router');
-        print('🟢 Calling router.push(/edit-video, extra: $videoPath)');
-
-        // Use unawaited push to avoid blocking this function
-        // ignore: unawaited_futures
-        router.push('/edit-video', extra: videoPath).then((result) {
-          print('🟢 Navigation returned from /edit-video, result: $result');
-          Log.info(
-            '📹 Navigation returned from /edit-video, result: $result',
-            category: LogCategory.video,
-          );
-
+        navigator.push<void>(
+          MaterialPageRoute(
+            builder: (ctx) => VideoEditorScreen(videoPath: videoPath),
+          ),
+        ).then((_) {
           // Clear navigation flag now that we've returned
-          if (mounted) {
-            _isNavigatingAway = false;
+          _isNavigatingAway = false;
+          _isProcessing = false;
 
-            // Re-initialize preview when returning from video editor
+          // Re-initialize preview when returning from video editor
+          if (mounted) {
             final currentState = ref.read(clipManagerProvider);
             if (currentState.sortedClips.isNotEmpty) {
               _loadPreview(currentState.sortedClips.first);
             }
           }
-        }).catchError((navError, navStack) {
-          print('🟢 Navigation FAILED: $navError');
-          Log.error(
-            '📹 Navigation to /edit-video failed: $navError',
-            category: LogCategory.video,
-          );
         });
-
-        print('🟢 Navigation push initiated (not awaited)');
-        Log.info(
-          '📹 Navigation initiated (not awaited)',
-          category: LogCategory.video,
-        );
       }
     } catch (e) {
       Log.error(

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - macOS Camera and Video Processing (2025-12-20)
+
+#### Bug Fixes
+- **Fixed macOS camera dispose crash** - App no longer crashes when camera is disposed during configuration
+  - Root cause: `stopRunning()` was being called on AVCaptureSession between `beginConfiguration()` and `commitConfiguration()` calls
+  - Fix: Only call `stopRunning()` if session is actually running, and run on background queue
+  - Crash message was: `stopRunning may not be called between calls to beginConfiguration and commitConfiguration`
+
+- **Investigation: macOS multi-clip navigation hang** - Added debug mode to skip cropping on macOS for testing
+  - When recording multiple clips with vertical crop on macOS, navigation to VideoEditorScreen would hang
+  - The navigation push fires (observer sees didPush) but the widget never builds
+  - Added temporary debug flag to skip crop encoding and test if that's the root cause
+  - iOS continues to work normally with cropping enabled
+
+#### Technical Details
+- Modified `macos/NativeCameraPlugin.swift`:
+  - `dispose()` method now checks `session.isRunning` before calling `stopRunning()`
+  - Runs `stopRunning()` on background queue to avoid blocking main thread
+- Modified `lib/services/video_export_service.dart`:
+  - Added `skipCropOnMacOS` debug flag for multi-clip processing
+  - Logs warning when crop is skipped for debugging
+
 ### Added - Video Editing, Clips, and Audio Features (2025-12-14)
 
 #### New Features

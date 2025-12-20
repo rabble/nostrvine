@@ -1012,6 +1012,13 @@ class VineRecordingController {
 
   /// Start recording a new segment (press down)
   Future<void> startRecording() async {
+    // DEBUG: Log controller instance for diagnosis
+    Log.info(
+      '🔍 startRecording called: controller hashCode=$hashCode, _state=$_state',
+      name: 'VineRecordingController',
+      category: LogCategory.system,
+    );
+
     if (!canRecord) return;
 
     // Prevent starting if already recording
@@ -1076,17 +1083,33 @@ class VineRecordingController {
     // Capture start time locally to prevent race conditions
     final segmentStartTime = _currentSegmentStartTime;
 
+    // DEBUG: Log current state for diagnosis
+    Log.info(
+      '🔍 stopRecording called: _state=$_state, segmentStartTime=${segmentStartTime != null ? "set" : "NULL"}, controller hashCode=$hashCode',
+      name: 'VineRecordingController',
+      category: LogCategory.system,
+    );
+
     if (_state != VineRecordingState.recording || segmentStartTime == null) {
       Log.warning(
-        'Not recording or no start time, ignoring stop request',
+        'Not recording or no start time, ignoring stop request. State: $_state, HasStartTime: ${segmentStartTime != null}',
         name: 'VineRecordingController',
         category: LogCategory.system,
       );
       return;
     }
 
+    // CRITICAL: Set state to paused IMMEDIATELY to prevent race conditions
+    // where another stop request comes in while async camera stop is in progress.
+    // The state check above will now correctly reject subsequent stop calls.
+    _setState(VineRecordingState.paused);
+
     // Clear the segment start time immediately to prevent double-stop
     _currentSegmentStartTime = null;
+
+    // Stop timers immediately to prevent them firing during async stop
+    _stopProgressTimer();
+    _stopMaxDurationTimer();
 
     try {
       var segmentEndTime = DateTime.now();

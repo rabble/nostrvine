@@ -135,137 +135,137 @@ class VideoExportService {
 
       // Build FFmpeg command - with or without crop filter and audio
       final audioArgs = muteAudio ? '-an' : '-c:a aac';
-      final bool needsEncoding = effectiveAspectRatio != null;
+
+      // TEMP DEBUG: Skip cropping on macOS for multi-clip to test if that's causing the hang
+      final bool skipCropOnMacOS = Platform.isMacOS && sortedClips.length > 1;
+      if (skipCropOnMacOS && effectiveAspectRatio != null) {
+        Log.warning(
+          'DEBUG: Skipping crop on macOS for multi-clip (testing hang issue)',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+      }
+      final bool needsEncoding = effectiveAspectRatio != null && !skipCropOnMacOS;
 
       if (needsEncoding) {
-        // With crop: need to re-encode - use filter_complex for proper per-segment rotation
-        // The concat demuxer (-f concat) doesn't handle per-segment rotation metadata correctly
-        // Using filter_complex ensures each input is decoded with its own rotation (autorotate)
+        // With crop: need to re-encode
         final cropFilter = _buildCropFilter(effectiveAspectRatio);
 
-        // Build input arguments for each clip
-        final inputArgs = sortedClips.map((c) => '-i "${c.filePath}"').join(' ');
+        // For single clip, use simple -vf filter instead of complex filter_complex
+        // This avoids macOS FFmpegKit issues with filter_complex concat
+        if (sortedClips.length == 1) {
+          final inputPath = sortedClips.first.filePath;
+          final simpleCommand =
+              '-y -i "$inputPath" -vf "$cropFilter" $audioArgs ${_getVideoEncoderArgs()} "$outputPath"';
 
-        // Check which clips have audio by probing them
-        // For now, use video-only concat to avoid the missing audio issue
-        // This is simpler and more reliable than trying to detect/generate silence
-        String filterComplex;
-        String audioMapping;
+          Log.info(
+            'Single clip crop (simple -vf): $simpleCommand',
+            name: 'VideoExportService',
+            category: LogCategory.system,
+          );
 
-        if (muteAudio) {
-          // Video only - no audio streams in concat
-          final streamLabels = List.generate(
-            sortedClips.length,
-            (i) => '[${i}:v]',
-          ).join('');
-          final concatFilter = '${streamLabels}concat=n=${sortedClips.length}:v=1:a=0[v]';
-          final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
-          filterComplex = '$concatFilter;[v]$cropWithFormat[vout]';
-          audioMapping = '';
-        } else {
-          // Build filter to concatenate video and audio streams
-          // Try using actual audio from input files first
-          final filterParts = <String>[];
-          final concatInputs = <String>[];
+          await FFmpegEncoder.executeCommandWithFallback(
+            command: simpleCommand,
+            logTag: 'VideoExportService',
+          );
 
-          for (var i = 0; i < sortedClips.length; i++) {
-            // Video stream - always present, normalize PTS
-            filterParts.add('[${i}:v]setpts=PTS-STARTPTS[v$i]');
+          // Cleanup temp files
+          try {
+            await File(listFilePath).delete();
+          } catch (_) {}
 
-            // Audio stream - use actual audio from input, normalize PTS
-            filterParts.add('[${i}:a]asetpts=PTS-STARTPTS[a$i]');
-
-            concatInputs.add('[v$i][a$i]');
-          }
-
-          final concatFilter =
-              '${concatInputs.join('')}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
-          filterParts.add(concatFilter);
-
-          final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
-          filterParts.add('[v]$cropWithFormat[vout]');
-
-          filterComplex = filterParts.join(';');
-          audioMapping = '-map "[a]" -c:a aac';
+          return outputPath;
         }
 
-        final command =
-            '-y $inputArgs -filter_complex "$filterComplex" -map "[vout]" $audioMapping ${_getVideoEncoderArgs()} "$outputPath"';
-
+        // For multiple clips: crop each individually, then concat
+        // This avoids filter_complex which blocks on macOS
         Log.info(
-          'Running FFmpeg with filter_complex: $command',
+          'Multi-clip crop: processing ${sortedClips.length} clips individually',
           name: 'VideoExportService',
           category: LogCategory.system,
         );
 
-        // Try with real audio first, fall back to silent audio if clips lack audio streams
-        try {
+        // Step 1: Crop each clip individually
+        // Use software encoding (libx264) on macOS to avoid VideoToolbox resource accumulation
+        // that can block the UI thread when running many sequential encode operations
+        final useSoftwareEncoder = Platform.isMacOS;
+        final encoderArgs = useSoftwareEncoder
+            ? FFmpegEncoder.getSoftwareEncoderArgs()
+            : _getVideoEncoderArgs();
+
+        if (useSoftwareEncoder) {
+          Log.info(
+            'Using software encoder (libx264) on macOS for multi-clip crop',
+            name: 'VideoExportService',
+            category: LogCategory.system,
+          );
+        }
+
+        final croppedPaths = <String>[];
+        for (var i = 0; i < sortedClips.length; i++) {
+          final clip = sortedClips[i];
+          final croppedPath = '${tempDir.path}/cropped_${timestamp}_$i.mp4';
+
+          final cropCommand =
+              '-y -i "${clip.filePath}" -vf "$cropFilter" -c:a aac $encoderArgs "$croppedPath"';
+
+          Log.info(
+            'Cropping clip $i: $cropCommand',
+            name: 'VideoExportService',
+            category: LogCategory.system,
+          );
+
           await FFmpegEncoder.executeCommandWithFallback(
-            command: command,
+            command: cropCommand,
             logTag: 'VideoExportService',
           );
-        } on FFmpegEncoderException catch (e) {
-          // Check if failure is due to missing audio stream
-          final output = e.softwareOutput ?? e.hardwareOutput ?? '';
-          if (output.contains('does not have audio') ||
-              output.contains('Invalid stream specifier') ||
-              output.contains('Stream map') && output.contains(':a')) {
-            Log.warning(
-              'Some clips lack audio, retrying with silent audio fallback',
-              name: 'VideoExportService',
-              category: LogCategory.system,
-            );
 
-            // Rebuild filter with anullsrc for silent audio
-            final fallbackFilterParts = <String>[];
-            final fallbackConcatInputs = <String>[];
+          // Explicitly clear sessions after each crop to release encoder resources
+          // This prevents resource accumulation that can block the UI on macOS
+          await FFmpegEncoder.clearSessions();
 
-            for (var i = 0; i < sortedClips.length; i++) {
-              final clip = sortedClips[i];
-              final durationSec = clip.duration.inMilliseconds / 1000.0;
-
-              fallbackFilterParts.add('[${i}:v]setpts=PTS-STARTPTS[v$i]');
-              fallbackFilterParts.add(
-                'anullsrc=channel_layout=mono:sample_rate=48000:d=$durationSec[silence$i]',
-              );
-              fallbackConcatInputs.add('[v$i][silence$i]');
-            }
-
-            final fallbackConcatFilter =
-                '${fallbackConcatInputs.join('')}concat=n=${sortedClips.length}:v=1:a=1[v][a]';
-            fallbackFilterParts.add(fallbackConcatFilter);
-
-            final cropWithFormat = FFmpegEncoder.injectFormatFilter(cropFilter);
-            fallbackFilterParts.add('[v]$cropWithFormat[vout]');
-
-            final fallbackFilterComplex = fallbackFilterParts.join(';');
-            final fallbackCommand =
-                '-y $inputArgs -filter_complex "$fallbackFilterComplex" -map "[vout]" $audioMapping ${_getVideoEncoderArgs()} "$outputPath"';
-
-            Log.info(
-              'Retrying with silent audio fallback: $fallbackCommand',
-              name: 'VideoExportService',
-              category: LogCategory.system,
-            );
-
-            await FFmpegEncoder.executeCommandWithFallback(
-              command: fallbackCommand,
-              logTag: 'VideoExportService',
-            );
-          } else {
-            // Not an audio issue, rethrow
-            rethrow;
-          }
+          croppedPaths.add(croppedPath);
         }
+
+        // Step 2: Concat cropped clips using simple concat demuxer
+        final croppedListContent =
+            croppedPaths.map((p) => "file '$p'").join('\n');
+        final croppedListPath = '${tempDir.path}/cropped_list_$timestamp.txt';
+        await File(croppedListPath).writeAsString(croppedListContent);
+
+        final concatAudioArgs = muteAudio ? '-an' : '-c:a copy';
+        final concatCommand =
+            '-y -f concat -safe 0 -i "$croppedListPath" -c:v copy $concatAudioArgs "$outputPath"';
+
+        Log.info(
+          'Concatenating cropped clips: $concatCommand',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+
+        final concatSession = await FFmpegKit.execute(concatCommand);
+        final concatReturnCode = await concatSession.getReturnCode();
+        await FFmpegEncoder.clearSessions();
+
+        if (!ReturnCode.isSuccess(concatReturnCode)) {
+          final output = await concatSession.getOutput();
+          throw Exception('Concat failed: $output');
+        }
+
+        // Cleanup temp files
+        try {
+          await File(listFilePath).delete();
+          await File(croppedListPath).delete();
+          for (final path in croppedPaths) {
+            await File(path).delete();
+          }
+        } catch (_) {}
 
         Log.info(
           'Successfully processed clips to: $outputPath',
           name: 'VideoExportService',
           category: LogCategory.system,
         );
-
-        // Clean up list file (not used but created earlier)
-        await File(listFilePath).delete();
 
         return outputPath;
       }
