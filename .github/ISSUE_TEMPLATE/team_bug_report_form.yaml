@@ -8,19 +8,6 @@ projects:
   - divine/2  # diVine Program project number
 body:
 
-# TODO: align with Adam on severity questions for liz/eng  
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      description: How severe is this bug?
-      options:
-        - "P0: Cannot access app (login, authentication, critical failure)"
-        - "P1: Cannot upload or view videos"
-        - "P2: Other features (follow, like, profile, etc.)"
-    validations:
-      required: true
-
   - type: textarea
     id: summary
     attributes:
@@ -61,19 +48,6 @@ body:
     validations:
       required: true
 
-# TODO: Is this clarifying or redundant?
-# - type: dropdown
-#   id: platform
-#   attributes:
-#     label: Platform
-#     description: Where did this bug occur?
-#     options:
-#       - iOS
-#       - Android
-#       - Multiple platforms
-#   validations:
-#     required: true
-
   - type: textarea
     id: environment
     attributes:
@@ -109,7 +83,7 @@ body:
       required: false
 
 
-# TODO: Think through if this can help the zendesk route too
+# TODO: Think through/iterate on this to bring engineers back into zendesk as "light" agents to get context. Later.
 #  - type: input
 #    id: zendesk-ticket
 #    attributes:
