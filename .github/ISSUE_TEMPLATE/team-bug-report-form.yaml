@@ -1,4 +1,4 @@
-name: Bug Report
+name: Team Bug Report
 description: Report a bug or issue with the app
 title: "[Bug] "
 labels: ["bug"]
@@ -105,6 +105,8 @@ body:
     validations:
       required: false
 
+
+#
 #  - type: input
 #    id: zendesk-ticket
 #    attributes:
