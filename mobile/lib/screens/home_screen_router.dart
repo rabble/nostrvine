@@ -12,6 +12,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -63,9 +64,29 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     return buildAsyncUI(
       pageContext,
       onData: (ctx) {
-        // Only handle home routes
+        // Only handle home routes - if we get here with wrong route, recover gracefully
         if (ctx.type != RouteType.home) {
-          return const Center(child: Text('Not a home route'));
+          // Log to Crashlytics as this indicates a routing bug
+          final errorMessage =
+              'HomeScreenRouter received non-home route: ${ctx.type.name}';
+          Log.error(errorMessage, name: 'HomeScreenRouter');
+          CrashReportingService.instance.recordError(
+            StateError(errorMessage),
+            StackTrace.current,
+            reason: 'Router delivered wrong route type to HomeScreenRouter',
+          );
+
+          // Redirect to home on next frame to avoid build-phase navigation
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.go('/home/0');
+            }
+          });
+
+          // Show loading while redirecting
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
         }
 
         int urlIndex = 0;
