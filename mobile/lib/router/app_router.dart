@@ -30,6 +30,7 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -77,6 +78,7 @@ int tabIndexFromLocation(String loc) {
     case 'notification-settings':
     case 'key-management':
     case 'safety-settings':
+    case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
@@ -512,6 +514,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/safety-settings',
         name: 'safety-settings',
         builder: (_, __) => const SafetySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/developer-options',
+        name: 'developer-options',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const DeveloperOptionsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/edit-profile',

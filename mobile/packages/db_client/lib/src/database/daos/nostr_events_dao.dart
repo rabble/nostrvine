@@ -436,6 +436,21 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Delete all events of a specific kind.
+  ///
+  /// Useful for clearing cached video events (kind 34236) when switching
+  /// environments.
+  ///
+  /// Returns the number of events deleted.
+  Future<int> deleteEventsByKind(int kind) async {
+    return customUpdate(
+      'DELETE FROM event WHERE kind = ?',
+      variables: [Variable.withInt(kind)],
+      updates: {nostrEvents},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   /// Convert database row to Event model
   Event _rowToEvent(QueryRow row) {
     final tags = (jsonDecode(row.read<String>('tags')) as List)
