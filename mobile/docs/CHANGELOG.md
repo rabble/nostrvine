@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Nostr Publish Reliability (2025-12-21)
+
+#### Bug Fixes
+- **Improved Nostr publish reliability** - Videos now publish more reliably with retry logic
+  - Added 3 retry attempts with exponential backoff (2s, 4s delays)
+  - Auto-initializes NostrClient before publish if not connected
+  - Force reconnects all relays before publish to handle stale WebSocket connections
+
+- **Fixed concurrent modification crash** - App no longer crashes during relay initialization
+  - Root cause: `_configuredRelays` list was being modified while being iterated during async operations
+  - Fix: Create a copy of the list before iterating in `_connectToConfiguredRelays()` and `forceReconnectAll()`
+
+- **Clear studio after successful publish** - Clips are now cleared from ClipManager after video is published
+  - Prevents accidentally re-publishing the same clips
+
+#### Technical Details
+- Modified `packages/nostr_client/lib/src/relay_manager.dart`:
+  - Added `forceReconnectAll()` method to disconnect and reconnect all relays
+  - Fixed concurrent modification by using `List<String>.from(_configuredRelays)` before async iteration
+- Modified `packages/nostr_client/lib/src/nostr_client.dart`:
+  - Added `forceReconnectAll()` method delegating to RelayManager
+- Modified `lib/services/video_event_publisher.dart`:
+  - Added retry logic with 3 attempts and exponential backoff
+  - Calls `forceReconnectAll()` before publish
+  - Clears `clipManagerProvider` after successful publish
+
+#### Tests Added
+- `packages/nostr_client/test/src/relay_manager_test.dart` - 6 new tests for `forceReconnectAll`
+- `packages/nostr_client/test/src/nostr_client_test.dart` - 1 new test for `forceReconnectAll`
+- `test/services/video_event_publisher_retry_test.dart` - 15 new tests for retry logic
+
 ### Fixed - Clip Library Navigation and UI (2025-12-20)
 
 #### Bug Fixes
