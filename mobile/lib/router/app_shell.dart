@@ -18,6 +18,7 @@ import 'page_context_provider.dart';
 import 'route_utils.dart';
 import 'nav_extensions.dart';
 import 'last_tab_position_provider.dart';
+import 'tab_history_provider.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.currentIndex});
@@ -72,6 +73,24 @@ class AppShell extends ConsumerWidget {
         return RouteType.profile;
       default:
         return RouteType.home;
+    }
+  }
+
+  /// Maps RouteType to tab index
+  /// Returns null if not a main tab route
+  int? _tabIndexFromRouteType(RouteType type) {
+    switch (type) {
+      case RouteType.home:
+        return 0;
+      case RouteType.explore:
+      case RouteType.hashtag: // Hashtag is part of explore tab
+        return 1;
+      case RouteType.notifications:
+        return 2;
+      case RouteType.profile:
+        return 3;
+      default:
+        return null; // Not a main tab route
     }
   }
 
@@ -242,45 +261,93 @@ class AppShell extends ConsumerWidget {
                   final ctx = ref.read(pageContextProvider).asData?.value;
                   if (ctx == null) return;
 
-                  // Handle back navigation based on context
+                  // First, check if we're in a sub-route (hashtag, search, etc.)
+                  // If so, navigate back to parent route
                   switch (ctx.type) {
-                    case RouteType.explore:
-                    case RouteType.notifications:
-                      // From explore or notifications, go to home
-                      context.go('/home/0');
-                      return;
-
                     case RouteType.hashtag:
                     case RouteType.search:
                       // Go back to explore
                       context.go('/explore');
                       return;
 
-                    case RouteType.profile:
-                      if (ctx.npub != 'me') {
-                        // From other user's profile, go back to home
-                        context.go('/home/0');
-                        return;
-                      }
-                      break;
-
                     default:
                       break;
                   }
 
-                  // For routes with videoIndex (feed mode), go to grid mode
-                  if (ctx.videoIndex != null) {
-                    final gridCtx = RouteContext(
-                      type: ctx.type,
-                      hashtag: ctx.hashtag,
-                      searchTerm: ctx.searchTerm,
-                      npub: ctx.npub,
-                      videoIndex: null,
-                    );
+                  // For routes with videoIndex (feed mode), go to grid mode first
+                  // This handles page-internal navigation before tab switching
+                  // For explore: go to grid mode (null index)
+                  // For notifications: go to index 0 (notifications always has an index)
+                  // For other routes: go to grid mode (null index)
+                  if (ctx.videoIndex != null && ctx.videoIndex != 0) {
+                    RouteContext gridCtx;
+                    if (ctx.type == RouteType.notifications) {
+                      // Notifications always has an index, go to index 0
+                      gridCtx = RouteContext(
+                        type: ctx.type,
+                        hashtag: ctx.hashtag,
+                        searchTerm: ctx.searchTerm,
+                        npub: ctx.npub,
+                        videoIndex: 0,
+                      );
+                    } else {
+                      // For explore and other routes, go to grid mode (null index)
+                      gridCtx = RouteContext(
+                        type: ctx.type,
+                        hashtag: ctx.hashtag,
+                        searchTerm: ctx.searchTerm,
+                        npub: ctx.npub,
+                        videoIndex: null,
+                      );
+                    }
                     final newRoute = buildRoute(gridCtx);
                     context.go(newRoute);
                     return;
                   }
+
+                  // Check tab history for navigation
+                  final tabHistory = ref.read(tabHistoryProvider.notifier);
+                  final previousTab = tabHistory.getPreviousTab();
+
+                  // If there's a previous tab in history, navigate to it
+                  if (previousTab != null) {
+                    // Navigate to previous tab
+                    final previousRouteType = _routeTypeForTab(previousTab);
+                    final lastIndex = ref
+                        .read(lastTabPositionProvider.notifier)
+                        .getPosition(previousRouteType);
+
+                    // Remove current tab from history before navigating
+                    tabHistory.navigateBack();
+
+                    // Navigate to previous tab
+                    switch (previousTab) {
+                      case 0:
+                        context.goHome(lastIndex ?? 0);
+                        break;
+                      case 1:
+                        context.goExplore(lastIndex);
+                        break;
+                      case 2:
+                        context.goNotifications(lastIndex ?? 0);
+                        break;
+                      case 3:
+                        context.goProfileGrid('me');
+                        break;
+                    }
+                    return;
+                  }
+
+                  // No previous tab - check if we're on a non-home tab
+                  // If so, go to home first before exiting
+                  final currentTab = _tabIndexFromRouteType(ctx.type);
+                  if (currentTab != null && currentTab != 0) {
+                    // Go to home first
+                    context.go('/home/0');
+                    return;
+                  }
+
+                  // Already at home with no history - let system handle exit
                 },
               )
             : Builder(
