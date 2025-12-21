@@ -18,8 +18,10 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/followers_screen.dart';
 import 'package:openvine/screens/following_screen.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -724,12 +726,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   // Action methods
 
   Future<void> _setupProfile() async {
-    print(
-      '🔍 NAV DEBUG: ProfileScreenRouter._setupProfile() - about to push /setup-profile',
+    // Navigate using root navigator to escape shell route
+    // This prevents redirect issues when navigating from inside shell
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) => const ProfileSetupScreen(isNewUser: true),
+      ),
     );
-    print('🔍 NAV DEBUG: Current location: ${GoRouterState.of(context).uri}');
-    await context.push('/setup-profile');
-    print('🔍 NAV DEBUG: Returned from push /setup-profile');
   }
 
   Future<void> _editProfile() async {
@@ -772,12 +775,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     );
 
     if (result == 'edit') {
-      print(
-        '🔍 NAV DEBUG: ProfileScreenRouter._editProfile() - about to push /edit-profile',
+      // Navigate using root navigator to escape shell route
+      // This prevents redirect issues when navigating from inside shell
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (context) => const ProfileSetupScreen(isNewUser: false),
+        ),
       );
-      print('🔍 NAV DEBUG: Current location: ${GoRouterState.of(context).uri}');
-      await context.push('/edit-profile');
-      print('🔍 NAV DEBUG: Returned from push /edit-profile');
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -881,7 +885,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   void _openClips() {
-    context.push('/clips');
+    // Navigate using root navigator to escape shell route
+    // This prevents redirect issues when navigating from inside shell
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (context) => const ClipLibraryScreen()));
   }
 
   Future<void> _followUser(String pubkey) async {

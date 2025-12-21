@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -133,16 +134,16 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       icon: Icons.person,
                       title: 'Edit Profile',
                       onTap: () {
-                        print(
-                          '🔍 NAV DEBUG: VineDrawer.Edit Profile - about to push /edit-profile',
+                        // Close drawer first
+                        context.pop();
+                        // Navigate using root navigator to escape shell route
+                        // This prevents redirect issues when navigating from inside shell
+                        Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ProfileSetupScreen(isNewUser: false),
+                          ),
                         );
-                        print(
-                          '🔍 NAV DEBUG: Current location: ${GoRouterState.of(context).uri}',
-                        );
-                        context
-                          ..pop()
-                          ..push('/edit-profile');
-                        print('🔍 NAV DEBUG: Returned from push /edit-profile');
                       },
                     ),
                     const Divider(color: Colors.grey, height: 1),
@@ -154,42 +155,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      context
-                        ..pop()
-                        ..push('/settings');
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.hub,
-                    title: 'Relays',
-                    subtitle: 'Manage Nostr relay connections',
-                    onTap: () {
-                      disposeAllVideoControllers(ref);
-                      context
-                        ..pop()
-                        ..push('/relay-settings');
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.cloud_upload,
-                    title: 'Media Servers',
-                    subtitle: 'Configure Blossom upload servers',
-                    onTap: () {
-                      disposeAllVideoControllers(ref);
-                      context
-                        ..pop()
-                        ..push('/blossom-settings');
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    subtitle: 'Manage notification preferences',
-                    onTap: () {
-                      disposeAllVideoControllers(ref);
-                      context
-                        ..pop()
-                        ..push('/notification-settings');
+                      // Close drawer first, then navigate
+                      Navigator.of(context).pop(); // Close drawer
+                      Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
                     },
                   ),
 
@@ -236,45 +208,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                         userPubkey,
                         isZendeskAvailable,
                       );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.save,
-                    title: 'Save Logs',
-                    subtitle: 'Export logs to file for manual sending',
-                    onTap: () async {
-                      context.pop(); // Close drawer
-
-                      // Wait for drawer close animation to complete
-                      await Future.delayed(const Duration(milliseconds: 300));
-                      if (!context.mounted) return;
-
-                      final bugReportService = ref.read(
-                        bugReportServiceProvider,
-                      );
-                      final userPubkey = authService.currentPublicKeyHex;
-
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Exporting logs...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-
-                      final success = await bugReportService.exportLogsToFile(
-                        currentScreen: 'VineDrawer',
-                        userPubkey: userPubkey,
-                      );
-
-                      if (!success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Failed to export logs'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
                     },
                   ),
 
