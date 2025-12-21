@@ -91,10 +91,16 @@ class AppShell extends ConsumerWidget {
 
     // Pop any pushed routes (like CuratedListFeedScreen, UserListPeopleScreen)
     // that were pushed via Navigator.push() on top of the shell
-    // This ensures we return to the shell before GoRouter navigation
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Only pop if there are actually pushed routes to avoid interfering with GoRouter
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      // There are pushed routes - pop them before navigating
+      // This ensures we return to the shell before GoRouter navigation
+      navigator.popUntil((route) => route.isFirst);
+    }
 
     // Navigate to last position in that tab
+    // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
         context.goHome(lastIndex ?? 0); // Home always has an index
@@ -169,7 +175,11 @@ class AppShell extends ConsumerWidget {
           category: LogCategory.ui,
         );
         // Pop any pushed routes first (like CuratedListFeedScreen)
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // Only pop if there are actually pushed routes
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.popUntil((route) => route.isFirst);
+        }
         // Navigate to main explore view
         context.goExplore(null);
       },
