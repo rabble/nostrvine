@@ -168,23 +168,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               // About
               _buildSectionHeader('About'),
-              _buildSettingsTile(
-                context,
-                icon: Icons.info,
-                title: 'Version',
-                subtitle: _appVersion,
-                onTap: () {},
-              ),
-
-              // Developer Options
-              _buildSectionHeader('Developer'),
-              _buildSettingsTile(
-                context,
-                icon: Icons.code,
-                title: 'Developer Options',
-                subtitle: 'Environment switching and debug tools',
-                onTap: () => context.push('/developer-options'),
-              ),
+              _buildVersionTile(context, ref),
 
               // Support
               _buildSectionHeader('Support'),
