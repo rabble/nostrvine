@@ -160,7 +160,7 @@ class _CreatorInfo extends ConsumerWidget {
           category: LogCategory.ui,
         );
         // Navigate to profile tab using GoRouter
-        context.goProfile(pubkey, 0);
+        context.pushProfile(pubkey, 0);
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,

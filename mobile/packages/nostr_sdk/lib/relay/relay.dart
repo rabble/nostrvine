@@ -67,7 +67,7 @@ abstract class Relay {
   Future onConnected() async {
     for (var message in pendingMessages) {
       // TODO To check result? and how to handle if send fail?
-      var result = send(message);
+      var result = await send(message);
       if (!result) {
         log("message send fail onConnected");
       }
@@ -80,7 +80,7 @@ abstract class Relay {
     info ??= await RelayInfoUtil.get(url);
   }
 
-  bool send(List<dynamic> message, {bool? forceSend});
+  Future<bool> send(List<dynamic> message, {bool? forceSend});
 
   Future<void> disconnect();
 
@@ -120,11 +120,11 @@ abstract class Relay {
     _queries[subscription.id] = subscription;
   }
 
-  bool checkAndCompleteQuery(String id) {
+  Future<bool> checkAndCompleteQuery(String id) async {
     // all subscription should be close
     var sub = _queries.remove(id);
     if (sub != null) {
-      send(["CLOSE", id]);
+      await send(["CLOSE", id]);
       return true;
     }
     return false;

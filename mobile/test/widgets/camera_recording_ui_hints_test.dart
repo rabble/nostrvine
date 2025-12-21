@@ -39,6 +39,7 @@ void main() {
         aspectRatio: model.AspectRatio.square,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
       );
 
       await tester.pumpWidget(
@@ -114,6 +115,7 @@ void main() {
           ),
         ],
         hasSegments: true,
+        segmentCount: 2,
       );
 
       await tester.pumpWidget(
@@ -175,6 +177,7 @@ void main() {
           ),
         ],
         hasSegments: true,
+        segmentCount: 1,
       );
 
       await tester.pumpWidget(
@@ -223,6 +226,7 @@ void main() {
         aspectRatio: model.AspectRatio.square,
         segments: [],
         hasSegments: false,
+        segmentCount: 0,
       );
 
       await tester.pumpWidget(
@@ -279,6 +283,7 @@ void main() {
           ),
         ],
         hasSegments: true,
+        segmentCount: 1,
       );
 
       await tester.pumpWidget(

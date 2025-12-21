@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_gateway_settings.dart';

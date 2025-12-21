@@ -300,6 +300,16 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 }
               }
 
+              // Pre-initialize controllers for adjacent videos on initial build
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                preInitializeControllers(
+                  ref: ref,
+                  currentIndex: safeIndex,
+                  videos: videos,
+                );
+              });
+
               // Build fullscreen video PageView
               return PageView.builder(
                 key: const Key('profile-video-page-view'),
@@ -322,6 +332,20 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
                   // Prefetch videos around current index
                   checkForPrefetch(currentIndex: newIndex, videos: videos);
+
+                  // Pre-initialize controllers for adjacent videos
+                  preInitializeControllers(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
+
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
                 },
                 itemBuilder: (context, index) {
                   if (index >= videos.length) return const SizedBox.shrink();
@@ -393,7 +417,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                               userIdHex: userIdHex,
                               isOwnProfile: isOwnProfile,
                               onEditProfile: _editProfile,
-                              onOpenDrafts: _openDrafts,
+                              onOpenClips: _openClips,
                               onShareProfile: () => _shareProfile(userIdHex),
                               onFollowUser: () => _followUser(userIdHex),
                               onUnfollowUser: () => _unfollowUser(userIdHex),
@@ -856,8 +880,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     }
   }
 
-  void _openDrafts() {
-    context.go('/drafts');
+  void _openClips() {
+    context.push('/clips');
   }
 
   Future<void> _followUser(String pubkey) async {

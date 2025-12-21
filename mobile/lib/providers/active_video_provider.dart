@@ -70,9 +70,11 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       break;
     case RouteType.notifications:
     case RouteType.camera:
+    case RouteType.clipManager:
+    case RouteType.editVideo:
     case RouteType.settings:
     case RouteType.editProfile:
-    case RouteType.drafts:
+    case RouteType.clips:
     case RouteType.importKey:
     case RouteType.welcome:
       // Non-video routes - return null
@@ -138,10 +140,6 @@ final isVideoActiveProvider = Provider.family<bool, String>((ref, videoId) {
 /// This ensures only one video can be playing at a time
 /// Must be watched at app level to activate
 final videoControllerAutoCleanupProvider = Provider<void>((ref) {
-  // This variable updates with the next value in activeVideoIdProvider.
-  // ignore: unused_local_variable
-  String? previousActiveVideoId;
-
   // Listen to active video changes and dispose all controllers when it changes
   ref.listen<String?>(activeVideoIdProvider, (previous, next) {
     // When active video changes, dispose all controllers to ensure clean state
@@ -156,6 +154,5 @@ final videoControllerAutoCleanupProvider = Provider<void>((ref) {
       // The new active video will create its controller fresh
       disposeAllVideoControllers(ref.container);
     }
-    previousActiveVideoId = next;
   }, fireImmediately: false);
 });
