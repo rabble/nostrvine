@@ -195,6 +195,10 @@ class AppShell extends ConsumerWidget {
           return true;
         }
 
+        if (ctx.type == RouteType.explore || ctx.type == RouteType.notifications) {
+          return true;
+        }
+
         if (ctx.type == RouteType.profile) {
           final authService = ref.read(authServiceProvider);
           final currentNpub = authService.currentNpub;
@@ -228,26 +232,44 @@ class AppShell extends ConsumerWidget {
                   final ctx = ref.read(pageContextProvider).asData?.value;
                   if (ctx == null) return;
 
-                  // Determine where to navigate based on current context
-                  if (ctx.type == RouteType.profile && ctx.npub != 'me') {
-                    // Viewing another user's profile - go back to previous page
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
+                  // Handle back navigation based on context
+                  switch (ctx.type) {
+                    case RouteType.explore:
+                    case RouteType.notifications:
+                      // From explore or notifications, go to home
+                      context.go('/home/0');
+                      return;
+
+                    case RouteType.hashtag:
+                    case RouteType.search:
+                      // Go back to explore
                       context.go('/explore');
-                    }
-                  } else if (ctx.videoIndex != null) {
-                    // In feed mode - go to grid mode (remove videoIndex)
+                      return;
+
+                    case RouteType.profile:
+                      if (ctx.npub != 'me') {
+                        // From other user's profile, go back to home
+                        context.go('/home/0');
+                        return;
+                      }
+                      break;
+
+                    default:
+                      break;
+                  }
+
+                  // For routes with videoIndex (feed mode), go to grid mode
+                  if (ctx.videoIndex != null) {
                     final gridCtx = RouteContext(
                       type: ctx.type,
                       hashtag: ctx.hashtag,
                       searchTerm: ctx.searchTerm,
-                      videoIndex: null, // Remove index to enter grid mode
+                      npub: ctx.npub,
+                      videoIndex: null,
                     );
-                    context.go(buildRoute(gridCtx));
-                  } else {
-                    // In grid mode - go back to explore
-                    context.go('/explore');
+                    final newRoute = buildRoute(gridCtx);
+                    context.go(newRoute);
+                    return;
                   }
                 },
               )

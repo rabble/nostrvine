@@ -43,22 +43,13 @@ class BackButtonHandler {
     }
 
     // Handle back navigation based on context
-    if (ctx.videoIndex != null) {
-      // In feed mode - go to grid mode (remove videoIndex)
-      final gridCtx = RouteContext(
-        type: ctx.type,
-        hashtag: ctx.hashtag,
-        searchTerm: ctx.searchTerm,
-        npub: ctx.npub,
-        videoIndex: null,
-      );
-      final newRoute = buildRoute(gridCtx);
-      _router!.go(newRoute);
-      return true; // Handled
-    }
-
-    // In grid mode or other contexts
     switch (ctx.type) {
+      case RouteType.explore:
+      case RouteType.notifications:
+        // From explore or notifications, go to home
+        _router!.go('/home/0');
+        return true; // Handled
+
       case RouteType.hashtag:
       case RouteType.search:
         // Go back to explore
@@ -74,18 +65,26 @@ class BackButtonHandler {
         // From own profile, fall through to default (stay in app)
         break;
 
-      case RouteType.explore:
-      case RouteType.notifications:
-        // From explore or notifications, go to home
-        _router!.go('/home/0');
-        return true; // Handled
-
       case RouteType.home:
         // Already at home - stay in app (don't exit)
         return true; // Handled (don't exit)
 
       default:
         break;
+    }
+
+    // For routes with videoIndex (feed mode), go to grid mode
+    if (ctx.videoIndex != null) {
+      final gridCtx = RouteContext(
+        type: ctx.type,
+        hashtag: ctx.hashtag,
+        searchTerm: ctx.searchTerm,
+        npub: ctx.npub,
+        videoIndex: null,
+      );
+      final newRoute = buildRoute(gridCtx);
+      _router!.go(newRoute);
+      return true; // Handled
     }
 
     // Default: stay in app (don't let Android close it)

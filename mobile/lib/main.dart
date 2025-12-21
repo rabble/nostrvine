@@ -865,22 +865,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       }
 
       // Handle back navigation based on context
-      if (ctx.videoIndex != null) {
-        // In feed mode - go to grid mode
-        final gridCtx = RouteContext(
-          type: ctx.type,
-          hashtag: ctx.hashtag,
-          searchTerm: ctx.searchTerm,
-          npub: ctx.npub,
-          videoIndex: null,
-        );
-        final newRoute = buildRoute(gridCtx);
-        router.go(newRoute);
-        return;
-      }
-
-      // In grid mode or other contexts
       switch (ctx.type) {
+        case RouteType.explore:
+        case RouteType.notifications:
+          // From explore or notifications, go to home
+          router.go('/home/0');
+          return;
+
         case RouteType.hashtag:
         case RouteType.search:
           router.go('/explore');
@@ -893,16 +884,25 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           }
           break;
 
-        case RouteType.explore:
-        case RouteType.notifications:
-          router.go('/home/0');
-          return;
-
         case RouteType.home:
           return;
 
         default:
           break;
+      }
+
+      // For routes with videoIndex (feed mode), go to grid mode
+      if (ctx.videoIndex != null) {
+        final gridCtx = RouteContext(
+          type: ctx.type,
+          hashtag: ctx.hashtag,
+          searchTerm: ctx.searchTerm,
+          npub: ctx.npub,
+          videoIndex: null,
+        );
+        final newRoute = buildRoute(gridCtx);
+        router.go(newRoute);
+        return;
       }
     }
 
