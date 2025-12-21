@@ -289,67 +289,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return ListTile(
       leading: const Icon(Icons.info, color: VineTheme.vineGreen),
-      title: GestureDetector(
-        onTap: () async {
-          if (isDeveloperMode) {
-            // Already unlocked - show message
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Developer mode is already enabled'),
-                backgroundColor: VineTheme.vineGreen,
-              ),
-            );
-            return;
-          }
-
-          // Increment tap counter
-          ref.read(developerModeTapCounterProvider.notifier).tap();
-
-          // Read the new count after tapping
-          final newCount = ref.read(developerModeTapCounterProvider);
-
-          if (newCount >= 7) {
-            // Unlock developer mode
-            await environmentService.enableDeveloperMode();
-            ref.read(developerModeTapCounterProvider.notifier).reset();
-
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Developer mode enabled!'),
-                  backgroundColor: VineTheme.vineGreen,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          } else if (newCount >= 4) {
-            // Show hint message
-            final remaining = 7 - newCount;
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '$remaining more taps to enable developer mode',
-                  ),
-                  duration: const Duration(milliseconds: 500),
-                ),
-              );
-            }
-          }
-        },
-        child: const Text(
-          'Version',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+      title: const Text(
+        'Version',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         _appVersion.isEmpty ? 'Loading...' : _appVersion,
         style: const TextStyle(color: Colors.grey, fontSize: 14),
       ),
+      onTap: () async {
+        if (isDeveloperMode) {
+          // Already unlocked - show message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Developer mode is already enabled'),
+              backgroundColor: VineTheme.vineGreen,
+            ),
+          );
+          return;
+        }
+
+        // Increment tap counter
+        ref.read(developerModeTapCounterProvider.notifier).tap();
+
+        // Read the new count after tapping
+        final newCount = ref.read(developerModeTapCounterProvider);
+
+        if (newCount >= 7) {
+          // Unlock developer mode
+          await environmentService.enableDeveloperMode();
+          ref.read(developerModeTapCounterProvider.notifier).reset();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Developer mode enabled!'),
+                backgroundColor: VineTheme.vineGreen,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (newCount >= 4) {
+          // Show hint message
+          final remaining = 7 - newCount;
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '$remaining more taps to enable developer mode',
+                ),
+                duration: const Duration(milliseconds: 500),
+              ),
+            );
+          }
+        }
+      },
     );
   }
 
