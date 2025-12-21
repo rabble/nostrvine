@@ -339,9 +339,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  '$remaining more taps to enable developer mode',
-                ),
+                content: Text('$remaining more taps to enable developer mode'),
                 duration: const Duration(milliseconds: 500),
               ),
             );
