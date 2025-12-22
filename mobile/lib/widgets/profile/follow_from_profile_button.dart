@@ -39,14 +39,15 @@ class FollowFromProfileButton extends ConsumerWidget {
         nostrClient: nostrClient,
         authService: authService,
       )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
-      child: _FollowFromProfileButtonView(pubkey: pubkey),
+      child: FollowFromProfileButtonView(pubkey: pubkey),
     );
   }
 }
 
 /// View widget that consumes [FollowingBloc] state and renders the follow button.
-class _FollowFromProfileButtonView extends StatelessWidget {
-  const _FollowFromProfileButtonView({required this.pubkey});
+class FollowFromProfileButtonView extends StatelessWidget {
+  @visibleForTesting
+  const FollowFromProfileButtonView({required this.pubkey});
 
   final String pubkey;
 
