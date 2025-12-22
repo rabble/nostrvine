@@ -34,6 +34,29 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   bool _urlUpdateScheduled = false; // Prevent infinite rebuild loops
 
   @override
+  void initState() {
+    super.initState();
+
+    final videosAsync = ref.read(videosForHomeRouteProvider);
+
+    // Redirect to home on next frame to avoid build-phase navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.go('/home/0');
+      }
+
+      // Initial build pre initialization
+      videosAsync.whenData((state) {
+        preInitializeControllers(
+          ref: ref,
+          currentIndex: 0,
+          videos: state.videos,
+        );
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
@@ -93,13 +116,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               ),
             );
           }
-
-          // Redirect to home on next frame to avoid build-phase navigation
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              context.go('/home/0');
-            }
-          });
 
           // Show loading while redirecting
           return const Center(
@@ -277,16 +293,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 });
               }
             }
-
-            // Pre-initialize controllers for adjacent videos on initial build
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              preInitializeControllers(
-                ref: ref,
-                currentIndex: urlIndex,
-                videos: videos,
-              );
-            });
 
             return RefreshIndicator(
               color: VineTheme.vineGreen,
