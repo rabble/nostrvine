@@ -1,5 +1,5 @@
 // ABOUTME: Events for the FollowingBloc
-// ABOUTME: Defines actions for loading, refreshing, and follow/unfollow operations
+// ABOUTME: Defines actions for loading and follow/unfollow operations
 
 part of 'following_bloc.dart';
 
@@ -8,19 +8,11 @@ sealed class FollowingEvent {
   const FollowingEvent();
 }
 
-/// Request to load the following list for a specific user
+/// Request to load (or refresh) the following list for a specific user
 final class FollowingListLoadRequested extends FollowingEvent {
   const FollowingListLoadRequested(this.pubkey);
 
   /// The public key of the user whose following list to load
-  final String pubkey;
-}
-
-/// Request to refresh the following list
-final class FollowingListRefreshRequested extends FollowingEvent {
-  const FollowingListRefreshRequested(this.pubkey);
-
-  /// The public key of the user whose following list to refresh
   final String pubkey;
 }
 

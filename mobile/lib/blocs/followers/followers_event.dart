@@ -8,19 +8,11 @@ sealed class FollowersEvent {
   const FollowersEvent();
 }
 
-/// Request to load the followers list for a specific user
+/// Request to load (or refresh) the followers list for a specific user
 final class FollowersListLoadRequested extends FollowersEvent {
   const FollowersListLoadRequested(this.pubkey);
 
   /// The public key of the user whose followers list to load
-  final String pubkey;
-}
-
-/// Request to refresh the followers list
-final class FollowersListRefreshRequested extends FollowersEvent {
-  const FollowersListRefreshRequested(this.pubkey);
-
-  /// The public key of the user whose followers list to refresh
   final String pubkey;
 }
 

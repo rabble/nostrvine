@@ -25,7 +25,6 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
        _nostrClient = nostrClient,
        super(const FollowersState()) {
     on<FollowersListLoadRequested>(_onLoadRequested);
-    on<FollowersListRefreshRequested>(_onRefreshRequested);
     on<FollowerToggleFollowRequested>(_onToggleFollowRequested);
   }
 
@@ -128,14 +127,6 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
         state.copyWith(status: FollowersStatus.success, followersPubkeys: []),
       );
     }
-  }
-
-  /// Handle refresh request
-  Future<void> _onRefreshRequested(
-    FollowersListRefreshRequested event,
-    Emitter<FollowersState> emit,
-  ) async {
-    add(FollowersListLoadRequested(event.pubkey));
   }
 
   /// Handle follow toggle request for a follower.

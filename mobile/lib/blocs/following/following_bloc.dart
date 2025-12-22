@@ -29,7 +29,6 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
        _authService = authService,
        super(const FollowingState()) {
     on<FollowingListLoadRequested>(_onLoadRequested);
-    on<FollowingListRefreshRequested>(_onRefreshRequested);
     on<FollowToggleRequested>(_onFollowToggleRequested);
   }
 
@@ -169,14 +168,6 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
         followingPubkeys: following,
       ),
     );
-  }
-
-  /// Handle refresh request
-  Future<void> _onRefreshRequested(
-    FollowingListRefreshRequested event,
-    Emitter<FollowingState> emit,
-  ) async {
-    add(FollowingListLoadRequested(event.pubkey));
   }
 
   /// Handle follow toggle request.

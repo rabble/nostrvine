@@ -105,7 +105,7 @@ class _FollowersScreenView extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       context.read<FollowersBloc>().add(
-                        FollowersListRefreshRequested(pubkey),
+                        FollowersListLoadRequested(pubkey),
                       );
                     },
                     style: ElevatedButton.styleFrom(

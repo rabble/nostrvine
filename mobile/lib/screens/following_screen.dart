@@ -106,7 +106,7 @@ class _FollowingListBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<FollowingBloc>().add(
-          FollowingListRefreshRequested(pubkey),
+          FollowingListLoadRequested(pubkey),
         );
       },
       child: ListView.builder(
@@ -177,7 +177,7 @@ class _FollowingErrorBody extends StatelessWidget {
           TextButton(
             onPressed: () {
               context.read<FollowingBloc>().add(
-                FollowingListRefreshRequested(pubkey),
+                FollowingListLoadRequested(pubkey),
               );
             },
             child: const Text('Retry'),
