@@ -273,17 +273,24 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       return;
     }
 
-    // Batch fetch profiles for videos around current position
-    _batchFetchProfilesAroundIndex(index, videos);
-
-    // Prefetch videos around current position for instant playback
-    checkForPrefetch(currentIndex: index, videos: videos);
-
-    // Update URL to trigger derived provider chain (unless navigation is disabled for deep links)
+    // Update URL immediately to trigger derived provider chain
     // context.go() → routerLocationStream → pageContextProvider → activeVideoIdProvider → VideoFeedItem reacts
     if (!widget.disableNavigation) {
       context.go('/home/$index');
     }
+
+    preInitializeControllers(ref: ref, currentIndex: index, videos: videos);
+
+    // Defer heavy operations to after the frame renders
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      // Batch fetch profiles for videos around current position
+      _batchFetchProfilesAroundIndex(index, videos);
+
+      // Prefetch videos around current position for instant playback
+      checkForPrefetch(currentIndex: index, videos: videos);
+    });
   }
 
   // Legacy methods removed - active video is now derived from URL via activeVideoIdProvider
@@ -564,10 +571,21 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       category: LogCategory.ui,
     );
 
+    // Pre-initialize controllers on initial build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      preInitializeControllers(
+        ref: ref,
+        currentIndex: _currentIndex,
+        videos: videos,
+      );
+    });
+
     return PageView.builder(
       itemCount: videos.length,
       controller: _pageController,
       scrollDirection: Axis.vertical,
+      allowImplicitScrolling: true,
       onPageChanged: (index) {
         setState(() => _currentIndex = index);
         _onPageChanged(index);
@@ -679,9 +697,6 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     // Fetch profile only for the currently visible video
     userProfilesNotifier.prefetchProfilesImmediately(pubkeysToFetch.toList());
   }
-
-  // Note: Keyboard navigation methods removed to avoid unused warnings
-  // Would be implemented for accessibility support when needed
 }
 
 /// Error widget for video loading failures

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/relay_capability_service.dart';

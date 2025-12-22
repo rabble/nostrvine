@@ -1,4 +1,4 @@
-// ABOUTME: Manages WebSocket connections with automatic reconnection and heartbeat.
+// ABOUTME: Manages WebSocket connections with on-demand reconnection.
 // ABOUTME: Single responsibility class for WebSocket lifecycle, designed for testability.
 
 import 'dart:async';
@@ -12,12 +12,6 @@ enum ConnectionState { disconnected, connecting, connected }
 
 /// Configuration for WebSocket connection behavior
 class WebSocketConfig {
-  /// Interval between heartbeat pings
-  final Duration pingInterval;
-
-  /// Timeout waiting for pong response
-  final Duration pongTimeout;
-
   /// Maximum number of reconnection attempts before giving up
   final int maxReconnectAttempts;
 
@@ -31,8 +25,6 @@ class WebSocketConfig {
   final Duration connectionTimeout;
 
   const WebSocketConfig({
-    this.pingInterval = const Duration(seconds: 30),
-    this.pongTimeout = const Duration(seconds: 10),
     this.maxReconnectAttempts = 10,
     this.baseReconnectDelay = const Duration(seconds: 2),
     this.maxReconnectDelay = const Duration(minutes: 5),
@@ -59,7 +51,14 @@ class DefaultWebSocketChannelFactory implements WebSocketChannelFactory {
 }
 
 /// {@template web_socket_connection_manager}
-/// Manages a single WebSocket connection with automatic reconnection and heartbeat.
+/// Manages a single WebSocket connection with on-demand reconnection.
+///
+/// Reconnects automatically when:
+/// - Sending a message while disconnected (triggers reconnect attempt)
+/// - Connection is lost while active (stream error/done)
+///
+/// Does NOT reconnect when:
+/// - Connection is idle and relay disconnects (no heartbeat)
 ///
 /// Designed for testability with:
 /// - Injectable WebSocketChannelFactory for mocking
@@ -92,12 +91,6 @@ class WebSocketConnectionManager {
 
   // Timers
   Timer? _reconnectTimer;
-  Timer? _pingTimer;
-  Timer? _pongTimeoutTimer;
-  bool _awaitingPong = false;
-
-  // Fixed ping subscription ID to avoid leaking subscriptions on the relay
-  late final String _pingSubId = '_ping_${hashCode.toRadixString(16)}';
 
   // Stream controllers for external consumers
   final _stateController = StreamController<ConnectionState>.broadcast();
@@ -147,7 +140,6 @@ class WebSocketConnectionManager {
 
   Future<bool> _doConnect() async {
     _setState(ConnectionState.connecting);
-    _stopHeartbeat();
 
     try {
       final uri = Uri.parse(url);
@@ -172,22 +164,17 @@ class WebSocketConnectionManager {
       _reconnectTimer = null;
 
       log('Connected to $url');
-      _startHeartbeat();
 
       return true;
     } catch (e) {
       log('Connection failed: $e');
       _errorController.add('Connection failed: $e');
       _setState(ConnectionState.disconnected);
-      _scheduleReconnect();
       return false;
     }
   }
 
   void _onMessage(dynamic message) {
-    // Any message means connection is alive
-    _onPongReceived();
-
     if (message is String) {
       _messageController.add(message);
     } else {
@@ -207,17 +194,12 @@ class WebSocketConnectionManager {
   }
 
   void _handleDisconnect() {
-    final wasConnected = _state == ConnectionState.connected;
-    _stopHeartbeat();
     _channelSubscription?.cancel();
     _channelSubscription = null;
     _channel = null;
 
     _setState(ConnectionState.disconnected);
-
-    if (wasConnected && _shouldReconnect) {
-      _scheduleReconnect();
-    }
+    // No automatic reconnection - reconnect happens on-demand when sending
   }
 
   /// Disconnect from the WebSocket server
@@ -225,7 +207,6 @@ class WebSocketConnectionManager {
     _shouldReconnect = false;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
-    _stopHeartbeat();
 
     await _closeChannel();
     _setState(ConnectionState.disconnected);
@@ -246,14 +227,40 @@ class WebSocketConnectionManager {
     }
   }
 
-  /// Send a message through the WebSocket
+  /// Send a message through the WebSocket.
   ///
-  /// Returns true if message was sent, false if not connected
-  bool send(String message) {
-    if (_state != ConnectionState.connected || _channel == null) {
-      log('Cannot send - not connected');
-      return false;
+  /// If disconnected, attempts to reconnect first.
+  /// Returns true if message was sent, false if send failed.
+  Future<bool> send(String message) async {
+    // Try to reconnect if disconnected
+    if (_state == ConnectionState.disconnected) {
+      log('Disconnected, attempting reconnect before send');
+      final connected = await _tryReconnect();
+      if (!connected) {
+        log('Reconnect failed, cannot send');
+        return false;
+      }
     }
+
+    // Wait if currently connecting
+    if (_state == ConnectionState.connecting) {
+      log('Connecting, waiting before send');
+      final connected = await _waitForConnection();
+      if (!connected) {
+        log('Connection failed, cannot send');
+        return false;
+      }
+    }
+
+    return _doSend(message);
+  }
+
+  /// Send a message synchronously (no reconnection attempt).
+  ///
+  /// Returns true if message was sent, false if not connected.
+
+  bool _doSend(String message) {
+    if (_channel == null) return false;
 
     try {
       _channel!.sink.add(message);
@@ -266,8 +273,8 @@ class WebSocketConnectionManager {
     }
   }
 
-  /// Send a JSON-encodable message
-  bool sendJson(dynamic data) {
+  /// Send a JSON-encodable message asynchronously (with reconnection)
+  Future<bool> sendJson(dynamic data) async {
     try {
       final encoded = jsonEncode(data);
       return send(encoded);
@@ -278,36 +285,71 @@ class WebSocketConnectionManager {
     }
   }
 
+  /// Send a JSON-encodable message synchronously (no reconnection)
+
   // --- Reconnection ---
 
-  void _scheduleReconnect() {
-    if (_reconnectTimer != null) return;
-    if (!_shouldReconnect) return;
+  Future<bool> _tryReconnect() async {
+    while (_shouldReconnect && _state == ConnectionState.disconnected) {
+      if (_reconnectAttempts >= config.maxReconnectAttempts) {
+        log('Max reconnect attempts reached for $url');
+        _errorController.add('Max reconnect attempts reached');
+        return false;
+      }
 
-    if (_reconnectAttempts >= config.maxReconnectAttempts) {
-      log('Max reconnect attempts reached for $url');
-      _errorController.add('Max reconnect attempts reached');
-      return;
+      // Exponential backoff: base * 2^attempts, capped at max
+      final delayMs =
+          (config.baseReconnectDelay.inMilliseconds *
+                  (1 << _reconnectAttempts.clamp(0, 8)))
+              .clamp(0, config.maxReconnectDelay.inMilliseconds);
+      final delay = Duration(milliseconds: delayMs);
+
+      _reconnectAttempts++;
+      log(
+        'Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts/${config.maxReconnectAttempts})',
+      );
+
+      await Future<void>.delayed(delay);
+
+      if (!_shouldReconnect) return false;
+
+      final connected = await _doConnect();
+      if (connected) return true;
     }
 
-    // Exponential backoff: base * 2^attempts, capped at max
-    final delayMs =
-        (config.baseReconnectDelay.inMilliseconds *
-                (1 << _reconnectAttempts.clamp(0, 8)))
-            .clamp(0, config.maxReconnectDelay.inMilliseconds);
-    final delay = Duration(milliseconds: delayMs);
+    return _state == ConnectionState.connected;
+  }
 
-    _reconnectAttempts++;
-    log(
-      'Scheduling reconnect in ${delay.inSeconds}s (attempt $_reconnectAttempts/${config.maxReconnectAttempts})',
-    );
+  Future<bool> _waitForConnection() async {
+    // Wait up to connectionTimeout for connection to complete
+    final completer = Completer<bool>();
+    StreamSubscription<ConnectionState>? sub;
 
-    _reconnectTimer = Timer(delay, () {
-      _reconnectTimer = null;
-      if (_shouldReconnect && _state == ConnectionState.disconnected) {
-        _doConnect();
+    sub = stateStream.listen((state) {
+      if (state == ConnectionState.connected) {
+        sub?.cancel();
+        if (!completer.isCompleted) completer.complete(true);
+      } else if (state == ConnectionState.disconnected) {
+        sub?.cancel();
+        if (!completer.isCompleted) completer.complete(false);
       }
     });
+
+    // Also check current state
+    if (_state == ConnectionState.connected) {
+      sub.cancel();
+      return true;
+    }
+
+    final result = await completer.future.timeout(
+      config.connectionTimeout,
+      onTimeout: () {
+        sub?.cancel();
+        return false;
+      },
+    );
+
+    return result;
   }
 
   /// Reset reconnection state, allowing fresh attempts
@@ -324,71 +366,6 @@ class WebSocketConnectionManager {
     await _closeChannel();
     _setState(ConnectionState.disconnected);
     return _doConnect();
-  }
-
-  // --- Heartbeat ---
-
-  void _startHeartbeat() {
-    _stopHeartbeat();
-    _awaitingPong = false;
-
-    _pingTimer = Timer.periodic(config.pingInterval, (_) {
-      _sendPing();
-    });
-    log('Heartbeat started');
-  }
-
-  void _stopHeartbeat() {
-    _pingTimer?.cancel();
-    _pingTimer = null;
-    _pongTimeoutTimer?.cancel();
-    _pongTimeoutTimer = null;
-    _awaitingPong = false;
-  }
-
-  void _sendPing() {
-    if (_state != ConnectionState.connected) {
-      return;
-    }
-
-    if (_awaitingPong) {
-      log('Still awaiting pong, connection may be stale');
-      return;
-    }
-
-    _awaitingPong = true;
-
-    _pongTimeoutTimer?.cancel();
-    _pongTimeoutTimer = Timer(config.pongTimeout, () {
-      if (_awaitingPong) {
-        log('Pong timeout, triggering reconnect');
-        _errorController.add('Heartbeat timeout');
-        _handleDisconnect();
-      }
-    });
-
-    final pingMsg = jsonEncode([
-      'REQ',
-      _pingSubId,
-      {'limit': 0},
-    ]);
-
-    if (send(pingMsg)) {
-      log('Ping sent');
-    } else {
-      log('Ping failed to send');
-      _awaitingPong = false;
-      _pongTimeoutTimer?.cancel();
-      _pongTimeoutTimer = null;
-    }
-  }
-
-  void _onPongReceived() {
-    if (_awaitingPong) {
-      _awaitingPong = false;
-      _pongTimeoutTimer?.cancel();
-      _pongTimeoutTimer = null;
-    }
   }
 
   // --- State management ---

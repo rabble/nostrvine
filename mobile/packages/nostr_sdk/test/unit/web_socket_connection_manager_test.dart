@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for WebSocketConnectionManager.
-// ABOUTME: Tests connection lifecycle, reconnection logic, and heartbeat mechanism.
+// ABOUTME: Tests connection lifecycle and on-demand reconnection logic.
 
 import 'dart:async';
 
@@ -139,11 +139,10 @@ void main() {
         channelFactory: mockFactory,
         logger: (msg) => logMessages.add(msg),
         config: const WebSocketConfig(
-          pingInterval: Duration(milliseconds: 100),
-          pongTimeout: Duration(milliseconds: 50),
           maxReconnectAttempts: 3,
           baseReconnectDelay: Duration(milliseconds: 10),
           maxReconnectDelay: Duration(milliseconds: 100),
+          connectionTimeout: Duration(milliseconds: 500),
         ),
       );
     });
@@ -234,6 +233,17 @@ void main() {
 
         expect(states, contains(ConnectionState.disconnected));
       });
+
+      test('stays disconnected when relay closes connection', () async {
+        await manager.connect();
+
+        mockFactory.lastChannel!.simulateClose();
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Should stay disconnected - no automatic reconnect
+        expect(manager.state, equals(ConnectionState.disconnected));
+        expect(mockFactory.createdChannels.length, equals(1));
+      });
     });
 
     group('messaging', () {
@@ -252,7 +262,7 @@ void main() {
       test('sends messages when connected', () async {
         await manager.connect();
 
-        final result = manager.send('["REQ", "sub1", {}]');
+        final result = await manager.send('["REQ", "sub1", {}]');
 
         expect(result, isTrue);
         expect(
@@ -264,7 +274,7 @@ void main() {
       test('sendJson encodes and sends', () async {
         await manager.connect();
 
-        final result = manager.sendJson(['REQ', 'sub1', {}]);
+        final result = await manager.sendJson(['REQ', 'sub1', {}]);
 
         expect(result, isTrue);
         expect(
@@ -272,64 +282,45 @@ void main() {
           equals('["REQ","sub1",{}]'),
         );
       });
-
-      test('send returns false when disconnected', () async {
-        final result = manager.send('test');
-
-        expect(result, isFalse);
-      });
     });
 
-    group('reconnection', () {
-      test('schedules reconnect on connection close', () async {
-        await manager.connect();
+    group('on-demand reconnection', () {
+      test('send reconnects when disconnected', () async {
+        // Start disconnected
+        expect(manager.state, equals(ConnectionState.disconnected));
 
-        // Listen for state changes to detect disconnect
-        final stateCompleter = Completer<void>();
-        final subscription = manager.stateStream.listen((state) {
-          if (state == ConnectionState.disconnected) {
-            stateCompleter.complete();
-          }
-        });
+        final result = await manager.send('["REQ", "sub1", {}]');
 
-        mockFactory.lastChannel!.simulateClose();
-
-        // Wait for disconnect state
-        await stateCompleter.future.timeout(const Duration(milliseconds: 100));
-
-        // At the moment of disconnect, reconnectAttempts should have been incremented
-        // It may have already reconnected and reset to 0, so check channels created
-        expect(
-          manager.reconnectAttempts > 0 ||
-              mockFactory.createdChannels.length > 1,
-          isTrue,
-        );
-
-        await subscription.cancel();
-      });
-
-      test('reconnects with exponential backoff', () async {
-        await manager.connect();
+        expect(result, isTrue);
+        expect(manager.state, equals(ConnectionState.connected));
         expect(mockFactory.createdChannels.length, equals(1));
-
-        // Simulate disconnect
-        mockFactory.lastChannel!.simulateClose();
-
-        // Wait for reconnection to complete (not just disconnect)
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        // Should have created a second channel for reconnection
-        expect(mockFactory.createdChannels.length, greaterThanOrEqualTo(2));
+        expect(
+          mockFactory.lastChannel!.sentMessages,
+          contains('["REQ", "sub1", {}]'),
+        );
       });
 
-      test('stops reconnecting after max attempts', () async {
+      test('send waits when connecting', () async {
+        // Start a connection
+        final connectFuture = manager.connect();
+
+        // Immediately try to send
+        final sendFuture = manager.send('["REQ", "sub1", {}]');
+
+        // Both should complete successfully
+        await connectFuture;
+        final result = await sendFuture;
+
+        expect(result, isTrue);
+        expect(mockFactory.createdChannels.length, equals(1));
+      });
+
+      test('send fails after max reconnect attempts', () async {
         mockFactory.shouldFail = true;
 
-        await manager.connect();
+        final result = await manager.send('test');
 
-        // Wait for all reconnect attempts
-        await Future.delayed(const Duration(milliseconds: 500));
-
+        expect(result, isFalse);
         expect(manager.reconnectAttempts, equals(3));
         expect(
           logMessages.any((m) => m.contains('Max reconnect attempts')),
@@ -337,10 +328,16 @@ void main() {
         );
       });
 
+      test('sendJson reconnects when disconnected', () async {
+        final result = await manager.sendJson(['REQ', 'sub1', {}]);
+
+        expect(result, isTrue);
+        expect(manager.state, equals(ConnectionState.connected));
+      });
+
       test('resetReconnection clears attempt counter', () async {
         mockFactory.shouldFail = true;
-        await manager.connect();
-        await Future.delayed(const Duration(milliseconds: 100));
+        await manager.send('test');
 
         manager.resetReconnection();
 
@@ -360,56 +357,13 @@ void main() {
 
       test('does not reconnect after explicit disconnect', () async {
         await manager.connect();
-
         await manager.disconnect();
-        await Future.delayed(const Duration(milliseconds: 50));
 
-        // Should still be disconnected, no reconnect attempts
-        expect(manager.state, equals(ConnectionState.disconnected));
+        // send should fail without reconnecting after explicit disconnect
+        final result = await manager.send('test');
+
+        expect(result, isFalse);
         expect(mockFactory.createdChannels.length, equals(1));
-      });
-    });
-
-    group('heartbeat', () {
-      test('sends ping messages periodically', () async {
-        await manager.connect();
-
-        // Wait for ping interval
-        await Future.delayed(const Duration(milliseconds: 150));
-
-        final pings = mockFactory.lastChannel!.sentMessages
-            .where((m) => m.toString().contains('_ping_'))
-            .toList();
-
-        expect(pings, isNotEmpty);
-      });
-
-      test('any message resets pong timeout', () async {
-        await manager.connect();
-
-        // Wait for ping
-        await Future.delayed(const Duration(milliseconds: 120));
-
-        // Simulate response
-        mockFactory.lastChannel!.simulateMessage('["EOSE", "_ping_123"]');
-        await Future.delayed(Duration.zero);
-
-        // Should still be connected
-        expect(manager.isConnected, isTrue);
-      });
-
-      test('triggers reconnect on pong timeout', () async {
-        await manager.connect();
-
-        // Wait for ping + pong timeout
-        await Future.delayed(const Duration(milliseconds: 200));
-
-        // Should have disconnected and possibly reconnected
-        expect(
-          mockFactory.createdChannels.length > 1 ||
-              manager.state == ConnectionState.disconnected,
-          isTrue,
-        );
       });
     });
 
@@ -432,12 +386,8 @@ void main() {
         mockFactory.lastChannel!.simulateError('Test error');
         await Future.delayed(const Duration(milliseconds: 10));
 
-        // Should be disconnected (may be reconnecting)
-        expect(
-          manager.state == ConnectionState.disconnected ||
-              manager.state == ConnectionState.connecting,
-          isTrue,
-        );
+        // Should be disconnected (no automatic reconnect)
+        expect(manager.state, equals(ConnectionState.disconnected));
       });
     });
 

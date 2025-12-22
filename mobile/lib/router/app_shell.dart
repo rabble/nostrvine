@@ -8,8 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/active_video_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'page_context_provider.dart';
@@ -185,8 +185,20 @@ class AppShell extends ConsumerWidget {
     // Watch page context to determine if back button should show
     final pageCtxAsync = ref.watch(pageContextProvider);
     final showBackButton = pageCtxAsync.maybeWhen(
-      data: (ctx) =>
-          ctx.type == RouteType.hashtag || ctx.type == RouteType.search,
+      data: (ctx) {
+        if (ctx.type == RouteType.hashtag || ctx.type == RouteType.search) {
+          return true;
+        }
+
+        if (ctx.type == RouteType.profile) {
+          final authService = ref.read(authServiceProvider);
+          final currentNpub = authService.currentNpub;
+
+          return ctx.npub != currentNpub;
+        }
+
+        return false;
+      },
       orElse: () => false,
     );
 
@@ -208,7 +220,14 @@ class AppShell extends ConsumerWidget {
                   if (ctx == null) return;
 
                   // Determine where to navigate based on current context
-                  if (ctx.videoIndex != null) {
+                  if (ctx.type == RouteType.profile && ctx.npub != 'me') {
+                    // Viewing another user's profile - go back to previous page
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/explore');
+                    }
+                  } else if (ctx.videoIndex != null) {
                     // In feed mode - go to grid mode (remove videoIndex)
                     final gridCtx = RouteContext(
                       type: ctx.type,

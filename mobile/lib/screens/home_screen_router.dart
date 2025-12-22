@@ -12,6 +12,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -33,6 +34,29 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   bool _urlUpdateScheduled = false; // Prevent infinite rebuild loops
 
   @override
+  void initState() {
+    super.initState();
+
+    final videosAsync = ref.read(videosForHomeRouteProvider);
+
+    // Redirect to home on next frame to avoid build-phase navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.go('/home/0');
+      }
+
+      // Initial build pre initialization
+      videosAsync.whenData((state) {
+        preInitializeControllers(
+          ref: ref,
+          currentIndex: 0,
+          videos: state.videos,
+        );
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
@@ -40,6 +64,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
   static int _buildCount = 0;
   static DateTime? _lastBuildTime;
+  static int _wrongRouteRedirectCount = 0;
+  static const _maxWrongRouteRedirects = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -63,10 +89,42 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     return buildAsyncUI(
       pageContext,
       onData: (ctx) {
-        // Only handle home routes
+        // Only handle home routes - if we get here with wrong route, recover gracefully
         if (ctx.type != RouteType.home) {
-          return const Center(child: Text('Not a home route'));
+          _wrongRouteRedirectCount++;
+
+          // Log to Crashlytics as this indicates a routing bug
+          final errorMessage =
+              'HomeScreenRouter received non-home route: ${ctx.type.name} (redirect attempt $_wrongRouteRedirectCount)';
+          Log.error(errorMessage, name: 'HomeScreenRouter');
+          CrashReportingService.instance.recordError(
+            StateError(errorMessage),
+            StackTrace.current,
+            reason: 'Router delivered wrong route type to HomeScreenRouter',
+          );
+
+          // Prevent infinite redirect loop
+          if (_wrongRouteRedirectCount > _maxWrongRouteRedirects) {
+            Log.error(
+              'Max wrong route redirects exceeded ($_wrongRouteRedirectCount) - stopping to prevent infinite loop',
+              name: 'HomeScreenRouter',
+            );
+            return const Center(
+              child: Text(
+                'Navigation error - please restart the app',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          // Show loading while redirecting
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
         }
+
+        // Reset redirect counter on successful home route
+        _wrongRouteRedirectCount = 0;
 
         int urlIndex = 0;
 
@@ -237,6 +295,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             }
 
             return RefreshIndicator(
+              color: VineTheme.vineGreen,
               semanticsLabel: 'searching for more videos',
               onRefresh: () =>
                   ref.read(homeRefreshControllerProvider).refresh(),
@@ -268,6 +327,20 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
                   // Prefetch videos around current index
                   checkForPrefetch(currentIndex: newIndex, videos: videos);
+
+                  // Pre-initialize controllers for adjacent videos
+                  preInitializeControllers(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
+
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
 
                   Log.debug(
                     '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',

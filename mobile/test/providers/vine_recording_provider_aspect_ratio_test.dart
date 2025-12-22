@@ -15,12 +15,13 @@ void main() {
         canRecord: controller.canRecord,
         segments: controller.segments,
         hasSegments: controller.hasSegments,
+        segmentCount: controller.segmentCount,
         isCameraInitialized: controller.isCameraInitialized,
         canSwitchCamera: controller.canSwitchCamera,
         aspectRatio: controller.aspectRatio,
       );
 
-      expect(state.aspectRatio, equals(AspectRatio.square));
+      expect(state.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('copyWith updates aspectRatio', () {
@@ -33,6 +34,7 @@ void main() {
         canRecord: controller.canRecord,
         segments: controller.segments,
         hasSegments: controller.hasSegments,
+        segmentCount: controller.segmentCount,
         isCameraInitialized: controller.isCameraInitialized,
         canSwitchCamera: controller.canSwitchCamera,
         aspectRatio: AspectRatio.square,
