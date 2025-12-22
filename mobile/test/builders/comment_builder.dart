@@ -99,15 +99,15 @@ class CommentBuilder {
 
   /// Build the Comment instance.
   Comment build() => Comment(
-        id: _id,
-        content: _content,
-        authorPubkey: _authorPubkey,
-        createdAt: _createdAt,
-        rootEventId: _rootEventId,
-        rootAuthorPubkey: _rootAuthorPubkey,
-        replyToEventId: _replyToEventId,
-        replyToAuthorPubkey: _replyToAuthorPubkey,
-      );
+    id: _id,
+    content: _content,
+    authorPubkey: _authorPubkey,
+    createdAt: _createdAt,
+    rootEventId: _rootEventId,
+    rootAuthorPubkey: _rootAuthorPubkey,
+    replyToEventId: _replyToEventId,
+    replyToAuthorPubkey: _replyToAuthorPubkey,
+  );
 }
 
 /// Standard test IDs for consistent testing (full 64-character hex format).

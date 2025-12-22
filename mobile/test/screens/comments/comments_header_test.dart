@@ -10,9 +10,7 @@ void main() {
     testWidgets('displays "Comments" title', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: CommentsHeader(onClose: () {}),
-          ),
+          home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );
 
@@ -28,9 +26,7 @@ void main() {
     testWidgets('displays close button with correct icon', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: CommentsHeader(onClose: () {}),
-          ),
+          home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );
 
@@ -46,9 +42,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: CommentsHeader(onClose: () => closeCallCount++),
-          ),
+          home: Scaffold(body: CommentsHeader(onClose: () => closeCallCount++)),
         ),
       );
 
@@ -62,9 +56,7 @@ void main() {
     testWidgets('has correct layout structure', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: CommentsHeader(onClose: () {}),
-          ),
+          home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );
 

@@ -110,28 +110,28 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          const CommentsDragHandle(),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
-          const Divider(color: Colors.white24, height: 1),
-          Expanded(
-            child: CommentsList(
-              videoEventId: widget.videoEvent.id,
-              videoEventPubkey: widget.videoEvent.pubkey,
-              isOriginalVine: widget.videoEvent.isOriginalVine,
-              scrollController: widget.sheetScrollController,
-              replyingToCommentId: _replyingToCommentId,
-              replyControllers: _replyControllers,
-              isPosting: _isPosting,
-              onReplyToggle: _handleReplyToggle,
-              onReplySubmit: (parentId) => _postComment(replyToId: parentId),
-            ),
-          ),
-          CommentInput(
-            controller: _commentController,
-            isPosting: _isPosting,
-            onSubmit: _postComment,
-          ),
-        ],
-      );
+    children: [
+      const CommentsDragHandle(),
+      CommentsHeader(onClose: () => Navigator.pop(context)),
+      const Divider(color: Colors.white24, height: 1),
+      Expanded(
+        child: CommentsList(
+          videoEventId: widget.videoEvent.id,
+          videoEventPubkey: widget.videoEvent.pubkey,
+          isOriginalVine: widget.videoEvent.isOriginalVine,
+          scrollController: widget.sheetScrollController,
+          replyingToCommentId: _replyingToCommentId,
+          replyControllers: _replyControllers,
+          isPosting: _isPosting,
+          onReplyToggle: _handleReplyToggle,
+          onReplySubmit: (parentId) => _postComment(replyToId: parentId),
+        ),
+      ),
+      CommentInput(
+        controller: _commentController,
+        isPosting: _isPosting,
+        onSubmit: _postComment,
+      ),
+    ],
+  );
 }

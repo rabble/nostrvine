@@ -9,11 +9,7 @@ void main() {
   group('CommentsDragHandle', () {
     testWidgets('renders container with correct dimensions', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CommentsDragHandle(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
       );
 
       // Find the Container
@@ -28,11 +24,7 @@ void main() {
 
     testWidgets('has correct visual styling', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CommentsDragHandle(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
       );
 
       // Find the Container and verify its decoration
@@ -46,11 +38,7 @@ void main() {
 
     testWidgets('has correct margin', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CommentsDragHandle(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
       );
 
       final container = tester.widget<Container>(find.byType(Container));

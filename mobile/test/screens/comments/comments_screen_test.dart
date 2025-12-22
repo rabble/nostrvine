@@ -391,7 +391,8 @@ void main() {
               home: Scaffold(
                 body: Builder(
                   builder: (context) => ElevatedButton(
-                    onPressed: () => CommentsScreen.show(context, testVideoEvent),
+                    onPressed: () =>
+                        CommentsScreen.show(context, testVideoEvent),
                     child: const Text('Open Comments'),
                   ),
                 ),

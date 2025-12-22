@@ -67,9 +67,8 @@ class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
-  Widget build(BuildContext context) => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+  Widget build(BuildContext context) =>
+      const Center(child: CircularProgressIndicator(color: Colors.white));
 }
 
 class _ErrorState extends StatelessWidget {
@@ -79,9 +78,9 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(
-          'Error loading comments: $error',
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
+    child: Text(
+      'Error loading comments: $error',
+      style: const TextStyle(color: Colors.red),
+    ),
+  );
 }

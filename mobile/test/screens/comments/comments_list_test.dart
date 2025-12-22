@@ -54,27 +54,29 @@ void main() {
       String? replyingToCommentId,
       bool isPosting = false,
     }) => ProviderScope(
-          overrides: [
-            userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-            commentsProvider(testVideoEventId, testVideoAuthorPubkey)
-                .overrideWith(() => _MockCommentsNotifier(commentsState)),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: CommentsList(
-                videoEventId: testVideoEventId,
-                videoEventPubkey: testVideoAuthorPubkey,
-                isOriginalVine: isOriginalVine,
-                scrollController: scrollController,
-                replyingToCommentId: replyingToCommentId,
-                replyControllers: replyControllers,
-                isPosting: isPosting,
-                onReplyToggle: (_) {},
-                onReplySubmit: (_) {},
-              ),
-            ),
+      overrides: [
+        userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+        commentsProvider(
+          testVideoEventId,
+          testVideoAuthorPubkey,
+        ).overrideWith(() => _MockCommentsNotifier(commentsState)),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: CommentsList(
+            videoEventId: testVideoEventId,
+            videoEventPubkey: testVideoAuthorPubkey,
+            isOriginalVine: isOriginalVine,
+            scrollController: scrollController,
+            replyingToCommentId: replyingToCommentId,
+            replyControllers: replyControllers,
+            isPosting: isPosting,
+            onReplyToggle: (_) {},
+            onReplySubmit: (_) {},
           ),
-        );
+        ),
+      ),
+    );
 
     group('loading state', () {
       testWidgets('shows loading indicator when loading', (tester) async {
@@ -123,30 +125,31 @@ void main() {
           topLevelComments: [],
         );
 
-        await tester.pumpWidget(buildTestWidget(
-          commentsState: state,
-          isOriginalVine: true,
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(commentsState: state, isOriginalVine: true),
+        );
         await tester.pump();
 
         // When isOriginalVine is true, the Classic Vine notice should appear
         expect(find.text('Classic Vine'), findsOneWidget);
       });
 
-      testWidgets('does not show Classic Vine notice when isOriginalVine is false', (tester) async {
-        final state = CommentsState(
-          rootEventId: testVideoEventId,
-          topLevelComments: [],
-        );
+      testWidgets(
+        'does not show Classic Vine notice when isOriginalVine is false',
+        (tester) async {
+          final state = CommentsState(
+            rootEventId: testVideoEventId,
+            topLevelComments: [],
+          );
 
-        await tester.pumpWidget(buildTestWidget(
-          commentsState: state,
-          isOriginalVine: false,
-        ));
-        await tester.pump();
+          await tester.pumpWidget(
+            buildTestWidget(commentsState: state, isOriginalVine: false),
+          );
+          await tester.pump();
 
-        expect(find.text('Classic Vine'), findsNothing);
-      });
+          expect(find.text('Classic Vine'), findsNothing);
+        },
+      );
     });
 
     group('data state', () {
@@ -166,7 +169,9 @@ void main() {
         expect(find.byType(ListView), findsOneWidget);
       });
 
-      testWidgets('renders CommentThread for each top-level comment', (tester) async {
+      testWidgets('renders CommentThread for each top-level comment', (
+        tester,
+      ) async {
         final comment1 = CommentNodeBuilder()
             .withComment(
               CommentBuilder()
@@ -199,7 +204,9 @@ void main() {
         expect(find.text('Second comment'), findsOneWidget);
       });
 
-      testWidgets('passes replyingToCommentId to CommentThread', (tester) async {
+      testWidgets('passes replyingToCommentId to CommentThread', (
+        tester,
+      ) async {
         final comments = CommentTreeBuilder.singleComment(content: 'Test');
         replyControllers[TestCommentIds.comment1Id] = TextEditingController();
 
@@ -218,10 +225,12 @@ void main() {
           totalCommentCount: 1,
         );
 
-        await tester.pumpWidget(buildTestWidget(
-          commentsState: state,
-          replyingToCommentId: TestCommentIds.comment1Id,
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(
+            commentsState: state,
+            replyingToCommentId: TestCommentIds.comment1Id,
+          ),
+        );
         await tester.pump();
 
         // Should show "Cancel" instead of "Reply" when replying

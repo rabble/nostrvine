@@ -11,34 +11,34 @@ void main() {
       testWidgets('displays "No comments yet" message', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: false),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
           ),
         );
 
-        expect(find.text('No comments yet.\nBe the first to comment!'), findsOneWidget);
-      });
-
-      testWidgets('does NOT show Classic Vine notice when isClassicVine is false', (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: false),
-            ),
-          ),
+        expect(
+          find.text('No comments yet.\nBe the first to comment!'),
+          findsOneWidget,
         );
-
-        expect(find.text('Classic Vine'), findsNothing);
-        expect(find.byIcon(Icons.history), findsNothing);
       });
+
+      testWidgets(
+        'does NOT show Classic Vine notice when isClassicVine is false',
+        (tester) async {
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
+            ),
+          );
+
+          expect(find.text('Classic Vine'), findsNothing);
+          expect(find.byIcon(Icons.history), findsNothing);
+        },
+      );
 
       testWidgets('is centered on screen', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: false),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
           ),
         );
 
@@ -47,12 +47,12 @@ void main() {
     });
 
     group('Classic Vine state', () {
-      testWidgets('shows Classic Vine notice when isClassicVine is true', (tester) async {
+      testWidgets('shows Classic Vine notice when isClassicVine is true', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: true),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
 
@@ -60,12 +60,12 @@ void main() {
         expect(find.byIcon(Icons.history), findsOneWidget);
       });
 
-      testWidgets('shows archive import message for Classic Vine', (tester) async {
+      testWidgets('shows archive import message for Classic Vine', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: true),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
 
@@ -78,33 +78,37 @@ void main() {
         );
       });
 
-      testWidgets('still shows "No comments yet" with Classic Vine notice', (tester) async {
+      testWidgets('still shows "No comments yet" with Classic Vine notice', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: true),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
 
         // Should show both the Classic Vine notice AND the empty state message
         expect(find.text('Classic Vine'), findsOneWidget);
-        expect(find.text('No comments yet.\nBe the first to comment!'), findsOneWidget);
+        expect(
+          find.text('No comments yet.\nBe the first to comment!'),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('has styled container for Classic Vine notice', (tester) async {
+      testWidgets('has styled container for Classic Vine notice', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: CommentsEmptyState(isClassicVine: true),
-            ),
+            home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
 
         // Find the decorated container (the one with orange styling)
         final containers = tester.widgetList<Container>(find.byType(Container));
         final decoratedContainer = containers.firstWhere(
-          (c) => c.decoration is BoxDecoration &&
+          (c) =>
+              c.decoration is BoxDecoration &&
               (c.decoration as BoxDecoration).borderRadius != null,
           orElse: () => throw StateError('No decorated container found'),
         );

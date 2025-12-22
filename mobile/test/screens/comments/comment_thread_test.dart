@@ -112,7 +112,9 @@ void main() {
         expect(find.text('Unknown'), findsOneWidget);
       });
 
-      testWidgets('shows user display name when profile is cached', (tester) async {
+      testWidgets('shows user display name when profile is cached', (
+        tester,
+      ) async {
         final profile = UserProfile(
           pubkey: TestCommentIds.author1Pubkey,
           rawData: const <String, dynamic>{},
@@ -121,8 +123,9 @@ void main() {
           displayName: 'Test User',
           name: 'testuser',
         );
-        when(mockUserProfileService.getCachedProfile(TestCommentIds.author1Pubkey))
-            .thenReturn(profile);
+        when(
+          mockUserProfileService.getCachedProfile(TestCommentIds.author1Pubkey),
+        ).thenReturn(profile);
 
         final comment = CommentBuilder()
             .withAuthorPubkey(TestCommentIds.author1Pubkey)
@@ -163,16 +166,20 @@ void main() {
         expect(find.text('Reply'), findsOneWidget);
       });
 
-      testWidgets('shows "Cancel" when replying to this comment', (tester) async {
+      testWidgets('shows "Cancel" when replying to this comment', (
+        tester,
+      ) async {
         final comment = CommentBuilder()
             .withId(TestCommentIds.comment1Id)
             .build();
         final node = CommentNodeBuilder().withComment(comment).build();
 
-        await tester.pumpWidget(buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(
+            node: node,
+            replyingToCommentId: TestCommentIds.comment1Id,
+          ),
+        );
         await tester.pump();
 
         expect(find.text('Cancel'), findsOneWidget);
@@ -186,10 +193,12 @@ void main() {
             .build();
         final node = CommentNodeBuilder().withComment(comment).build();
 
-        await tester.pumpWidget(buildTestWidget(
-          node: node,
-          onReplyToggle: (id) => toggledCommentId = id,
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(
+            node: node,
+            onReplyToggle: (id) => toggledCommentId = id,
+          ),
+        );
         await tester.pump();
 
         await tester.tap(find.text('Reply'));
@@ -206,25 +215,31 @@ void main() {
             .build();
         final node = CommentNodeBuilder().withComment(comment).build();
 
-        await tester.pumpWidget(buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(
+            node: node,
+            replyingToCommentId: TestCommentIds.comment1Id,
+          ),
+        );
         await tester.pump();
 
         expect(find.byType(CommentsReplyInput), findsOneWidget);
       });
 
-      testWidgets('does not show reply input for different comment', (tester) async {
+      testWidgets('does not show reply input for different comment', (
+        tester,
+      ) async {
         final comment = CommentBuilder()
             .withId(TestCommentIds.comment1Id)
             .build();
         final node = CommentNodeBuilder().withComment(comment).build();
 
-        await tester.pumpWidget(buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment2Id, // Different ID
-        ));
+        await tester.pumpWidget(
+          buildTestWidget(
+            node: node,
+            replyingToCommentId: TestCommentIds.comment2Id, // Different ID
+          ),
+        );
         await tester.pump();
 
         expect(find.byType(CommentsReplyInput), findsNothing);
@@ -247,7 +262,9 @@ void main() {
             )
             .build();
 
-        final replyNode = CommentNodeBuilder().withComment(replyComment).build();
+        final replyNode = CommentNodeBuilder()
+            .withComment(replyComment)
+            .build();
         final parentNode = CommentNodeBuilder()
             .withComment(parentComment)
             .withReplies([replyNode])
@@ -261,7 +278,9 @@ void main() {
         expect(find.text('Reply comment'), findsOneWidget);
       });
 
-      testWidgets('deeply nested replies are indented correctly', (tester) async {
+      testWidgets('deeply nested replies are indented correctly', (
+        tester,
+      ) async {
         // Create a 3-level deep thread
         final level2Reply = CommentNodeBuilder()
             .withComment(

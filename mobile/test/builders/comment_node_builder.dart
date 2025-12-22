@@ -92,17 +92,15 @@ class CommentTreeBuilder {
     String content = 'Test comment',
     String? authorPubkey,
   }) => [
-        CommentNodeBuilder()
-            .withComment(
-              CommentBuilder()
-                  .withContent(content)
-                  .withAuthorPubkey(
-                    authorPubkey ?? TestCommentIds.author1Pubkey,
-                  )
-                  .build(),
-            )
-            .build(),
-      ];
+    CommentNodeBuilder()
+        .withComment(
+          CommentBuilder()
+              .withContent(content)
+              .withAuthorPubkey(authorPubkey ?? TestCommentIds.author1Pubkey)
+              .build(),
+        )
+        .build(),
+  ];
 
   /// Build a tree with a parent and one reply.
   static List<CommentNode> parentWithReply({
