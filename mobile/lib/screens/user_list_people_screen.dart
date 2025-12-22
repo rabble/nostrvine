@@ -224,7 +224,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
 
               return GestureDetector(
                 onTap: () {
-                  context.goProfile(pubkey);
+                  context.pushProfile(pubkey);
                 },
                 child: Container(
                   width: 80,

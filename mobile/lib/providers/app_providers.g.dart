@@ -1093,6 +1093,59 @@ final class DraftStorageServiceProvider
 String _$draftStorageServiceHash() =>
     r'33f3e00de2b933fffa49823e6eef306ed15f04cb';
 
+/// Clip library service for persisting individual video clips
+
+@ProviderFor(clipLibraryService)
+const clipLibraryServiceProvider = ClipLibraryServiceProvider._();
+
+/// Clip library service for persisting individual video clips
+
+final class ClipLibraryServiceProvider
+    extends
+        $FunctionalProvider<
+          ClipLibraryService,
+          ClipLibraryService,
+          ClipLibraryService
+        >
+    with $Provider<ClipLibraryService> {
+  /// Clip library service for persisting individual video clips
+  const ClipLibraryServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'clipLibraryServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$clipLibraryServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ClipLibraryService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ClipLibraryService create(Ref ref) {
+    return clipLibraryService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ClipLibraryService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ClipLibraryService>(value),
+    );
+  }
+}
+
+String _$clipLibraryServiceHash() =>
+    r'b979f5ba3eb3437f096e14abbe5492905a3cd82d';
+
 /// Authentication service depends on secure key storage and user data cleanup
 
 @ProviderFor(authService)

@@ -52,6 +52,16 @@ class ShareVideoMenu extends ConsumerStatefulWidget {
 }
 
 class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
+  /// Safely pop the context, handling cases where there's nothing to pop
+  void _safePop(BuildContext ctx) {
+    if (ctx.canPop()) {
+      ctx.pop();
+    } else {
+      // If we can't pop via go_router, try Navigator.maybePop as fallback
+      Navigator.of(ctx).maybePop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Material(
     color: VineTheme.backgroundColor,
@@ -138,7 +148,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
         ),
         IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => _safePop(context),
           icon: const Icon(Icons.close, color: VineTheme.secondaryText),
         ),
       ],
@@ -216,7 +226,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       );
 
       if (mounted) {
-        context.pop(); // Close share menu
+        _safePop(context); // Close share menu
 
         if (result.success) {
           // Show success confirmation dialog using root navigator
@@ -1182,6 +1192,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
   /// Delete the user's content using NIP-09
   Future<void> _deleteContent() async {
+    // Capture the router before any navigation happens
+    // This allows us to navigate after the bottom sheet is dismissed
+    final router = GoRouter.of(context);
+
     try {
       final deletionService = await ref.read(
         contentDeletionServiceProvider.future,
@@ -1252,9 +1266,18 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             category: LogCategory.ui,
           );
 
-          // Close the share menu
+          // Close the share menu (bottom sheet) first
           if (widget.onDismiss != null) {
             widget.onDismiss!();
+          } else if (mounted) {
+            // Fallback: close the bottom sheet via Navigator
+            Navigator.of(context).pop();
+          }
+
+          // Navigate back to previous screen (profile or feed)
+          // Use the captured router since context may be invalid after bottom sheet closes
+          if (router.canPop()) {
+            router.pop();
           }
         }
       }

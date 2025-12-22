@@ -417,7 +417,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                               userIdHex: userIdHex,
                               isOwnProfile: isOwnProfile,
                               onEditProfile: _editProfile,
-                              onOpenDrafts: _openDrafts,
+                              onOpenClips: _openClips,
                               onShareProfile: () => _shareProfile(userIdHex),
                               onFollowUser: () => _followUser(userIdHex),
                               onUnfollowUser: () => _unfollowUser(userIdHex),
@@ -880,8 +880,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     }
   }
 
-  void _openDrafts() {
-    context.go('/drafts');
+  void _openClips() {
+    context.push('/clips');
   }
 
   Future<void> _followUser(String pubkey) async {

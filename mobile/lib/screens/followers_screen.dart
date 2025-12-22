@@ -130,6 +130,6 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen>
   }
 
   void _navigateToProfile(String pubkey) {
-    context.goProfile(pubkey, 0);
+    context.pushProfile(pubkey, 0);
   }
 }

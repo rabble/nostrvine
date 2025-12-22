@@ -36,11 +36,32 @@ class NostrService extends _$NostrService {
     });
 
     // Create initial NostrClient
-    return NostrServiceFactory.create(
+    final client = NostrServiceFactory.create(
       keyContainer: authService.currentKeyContainer,
       statisticsService: statisticsService,
       gatewaySettings: gatewaySettings,
     );
+
+    // Schedule initialization after build completes
+    // This ensures relays are connected when the client is first used
+    Future.microtask(() async {
+      try {
+        await client.initialize();
+        Log.info(
+          '[NostrService] Client initialized via build()',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
+      } catch (e) {
+        Log.error(
+          '[NostrService] Failed to initialize client in build(): $e',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
+      }
+    });
+
+    return client;
   }
 
   Future<void> _onAuthStateChanged(AuthState newState) async {

@@ -489,7 +489,16 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             movieOutput?.stopRecording()
         }
 
-        captureSession?.stopRunning()
+        // Only stop the session if it's actually running
+        // Calling stopRunning() on a session that's being configured
+        // (between beginConfiguration/commitConfiguration) will crash
+        if let session = captureSession, session.isRunning {
+            // Stop on background queue to avoid blocking main thread
+            DispatchQueue.global(qos: .userInitiated).async {
+                session.stopRunning()
+            }
+        }
+
         captureSession = nil
         videoDevice = nil
         videoInput = nil

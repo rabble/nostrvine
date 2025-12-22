@@ -1,16 +1,16 @@
-// ABOUTME: TDD widget test for Drafts button in profile action buttons
-// ABOUTME: Tests that Drafts button is prominently displayed and navigates correctly
+// ABOUTME: TDD widget test for Clips button in profile action buttons
+// ABOUTME: Tests that Clips button is prominently displayed and navigates correctly
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/vine_drafts_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 
 void main() {
-  group('Profile Drafts Button', () {
-    testWidgets('should render Drafts button in action buttons row', (
+  group('Profile Clips Button', () {
+    testWidgets('should render Clips button in action buttons row', (
       tester,
     ) async {
-      bool draftsTapped = false;
+      bool clipsTapped = false;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -31,14 +31,14 @@ void main() {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      key: const Key('drafts-button'),
+                      key: const Key('clips-button'),
                       onPressed: () {
-                        draftsTapped = true;
+                        clipsTapped = true;
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[800],
                       ),
-                      child: const Text('Drafts'),
+                      child: const Text('Clips'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -60,75 +60,75 @@ void main() {
 
       // Verify all three buttons exist
       expect(find.text('Edit Profile'), findsOneWidget);
-      expect(find.text('Drafts'), findsOneWidget);
+      expect(find.text('Clips'), findsOneWidget);
       expect(find.text('Share Profile'), findsOneWidget);
 
-      // Verify Drafts button has correct key
-      expect(find.byKey(const Key('drafts-button')), findsOneWidget);
+      // Verify Clips button has correct key
+      expect(find.byKey(const Key('clips-button')), findsOneWidget);
 
       // Verify buttons are in correct order
       final editButton = find.text('Edit Profile');
-      final draftsButton = find.text('Drafts');
+      final clipsButton = find.text('Clips');
       final shareButton = find.text('Share Profile');
 
       final editPos = tester.getCenter(editButton);
-      final draftsPos = tester.getCenter(draftsButton);
+      final clipsPos = tester.getCenter(clipsButton);
       final sharePos = tester.getCenter(shareButton);
 
       // Verify horizontal ordering (left to right)
       expect(
-        editPos.dx < draftsPos.dx,
+        editPos.dx < clipsPos.dx,
         true,
-        reason: 'Edit Profile should be left of Drafts',
+        reason: 'Edit Profile should be left of Clips',
       );
       expect(
-        draftsPos.dx < sharePos.dx,
+        clipsPos.dx < sharePos.dx,
         true,
-        reason: 'Drafts should be left of Share Profile',
+        reason: 'Clips should be left of Share Profile',
       );
 
-      // Tap Drafts button
-      await tester.tap(find.byKey(const Key('drafts-button')));
+      // Tap Clips button
+      await tester.tap(find.byKey(const Key('clips-button')));
       await tester.pump();
 
-      expect(draftsTapped, true);
+      expect(clipsTapped, true);
     });
 
     testWidgets(
-      'should navigate to VineDraftsScreen when Drafts button tapped',
+      'should navigate to ClipLibraryScreen when Clips button tapped',
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
-                  key: const Key('drafts-button'),
+                  key: const Key('clips-button'),
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const VineDraftsScreen(),
+                        builder: (context) => const ClipLibraryScreen(),
                       ),
                     );
                   },
-                  child: const Text('Drafts'),
+                  child: const Text('Clips'),
                 ),
               ),
             ),
           ),
         );
 
-        // Tap Drafts button
-        await tester.tap(find.byKey(const Key('drafts-button')));
+        // Tap Clips button
+        await tester.tap(find.byKey(const Key('clips-button')));
         await tester.pumpAndSettle();
 
-        // Should navigate to VineDraftsScreen
-        expect(find.byType(VineDraftsScreen), findsOneWidget);
+        // Should navigate to ClipLibraryScreen
+        expect(find.byType(ClipLibraryScreen), findsOneWidget);
       },
     );
 
     testWidgets(
-      'Drafts button should have consistent styling with other buttons',
+      'Clips button should have consistent styling with other buttons',
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -152,14 +152,14 @@ void main() {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton(
-                        key: const Key('drafts-button'),
+                        key: const Key('clips-button'),
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey[800],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('Drafts'),
+                        child: const Text('Clips'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -186,8 +186,8 @@ void main() {
         final editHeight = tester
             .getSize(find.byKey(const Key('edit-button')))
             .height;
-        final draftsHeight = tester
-            .getSize(find.byKey(const Key('drafts-button')))
+        final clipsHeight = tester
+            .getSize(find.byKey(const Key('clips-button')))
             .height;
         final shareHeight = tester
             .getSize(find.byKey(const Key('share-button')))
@@ -195,21 +195,21 @@ void main() {
 
         expect(
           editHeight,
-          draftsHeight,
-          reason: 'Edit and Drafts buttons should have same height',
+          clipsHeight,
+          reason: 'Edit and Clips buttons should have same height',
         );
         expect(
-          draftsHeight,
+          clipsHeight,
           shareHeight,
-          reason: 'Drafts and Share buttons should have same height',
+          reason: 'Clips and Share buttons should have same height',
         );
 
         // All buttons should be expanded equally (same width due to Expanded widget)
         final editWidth = tester
             .getSize(find.byKey(const Key('edit-button')))
             .width;
-        final draftsWidth = tester
-            .getSize(find.byKey(const Key('drafts-button')))
+        final clipsWidth = tester
+            .getSize(find.byKey(const Key('clips-button')))
             .width;
         final shareWidth = tester
             .getSize(find.byKey(const Key('share-button')))
@@ -217,18 +217,18 @@ void main() {
 
         expect(
           editWidth,
-          closeTo(draftsWidth, 1),
-          reason: 'Edit and Drafts buttons should have similar width',
+          closeTo(clipsWidth, 1),
+          reason: 'Edit and Clips buttons should have similar width',
         );
         expect(
-          draftsWidth,
+          clipsWidth,
           closeTo(shareWidth, 1),
-          reason: 'Drafts and Share buttons should have similar width',
+          reason: 'Clips and Share buttons should have similar width',
         );
       },
     );
 
-    testWidgets('should only show Drafts button for own profile', (
+    testWidgets('should only show Clips button for own profile', (
       tester,
     ) async {
       // Test own profile (shows all three buttons)
@@ -239,7 +239,7 @@ void main() {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  // Own profile - show all buttons including Drafts
+                  // Own profile - show all buttons including Clips
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {},
@@ -249,9 +249,9 @@ void main() {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      key: const Key('drafts-button'),
+                      key: const Key('clips-button'),
                       onPressed: () {},
-                      child: const Text('Drafts'),
+                      child: const Text('Clips'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -268,15 +268,15 @@ void main() {
         ),
       );
 
-      expect(find.text('Drafts'), findsOneWidget);
+      expect(find.text('Clips'), findsOneWidget);
       expect(find.text('Edit Profile'), findsOneWidget);
       expect(find.text('Share Profile'), findsOneWidget);
     });
 
-    testWidgets('Drafts button should not show for other users profiles', (
+    testWidgets('Clips button should not show for other users profiles', (
       tester,
     ) async {
-      // Test other user's profile (no Edit/Drafts/Share buttons)
+      // Test other user's profile (no Edit/Clips/Share buttons)
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -303,7 +303,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Drafts'), findsNothing);
+      expect(find.text('Clips'), findsNothing);
       expect(find.text('Edit Profile'), findsNothing);
       expect(find.text('Share Profile'), findsNothing);
       expect(find.text('Follow'), findsOneWidget);
