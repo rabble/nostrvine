@@ -171,7 +171,7 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   }
 
   /// Handle follow toggle request.
-  /// Determines whether to follow or unfollow based on current state.
+  /// Determines whether to follow or unfollow based on current state. UI will consume the stream for inmediate update.
   Future<void> _onFollowToggleRequested(
     FollowToggleRequested event,
     Emitter<FollowingState> emit,

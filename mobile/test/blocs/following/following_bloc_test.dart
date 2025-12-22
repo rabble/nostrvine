@@ -1,0 +1,384 @@
+// ABOUTME: Tests for FollowingBloc - loading following list and toggle follow
+// ABOUTME: Tests both current user (reactive via repository) and other user (Nostr fetch) modes
+
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
+import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/blocs/following/following_bloc.dart';
+import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/auth_service.dart';
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeFilter extends Fake implements Filter {}
+
+void main() {
+  group('FollowingBloc', () {
+    late _MockNostrClient mockNostrClient;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockAuthService mockAuthService;
+    late StreamController<List<String>> followingStreamController;
+
+    // Helper to create valid hex pubkeys (64 hex characters)
+    String validPubkey(String suffix) {
+      final hexSuffix = suffix.codeUnits
+          .map((c) => c.toRadixString(16).padLeft(2, '0'))
+          .join();
+      return hexSuffix.padLeft(64, '0');
+    }
+
+    setUpAll(() {
+      registerFallbackValue(<Filter>[_FakeFilter()]);
+    });
+
+    setUp(() {
+      mockNostrClient = _MockNostrClient();
+      mockFollowRepository = _MockFollowRepository();
+      mockAuthService = _MockAuthService();
+      followingStreamController = StreamController<List<String>>.broadcast();
+
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => followingStreamController.stream);
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+    });
+
+    tearDown(() {
+      followingStreamController.close();
+    });
+
+    FollowingBloc _createBloc() => FollowingBloc(
+      followRepository: mockFollowRepository,
+      nostrClient: mockNostrClient,
+      authService: mockAuthService,
+    );
+
+    test('initial state is correct', () {
+      final bloc = _createBloc();
+      expect(bloc.state, const FollowingState());
+      bloc.close();
+    });
+
+    group('FollowingListLoadRequested', () {
+      group('current user mode', () {
+        blocTest<FollowingBloc, FollowingState>(
+          'emits [loading, success] with repository data for current user',
+          setUp: () {
+            when(
+              () => mockAuthService.currentPublicKeyHex,
+            ).thenReturn(validPubkey('current'));
+            when(
+              () => mockFollowRepository.followingPubkeys,
+            ).thenReturn([validPubkey('following1')]);
+          },
+          build: _createBloc,
+          act: (bloc) =>
+              bloc.add(FollowingListLoadRequested(validPubkey('current'))),
+          expect: () => [
+            FollowingState(
+              status: FollowingStatus.loading,
+              targetPubkey: validPubkey('current'),
+            ),
+            FollowingState(
+              status: FollowingStatus.success,
+              followingPubkeys: [validPubkey('following1')],
+              targetPubkey: validPubkey('current'),
+            ),
+          ],
+        );
+
+        blocTest<FollowingBloc, FollowingState>(
+          'updates state when repository stream emits new following list',
+          setUp: () {
+            when(
+              () => mockAuthService.currentPublicKeyHex,
+            ).thenReturn(validPubkey('current'));
+            when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+            when(() => mockFollowRepository.followingStream).thenAnswer(
+              (_) => Stream.value([
+                validPubkey('following1'),
+                validPubkey('following2'),
+              ]),
+            );
+          },
+          build: _createBloc,
+          act: (bloc) =>
+              bloc.add(FollowingListLoadRequested(validPubkey('current'))),
+          expect: () => [
+            FollowingState(
+              status: FollowingStatus.loading,
+              targetPubkey: validPubkey('current'),
+            ),
+            FollowingState(
+              status: FollowingStatus.success,
+              followingPubkeys: const [],
+              targetPubkey: validPubkey('current'),
+            ),
+            FollowingState(
+              status: FollowingStatus.success,
+              followingPubkeys: [
+                validPubkey('following1'),
+                validPubkey('following2'),
+              ],
+              targetPubkey: validPubkey('current'),
+            ),
+          ],
+        );
+      });
+
+      group('other user mode', () {
+        blocTest<FollowingBloc, FollowingState>(
+          'emits [loading, success] with Nostr data for other user',
+          setUp: () {
+            when(
+              () => mockAuthService.currentPublicKeyHex,
+            ).thenReturn(validPubkey('current'));
+
+            final otherPubkey = validPubkey('other');
+            final controller = StreamController<nostr_sdk.Event>();
+            when(
+              () => mockNostrClient.subscribe(any()),
+            ).thenAnswer((_) => controller.stream);
+
+            // Emit contact list event with following
+            Future.delayed(const Duration(milliseconds: 50), () {
+              controller.add(
+                nostr_sdk.Event(
+                  otherPubkey,
+                  3,
+                  [
+                    ['p', validPubkey('following1')],
+                    ['p', validPubkey('following2')],
+                  ],
+                  '',
+                  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              );
+              controller.close();
+            });
+          },
+          build: _createBloc,
+          act: (bloc) =>
+              bloc.add(FollowingListLoadRequested(validPubkey('other'))),
+          wait: const Duration(milliseconds: 200),
+          expect: () => [
+            FollowingState(
+              status: FollowingStatus.loading,
+              targetPubkey: validPubkey('other'),
+            ),
+            FollowingState(
+              status: FollowingStatus.success,
+              followingPubkeys: [
+                validPubkey('following1'),
+                validPubkey('following2'),
+              ],
+              targetPubkey: validPubkey('other'),
+            ),
+          ],
+        );
+
+        blocTest<FollowingBloc, FollowingState>(
+          'emits [loading, success] with empty list when no contact list found',
+          setUp: () {
+            when(
+              () => mockAuthService.currentPublicKeyHex,
+            ).thenReturn(validPubkey('current'));
+            when(
+              () => mockNostrClient.subscribe(any()),
+            ).thenAnswer((_) => const Stream.empty());
+          },
+          build: _createBloc,
+          act: (bloc) =>
+              bloc.add(FollowingListLoadRequested(validPubkey('other'))),
+          wait: const Duration(milliseconds: 100),
+          expect: () => [
+            FollowingState(
+              status: FollowingStatus.loading,
+              targetPubkey: validPubkey('other'),
+            ),
+            FollowingState(
+              status: FollowingStatus.success,
+              followingPubkeys: const [],
+              targetPubkey: validPubkey('other'),
+            ),
+          ],
+        );
+      });
+    });
+
+    group('FollowToggleRequested', () {
+      blocTest<FollowingBloc, FollowingState>(
+        'calls follow when not currently following',
+        setUp: () {
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+          when(
+            () => mockFollowRepository.follow(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: _createBloc,
+        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
+        verify: (_) {
+          verify(
+            () => mockFollowRepository.follow(validPubkey('user')),
+          ).called(1);
+          verifyNever(() => mockFollowRepository.unfollow(any()));
+        },
+      );
+
+      blocTest<FollowingBloc, FollowingState>(
+        'calls unfollow when currently following',
+        setUp: () {
+          when(
+            () => mockFollowRepository.isFollowing(validPubkey('user')),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.unfollow(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: _createBloc,
+        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
+        wait: const Duration(milliseconds: 100),
+        verify: (_) {
+          verify(
+            () => mockFollowRepository.unfollow(validPubkey('user')),
+          ).called(1);
+          verifyNever(() => mockFollowRepository.follow(any()));
+        },
+      );
+
+      blocTest<FollowingBloc, FollowingState>(
+        'handles follow error gracefully',
+        setUp: () {
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+          when(
+            () => mockFollowRepository.follow(any()),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: _createBloc,
+        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
+        expect: () => <FollowingState>[],
+      );
+
+      blocTest<FollowingBloc, FollowingState>(
+        'handles unfollow error gracefully',
+        setUp: () {
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+          when(
+            () => mockFollowRepository.unfollow(any()),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: _createBloc,
+        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
+        wait: const Duration(milliseconds: 100),
+        // Should not throw or emit error state - just logs
+        expect: () => <FollowingState>[],
+      );
+    });
+
+    group('close', () {
+      test('cancels nostr subscription', () async {
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(validPubkey('current'));
+        final controller = StreamController<nostr_sdk.Event>();
+        when(
+          () => mockNostrClient.subscribe(any()),
+        ).thenAnswer((_) => controller.stream);
+
+        final bloc = _createBloc();
+        bloc.add(FollowingListLoadRequested(validPubkey('other')));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        await bloc.close();
+
+        // Stream should be closable without errors
+        await controller.close();
+      });
+    });
+  });
+
+  group('FollowingState', () {
+    test('supports value equality', () {
+      const state1 = FollowingState(
+        status: FollowingStatus.success,
+        followingPubkeys: ['pubkey1'],
+        targetPubkey: 'target',
+      );
+      const state2 = FollowingState(
+        status: FollowingStatus.success,
+        followingPubkeys: ['pubkey1'],
+        targetPubkey: 'target',
+      );
+
+      expect(state1, equals(state2));
+    });
+
+    test('isFollowing returns true when pubkey in list', () {
+      const state = FollowingState(
+        status: FollowingStatus.success,
+        followingPubkeys: ['pubkey1', 'pubkey2'],
+      );
+
+      expect(state.isFollowing('pubkey1'), isTrue);
+      expect(state.isFollowing('pubkey2'), isTrue);
+      expect(state.isFollowing('pubkey3'), isFalse);
+    });
+
+    test('copyWith creates copy with updated values', () {
+      const state = FollowingState(
+        status: FollowingStatus.initial,
+        followingPubkeys: [],
+        targetPubkey: 'target1',
+      );
+
+      final updated = state.copyWith(
+        status: FollowingStatus.loading,
+        followingPubkeys: ['pubkey1'],
+        targetPubkey: 'target2',
+      );
+
+      expect(updated.status, FollowingStatus.loading);
+      expect(updated.followingPubkeys, ['pubkey1']);
+      expect(updated.targetPubkey, 'target2');
+    });
+
+    test('copyWith preserves values when not specified', () {
+      const state = FollowingState(
+        status: FollowingStatus.success,
+        followingPubkeys: ['pubkey1'],
+        targetPubkey: 'target',
+      );
+
+      final updated = state.copyWith();
+
+      expect(updated.status, FollowingStatus.success);
+      expect(updated.followingPubkeys, ['pubkey1']);
+      expect(updated.targetPubkey, 'target');
+    });
+
+    test('props includes all fields', () {
+      const state = FollowingState(
+        status: FollowingStatus.success,
+        followingPubkeys: ['pubkey1'],
+        targetPubkey: 'target',
+      );
+
+      expect(state.props, [
+        FollowingStatus.success,
+        ['pubkey1'],
+        'target',
+      ]);
+    });
+  });
+}
