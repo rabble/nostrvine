@@ -25,45 +25,45 @@ class CommentInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          border: Border(top: BorderSide(color: Colors.grey[800]!)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                enableInteractiveSelection: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: 'Add a comment...',
-                  hintStyle: TextStyle(color: Colors.white54),
-                  border: InputBorder.none,
-                ),
-                maxLines: null,
-              ),
+    padding: EdgeInsets.only(
+      left: 16,
+      right: 16,
+      top: 8,
+      bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+    ),
+    decoration: BoxDecoration(
+      color: Colors.grey[900],
+      border: Border(top: BorderSide(color: Colors.grey[800]!)),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enableInteractiveSelection: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Add a comment...',
+              hintStyle: TextStyle(color: Colors.white54),
+              border: InputBorder.none,
             ),
-            IconButton(
-              onPressed: isPosting ? null : onSubmit,
-              icon: isPosting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send, color: Colors.white),
-            ),
-          ],
+            maxLines: null,
+          ),
         ),
-      );
+        IconButton(
+          onPressed: isPosting ? null : onSubmit,
+          icon: isPosting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.send, color: Colors.white),
+        ),
+      ],
+    ),
+  );
 }

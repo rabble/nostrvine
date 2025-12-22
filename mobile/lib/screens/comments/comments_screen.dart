@@ -22,19 +22,19 @@ class CommentsScreen extends ConsumerStatefulWidget {
 
   /// Creates a GoRoute for this screen.
   static GoRoute routeBuilder() => GoRoute(
-        path: routePath,
-        name: routeName,
-        builder: (ctx, st) {
-          final video = st.extra as VideoEvent?;
-          if (video == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No video selected')),
-            );
-          }
-          return CommentsScreen(videoEvent: video);
-        },
-      );
+    path: routePath,
+    name: routeName,
+    builder: (ctx, st) {
+      final video = st.extra as VideoEvent?;
+      if (video == null) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('No video selected')),
+        );
+      }
+      return CommentsScreen(videoEvent: video);
+    },
+  );
 
   @override
   ConsumerState<CommentsScreen> createState() => _CommentsScreenState();
@@ -103,74 +103,67 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            // Video in background (paused - autoplay disabled)
-            VideoFeedItem(
-              video: widget.videoEvent,
-              index: 0,
-              disableAutoplay: true,
-            ),
+    backgroundColor: Colors.black,
+    body: Stack(
+      children: [
+        // Video in background (paused - autoplay disabled)
+        VideoFeedItem(
+          video: widget.videoEvent,
+          index: 0,
+          disableAutoplay: true,
+        ),
 
-            // Comments overlay
-            DraggableScrollableSheet(
-              initialChildSize: 0.6,
-              minChildSize: 0.3,
-              maxChildSize: 0.9,
-              builder: (context, scrollController) => DecoratedBox(
-                decoration: const BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Handle bar
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white54,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-
-                    // Comments header
-                    CommentsHeader(
-                      onClose: () => Navigator.pop(context),
-                    ),
-
-                    const Divider(color: Colors.white24, height: 1),
-
-                    // Comments list
-                    Expanded(
-                      child: _buildCommentsList(scrollController),
-                    ),
-
-                    // Comment input
-                    CommentInput(
-                      controller: _commentController,
-                      isPosting: _isPosting,
-                      onSubmit: _postComment,
-                    ),
-                  ],
-                ),
+        // Comments overlay
+        DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) => DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-          ],
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white54,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Comments header
+                CommentsHeader(onClose: () => Navigator.pop(context)),
+
+                const Divider(color: Colors.white24, height: 1),
+
+                // Comments list
+                Expanded(child: _buildCommentsList(scrollController)),
+
+                // Comment input
+                CommentInput(
+                  controller: _commentController,
+                  isPosting: _isPosting,
+                  onSubmit: _postComment,
+                ),
+              ],
+            ),
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _buildCommentsList(ScrollController scrollController) {
     final state = ref.watch(
-      commentsProvider(
-        widget.videoEvent.id,
-        widget.videoEvent.pubkey,
-      ),
+      commentsProvider(widget.videoEvent.id, widget.videoEvent.pubkey),
     );
 
     if (state.isLoading) {
