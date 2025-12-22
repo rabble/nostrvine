@@ -27,7 +27,6 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
@@ -639,20 +638,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return VideoEditorScreen(videoPath: videoPath);
-        },
-      ),
-      GoRoute(
-        path: CommentsScreen.routePath,
-        name: CommentsScreen.routeName,
-        builder: (ctx, st) {
-          final video = st.extra as VideoEvent?;
-          if (video == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No video selected')),
-            );
-          }
-          return CommentsScreen(videoEvent: video);
         },
       ),
     ],

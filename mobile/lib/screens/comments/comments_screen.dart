@@ -3,38 +3,45 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
 import 'package:openvine/screens/comments/widgets/comments.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class CommentsScreen extends ConsumerStatefulWidget {
-  const CommentsScreen({required this.videoEvent, super.key});
+  const CommentsScreen({
+    required this.videoEvent,
+    required this.sheetScrollController,
+    super.key,
+  });
+
   final VideoEvent videoEvent;
+  final ScrollController sheetScrollController;
 
-  /// Route path for go_router.
-  static const String routePath = '/comments';
-
-  /// Route name for go_router.
-  static const String routeName = 'comments';
-
-  /// Creates a GoRoute for this screen.
-  static GoRoute routeBuilder() => GoRoute(
-    path: routePath,
-    name: routeName,
-    builder: (ctx, st) {
-      final video = st.extra as VideoEvent?;
-      if (video == null) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: Text('No video selected')),
-        );
-      }
-      return CommentsScreen(videoEvent: video);
-    },
-  );
+  /// Shows comments as a modal bottom sheet overlay
+  static Future<void> show(BuildContext context, VideoEvent video) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) => DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: CommentsScreen(
+              videoEvent: video,
+              sheetScrollController: scrollController,
+            ),
+          ),
+        ),
+      );
 
   @override
   ConsumerState<CommentsScreen> createState() => _CommentsScreenState();
@@ -102,103 +109,29 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
-    body: Stack(
-      children: [
-        // Video in background (paused - autoplay disabled)
-        VideoFeedItem(
-          video: widget.videoEvent,
-          index: 0,
-          disableAutoplay: true,
-        ),
-
-        // Comments overlay
-        DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) => DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white54,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
-                // Comments header
-                CommentsHeader(onClose: () => Navigator.pop(context)),
-
-                const Divider(color: Colors.white24, height: 1),
-
-                // Comments list
-                Expanded(child: _buildCommentsList(scrollController)),
-
-                // Comment input
-                CommentInput(
-                  controller: _commentController,
-                  isPosting: _isPosting,
-                  onSubmit: _postComment,
-                ),
-              ],
+  Widget build(BuildContext context) => Column(
+        children: [
+          const CommentsDragHandle(),
+          CommentsHeader(onClose: () => Navigator.pop(context)),
+          const Divider(color: Colors.white24, height: 1),
+          Expanded(
+            child: CommentsList(
+              videoEventId: widget.videoEvent.id,
+              videoEventPubkey: widget.videoEvent.pubkey,
+              isOriginalVine: widget.videoEvent.isOriginalVine,
+              scrollController: widget.sheetScrollController,
+              replyingToCommentId: _replyingToCommentId,
+              replyControllers: _replyControllers,
+              isPosting: _isPosting,
+              onReplyToggle: _handleReplyToggle,
+              onReplySubmit: (parentId) => _postComment(replyToId: parentId),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildCommentsList(ScrollController scrollController) {
-    final state = ref.watch(
-      commentsProvider(widget.videoEvent.id, widget.videoEvent.pubkey),
-    );
-
-    if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+          CommentInput(
+            controller: _commentController,
+            isPosting: _isPosting,
+            onSubmit: _postComment,
+          ),
+        ],
       );
-    }
-
-    if (state.error != null) {
-      return Center(
-        child: Text(
-          'Error loading comments: ${state.error}',
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
-    }
-
-    if (state.topLevelComments.isEmpty) {
-      return CommentsEmptyState(
-        isClassicVine: widget.videoEvent.isOriginalVine,
-      );
-    }
-
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: state.topLevelComments.length,
-      itemBuilder: (context, index) => CommentThread(
-        node: state.topLevelComments[index],
-        replyingToCommentId: _replyingToCommentId,
-        replyControllers: _replyControllers,
-        isPosting: _isPosting,
-        onReplyToggle: _handleReplyToggle,
-        onReplySubmit: (parentId) => _postComment(replyToId: parentId),
-      ),
-    );
-  }
 }

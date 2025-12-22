@@ -7,7 +7,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/comments_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/screens/comments/widgets/reply_input.dart';
+import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -164,7 +164,7 @@ class CommentThread extends ConsumerWidget {
                 ),
               ),
               if (isReplying)
-                ReplyInput(
+                CommentsReplyInput(
                   controller: replyControllers[comment.id]!,
                   isPosting: isPosting,
                   onSubmit: () => onReplySubmit(comment.id),
