@@ -1391,24 +1391,6 @@ class MockSocialService extends _i1.Mock implements _i15.SocialService {
           as _i7.Future<void>);
 
   @override
-  _i7.Future<void> followUser(String? pubkeyToFollow) =>
-      (super.noSuchMethod(
-            Invocation.method(#followUser, [pubkeyToFollow]),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
-  _i7.Future<void> unfollowUser(String? pubkeyToUnfollow) =>
-      (super.noSuchMethod(
-            Invocation.method(#unfollowUser, [pubkeyToUnfollow]),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
   _i7.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
       (super.noSuchMethod(
             Invocation.method(#getFollowerStats, [pubkey]),
