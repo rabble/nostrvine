@@ -39,14 +39,15 @@ class VideoFollowButton extends ConsumerWidget {
         nostrClient: nostrClient,
         authService: authService,
       )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
-      child: _VideoFollowButtonView(pubkey: pubkey),
+      child: VideoFollowButtonView(pubkey: pubkey),
     );
   }
 }
 
 /// View widget that consumes [FollowingBloc] state and renders the follow button.
-class _VideoFollowButtonView extends StatelessWidget {
-  const _VideoFollowButtonView({required this.pubkey});
+class VideoFollowButtonView extends StatelessWidget {
+  @visibleForTesting
+  const VideoFollowButtonView({required this.pubkey});
 
   final String pubkey;
 
