@@ -105,9 +105,7 @@ class _FollowingListBody extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<FollowingBloc>().add(
-          FollowingListLoadRequested(pubkey),
-        );
+        context.read<FollowingBloc>().add(FollowingListLoadRequested(pubkey));
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
