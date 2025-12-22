@@ -4,7 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:openvine/providers/comments/comments.dart';
+import 'package:openvine/providers/comments/comments_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
@@ -17,16 +18,7 @@ import 'package:openvine/widgets/user_name.dart';
 /// Shows author avatar, name, timestamp, and content.
 /// Includes a reply button that toggles an inline reply input.
 class CommentThread extends ConsumerWidget {
-  const CommentThread({
-    required this.node,
-    required this.replyingToCommentId,
-    required this.replyControllers,
-    required this.isPosting,
-    required this.onReplyToggle,
-    required this.onReplySubmit,
-    this.depth = 0,
-    super.key,
-  });
+  const CommentThread({required this.node, this.depth = 0, super.key});
 
   /// The comment node containing the comment and its replies.
   final CommentNode node;
@@ -34,25 +26,12 @@ class CommentThread extends ConsumerWidget {
   /// Current nesting depth for indentation (0 = top level).
   final int depth;
 
-  /// ID of the comment currently being replied to, or null if none.
-  final String? replyingToCommentId;
-
-  /// Map of comment IDs to their reply text controllers.
-  final Map<String, TextEditingController> replyControllers;
-
-  /// Whether a comment/reply is currently being posted.
-  final bool isPosting;
-
-  /// Callback when the reply button is toggled for a comment.
-  final void Function(String commentId) onReplyToggle;
-
-  /// Callback when a reply should be submitted.
-  final void Function(String parentId) onReplySubmit;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comment = node.comment;
-    final isReplying = replyingToCommentId == comment.id;
+    final inputState = ref.watch(currentCommentInputProvider);
+    final isReplying = inputState.activeReplyCommentId == comment.id;
+    final isPostingReply = inputState.isReplyPosting(comment.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +131,11 @@ class CommentThread extends ConsumerWidget {
                     Row(
                       children: [
                         TextButton(
-                          onPressed: () => onReplyToggle(comment.id),
+                          onPressed: () {
+                            ref
+                                .read(currentCommentInputProvider.notifier)
+                                .toggleReply(comment.id);
+                          },
                           child: Text(
                             isReplying ? 'Cancel' : 'Reply',
                             style: const TextStyle(color: Colors.white70),
@@ -164,27 +147,84 @@ class CommentThread extends ConsumerWidget {
                 ),
               ),
               if (isReplying)
-                CommentsReplyInput(
-                  controller: replyControllers[comment.id]!,
-                  isPosting: isPosting,
-                  onSubmit: () => onReplySubmit(comment.id),
+                _ReplyInputWrapper(
+                  parentCommentId: comment.id,
+                  parentAuthorPubkey: comment.authorPubkey,
+                  isPosting: isPostingReply,
                 ),
             ],
           ),
         ),
         // Recursively render replies
         ...node.replies.map(
-          (reply) => CommentThread(
-            node: reply,
-            depth: depth + 1,
-            replyingToCommentId: replyingToCommentId,
-            replyControllers: replyControllers,
-            isPosting: isPosting,
-            onReplyToggle: onReplyToggle,
-            onReplySubmit: onReplySubmit,
-          ),
+          (reply) => CommentThread(node: reply, depth: depth + 1),
         ),
       ],
+    );
+  }
+}
+
+/// Wrapper for reply input that manages its own TextEditingController
+class _ReplyInputWrapper extends ConsumerStatefulWidget {
+  const _ReplyInputWrapper({
+    required this.parentCommentId,
+    required this.parentAuthorPubkey,
+    required this.isPosting,
+  });
+
+  final String parentCommentId;
+  final String parentAuthorPubkey;
+  final bool isPosting;
+
+  @override
+  ConsumerState<_ReplyInputWrapper> createState() => _ReplyInputWrapperState();
+}
+
+class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final inputState = ref.read(currentCommentInputProvider);
+    _controller = TextEditingController(
+      text: inputState.getReplyText(widget.parentCommentId),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inputState = ref.watch(currentCommentInputProvider);
+    final currentText = inputState.getReplyText(widget.parentCommentId);
+
+    // Sync controller with state (for when state changes externally,
+    // e.g., after post clears the text)
+    if (_controller.text != currentText) {
+      _controller.text = currentText;
+      _controller.selection = TextSelection.collapsed(
+        offset: currentText.length,
+      );
+    }
+
+    return CommentsReplyInput(
+      controller: _controller,
+      isPosting: widget.isPosting,
+      onChanged: (text) {
+        ref
+            .read(currentCommentInputProvider.notifier)
+            .updateReplyText(widget.parentCommentId, text);
+      },
+      onSubmit: () {
+        ref
+            .read(currentCommentInputProvider.notifier)
+            .postReply(widget.parentCommentId, widget.parentAuthorPubkey);
+      },
     );
   }
 }

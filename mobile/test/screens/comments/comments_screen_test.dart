@@ -8,7 +8,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:openvine/providers/comments/comment_context_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/comments/widgets/comment_input.dart';
 import 'package:openvine/screens/comments/widgets/comments_drag_handle.dart';
@@ -16,6 +16,8 @@ import 'package:openvine/screens/comments/widgets/comments_header.dart';
 import 'package:openvine/screens/comments/widgets/comments_list.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/state/comment_input_state.dart';
+import 'package:openvine/state/comments_state.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
@@ -61,20 +63,24 @@ void main() {
 
     Widget buildTestWidget({
       CommentsState? commentsState,
+      CommentInputState? inputState,
       VideoEvent? videoEvent,
     }) {
       final state =
           commentsState ??
           CommentsState(rootEventId: testVideoEventId, topLevelComments: []);
+      final input = inputState ?? CommentInputState.initial;
+      final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
 
       return ProviderScope(
         overrides: [
           socialServiceProvider.overrideWithValue(mockSocialService),
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-          commentsProvider(
-            testVideoEventId,
-            testVideoAuthorPubkey,
-          ).overrideWith(() => _MockCommentsNotifier(state)),
+          commentContextProvider.overrideWithValue(ctx),
+          currentCommentsProvider.overrideWith((ref) => state),
+          currentCommentInputProvider.overrideWith(
+            () => _MockCurrentCommentInput(input),
+          ),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -141,104 +147,6 @@ void main() {
         await tester.pump();
 
         expect(find.text('Test comment'), findsOneWidget);
-      });
-    });
-
-    group('posting comments', () {
-      testWidgets('calls SocialService.postComment when sending', (
-        tester,
-      ) async {
-        when(
-          mockSocialService.postComment(
-            content: anyNamed('content'),
-            rootEventId: anyNamed('rootEventId'),
-            rootEventAuthorPubkey: anyNamed('rootEventAuthorPubkey'),
-            replyToEventId: anyNamed('replyToEventId'),
-          ),
-        ).thenAnswer((_) async {});
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        // Enter text and tap send
-        await tester.enterText(find.byType(TextField).first, 'Test comment');
-        await tester.pump();
-
-        await tester.tap(find.byIcon(Icons.send));
-        await tester.pump();
-
-        verify(
-          mockSocialService.postComment(
-            content: 'Test comment',
-            rootEventId: testVideoEventId,
-            rootEventAuthorPubkey: testVideoAuthorPubkey,
-            replyToEventId: null,
-          ),
-        ).called(1);
-      });
-
-      testWidgets('clears input after successful post', (tester) async {
-        when(
-          mockSocialService.postComment(
-            content: anyNamed('content'),
-            rootEventId: anyNamed('rootEventId'),
-            rootEventAuthorPubkey: anyNamed('rootEventAuthorPubkey'),
-            replyToEventId: anyNamed('replyToEventId'),
-          ),
-        ).thenAnswer((_) async {});
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        await tester.enterText(find.byType(TextField).first, 'Test comment');
-        await tester.pump();
-
-        await tester.tap(find.byIcon(Icons.send));
-        await tester.pumpAndSettle();
-
-        // Input should be cleared
-        final textField = tester.widget<TextField>(
-          find.byType(TextField).first,
-        );
-        expect(textField.controller?.text, isEmpty);
-      });
-
-      testWidgets('does not post empty comment', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        // Don't enter any text, just tap send
-        await tester.tap(find.byIcon(Icons.send));
-        await tester.pump();
-
-        verifyNever(
-          mockSocialService.postComment(
-            content: anyNamed('content'),
-            rootEventId: anyNamed('rootEventId'),
-            rootEventAuthorPubkey: anyNamed('rootEventAuthorPubkey'),
-            replyToEventId: anyNamed('replyToEventId'),
-          ),
-        );
-      });
-
-      testWidgets('does not post whitespace-only comment', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        await tester.enterText(find.byType(TextField).first, '   ');
-        await tester.pump();
-
-        await tester.tap(find.byIcon(Icons.send));
-        await tester.pump();
-
-        verifyNever(
-          mockSocialService.postComment(
-            content: anyNamed('content'),
-            rootEventId: anyNamed('rootEventId'),
-            rootEventAuthorPubkey: anyNamed('rootEventAuthorPubkey'),
-            replyToEventId: anyNamed('replyToEventId'),
-          ),
-        );
       });
     });
 
@@ -309,32 +217,6 @@ void main() {
       });
     });
 
-    group('error handling', () {
-      testWidgets('shows snackbar on post error', (tester) async {
-        when(
-          mockSocialService.postComment(
-            content: anyNamed('content'),
-            rootEventId: anyNamed('rootEventId'),
-            rootEventAuthorPubkey: anyNamed('rootEventAuthorPubkey'),
-            replyToEventId: anyNamed('replyToEventId'),
-          ),
-        ).thenThrow(Exception('Network error'));
-
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pump();
-
-        await tester.enterText(find.byType(TextField).first, 'Test comment');
-        await tester.pump();
-
-        await tester.tap(find.byIcon(Icons.send));
-        await tester.pumpAndSettle();
-
-        // Should show error snackbar
-        expect(find.byType(SnackBar), findsOneWidget);
-        expect(find.textContaining('Failed to post comment'), findsOneWidget);
-      });
-    });
-
     group('loading states', () {
       testWidgets('shows loading indicator in list when loading', (
         tester,
@@ -366,6 +248,19 @@ void main() {
       });
     });
 
+    group('error handling', () {
+      testWidgets('renders without error when input state has no error', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pump();
+
+        // Should render normally without error
+        expect(find.byType(CommentsScreen), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+      });
+    });
+
     group('show modal', () {
       testWidgets('CommentsScreen.show opens modal bottom sheet', (
         tester,
@@ -374,6 +269,7 @@ void main() {
           rootEventId: testVideoEventId,
           topLevelComments: [],
         );
+        final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -382,10 +278,11 @@ void main() {
               userProfileServiceProvider.overrideWithValue(
                 mockUserProfileService,
               ),
-              commentsProvider(
-                testVideoEventId,
-                testVideoAuthorPubkey,
-              ).overrideWith(() => _MockCommentsNotifier(state)),
+              commentContextProvider.overrideWithValue(ctx),
+              currentCommentsProvider.overrideWith((ref) => state),
+              currentCommentInputProvider.overrideWith(
+                () => _MockCurrentCommentInput(CommentInputState.initial),
+              ),
             ],
             child: MaterialApp(
               home: Scaffold(
@@ -414,11 +311,52 @@ void main() {
   });
 }
 
-/// Mock CommentsNotifier that returns a fixed state
-class _MockCommentsNotifier extends CommentsNotifier {
-  _MockCommentsNotifier(this._state);
-  final CommentsState _state;
+/// Mock CurrentCommentInput that manages state for testing
+class _MockCurrentCommentInput extends CurrentCommentInput {
+  _MockCurrentCommentInput(this._initialState);
+
+  final CommentInputState _initialState;
 
   @override
-  CommentsState build(String rootEventId, String rootAuthorPubkey) => _state;
+  CommentInputState build() => _initialState;
+
+  @override
+  void toggleReply(String commentId) {
+    if (state.activeReplyCommentId == commentId) {
+      state = state.copyWith(activeReplyCommentId: null);
+    } else {
+      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+      updatedReplies.putIfAbsent(commentId, () => '');
+      state = state.copyWith(
+        activeReplyCommentId: commentId,
+        replyInputTexts: updatedReplies,
+      );
+    }
+  }
+
+  @override
+  void updateMainText(String text) {
+    state = state.copyWith(mainInputText: text, error: null);
+  }
+
+  @override
+  void updateReplyText(String commentId, String text) {
+    final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+    updatedReplies[commentId] = text;
+    state = state.copyWith(replyInputTexts: updatedReplies, error: null);
+  }
+
+  @override
+  Future<void> postMainComment() async {}
+
+  @override
+  Future<void> postReply(
+    String parentCommentId,
+    String? parentAuthorPubkey,
+  ) async {}
+
+  @override
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
 }

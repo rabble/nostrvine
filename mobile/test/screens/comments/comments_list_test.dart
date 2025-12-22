@@ -7,11 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:openvine/providers/comments/comment_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_thread.dart';
+import 'package:openvine/state/comments_state.dart';
 import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
 import 'package:openvine/screens/comments/widgets/comments_list.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/state/comment_input_state.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
@@ -37,35 +39,28 @@ void main() {
 
     Widget buildTestWidget({
       required CommentsState commentsState,
+      CommentInputState? inputState,
       bool isOriginalVine = false,
-      String? replyingToCommentId,
-      bool isPosting = false,
       ScrollController? scrollController,
-      Map<String, TextEditingController>? replyControllers,
     }) {
       final sc = scrollController ?? ScrollController();
-      final rc = replyControllers ?? <String, TextEditingController>{};
+      final input = inputState ?? CommentInputState.initial;
+      final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
 
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-          commentsProvider(
-            testVideoEventId,
-            testVideoAuthorPubkey,
-          ).overrideWith(() => _MockCommentsNotifier(commentsState)),
+          commentContextProvider.overrideWithValue(ctx),
+          currentCommentsProvider.overrideWith((ref) => commentsState),
+          currentCommentInputProvider.overrideWith(
+            () => _MockCurrentCommentInput(input),
+          ),
         ],
         child: MaterialApp(
           home: Scaffold(
             body: CommentsList(
-              videoEventId: testVideoEventId,
-              videoEventPubkey: testVideoAuthorPubkey,
               isOriginalVine: isOriginalVine,
               scrollController: sc,
-              replyingToCommentId: replyingToCommentId,
-              replyControllers: rc,
-              isPosting: isPosting,
-              onReplyToggle: (_) {},
-              onReplySubmit: (_) {},
             ),
           ),
         ),
@@ -158,10 +153,6 @@ void main() {
     });
 
     testWidgets('shows Cancel when replying to comment', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final state = CommentsState(
         rootEventId: testVideoEventId,
         topLevelComments: [
@@ -177,19 +168,17 @@ void main() {
         totalCommentCount: 1,
       );
 
+      final inputState = CommentInputState(
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
+      );
+
       await tester.pumpWidget(
-        buildTestWidget(
-          commentsState: state,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
+        buildTestWidget(commentsState: state, inputState: inputState),
       );
       await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
-
-      // Clean up
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
     testWidgets('uses provided scroll controller', (tester) async {
@@ -217,11 +206,52 @@ void main() {
   });
 }
 
-/// Mock CommentsNotifier that returns a fixed state
-class _MockCommentsNotifier extends CommentsNotifier {
-  _MockCommentsNotifier(this._state);
-  final CommentsState _state;
+/// Mock CurrentCommentInput that manages state for testing
+class _MockCurrentCommentInput extends CurrentCommentInput {
+  _MockCurrentCommentInput(this._initialState);
+
+  final CommentInputState _initialState;
 
   @override
-  CommentsState build(String rootEventId, String rootAuthorPubkey) => _state;
+  CommentInputState build() => _initialState;
+
+  @override
+  void toggleReply(String commentId) {
+    if (state.activeReplyCommentId == commentId) {
+      state = state.copyWith(activeReplyCommentId: null);
+    } else {
+      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+      updatedReplies.putIfAbsent(commentId, () => '');
+      state = state.copyWith(
+        activeReplyCommentId: commentId,
+        replyInputTexts: updatedReplies,
+      );
+    }
+  }
+
+  @override
+  void updateMainText(String text) {
+    state = state.copyWith(mainInputText: text, error: null);
+  }
+
+  @override
+  void updateReplyText(String commentId, String text) {
+    final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+    updatedReplies[commentId] = text;
+    state = state.copyWith(replyInputTexts: updatedReplies, error: null);
+  }
+
+  @override
+  Future<void> postMainComment() async {}
+
+  @override
+  Future<void> postReply(
+    String parentCommentId,
+    String? parentAuthorPubkey,
+  ) async {}
+
+  @override
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
 }

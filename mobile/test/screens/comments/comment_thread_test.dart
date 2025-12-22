@@ -8,10 +8,12 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:openvine/providers/comments/comment_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_thread.dart';
+import 'package:openvine/state/comments_state.dart';
 import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/state/comment_input_state.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../builders/comment_builder.dart';
@@ -19,6 +21,12 @@ import '../../builders/comment_node_builder.dart';
 
 @GenerateMocks([UserProfileService])
 import 'comment_thread_test.mocks.dart';
+
+// Full 64-character test IDs
+const testVideoEventId =
+    'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+const testVideoAuthorPubkey =
+    'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a';
 
 void main() {
   group('CommentThread', () {
@@ -33,30 +41,23 @@ void main() {
     Widget buildTestWidget({
       required CommentNode node,
       int depth = 0,
-      String? replyingToCommentId,
-      Map<String, TextEditingController>? replyControllers,
-      bool isPosting = false,
-      void Function(String)? onReplyToggle,
-      void Function(String)? onReplySubmit,
+      CommentInputState? inputState,
     }) {
-      final rc = replyControllers ?? <String, TextEditingController>{};
+      final input = inputState ?? CommentInputState.initial;
+      final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
 
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          commentContextProvider.overrideWithValue(ctx),
+          currentCommentInputProvider.overrideWith(
+            () => _MockCurrentCommentInput(input),
+          ),
         ],
         child: MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: CommentThread(
-                node: node,
-                depth: depth,
-                replyingToCommentId: replyingToCommentId,
-                replyControllers: rc,
-                isPosting: isPosting,
-                onReplyToggle: onReplyToggle ?? (_) {},
-                onReplySubmit: onReplySubmit ?? (_) {},
-              ),
+              child: CommentThread(node: node, depth: depth),
             ),
           ),
         ),
@@ -145,70 +146,63 @@ void main() {
     });
 
     testWidgets('shows Cancel when replying', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
+      final inputState = CommentInputState(
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
+      );
+
       await tester.pumpWidget(
-        buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
+        buildTestWidget(node: node, inputState: inputState),
       );
       await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Reply'), findsNothing);
-
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
-    testWidgets('calls onReplyToggle when Reply tapped', (tester) async {
-      var toggledId = '';
+    testWidgets('tapping Reply toggles reply mode', (tester) async {
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
-      await tester.pumpWidget(
-        buildTestWidget(node: node, onReplyToggle: (id) => toggledId = id),
-      );
+      await tester.pumpWidget(buildTestWidget(node: node));
       await tester.pump();
 
+      // Initially shows Reply
+      expect(find.text('Reply'), findsOneWidget);
+
+      // Tap Reply
       await tester.tap(find.text('Reply'));
       await tester.pump();
 
-      expect(toggledId, equals(TestCommentIds.comment1Id));
+      // Should now show Cancel and reply input
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Write a reply...'), findsOneWidget);
     });
 
     testWidgets('shows CommentsReplyInput when replying', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
+      final inputState = CommentInputState(
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
+      );
+
       await tester.pumpWidget(
-        buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
+        buildTestWidget(node: node, inputState: inputState),
       );
       await tester.pump();
 
       expect(find.byType(CommentsReplyInput), findsOneWidget);
-
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
     testWidgets('renders nested replies', (tester) async {
@@ -288,4 +282,54 @@ void main() {
       expect(find.byType(UserAvatar), findsOneWidget);
     });
   });
+}
+
+/// Mock CurrentCommentInput that manages state for testing
+class _MockCurrentCommentInput extends CurrentCommentInput {
+  _MockCurrentCommentInput(this._initialState);
+
+  final CommentInputState _initialState;
+
+  @override
+  CommentInputState build() => _initialState;
+
+  @override
+  void toggleReply(String commentId) {
+    if (state.activeReplyCommentId == commentId) {
+      state = state.copyWith(activeReplyCommentId: null);
+    } else {
+      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+      updatedReplies.putIfAbsent(commentId, () => '');
+      state = state.copyWith(
+        activeReplyCommentId: commentId,
+        replyInputTexts: updatedReplies,
+      );
+    }
+  }
+
+  @override
+  void updateMainText(String text) {
+    state = state.copyWith(mainInputText: text, error: null);
+  }
+
+  @override
+  void updateReplyText(String commentId, String text) {
+    final updatedReplies = Map<String, String>.from(state.replyInputTexts);
+    updatedReplies[commentId] = text;
+    state = state.copyWith(replyInputTexts: updatedReplies, error: null);
+  }
+
+  @override
+  Future<void> postMainComment() async {}
+
+  @override
+  Future<void> postReply(
+    String parentCommentId,
+    String? parentAuthorPubkey,
+  ) async {}
+
+  @override
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
 }

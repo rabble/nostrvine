@@ -6,64 +6,11 @@ import 'dart:async';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/comment.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/state/comments_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'comments_provider.g.dart';
-
-/// Comment tree node for organizing threaded comments
-class CommentNode {
-  CommentNode({
-    required this.comment,
-    List<CommentNode>? replies,
-    this.isExpanded = true,
-  }) : replies = replies ?? [];
-  final Comment comment;
-  final List<CommentNode> replies;
-  bool isExpanded;
-
-  /// Get total reply count including nested replies
-  int get totalReplyCount {
-    var count = replies.length;
-    for (final reply in replies) {
-      count += reply.totalReplyCount;
-    }
-    return count;
-  }
-}
-
-/// State class for managing comments for a specific video
-class CommentsState {
-  const CommentsState({
-    required this.rootEventId,
-    this.topLevelComments = const [],
-    this.isLoading = false,
-    this.error,
-    this.totalCommentCount = 0,
-    this.commentCache = const {},
-  });
-  final String rootEventId;
-  final List<CommentNode> topLevelComments;
-  final bool isLoading;
-  final String? error;
-  final int totalCommentCount;
-  final Map<String, Comment> commentCache;
-
-  CommentsState copyWith({
-    List<CommentNode>? topLevelComments,
-    bool? isLoading,
-    String? error,
-    int? totalCommentCount,
-    Map<String, Comment>? commentCache,
-  }) => CommentsState(
-    rootEventId: rootEventId,
-    topLevelComments: topLevelComments ?? this.topLevelComments,
-    isLoading: isLoading ?? this.isLoading,
-    error: error,
-    totalCommentCount: totalCommentCount ?? this.totalCommentCount,
-    commentCache: commentCache ?? this.commentCache,
-  );
-}
 
 /// Notifier for managing comments for a specific video
 @riverpod
@@ -301,47 +248,38 @@ class CommentsNotifier extends _$CommentsNotifier {
     Map<String, Comment> commentMap,
     Map<String, List<String>> replyMap,
   ) {
-    final topLevel = <CommentNode>[];
-    final nodeMap = <String, CommentNode>{};
+    // Build child->parent and parent->children maps
+    final childrenMap = <String, List<String>>{}; // parentId -> [childIds]
+    final topLevelIds = <String>[];
 
-    // Create nodes for all comments
-    for (final comment in commentMap.values) {
-      nodeMap[comment.id] = CommentNode(comment: comment);
-    }
-
-    // Build tree structure
     for (final comment in commentMap.values) {
       if (comment.replyToEventId == null ||
-          comment.replyToEventId == _rootEventId) {
-        // Top-level comment
-        topLevel.add(nodeMap[comment.id]!);
-      } else if (nodeMap.containsKey(comment.replyToEventId)) {
-        // Add as reply to parent comment
-        nodeMap[comment.replyToEventId]!.replies.add(nodeMap[comment.id]!);
+          comment.replyToEventId == _rootEventId ||
+          !commentMap.containsKey(comment.replyToEventId)) {
+        // Top-level comment (or orphaned reply)
+        topLevelIds.add(comment.id);
       } else {
-        // Parent comment not found, treat as top-level
-        topLevel.add(nodeMap[comment.id]!);
+        // Child comment
+        childrenMap[comment.replyToEventId!] =
+            (childrenMap[comment.replyToEventId!] ?? [])..add(comment.id);
       }
     }
 
-    // Sort by creation time (newest first)
-    topLevel.sort((a, b) => b.comment.createdAt.compareTo(a.comment.createdAt));
+    // Recursively build immutable nodes from bottom up
+    CommentNode buildNode(String commentId) {
+      final comment = commentMap[commentId]!;
+      final childIds = childrenMap[commentId] ?? [];
 
-    // Sort replies recursively
-    void sortReplies(CommentNode node) {
-      node.replies.sort(
-        (a, b) => a.comment.createdAt.compareTo(b.comment.createdAt),
-      );
-      for (final reply in node.replies) {
-        sortReplies(reply);
-      }
+      // Build child nodes first, then sort by creation time (oldest first)
+      final childNodes = childIds.map(buildNode).toList()
+        ..sort((a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
+
+      return CommentNode(comment: comment, replies: childNodes);
     }
 
-    for (final node in topLevel) {
-      sortReplies(node);
-    }
-
-    return topLevel;
+    // Build top-level nodes and sort by creation time (newest first)
+    return topLevelIds.map(buildNode).toList()
+      ..sort((a, b) => b.comment.createdAt.compareTo(a.comment.createdAt));
   }
 
   /// Post a new comment

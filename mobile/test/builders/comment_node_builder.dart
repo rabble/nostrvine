@@ -2,7 +2,7 @@
 // ABOUTME: Supports building nested comment trees for testing threaded displays
 
 import 'package:openvine/models/comment.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:openvine/state/comments_state.dart';
 import 'comment_builder.dart';
 
 /// Fluent builder for creating CommentNode instances in tests.

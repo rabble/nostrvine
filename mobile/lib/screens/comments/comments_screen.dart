@@ -4,10 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/comments/comments.dart';
 import 'package:openvine/screens/comments/widgets/comments.dart';
 
-class CommentsScreen extends ConsumerStatefulWidget {
+class CommentsScreen extends ConsumerWidget {
   const CommentsScreen({
     required this.videoEvent,
     required this.sheetScrollController,
@@ -44,94 +44,106 @@ class CommentsScreen extends ConsumerStatefulWidget {
       );
 
   @override
-  ConsumerState<CommentsScreen> createState() => _CommentsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ctx = (eventId: videoEvent.id, pubkey: videoEvent.pubkey);
+
+    // Wrap children in ProviderScope with comment context override
+    return ProviderScope(
+      overrides: [commentContextProvider.overrideWithValue(ctx)],
+      child: _CommentsScreenContent(
+        videoEvent: videoEvent,
+        sheetScrollController: sheetScrollController,
+      ),
+    );
+  }
 }
 
-class _CommentsScreenState extends ConsumerState<CommentsScreen> {
-  final _commentController = TextEditingController();
-  final _replyControllers = <String, TextEditingController>{};
-  String? _replyingToCommentId;
-  bool _isPosting = false;
+/// Content widget that lives inside the ProviderScope
+class _CommentsScreenContent extends ConsumerWidget {
+  const _CommentsScreenContent({
+    required this.videoEvent,
+    required this.sheetScrollController,
+  });
+
+  final VideoEvent videoEvent;
+  final ScrollController sheetScrollController;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Listen for errors and show snackbar
+    ref.listen(currentCommentInputProvider, (prev, next) {
+      final error = next.error;
+      if (error != null && prev?.error != error) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+        ref.read(currentCommentInputProvider.notifier).clearError();
+      }
+    });
+
+    return Column(
+      children: [
+        const CommentsDragHandle(),
+        CommentsHeader(onClose: () => Navigator.pop(context)),
+        const Divider(color: Colors.white24, height: 1),
+        Expanded(
+          child: CommentsList(
+            isOriginalVine: videoEvent.isOriginalVine,
+            scrollController: sheetScrollController,
+          ),
+        ),
+        const _MainCommentInput(),
+      ],
+    );
+  }
+}
+
+/// Main comment input widget that reads from provider
+class _MainCommentInput extends ConsumerStatefulWidget {
+  const _MainCommentInput();
+
+  @override
+  ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
+}
+
+class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final inputState = ref.read(currentCommentInputProvider);
+    _controller = TextEditingController(text: inputState.mainInputText);
+  }
 
   @override
   void dispose() {
-    _commentController.dispose();
-    for (final controller in _replyControllers.values) {
-      controller.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _postComment({String? replyToId}) async {
-    final controller = replyToId != null
-        ? _replyControllers[replyToId]
-        : _commentController;
-
-    if (controller == null || controller.text.trim().isEmpty) return;
-
-    setState(() => _isPosting = true);
-
-    try {
-      final socialService = ref.read(socialServiceProvider);
-      await socialService.postComment(
-        content: controller.text.trim(),
-        rootEventId: widget.videoEvent.id,
-        rootEventAuthorPubkey: widget.videoEvent.pubkey,
-        replyToEventId: replyToId,
-      );
-
-      controller.clear();
-      if (replyToId != null) {
-        setState(() => _replyingToCommentId = null);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isPosting = false);
-      }
-    }
-  }
-
-  void _handleReplyToggle(String commentId) {
-    setState(() {
-      if (_replyingToCommentId == commentId) {
-        _replyingToCommentId = null;
-      } else {
-        _replyingToCommentId = commentId;
-        _replyControllers[commentId] ??= TextEditingController();
-      }
-    });
-  }
-
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      const CommentsDragHandle(),
-      CommentsHeader(onClose: () => Navigator.pop(context)),
-      const Divider(color: Colors.white24, height: 1),
-      Expanded(
-        child: CommentsList(
-          videoEventId: widget.videoEvent.id,
-          videoEventPubkey: widget.videoEvent.pubkey,
-          isOriginalVine: widget.videoEvent.isOriginalVine,
-          scrollController: widget.sheetScrollController,
-          replyingToCommentId: _replyingToCommentId,
-          replyControllers: _replyControllers,
-          isPosting: _isPosting,
-          onReplyToggle: _handleReplyToggle,
-          onReplySubmit: (parentId) => _postComment(replyToId: parentId),
-        ),
-      ),
-      CommentInput(
-        controller: _commentController,
-        isPosting: _isPosting,
-        onSubmit: _postComment,
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final inputState = ref.watch(currentCommentInputProvider);
+
+    // Sync controller with state (for when state changes externally,
+    // e.g., after post clears the text)
+    if (_controller.text != inputState.mainInputText) {
+      _controller.text = inputState.mainInputText;
+      _controller.selection = TextSelection.collapsed(
+        offset: inputState.mainInputText.length,
+      );
+    }
+
+    return CommentInput(
+      controller: _controller,
+      isPosting: inputState.isMainPosting,
+      onChanged: (text) {
+        ref.read(currentCommentInputProvider.notifier).updateMainText(text);
+      },
+      onSubmit: () {
+        ref.read(currentCommentInputProvider.notifier).postMainComment();
+      },
+    );
+  }
 }

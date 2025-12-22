@@ -12,6 +12,7 @@ class CommentsReplyInput extends StatelessWidget {
     required this.controller,
     required this.isPosting,
     required this.onSubmit,
+    this.onChanged,
     super.key,
   });
 
@@ -23,6 +24,9 @@ class CommentsReplyInput extends StatelessWidget {
 
   /// Callback when the send button is pressed.
   final VoidCallback onSubmit;
+
+  /// Callback when the text changes.
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -37,6 +41,7 @@ class CommentsReplyInput extends StatelessWidget {
         Expanded(
           child: TextField(
             controller: controller,
+            onChanged: onChanged,
             enableInteractiveSelection: true,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
