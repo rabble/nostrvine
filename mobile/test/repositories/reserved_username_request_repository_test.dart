@@ -18,6 +18,13 @@ void main() {
   });
 
   group('ReservedUsernameRequestRepository', () {
+    test('can instantiate default constructor', () {
+      const repository = ReservedUsernameRequestResult(success: true);
+
+      expect(repository.success, isTrue);
+      expect(repository.error, isNull);
+    });
+
     group('ReservedUsernameRequestResult', () {
       group('success constructor', () {
         test('creates result with success=true and null error', () {

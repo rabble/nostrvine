@@ -64,12 +64,8 @@ void main() {
       await tester.pumpWidget(buildSubject(username: 'satoshi'));
       await openDialog(tester);
 
-      // Find the username field (first TextField, read-only)
-      final usernameFinder = find.widgetWithText(TextField, 'satoshi');
+      final usernameFinder = find.widgetWithText(InputDecorator, 'satoshi');
       expect(usernameFinder, findsOneWidget);
-
-      final usernameField = tester.widget<TextField>(usernameFinder);
-      expect(usernameField.readOnly, isTrue);
     });
 
     testWidgets('email field is editable and accepts input', (tester) async {
@@ -98,7 +94,7 @@ void main() {
 
       // Find justification field by label
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       expect(justificationField, findsOneWidget);
@@ -143,7 +139,7 @@ void main() {
 
       // Enter valid justification
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -173,7 +169,7 @@ void main() {
 
       // Enter valid justification
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -226,7 +222,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -265,7 +261,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -306,7 +302,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -321,7 +317,9 @@ void main() {
       expect(find.text('Network error'), findsOneWidget);
     });
 
-    testWidgets('dialog auto-closes after success with timer', (tester) async {
+    testWidgets('dialog shows success message after successful submission', (
+      tester,
+    ) async {
       when(
         () => mockRepository.submitRequest(
           username: any(named: 'username'),
@@ -344,7 +342,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -357,12 +355,12 @@ void main() {
 
       // Dialog should still be open after success
       expect(find.text('Request Reserved Username'), findsOneWidget);
-
-      // Wait for 1.5 seconds (auto-dismiss timer) + execute callback
-      await tester.pumpAndSettle(const Duration(milliseconds: 1500));
-
-      // Dialog should now be closed
-      expect(find.text('Request Reserved Username'), findsNothing);
+      expect(
+        find.text(
+          'Request submitted! We\'ll review it and contact you at the email provided.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows email validation error for invalid email', (
@@ -419,7 +417,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -460,7 +458,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -496,7 +494,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -538,7 +536,7 @@ void main() {
       await tester.enterText(emailField, 'test@example.com');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I am the brand owner');
@@ -581,7 +579,7 @@ void main() {
       await tester.enterText(emailField, 'satoshi@bitcoin.org');
 
       final justificationField = find.ancestor(
-        of: find.text('Why should you have this username?'),
+        of: find.text('Reason for Request'),
         matching: find.byType(TextField),
       );
       await tester.enterText(justificationField, 'I created Bitcoin');

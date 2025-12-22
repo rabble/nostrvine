@@ -33,71 +33,49 @@ void main() {
   }
 
   group('ReservedUsernameRequestNotifier', () {
+    group('isEmailValid', () {
+      test('is true when email is empty', () {
+        final container = createContainer();
+
+        expect(
+          container.read(reservedUsernameRequestProvider.notifier).isEmailValid,
+          isTrue,
+        );
+      });
+
+      test('is true when email is valid', () {
+        final container = createContainer();
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
+
+        notifier.setEmail('test@example.com');
+
+        expect(notifier.isEmailValid, isTrue);
+      });
+
+      test('is false when email is not valid', () {
+        final container = createContainer();
+        final notifier = container.read(
+          reservedUsernameRequestProvider.notifier,
+        );
+
+        notifier.setEmail('test@example.%com');
+
+        expect(notifier.isEmailValid, isFalse);
+      });
+    });
+
     group('build', () {
       test('returns initial state with empty fields and idle status', () {
         final container = createContainer();
 
         final state = container.read(reservedUsernameRequestProvider);
 
-        expect(state.username, '');
         expect(state.email, '');
         expect(state.justification, '');
         expect(state.status, ReservedUsernameRequestStatus.idle);
         expect(state.errorMessage, isNull);
-      });
-    });
-
-    group('setUsername', () {
-      test('updates username in state', () {
-        final container = createContainer();
-
-        container
-            .read(reservedUsernameRequestProvider.notifier)
-            .setUsername('testuser');
-
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
-      });
-
-      test('converts username to lowercase', () {
-        final container = createContainer();
-
-        container
-            .read(reservedUsernameRequestProvider.notifier)
-            .setUsername('TestUser');
-
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
-      });
-
-      test('trims whitespace from username', () {
-        final container = createContainer();
-
-        container
-            .read(reservedUsernameRequestProvider.notifier)
-            .setUsername('  testuser  ');
-
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
-      });
-
-      test('preserves other fields when updating username', () {
-        final container = createContainer();
-        final notifier = container.read(
-          reservedUsernameRequestProvider.notifier,
-        );
-
-        // Set other fields first
-        notifier.setEmail('test@example.com');
-        notifier.setJustification('I am the owner');
-
-        // Update username
-        notifier.setUsername('newuser');
-
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'newuser');
-        expect(state.email, 'test@example.com');
-        expect(state.justification, 'I am the owner');
       });
     });
 
@@ -143,14 +121,12 @@ void main() {
         );
 
         // Set other fields first
-        notifier.setUsername('testuser');
         notifier.setJustification('I am the owner');
 
         // Update email
         notifier.setEmail('new@example.com');
 
         final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
         expect(state.email, 'new@example.com');
         expect(state.justification, 'I am the owner');
       });
@@ -200,99 +176,18 @@ void main() {
         );
 
         // Set other fields first
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
 
         // Update justification
         notifier.setJustification('New justification');
 
         final state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
         expect(state.email, 'test@example.com');
         expect(state.justification, 'New justification');
       });
     });
 
-    group('reset', () {
-      test('returns state to initial values', () {
-        final container = createContainer();
-        final notifier = container.read(
-          reservedUsernameRequestProvider.notifier,
-        );
-
-        // Set up a non-initial state
-        notifier.setUsername('testuser');
-        notifier.setEmail('test@example.com');
-        notifier.setJustification('I own the brand');
-
-        // Verify state is not initial
-        var state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'testuser');
-        expect(state.email, 'test@example.com');
-        expect(state.justification, 'I own the brand');
-
-        // Act
-        notifier.reset();
-
-        // Assert - should be back to initial state
-        state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, '');
-        expect(state.email, '');
-        expect(state.justification, '');
-        expect(state.status, ReservedUsernameRequestStatus.idle);
-        expect(state.errorMessage, isNull);
-      });
-
-      test('clears error state', () {
-        final container = createContainer();
-        final notifier = container.read(
-          reservedUsernameRequestProvider.notifier,
-        );
-
-        // Manually set an error state
-        notifier.setUsername('testuser');
-        notifier.setEmail('invalid-email');
-        notifier.setJustification('reason');
-
-        // Try to submit (will fail validation but we can simulate error state)
-        // For test purposes, just verify reset works regardless of state
-
-        // Act
-        notifier.reset();
-
-        // Assert
-        final state = container.read(reservedUsernameRequestProvider);
-        expect(state.status, ReservedUsernameRequestStatus.idle);
-        expect(state.errorMessage, isNull);
-      });
-    });
-
     group('submitRequest', () {
-      test(
-        'returns false when canSubmit is false (missing username)',
-        () async {
-          final container = createContainer();
-          final notifier = container.read(
-            reservedUsernameRequestProvider.notifier,
-          );
-
-          // Set only email and justification
-          notifier.setEmail('test@example.com');
-          notifier.setJustification('I am the owner');
-
-          final result = await notifier.submitRequest();
-
-          expect(result, false);
-          verifyNever(
-            () => mockRepository.submitRequest(
-              username: any(named: 'username'),
-              email: any(named: 'email'),
-              justification: any(named: 'justification'),
-            ),
-          );
-        },
-      );
-
       test('returns false when canSubmit is false (missing email)', () async {
         final container = createContainer();
         final notifier = container.read(
@@ -300,10 +195,9 @@ void main() {
         );
 
         // Set only username and justification
-        notifier.setUsername('testuser');
         notifier.setJustification('I am the owner');
 
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         expect(result, false);
         verifyNever(
@@ -322,11 +216,10 @@ void main() {
         );
 
         // Set invalid email
-        notifier.setUsername('testuser');
         notifier.setEmail('invalid-email');
         notifier.setJustification('I am the owner');
 
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         expect(result, false);
         verifyNever(
@@ -347,10 +240,9 @@ void main() {
           );
 
           // Set only username and email
-          notifier.setUsername('testuser');
           notifier.setEmail('test@example.com');
 
-          final result = await notifier.submitRequest();
+          final result = await notifier.submitRequest(username: 'username');
 
           expect(result, false);
           verifyNever(
@@ -372,7 +264,7 @@ void main() {
         // Arrange
         when(
           () => mockRepository.submitRequest(
-            username: 'testuser',
+            username: 'username',
             email: 'test@example.com',
             justification: 'I am the owner',
           ),
@@ -388,17 +280,16 @@ void main() {
           return const ReservedUsernameRequestResult.success();
         });
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        await notifier.submitRequest();
+        await notifier.submitRequest(username: 'username');
 
         // Assert - verify submitting state was set
         verify(
           () => mockRepository.submitRequest(
-            username: 'testuser',
+            username: 'username',
             email: 'test@example.com',
             justification: 'I am the owner',
           ),
@@ -414,7 +305,7 @@ void main() {
         // Arrange
         when(
           () => mockRepository.submitRequest(
-            username: 'testuser',
+            username: 'username',
             email: 'test@example.com',
             justification: 'I am the brand owner',
           ),
@@ -422,17 +313,16 @@ void main() {
           (_) async => const ReservedUsernameRequestResult.success(),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the brand owner');
 
         // Act
-        await notifier.submitRequest();
+        await notifier.submitRequest(username: 'username');
 
         // Assert
         verify(
           () => mockRepository.submitRequest(
-            username: 'testuser',
+            username: 'username',
             email: 'test@example.com',
             justification: 'I am the brand owner',
           ),
@@ -456,12 +346,11 @@ void main() {
           (_) async => const ReservedUsernameRequestResult.success(),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         // Assert
         expect(result, true);
@@ -489,12 +378,11 @@ void main() {
           (_) async => const ReservedUsernameRequestResult.failure(errorMsg),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         // Assert
         expect(result, false);
@@ -521,12 +409,11 @@ void main() {
           (_) async => const ReservedUsernameRequestResult.success(),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         // Assert
         expect(result, true);
@@ -550,12 +437,11 @@ void main() {
               const ReservedUsernameRequestResult.failure('Network error'),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         // Assert
         expect(result, false);
@@ -576,12 +462,11 @@ void main() {
           ),
         ).thenThrow(Exception('Network timeout'));
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
         // Act
-        final result = await notifier.submitRequest();
+        final result = await notifier.submitRequest(username: 'username');
 
         // Assert
         expect(result, false);
@@ -609,11 +494,10 @@ void main() {
               const ReservedUsernameRequestResult.failure('First error'),
         );
 
-        notifier.setUsername('testuser');
         notifier.setEmail('test@example.com');
         notifier.setJustification('I am the owner');
 
-        await notifier.submitRequest();
+        await notifier.submitRequest(username: 'username');
 
         // Verify error state
         var state = container.read(reservedUsernameRequestProvider);
@@ -631,7 +515,7 @@ void main() {
         );
 
         // Act - submit again
-        await notifier.submitRequest();
+        await notifier.submitRequest(username: 'username');
 
         // Assert - error should be cleared
         state = container.read(reservedUsernameRequestProvider);
@@ -661,12 +545,11 @@ void main() {
             ),
           );
 
-          notifier.setUsername('testuser');
           notifier.setEmail('test@example.com');
           notifier.setJustification('I am the owner');
 
           // Act
-          final result = await notifier.submitRequest();
+          final result = await notifier.submitRequest(username: 'username');
 
           // Assert
           expect(result, false);
@@ -674,100 +557,6 @@ void main() {
           expect(state.errorMessage, 'Failed to submit request');
         },
       );
-    });
-
-    group('integration tests', () {
-      test('full form submission flow succeeds', () async {
-        final container = createContainer();
-        final notifier = container.read(
-          reservedUsernameRequestProvider.notifier,
-        );
-
-        // Arrange
-        when(
-          () => mockRepository.submitRequest(
-            username: 'brandname',
-            email: 'ceo@brand.com',
-            justification: 'I am the CEO and founder of Brand Inc.',
-          ),
-        ).thenAnswer(
-          (_) async => const ReservedUsernameRequestResult.success(),
-        );
-
-        // Act - simulate user filling out form
-        notifier.setUsername('BrandName'); // Will be lowercased
-        notifier.setEmail('  ceo@brand.com  '); // Will be trimmed
-        notifier.setJustification('I am the CEO and founder of Brand Inc.');
-
-        // Verify canSubmit before submission
-        var state = container.read(reservedUsernameRequestProvider);
-        expect(state.canSubmit, true);
-
-        // Submit
-        final result = await notifier.submitRequest();
-
-        // Assert
-        expect(result, true);
-        state = container.read(reservedUsernameRequestProvider);
-        expect(state.isSuccess, true);
-        expect(state.username, 'brandname');
-        expect(state.email, 'ceo@brand.com');
-      });
-
-      test('form can be reset and resubmitted', () async {
-        final container = createContainer();
-        final notifier = container.read(
-          reservedUsernameRequestProvider.notifier,
-        );
-
-        // First submission
-        when(
-          () => mockRepository.submitRequest(
-            username: 'first',
-            email: 'first@example.com',
-            justification: 'First reason',
-          ),
-        ).thenAnswer(
-          (_) async => const ReservedUsernameRequestResult.success(),
-        );
-
-        notifier.setUsername('first');
-        notifier.setEmail('first@example.com');
-        notifier.setJustification('First reason');
-
-        await notifier.submitRequest();
-
-        expect(container.read(reservedUsernameRequestProvider).isSuccess, true);
-
-        // Reset form
-        notifier.reset();
-
-        var state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, '');
-        expect(state.status, ReservedUsernameRequestStatus.idle);
-
-        // Second submission with different data
-        when(
-          () => mockRepository.submitRequest(
-            username: 'second',
-            email: 'second@example.com',
-            justification: 'Second reason',
-          ),
-        ).thenAnswer(
-          (_) async => const ReservedUsernameRequestResult.success(),
-        );
-
-        notifier.setUsername('second');
-        notifier.setEmail('second@example.com');
-        notifier.setJustification('Second reason');
-
-        final result = await notifier.submitRequest();
-
-        expect(result, true);
-        state = container.read(reservedUsernameRequestProvider);
-        expect(state.username, 'second');
-        expect(state.email, 'second@example.com');
-      });
     });
   });
 }
