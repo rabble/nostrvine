@@ -7,7 +7,6 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -21,16 +20,21 @@ import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
-import 'package:openvine/screens/vine_drafts_screen.dart';
+import 'package:openvine/screens/clip_manager_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Navigator keys for per-tab state preservation
@@ -68,13 +72,18 @@ int tabIndexFromLocation(String loc) {
     case 'search':
     case 'settings':
     case 'relay-settings':
+    case 'relay-diagnostic':
     case 'blossom-settings':
     case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
     case 'welcome':
     case 'camera':
+    case 'clip-manager':
+    case 'edit-video':
     case 'drafts':
     case 'followers':
     case 'following':
@@ -97,12 +106,18 @@ void resetNavigationState() {
 Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
   // Get the current user's pubkey
   final currentUserPubkey = prefs.getString('current_user_pubkey_hex');
-  debugPrint('[Router] Current user pubkey from prefs: $currentUserPubkey');
+  Log.debug(
+    'Current user pubkey from prefs: $currentUserPubkey',
+    name: 'AppRouter',
+    category: LogCategory.ui,
+  );
 
   if (currentUserPubkey == null || currentUserPubkey.isEmpty) {
     // No current user stored - treat as no following
-    debugPrint(
-      '[Router] No current user pubkey stored, treating as no following',
+    Log.debug(
+      'No current user pubkey stored, treating as no following',
+      name: 'AppRouter',
+      category: LogCategory.ui,
     );
     return false;
   }
@@ -112,18 +127,28 @@ Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
   final value = prefs.getString(key);
 
   if (value == null || value.isEmpty) {
-    debugPrint('[Router] No following list cache for current user');
+    Log.debug(
+      'No following list cache for current user',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
     return false;
   }
 
   try {
     final List<dynamic> decoded = jsonDecode(value);
-    debugPrint(
-      '[Router] Current user following list has ${decoded.length} entries',
+    Log.debug(
+      'Current user following list has ${decoded.length} entries',
+      name: 'AppRouter',
+      category: LogCategory.ui,
     );
     return decoded.isNotEmpty;
   } catch (e) {
-    debugPrint('[Router] Current user following list has invalid JSON: $e');
+    Log.debug(
+      'Current user following list has invalid JSON: $e',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
     return false;
   }
 }
@@ -155,15 +180,44 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authListenable,
     redirect: (context, state) async {
       final location = state.matchedLocation;
+      Log.debug(
+        'Redirect START for: $location',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
+      Log.debug(
+        'Getting SharedPreferences...',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
       final prefs = await SharedPreferences.getInstance();
+      Log.debug(
+        'SharedPreferences obtained',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
 
       // Check TOS acceptance first (before any other routes except /welcome)
       if (!location.startsWith('/welcome') &&
           !location.startsWith('/import-key')) {
+        Log.debug(
+          'Checking TOS for: $location',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
         final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
+        Log.debug(
+          'TOS accepted: $hasAcceptedTerms',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
 
         if (!hasAcceptedTerms) {
-          debugPrint('[Router] TOS not accepted, redirecting to /welcome');
+          Log.debug(
+            'TOS not accepted, redirecting to /welcome',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
           return '/welcome';
         }
       }
@@ -172,8 +226,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (location.startsWith('/welcome')) {
         final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
         if (hasAcceptedTerms) {
-          debugPrint(
-            '[Router] TOS accepted, redirecting from /welcome to /explore',
+          Log.debug(
+            'TOS accepted, redirecting from /welcome to /explore',
+            name: 'AppRouter',
+            category: LogCategory.ui,
           );
           return '/explore';
         }
@@ -188,21 +244,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // This is more reliable than checking socialProvider state which may not be initialized
         final prefs = await SharedPreferences.getInstance();
         final hasFollowing = await hasAnyFollowingInCache(prefs);
-        debugPrint(
-          '[Router] Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+        Log.debug(
+          'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+          name: 'AppRouter',
+          category: LogCategory.ui,
         );
         if (!hasFollowing) {
-          debugPrint(
-            '[Router] Redirecting to /explore because no following list found',
+          Log.debug(
+            'Redirecting to /explore because no following list found',
+            name: 'AppRouter',
+            category: LogCategory.ui,
           );
           return '/explore';
         }
       } else if (location.startsWith('/home')) {
-        debugPrint(
-          '[Router] Skipping empty contacts check: _hasNavigated=$_hasNavigated',
+        Log.debug(
+          'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
+          name: 'AppRouter',
+          category: LogCategory.ui,
         );
       }
 
+      Log.debug(
+        'Redirect END for: $location, returning null',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
+      print(
+        '🔵🔵🔵 REDIRECT RETURNING NULL for $location - route builder should be called next 🔵🔵🔵',
+      );
       return null;
     },
     routes: [
@@ -404,6 +474,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const UniversalCameraScreenPure(),
       ),
       GoRoute(
+        path: '/clip-manager',
+        name: 'clip-manager',
+        builder: (_, __) => const ClipManagerScreen(),
+      ),
+      GoRoute(
         path: '/settings',
         name: 'settings',
         builder: (_, __) => const SettingsScreen(),
@@ -424,15 +499,44 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const NotificationSettingsScreen(),
       ),
       GoRoute(
+        path: '/key-management',
+        name: 'key-management',
+        builder: (_, __) => const KeyManagementScreen(),
+      ),
+      GoRoute(
+        path: '/relay-diagnostic',
+        name: 'relay-diagnostic',
+        builder: (_, __) => const RelayDiagnosticScreen(),
+      ),
+      GoRoute(
+        path: '/safety-settings',
+        name: 'safety-settings',
+        builder: (_, __) => const SafetySettingsScreen(),
+      ),
+      GoRoute(
         path: '/edit-profile',
         name: 'edit-profile',
         builder: (context, state) {
-          print('🔍 ROUTE DEBUG: /edit-profile route builder called');
-          print('🔍 ROUTE DEBUG: state.uri = ${state.uri}');
-          print(
-            '🔍 ROUTE DEBUG: state.matchedLocation = ${state.matchedLocation}',
+          Log.debug(
+            '/edit-profile route builder called',
+            name: 'AppRouter',
+            category: LogCategory.ui,
           );
-          print('🔍 ROUTE DEBUG: state.fullPath = ${state.fullPath}');
+          Log.debug(
+            '/edit-profile state.uri = ${state.uri}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
+          Log.debug(
+            '/edit-profile state.matchedLocation = ${state.matchedLocation}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
+          Log.debug(
+            '/edit-profile state.fullPath = ${state.fullPath}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
           return const ProfileSetupScreen(isNewUser: false);
         },
       ),
@@ -440,19 +544,38 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/setup-profile',
         name: 'setup-profile',
         builder: (context, state) {
-          print('🔍 ROUTE DEBUG: /setup-profile route builder called');
-          print('🔍 ROUTE DEBUG: state.uri = ${state.uri}');
-          print(
-            '🔍 ROUTE DEBUG: state.matchedLocation = ${state.matchedLocation}',
+          Log.debug(
+            '/setup-profile route builder called',
+            name: 'AppRouter',
+            category: LogCategory.ui,
           );
-          print('🔍 ROUTE DEBUG: state.fullPath = ${state.fullPath}');
+          Log.debug(
+            '/setup-profile state.uri = ${state.uri}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
+          Log.debug(
+            '/setup-profile state.matchedLocation = ${state.matchedLocation}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
+          Log.debug(
+            '/setup-profile state.fullPath = ${state.fullPath}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
           return const ProfileSetupScreen(isNewUser: true);
         },
       ),
       GoRoute(
         path: '/drafts',
         name: 'drafts',
-        builder: (_, __) => const VineDraftsScreen(),
+        builder: (_, __) => const ClipLibraryScreen(),
+      ),
+      GoRoute(
+        path: '/clips',
+        name: 'clips',
+        builder: (_, __) => const ClipLibraryScreen(),
       ),
       // Followers screen
       GoRoute(
@@ -506,15 +629,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/edit-video',
         name: 'edit-video',
         builder: (ctx, st) {
-          final video = st.extra as VideoEvent?;
-          if (video == null) {
+          final videoPath = st.extra as String?;
+          if (videoPath == null) {
             // If no video provided, show error screen
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: const Center(child: Text('No video selected for editing')),
             );
           }
-          return VideoEditorScreen(video: video);
+          return VideoEditorScreen(videoPath: videoPath);
         },
       ),
     ],

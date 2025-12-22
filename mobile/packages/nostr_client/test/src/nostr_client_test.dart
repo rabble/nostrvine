@@ -1052,6 +1052,16 @@ void main() {
       });
     });
 
+    group('forceReconnectAll', () {
+      test('delegates to RelayManager', () async {
+        when(mockRelayManager.forceReconnectAll).thenAnswer((_) async {});
+
+        await client.forceReconnectAll();
+
+        verify(mockRelayManager.forceReconnectAll).called(1);
+      });
+    });
+
     group('sendLike', () {
       test('sends like successfully', () async {
         const eventId = 'event-to-like';

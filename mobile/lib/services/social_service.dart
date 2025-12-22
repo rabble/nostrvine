@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
@@ -1641,6 +1642,7 @@ class SocialService {
   }
 
   // === COMMENT SYSTEM ===
+  final Map<String, ReplaySubject<Event>> _commentSubjects = {};
 
   /// Posts a comment in reply to a root event (video)
   Future<void> postComment({
@@ -1745,7 +1747,10 @@ class SocialService {
     );
 
     // Create a StreamController to emit events
-    final controller = StreamController<Event>();
+    final controller = _commentSubjects.putIfAbsent(
+      rootEventId,
+      () => ReplaySubject<Event>(),
+    );
 
     // Create managed subscription for comments
     // NOTE: No onComplete callback - keep subscription open for real-time comments

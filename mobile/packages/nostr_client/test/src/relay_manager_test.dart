@@ -675,6 +675,103 @@ void main() {
       });
     });
 
+    group('forceReconnectAll', () {
+      setUp(() async {
+        await manager.initialize();
+        await manager.addRelay(testCustomRelayUrl);
+        await manager.addRelay(testCustomRelayUrl2);
+      });
+
+      test('disconnects all relays before reconnecting', () async {
+        clearInteractions(mockRelayPool);
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+
+        await manager.forceReconnectAll();
+
+        // Should remove all 3 relays (default + 2 custom)
+        verify(() => mockRelayPool.remove(testDefaultRelayUrl)).called(1);
+        verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
+        verify(() => mockRelayPool.remove(testCustomRelayUrl2)).called(1);
+      });
+
+      test('reconnects all relays after disconnecting', () async {
+        clearInteractions(mockRelayPool);
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+
+        await manager.forceReconnectAll();
+
+        // Should reconnect all 3 relays
+        verify(() => mockRelayPool.add(any())).called(3);
+      });
+
+      test('updates status to connected on successful reconnection', () async {
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+
+        await manager.forceReconnectAll();
+
+        expect(
+          manager.getRelayStatus(testDefaultRelayUrl)?.state,
+          equals(RelayState.connected),
+        );
+        expect(
+          manager.getRelayStatus(testCustomRelayUrl)?.state,
+          equals(RelayState.connected),
+        );
+        expect(
+          manager.getRelayStatus(testCustomRelayUrl2)?.state,
+          equals(RelayState.connected),
+        );
+      });
+
+      test('updates status to error on failed reconnection', () async {
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+
+        await manager.forceReconnectAll();
+
+        expect(
+          manager.getRelayStatus(testDefaultRelayUrl)?.state,
+          equals(RelayState.error),
+        );
+        expect(
+          manager.getRelayStatus(testCustomRelayUrl)?.state,
+          equals(RelayState.error),
+        );
+      });
+
+      test('emits connecting status during reconnection', () async {
+        final statusStates = <RelayState>[];
+        manager.statusStream.listen((statuses) {
+          final status = statuses[testCustomRelayUrl];
+          if (status != null) {
+            statusStates.add(status.state);
+          }
+        });
+
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        await manager.forceReconnectAll();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(statusStates, contains(RelayState.connecting));
+        expect(statusStates, contains(RelayState.connected));
+      });
+
+      test('handles mixed success and failure', () async {
+        // First relay succeeds, second fails
+        var callCount = 0;
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async {
+          callCount++;
+          return callCount != 2; // Fail on second call
+        });
+
+        await manager.forceReconnectAll();
+
+        // At least one should be connected, one errored
+        final states = manager.currentStatuses.values.map((s) => s.state);
+        expect(states, contains(RelayState.connected));
+        expect(states, contains(RelayState.error));
+      });
+    });
+
     group('dispose', () {
       test('stops status polling', () async {
         await manager.initialize();

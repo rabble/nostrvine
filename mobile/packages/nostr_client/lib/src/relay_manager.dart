@@ -287,6 +287,42 @@ class RelayManager {
     _notifyStatusChange();
   }
 
+  /// Force reconnect all relays (disconnect first, then reconnect)
+  ///
+  /// Use this when WebSocket connections may have been silently dropped
+  /// (e.g., after app backgrounding).
+  Future<void> forceReconnectAll() async {
+    _log('Force reconnecting all relays');
+
+    // Create a copy to avoid concurrent modification during async iteration
+    final relaysToReconnect = List<String>.from(_configuredRelays);
+
+    // First disconnect all
+    for (final url in relaysToReconnect) {
+      _relayPool.remove(url);
+      _updateRelayStatus(url, RelayState.connecting);
+    }
+    _notifyStatusChange();
+
+    // Then reconnect all
+    for (final url in relaysToReconnect) {
+      final success = await _connectToRelay(url);
+      if (success) {
+        _updateRelayStatus(url, RelayState.connected);
+        _log('Force reconnected to $url');
+      } else {
+        _updateRelayStatus(
+          url,
+          RelayState.error,
+          errorMessage: 'Force reconnection failed',
+        );
+        _log('Force reconnection failed for $url');
+      }
+    }
+
+    _notifyStatusChange();
+  }
+
   /// Reconnect to a specific relay
   Future<bool> reconnectRelay(String url) async {
     final normalizedUrl = _normalizeUrl(url);
@@ -336,12 +372,15 @@ class RelayManager {
   // ---------------------------------------------------------------------------
 
   Future<void> _connectToConfiguredRelays() async {
-    for (final url in _configuredRelays) {
+    // Create a copy to avoid concurrent modification during async iteration
+    final relaysToConnect = List<String>.from(_configuredRelays);
+
+    for (final url in relaysToConnect) {
       _updateRelayStatus(url, RelayState.connecting);
     }
     _notifyStatusChange();
 
-    for (final url in _configuredRelays) {
+    for (final url in relaysToConnect) {
       final success = await _connectToRelay(url);
       if (success) {
         _updateRelayStatus(url, RelayState.connected);

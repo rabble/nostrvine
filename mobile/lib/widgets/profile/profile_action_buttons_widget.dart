@@ -1,4 +1,4 @@
-// ABOUTME: Action buttons widget for profile page (edit, drafts, share, follow, block)
+// ABOUTME: Action buttons widget for profile page (edit, clips, share, follow, block)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ class ProfileActionButtons extends StatelessWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     this.onEditProfile,
-    this.onOpenDrafts,
+    this.onOpenClips,
     this.onShareProfile,
     this.onBlockUser,
     super.key,
@@ -22,7 +22,7 @@ class ProfileActionButtons extends StatelessWidget {
   final String userIdHex;
   final bool isOwnProfile;
   final VoidCallback? onEditProfile;
-  final VoidCallback? onOpenDrafts;
+  final VoidCallback? onOpenClips;
   final VoidCallback? onShareProfile;
   final void Function(bool isCurrentlyBlocked)? onBlockUser;
 
@@ -49,8 +49,8 @@ class ProfileActionButtons extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: ElevatedButton(
-              key: const Key('drafts-button'),
-              onPressed: onOpenDrafts,
+              key: const Key('clips-button'),
+              onPressed: onOpenClips,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey[800],
                 foregroundColor: Colors.white,
@@ -59,7 +59,7 @@ class ProfileActionButtons extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Drafts'),
+              child: const Text('Clips'),
             ),
           ),
           const SizedBox(width: 8),

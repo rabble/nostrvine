@@ -27,6 +27,7 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
@@ -264,6 +265,13 @@ UsernameRepository usernameRepository(Ref ref) {
 Future<DraftStorageService> draftStorageService(Ref ref) async {
   final prefs = ref.watch(sharedPreferencesProvider);
   return DraftStorageService(prefs);
+}
+
+/// Clip library service for persisting individual video clips
+@riverpod
+ClipLibraryService clipLibraryService(Ref ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ClipLibraryService(prefs);
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)

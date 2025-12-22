@@ -553,6 +553,14 @@ class NostrClient {
     await _relayManager.retryDisconnectedRelays();
   }
 
+  /// Force reconnect all relays (disconnect first, then reconnect)
+  ///
+  /// Use this when WebSocket connections may have been silently dropped
+  /// (e.g., after app backgrounding).
+  Future<void> forceReconnectAll() async {
+    await _relayManager.forceReconnectAll();
+  }
+
   /// Gets relay connection status as a simple map.
   ///
   /// Returns `Map<String, bool>` where the value indicates if
