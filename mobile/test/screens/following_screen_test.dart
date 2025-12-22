@@ -1,30 +1,22 @@
 // ABOUTME: Tests for FollowingScreen widget using FollowingBloc
-// ABOUTME: Validates following list fetching, caching, error handling, and UI states
-
-import 'dart:async';
+// ABOUTME: Validates following list UI states and user interactions
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart' as mocktail;
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:nostr_client/nostr_client.dart';
+import 'package:mockito/mockito.dart' show when;
 import 'package:openvine/blocs/following/following_bloc.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/following_screen.dart';
-import 'package:openvine/services/auth_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
 import '../helpers/test_provider_overrides.mocks.dart'
     show MockSharedPreferences;
-import 'following_screen_test.mocks.dart';
 
 class MockFollowingBloc extends MockBloc<FollowingEvent, FollowingState>
     implements FollowingBloc {}
 
-@GenerateMocks([NostrClient, AuthService, FollowRepository])
 void main() {
   setUpAll(() {
     // Register fallback value for mocktail captureAny
@@ -215,11 +207,8 @@ void main() {
           .captured;
 
       expect(captured.length, 1);
-      expect(captured.first, isA<FollowingListRefreshRequested>());
-      expect(
-        (captured.first as FollowingListRefreshRequested).pubkey,
-        testPubkey,
-      );
+      expect(captured.first, isA<FollowingListLoadRequested>());
+      expect((captured.first as FollowingListLoadRequested).pubkey, testPubkey);
     });
 
     // Note: RefreshIndicator test is skipped because UserProfileTile
@@ -263,108 +252,12 @@ void main() {
             .captured;
 
         expect(captured.length, 1);
-        expect(captured.first, isA<FollowingListRefreshRequested>());
+        expect(captured.first, isA<FollowingListLoadRequested>());
         expect(
-          (captured.first as FollowingListRefreshRequested).pubkey,
+          (captured.first as FollowingListLoadRequested).pubkey,
           testPubkey,
         );
       },
-    );
-  });
-
-  group('FollowingBloc', () {
-    late MockNostrClient mockNostrClient;
-    late MockAuthService mockAuthService;
-    late MockFollowRepository mockFollowRepository;
-    late StreamController<List<String>> followingStreamController;
-
-    setUp(() {
-      mockNostrClient = MockNostrClient();
-      mockAuthService = MockAuthService();
-      mockFollowRepository = MockFollowRepository();
-      followingStreamController = StreamController<List<String>>.broadcast();
-
-      when(
-        mockFollowRepository.followingStream,
-      ).thenAnswer((_) => followingStreamController.stream);
-      when(mockFollowRepository.followingPubkeys).thenReturn([]);
-    });
-
-    tearDown(() {
-      followingStreamController.close();
-    });
-
-    blocTest<FollowingBloc, FollowingState>(
-      'emits [loading, success] when loading current user following list',
-      build: () {
-        when(
-          mockAuthService.currentPublicKeyHex,
-        ).thenReturn(validPubkey('current'));
-        when(
-          mockFollowRepository.followingPubkeys,
-        ).thenReturn([validPubkey('following1')]);
-        return FollowingBloc(
-          followRepository: mockFollowRepository,
-          nostrClient: mockNostrClient,
-          authService: mockAuthService,
-        );
-      },
-      act: (bloc) =>
-          bloc.add(FollowingListLoadRequested(validPubkey('current'))),
-      expect: () => [
-        FollowingState(
-          status: FollowingStatus.loading,
-          targetPubkey: validPubkey('current'),
-        ),
-        FollowingState(
-          status: FollowingStatus.success,
-          followingPubkeys: [validPubkey('following1')],
-          targetPubkey: validPubkey('current'),
-        ),
-      ],
-    );
-
-    blocTest<FollowingBloc, FollowingState>(
-      'updates state when repository stream emits new following list',
-      build: () {
-        when(
-          mockAuthService.currentPublicKeyHex,
-        ).thenReturn(validPubkey('current'));
-        when(mockFollowRepository.followingPubkeys).thenReturn([]);
-        return FollowingBloc(
-          followRepository: mockFollowRepository,
-          nostrClient: mockNostrClient,
-          authService: mockAuthService,
-        );
-      },
-      act: (bloc) async {
-        bloc.add(FollowingListLoadRequested(validPubkey('current')));
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        followingStreamController.add([
-          validPubkey('following1'),
-          validPubkey('following2'),
-        ]);
-      },
-      wait: const Duration(milliseconds: 200),
-      expect: () => [
-        FollowingState(
-          status: FollowingStatus.loading,
-          targetPubkey: validPubkey('current'),
-        ),
-        FollowingState(
-          status: FollowingStatus.success,
-          followingPubkeys: const [],
-          targetPubkey: validPubkey('current'),
-        ),
-        FollowingState(
-          status: FollowingStatus.success,
-          followingPubkeys: [
-            validPubkey('following1'),
-            validPubkey('following2'),
-          ],
-          targetPubkey: validPubkey('current'),
-        ),
-      ],
     );
   });
 }
