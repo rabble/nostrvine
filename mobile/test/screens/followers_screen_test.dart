@@ -8,10 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/followers_screen.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 @GenerateMocks([NostrClient])
 import 'followers_screen_test.mocks.dart';
@@ -39,12 +39,15 @@ void main() {
     });
 
     tearDown(() {
-      eventStreamController.close();
+      if (!eventStreamController.isClosed) {
+        // TODO: This doesn't actually close the pending timers
+        eventStreamController.close();
+      }
     });
 
     Widget createTestWidget({
       required String pubkey,
-      required String displayName,
+      String? displayName = 'Test User',
     }) {
       return ProviderScope(
         overrides: [nostrServiceProvider.overrideWithValue(mockNostrService)],
@@ -62,6 +65,36 @@ void main() {
       // Should show loading indicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Test User\'s Followers'), findsOneWidget);
+    });
+
+    testWidgets('displays fallback text when displayName is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(pubkey: 'test_pubkey', displayName: null),
+      );
+      await tester.pump();
+
+      expect(find.text('Followers'), findsOneWidget);
+
+      // Close the stream to cancel pending timers
+      await eventStreamController.close();
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    testWidgets('displays fallback text when displayName is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(pubkey: 'test_pubkey', displayName: ''),
+      );
+      await tester.pump();
+
+      expect(find.text('Followers'), findsOneWidget);
+
+      // Close the stream to cancel pending timers
+      await eventStreamController.close();
+      await tester.pump(const Duration(seconds: 6));
     });
 
     testWidgets('displays followers when events arrive', (tester) async {

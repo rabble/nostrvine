@@ -24,7 +24,7 @@ class FollowingPage extends ConsumerWidget {
   });
 
   final String pubkey;
-  final String displayName;
+  final String? displayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,17 +53,21 @@ class FollowingView extends StatelessWidget {
   });
 
   final String pubkey;
-  final String displayName;
+  final String? displayName;
 
   @override
   Widget build(BuildContext context) {
+    final appBarTitle = displayName?.isNotEmpty == true
+        ? "$displayName's Following"
+        : 'Following';
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: VineTheme.whiteText,
         title: Text(
-          "$displayName's Following",
+          appBarTitle,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,

@@ -26,7 +26,7 @@ class ProfileFollowersStat extends ConsumerWidget {
   final String pubkey;
 
   /// The display name of the user for the followers screen title.
-  final String displayName;
+  final String? displayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,7 +52,7 @@ class ProfileFollowersStatView extends StatelessWidget {
   });
 
   final String pubkey;
-  final String displayName;
+  final String? displayName;
 
   @override
   Widget build(BuildContext context) {
