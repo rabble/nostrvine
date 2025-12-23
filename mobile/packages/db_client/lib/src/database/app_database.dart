@@ -100,12 +100,80 @@ class AppDatabase extends _$AppDatabase {
 extension Migrations on GeneratedDatabase {
   OnUpgrade get _schemaUpgrade => stepByStep(
     from1To2: (m, schema) async {
+      // Add expire_at column to event table
       await m.alterTable(
         TableMigration(
           schema.event,
           newColumns: [schema.event.expireAt],
         ),
       );
+
+      // Fix profile_stats table if it has old schema (updated_at instead of
+      // cached_at, or missing total_views/total_likes columns).
+      // Since profile_stats is a cache with 5-minute expiry, we can safely
+      // drop and recreate it.
+      await _migrateProfileStatsTable(m, schema);
     },
   );
+
+  /// Migrates profile_stats table from old schema to new schema.
+  ///
+  /// Old schema had: pubkey, video_count, follower_count, following_count,
+  ///                 updated_at
+  /// New schema has: pubkey, video_count, follower_count, following_count,
+  ///                 total_views, total_likes, cached_at
+  ///
+  /// Since this is a cache table with 5-minute expiry, we drop and recreate.
+  Future<void> _migrateProfileStatsTable(
+    Migrator m,
+    Schema2 schema,
+  ) async {
+    // Check if profile_stats table exists and has old schema
+    final hasOldSchema = await _profileStatsHasOldSchema();
+
+    if (hasOldSchema) {
+      // Drop the old table
+      await customStatement('DROP TABLE IF EXISTS profile_stats');
+
+      // Create the new table with correct schema
+      await m.createTable(schema.profileStats);
+    }
+  }
+
+  /// Checks if profile_stats table exists with old schema.
+  ///
+  /// Returns true if the table exists but is missing the cached_at column
+  /// (which indicates it has the old updated_at schema).
+  Future<bool> _profileStatsHasOldSchema() async {
+    try {
+      // Check if profile_stats table exists
+      final tableExists = await customSelect(
+        "SELECT name FROM sqlite_master WHERE type='table' "
+        "AND name='profile_stats'",
+      ).get();
+
+      if (tableExists.isEmpty) {
+        return false; // Table doesn't exist, no migration needed
+      }
+
+      // Check if cached_at column exists
+      final columns = await customSelect(
+        'PRAGMA table_info(profile_stats)',
+      ).get();
+
+      final columnNames = columns.map((row) => row.data['name']).toSet();
+
+      // Old schema has updated_at, new schema has cached_at
+      // Also check for missing total_views and total_likes
+      final hasCachedAt = columnNames.contains('cached_at');
+      final hasTotalViews = columnNames.contains('total_views');
+      final hasTotalLikes = columnNames.contains('total_likes');
+
+      // If any of the new columns are missing, we need to migrate
+      return !hasCachedAt || !hasTotalViews || !hasTotalLikes;
+    } on Exception {
+      // If we can't check, assume no migration needed
+      return false;
+    }
+  }
 }
