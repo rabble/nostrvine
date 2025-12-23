@@ -528,7 +528,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final profile = profileAsync.value;
 
     if (!isOwnProfile && profile == null) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     final profilePictureUrl = profile?.picture;
