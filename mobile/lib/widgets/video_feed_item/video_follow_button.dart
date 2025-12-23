@@ -38,7 +38,8 @@ class VideoFollowButton extends ConsumerWidget {
         followRepository: followRepository,
         nostrClient: nostrClient,
         authService: authService,
-      )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
+        targetPubkey: currentUserPubkey ?? '',
+      )..add(const FollowingListLoadRequested()),
       child: VideoFollowButtonView(pubkey: pubkey),
     );
   }
@@ -53,9 +54,22 @@ class VideoFollowButtonView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<FollowingBloc, FollowingState, bool>(
-      selector: (state) => state.isFollowing(pubkey),
-      builder: (context, isFollowing) {
+    return BlocSelector<
+      FollowingBloc,
+      FollowingState,
+      ({bool isFollowing, bool isReady})
+    >(
+      selector: (state) => (
+        isFollowing: state.isFollowing(pubkey),
+        isReady: state.status == FollowingStatus.success,
+      ),
+      builder: (context, data) {
+        // Don't show button until status is success to prevent flash on Home feed
+        if (!data.isReady) {
+          return const SizedBox.shrink();
+        }
+
+        final isFollowing = data.isFollowing;
         return GestureDetector(
           onTap: () {
             Log.info(

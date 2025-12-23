@@ -58,22 +58,47 @@ void main() {
       followingStreamController.close();
     });
 
-    FollowingBloc _createBloc() => FollowingBloc(
+    FollowingBloc createBloc({required String targetPubkey}) => FollowingBloc(
       followRepository: mockFollowRepository,
       nostrClient: mockNostrClient,
       authService: mockAuthService,
+      targetPubkey: targetPubkey,
     );
 
-    test('initial state is correct', () {
-      final bloc = _createBloc();
-      expect(bloc.state, const FollowingState());
+    test('initial state for current user is success with cached data', () {
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(validPubkey('current'));
+      when(
+        () => mockFollowRepository.followingPubkeys,
+      ).thenReturn([validPubkey('following1')]);
+
+      final bloc = createBloc(targetPubkey: validPubkey('current'));
+      expect(
+        bloc.state,
+        FollowingState(
+          status: FollowingStatus.success,
+          followingPubkeys: [validPubkey('following1')],
+          targetPubkey: validPubkey('current'),
+        ),
+      );
+      bloc.close();
+    });
+
+    test('initial state for other user is initial with targetPubkey', () {
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(validPubkey('current'));
+
+      final bloc = createBloc(targetPubkey: validPubkey('other'));
+      expect(bloc.state, FollowingState(targetPubkey: validPubkey('other')));
       bloc.close();
     });
 
     group('FollowingListLoadRequested', () {
       group('current user mode', () {
         blocTest<FollowingBloc, FollowingState>(
-          'emits [loading, success] with repository data for current user',
+          'listens to repository stream for updates',
           setUp: () {
             when(
               () => mockAuthService.currentPublicKeyHex,
@@ -81,30 +106,6 @@ void main() {
             when(
               () => mockFollowRepository.followingPubkeys,
             ).thenReturn([validPubkey('following1')]);
-          },
-          build: _createBloc,
-          act: (bloc) =>
-              bloc.add(FollowingListLoadRequested(validPubkey('current'))),
-          expect: () => [
-            FollowingState(
-              status: FollowingStatus.loading,
-              targetPubkey: validPubkey('current'),
-            ),
-            FollowingState(
-              status: FollowingStatus.success,
-              followingPubkeys: [validPubkey('following1')],
-              targetPubkey: validPubkey('current'),
-            ),
-          ],
-        );
-
-        blocTest<FollowingBloc, FollowingState>(
-          'updates state when repository stream emits new following list',
-          setUp: () {
-            when(
-              () => mockAuthService.currentPublicKeyHex,
-            ).thenReturn(validPubkey('current'));
-            when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
             when(() => mockFollowRepository.followingStream).thenAnswer(
               (_) => Stream.value([
                 validPubkey('following1'),
@@ -112,19 +113,9 @@ void main() {
               ]),
             );
           },
-          build: _createBloc,
-          act: (bloc) =>
-              bloc.add(FollowingListLoadRequested(validPubkey('current'))),
+          build: () => createBloc(targetPubkey: validPubkey('current')),
+          act: (bloc) => bloc.add(const FollowingListLoadRequested()),
           expect: () => [
-            FollowingState(
-              status: FollowingStatus.loading,
-              targetPubkey: validPubkey('current'),
-            ),
-            FollowingState(
-              status: FollowingStatus.success,
-              followingPubkeys: const [],
-              targetPubkey: validPubkey('current'),
-            ),
             FollowingState(
               status: FollowingStatus.success,
               followingPubkeys: [
@@ -168,9 +159,8 @@ void main() {
               controller.close();
             });
           },
-          build: _createBloc,
-          act: (bloc) =>
-              bloc.add(FollowingListLoadRequested(validPubkey('other'))),
+          build: () => createBloc(targetPubkey: validPubkey('other')),
+          act: (bloc) => bloc.add(const FollowingListLoadRequested()),
           wait: const Duration(milliseconds: 200),
           expect: () => [
             FollowingState(
@@ -198,9 +188,8 @@ void main() {
               () => mockNostrClient.subscribe(any()),
             ).thenAnswer((_) => const Stream.empty());
           },
-          build: _createBloc,
-          act: (bloc) =>
-              bloc.add(FollowingListLoadRequested(validPubkey('other'))),
+          build: () => createBloc(targetPubkey: validPubkey('other')),
+          act: (bloc) => bloc.add(const FollowingListLoadRequested()),
           wait: const Duration(milliseconds: 100),
           expect: () => [
             FollowingState(
@@ -226,7 +215,7 @@ void main() {
             () => mockFollowRepository.follow(any()),
           ).thenAnswer((_) async {});
         },
-        build: _createBloc,
+        build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
         verify: (_) {
           verify(
@@ -246,7 +235,7 @@ void main() {
             () => mockFollowRepository.unfollow(any()),
           ).thenAnswer((_) async {});
         },
-        build: _createBloc,
+        build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
         wait: const Duration(milliseconds: 100),
         verify: (_) {
@@ -265,7 +254,7 @@ void main() {
             () => mockFollowRepository.follow(any()),
           ).thenThrow(Exception('Network error'));
         },
-        build: _createBloc,
+        build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
         expect: () => <FollowingState>[],
       );
@@ -278,7 +267,7 @@ void main() {
             () => mockFollowRepository.unfollow(any()),
           ).thenThrow(Exception('Network error'));
         },
-        build: _createBloc,
+        build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
         wait: const Duration(milliseconds: 100),
         // Should not throw or emit error state - just logs
@@ -296,8 +285,8 @@ void main() {
           () => mockNostrClient.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        final bloc = _createBloc();
-        bloc.add(FollowingListLoadRequested(validPubkey('other')));
+        final bloc = createBloc(targetPubkey: validPubkey('other'));
+        bloc.add(const FollowingListLoadRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         await bloc.close();

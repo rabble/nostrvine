@@ -38,7 +38,8 @@ class FollowingPage extends ConsumerWidget {
         followRepository: followRepository,
         nostrClient: nostrClient,
         authService: authService,
-      )..add(FollowingListLoadRequested(pubkey)),
+        targetPubkey: pubkey,
+      )..add(const FollowingListLoadRequested()),
       child: FollowingView(pubkey: pubkey, displayName: displayName),
     );
   }
@@ -83,7 +84,7 @@ class FollowingView extends StatelessWidget {
               following: state.followingPubkeys,
               pubkey: pubkey,
             ),
-            FollowingStatus.failure => _FollowingErrorBody(pubkey: pubkey),
+            FollowingStatus.failure => const _FollowingErrorBody(),
           };
         },
       ),
@@ -105,7 +106,7 @@ class _FollowingListBody extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<FollowingBloc>().add(FollowingListLoadRequested(pubkey));
+        context.read<FollowingBloc>().add(const FollowingListLoadRequested());
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -155,9 +156,7 @@ class _FollowingEmptyState extends StatelessWidget {
 }
 
 class _FollowingErrorBody extends StatelessWidget {
-  const _FollowingErrorBody({required this.pubkey});
-
-  final String pubkey;
+  const _FollowingErrorBody();
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +174,7 @@ class _FollowingErrorBody extends StatelessWidget {
           TextButton(
             onPressed: () {
               context.read<FollowingBloc>().add(
-                FollowingListLoadRequested(pubkey),
+                const FollowingListLoadRequested(),
               );
             },
             child: const Text('Retry'),

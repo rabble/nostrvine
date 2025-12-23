@@ -8,12 +8,9 @@ sealed class FollowingEvent {
   const FollowingEvent();
 }
 
-/// Request to load (or refresh) the following list for a specific user
+/// Request to load (or refresh) the following list.
 final class FollowingListLoadRequested extends FollowingEvent {
-  const FollowingListLoadRequested(this.pubkey);
-
-  /// The public key of the user whose following list to load
-  final String pubkey;
+  const FollowingListLoadRequested();
 }
 
 /// Request to toggle follow status for a user.

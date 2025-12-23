@@ -23,7 +23,7 @@ void main() {
     late MockSharedPreferences mockSharedPreferences;
     setUpAll(() {
       // Register fallback value for mocktail captureAny
-      mocktail.registerFallbackValue(const FollowingListLoadRequested(''));
+      mocktail.registerFallbackValue(const FollowingListLoadRequested());
     });
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -175,7 +175,6 @@ void main() {
 
       expect(captured.length, 1);
       expect(captured.first, isA<FollowingListLoadRequested>());
-      expect((captured.first as FollowingListLoadRequested).pubkey, testPubkey);
     });
 
     // TODO(anyone): fix the test below, skip for now.
@@ -220,10 +219,6 @@ void main() {
 
         expect(captured.length, 1);
         expect(captured.first, isA<FollowingListLoadRequested>());
-        expect(
-          (captured.first as FollowingListLoadRequested).pubkey,
-          testPubkey,
-        );
       },
     );
   });

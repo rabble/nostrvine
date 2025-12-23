@@ -19,15 +19,28 @@ part 'following_state.dart';
 /// Scoped to [FollowingScreen]. Supports two modes:
 /// - Current user: Uses [FollowRepository] for reactive updates via emit.forEach
 /// - Other users: Fetches following list from Nostr relays (read-only)
+///
+/// For current user, the initial state is set optimistically with cached
+/// repository data to prevent UI flash.
 class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   FollowingBloc({
     required FollowRepository followRepository,
     required NostrClient nostrClient,
     required AuthService authService,
+    required String targetPubkey,
   }) : _followRepository = followRepository,
        _nostrClient = nostrClient,
        _authService = authService,
-       super(const FollowingState()) {
+       _targetPubkey = targetPubkey,
+       super(
+         targetPubkey == authService.currentPublicKeyHex
+             ? FollowingState(
+                 status: FollowingStatus.success,
+                 followingPubkeys: followRepository.followingPubkeys,
+                 targetPubkey: targetPubkey,
+               )
+             : FollowingState(targetPubkey: targetPubkey),
+       ) {
     on<FollowingListLoadRequested>(_onLoadRequested);
     on<FollowToggleRequested>(_onFollowToggleRequested);
   }
@@ -35,28 +48,28 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   final FollowRepository _followRepository;
   final NostrClient _nostrClient;
   final AuthService _authService;
+  final String _targetPubkey;
   StreamSubscription<Event>? _nostrSubscription;
 
-  bool _isCurrentUser(String pubkey) =>
-      pubkey == _authService.currentPublicKeyHex;
+  bool get _isCurrentUser => _targetPubkey == _authService.currentPublicKeyHex;
 
   /// Handle request to load a following list
   Future<void> _onLoadRequested(
     FollowingListLoadRequested event,
     Emitter<FollowingState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        status: FollowingStatus.loading,
-        targetPubkey: event.pubkey,
-      ),
-    );
-
     try {
-      if (_isCurrentUser(event.pubkey)) {
-        await _loadCurrentUserFollowing(emit);
+      if (_isCurrentUser) {
+        await _listenCurrentUserFollowing(emit);
       } else {
-        await _loadOtherUserFollowing(event.pubkey, emit);
+        // For other users, we need to fetch from network so show loading
+        emit(
+          state.copyWith(
+            status: FollowingStatus.loading,
+            targetPubkey: _targetPubkey,
+          ),
+        );
+        await _loadOtherUserFollowing(emit);
       }
     } catch (e) {
       Log.error(
@@ -68,17 +81,8 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     }
   }
 
-  /// Load current user's following from FollowRepository (reactive)
-  /// Uses emit.forEach to listen to the repository stream
-  Future<void> _loadCurrentUserFollowing(Emitter<FollowingState> emit) async {
-    // Emit current state immediately
-    emit(
-      state.copyWith(
-        status: FollowingStatus.success,
-        followingPubkeys: _followRepository.followingPubkeys,
-      ),
-    );
-
+  /// Listen current user's following from FollowRepository (reactive)
+  Future<void> _listenCurrentUserFollowing(Emitter<FollowingState> emit) async {
     // Listen to repository stream for reactive updates
     await emit.forEach<List<String>>(
       _followRepository.followingStream,
@@ -98,10 +102,7 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   }
 
   /// Load other user's following from Nostr relays
-  Future<void> _loadOtherUserFollowing(
-    String pubkey,
-    Emitter<FollowingState> emit,
-  ) async {
+  Future<void> _loadOtherUserFollowing(Emitter<FollowingState> emit) async {
     // Cancel any existing subscription
     await _nostrSubscription?.cancel();
 
@@ -110,7 +111,7 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     // Subscribe to the user's kind 3 contact list events
     final eventStream = _nostrClient.subscribe([
       Filter(
-        authors: [pubkey],
+        authors: [_targetPubkey],
         kinds: const [3], // Contact lists
         limit: 1, // Get most recent only
       ),

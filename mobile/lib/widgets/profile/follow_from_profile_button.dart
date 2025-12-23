@@ -38,7 +38,8 @@ class FollowFromProfileButton extends ConsumerWidget {
         followRepository: followRepository,
         nostrClient: nostrClient,
         authService: authService,
-      )..add(FollowingListLoadRequested(currentUserPubkey ?? '')),
+        targetPubkey: currentUserPubkey ?? '',
+      )..add(const FollowingListLoadRequested()),
       child: FollowFromProfileButtonView(pubkey: pubkey),
     );
   }
