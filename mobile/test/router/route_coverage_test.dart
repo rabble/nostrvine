@@ -6,26 +6,26 @@ import 'package:openvine/router/route_utils.dart';
 
 void main() {
   group('Route Coverage Validation', () {
-    group('Settings routes parse to RouteType.settings', () {
-      // These routes were missing from parseRoute() causing the navigation bug
-      // where users saw "not a home route" when navigating to settings sub-screens
-      const settingsRoutes = [
-        '/settings',
-        '/relay-settings',
-        '/relay-diagnostic',
-        '/blossom-settings',
-        '/notification-settings',
-        '/key-management',
-        '/safety-settings',
-      ];
+    group('Settings routes parse to their dedicated RouteTypes', () {
+      // Each settings route has its own RouteType to ensure proper round-trip
+      // normalization (parseRoute → buildRoute returns the same URL)
+      final settingsRoutes = {
+        '/settings': RouteType.settings,
+        '/relay-settings': RouteType.relaySettings,
+        '/relay-diagnostic': RouteType.relayDiagnostic,
+        '/blossom-settings': RouteType.blossomSettings,
+        '/notification-settings': RouteType.notificationSettings,
+        '/key-management': RouteType.keyManagement,
+        '/safety-settings': RouteType.safetySettings,
+      };
 
-      for (final route in settingsRoutes) {
-        test('$route parses to RouteType.settings', () {
-          final context = parseRoute(route);
+      for (final entry in settingsRoutes.entries) {
+        test('${entry.key} parses to RouteType.${entry.value.name}', () {
+          final context = parseRoute(entry.key);
           expect(
             context.type,
-            RouteType.settings,
-            reason: '$route should parse to RouteType.settings',
+            entry.value,
+            reason: '${entry.key} should parse to RouteType.${entry.value.name}',
           );
         });
       }
