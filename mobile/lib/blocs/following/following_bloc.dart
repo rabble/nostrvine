@@ -147,5 +147,4 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
       );
     }
   }
-
 }

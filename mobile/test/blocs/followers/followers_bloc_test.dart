@@ -57,9 +57,7 @@ void main() {
           final targetPubkey = validPubkey('target');
           final followerPubkey = validPubkey('follower1');
 
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer(
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
             (_) async => [
               nostr_sdk.Event(
                 followerPubkey,
@@ -118,9 +116,7 @@ void main() {
           final targetPubkey = validPubkey('target');
           final followerPubkey = validPubkey('follower1');
 
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer(
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
             (_) async => [
               nostr_sdk.Event(
                 followerPubkey,

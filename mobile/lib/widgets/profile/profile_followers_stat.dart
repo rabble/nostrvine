@@ -38,10 +38,7 @@ class ProfileFollowersStat extends ConsumerWidget {
         followRepository: followRepository,
         nostrClient: nostrClient,
       )..add(FollowersListLoadRequested(pubkey)),
-      child: ProfileFollowersStatView(
-        pubkey: pubkey,
-        displayName: displayName,
-      ),
+      child: ProfileFollowersStatView(pubkey: pubkey, displayName: displayName),
     );
   }
 }
@@ -61,7 +58,8 @@ class ProfileFollowersStatView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<FollowersBloc, FollowersState>(
       builder: (context, state) {
-        final isLoading = state.status == FollowersStatus.initial ||
+        final isLoading =
+            state.status == FollowersStatus.initial ||
             state.status == FollowersStatus.loading;
 
         return ProfileStatColumn(
@@ -77,10 +75,8 @@ class ProfileFollowersStatView extends StatelessWidget {
   void _navigateToFollowers(BuildContext context) {
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (context) => FollowersScreen(
-          pubkey: pubkey,
-          displayName: displayName,
-        ),
+        builder: (context) =>
+            FollowersScreen(pubkey: pubkey, displayName: displayName),
       ),
     );
   }

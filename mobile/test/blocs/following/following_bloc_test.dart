@@ -120,9 +120,7 @@ void main() {
             ).thenReturn(validPubkey('current'));
 
             final otherPubkey = validPubkey('other');
-            when(
-              () => mockNostrClient.queryEvents(any()),
-            ).thenAnswer(
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
               (_) async => [
                 nostr_sdk.Event(
                   otherPubkey,
@@ -212,7 +210,6 @@ void main() {
         expect: () => <FollowingState>[],
       );
     });
-
   });
 
   group('FollowingState', () {
