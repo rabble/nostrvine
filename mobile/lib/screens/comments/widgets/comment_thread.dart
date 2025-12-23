@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/comments/comments.dart';
-import 'package:openvine/providers/comments/comments_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
@@ -29,7 +28,8 @@ class CommentThread extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comment = node.comment;
-    final inputState = ref.watch(currentCommentInputProvider);
+    final ctx = ref.watch(commentContextProvider);
+    final inputState = ref.watch(commentInputProvider(ctx.eventId, ctx.pubkey));
     final isReplying = inputState.activeReplyCommentId == comment.id;
     final isPostingReply = inputState.isReplyPosting(comment.id);
 
@@ -133,7 +133,12 @@ class CommentThread extends ConsumerWidget {
                         TextButton(
                           onPressed: () {
                             ref
-                                .read(currentCommentInputProvider.notifier)
+                                .read(
+                                  commentInputProvider(
+                                    ctx.eventId,
+                                    ctx.pubkey,
+                                  ).notifier,
+                                )
                                 .toggleReply(comment.id);
                           },
                           child: Text(
@@ -186,7 +191,8 @@ class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
   @override
   void initState() {
     super.initState();
-    final inputState = ref.read(currentCommentInputProvider);
+    final ctx = ref.read(commentContextProvider);
+    final inputState = ref.read(commentInputProvider(ctx.eventId, ctx.pubkey));
     _controller = TextEditingController(
       text: inputState.getReplyText(widget.parentCommentId),
     );
@@ -200,7 +206,8 @@ class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final inputState = ref.watch(currentCommentInputProvider);
+    final ctx = ref.watch(commentContextProvider);
+    final inputState = ref.watch(commentInputProvider(ctx.eventId, ctx.pubkey));
     final currentText = inputState.getReplyText(widget.parentCommentId);
 
     // Sync controller with state (for when state changes externally,
@@ -217,12 +224,12 @@ class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
       isPosting: widget.isPosting,
       onChanged: (text) {
         ref
-            .read(currentCommentInputProvider.notifier)
+            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
             .updateReplyText(widget.parentCommentId, text);
       },
       onSubmit: () {
         ref
-            .read(currentCommentInputProvider.notifier)
+            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
             .postReply(widget.parentCommentId, widget.parentAuthorPubkey);
       },
     );

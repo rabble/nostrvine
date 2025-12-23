@@ -19,7 +19,8 @@ class CommentsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(currentCommentsProvider);
+    final ctx = ref.watch(commentContextProvider);
+    final state = ref.watch(commentsProvider(ctx.eventId, ctx.pubkey));
 
     if (state.isLoading) {
       return const _LoadingState();

@@ -70,14 +70,18 @@ class _CommentsScreenContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ctx = ref.watch(commentContextProvider);
+
     // Listen for errors and show snackbar
-    ref.listen(currentCommentInputProvider, (prev, next) {
+    ref.listen(commentInputProvider(ctx.eventId, ctx.pubkey), (prev, next) {
       final error = next.error;
       if (error != null && prev?.error != error) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error)));
-        ref.read(currentCommentInputProvider.notifier).clearError();
+        ref
+            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
+            .clearError();
       }
     });
 
@@ -112,7 +116,10 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   @override
   void initState() {
     super.initState();
-    final inputState = ref.read(currentCommentInputProvider);
+    final ctx = ref.read(commentContextProvider);
+    final inputState = ref.read(
+      commentInputProvider(ctx.eventId, ctx.pubkey),
+    );
     _controller = TextEditingController(text: inputState.mainInputText);
   }
 
@@ -124,7 +131,10 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
 
   @override
   Widget build(BuildContext context) {
-    final inputState = ref.watch(currentCommentInputProvider);
+    final ctx = ref.watch(commentContextProvider);
+    final inputState = ref.watch(
+      commentInputProvider(ctx.eventId, ctx.pubkey),
+    );
 
     // Sync controller with state (for when state changes externally,
     // e.g., after post clears the text)
@@ -139,10 +149,14 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
       controller: _controller,
       isPosting: inputState.isMainPosting,
       onChanged: (text) {
-        ref.read(currentCommentInputProvider.notifier).updateMainText(text);
+        ref
+            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
+            .updateMainText(text);
       },
       onSubmit: () {
-        ref.read(currentCommentInputProvider.notifier).postMainComment();
+        ref
+            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
+            .postMainComment();
       },
     );
   }
