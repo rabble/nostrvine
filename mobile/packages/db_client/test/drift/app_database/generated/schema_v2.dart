@@ -1691,12 +1691,12 @@ class VideoMetricsCompanion extends UpdateCompanion<VideoMetricsData> {
   }
 }
 
-class ProfileStats extends Table
-    with TableInfo<ProfileStats, ProfileStatsData> {
+class ProfileStatistics extends Table
+    with TableInfo<ProfileStatistics, ProfileStatisticsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  ProfileStats(this.attachedDatabase, [this._alias]);
+  ProfileStatistics(this.attachedDatabase, [this._alias]);
   late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
     'pubkey',
     aliasedName,
@@ -1767,13 +1767,13 @@ class ProfileStats extends Table
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'profile_stats';
+  static const String $name = 'profile_statistics';
   @override
   Set<GeneratedColumn> get $primaryKey => {pubkey};
   @override
-  ProfileStatsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ProfileStatisticsData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ProfileStatsData(
+    return ProfileStatisticsData(
       pubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}pubkey'],
@@ -1806,8 +1806,8 @@ class ProfileStats extends Table
   }
 
   @override
-  ProfileStats createAlias(String alias) {
-    return ProfileStats(attachedDatabase, alias);
+  ProfileStatistics createAlias(String alias) {
+    return ProfileStatistics(attachedDatabase, alias);
   }
 
   @override
@@ -1816,8 +1816,8 @@ class ProfileStats extends Table
   bool get dontWriteConstraints => true;
 }
 
-class ProfileStatsData extends DataClass
-    implements Insertable<ProfileStatsData> {
+class ProfileStatisticsData extends DataClass
+    implements Insertable<ProfileStatisticsData> {
   final String pubkey;
   final int? videoCount;
   final int? followerCount;
@@ -1825,7 +1825,7 @@ class ProfileStatsData extends DataClass
   final int? totalViews;
   final int? totalLikes;
   final int cachedAt;
-  const ProfileStatsData({
+  const ProfileStatisticsData({
     required this.pubkey,
     this.videoCount,
     this.followerCount,
@@ -1857,8 +1857,8 @@ class ProfileStatsData extends DataClass
     return map;
   }
 
-  ProfileStatsCompanion toCompanion(bool nullToAbsent) {
-    return ProfileStatsCompanion(
+  ProfileStatisticsCompanion toCompanion(bool nullToAbsent) {
+    return ProfileStatisticsCompanion(
       pubkey: Value(pubkey),
       videoCount: videoCount == null && nullToAbsent
           ? const Value.absent()
@@ -1879,12 +1879,12 @@ class ProfileStatsData extends DataClass
     );
   }
 
-  factory ProfileStatsData.fromJson(
+  factory ProfileStatisticsData.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ProfileStatsData(
+    return ProfileStatisticsData(
       pubkey: serializer.fromJson<String>(json['pubkey']),
       videoCount: serializer.fromJson<int?>(json['videoCount']),
       followerCount: serializer.fromJson<int?>(json['followerCount']),
@@ -1908,7 +1908,7 @@ class ProfileStatsData extends DataClass
     };
   }
 
-  ProfileStatsData copyWith({
+  ProfileStatisticsData copyWith({
     String? pubkey,
     Value<int?> videoCount = const Value.absent(),
     Value<int?> followerCount = const Value.absent(),
@@ -1916,7 +1916,7 @@ class ProfileStatsData extends DataClass
     Value<int?> totalViews = const Value.absent(),
     Value<int?> totalLikes = const Value.absent(),
     int? cachedAt,
-  }) => ProfileStatsData(
+  }) => ProfileStatisticsData(
     pubkey: pubkey ?? this.pubkey,
     videoCount: videoCount.present ? videoCount.value : this.videoCount,
     followerCount: followerCount.present
@@ -1929,8 +1929,8 @@ class ProfileStatsData extends DataClass
     totalLikes: totalLikes.present ? totalLikes.value : this.totalLikes,
     cachedAt: cachedAt ?? this.cachedAt,
   );
-  ProfileStatsData copyWithCompanion(ProfileStatsCompanion data) {
-    return ProfileStatsData(
+  ProfileStatisticsData copyWithCompanion(ProfileStatisticsCompanion data) {
+    return ProfileStatisticsData(
       pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
       videoCount: data.videoCount.present
           ? data.videoCount.value
@@ -1953,7 +1953,7 @@ class ProfileStatsData extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('ProfileStatsData(')
+    return (StringBuffer('ProfileStatisticsData(')
           ..write('pubkey: $pubkey, ')
           ..write('videoCount: $videoCount, ')
           ..write('followerCount: $followerCount, ')
@@ -1978,7 +1978,7 @@ class ProfileStatsData extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ProfileStatsData &&
+      (other is ProfileStatisticsData &&
           other.pubkey == this.pubkey &&
           other.videoCount == this.videoCount &&
           other.followerCount == this.followerCount &&
@@ -1988,7 +1988,8 @@ class ProfileStatsData extends DataClass
           other.cachedAt == this.cachedAt);
 }
 
-class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
+class ProfileStatisticsCompanion
+    extends UpdateCompanion<ProfileStatisticsData> {
   final Value<String> pubkey;
   final Value<int?> videoCount;
   final Value<int?> followerCount;
@@ -1997,7 +1998,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
   final Value<int?> totalLikes;
   final Value<int> cachedAt;
   final Value<int> rowid;
-  const ProfileStatsCompanion({
+  const ProfileStatisticsCompanion({
     this.pubkey = const Value.absent(),
     this.videoCount = const Value.absent(),
     this.followerCount = const Value.absent(),
@@ -2007,7 +2008,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
     this.cachedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  ProfileStatsCompanion.insert({
+  ProfileStatisticsCompanion.insert({
     required String pubkey,
     this.videoCount = const Value.absent(),
     this.followerCount = const Value.absent(),
@@ -2018,7 +2019,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
     this.rowid = const Value.absent(),
   }) : pubkey = Value(pubkey),
        cachedAt = Value(cachedAt);
-  static Insertable<ProfileStatsData> custom({
+  static Insertable<ProfileStatisticsData> custom({
     Expression<String>? pubkey,
     Expression<int>? videoCount,
     Expression<int>? followerCount,
@@ -2040,7 +2041,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
     });
   }
 
-  ProfileStatsCompanion copyWith({
+  ProfileStatisticsCompanion copyWith({
     Value<String>? pubkey,
     Value<int?>? videoCount,
     Value<int?>? followerCount,
@@ -2050,7 +2051,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
     Value<int>? cachedAt,
     Value<int>? rowid,
   }) {
-    return ProfileStatsCompanion(
+    return ProfileStatisticsCompanion(
       pubkey: pubkey ?? this.pubkey,
       videoCount: videoCount ?? this.videoCount,
       followerCount: followerCount ?? this.followerCount,
@@ -2094,7 +2095,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStatsData> {
 
   @override
   String toString() {
-    return (StringBuffer('ProfileStatsCompanion(')
+    return (StringBuffer('ProfileStatisticsCompanion(')
           ..write('pubkey: $pubkey, ')
           ..write('videoCount: $videoCount, ')
           ..write('followerCount: $followerCount, ')
@@ -4327,7 +4328,7 @@ class DatabaseAtV2 extends GeneratedDatabase {
   late final Event event = Event(this);
   late final UserProfiles userProfiles = UserProfiles(this);
   late final VideoMetrics videoMetrics = VideoMetrics(this);
-  late final ProfileStats profileStats = ProfileStats(this);
+  late final ProfileStatistics profileStatistics = ProfileStatistics(this);
   late final HashtagStats hashtagStats = HashtagStats(this);
   late final Notifications notifications = Notifications(this);
   late final PendingUploads pendingUploads = PendingUploads(this);
@@ -4340,7 +4341,7 @@ class DatabaseAtV2 extends GeneratedDatabase {
     event,
     userProfiles,
     videoMetrics,
-    profileStats,
+    profileStatistics,
     hashtagStats,
     notifications,
     pendingUploads,

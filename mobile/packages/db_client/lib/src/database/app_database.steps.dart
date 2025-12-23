@@ -11,7 +11,7 @@ final class Schema2 extends i0.VersionedSchema {
     event,
     userProfiles,
     videoMetrics,
-    profileStats,
+    profileStatistics,
     hashtagStats,
     notifications,
     pendingUploads,
@@ -89,9 +89,9 @@ final class Schema2 extends i0.VersionedSchema {
     ),
     alias: null,
   );
-  late final Shape3 profileStats = Shape3(
+  late final Shape3 profileStatistics = Shape3(
     source: i0.VersionedTable(
-      entityName: 'profile_stats',
+      entityName: 'profile_statistics',
       withoutRowId: false,
       isStrict: false,
       tableConstraints: ['PRIMARY KEY(pubkey)'],
