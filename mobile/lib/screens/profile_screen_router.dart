@@ -136,9 +136,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     return buildAsyncUI(
       pageContext,
       onData: (ctx) {
-        // Only handle profile routes
         if (ctx.type != RouteType.profile) {
-          return const Center(child: Text('Not a profile route'));
+          // During navigation transitions, we may briefly see non-profile routes.
+          // Just show nothing rather than an error message.
+          return const SizedBox.shrink();
         }
 
         // Convert npub to hex for profile feed provider
