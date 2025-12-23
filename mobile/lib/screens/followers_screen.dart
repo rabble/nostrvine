@@ -116,7 +116,7 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen>
 
   @override
   Widget build(BuildContext context) {
-    final appBarTitle = widget.displayName != null
+    final appBarTitle = widget.displayName?.isNotEmpty == true
         ? '${widget.displayName}\'s Followers'
         : 'Followers';
 
