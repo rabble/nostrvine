@@ -111,7 +111,8 @@ class RelayManager {
     final storage = _config.storage;
     if (storage != null) {
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays to prevent duplicates from URL format mismatches
+      // Normalize loaded relays to prevent duplicates from URL format
+      // mismatches
       for (final url in savedRelays) {
         final normalized = _normalizeUrl(url);
         if (normalized != null && !_configuredRelays.contains(normalized)) {
@@ -121,7 +122,8 @@ class RelayManager {
       _log('Loaded ${_configuredRelays.length} relays from storage');
     }
 
-    // Ensure default relay is always included (uses normalized URL for comparison)
+    // Ensure default relay is always included
+    // (uses normalized URL for comparison)
     final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
     if (normalizedDefault != null &&
         !_configuredRelays.contains(normalizedDefault)) {
