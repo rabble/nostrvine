@@ -25,6 +25,7 @@ environment:
 workspace:
   - packages/comments_repository
   - packages/db_client
+  - packages/keycast_flutter
   - packages/likes_repository
   - packages/models
   - packages/nostr_sdk
