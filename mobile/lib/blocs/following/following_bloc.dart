@@ -1,8 +1,6 @@
 // ABOUTME: BLoC for displaying a user's following list and handling follow/unfollow
 // ABOUTME: Scoped to FollowingScreen - handles loading, refreshing, and operations
 
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -46,7 +44,6 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   final FollowRepository _followRepository;
   final NostrClient _nostrClient;
   final String _targetPubkey;
-  StreamSubscription<Event>? _nostrSubscription;
 
   bool get _isCurrentUser => _targetPubkey == _nostrClient.publicKey;
 
@@ -101,13 +98,8 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   // TODO(Oscar): move the logic to the repository. Task related https://github.com/divinevideo/divine-mobile/issues/571. See also comments on this PR for more refactor https://github.com/divinevideo/divine-mobile/pull/717
   /// Load other user's following from Nostr relays
   Future<void> _loadOtherUserFollowing(Emitter<FollowingState> emit) async {
-    // Cancel any existing subscription
-    await _nostrSubscription?.cancel();
-
-    final completer = Completer<List<String>>();
-
-    // Subscribe to the user's kind 3 contact list events
-    final eventStream = _nostrClient.subscribe([
+    // Query user's kind 3 contact list event
+    final events = await _nostrClient.queryEvents([
       Filter(
         authors: [_targetPubkey],
         kinds: const [3], // Contact lists
@@ -115,52 +107,20 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
       ),
     ]);
 
-    // Apply timeout
-    final timeoutStream = eventStream.timeout(
-      const Duration(seconds: 5),
-      onTimeout: (sink) {
-        if (!completer.isCompleted) {
-          completer.complete([]);
-        }
-        sink.close();
-      },
-    );
-
-    _nostrSubscription = timeoutStream.listen(
-      (event) {
-        // Extract followed pubkeys from 'p' tags
-        final following = <String>[];
-        for (final tag in event.tags) {
-          if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-            final followedPubkey = tag[1];
-            if (!following.contains(followedPubkey)) {
-              following.add(followedPubkey);
-            }
+    // Extract followed pubkeys from 'p' tags
+    final following = <String>[];
+    if (events.isNotEmpty) {
+      final event = events.first;
+      for (final tag in event.tags) {
+        if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
+          final followedPubkey = tag[1];
+          if (!following.contains(followedPubkey)) {
+            following.add(followedPubkey);
           }
         }
+      }
+    }
 
-        if (!completer.isCompleted) {
-          completer.complete(following);
-        }
-      },
-      onError: (Object error) {
-        Log.error(
-          'Error fetching following list: $error',
-          name: 'FollowingBloc',
-          category: LogCategory.relay,
-        );
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-      },
-      onDone: () {
-        if (!completer.isCompleted) {
-          completer.complete([]);
-        }
-      },
-    );
-
-    final following = await completer.future;
     emit(
       state.copyWith(
         status: FollowingStatus.success,
@@ -188,9 +148,4 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     }
   }
 
-  @override
-  Future<void> close() {
-    _nostrSubscription?.cancel();
-    return super.close();
-  }
 }

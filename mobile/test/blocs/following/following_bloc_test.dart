@@ -8,15 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/blocs/following/following_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
-
-class _FakeFilter extends Fake implements Filter {}
 
 void main() {
   group('FollowingBloc', () {
@@ -31,10 +28,6 @@ void main() {
           .join();
       return hexSuffix.padLeft(64, '0');
     }
-
-    setUpAll(() {
-      registerFallbackValue(<Filter>[_FakeFilter()]);
-    });
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
@@ -127,14 +120,10 @@ void main() {
             ).thenReturn(validPubkey('current'));
 
             final otherPubkey = validPubkey('other');
-            final controller = StreamController<nostr_sdk.Event>();
             when(
-              () => mockNostrClient.subscribe(any()),
-            ).thenAnswer((_) => controller.stream);
-
-            // Emit contact list event with following
-            Future.delayed(const Duration(milliseconds: 50), () {
-              controller.add(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer(
+              (_) async => [
                 nostr_sdk.Event(
                   otherPubkey,
                   3,
@@ -145,13 +134,11 @@ void main() {
                   '',
                   createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 ),
-              );
-              controller.close();
-            });
+              ],
+            );
           },
           build: () => createBloc(targetPubkey: validPubkey('other')),
           act: (bloc) => bloc.add(const FollowingListLoadRequested()),
-          wait: const Duration(milliseconds: 200),
           expect: () => [
             FollowingState(
               status: FollowingStatus.loading,
@@ -175,12 +162,11 @@ void main() {
               () => mockNostrClient.publicKey,
             ).thenReturn(validPubkey('current'));
             when(
-              () => mockNostrClient.subscribe(any()),
-            ).thenAnswer((_) => const Stream.empty());
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => []);
           },
           build: () => createBloc(targetPubkey: validPubkey('other')),
           act: (bloc) => bloc.add(const FollowingListLoadRequested()),
-          wait: const Duration(milliseconds: 100),
           expect: () => [
             FollowingState(
               status: FollowingStatus.loading,
@@ -227,26 +213,6 @@ void main() {
       );
     });
 
-    group('close', () {
-      test('cancels nostr subscription', () async {
-        when(
-          () => mockNostrClient.publicKey,
-        ).thenReturn(validPubkey('current'));
-        final controller = StreamController<nostr_sdk.Event>();
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final bloc = createBloc(targetPubkey: validPubkey('other'));
-        bloc.add(const FollowingListLoadRequested());
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        await bloc.close();
-
-        // Stream should be closable without errors
-        await controller.close();
-      });
-    });
   });
 
   group('FollowingState', () {

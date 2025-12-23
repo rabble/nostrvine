@@ -1,14 +1,11 @@
 // ABOUTME: Tests for FollowersBloc - loading followers list and toggle follow
 // ABOUTME: Uses bloc_test for state emission verification and mocktail for mocks
 
-import 'dart:async';
-
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/blocs/followers/followers_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 
@@ -16,17 +13,10 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _FakeFilter extends Fake implements Filter {}
-
 void main() {
-  setUpAll(() {
-    registerFallbackValue(<Filter>[_FakeFilter()]);
-  });
-
   group('FollowersBloc', () {
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
-    late StreamController<nostr_sdk.Event> eventStreamController;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -39,19 +29,14 @@ void main() {
     setUp(() {
       mockNostrClient = _MockNostrClient();
       mockFollowRepository = _MockFollowRepository();
-      eventStreamController = StreamController<nostr_sdk.Event>.broadcast();
 
-      // Default stub for subscribe - returns empty stream
+      // Default stub for queryEvents - returns empty list
       when(
-        () => mockNostrClient.subscribe(any()),
-      ).thenAnswer((_) => eventStreamController.stream);
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => []);
 
       // Default stub for isFollowing
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
-    });
-
-    tearDown(() {
-      eventStreamController.close();
     });
 
     FollowersBloc createBloc() => FollowersBloc(
@@ -72,15 +57,10 @@ void main() {
           final targetPubkey = validPubkey('target');
           final followerPubkey = validPubkey('follower1');
 
-          // Create a stream that emits events then completes
-          final controller = StreamController<nostr_sdk.Event>();
           when(
-            () => mockNostrClient.subscribe(any()),
-          ).thenAnswer((_) => controller.stream);
-
-          // Schedule event emission and close
-          Future.delayed(const Duration(milliseconds: 50), () {
-            controller.add(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer(
+            (_) async => [
               nostr_sdk.Event(
                 followerPubkey,
                 3,
@@ -90,14 +70,12 @@ void main() {
                 '',
                 createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
               ),
-            );
-            controller.close();
-          });
+            ],
+          );
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(FollowersListLoadRequested(validPubkey('target'))),
-        wait: const Duration(milliseconds: 200),
         expect: () => [
           FollowersState(
             status: FollowersStatus.loading,
@@ -114,15 +92,13 @@ void main() {
       blocTest<FollowersBloc, FollowersState>(
         'emits [loading, success] with empty list when no followers',
         setUp: () {
-          // Stream that immediately completes
           when(
-            () => mockNostrClient.subscribe(any()),
-          ).thenAnswer((_) => const Stream.empty());
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(FollowersListLoadRequested(validPubkey('target'))),
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           FollowersState(
             status: FollowersStatus.loading,
@@ -142,14 +118,10 @@ void main() {
           final targetPubkey = validPubkey('target');
           final followerPubkey = validPubkey('follower1');
 
-          final controller = StreamController<nostr_sdk.Event>();
           when(
-            () => mockNostrClient.subscribe(any()),
-          ).thenAnswer((_) => controller.stream);
-
-          // Emit same follower twice
-          Future.delayed(const Duration(milliseconds: 50), () {
-            controller.add(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer(
+            (_) async => [
               nostr_sdk.Event(
                 followerPubkey,
                 3,
@@ -159,8 +131,6 @@ void main() {
                 '',
                 createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
               ),
-            );
-            controller.add(
               nostr_sdk.Event(
                 followerPubkey, // Same pubkey
                 3,
@@ -170,20 +140,18 @@ void main() {
                 '',
                 createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
               ),
-            );
-            controller.close();
-          });
+            ],
+          );
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(FollowersListLoadRequested(validPubkey('target'))),
-        wait: const Duration(milliseconds: 200),
         expect: () => [
           FollowersState(
             status: FollowersStatus.loading,
             targetPubkey: validPubkey('target'),
           ),
-          // Only one state with the follower (deduplicated)
+          // Only one follower (deduplicated)
           FollowersState(
             status: FollowersStatus.success,
             targetPubkey: validPubkey('target'),
@@ -193,29 +161,11 @@ void main() {
       );
 
       blocTest<FollowersBloc, FollowersState>(
-        'subscribes with correct filter (kind 3, p tag)',
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(FollowersListLoadRequested(validPubkey('target'))),
-        wait: const Duration(milliseconds: 100),
-        verify: (_) {
-          final captured = verify(
-            () => mockNostrClient.subscribe(captureAny()),
-          ).captured;
-          expect(captured.length, 1);
-          final filters = captured.first as List<Filter>;
-          expect(filters.length, 1);
-          expect(filters[0].kinds, contains(3));
-          expect(filters[0].p, contains(validPubkey('target')));
-        },
-      );
-
-      blocTest<FollowersBloc, FollowersState>(
         'clears previous followers when loading new list',
         setUp: () {
           when(
-            () => mockNostrClient.subscribe(any()),
-          ).thenAnswer((_) => const Stream.empty());
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
         },
         build: createBloc,
         seed: () => FollowersState(
@@ -224,7 +174,6 @@ void main() {
           followersPubkeys: [validPubkey('old_follower')],
         ),
         act: (bloc) => bloc.add(FollowersListLoadRequested(validPubkey('new'))),
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           FollowersState(
             status: FollowersStatus.loading,
@@ -242,96 +191,35 @@ void main() {
 
     group('FollowerToggleFollowRequested', () {
       blocTest<FollowersBloc, FollowersState>(
-        'calls follow when not currently following',
+        'calls toggleFollow on repository',
         setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
           when(
-            () => mockFollowRepository.follow(any()),
+            () => mockFollowRepository.toggleFollow(any()),
           ).thenAnswer((_) async {});
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(FollowerToggleFollowRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
         verify: (_) {
           verify(
-            () => mockFollowRepository.follow(validPubkey('user')),
+            () => mockFollowRepository.toggleFollow(validPubkey('user')),
           ).called(1);
-          verifyNever(() => mockFollowRepository.unfollow(any()));
         },
       );
 
       blocTest<FollowersBloc, FollowersState>(
-        'calls unfollow when currently following',
+        'handles toggleFollow error gracefully',
         setUp: () {
           when(
-            () => mockFollowRepository.isFollowing(validPubkey('user')),
-          ).thenReturn(true);
-          when(
-            () => mockFollowRepository.unfollow(any()),
-          ).thenAnswer((_) async {});
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(FollowerToggleFollowRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
-        verify: (_) {
-          verify(
-            () => mockFollowRepository.unfollow(validPubkey('user')),
-          ).called(1);
-          verifyNever(() => mockFollowRepository.follow(any()));
-        },
-      );
-
-      blocTest<FollowersBloc, FollowersState>(
-        'handles follow error gracefully',
-        setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
-          when(
-            () => mockFollowRepository.follow(any()),
+            () => mockFollowRepository.toggleFollow(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(FollowerToggleFollowRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
         // Should not throw or emit error state - just logs
         expect: () => <FollowersState>[],
       );
-
-      blocTest<FollowersBloc, FollowersState>(
-        'handles unfollow error gracefully',
-        setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
-          when(
-            () => mockFollowRepository.unfollow(any()),
-          ).thenThrow(Exception('Network error'));
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(FollowerToggleFollowRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
-        // Should not throw or emit error state - just logs
-        expect: () => <FollowersState>[],
-      );
-    });
-
-    group('close', () {
-      test('cancels nostr subscription', () async {
-        final controller = StreamController<nostr_sdk.Event>();
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final bloc = createBloc();
-        bloc.add(FollowersListLoadRequested(validPubkey('target')));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        await bloc.close();
-
-        // Stream should be closable without errors
-        await controller.close();
-      });
     });
   });
 

@@ -1,8 +1,6 @@
 // ABOUTME: BLoC for displaying a user's followers list
 // ABOUTME: Fetches Kind 3 events that mention the target user in 'p' tags
 
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -31,7 +29,6 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
 
   final FollowRepository _followRepository;
   final NostrClient _nostrClient;
-  StreamSubscription<Event>? _nostrSubscription;
 
   /// Handle request to load a followers list
   Future<void> _onLoadRequested(
@@ -64,109 +61,44 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
     String pubkey,
     Emitter<FollowersState> emit,
   ) async {
-    // Cancel any existing subscription
-    await _nostrSubscription?.cancel();
-
-    final followers = <String>[];
-    final completer = Completer<void>();
-
-    // Subscribe to kind 3 events that mention this pubkey in p tags
-    final eventStream = _nostrClient.subscribe([
+    // Query kind 3 events that mention this pubkey in p tags
+    final events = await _nostrClient.queryEvents([
       Filter(
         kinds: const [3], // Contact lists
         p: [pubkey], // Events that mention this pubkey
       ),
     ]);
 
-    // Apply timeout
-    final timeoutStream = eventStream.timeout(
-      const Duration(seconds: 5),
-      onTimeout: (sink) {
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-        sink.close();
-      },
-    );
-
-    _nostrSubscription = timeoutStream.listen(
-      (event) {
-        // Each author who has this pubkey in their contact list is a follower
-        if (!followers.contains(event.pubkey)) {
-          followers.add(event.pubkey);
-
-          // Emit updated state with new follower
-          emit(
-            state.copyWith(
-              status: FollowersStatus.success,
-              followersPubkeys: List.from(followers),
-            ),
-          );
-        }
-      },
-      onError: (Object error) {
-        Log.error(
-          'Error fetching followers list: $error',
-          name: 'FollowersBloc',
-          category: LogCategory.relay,
-        );
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-      },
-      onDone: () {
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      },
-    );
-
-    await completer.future;
-
-    // If no followers were found, ensure we're in success state with empty list
-    if (followers.isEmpty) {
-      emit(
-        state.copyWith(status: FollowersStatus.success, followersPubkeys: []),
-      );
+    // Extract unique follower pubkeys (authors of events that follow target)
+    final followers = <String>[];
+    for (final event in events) {
+      if (!followers.contains(event.pubkey)) {
+        followers.add(event.pubkey);
+      }
     }
+
+    emit(
+      state.copyWith(
+        status: FollowersStatus.success,
+        followersPubkeys: followers,
+      ),
+    );
   }
 
   /// Handle follow toggle request for a follower.
-  /// Uses the FollowRepository to follow/unfollow the user.
+  /// Delegates to repository which handles the toggle logic internally.
   Future<void> _onToggleFollowRequested(
     FollowerToggleFollowRequested event,
     Emitter<FollowersState> emit,
   ) async {
-    final isCurrentlyFollowing = _followRepository.isFollowing(event.pubkey);
-
     try {
-      if (isCurrentlyFollowing) {
-        await _followRepository.unfollow(event.pubkey);
-        Log.info(
-          'Successfully unfollowed user: ${event.pubkey}',
-          name: 'FollowersBloc',
-          category: LogCategory.system,
-        );
-      } else {
-        await _followRepository.follow(event.pubkey);
-        Log.info(
-          'Successfully followed user: ${event.pubkey}',
-          name: 'FollowersBloc',
-          category: LogCategory.system,
-        );
-      }
+      await _followRepository.toggleFollow(event.pubkey);
     } catch (e) {
       Log.error(
-        'Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user: $e',
+        'Failed to toggle follow for user: $e',
         name: 'FollowersBloc',
         category: LogCategory.system,
       );
     }
-  }
-
-  @override
-  Future<void> close() {
-    _nostrSubscription?.cancel();
-    return super.close();
   }
 }
