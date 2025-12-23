@@ -10,7 +10,7 @@ class SecureKeycastStorage implements KeycastStorage {
   final FlutterSecureStorage _storage;
 
   SecureKeycastStorage([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   @override
   Future<String?> read(String key) async {

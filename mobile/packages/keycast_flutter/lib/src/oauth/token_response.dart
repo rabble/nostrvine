@@ -8,6 +8,7 @@ class TokenResponse {
   final int expiresIn;
   final String? scope;
   final PolicyInfo? policy;
+
   /// Handle for silent re-authentication (pass to next authorize request)
   final String? authorizationHandle;
 
@@ -54,9 +55,11 @@ class PolicyInfo {
       slug: json['slug'] as String,
       displayName: json['display_name'] as String? ?? json['slug'] as String,
       description: json['description'] as String? ?? '',
-      permissions: (json['permissions'] as List<dynamic>?)
-              ?.map((e) =>
-                  PermissionDisplay.fromJson(e as Map<String, dynamic>))
+      permissions:
+          (json['permissions'] as List<dynamic>?)
+              ?.map(
+                (e) => PermissionDisplay.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
     );
