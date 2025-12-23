@@ -60,9 +60,7 @@ void main() {
     );
 
     test('initial state for current user is success with cached data', () {
-      when(
-        () => mockNostrClient.publicKey,
-      ).thenReturn(validPubkey('current'));
+      when(() => mockNostrClient.publicKey).thenReturn(validPubkey('current'));
       when(
         () => mockFollowRepository.followingPubkeys,
       ).thenReturn([validPubkey('following1')]);
@@ -80,9 +78,7 @@ void main() {
     });
 
     test('initial state for other user is initial with targetPubkey', () {
-      when(
-        () => mockNostrClient.publicKey,
-      ).thenReturn(validPubkey('current'));
+      when(() => mockNostrClient.publicKey).thenReturn(validPubkey('current'));
 
       final bloc = createBloc(targetPubkey: validPubkey('other'));
       expect(bloc.state, FollowingState(targetPubkey: validPubkey('other')));
