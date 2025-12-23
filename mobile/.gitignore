@@ -76,3 +76,4 @@ android/play-store-service-account.json
 .fvmrc
 
 test*.mp4
+test/goldens/screens/failures/
