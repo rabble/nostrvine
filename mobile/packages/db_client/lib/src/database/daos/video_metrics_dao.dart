@@ -83,4 +83,16 @@ class VideoMetricsDao extends DatabaseAccessor<AppDatabase>
       }
     });
   }
+
+  /// Delete all video metrics from the cache.
+  ///
+  /// Used when switching environments to clear stale metrics.
+  /// Returns the number of rows deleted.
+  Future<int> deleteAllVideoMetrics() async {
+    return customUpdate(
+      'DELETE FROM video_metrics',
+      updates: {videoMetrics},
+      updateKind: UpdateKind.delete,
+    );
+  }
 }
