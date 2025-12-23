@@ -28,8 +28,8 @@ class KeycastOAuth {
     required this.config,
     http.Client? httpClient,
     KeycastStorage? storage,
-  })  : _client = httpClient ?? http.Client(),
-        _storage = storage ?? MemoryKeycastStorage();
+  }) : _client = httpClient ?? http.Client(),
+       _storage = storage ?? MemoryKeycastStorage();
 
   /// Get stored session from storage
   /// Returns null if no session or session is expired
@@ -59,9 +59,7 @@ class KeycastOAuth {
   Future<void> logout() async {
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
-    await _client.post(
-      Uri.parse('${config.serverUrl}/api/auth/logout'),
-    );
+    await _client.post(Uri.parse('${config.serverUrl}/api/auth/logout'));
   }
 
   Future<void> _saveSession(KeycastSession session) async {

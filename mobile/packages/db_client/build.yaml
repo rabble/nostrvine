@@ -1,0 +1,18 @@
+# Build configuration for db_client package
+# Configures Drift schema generation for migration testing
+# See: https://drift.simonbinder.eu/migrations/tests/
+
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Database configuration for make-migrations command
+          databases:
+            app_database: lib/src/database/app_database.dart
+
+          # Directory for schema snapshots
+          schema_dir: drift_schemas/
+
+          # Directory for generated test files
+          test_dir: test/drift/

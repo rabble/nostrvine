@@ -80,7 +80,11 @@ abstract class Relay {
     info ??= await RelayInfoUtil.get(url);
   }
 
-  Future<bool> send(List<dynamic> message, {bool? forceSend});
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+  });
 
   Future<void> disconnect();
 
