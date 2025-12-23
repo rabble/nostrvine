@@ -93,7 +93,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _navigateToFollowers(
     BuildContext context,
     String pubkey,
-    String displayName,
+    String? displayName,
   ) {
     // Navigate using root navigator to escape shell route
     Navigator.of(context, rootNavigator: true).push(
@@ -107,7 +107,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _navigateToFollowing(
     BuildContext context,
     String pubkey,
-    String displayName,
+    String? displayName,
   ) {
     // Navigate using root navigator to escape shell route
     Navigator.of(context, rootNavigator: true).push(
@@ -526,14 +526,17 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    if (profile == null) {
+    if (!isOwnProfile && profile == null) {
       return SizedBox.shrink();
     }
-    final profilePictureUrl = profile.picture;
-    final displayName = profile.bestDisplayName;
+
+    final profilePictureUrl = profile?.picture;
+    final displayName = profile?.bestDisplayName;
     final hasCustomName =
-        profile.name?.isNotEmpty == true ||
-        profile.displayName?.isNotEmpty == true;
+        profile?.name?.isNotEmpty == true ||
+        profile?.displayName?.isNotEmpty == true;
+    final nip05 = profile?.nip05;
+    final about = profile?.about;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -664,15 +667,15 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 ),
                 const SizedBox(height: 4),
                 // Show NIP-05 identifier if present
-                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                if (nip05 != null && nip05.isNotEmpty)
                   Text(
-                    profile.nip05!,
+                    nip05,
                     style: TextStyle(color: Colors.grey[400], fontSize: 13),
                   ),
                 const SizedBox(height: 4),
-                if (profile.about != null && profile.about!.isNotEmpty)
+                if (about != null && about.isNotEmpty)
                   SelectableText(
-                    profile.about!,
+                    about,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
