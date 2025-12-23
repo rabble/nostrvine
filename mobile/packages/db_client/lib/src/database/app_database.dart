@@ -45,7 +45,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -116,7 +116,8 @@ extension Migrations on GeneratedDatabase {
           newColumns: [schema.event.expireAt],
         ),
       );
-
+    },
+    from2To3: (m, schema) async {
       // Drop old profile_stats table (renamed to profile_statistics).
       // This handles any schema mismatches from older versions.
       // Data loss is acceptable since this is a cache with 5-minute expiry.

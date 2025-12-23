@@ -397,7 +397,7 @@
       "references": [],
       "type": "table",
       "data": {
-        "name": "profile_stats",
+        "name": "profile_statistics",
         "was_declared_in_moor": false,
         "columns": [
           {
@@ -1002,11 +1002,11 @@
       ]
     },
     {
-      "name": "profile_stats",
+      "name": "profile_statistics",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"profile_stats\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"profile_statistics\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     },

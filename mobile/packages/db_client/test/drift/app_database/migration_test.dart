@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -59,20 +60,20 @@ void main() {
       );
     });
 
-    test('migration from v1 to v2 drops profile_stats and creates '
+    test('migration from v2 to v3 drops profile_stats and creates '
         'profile_statistics', () async {
-      // v1 has profile_stats, v2 has profile_statistics
+      // v2 has profile_stats, v3 has profile_statistics
       // The migration drops profile_stats and creates profile_statistics
       await verifier.testWithDataIntegrity(
-        oldVersion: 1,
-        newVersion: 2,
-        createOld: v1.DatabaseAtV1.new,
-        createNew: v2.DatabaseAtV2.new,
+        oldVersion: 2,
+        newVersion: 3,
+        createOld: v2.DatabaseAtV2.new,
+        createNew: v3.DatabaseAtV3.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           // Insert data into profile_stats (old table name)
           batch.insertAll(oldDb.profileStats, [
-            v1.ProfileStatsData(
+            v2.ProfileStatsData(
               pubkey: 'test_pubkey_abc123',
               videoCount: 10,
               followerCount: 100,
