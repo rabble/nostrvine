@@ -2,11 +2,12 @@
 // ABOUTME: Verifies AppDatabase can open nostr_sdk's existing SQLite database
 
 import 'dart:io';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -88,7 +89,7 @@ void main() {
     test('AppDatabase has correct schema version', () async {
       final db = AppDatabase.test(NativeDatabase(File(testDbPath)));
 
-      // Schema version should be 3 (nostr_sdk is at 2)
+      // Schema version should match current database version
       expect(db.schemaVersion, equals(3));
 
       await db.close();

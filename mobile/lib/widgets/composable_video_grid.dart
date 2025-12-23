@@ -403,14 +403,11 @@ class _VideoInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = video.duration;
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Duration badge if available
-        if (duration != null) _VideoDurationBadge(duration: duration),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           color: VineTheme.cardBackground,
@@ -443,30 +440,6 @@ class _VideoInfoSection extends StatelessWidget {
       ],
     );
   }
-}
-
-class _VideoDurationBadge extends StatelessWidget {
-  const _VideoDurationBadge({required this.duration});
-
-  final int duration;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.all(4),
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-    decoration: BoxDecoration(
-      color: VineTheme.darkOverlay,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Text(
-      '${duration}s',
-      style: TextStyle(
-        color: VineTheme.whiteText,
-        fontSize: 10,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  );
 }
 
 class _VideoThumbnail extends StatelessWidget {

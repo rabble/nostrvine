@@ -8,9 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
+import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'page_context_provider.dart';
 import 'route_utils.dart';
@@ -182,6 +184,9 @@ class AppShell extends ConsumerWidget {
     // Initialize auto-cleanup provider to ensure only one video plays at a time
     ref.watch(videoControllerAutoCleanupProvider);
 
+    // Initialize relay statistics bridge to record connection events
+    ref.watch(relayStatisticsBridgeProvider);
+
     // Watch page context to determine if back button should show
     final pageCtxAsync = ref.watch(pageContextProvider);
     final showBackButton = pageCtxAsync.maybeWhen(
@@ -202,9 +207,13 @@ class AppShell extends ConsumerWidget {
       orElse: () => false,
     );
 
+    // Get environment config for app bar styling
+    final environment = ref.watch(currentEnvironmentProvider);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: getEnvironmentAppBarColor(environment),
         leading: showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -265,7 +274,13 @@ class AppShell extends ConsumerWidget {
                   },
                 ),
               ),
-        title: _buildTappableTitle(context, ref, title),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: _buildTappableTitle(context, ref, title)),
+            const EnvironmentBadge(),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Search',

@@ -5,19 +5,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/developer_mode_tap_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final isAuthenticated = authService.isAuthenticated;
+    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -26,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
         foregroundColor: VineTheme.whiteText,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           tooltip: 'Back',
         ),
       ),
@@ -112,6 +136,19 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => context.push('/blossom-settings'),
               ),
 
+              // Developer Options (only visible when developer mode is enabled)
+              if (isDeveloperMode) ...[
+                _buildSectionHeader('Developer'),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.developer_mode,
+                  title: 'Developer Options',
+                  subtitle: 'Environment switcher and debug settings',
+                  onTap: () => context.push('/developer-options'),
+                  iconColor: Colors.orange,
+                ),
+              ],
+
               // Preferences
               _buildSectionHeader('Preferences'),
               _buildSettingsTile(
@@ -128,6 +165,10 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Blocked users, muted content, and report history',
                 onTap: () => context.push('/safety-settings'),
               ),
+
+              // About
+              _buildSectionHeader('About'),
+              _buildVersionTile(context, ref),
 
               // Support
               _buildSectionHeader('Support'),
@@ -241,6 +282,72 @@ class SettingsScreen extends ConsumerWidget {
     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
     onTap: onTap,
   );
+
+  Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
+    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
+    final environmentService = ref.watch(environmentServiceProvider);
+
+    return ListTile(
+      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
+      title: const Text(
+        'Version',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        _appVersion.isEmpty ? 'Loading...' : _appVersion,
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      onTap: () async {
+        if (isDeveloperMode) {
+          // Already unlocked - show message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Developer mode is already enabled'),
+              backgroundColor: VineTheme.vineGreen,
+            ),
+          );
+          return;
+        }
+
+        // Increment tap counter
+        ref.read(developerModeTapCounterProvider.notifier).tap();
+
+        // Read the new count after tapping
+        final newCount = ref.read(developerModeTapCounterProvider);
+
+        if (newCount >= 7) {
+          // Unlock developer mode
+          await environmentService.enableDeveloperMode();
+          ref.read(developerModeTapCounterProvider.notifier).reset();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Developer mode enabled!'),
+                backgroundColor: VineTheme.vineGreen,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (newCount >= 4) {
+          // Show hint message
+          final remaining = 7 - newCount;
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$remaining more taps to enable developer mode'),
+                duration: const Duration(milliseconds: 500),
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);

@@ -561,23 +561,28 @@ VideoPlayerController individualVideoController(
           );
 
           // Check if user has NOT verified adult content yet
-          final ageVerificationService = ref.read(
-            ageVerificationServiceProvider,
-          );
-          if (!ageVerificationService.isAdultContentVerified) {
-            Log.info(
-              '🔐 User has not verified adult content - need to show verification dialog',
-              name: 'IndividualVideoController',
-              category: LogCategory.video,
+          // Wrap in try-catch because provider may be disposed by the time this error handler runs
+          try {
+            final ageVerificationService = ref.read(
+              ageVerificationServiceProvider,
             );
-            // Store this video ID in a provider so the widget can show the dialog
-            // For now, just log - we'll handle UI in the widget layer
-          } else {
-            Log.warning(
-              '🔐 User has verified but still getting 401 - may be auth header issue',
-              name: 'IndividualVideoController',
-              category: LogCategory.video,
-            );
+            if (!ageVerificationService.isAdultContentVerified) {
+              Log.info(
+                '🔐 User has not verified adult content - need to show verification dialog',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+              // Store this video ID in a provider so the widget can show the dialog
+              // For now, just log - we'll handle UI in the widget layer
+            } else {
+              Log.warning(
+                '🔐 User has verified but still getting 401 - may be auth header issue',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+            }
+          } catch (_) {
+            // Provider already disposed - ignore since this is just diagnostic logging
           }
         }
 

@@ -1,14 +1,17 @@
 // ABOUTME: Welcome screen for new users showing TOS acceptance and age verification
 // ABOUTME: App auto-creates nsec on first launch - this screen only handles TOS and shows error if auto-creation fails
 
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/widgets/login/keycast_login_button.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:go_router/go_router.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -93,6 +96,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       onAgreedToTermsChanged: (value) =>
                           setState(() => _agreedToTerms = value),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    /// TODO(any): At the moment, the Keycast website do not include an AASA file with the app ids.
+                    /// Once that is fixed, we can remove this check.
+                    if (!Platform.isIOS)
+                      KeycastLoginButton(enabled: _canProceed),
 
                     const SizedBox(height: 16),
 

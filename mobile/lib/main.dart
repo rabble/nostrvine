@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -432,6 +433,14 @@ Future<void> _startOpenVineApp() async {
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+  );
+
+  // Initialize environment service FIRST (before other services that depend on relay config)
+  await container.read(environmentServiceProvider).initialize();
+  Log.info(
+    '[INIT] EnvironmentService initialized: ${container.read(currentEnvironmentProvider).displayName}',
+    name: 'Main',
+    category: LogCategory.system,
   );
 
   // Initialize critical services at app startup level (not UI level)

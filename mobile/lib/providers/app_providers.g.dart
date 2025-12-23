@@ -376,6 +376,56 @@ final class RelayStatisticsStreamProvider
 String _$relayStatisticsStreamHash() =>
     r'0ab9617467aabccc62b36b0de4d79a0ce9d01c5e';
 
+/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
+/// Must be watched at app level to activate the bridge
+
+@ProviderFor(relayStatisticsBridge)
+const relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
+
+/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
+/// Must be watched at app level to activate the bridge
+
+final class RelayStatisticsBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
+  /// Must be watched at app level to activate the bridge
+  const RelayStatisticsBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'relayStatisticsBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$relayStatisticsBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return relayStatisticsBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$relayStatisticsBridgeHash() =>
+    r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
+
 /// Analytics service with opt-out support
 
 @ProviderFor(analyticsService)
@@ -1045,6 +1095,63 @@ final class UsernameRepositoryProvider
 
 String _$usernameRepositoryHash() =>
     r'd8dd9d65a89158d8f22672ae325b528e65164e14';
+
+/// Reserved username request repository for claiming reserved usernames
+
+@ProviderFor(reservedUsernameRequestRepository)
+const reservedUsernameRequestRepositoryProvider =
+    ReservedUsernameRequestRepositoryProvider._();
+
+/// Reserved username request repository for claiming reserved usernames
+
+final class ReservedUsernameRequestRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ReservedUsernameRequestRepository,
+          ReservedUsernameRequestRepository,
+          ReservedUsernameRequestRepository
+        >
+    with $Provider<ReservedUsernameRequestRepository> {
+  /// Reserved username request repository for claiming reserved usernames
+  const ReservedUsernameRequestRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reservedUsernameRequestRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$reservedUsernameRequestRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReservedUsernameRequestRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ReservedUsernameRequestRepository create(Ref ref) {
+    return reservedUsernameRequestRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReservedUsernameRequestRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReservedUsernameRequestRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$reservedUsernameRequestRepositoryHash() =>
+    r'5c70d268d858f7509ce9cb6bfc297493efea65c2';
 
 /// Draft storage service for persisting vine drafts
 
