@@ -52,10 +52,7 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
     },
-    onUpgrade: (m, from, to) async {
-      // Tables haven't actually changed - just accept any version
-      // This handles devices that have older/newer schema versions
-    },
+    onUpgrade: _schemaUpgrade,
     beforeOpen: (details) async {
       // Ensure the event table has the expire_at column.
       // The event table is managed by nostr_sdk's embedded relay, so we need
@@ -65,7 +62,6 @@ class AppDatabase extends _$AppDatabase {
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
-    onUpgrade: _schemaUpgrade,
   );
 
   /// Whether the expire_at column exists in the event table.
