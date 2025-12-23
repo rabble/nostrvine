@@ -45,7 +45,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -68,12 +68,21 @@ class AppDatabase extends _$AppDatabase {
   /// - Old notifications (older than 7 days)
   ///
   /// Returns a [CleanupResult] with counts of deleted records.
+  ///
+  /// Note: This method handles cases where tables may not exist during
+  /// migrations from older schema versions.
   Future<CleanupResult> runStartupCleanup() async {
     // Delete expired Nostr events
     final expiredEventsDeleted = await nostrEventsDao.deleteExpiredEvents(null);
 
     // Delete expired profile stats (5 minute expiry)
-    final expiredProfileStatsDeleted = await profileStatsDao.deleteExpired();
+    // Note: Table may not exist during migrations from older versions
+    var expiredProfileStatsDeleted = 0;
+    try {
+      expiredProfileStatsDeleted = await profileStatsDao.deleteExpired();
+    } on Exception {
+      // Table doesn't exist yet (migrating from older schema)
+    }
 
     // Delete expired hashtag stats (1 hour expiry)
     final expiredHashtagStatsDeleted = await hashtagStatsDao.deleteExpired();
@@ -100,12 +109,22 @@ class AppDatabase extends _$AppDatabase {
 extension Migrations on GeneratedDatabase {
   OnUpgrade get _schemaUpgrade => stepByStep(
     from1To2: (m, schema) async {
+      // Add expire_at column to event table
       await m.alterTable(
         TableMigration(
           schema.event,
           newColumns: [schema.event.expireAt],
         ),
       );
+    },
+    from2To3: (m, schema) async {
+      // Drop old profile_stats table (renamed to profile_statistics).
+      // This handles any schema mismatches from older versions.
+      // Data loss is acceptable since this is a cache with 5-minute expiry.
+      await customStatement('DROP TABLE IF EXISTS profile_stats');
+
+      // Create new profile_statistics table with correct schema
+      await m.createTable(schema.profileStatistics);
     },
   );
 }
