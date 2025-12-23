@@ -10,10 +10,12 @@ enum RouteType {
   hashtag, // Still supported as push route within explore
   search,
   camera,
+  clipManager, // Clip management screen for recorded segments
+  editVideo, // Video editor screen for text/sound overlays
   importKey,
   settings,
   editProfile, // Profile editing screen
-  drafts, // Video drafts screen
+  clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
 }
 
@@ -132,7 +134,19 @@ RouteContext parseRoute(String path) {
     case 'camera':
       return const RouteContext(type: RouteType.camera);
 
+    case 'clip-manager':
+      return const RouteContext(type: RouteType.clipManager);
+
+    case 'edit-video':
+      return const RouteContext(type: RouteType.editVideo);
+
     case 'settings':
+    case 'relay-settings':
+    case 'relay-diagnostic':
+    case 'blossom-settings':
+    case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
       return const RouteContext(type: RouteType.settings);
 
     case 'edit-profile':
@@ -140,9 +154,10 @@ RouteContext parseRoute(String path) {
       // Profile editing screens - standalone routes outside ShellRoute
       return const RouteContext(type: RouteType.editProfile);
 
-    case 'drafts':
-      // Drafts screen - standalone route outside ShellRoute
-      return const RouteContext(type: RouteType.drafts);
+    case 'clips':
+    case 'drafts': // Legacy route, redirects to clips
+      // Clip library screen - standalone route outside ShellRoute
+      return const RouteContext(type: RouteType.clips);
 
     case 'import-key':
       return const RouteContext(type: RouteType.importKey);
@@ -224,6 +239,12 @@ String buildRoute(RouteContext context) {
     case RouteType.camera:
       return '/camera';
 
+    case RouteType.clipManager:
+      return '/clip-manager';
+
+    case RouteType.editVideo:
+      return '/edit-video';
+
     case RouteType.settings:
       return '/settings';
 
@@ -233,8 +254,8 @@ String buildRoute(RouteContext context) {
     case RouteType.importKey:
       return '/import-key';
 
-    case RouteType.drafts:
-      return '/drafts';
+    case RouteType.clips:
+      return '/clips';
 
     case RouteType.welcome:
       return '/welcome';

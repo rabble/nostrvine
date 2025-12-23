@@ -14,6 +14,14 @@ import 'package:openvine/providers/app_providers.dart';
 
 part 'individual_video_providers.g.dart';
 
+/// Maximum playback duration before looping (6.3 seconds)
+/// Videos longer than this will loop back to beginning at this mark
+const maxPlaybackDuration = Duration(milliseconds: 6300);
+
+/// Interval for checking playback position (200ms = 5 checks/sec)
+/// Balances responsiveness with performance (vs 60 checks/sec for per-frame)
+const loopCheckInterval = Duration(milliseconds: 200);
+
 /// Cache for pre-generated auth headers by video ID
 /// This allows synchronous header lookup during controller creation
 final authHeadersCacheProvider =
@@ -202,6 +210,7 @@ VideoPlayerController individualVideoController(
   // 5 minutes allows smooth scrolling back and forth without re-initializing codecs
   final link = ref.keepAlive();
   Timer? cacheTimer;
+  Timer? loopEnforcementTimer;
 
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
@@ -443,6 +452,31 @@ VideoPlayerController individualVideoController(
         // Set looping for Vine-like behavior
         controller.setLooping(true);
 
+        // Start loop enforcement timer for videos longer than 6.3s
+        // Short videos use native looping; long videos get enforced loop at 6.3s
+        final videoDuration = controller.value.duration;
+        if (videoDuration > maxPlaybackDuration) {
+          loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
+            // Skip check if video is paused
+            if (!controller.value.isPlaying) return;
+
+            // Enforce loop at 6.3s mark
+            if (controller.value.position >= maxPlaybackDuration) {
+              Log.debug(
+                '🔄 Loop enforcement: ${params.videoId} at ${controller.value.position.inMilliseconds}ms → seeking to 0',
+                name: 'LoopEnforcement',
+                category: LogCategory.video,
+              );
+              safeSeekTo(controller, params.videoId, Duration.zero);
+            }
+          });
+          Log.info(
+            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms)',
+            name: 'LoopEnforcement',
+            category: LogCategory.video,
+          );
+        }
+
         // CRITICAL DEBUG: Check if video is starting at position 0
         if (initialPosition.inMilliseconds > 0) {
           Log.warning(
@@ -555,6 +589,9 @@ VideoPlayerController individualVideoController(
             category: LogCategory.video,
           );
 
+          // Cancel loop enforcement timer before invalidating to prevent race condition
+          loopEnforcementTimer?.cancel();
+
           // Remove corrupted cache file and invalidate provider to trigger retry
           openVineVideoCache
               .removeCorruptedVideo(params.videoId)
@@ -600,6 +637,7 @@ VideoPlayerController individualVideoController(
 
   // AutoDispose: Cleanup controller when provider is disposed
   ref.onDispose(() {
+    loopEnforcementTimer?.cancel();
     cacheTimer?.cancel();
     Log.info(
       '🧹 Disposing VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',

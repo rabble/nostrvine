@@ -14,6 +14,7 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:db_client/db_client.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/draft_migration_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/config/zendesk_config.dart';
@@ -27,6 +28,7 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
@@ -185,6 +187,22 @@ Future<void> _startOpenVineApp() async {
         category: LogCategory.system,
       );
       StartupPerformanceService.instance.completePhase('video_cache');
+    }
+  }
+
+  // Initialize FFmpegEncoder with memory-efficient session settings
+  if (!kIsWeb) {
+    StartupPerformanceService.instance.startPhase('ffmpeg_encoder');
+    try {
+      await FFmpegEncoder.initialize();
+      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
+    } catch (e) {
+      Log.error(
+        '[STARTUP] FFmpeg encoder initialization failed: $e',
+        name: 'Main',
+        category: LogCategory.system,
+      );
+      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
     }
   }
 
@@ -588,6 +606,43 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       } catch (e) {
         Log.warning(
           '[INIT] Mutual mute sync failed (non-critical): $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      }
+    });
+
+    // Run draft-to-clip migration in background (one-time operation)
+    Future.microtask(() async {
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final draftService = await ref.read(draftStorageServiceProvider.future);
+        final clipService = ref.read(clipLibraryServiceProvider);
+
+        final migrationService = DraftMigrationService(
+          draftService: draftService,
+          clipService: clipService,
+          prefs: prefs,
+        );
+
+        final result = await migrationService.migrate();
+
+        if (result.alreadyMigrated) {
+          Log.info(
+            '[INIT] ○ Draft migration already completed',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        } else {
+          Log.info(
+            '[INIT] ✅ Draft migration complete: ${result.migratedCount} migrated, ${result.skippedCount} skipped',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        }
+      } catch (e) {
+        Log.warning(
+          '[INIT] Draft migration failed (non-critical): $e',
           name: 'Main',
           category: LogCategory.system,
         );

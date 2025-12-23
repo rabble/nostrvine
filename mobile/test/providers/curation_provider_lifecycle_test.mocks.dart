@@ -350,6 +350,15 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<void>);
 
   @override
+  _i6.Future<void> forceReconnectAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#forceReconnectAll, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
   Map<String, bool> getRelayStatus() =>
       (super.noSuchMethod(
             Invocation.method(#getRelayStatus, []),

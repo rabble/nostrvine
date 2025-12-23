@@ -11,7 +11,6 @@ import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
 import '../nostr.dart';
-import '../relay_local/relay_local.dart';
 import '../subscription.dart';
 import '../utils/string_util.dart';
 import 'client_connected.dart';
@@ -51,8 +50,6 @@ class RelayPool {
   /// Used to determine when all relays have finished sending stored events.
   final Map<String, Set<String>> _subscriptionEoseRelays = {};
 
-  RelayLocal? relayLocal;
-
   List<EventFilter> eventFilters;
 
   Function(String, String)? onNotice;
@@ -90,9 +87,6 @@ class RelayPool {
     }
 
     relay.onMessage = _onEvent;
-    if (relay is RelayLocal) {
-      relayLocal = relay;
-    }
 
     if (await relay.connect()) {
       if (autoSubscribe) {
@@ -152,12 +146,12 @@ class RelayPool {
     return _relays[url];
   }
 
-  bool relayDoQuery(
+  Future<bool> relayDoQuery(
     Relay relay,
     Subscription subscription,
     bool sendAfterAuth, {
     bool runBeforeConnected = false,
-  }) {
+  }) async {
     if ((!runBeforeConnected &&
             relay.relayStatus.connected != ClientConnected.connected) ||
         !relay.relayStatus.readAccess) {
@@ -174,7 +168,7 @@ class RelayPool {
         // For vine.hol.is, send the query to trigger AUTH challenge
         if (relay.url.contains('vine.hol.is')) {
           log('🔐 vine.hol.is query - sending to trigger AUTH challenge');
-          var result = relay.send(message, forceSend: true);
+          var result = await relay.send(message, forceSend: true);
           if (result) {
             return true;
           }
@@ -199,10 +193,6 @@ class RelayPool {
   }
 
   void _broadcaseToCache(Map<String, dynamic> event) {
-    if (relayLocal != null) {
-      relayLocal!.broadcaseToLocal(event);
-    }
-
     for (var relay in _cacheRelays.values) {
       if (relay.relayStatus.connected == ClientConnected.connected) {
         relay.send(["EVENT", event]);
@@ -216,8 +206,7 @@ class RelayPool {
 
     if (messageType == 'EVENT') {
       try {
-        if (relay is! RelayLocal &&
-            (relay.relayStatus.relayType != RelayType.cache)) {
+        if ((relay.relayStatus.relayType != RelayType.cache)) {
           var event = Map<String, dynamic>.from(json[2]);
           var kind = event["kind"];
           if (!cacheAvoidEvents.contains(kind)) {
@@ -238,8 +227,7 @@ class RelayPool {
           }
         }
 
-        if (relay is RelayLocal ||
-            relay.relayStatus.relayType == RelayType.cache) {
+        if (relay.relayStatus.relayType == RelayType.cache) {
           // local message read source from json
           var sources = json[2]["sources"];
           if (sources != null && sources is List) {
@@ -272,7 +260,7 @@ class RelayPool {
 
       final subId = json[1] as String;
       // EOSE received for subscription (debug logging removed)
-      var isQuery = relay.checkAndCompleteQuery(subId);
+      var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
         // is Query find if need to callback
         var callback = _queryCompleteCallbacks[subId];
@@ -519,20 +507,15 @@ class RelayPool {
       }
     }
 
-    // local relay
-    if (relayTypes.contains(RelayType.local) && relayLocal != null) {
-      relayDoSubscribe(relayLocal!, subscription, sendAfterAuth);
-    }
-
     return subscription.id;
   }
 
-  bool relayDoSubscribe(
+  Future<bool> relayDoSubscribe(
     Relay relay,
     Subscription subscription,
     bool sendAfterAuth, {
     bool runBeforeConnected = false,
-  }) {
+  }) async {
     if ((!runBeforeConnected &&
             relay.relayStatus.connected != ClientConnected.connected) ||
         !relay.relayStatus.readAccess) {
@@ -552,7 +535,7 @@ class RelayPool {
           log(
             '🔐 vine.hol.is subscription - sending to trigger AUTH challenge',
           );
-          var result = relay.send(message, forceSend: true);
+          var result = await relay.send(message, forceSend: true);
           if (result) {
             return true;
           }
@@ -667,7 +650,7 @@ class RelayPool {
   /// query info will hold in relay and close in relay when EOSE message be received.
   /// if onlyTempRelays is true and tempRelays is not empty, it will only query throw tempRelays.
   /// if onlyTempRelays is false and tempRelays is not empty, it will query bath myRelays and tempRelays.
-  String query(
+  Future<String> query(
     List<Map<String, dynamic>> filters,
     Function(Event) onEvent, {
     String? id,
@@ -677,7 +660,7 @@ class RelayPool {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
-  }) {
+  }) async {
     if (filters.isEmpty) {
       throw ArgumentError("No filters given", "filters");
     }
@@ -731,21 +714,16 @@ class RelayPool {
       }
     }
 
-    // local relay
-    if (relayTypes.contains(RelayType.local) && relayLocal != null) {
-      relayDoQuery(relayLocal!, subscription, sendAfterAuth);
-    }
-
     return subscription.id;
   }
 
   /// send message to relay
   /// there are tempRelays, it also send to tempRelays too.
-  bool send(
+  Future<bool> send(
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
-  }) {
+  }) async {
     bool hadSubmitSend = false;
 
     for (Relay relay in _relays.values) {
@@ -775,7 +753,7 @@ class RelayPool {
             log(
               '🔐 vine.hol.is detected - sending message to trigger AUTH challenge',
             );
-            var result = relay.send(message, forceSend: true);
+            var result = await relay.send(message, forceSend: true);
             if (result) {
               hadSubmitSend = true;
             }
@@ -792,7 +770,7 @@ class RelayPool {
           log(
             '🔐 Relay ${relay.url} sending immediately (alwaysAuth=${relay.relayStatus.alwaysAuth}, authed=${relay.relayStatus.authed})',
           );
-          var result = relay.send(message);
+          var result = await relay.send(message);
           if (result) {
             hadSubmitSend = true;
           }
@@ -1050,13 +1028,6 @@ class RelayPool {
       }
     }
 
-    // Add local relay
-    if (relayTypes.contains(RelayType.local) && relayLocal != null) {
-      if (!relaysToTry.contains(relayLocal)) {
-        relaysToTry.add(relayLocal!);
-      }
-    }
-
     // Try each relay until one responds
     for (final relay in relaysToTry) {
       if (relay.relayStatus.connected != ClientConnected.connected) {
@@ -1070,7 +1041,7 @@ class RelayPool {
       final responseFuture = relay.registerCountQuery(subscriptionId);
 
       // Send the COUNT request
-      final sent = relay.send(message);
+      final sent = await relay.send(message);
       if (!sent) {
         continue;
       }

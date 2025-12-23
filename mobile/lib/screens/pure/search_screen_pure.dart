@@ -600,7 +600,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               '🔍 SearchScreenPure: Tapped user: $userPubkey',
               category: LogCategory.video,
             );
-            context.goProfileGrid(userPubkey);
+            context.pushProfileGrid(userPubkey);
           },
         );
       },

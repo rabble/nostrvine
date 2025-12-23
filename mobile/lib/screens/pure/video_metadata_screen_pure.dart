@@ -9,6 +9,7 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/models/pending_upload.dart'
     show UploadStatus, PendingUpload;
@@ -47,6 +48,7 @@ class _VideoMetadataScreenPureState
   String? _currentUploadId;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  bool _isVideoPlaying = false;
   VineDraft? _currentDraft;
 
   // Background upload state (managed by Task 3 - initState/dispose)
@@ -151,6 +153,9 @@ class _VideoMetadataScreenPureState
         });
       }
 
+      // Listen for play state changes
+      _videoController!.addListener(_onVideoStateChanged);
+
       // Start playing after UI has rendered
       // Use addPostFrameCallback to ensure play() happens after frame is drawn
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -179,6 +184,27 @@ class _VideoMetadataScreenPureState
           _isVideoInitialized = false;
         });
       }
+    }
+  }
+
+  void _onVideoStateChanged() {
+    if (_videoController != null && mounted) {
+      final isPlaying = _videoController!.value.isPlaying;
+      if (_isVideoPlaying != isPlaying) {
+        setState(() {
+          _isVideoPlaying = isPlaying;
+        });
+      }
+    }
+  }
+
+  void _toggleVideoPlayPause() {
+    if (_videoController == null) return;
+
+    if (_videoController!.value.isPlaying) {
+      _videoController!.pause();
+    } else {
+      _videoController!.play();
     }
   }
 
@@ -355,6 +381,7 @@ class _VideoMetadataScreenPureState
     _titleController.dispose();
     _descriptionController.dispose();
     _hashtagController.dispose();
+    _videoController?.removeListener(_onVideoStateChanged);
     _videoController?.dispose();
     super.dispose();
 
@@ -475,51 +502,95 @@ class _VideoMetadataScreenPureState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Video preview
-                            Container(
-                              height: 200,
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Center(
-                                  child:
-                                      _isVideoInitialized &&
-                                          _videoController != null
-                                      ? Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            AspectRatio(
-                                              aspectRatio:
-                                                  _currentDraft!.aspectRatio ==
-                                                      vine.AspectRatio.square
-                                                  ? 1.0
-                                                  : 9.0 / 16.0,
-                                              child: VideoPlayer(
-                                                _videoController!,
+                            // Video preview with tap-to-pause
+                            GestureDetector(
+                              onTap: _toggleVideoPlayPause,
+                              child: Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Center(
+                                    child:
+                                        _isVideoInitialized &&
+                                            _videoController != null
+                                        ? Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              // Video with proper aspect ratio cropping
+                                              AspectRatio(
+                                                aspectRatio:
+                                                    _currentDraft!
+                                                            .aspectRatio ==
+                                                        vine.AspectRatio.square
+                                                    ? 1.0
+                                                    : 9.0 / 16.0,
+                                                child: ClipRect(
+                                                  child: FittedBox(
+                                                    fit: BoxFit.cover,
+                                                    child: SizedBox(
+                                                      width: _videoController!
+                                                          .value
+                                                          .size
+                                                          .width,
+                                                      height: _videoController!
+                                                          .value
+                                                          .size
+                                                          .height,
+                                                      child: VideoPlayer(
+                                                        _videoController!,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const CircularProgressIndicator(
-                                              color: VineTheme.vineGreen,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Loading preview...',
-                                              style: TextStyle(
-                                                color: Colors.grey[400],
-                                                fontSize: 12,
+                                              // Play/pause overlay icon
+                                              AnimatedOpacity(
+                                                opacity: _isVideoPlaying
+                                                    ? 0.0
+                                                    : 1.0,
+                                                duration: const Duration(
+                                                  milliseconds: 200,
+                                                ),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.5),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  padding: const EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.play_arrow,
+                                                    color: Colors.white,
+                                                    size: 40,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
+                                            ],
+                                          )
+                                        : Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const CircularProgressIndicator(
+                                                color: VineTheme.vineGreen,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Loading preview...',
+                                                style: TextStyle(
+                                                  color: Colors.grey[400],
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1038,6 +1109,15 @@ class _VideoMetadataScreenPureState
   Future<void> _publishVideo() async {
     if (_currentDraft == null) return;
 
+    // Stop video playback when publishing starts
+    if (_videoController != null && _videoController!.value.isPlaying) {
+      await _videoController!.pause();
+      Log.info(
+        '📝 Paused video playback for publishing',
+        category: LogCategory.video,
+      );
+    }
+
     // Get upload manager and check if background upload exists
     final uploadManager = ref.read(uploadManagerProvider);
 
@@ -1183,6 +1263,12 @@ class _VideoMetadataScreenPureState
 
       // Mark recording as published to prevent auto-save on dispose
       ref.read(vineRecordingProvider.notifier).markAsPublished();
+
+      // Clean up recording segments and temp files after successful publish
+      await ref.read(vineRecordingProvider.notifier).cleanupAndReset();
+
+      // Clear clip manager to allow recording new videos without "clear" prompt
+      ref.read(clipManagerProvider.notifier).clearAll();
 
       if (mounted) {
         setState(() {

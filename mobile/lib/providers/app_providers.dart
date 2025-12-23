@@ -27,6 +27,7 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
@@ -44,6 +45,7 @@ import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -265,6 +267,13 @@ Future<DraftStorageService> draftStorageService(Ref ref) async {
   return DraftStorageService(prefs);
 }
 
+/// Clip library service for persisting individual video clips
+@riverpod
+ClipLibraryService clipLibraryService(Ref ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ClipLibraryService(prefs);
+}
+
 // (Removed duplicate legacy provider for StreamUploadService)
 
 // =============================================================================
@@ -380,6 +389,44 @@ SocialService socialService(Ref ref) {
     subscriptionManager: subscriptionManager,
     personalEventCache: personalEventCache,
   );
+}
+
+/// Provider for FollowRepository instance
+///
+/// Creates a FollowRepository for managing follow relationships.
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalEventCacheService (for caching contact list events)
+@Riverpod(keepAlive: true)
+FollowRepository followRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  assert(
+    nostrClient.hasKeys,
+    'FollowRepository accessed without authentication',
+  );
+
+  final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+
+  final repository = FollowRepository(
+    nostrClient: nostrClient,
+    personalEventCache: personalEventCache,
+  );
+
+  // Initialize asynchronously
+  repository.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize FollowRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod
