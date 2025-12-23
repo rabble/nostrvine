@@ -13,6 +13,7 @@ import 'package:openvine/utils/unified_logger.dart';
 part 'followers_event.dart';
 part 'followers_state.dart';
 
+// TODO(Oscar): we will split this bloc into MyFollowersBloc and OthersFollowersBloc to separate the logic of current user and seeing others profile. Related task https://github.com/divinevideo/divine-mobile/issues/571
 /// BLoC for displaying a user's followers list.
 ///
 /// Fetches Kind 3 (contact list) events that mention the target user
@@ -57,6 +58,7 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
     }
   }
 
+  // TODO(Oscar): move the logic to the repository. Task related https://github.com/divinevideo/divine-mobile/issues/571. See also comments on this PR for more refactor https://github.com/divinevideo/divine-mobile/pull/717
   /// Load followers from Nostr relays
   Future<void> _loadFollowers(
     String pubkey,

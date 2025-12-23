@@ -13,6 +13,7 @@ import 'package:openvine/utils/unified_logger.dart';
 part 'following_event.dart';
 part 'following_state.dart';
 
+// TODO(Oscar): we will split this bloc into MyFollowingBloc and OthersFollowingBloc to separate the logic of current user and seeing others profile. Related task https://github.com/divinevideo/divine-mobile/issues/571
 /// BLoC for displaying a user's following list and handling follow/unfollow.
 ///
 /// Scoped to [FollowingScreen]. Supports two modes:
@@ -97,6 +98,7 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
     );
   }
 
+  // TODO(Oscar): move the logic to the repository. Task related https://github.com/divinevideo/divine-mobile/issues/571. See also comments on this PR for more refactor https://github.com/divinevideo/divine-mobile/pull/717
   /// Load other user's following from Nostr relays
   Future<void> _loadOtherUserFollowing(Emitter<FollowingState> emit) async {
     // Cancel any existing subscription
