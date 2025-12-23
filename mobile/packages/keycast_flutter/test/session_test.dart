@@ -36,9 +36,7 @@ void main() {
       });
 
       test('handles missing accessToken', () {
-        final tokenResponse = TokenResponse(
-          bunkerUrl: 'bunker://test',
-        );
+        final tokenResponse = TokenResponse(bunkerUrl: 'bunker://test');
 
         final session = KeycastSession.fromTokenResponse(tokenResponse);
         expect(session.accessToken, isNull);
@@ -118,16 +116,16 @@ void main() {
 
         expect(restored.bunkerUrl, original.bunkerUrl);
         expect(restored.accessToken, original.accessToken);
-        expect(restored.expiresAt?.toIso8601String(),
-            original.expiresAt?.toIso8601String());
+        expect(
+          restored.expiresAt?.toIso8601String(),
+          original.expiresAt?.toIso8601String(),
+        );
         expect(restored.scope, original.scope);
         expect(restored.userPubkey, original.userPubkey);
       });
 
       test('handles null fields in serialization', () {
-        final original = KeycastSession(
-          bunkerUrl: 'bunker://test',
-        );
+        final original = KeycastSession(bunkerUrl: 'bunker://test');
 
         final json = original.toJson();
         final restored = KeycastSession.fromJson(json);

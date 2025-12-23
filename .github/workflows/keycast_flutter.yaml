@@ -1,0 +1,49 @@
+# ABOUTME: CI workflow for the keycast_flutter package.
+# ABOUTME: Runs tests, formatting, and analysis only when keycast_flutter files change.
+
+name: Keycast flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/keycast_flutter/**"
+      - ".github/workflows/keycast_flutter.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/keycast_flutter/**"
+      - ".github/workflows/keycast_flutter.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Keycast flutter CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/packages/keycast_flutter/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.3"
+          channel: "stable"
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: ✨ Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: 🕵️ Analyze code
+        run: flutter analyze lib test
+
+      - name: 🧪 Run tests
+        run: flutter test

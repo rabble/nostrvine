@@ -4,11 +4,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/reserved_username_request_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -258,6 +260,12 @@ Nip05Service nip05Service(Ref ref) {
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);
   return UsernameRepository(nip05Service);
+}
+
+/// Reserved username request repository for claiming reserved usernames
+@riverpod
+ReservedUsernameRequestRepository reservedUsernameRequestRepository(Ref ref) {
+  return ReservedUsernameRequestRepository(http.Client());
 }
 
 /// Draft storage service for persisting vine drafts

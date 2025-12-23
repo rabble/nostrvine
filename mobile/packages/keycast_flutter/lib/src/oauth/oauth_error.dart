@@ -5,10 +5,7 @@ class OAuthError {
   final String error;
   final String? errorDescription;
 
-  const OAuthError({
-    required this.error,
-    this.errorDescription,
-  });
+  const OAuthError({required this.error, this.errorDescription});
 
   factory OAuthError.fromJson(Map<String, dynamic> json) {
     return OAuthError(

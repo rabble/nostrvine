@@ -19,6 +19,10 @@ const kMinUsernameLength = 3;
 /// Maximum length for a valid username
 const kMaxUsernameLength = 20;
 
+/// Debug flag to simulate reserved username for testing
+/// Set to true to make any username starting with "test" appear as reserved
+const kDebugSimulateReservedUsernames = false;
+
 /// Notifier for managing username availability checking and registration
 ///
 /// Provides debounced availability checking to avoid excessive API calls
@@ -80,6 +84,22 @@ class UsernameNotifier extends _$UsernameNotifier {
   /// This is exposed for testing to bypass debounce timer.
   @visibleForTesting
   Future<void> checkAvailability(String username) async {
+    // Debug mode: simulate reserved usernames for testing
+    if (kDebugSimulateReservedUsernames &&
+        kDebugMode &&
+        username.toLowerCase().startsWith('test')) {
+      Log.debug(
+        'DEBUG: Simulating reserved username for: $username',
+        name: 'UsernameNotifier',
+        category: LogCategory.api,
+      );
+      state = state.copyWith(
+        status: UsernameCheckStatus.reserved,
+        errorMessage: 'Username is reserved. Contact support to claim.',
+      );
+      return;
+    }
+
     final repository = ref.read(usernameRepositoryProvider);
 
     Log.debug(

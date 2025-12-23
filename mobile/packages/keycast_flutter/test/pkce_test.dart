@@ -60,8 +60,9 @@ void main() {
         final challenge = Pkce.generateChallenge(verifier);
 
         final expectedHash = sha256.convert(utf8.encode(verifier));
-        final expectedChallenge =
-            base64Url.encode(expectedHash.bytes).replaceAll('=', '');
+        final expectedChallenge = base64Url
+            .encode(expectedHash.bytes)
+            .replaceAll('=', '');
 
         expect(challenge, equals(expectedChallenge));
       });
@@ -102,8 +103,9 @@ void main() {
         final challenge = Pkce.generateChallenge(verifier);
 
         final expectedHash = sha256.convert(utf8.encode(verifier));
-        final expectedChallenge =
-            base64Url.encode(expectedHash.bytes).replaceAll('=', '');
+        final expectedChallenge = base64Url
+            .encode(expectedHash.bytes)
+            .replaceAll('=', '');
 
         expect(challenge, equals(expectedChallenge));
       });
