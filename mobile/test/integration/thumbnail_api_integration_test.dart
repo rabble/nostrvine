@@ -198,16 +198,23 @@ void main() {
         skip: true,
       );
 
-      test('handles empty video ID', () async {
-        const emptyId = '';
+      test(
+        'handles empty video ID',
+        () async {
+          const emptyId = '';
 
-        final exists = await ThumbnailApiService.thumbnailExists(emptyId);
-        expect(exists, isFalse);
+          final exists = await ThumbnailApiService.thumbnailExists(emptyId);
+          expect(exists, isFalse);
 
-        final url = await ThumbnailApiService.getThumbnailWithFallback(emptyId);
-        expect(url, isNull);
-      // TODO(any): Fix and re-enable this test
-      }, timeout: const Timeout(Duration(seconds: 30)), skip: true);
+          final url = await ThumbnailApiService.getThumbnailWithFallback(
+            emptyId,
+          );
+          expect(url, isNull);
+          // TODO(any): Fix and re-enable this test
+        },
+        timeout: const Timeout(Duration(seconds: 30)),
+        skip: true,
+      );
 
       test(
         'handles special characters in video ID',

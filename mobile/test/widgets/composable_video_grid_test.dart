@@ -103,7 +103,7 @@ void main() {
 
       // Should render 2 video tiles
       expect(find.byType(GestureDetector), findsNWidgets(2));
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('filters out broken videos using BrokenVideoTracker', (
@@ -132,7 +132,7 @@ void main() {
 
       // Should only render 2 tiles (broken_video filtered out)
       expect(find.byType(GestureDetector), findsNWidgets(2));
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('shows empty state when no videos after filtering', (
@@ -194,7 +194,7 @@ void main() {
       expect(tappedIndex, equals(1));
       expect(tappedVideos, isNotNull);
       expect(tappedVideos!.length, equals(2));
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('uses correct grid parameters', (tester) async {
@@ -224,7 +224,7 @@ void main() {
 
       expect(delegate.crossAxisCount, equals(3));
       expect(delegate.childAspectRatio, equals(1.0));
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('displays video metadata correctly', (tester) async {
@@ -250,7 +250,7 @@ void main() {
       expect(find.text('Video 1'), findsOneWidget);
       expect(find.text('10'), findsOneWidget); // likes count
       expect(find.text('5s'), findsOneWidget); // duration badge
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
   });
 }

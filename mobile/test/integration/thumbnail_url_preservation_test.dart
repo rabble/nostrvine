@@ -67,7 +67,7 @@ void main() {
       expect(upload.thumbnailPath, startsWith('https://'));
 
       print('✅ Thumbnail URL preserved in upload: ${upload.thumbnailPath}');
-    // TODO: Fix and re-enable this test
+      // TODO: Fix and re-enable this test
     }, skip: true);
 
     test(

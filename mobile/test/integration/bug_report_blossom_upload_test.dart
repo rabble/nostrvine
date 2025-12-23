@@ -268,7 +268,7 @@ Error Counts:
 
       // Re-enable for other tests
       await blossomService.setBlossomEnabled(true);
-    // TODO(any): Fix and reenable this test
+      // TODO(any): Fix and reenable this test
     }, skip: true);
 
     test('should collect diagnostics and create bug report file', () async {
@@ -304,7 +304,7 @@ Error Counts:
       expect(sanitized.reportId, equals(bugReportData.reportId));
 
       print('✅ Sanitization successful\n');
-    // TODO(any): Fix and reenable this test
+      // TODO(any): Fix and reenable this test
     }, skip: true);
 
     test('should estimate report size correctly', () async {

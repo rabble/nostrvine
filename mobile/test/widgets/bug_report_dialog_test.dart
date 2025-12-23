@@ -330,7 +330,7 @@ void main() {
 
       // Dialog should now be closed
       expect(find.text('Report a Bug'), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets(
@@ -468,7 +468,7 @@ void main() {
 
       // Dialog should be closed
       expect(find.text('Report a Bug'), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
   });
 }

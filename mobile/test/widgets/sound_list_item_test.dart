@@ -74,7 +74,7 @@ void main() {
 
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       expect(find.byIcon(Icons.pause), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('shows pause icon when playing', (tester) async {
@@ -94,7 +94,7 @@ void main() {
 
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('shows checkmark when selected', (tester) async {
@@ -173,7 +173,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.play_arrow));
       expect(playPauseTapped, isTrue);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('uses dark theme colors', (tester) async {
@@ -226,7 +226,7 @@ void main() {
 
       expect(find.text('No Artist Sound'), findsOneWidget);
       expect(find.text('Unknown Artist'), findsOneWidget);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
   });
 }

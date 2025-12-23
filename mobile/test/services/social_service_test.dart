@@ -700,7 +700,7 @@ void main() {
 
         // Verify user is no longer followed locally
         expect(socialService.isFollowing(testTargetPubkey), false);
-      // TODO(any): Fix and reenable this test
+        // TODO(any): Fix and reenable this test
       }, skip: true);
 
       test(
@@ -902,7 +902,7 @@ void main() {
             tags: anyNamed('tags'),
           ),
         );
-      // TODO(any): Fix and reenable this test
+        // TODO(any): Fix and reenable this test
       }, skip: true);
 
       test('should not unfollow user that is not followed', () async {
@@ -979,7 +979,7 @@ void main() {
 
         expect(stats['following'], 3); // 3 p tags in contact list
         expect(stats['followers'], 2); // 2 unique followers
-      // TODO(any): Fix and reenable this test
+        // TODO(any): Fix and reenable this test
       }, skip: true);
 
       test('should return cached follower stats when available', () async {
@@ -1237,7 +1237,7 @@ void main() {
 
         // Should call subscription twice: once for videos, once for likes
         verify(mockNostrService.subscribe(argThat(anything))).called(2);
-      // TODO(any): Fix and reenable this test
+        // TODO(any): Fix and reenable this test
       }, skip: true);
 
       test('should return zero likes for user with no videos', () async {

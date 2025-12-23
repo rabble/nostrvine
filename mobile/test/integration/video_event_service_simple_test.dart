@@ -189,7 +189,7 @@ void main() {
       // Error handling may vary - the important thing is it doesn't crash
 
       Log.info('✅ Error handling test completed');
-    // TODO(any): Fix and reenable this test
+      // TODO(any): Fix and reenable this test
     }, skip: true);
 
     test('VideoEventService filters non-video events correctly', () async {
@@ -253,7 +253,7 @@ void main() {
       );
 
       Log.info('✅ Event filtering test completed');
-    // TODO(any): Fix and reenable this test
+      // TODO(any): Fix and reenable this test
     }, skip: true);
   });
 }

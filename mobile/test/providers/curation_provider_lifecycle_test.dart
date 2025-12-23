@@ -108,7 +108,7 @@ void main() {
       // In production, this prevents the "0 videos" bug when navigating back to Editor's Pick
 
       container.dispose();
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test(
@@ -149,7 +149,7 @@ void main() {
         container.dispose();
       },
       // TODO(any): Fix and re-enable this test
-      skip: true
+      skip: true,
     );
 
     test('curation service initializes with sample data', () {

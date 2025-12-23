@@ -377,7 +377,7 @@ void main() {
       final refreshWidget = tester.widget<RefreshIndicator>(refreshIndicator);
       expect(refreshWidget.semanticsLabel, 'searching for more videos');
     });
-  // TODO(any): Fix and re-enable this test
+    // TODO(any): Fix and re-enable this test
   }, skip: true);
 }
 

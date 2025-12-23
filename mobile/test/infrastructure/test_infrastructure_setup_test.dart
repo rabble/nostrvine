@@ -111,7 +111,7 @@ void main() {
         contains('dart format'),
         reason: 'Pre-commit should run dart format',
       );
-  // TODO(any): Fix and re-enable tests
+      // TODO(any): Fix and re-enable tests
     }, skip: true);
 
     test('test data builders exist', () {
@@ -160,7 +160,7 @@ void main() {
         final implFile = File('${inMemoryDir.path}/$impl');
         expect(implFile.existsSync(), isTrue, reason: '$impl should exist');
       }
-  // TODO(any): Fix and re-enable tests
+      // TODO(any): Fix and re-enable tests
     }, skip: true);
 
     test('GitHub Actions workflow is configured', () {
@@ -187,7 +187,7 @@ void main() {
         contains('min_coverage: 80'),
         reason: 'Workflow should enforce 80% coverage',
       );
-  // TODO(any): Fix and re-enable tests
+      // TODO(any): Fix and re-enable tests
     }, skip: true);
 
     test('test helper utilities are comprehensive', () {
@@ -271,7 +271,7 @@ void main() {
         isTrue,
         reason: 'Custom file length checker should exist',
       );
-  // TODO(any): Fix and re-enable tests
+      // TODO(any): Fix and re-enable tests
     }, skip: true);
   });
 }

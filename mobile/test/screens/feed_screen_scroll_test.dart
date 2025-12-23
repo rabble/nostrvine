@@ -53,7 +53,7 @@ void main() {
 
       expect(scrollController.offset, 0.0);
       expect(refreshCalled, true);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     test('should use animation completion instead of Future.delayed', () async {
@@ -88,7 +88,7 @@ void main() {
 
       expect(animationCompleted, true);
       expect(refreshCalled, true);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     test('should handle immediate refresh if already at top', () async {
@@ -104,7 +104,7 @@ void main() {
       );
 
       expect(refreshCalled, true);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
   });
 
@@ -131,7 +131,7 @@ void main() {
       expect(actionCompleted, true);
 
       animationController.dispose();
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     test(

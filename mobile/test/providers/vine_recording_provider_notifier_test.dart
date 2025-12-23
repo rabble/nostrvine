@@ -11,7 +11,7 @@ void main() {
       final state = container.read(vineRecordingProvider);
 
       expect(state.aspectRatio, equals(AspectRatio.square));
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('setAspectRatio updates state', () {

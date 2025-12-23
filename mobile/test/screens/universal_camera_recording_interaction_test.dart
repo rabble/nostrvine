@@ -179,8 +179,8 @@ void main() {
             reason: 'Should have recorded segment',
           );
         }
-      //}, skip: kIsWeb);
-      // TODO(any): Fix and re-enable this test
+        //}, skip: kIsWeb);
+        // TODO(any): Fix and re-enable this test
       }, skip: true);
 
       testWidgets('should support multiple press-and-hold segments on mobile', (
@@ -240,8 +240,8 @@ void main() {
             reason: 'Should have 3 segments after third press-release',
           );
         }
-      //}, skip: kIsWeb);
-      // TODO(any): Fix and re-enable this test
+        //}, skip: kIsWeb);
+        // TODO(any): Fix and re-enable this test
       }, skip: true);
 
       testWidgets('should show segment count UI on mobile', (tester) async {
@@ -272,7 +272,7 @@ void main() {
             reason: 'Mobile should show segment information',
           );
         }
-      // TODO(any): Fix and re-enable this test
+        // TODO(any): Fix and re-enable this test
       }, skip: true);
       //}, skip: kIsWeb);
     });
@@ -296,7 +296,7 @@ void main() {
 
         // After recording, publish button should appear
         // (Implementation will make this pass)
-      // TODO(any): Fix and re-enable this test
+        // TODO(any): Fix and re-enable this test
       }, skip: true);
 
       testWidgets('should show total recording duration', (tester) async {
@@ -320,7 +320,7 @@ void main() {
           findsOneWidget,
           reason: 'Should show recording duration timer',
         );
-      // TODO(any): Fix and re-enable this test
+        // TODO(any): Fix and re-enable this test
       }, skip: true);
 
       testWidgets('should enforce 6.3 second maximum on both platforms', (

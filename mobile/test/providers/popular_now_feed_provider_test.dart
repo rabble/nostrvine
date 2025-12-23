@@ -60,7 +60,7 @@ void main() {
           sortBy: argThat(isNotNull, named: 'sortBy'),
         ),
       ).called(greaterThanOrEqualTo(1));
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should get videos from popularNowVideos getter', () async {
@@ -81,7 +81,7 @@ void main() {
       // Assert
       expect(state.videos.length, 2);
       verify(mockService.popularNowVideos).called(greaterThanOrEqualTo(1));
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should sort videos by timestamp (newest first)', () async {
@@ -108,7 +108,7 @@ void main() {
       expect(state.videos[0].id, 'v2'); // Newest (Jan 3)
       expect(state.videos[1].id, 'v3'); // Middle (Jan 2)
       expect(state.videos[2].id, 'v1'); // Oldest (Jan 1)
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should return empty feed when no videos', () async {
@@ -121,7 +121,7 @@ void main() {
       // Assert
       expect(state.videos, isEmpty);
       expect(state.hasMoreContent, false);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should set hasMoreContent true when videos >= 10', () async {
@@ -141,7 +141,7 @@ void main() {
       // Assert
       expect(state.videos.length, 15);
       expect(state.hasMoreContent, true);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should load more videos when loadMore is called', () async {
@@ -171,7 +171,7 @@ void main() {
       verify(
         mockService.loadMoreEvents(SubscriptionType.popularNow, limit: 50),
       ).called(1);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should refresh feed when refresh is called', () async {
@@ -201,7 +201,7 @@ void main() {
           force: true, // Should force refresh
         ),
       ).called(1);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should return empty state when appReady is false', () async {

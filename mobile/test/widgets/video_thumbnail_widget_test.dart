@@ -68,7 +68,7 @@ void main() {
 
       // Should not show placeholder when thumbnail exists
       expect(find.byType(VideoIconPlaceholder), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('displays blurhash when only blurhash is available', (

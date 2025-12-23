@@ -171,6 +171,6 @@ void main() {
 
       await screenMatchesGolden(tester, 'user_avatar_themes');
     });
-  // TODO(any): Fix and re-enable tests
+    // TODO(any): Fix and re-enable tests
   }, skip: true);
 }

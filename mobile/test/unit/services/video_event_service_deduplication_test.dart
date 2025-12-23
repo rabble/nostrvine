@@ -127,7 +127,7 @@ void main() {
         videoEventService.discoveryVideos.first.id,
         equals('test-video-id-1'),
       );
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should add different events with unique IDs', () async {
@@ -250,7 +250,7 @@ void main() {
         videoEventService.discoveryVideos[1].id,
         equals('test-video-id-1'),
       );
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test(
@@ -347,7 +347,7 @@ void main() {
         videoEventService.discoveryVideos.first.id,
         equals('rapid-test-video'),
       );
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should handle events with invalid kind gracefully', () async {
@@ -396,7 +396,7 @@ void main() {
       // Should only have the valid video event
       expect(videoEventService.discoveryVideos.length, equals(1));
       expect(videoEventService.discoveryVideos.first.id, equals('valid-video'));
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
   });
 
@@ -487,7 +487,7 @@ void main() {
       // This is expected behavior: reposts reference original events that must exist in cache
       // When includeReposts is true, kind 6 events are accepted but require original video lookup
       expect(videoEventService.discoveryVideos.length, equals(0));
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
   });
 }

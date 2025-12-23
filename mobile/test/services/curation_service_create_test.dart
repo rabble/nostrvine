@@ -95,7 +95,7 @@ void main() {
       expect(storedSet.videoIds, ['video1', 'video2', 'video3']);
       expect(storedSet.description, 'A test curation set');
       expect(storedSet.imageUrl, 'https://example.com/image.jpg');
-  // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('creates event with correct kind 30005', () async {
@@ -171,7 +171,7 @@ void main() {
       // Verify video references
       final aTags = capturedEvent.tags.where((tag) => tag[0] == 'a').toList();
       expect(aTags.length, 2);
-  // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('returns false when broadcast fails', () async {
@@ -276,7 +276,7 @@ void main() {
       // Verify: Stored curation set has correct curator pubkey
       final storedSet = curationService.getCurationSet('test');
       expect(storedSet!.curatorPubkey, testKeychain.public);
-  // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('handles partial broadcast success', () async {

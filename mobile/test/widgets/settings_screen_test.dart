@@ -34,7 +34,7 @@ void main() {
       expect(find.text('PROFILE'), findsOneWidget);
       expect(find.text('NETWORK'), findsOneWidget);
       expect(find.text('PREFERENCES'), findsOneWidget);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('Settings tiles display correctly', (tester) async {
@@ -57,7 +57,7 @@ void main() {
       // CRITICAL: P2P Sync should be hidden for release
       expect(find.text('P2P Sync'), findsNothing);
       expect(find.text('Peer-to-peer synchronization settings'), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('Settings tiles have proper icons', (tester) async {
@@ -80,7 +80,7 @@ void main() {
 
       // CRITICAL: P2P Sync icon (Icons.sync) should be hidden for release
       expect(find.byIcon(Icons.sync), findsNothing);
-    // TODO(any): Fix and re-enable these tests
+      // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
     testWidgets('App bar displays correctly', (tester) async {

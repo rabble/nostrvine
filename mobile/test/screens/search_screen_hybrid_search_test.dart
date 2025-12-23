@@ -192,7 +192,7 @@ void main() {
 
       // Assert: Should find 3 videos (title match, content match, hashtag match)
       expect(find.text('Videos (3)'), findsOneWidget);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     testWidgets('should show loading indicator during remote search', (
@@ -303,7 +303,7 @@ void main() {
 
       // Assert: Should show 2 unique users (not 3)
       expect(find.text('Users (2)'), findsOneWidget);
-    // TODO(any): Fix and re-enable this test
+      // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     testWidgets(
