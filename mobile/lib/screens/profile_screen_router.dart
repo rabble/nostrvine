@@ -17,8 +17,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/followers_screen.dart';
-import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -27,6 +25,8 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
+import 'package:openvine/widgets/profile/profile_followers_stat.dart';
+import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -87,34 +87,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       // Still call fetchProfile to trigger background refresh if needed
       userProfileService.fetchProfile(userIdHex);
     }
-  }
-
-  void _navigateToFollowers(
-    BuildContext context,
-    String pubkey,
-    String displayName,
-  ) {
-    // Navigate using root navigator to escape shell route
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowersScreen(pubkey: pubkey, displayName: displayName),
-      ),
-    );
-  }
-
-  void _navigateToFollowing(
-    BuildContext context,
-    String pubkey,
-    String displayName,
-  ) {
-    // Navigate using root navigator to escape shell route
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowingPage(pubkey: pubkey, displayName: displayName),
-      ),
-    );
   }
 
   @override
@@ -619,23 +591,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                       isLoading: profileStatsAsync.isLoading,
                       onTap: null, // Videos aren't tappable
                     ),
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.followers
-                          : null,
-                      label: 'Followers',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: () =>
-                          _navigateToFollowers(context, userIdHex, displayName),
+                    ProfileFollowersStat(
+                      pubkey: userIdHex,
+                      displayName: displayName,
                     ),
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.following
-                          : null,
-                      label: 'Following',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: () =>
-                          _navigateToFollowing(context, userIdHex, displayName),
+                    ProfileFollowingStat(
+                      pubkey: userIdHex,
+                      displayName: displayName,
                     ),
                   ],
                 ),
