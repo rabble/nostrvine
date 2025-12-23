@@ -1061,8 +1061,9 @@ class VideoOverlayActions extends ConsumerWidget {
                     builder: (context, ref, _) {
                       final socialState = ref.watch(socialProvider);
                       final isLiked = socialState.isLiked(video.id);
-                      final isLikeInProgress =
-                          socialState.isLikeInProgress(video.id);
+                      final isLikeInProgress = socialState.isLikeInProgress(
+                        video.id,
+                      );
                       final likeCount = socialState.likeCounts[video.id] ?? 0;
 
                       return Column(
@@ -1099,7 +1100,9 @@ class VideoOverlayActions extends ConsumerWidget {
                                       isLiked
                                           ? Icons.favorite
                                           : Icons.favorite_outline,
-                                      color: isLiked ? Colors.red : Colors.white,
+                                      color: isLiked
+                                          ? Colors.red
+                                          : Colors.white,
                                       size: 32,
                                     ),
                             ),
@@ -1237,8 +1240,9 @@ class VideoOverlayActions extends ConsumerWidget {
                           ? '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag'
                           : video.id;
                       final isReposted = socialState.hasReposted(addressableId);
-                      final isRepostInProgress =
-                          socialState.isRepostInProgress(video.id);
+                      final isRepostInProgress = socialState.isRepostInProgress(
+                        video.id,
+                      );
 
                       return Column(
                         children: [
