@@ -34,14 +34,12 @@ class FollowersScreen extends ConsumerWidget {
 
     return MultiBlocProvider(
       providers: [
-        // FollowersBloc for fetching the followers list
         BlocProvider(
           create: (_) => FollowersBloc(
             followRepository: followRepository,
             nostrClient: nostrClient,
           )..add(FollowersListLoadRequested(pubkey)),
         ),
-        // FollowingBloc for tracking current user's following state
         BlocProvider(
           create: (_) => FollowingBloc(
             followRepository: followRepository,

@@ -28,7 +28,6 @@ class FollowingPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get dependencies from Riverpod
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
 
