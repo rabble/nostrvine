@@ -2,13 +2,13 @@
 // ignore_for_file: unused_local_variable, unused_import
 import 'dart:io';
 
+import 'package:db_client/src/database/app_database.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
-import 'package:db_client/src/database/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'generated/schema.dart';
 
+import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 
@@ -294,12 +294,15 @@ void main() {
       final db = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
       // Query to verify the new schema has correct columns
-      final columns = await db.customSelect(
-        'PRAGMA table_info(profile_stats)',
-      ).get();
+      final columns = await db
+          .customSelect(
+            'PRAGMA table_info(profile_stats)',
+          )
+          .get();
 
-      final columnNames =
-          columns.map((row) => row.data['name'] as String).toSet();
+      final columnNames = columns
+          .map((row) => row.data['name'] as String)
+          .toSet();
 
       // New schema should have cached_at, total_views, total_likes
       expect(columnNames, contains('cached_at'));
@@ -313,19 +316,20 @@ void main() {
       await db.close();
     });
 
-    test('migrates profile_stats missing total_views and total_likes columns',
-        () async {
-      // Create a database with partially old schema (has cached_at but missing
-      // total_views/total_likes)
-      final rawDb = NativeDatabase(File(tempDbPath));
-      await rawDb.ensureOpen(
-        _StubUser(schemaVersion: 0, onCreate: (_) async {}),
-      );
+    test(
+      'migrates profile_stats missing total_views and total_likes columns',
+      () async {
+        // Create a database with partially old schema (has cached_at but missing
+        // total_views/total_likes)
+        final rawDb = NativeDatabase(File(tempDbPath));
+        await rawDb.ensureOpen(
+          _StubUser(schemaVersion: 0, onCreate: (_) async {}),
+        );
 
-      // Create v1 schema tables
-      await createV1Schema(rawDb);
+        // Create v1 schema tables
+        await createV1Schema(rawDb);
 
-      await rawDb.runCustom('''
+        await rawDb.runCustom('''
         CREATE TABLE IF NOT EXISTS profile_stats (
           pubkey TEXT NOT NULL PRIMARY KEY,
           video_count INTEGER,
@@ -335,28 +339,32 @@ void main() {
         )
       ''');
 
-      // Set schema version to 1 so migration runs
-      await rawDb.runCustom('PRAGMA user_version = 1');
+        // Set schema version to 1 so migration runs
+        await rawDb.runCustom('PRAGMA user_version = 1');
 
-      await rawDb.close();
+        await rawDb.close();
 
-      // Open with AppDatabase which should run migration
-      final db = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+        // Open with AppDatabase which should run migration
+        final db = AppDatabase.test(NativeDatabase(File(tempDbPath)));
 
-      // Query to verify the new schema has all columns
-      final columns = await db.customSelect(
-        'PRAGMA table_info(profile_stats)',
-      ).get();
+        // Query to verify the new schema has all columns
+        final columns = await db
+            .customSelect(
+              'PRAGMA table_info(profile_stats)',
+            )
+            .get();
 
-      final columnNames =
-          columns.map((row) => row.data['name'] as String).toSet();
+        final columnNames = columns
+            .map((row) => row.data['name'] as String)
+            .toSet();
 
-      expect(columnNames, contains('cached_at'));
-      expect(columnNames, contains('total_views'));
-      expect(columnNames, contains('total_likes'));
+        expect(columnNames, contains('cached_at'));
+        expect(columnNames, contains('total_views'));
+        expect(columnNames, contains('total_likes'));
 
-      await db.close();
-    });
+        await db.close();
+      },
+    );
 
     test('does not modify profile_stats with correct schema', () async {
       // Create a database with correct schema
