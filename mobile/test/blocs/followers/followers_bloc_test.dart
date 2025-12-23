@@ -316,31 +316,6 @@ void main() {
       );
     });
 
-    group('isFollowing', () {
-      test('delegates to FollowRepository', () {
-        when(
-          () => mockFollowRepository.isFollowing(validPubkey('user')),
-        ).thenReturn(true);
-        when(
-          () => mockFollowRepository.isFollowing(validPubkey('other')),
-        ).thenReturn(false);
-
-        final bloc = createBloc();
-
-        expect(bloc.isFollowing(validPubkey('user')), isTrue);
-        expect(bloc.isFollowing(validPubkey('other')), isFalse);
-
-        verify(
-          () => mockFollowRepository.isFollowing(validPubkey('user')),
-        ).called(1);
-        verify(
-          () => mockFollowRepository.isFollowing(validPubkey('other')),
-        ).called(1);
-
-        bloc.close();
-      });
-    });
-
     group('close', () {
       test('cancels nostr subscription', () async {
         final controller = StreamController<nostr_sdk.Event>();

@@ -164,9 +164,6 @@ class FollowersBloc extends Bloc<FollowersEvent, FollowersState> {
     }
   }
 
-  /// Check if the current user is following a specific pubkey
-  bool isFollowing(String pubkey) => _followRepository.isFollowing(pubkey);
-
   @override
   Future<void> close() {
     _nostrSubscription?.cancel();
