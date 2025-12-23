@@ -11,13 +11,10 @@ import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/blocs/following/following_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/auth_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
-
-class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeFilter extends Fake implements Filter {}
 
@@ -25,7 +22,6 @@ void main() {
   group('FollowingBloc', () {
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
-    late _MockAuthService mockAuthService;
     late StreamController<List<String>> followingStreamController;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -43,7 +39,6 @@ void main() {
     setUp(() {
       mockNostrClient = _MockNostrClient();
       mockFollowRepository = _MockFollowRepository();
-      mockAuthService = _MockAuthService();
       followingStreamController = StreamController<List<String>>.broadcast();
 
       when(
@@ -51,7 +46,7 @@ void main() {
       ).thenAnswer((_) => followingStreamController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+      when(() => mockNostrClient.publicKey).thenReturn('');
     });
 
     tearDown(() {
@@ -61,13 +56,12 @@ void main() {
     FollowingBloc createBloc({required String targetPubkey}) => FollowingBloc(
       followRepository: mockFollowRepository,
       nostrClient: mockNostrClient,
-      authService: mockAuthService,
       targetPubkey: targetPubkey,
     );
 
     test('initial state for current user is success with cached data', () {
       when(
-        () => mockAuthService.currentPublicKeyHex,
+        () => mockNostrClient.publicKey,
       ).thenReturn(validPubkey('current'));
       when(
         () => mockFollowRepository.followingPubkeys,
@@ -87,7 +81,7 @@ void main() {
 
     test('initial state for other user is initial with targetPubkey', () {
       when(
-        () => mockAuthService.currentPublicKeyHex,
+        () => mockNostrClient.publicKey,
       ).thenReturn(validPubkey('current'));
 
       final bloc = createBloc(targetPubkey: validPubkey('other'));
@@ -101,7 +95,7 @@ void main() {
           'listens to repository stream for updates',
           setUp: () {
             when(
-              () => mockAuthService.currentPublicKeyHex,
+              () => mockNostrClient.publicKey,
             ).thenReturn(validPubkey('current'));
             when(
               () => mockFollowRepository.followingPubkeys,
@@ -133,7 +127,7 @@ void main() {
           'emits [loading, success] with Nostr data for other user',
           setUp: () {
             when(
-              () => mockAuthService.currentPublicKeyHex,
+              () => mockNostrClient.publicKey,
             ).thenReturn(validPubkey('current'));
 
             final otherPubkey = validPubkey('other');
@@ -182,7 +176,7 @@ void main() {
           'emits [loading, success] with empty list when no contact list found',
           setUp: () {
             when(
-              () => mockAuthService.currentPublicKeyHex,
+              () => mockNostrClient.publicKey,
             ).thenReturn(validPubkey('current'));
             when(
               () => mockNostrClient.subscribe(any()),
@@ -278,7 +272,7 @@ void main() {
     group('close', () {
       test('cancels nostr subscription', () async {
         when(
-          () => mockAuthService.currentPublicKeyHex,
+          () => mockNostrClient.publicKey,
         ).thenReturn(validPubkey('current'));
         final controller = StreamController<nostr_sdk.Event>();
         when(

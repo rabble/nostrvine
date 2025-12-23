@@ -25,11 +25,9 @@ class FollowFromProfileButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
 
     // Don't show follow button for own profile
-    if (currentUserPubkey == pubkey) {
+    if (nostrClient.publicKey == pubkey) {
       return const SizedBox.shrink();
     }
 
@@ -37,8 +35,7 @@ class FollowFromProfileButton extends ConsumerWidget {
       create: (_) => FollowingBloc(
         followRepository: followRepository,
         nostrClient: nostrClient,
-        authService: authService,
-        targetPubkey: currentUserPubkey ?? '',
+        targetPubkey: nostrClient.publicKey,
       )..add(const FollowingListLoadRequested()),
       child: FollowFromProfileButtonView(pubkey: pubkey),
     );

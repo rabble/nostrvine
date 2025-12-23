@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'following_event.dart';
@@ -26,14 +25,12 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   FollowingBloc({
     required FollowRepository followRepository,
     required NostrClient nostrClient,
-    required AuthService authService,
     required String targetPubkey,
   }) : _followRepository = followRepository,
        _nostrClient = nostrClient,
-       _authService = authService,
        _targetPubkey = targetPubkey,
        super(
-         targetPubkey == authService.currentPublicKeyHex
+         targetPubkey == nostrClient.publicKey
              ? FollowingState(
                  status: FollowingStatus.success,
                  followingPubkeys: followRepository.followingPubkeys,
@@ -47,11 +44,10 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
 
   final FollowRepository _followRepository;
   final NostrClient _nostrClient;
-  final AuthService _authService;
   final String _targetPubkey;
   StreamSubscription<Event>? _nostrSubscription;
 
-  bool get _isCurrentUser => _targetPubkey == _authService.currentPublicKeyHex;
+  bool get _isCurrentUser => _targetPubkey == _nostrClient.publicKey;
 
   /// Handle request to load a following list
   Future<void> _onLoadRequested(

@@ -31,8 +31,6 @@ class FollowersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
 
     return MultiBlocProvider(
       providers: [
@@ -48,8 +46,7 @@ class FollowersScreen extends ConsumerWidget {
           create: (_) => FollowingBloc(
             followRepository: followRepository,
             nostrClient: nostrClient,
-            authService: authService,
-            targetPubkey: currentUserPubkey ?? '',
+            targetPubkey: nostrClient.publicKey,
           )..add(const FollowingListLoadRequested()),
         ),
       ],

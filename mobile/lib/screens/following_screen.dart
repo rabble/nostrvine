@@ -31,13 +31,11 @@ class FollowingPage extends ConsumerWidget {
     // Get dependencies from Riverpod
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
-    final authService = ref.watch(authServiceProvider);
 
     return BlocProvider(
       create: (_) => FollowingBloc(
         followRepository: followRepository,
         nostrClient: nostrClient,
-        authService: authService,
         targetPubkey: pubkey,
       )..add(const FollowingListLoadRequested()),
       child: FollowingView(pubkey: pubkey, displayName: displayName),
