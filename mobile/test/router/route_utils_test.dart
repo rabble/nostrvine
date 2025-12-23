@@ -52,6 +52,48 @@ void main() {
       expect(result.videoIndex, isNull);
     });
 
+    test('parses relay-settings route', () {
+      final result = parseRoute('/relay-settings');
+
+      expect(result.type, RouteType.relaySettings);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses relay-diagnostic route', () {
+      final result = parseRoute('/relay-diagnostic');
+
+      expect(result.type, RouteType.relayDiagnostic);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses blossom-settings route', () {
+      final result = parseRoute('/blossom-settings');
+
+      expect(result.type, RouteType.blossomSettings);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses notification-settings route', () {
+      final result = parseRoute('/notification-settings');
+
+      expect(result.type, RouteType.notificationSettings);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses key-management route', () {
+      final result = parseRoute('/key-management');
+
+      expect(result.type, RouteType.keyManagement);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses safety-settings route', () {
+      final result = parseRoute('/safety-settings');
+
+      expect(result.type, RouteType.safetySettings);
+      expect(result.videoIndex, isNull);
+    });
+
     test('parses clip-manager route', () {
       final result = parseRoute('/clip-manager');
 
@@ -154,6 +196,12 @@ void main() {
         '/hashtag/nostr/1',
         '/camera',
         '/settings',
+        '/relay-settings',
+        '/relay-diagnostic',
+        '/blossom-settings',
+        '/notification-settings',
+        '/key-management',
+        '/safety-settings',
         '/clip-manager',
         '/edit-video',
       ];

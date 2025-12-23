@@ -14,6 +14,12 @@ enum RouteType {
   editVideo, // Video editor screen for text/sound overlays
   importKey,
   settings,
+  relaySettings,
+  relayDiagnostic,
+  blossomSettings,
+  notificationSettings,
+  keyManagement,
+  safetySettings,
   editProfile, // Profile editing screen
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
@@ -141,13 +147,25 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.editVideo);
 
     case 'settings':
-    case 'relay-settings':
-    case 'relay-diagnostic':
-    case 'blossom-settings':
-    case 'notification-settings':
-    case 'key-management':
-    case 'safety-settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'relay-settings':
+      return const RouteContext(type: RouteType.relaySettings);
+
+    case 'relay-diagnostic':
+      return const RouteContext(type: RouteType.relayDiagnostic);
+
+    case 'blossom-settings':
+      return const RouteContext(type: RouteType.blossomSettings);
+
+    case 'notification-settings':
+      return const RouteContext(type: RouteType.notificationSettings);
+
+    case 'key-management':
+      return const RouteContext(type: RouteType.keyManagement);
+
+    case 'safety-settings':
+      return const RouteContext(type: RouteType.safetySettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -247,6 +265,24 @@ String buildRoute(RouteContext context) {
 
     case RouteType.settings:
       return '/settings';
+
+    case RouteType.relaySettings:
+      return '/relay-settings';
+
+    case RouteType.relayDiagnostic:
+      return '/relay-diagnostic';
+
+    case RouteType.blossomSettings:
+      return '/blossom-settings';
+
+    case RouteType.notificationSettings:
+      return '/notification-settings';
+
+    case RouteType.keyManagement:
+      return '/key-management';
+
+    case RouteType.safetySettings:
+      return '/safety-settings';
 
     case RouteType.editProfile:
       return '/edit-profile';
