@@ -6,6 +6,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
+import 'package:openvine/providers/profile_liked_videos_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -67,6 +68,9 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       break;
     case RouteType.search:
       videosAsync = ref.watch(videosForSearchRouteProvider);
+      break;
+    case RouteType.likedVideos:
+      videosAsync = ref.watch(likedVideosFeedStateProvider);
       break;
     case RouteType.notifications:
     case RouteType.camera:

@@ -11,6 +11,7 @@ import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -52,6 +53,12 @@ final _hashtagGridKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-grid');
 final _hashtagFeedKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-feed');
 final _profileGridKey = GlobalKey<NavigatorState>(debugLabel: 'profile-grid');
 final _profileFeedKey = GlobalKey<NavigatorState>(debugLabel: 'profile-feed');
+final _likedVideosGridKey = GlobalKey<NavigatorState>(
+  debugLabel: 'liked-videos-grid',
+);
+final _likedVideosFeedKey = GlobalKey<NavigatorState>(
+  debugLabel: 'liked-videos-feed',
+);
 
 /// Maps URL location to bottom nav tab index
 /// Returns -1 for non-tab routes (like search, settings, edit-profile) to hide bottom nav
@@ -68,7 +75,8 @@ int tabIndexFromLocation(String loc) {
     case 'notifications':
       return 2;
     case 'profile':
-      return 3;
+    case 'liked-videos':
+      return 3; // Liked videos keeps profile tab active
     case 'search':
     case 'settings':
     case 'relay-settings':
@@ -373,6 +381,37 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ProfileScreenRouter(),
                   settings: const RouteSettings(name: 'ProfileScreen'),
+                ),
+              ),
+            ),
+          ),
+
+          // LIKED VIDEOS route - grid mode (no index)
+          GoRoute(
+            path: '/liked-videos',
+            name: 'liked-videos',
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _likedVideosGridKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const LikedVideosScreenRouter(),
+                  settings: const RouteSettings(name: 'LikedVideosScreen'),
+                ),
+              ),
+            ),
+          ),
+
+          // LIKED VIDEOS route - feed mode (with video index)
+          GoRoute(
+            path: '/liked-videos/:index',
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _likedVideosFeedKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const LikedVideosScreenRouter(),
+                  settings: const RouteSettings(name: 'LikedVideosScreen'),
                 ),
               ),
             ),
