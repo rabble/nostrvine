@@ -2,6 +2,12 @@ name: Bug Report
 description: Report a bug or issue with the app
 title: "fix: "
 labels: ["bug"]
+
+assignees:
+  - NotThatKindOfDrLiz
+projects:
+  - divine/2  # diVine Program project number
+
 body:
   - type: textarea
     id: summary
@@ -73,3 +79,14 @@ body:
       label: Evidence
       description: Screenshots, screen recordings, logs, crash reports, etc.
       placeholder: "Attach or link to evidence here (videos, screenshots, logs, etc.)"
+
+
+# TODO: Think through/iterate on this to bring engineers back into zendesk as "light" agents to get context. Later.
+#  - type: input
+#    id: zendesk-ticket
+#    attributes:
+#      label: Zendesk Ticket
+#      description: Related Zendesk ticket number (if from support)
+#      placeholder: "#12345"
+#    validations:
+#      required: false

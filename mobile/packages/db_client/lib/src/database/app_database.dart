@@ -3,6 +3,7 @@
 // ABOUTME: and uploads.
 
 import 'package:db_client/db_client.dart';
+import 'package:db_client/src/database/app_database.steps.dart';
 import 'package:drift/drift.dart';
 
 part 'app_database.g.dart';
@@ -38,13 +39,13 @@ const _notificationRetentionDays = 7;
 )
 class AppDatabase extends _$AppDatabase {
   /// Default constructor - uses platform-appropriate connection
-  AppDatabase() : super(openConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   /// Constructor that accepts a custom QueryExecutor (for testing)
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +56,7 @@ class AppDatabase extends _$AppDatabase {
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
+    onUpgrade: _schemaUpgrade,
   );
 
   /// Runs cleanup of expired data from all tables.
@@ -93,4 +95,17 @@ class AppDatabase extends _$AppDatabase {
       oldNotificationsDeleted: oldNotificationsDeleted,
     );
   }
+}
+
+extension Migrations on GeneratedDatabase {
+  OnUpgrade get _schemaUpgrade => stepByStep(
+    from1To2: (m, schema) async {
+      await m.alterTable(
+        TableMigration(
+          schema.event,
+          newColumns: [schema.event.expireAt],
+        ),
+      );
+    },
+  );
 }

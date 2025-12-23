@@ -96,60 +96,13 @@ class VideoEventPublisher {
           category: LogCategory.video,
         );
         await _nostrService.initialize();
-        // Wait for connections to establish
-        await Future<void>.delayed(const Duration(seconds: 2));
-
-        Log.info(
-          '🔍 After init: connected=${_nostrService.connectedRelayCount}, '
-          'relays=${_nostrService.connectedRelays}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
       }
 
-      // Check relay connectivity before attempting broadcast
-      final connectedCount = _nostrService.connectedRelayCount;
-      if (connectedCount == 0) {
-        Log.warning(
-          '⚠️ No relays connected, force reconnecting all relays...',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-        // Use forceReconnectAll to handle stale WebSocket connections
-        // (e.g., after app was backgrounded)
-        await _nostrService.forceReconnectAll();
-
-        // Wait for connections to establish
-        await Future<void>.delayed(const Duration(seconds: 2));
-
-        final newConnectedCount = _nostrService.connectedRelayCount;
-        Log.info(
-          '🔍 After force reconnect: connected=$newConnectedCount, '
-          'relays=${_nostrService.connectedRelays}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-
-        if (newConnectedCount == 0) {
-          Log.error(
-            '❌ No relays available after force reconnection attempt',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          return false;
-        }
-        Log.info(
-          '✅ Force reconnected to $newConnectedCount relay(s)',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      } else {
-        Log.info(
-          '📡 $connectedCount relay(s) connected',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      }
+      Log.info(
+        '📡 ${_nostrService.connectedRelayCount} relay(s) connected',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
 
       // Log the complete event details
       Log.info(

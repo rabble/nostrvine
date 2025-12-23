@@ -126,21 +126,24 @@ class RelayBase extends Relay {
       return false;
     }
 
-    if (forceSend == true || _connectionManager!.isConnected) {
-      try {
-        // Log AUTH-related messages for debugging
-        if (message.isNotEmpty && message[0] == 'AUTH') {
-          log("🔐 AUTH response sent, waiting for relay confirmation...");
-        }
-
-        // Defensive serialization: Ensure all data is JSON-serializable
-        final sanitizedMessage = sanitizeForJson(message);
-        return await _connectionManager!.sendJson(sanitizedMessage);
-      } catch (e) {
-        onError(e.toString(), reconnect: true);
+    try {
+      // Log AUTH-related messages for debugging
+      if (message.isNotEmpty && message[0] == 'AUTH') {
+        log("🔐 AUTH response sent, waiting for relay confirmation...");
       }
-    } else if (queueIfFailed) {
-      pendingMessages.add(message);
+
+      // Defensive serialization: Ensure all data is JSON-serializable
+      final sanitizedMessage = sanitizeForJson(message);
+      final result = await _connectionManager!.sendJson(sanitizedMessage);
+      if (!result && queueIfFailed) {
+        pendingMessages.add(message);
+      }
+      return result;
+    } catch (e) {
+      if (queueIfFailed) {
+        pendingMessages.add(message);
+      }
+      onError(e.toString(), reconnect: true);
     }
 
     return false;

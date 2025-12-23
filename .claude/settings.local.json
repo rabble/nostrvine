@@ -35,7 +35,8 @@
       "mcp__dart__analyze_files",
       "Bash(git add:*)",
       "mcp__ide__getDiagnostics",
-      "mcp__dart__dart_format"
+      "mcp__dart__dart_format",
+      "Bash(dart run:*)"
     ],
     "deny": [],
     "ask": []

@@ -91,16 +91,29 @@ class RelayIsolate extends Relay {
   }
 
   @override
-  Future<bool> send(List message, {bool? forceSend}) async {
-    if (forceSend == true ||
-        (mainToSubSendPort != null &&
-            relayStatus.connected == ClientConnected.connected)) {
+  Future<bool> send(
+    List message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+  }) async {
+    if (mainToSubSendPort == null) {
+      if (queueIfFailed) {
+        pendingMessages.add(message);
+      }
+      return false;
+    }
+
+    try {
       // Defensive serialization: Ensure all data is JSON-serializable
       final sanitizedMessage = sanitizeForJson(message);
       final encoded = jsonEncode(sanitizedMessage);
-      // log(encoded);
       mainToSubSendPort!.send(encoded);
       return true;
+    } catch (e) {
+      if (queueIfFailed) {
+        pendingMessages.add(message);
+      }
+      onError(e.toString(), reconnect: true);
     }
 
     return false;

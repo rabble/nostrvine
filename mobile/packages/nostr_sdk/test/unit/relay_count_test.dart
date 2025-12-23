@@ -15,7 +15,11 @@ class TestRelay extends Relay {
   Future<void> disconnect() async {}
 
   @override
-  Future<bool> send(List<dynamic> message, {bool? forceSend}) async => true;
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+  }) async => true;
 }
 
 void main() {
