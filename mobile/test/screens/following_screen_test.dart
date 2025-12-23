@@ -53,8 +53,10 @@ void main() {
   });
 
   tearDown(() {
-    // TODO: This doesn't actually close the pending timers
-    eventStreamController.close();
+    if (!eventStreamController.isClosed) {
+      // TODO: This doesn't actually close the pending timers
+      eventStreamController.close();
+    }
   });
 
   Widget createTestWidget({String? pubkey, String? displayName = 'Test User'}) {
