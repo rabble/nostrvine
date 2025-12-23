@@ -100,7 +100,6 @@ class AppDatabase extends _$AppDatabase {
 extension Migrations on GeneratedDatabase {
   OnUpgrade get _schemaUpgrade => stepByStep(
     from1To2: (m, schema) async {
-      // Add expire_at column to event table
       await m.alterTable(
         TableMigration(
           schema.event,
@@ -108,10 +107,6 @@ extension Migrations on GeneratedDatabase {
         ),
       );
 
-      // Fix profile_stats table if it has old schema (updated_at instead of
-      // cached_at, or missing total_views/total_likes columns).
-      // Since profile_stats is a cache with 5-minute expiry, we can safely
-      // drop and recreate it.
       await _migrateProfileStatsTable(m, schema);
     },
   );
@@ -128,7 +123,6 @@ extension Migrations on GeneratedDatabase {
     Migrator m,
     Schema2 schema,
   ) async {
-    // Check if profile_stats table exists and has old schema
     final hasOldSchema = await _profileStatsHasOldSchema();
 
     if (hasOldSchema) {
