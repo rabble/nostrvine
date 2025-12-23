@@ -202,68 +202,30 @@ void main() {
 
     group('FollowToggleRequested', () {
       blocTest<FollowingBloc, FollowingState>(
-        'calls follow when not currently following',
+        'calls toggleFollow on repository',
         setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
           when(
-            () => mockFollowRepository.follow(any()),
+            () => mockFollowRepository.toggleFollow(any()),
           ).thenAnswer((_) async {});
         },
         build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
         verify: (_) {
           verify(
-            () => mockFollowRepository.follow(validPubkey('user')),
+            () => mockFollowRepository.toggleFollow(validPubkey('user')),
           ).called(1);
-          verifyNever(() => mockFollowRepository.unfollow(any()));
         },
       );
 
       blocTest<FollowingBloc, FollowingState>(
-        'calls unfollow when currently following',
+        'handles toggleFollow error gracefully',
         setUp: () {
           when(
-            () => mockFollowRepository.isFollowing(validPubkey('user')),
-          ).thenReturn(true);
-          when(
-            () => mockFollowRepository.unfollow(any()),
-          ).thenAnswer((_) async {});
-        },
-        build: () => createBloc(targetPubkey: validPubkey('current')),
-        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
-        verify: (_) {
-          verify(
-            () => mockFollowRepository.unfollow(validPubkey('user')),
-          ).called(1);
-          verifyNever(() => mockFollowRepository.follow(any()));
-        },
-      );
-
-      blocTest<FollowingBloc, FollowingState>(
-        'handles follow error gracefully',
-        setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
-          when(
-            () => mockFollowRepository.follow(any()),
+            () => mockFollowRepository.toggleFollow(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: () => createBloc(targetPubkey: validPubkey('current')),
         act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
-        expect: () => <FollowingState>[],
-      );
-
-      blocTest<FollowingBloc, FollowingState>(
-        'handles unfollow error gracefully',
-        setUp: () {
-          when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
-          when(
-            () => mockFollowRepository.unfollow(any()),
-          ).thenThrow(Exception('Network error'));
-        },
-        build: () => createBloc(targetPubkey: validPubkey('current')),
-        act: (bloc) => bloc.add(FollowToggleRequested(validPubkey('user'))),
-        wait: const Duration(milliseconds: 100),
         // Should not throw or emit error state - just logs
         expect: () => <FollowingState>[],
       );

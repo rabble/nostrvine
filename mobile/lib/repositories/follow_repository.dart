@@ -68,6 +68,15 @@ class FollowRepository {
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
 
+  /// Toggle follow status for a user.
+  Future<void> toggleFollow(String pubkey) async {
+    if (isFollowing(pubkey)) {
+      await unfollow(pubkey);
+    } else {
+      await follow(pubkey);
+    }
+  }
+
   /// Initialize the repository - load from local cache, then sync with network
   Future<void> initialize() async {
     if (_isInitialized) return;

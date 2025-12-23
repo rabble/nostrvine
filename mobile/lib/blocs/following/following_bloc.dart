@@ -170,32 +170,18 @@ class FollowingBloc extends Bloc<FollowingEvent, FollowingState> {
   }
 
   /// Handle follow toggle request.
-  /// Determines whether to follow or unfollow based on current state. UI will consume the stream for inmediate update.
+  /// Delegates to repository which handles the toggle logic internally.
+  /// UI updates reactively via the repository's stream.
   Future<void> _onFollowToggleRequested(
     FollowToggleRequested event,
     Emitter<FollowingState> emit,
   ) async {
-    final isCurrentlyFollowing = _followRepository.isFollowing(event.pubkey);
-
     try {
-      if (isCurrentlyFollowing) {
-        await _followRepository.unfollow(event.pubkey);
-        Log.info(
-          'Successfully unfollowed user: ${event.pubkey}',
-          name: 'FollowingBloc',
-          category: LogCategory.system,
-        );
-      } else {
-        await _followRepository.follow(event.pubkey);
-        Log.info(
-          'Successfully followed user: ${event.pubkey}',
-          name: 'FollowingBloc',
-          category: LogCategory.system,
-        );
-      }
+      await _followRepository.toggleFollow(event.pubkey);
     } catch (e) {
+      // Error already logged in repository
       Log.error(
-        'Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user: $e',
+        'Failed to toggle follow for user: $e',
         name: 'FollowingBloc',
         category: LogCategory.system,
       );
