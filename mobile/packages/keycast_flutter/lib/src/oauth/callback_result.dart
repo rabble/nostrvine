@@ -15,10 +15,7 @@ class CallbackError extends CallbackResult {
   final String error;
   final String? description;
 
-  const CallbackError({
-    required this.error,
-    this.description,
-  });
+  const CallbackError({required this.error, this.description});
 
   @override
   String toString() => description != null

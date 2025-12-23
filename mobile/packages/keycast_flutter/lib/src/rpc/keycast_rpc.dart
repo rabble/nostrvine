@@ -30,8 +30,11 @@ class KeycastRpc implements NostrSigner {
     );
   }
 
-  Future<T> _call<T>(String method, List<dynamic> params,
-      T Function(dynamic) fromResult) async {
+  Future<T> _call<T>(
+    String method,
+    List<dynamic> params,
+    T Function(dynamic) fromResult,
+  ) async {
     print('[Keycast RPC] Calling $method...');
     final stopwatch = Stopwatch()..start();
     final response = await _client.post(
@@ -40,14 +43,13 @@ class KeycastRpc implements NostrSigner {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'method': method,
-        'params': params,
-      }),
+      body: jsonEncode({'method': method, 'params': params}),
     );
 
     stopwatch.stop();
-    print('[Keycast RPC] $method completed in ${stopwatch.elapsedMilliseconds}ms (HTTP ${response.statusCode})');
+    print(
+      '[Keycast RPC] $method completed in ${stopwatch.elapsedMilliseconds}ms (HTTP ${response.statusCode})',
+    );
 
     if (response.statusCode != 200) {
       print('[Keycast RPC] Error response: ${response.body}');
@@ -77,32 +79,41 @@ class KeycastRpc implements NostrSigner {
 
   @override
   Future<Event?> signEvent(Event event) async {
-    return _call('sign_event', [event.toJson()],
-        (result) => Event.fromJson(result as Map<String, dynamic>));
+    return _call('sign_event', [
+      event.toJson(),
+    ], (result) => Event.fromJson(result as Map<String, dynamic>));
   }
 
   @override
   Future<String?> nip44Encrypt(pubkey, plaintext) async {
-    return _call(
-        'nip44_encrypt', [pubkey, plaintext], (result) => result as String);
+    return _call('nip44_encrypt', [
+      pubkey,
+      plaintext,
+    ], (result) => result as String);
   }
 
   @override
   Future<String?> nip44Decrypt(pubkey, ciphertext) async {
-    return _call(
-        'nip44_decrypt', [pubkey, ciphertext], (result) => result as String);
+    return _call('nip44_decrypt', [
+      pubkey,
+      ciphertext,
+    ], (result) => result as String);
   }
 
   @override
   Future<String?> encrypt(pubkey, plaintext) async {
-    return _call(
-        'nip04_encrypt', [pubkey, plaintext], (result) => result as String);
+    return _call('nip04_encrypt', [
+      pubkey,
+      plaintext,
+    ], (result) => result as String);
   }
 
   @override
   Future<String?> decrypt(pubkey, ciphertext) async {
-    return _call(
-        'nip04_decrypt', [pubkey, ciphertext], (result) => result as String);
+    return _call('nip04_decrypt', [
+      pubkey,
+      ciphertext,
+    ], (result) => result as String);
   }
 
   @override

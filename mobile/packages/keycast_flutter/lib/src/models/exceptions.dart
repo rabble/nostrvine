@@ -12,7 +12,7 @@ class KeycastException implements Exception {
 
 class SessionExpiredException extends KeycastException {
   SessionExpiredException([String? message])
-      : super(message ?? 'Session has expired');
+    : super(message ?? 'Session has expired');
 }
 
 class OAuthException extends KeycastException {

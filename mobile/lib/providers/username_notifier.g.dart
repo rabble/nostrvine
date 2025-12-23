@@ -53,7 +53,7 @@ final class UsernameNotifierProvider
   }
 }
 
-String _$usernameNotifierHash() => r'9c99f53c4aba6f862896fa21f259666d2c30be7a';
+String _$usernameNotifierHash() => r'f2dfb8f50d83d2b8d93b2a8f492faaac7375b5b1';
 
 /// Notifier for managing username availability checking and registration
 ///

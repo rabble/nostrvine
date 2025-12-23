@@ -13,6 +13,7 @@ class KeycastSession {
   final DateTime? expiresAt;
   final String? scope;
   final String? userPubkey;
+
   /// Handle for silent re-authentication
   final String? authorizationHandle;
 
@@ -37,8 +38,7 @@ class KeycastSession {
     );
   }
 
-  bool get isExpired =>
-      expiresAt != null && DateTime.now().isAfter(expiresAt!);
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   bool get hasRpcAccess => accessToken != null && !isExpired;
 
@@ -86,10 +86,7 @@ class KeycastSession {
 
   Future<void> save([FlutterSecureStorage? storage]) async {
     final secureStorage = storage ?? const FlutterSecureStorage();
-    await secureStorage.write(
-      key: _storageKey,
-      value: jsonEncode(toJson()),
-    );
+    await secureStorage.write(key: _storageKey, value: jsonEncode(toJson()));
   }
 
   static Future<KeycastSession?> load([FlutterSecureStorage? storage]) async {

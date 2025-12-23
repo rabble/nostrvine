@@ -100,8 +100,10 @@ void main() {
         );
 
         final pubkey = await rpc.getPublicKey();
-        expect(pubkey,
-            '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d');
+        expect(
+          pubkey,
+          '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+        );
       });
     });
 
@@ -243,10 +245,7 @@ void main() {
     group('error handling', () {
       test('throws RpcException on error response', () async {
         mockClient = MockClient((request) async {
-          return http.Response(
-            jsonEncode({'error': 'signing_failed'}),
-            200,
-          );
+          return http.Response(jsonEncode({'error': 'signing_failed'}), 200);
         });
 
         final rpc = KeycastRpc(
@@ -255,10 +254,7 @@ void main() {
           httpClient: mockClient,
         );
 
-        expect(
-          () => rpc.getPublicKey(),
-          throwsA(isA<RpcException>()),
-        );
+        expect(() => rpc.getPublicKey(), throwsA(isA<RpcException>()));
       });
 
       test('throws RpcException on HTTP error', () async {
@@ -272,10 +268,7 @@ void main() {
           httpClient: mockClient,
         );
 
-        expect(
-          () => rpc.getPublicKey(),
-          throwsA(isA<RpcException>()),
-        );
+        expect(() => rpc.getPublicKey(), throwsA(isA<RpcException>()));
       });
     });
   });

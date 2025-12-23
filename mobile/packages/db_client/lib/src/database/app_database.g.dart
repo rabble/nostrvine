@@ -2109,7 +2109,7 @@ class $ProfileStatsTable extends ProfileStats
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'profile_stats';
+  static const String $name = 'profile_statistics';
   @override
   VerificationContext validateIntegrity(
     Insertable<ProfileStatRow> instance, {
