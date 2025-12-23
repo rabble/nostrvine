@@ -88,37 +88,13 @@ Future<void> clearAllProfileStatsCache() async {
   );
 }
 
+// TODO(any): refactor this method while doing https://github.com/divinevideo/divine-mobile/issues/571
 /// Async provider for loading profile statistics
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
-  final authService = ref.read(authServiceProvider);
-  final followRepository = ref.watch(followRepositoryProvider);
-  final isCurrentUser = authService.currentPublicKeyHex == pubkey;
-
-  // For current user, get following count directly from repository
-  // and listen to stream for reactive updates
-  int? currentUserFollowingCount;
-  if (isCurrentUser) {
-    currentUserFollowingCount = followRepository.followingCount;
-
-    // Subscribe to stream for reactive updates when following list changes
-    final subscription = followRepository.followingStream.listen((list) {
-      // Invalidate this provider when following list changes
-      ref.invalidateSelf();
-    });
-
-    ref.onDispose(() {
-      subscription.cancel();
-    });
-  }
-
-  // Check cache first (but not for following count if current user)
+  // Check cache first
   final cached = await _getCachedProfileStats(pubkey);
   if (cached != null) {
-    // For current user, always update the following count from live data
-    if (isCurrentUser) {
-      return cached.copyWith(following: currentUserFollowingCount ?? 0);
-    }
     return cached;
   }
 
@@ -149,17 +125,11 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
       totalLikes += video.originalLikes ?? 0;
     }
 
-    // For current user, use live following count from repository
-    // For other users, use the fetched follower stats
-    final followingCount = isCurrentUser
-        ? currentUserFollowingCount ?? 0
-        : followerStats['following'] ?? 0;
-
     final stats = ProfileStats(
       videoCount: videoCount,
       totalLikes: totalLikes, // Sum of all likes from user's videos
       followers: followerStats['followers'] ?? 0,
-      following: followingCount,
+      following: followerStats['following'] ?? 0,
       totalViews: totalLoops, // Sum of all loops (views) from user's videos
       lastUpdated: DateTime.now(),
     );
