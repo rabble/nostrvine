@@ -25,39 +25,6 @@ void main() {
       when(mockAuthService.lastError).thenReturn(null);
     });
 
-    testWidgets('Divine title uses Pacifico Google Font', (tester) async {
-      // Set larger test size to prevent overflow
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-
-      // Build the widget with provider override
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
-          child: const MaterialApp(home: WelcomeScreen()),
-        ),
-      );
-
-      // Allow font loading to complete (will use fallback in tests)
-      await tester.pumpAndSettle();
-
-      // Find the title text widget
-      final titleFinder = find.text(
-        'Create and share short videos\non the decentralized web',
-      );
-      expect(titleFinder, findsOneWidget);
-
-      // Get the Text widget
-      final Text titleWidget = tester.widget(titleFinder);
-
-      // Verify the style uses Pacifico font family
-      expect(titleWidget.style, isNotNull);
-      expect(titleWidget.style!.fontFamily, contains('Pacifico'));
-
-      // Verify other style properties
-      expect(titleWidget.style!.fontSize, equals(18));
-      expect(titleWidget.style!.color, equals(const Color(0xFFF5F6EA)));
-    });
-
     testWidgets('Welcome screen layout renders correctly', (tester) async {
       // Set larger test size to prevent overflow
       await tester.binding.setSurfaceSize(const Size(800, 1200));

@@ -107,7 +107,7 @@ void main() {
       'dialog auto-closes when upload reaches readyToPublish status',
       (WidgetTester tester) async {
         final goRouter = MockGoRouter();
-  
+
         // Arrange: Start with uploading status
         var mockUpload = PendingUpload.create(
           localVideoPath: '/test/video.mp4',
