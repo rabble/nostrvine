@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -78,9 +79,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Create and share short videos\non the decentralized web',
-                      style: TextStyle(fontSize: 18, color: Color(0xFFF5F6EA)),
+                      style: GoogleFonts.pacifico(fontSize: 18, color: Color(0xFFF5F6EA)),
                       textAlign: TextAlign.center,
                     ),
 

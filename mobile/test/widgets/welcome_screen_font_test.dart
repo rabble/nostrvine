@@ -22,6 +22,7 @@ void main() {
       // Mock the authState property that welcome screen now uses
       when(mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.lastError).thenReturn(null);
     });
 
     testWidgets('Divine title uses Pacifico Google Font', (tester) async {
@@ -40,7 +41,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the title text widget
-      final titleFinder = find.text('Welcome to Divine');
+      final titleFinder = find.text(
+        'Create and share short videos\non the decentralized web',
+      );
       expect(titleFinder, findsOneWidget);
 
       // Get the Text widget
@@ -51,8 +54,8 @@ void main() {
       expect(titleWidget.style!.fontFamily, contains('Pacifico'));
 
       // Verify other style properties
-      expect(titleWidget.style!.fontSize, equals(32));
-      expect(titleWidget.style!.color, equals(Colors.white));
+      expect(titleWidget.style!.fontSize, equals(18));
+      expect(titleWidget.style!.color, equals(const Color(0xFFF5F6EA)));
     });
 
     testWidgets('Welcome screen layout renders correctly', (tester) async {
@@ -70,16 +73,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify key elements are present
-      expect(find.text('Welcome to Divine'), findsOneWidget);
       expect(
-        find.text('Create and share short videos on the decentralized web'),
+        find.text('Create and share short videos\non the decentralized web'),
         findsOneWidget,
       );
-      expect(find.text('What is Divine?'), findsOneWidget);
-
-      // Note: Create/Import buttons no longer shown - app auto-creates nsec
-      // Users can only import keys later from settings
+      expect(
+        find.text('Already have keys? Import them here →'),
+        findsOneWidget,
+      );
     });
-    // TODO(any): Fix and re-enable these tests
-  }, skip: true);
+  });
 }
