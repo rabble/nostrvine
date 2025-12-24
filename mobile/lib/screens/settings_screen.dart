@@ -8,6 +8,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -287,6 +288,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
     final environmentService = ref.watch(environmentServiceProvider);
 
+    // Read the new count after tapping
+    final newCount = ref.watch(developerModeTapCounterProvider);
+
     return ListTile(
       leading: const Icon(Icons.info, color: VineTheme.vineGreen),
       title: const Text(
@@ -316,8 +320,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // Increment tap counter
         ref.read(developerModeTapCounterProvider.notifier).tap();
 
-        // Read the new count after tapping
-        final newCount = ref.read(developerModeTapCounterProvider);
+        Log.debug(
+          '👨‍💻 Dev mode count: ${newCount}',
+          name: 'SettingsScreen',
+          category: LogCategory.ui,
+        );
 
         if (newCount >= 7) {
           // Unlock developer mode
