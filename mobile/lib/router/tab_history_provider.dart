@@ -23,7 +23,9 @@ class TabHistory extends Notifier<List<int>> {
 
       // Get previous context to check if we're switching tabs
       final prevCtx = prev?.asData?.value;
-      final prevTabIndex = prevCtx != null ? _tabIndexFromRouteType(prevCtx.type) : null;
+      final prevTabIndex = prevCtx != null
+          ? _tabIndexFromRouteType(prevCtx.type)
+          : null;
 
       // Only add to history if we're switching to a different tab
       // Don't add if we're already on the same tab (e.g., scrolling within home feed)
@@ -141,4 +143,3 @@ class TabHistory extends Notifier<List<int>> {
 final tabHistoryProvider = NotifierProvider<TabHistory, List<int>>(() {
   return TabHistory();
 });
-

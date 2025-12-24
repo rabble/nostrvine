@@ -224,7 +224,8 @@ class AppShell extends ConsumerWidget {
           return true;
         }
 
-        if (ctx.type == RouteType.explore || ctx.type == RouteType.notifications) {
+        if (ctx.type == RouteType.explore ||
+            ctx.type == RouteType.notifications) {
           return true;
         }
 
