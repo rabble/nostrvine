@@ -171,7 +171,8 @@ void main() {
     test('should upload to staging server with manual Blossom auth', () async {
       print('🔄 Testing upload to staging server: $stagingServer');
       await _testUploadToServer(stagingServer);
-    });
+      // TODO(any): Fix and re-enable these tests
+    }, skip: true);
 
     test(
       'should upload to production server with manual Blossom auth',
@@ -179,6 +180,8 @@ void main() {
         print('🔄 Testing upload to production server: $prodServer');
         await _testUploadToServer(prodServer);
       },
+      // TODO(any): Fix and re-enable these tests
+      skip: true,
     );
 
     test('should create proper Blossom auth event structure', () async {

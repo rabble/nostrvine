@@ -18,6 +18,7 @@ import 'page_context_provider.dart';
 import 'route_utils.dart';
 import 'nav_extensions.dart';
 import 'last_tab_position_provider.dart';
+import 'tab_history_provider.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.currentIndex});
@@ -75,6 +76,24 @@ class AppShell extends ConsumerWidget {
     }
   }
 
+  /// Maps RouteType to tab index
+  /// Returns null if not a main tab route
+  int? _tabIndexFromRouteType(RouteType type) {
+    switch (type) {
+      case RouteType.home:
+        return 0;
+      case RouteType.explore:
+      case RouteType.hashtag: // Hashtag is part of explore tab
+        return 1;
+      case RouteType.notifications:
+        return 2;
+      case RouteType.profile:
+        return 3;
+      default:
+        return null; // Not a main tab route
+    }
+  }
+
   /// Handles tab tap - navigates to last known position in that tab
   void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
     final routeType = _routeTypeForTab(tabIndex);
@@ -91,10 +110,16 @@ class AppShell extends ConsumerWidget {
 
     // Pop any pushed routes (like CuratedListFeedScreen, UserListPeopleScreen)
     // that were pushed via Navigator.push() on top of the shell
-    // This ensures we return to the shell before GoRouter navigation
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Only pop if there are actually pushed routes to avoid interfering with GoRouter
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      // There are pushed routes - pop them before navigating
+      // This ensures we return to the shell before GoRouter navigation
+      navigator.popUntil((route) => route.isFirst);
+    }
 
     // Navigate to last position in that tab
+    // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
         context.goHome(lastIndex ?? 0); // Home always has an index
@@ -169,7 +194,11 @@ class AppShell extends ConsumerWidget {
           category: LogCategory.ui,
         );
         // Pop any pushed routes first (like CuratedListFeedScreen)
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // Only pop if there are actually pushed routes
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.popUntil((route) => route.isFirst);
+        }
         // Navigate to main explore view
         context.goExplore(null);
       },
@@ -192,6 +221,11 @@ class AppShell extends ConsumerWidget {
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
         if (ctx.type == RouteType.hashtag || ctx.type == RouteType.search) {
+          return true;
+        }
+
+        if (ctx.type == RouteType.explore ||
+            ctx.type == RouteType.notifications) {
           return true;
         }
 
@@ -228,27 +262,93 @@ class AppShell extends ConsumerWidget {
                   final ctx = ref.read(pageContextProvider).asData?.value;
                   if (ctx == null) return;
 
-                  // Determine where to navigate based on current context
-                  if (ctx.type == RouteType.profile && ctx.npub != 'me') {
-                    // Viewing another user's profile - go back to previous page
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
+                  // First, check if we're in a sub-route (hashtag, search, etc.)
+                  // If so, navigate back to parent route
+                  switch (ctx.type) {
+                    case RouteType.hashtag:
+                    case RouteType.search:
+                      // Go back to explore
                       context.go('/explore');
-                    }
-                  } else if (ctx.videoIndex != null) {
-                    // In feed mode - go to grid mode (remove videoIndex)
-                    final gridCtx = RouteContext(
-                      type: ctx.type,
-                      hashtag: ctx.hashtag,
-                      searchTerm: ctx.searchTerm,
-                      videoIndex: null, // Remove index to enter grid mode
-                    );
-                    context.go(buildRoute(gridCtx));
-                  } else {
-                    // In grid mode - go back to explore
-                    context.go('/explore');
+                      return;
+
+                    default:
+                      break;
                   }
+
+                  // For routes with videoIndex (feed mode), go to grid mode first
+                  // This handles page-internal navigation before tab switching
+                  // For explore: go to grid mode (null index)
+                  // For notifications: go to index 0 (notifications always has an index)
+                  // For other routes: go to grid mode (null index)
+                  if (ctx.videoIndex != null && ctx.videoIndex != 0) {
+                    RouteContext gridCtx;
+                    if (ctx.type == RouteType.notifications) {
+                      // Notifications always has an index, go to index 0
+                      gridCtx = RouteContext(
+                        type: ctx.type,
+                        hashtag: ctx.hashtag,
+                        searchTerm: ctx.searchTerm,
+                        npub: ctx.npub,
+                        videoIndex: 0,
+                      );
+                    } else {
+                      // For explore and other routes, go to grid mode (null index)
+                      gridCtx = RouteContext(
+                        type: ctx.type,
+                        hashtag: ctx.hashtag,
+                        searchTerm: ctx.searchTerm,
+                        npub: ctx.npub,
+                        videoIndex: null,
+                      );
+                    }
+                    final newRoute = buildRoute(gridCtx);
+                    context.go(newRoute);
+                    return;
+                  }
+
+                  // Check tab history for navigation
+                  final tabHistory = ref.read(tabHistoryProvider.notifier);
+                  final previousTab = tabHistory.getPreviousTab();
+
+                  // If there's a previous tab in history, navigate to it
+                  if (previousTab != null) {
+                    // Navigate to previous tab
+                    final previousRouteType = _routeTypeForTab(previousTab);
+                    final lastIndex = ref
+                        .read(lastTabPositionProvider.notifier)
+                        .getPosition(previousRouteType);
+
+                    // Remove current tab from history before navigating
+                    tabHistory.navigateBack();
+
+                    // Navigate to previous tab
+                    switch (previousTab) {
+                      case 0:
+                        context.goHome(lastIndex ?? 0);
+                        break;
+                      case 1:
+                        context.goExplore(lastIndex);
+                        break;
+                      case 2:
+                        context.goNotifications(lastIndex ?? 0);
+                        break;
+                      case 3:
+                        context.goProfileGrid('me');
+                        break;
+                    }
+                    return;
+                  }
+
+                  // No previous tab - check if we're on a non-home tab
+                  // If so, go to home first before exiting
+                  final currentTab = _tabIndexFromRouteType(ctx.type);
+                  if (currentTab != null && currentTab != 0) {
+                    // Go to home first
+                    context.go('/home/0');
+                    return;
+                  }
+
+                  // Already at home with no history - let system handle exit
                 },
               )
             : Builder(

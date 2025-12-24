@@ -85,7 +85,7 @@ void main() {
     // (rendered in ListView) has deep Riverpod dependencies that require
     // extensive mocking. The retry button test above verifies the event
     // dispatch mechanism works correctly.
-    testWidgets('displays following list when status is success', skip: true, (
+    testWidgets('displays following list when status is success', (
       tester,
     ) async {
       final followingPubkeys = [
@@ -110,7 +110,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ListView), findsOneWidget);
-    });
+      // TODO(any): Fix and enable this test
+    }, skip: true);
 
     testWidgets('shows empty state when following list is empty', (
       tester,

@@ -45,3 +45,6 @@ jobs:
 
       - name: 🕵️ Analyze code
         run: flutter analyze lib test
+
+      - name: 🚀 Run tests
+        run: flutter test

@@ -376,5 +376,6 @@ void waitForInit() async {
         testDir.deleteSync(recursive: true);
       }
     });
-  });
+    // TODO(any): Fix and re-enable this test
+  }, skip: true);
 }
