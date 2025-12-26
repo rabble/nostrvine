@@ -43,19 +43,16 @@ class UserProfileTile extends ConsumerWidget {
               color: VineTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              children: [
-                // Avatar
-                GestureDetector(
-                  onTap: onTap,
-                  child: UserAvatar(imageUrl: profile?.picture, size: 48),
-                ),
-                const SizedBox(width: 12),
+            child: GestureDetector(
+              onTap: onTap,
+              child: Row(
+                children: [
+                  // Avatar
+                  UserAvatar(imageUrl: profile?.picture, size: 48),
+                  const SizedBox(width: 12),
 
-                // Name and details
-                Expanded(
-                  child: GestureDetector(
-                    onTap: onTap,
+                  // Name and details
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -81,44 +78,50 @@ class UserProfileTile extends ConsumerWidget {
                       ],
                     ),
                   ),
-                ),
 
-                // Follow button
-                if (showFollowButton && !isCurrentUser) ...[
-                  const SizedBox(width: 12),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final isFollowing = ref.watch(
-                        isFollowingProvider(pubkey),
-                      );
+                  // Follow button
+                  if (showFollowButton && !isCurrentUser) ...[
+                    const SizedBox(width: 12),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final isFollowing = ref.watch(
+                          isFollowingProvider(pubkey),
+                        );
 
-                      return SizedBox(
-                        height: 32,
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              _toggleFollow(context, ref, pubkey, isFollowing),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isFollowing
-                                ? Colors.white
-                                : VineTheme.vineGreen,
-                            foregroundColor: isFollowing
-                                ? VineTheme.vineGreen
-                                : Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        return SizedBox(
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: () => _toggleFollow(
+                              context,
+                              ref,
+                              pubkey,
+                              isFollowing,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isFollowing
+                                  ? Colors.white
+                                  : VineTheme.vineGreen,
+                              foregroundColor: isFollowing
+                                  ? VineTheme.vineGreen
+                                  : Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              isFollowing ? 'Following' : 'Follow',
+                              style: const TextStyle(fontSize: 12),
                             ),
                           ),
-                          child: Text(
-                            isFollowing ? 'Following' : 'Follow',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
