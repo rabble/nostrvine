@@ -64,12 +64,11 @@ void main() {
       expect(find.byType(VideoThumbnailWidget), findsOneWidget);
 
       // Should create an Image widget when thumbnail URL exists
+      // We don't need to check that the placeholder was gone because
+      // the CachedNetworkImage will always show the placeholder, it
+      // just fades away when the image is loaded.
       expect(find.byType(Image), findsOneWidget);
-
-      // Should not show placeholder when thumbnail exists
-      expect(find.byType(VideoIconPlaceholder), findsNothing);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('displays blurhash when only blurhash is available', (
       tester,

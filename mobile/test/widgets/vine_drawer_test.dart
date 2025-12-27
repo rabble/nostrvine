@@ -53,13 +53,14 @@ void main() {
           (widget) =>
               widget is Image &&
               widget.image is AssetImage &&
-              (widget.image as AssetImage).assetName.contains('app_icon.png'),
+              (widget.image as AssetImage).assetName.contains(
+                'White cropped.png',
+              ),
         ),
         findsOneWidget,
         reason: 'Divine logo image should be displayed in drawer header',
       );
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('does not display "OpenVine" text in header', (tester) async {
       final scaffoldKey = GlobalKey<ScaffoldState>();

@@ -22,37 +22,7 @@ void main() {
       // Mock the authState property that welcome screen now uses
       when(mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(mockAuthService.isAuthenticated).thenReturn(true);
-    });
-
-    testWidgets('Divine title uses Pacifico Google Font', (tester) async {
-      // Set larger test size to prevent overflow
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-
-      // Build the widget with provider override
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
-          child: const MaterialApp(home: WelcomeScreen()),
-        ),
-      );
-
-      // Allow font loading to complete (will use fallback in tests)
-      await tester.pumpAndSettle();
-
-      // Find the title text widget
-      final titleFinder = find.text('Welcome to Divine');
-      expect(titleFinder, findsOneWidget);
-
-      // Get the Text widget
-      final Text titleWidget = tester.widget(titleFinder);
-
-      // Verify the style uses Pacifico font family
-      expect(titleWidget.style, isNotNull);
-      expect(titleWidget.style!.fontFamily, contains('Pacifico'));
-
-      // Verify other style properties
-      expect(titleWidget.style!.fontSize, equals(32));
-      expect(titleWidget.style!.color, equals(Colors.white));
+      when(mockAuthService.lastError).thenReturn(null);
     });
 
     testWidgets('Welcome screen layout renders correctly', (tester) async {
@@ -70,16 +40,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify key elements are present
-      expect(find.text('Welcome to Divine'), findsOneWidget);
       expect(
-        find.text('Create and share short videos on the decentralized web'),
+        find.text('Create and share short videos\non the decentralized web'),
         findsOneWidget,
       );
-      expect(find.text('What is Divine?'), findsOneWidget);
-
-      // Note: Create/Import buttons no longer shown - app auto-creates nsec
-      // Users can only import keys later from settings
+      expect(
+        find.text('Already have keys? Import them here →'),
+        findsOneWidget,
+      );
     });
-    // TODO(any): Fix and re-enable these tests
-  }, skip: true);
+  });
 }

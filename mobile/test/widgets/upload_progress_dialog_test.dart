@@ -3,8 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/widgets/upload_progress_dialog.dart';
+
+import '../helpers/go_router.dart';
 
 // Simple mock that only implements getUpload
 class MockUploadManager {
@@ -103,6 +106,8 @@ void main() {
     testWidgets(
       'dialog auto-closes when upload reaches readyToPublish status',
       (WidgetTester tester) async {
+        final goRouter = MockGoRouter();
+
         // Arrange: Start with uploading status
         var mockUpload = PendingUpload.create(
           localVideoPath: '/test/video.mp4',
@@ -114,25 +119,28 @@ void main() {
 
         // Act: Show dialog
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => UploadProgressDialog(
-                          uploadId: mockUpload.id,
-                          uploadManager: mockManager,
-                        ),
-                      );
-                      dialogPopped = true;
-                    },
-                    child: const Text('Show Dialog'),
-                  );
-                },
+          MockGoRouterProvider(
+            goRouter: goRouter,
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    return ElevatedButton(
+                      onPressed: () async {
+                        await showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => UploadProgressDialog(
+                            uploadId: mockUpload.id,
+                            uploadManager: mockManager,
+                          ),
+                        );
+                        dialogPopped = true;
+                      },
+                      child: const Text('Show Dialog'),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -157,12 +165,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pumpAndSettle();
 
-        // Assert: Dialog should be closed
-        expect(find.text('Uploading video...'), findsNothing);
-        expect(dialogPopped, true);
+        verify(goRouter.pop).called(1);
       },
-      // TODO(Any): Fix and re-enable these tests
-      skip: true,
     );
 
     testWidgets('dialog polls UploadManager every 500ms for status updates', (
@@ -180,14 +184,19 @@ void main() {
         onGetUpload: () => pollCount++,
       );
 
+      final goRouter = MockGoRouter();
+
       // Act: Show dialog
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => UploadProgressDialog(
-                uploadId: mockUpload.id,
-                uploadManager: mockManager,
+        MockGoRouterProvider(
+          goRouter: goRouter,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => UploadProgressDialog(
+                  uploadId: mockUpload.id,
+                  uploadManager: mockManager,
+                ),
               ),
             ),
           ),
@@ -216,8 +225,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
+    });
   });
 }
 
