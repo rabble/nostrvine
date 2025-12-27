@@ -31,7 +31,7 @@ class UserProfileTile extends ConsumerWidget {
       future: userProfileService.fetchProfile(pubkey),
       builder: (context, snapshot) {
         final profile = userProfileService.getCachedProfile(pubkey);
-
+        // wrapping with Semantics for testability and accessibility
         return Semantics(
           label: profile?.betterDisplayName('Unknown'),
           container: true,
