@@ -1203,6 +1203,8 @@ class VideoEventService extends ChangeNotifier {
         // Set up timeout to detect feed loading failures (30 seconds)
         Timer? feedLoadingTimeout;
         feedLoadingTimeout = Timer(const Duration(seconds: 30), () {
+          if (_isDisposed) return;
+
           if (!eoseReceived && eventCount == 0 && !timeoutReported) {
             timeoutReported = true;
             Log.error(
@@ -1219,7 +1221,13 @@ class VideoEventService extends ChangeNotifier {
             );
             _activeSubscriptions.remove(subscriptionType);
             _subscriptionParams.remove(subscriptionType);
-            _subscriptions.remove(subscriptionId);
+
+            // Cancel the subscription to prevent leaks
+            final sub = _subscriptions.remove(subscriptionId);
+            sub?.cancel();
+
+            // Reset loading state
+            _paginationStates[subscriptionType]?.isLoading = false;
 
             // Report timeout to Crashlytics
             _reportFeedLoadingTimeout(
@@ -4634,8 +4642,13 @@ class VideoEventService extends ChangeNotifier {
     }
   }
 
+  // Track whether the service has been disposed
+  bool _isDisposed = false;
+
   @override
   void dispose() {
+    _isDisposed = true;
+
     // Flush any remaining batched logs
     LogBatcher.flush();
 
