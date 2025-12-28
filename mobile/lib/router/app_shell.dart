@@ -11,6 +11,7 @@ import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -245,6 +246,10 @@ class AppShell extends ConsumerWidget {
     final environment = ref.watch(currentEnvironmentProvider);
 
     return Scaffold(
+      onDrawerChanged: (isOpen) {
+        // Track drawer visibility for video pause/resume
+        ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
+      },
       appBar: AppBar(
         elevation: 0,
         backgroundColor: getEnvironmentAppBarColor(environment),
@@ -363,13 +368,8 @@ class AppShell extends ConsumerWidget {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-
-                    // Pause all videos when drawer opens
-                    final visibilityManager = ref.read(
-                      videoVisibilityManagerProvider,
-                    );
-                    visibilityManager.pauseAllVideos();
-
+                    // Drawer open state is tracked via onDrawerChanged callback
+                    // which triggers overlay visibility provider to pause videos
                     Scaffold.of(context).openDrawer();
                   },
                 ),
