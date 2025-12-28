@@ -88,6 +88,7 @@ Future<void> showDeleteAllContentWarningDialog({
         'This is IRREVERSIBLE. Are you ABSOLUTELY CERTAIN?',
         style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
       ),
+      scrollable: true,
       actions: [
         TextButton(
           onPressed: () => context.pop(),
