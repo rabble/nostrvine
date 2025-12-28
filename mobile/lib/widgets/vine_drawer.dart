@@ -189,13 +189,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       final userPubkey = authService.currentPublicKeyHex;
 
                       // Get root context before closing drawer
-                      final navigator = Navigator.of(context);
+                      final navigatorContext = Navigator.of(context).context;
 
                       context.pop(); // Close drawer
 
                       // Wait for drawer close animation
                       await Future.delayed(const Duration(milliseconds: 300));
-                      if (!navigator.context.mounted) {
+                      if (!navigatorContext.mounted) {
                         print('⚠️ Context not mounted after drawer close');
                         return;
                       }
@@ -203,7 +203,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       // Show support options dialog using root context
                       // Pass captured services instead of ref
                       _showSupportOptionsDialog(
-                        navigator.context,
+                        navigatorContext,
                         bugReportService,
                         userPubkey,
                         isZendeskAvailable,
