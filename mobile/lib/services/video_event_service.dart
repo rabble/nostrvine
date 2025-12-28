@@ -1040,8 +1040,22 @@ class VideoEventService extends ChangeNotifier {
       // Store hashtag filter for event processing
       _activeHashtagFilters[subscriptionType] = hashtags;
 
-      // Gateway handling is now done internally by NostrClient
-      // NostrClient.queryEvents() follows Cache → Gateway → WebSocket flow
+      // Gateway handling: Parallel fetch for immediate content
+      if (_shouldUseGatewayForFeed(subscriptionType) && filters.isNotEmpty) {
+        // Only query gateway with primary video filter (index 0)
+        // Gateway doesn't support REQ with multiple filters yet
+        final gatewayFilter = filters[0];
+
+        Log.info(
+          '🚀 Querying gateway for $subscriptionType',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+
+        // Fire and forget - don't await
+        // The gateway results will be merged into the feed via _handleNewVideoEvent
+        unawaited(_queryGatewayAndMerge(subscriptionType, gatewayFilter));
+      }
 
       // Verify NostrService is ready
       if (!_nostrService.isInitialized) {
@@ -3027,6 +3041,58 @@ class VideoEventService extends ChangeNotifier {
         category: LogCategory.video,
       );
       rethrow;
+    }
+  }
+
+  /// Check if we should use the gateway for this feed type
+  bool _shouldUseGatewayForFeed(SubscriptionType type) {
+    return switch (type) {
+      SubscriptionType.popularNow => true,
+      SubscriptionType.discovery => true,
+      SubscriptionType.trending => true,
+      SubscriptionType.hashtag => true,
+      _ => false,
+    };
+  }
+
+  /// Query the gateway for events and merge them into the feed
+  Future<void> _queryGatewayAndMerge(
+    SubscriptionType type,
+    Filter filter,
+  ) async {
+    try {
+      Log.info(
+        '🚀 Querying gateway for $type',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+
+      final events = await _nostrService.queryEvents(
+        [filter],
+        useGateway: true,
+        useCache: false,
+      );
+
+      Log.info(
+        '✅ Gateway returned ${events.length} events for $type',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+
+      for (final event in events) {
+        _handleNewVideoEvent(event, type);
+      }
+
+      if (events.isNotEmpty) {
+        notifyListeners();
+      }
+    } catch (e) {
+      // Log but don't rethrow - gateway failure shouldn't break the feed
+      Log.warning(
+        ' Gateway query failed for $type: $e',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
     }
   }
 
