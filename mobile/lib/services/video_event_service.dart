@@ -1211,6 +1211,16 @@ class VideoEventService extends ChangeNotifier {
               category: LogCategory.video,
             );
 
+            // Clean up subscription state so retry is possible
+            Log.info(
+              '🧹 Cleaning up timed-out subscription state for $subscriptionType',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+            _activeSubscriptions.remove(subscriptionType);
+            _subscriptionParams.remove(subscriptionType);
+            _subscriptions.remove(subscriptionId);
+
             // Report timeout to Crashlytics
             _reportFeedLoadingTimeout(
               subscriptionType: subscriptionType,
