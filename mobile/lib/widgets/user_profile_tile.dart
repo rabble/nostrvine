@@ -98,18 +98,20 @@ class UserProfileTile extends ConsumerWidget {
                     ),
                   ),
 
-              // Follow button
-              if (showFollowButton &&
-                  !isCurrentUser &&
-                  isFollowing != null &&
-                  onToggleFollow != null) ...[
-                const SizedBox(width: 12),
-                _FollowButton(
-                  isFollowing: isFollowing!,
-                  onToggleFollow: onToggleFollow!,
-                ),
-              ],
-            ],
+                  // Follow button
+                  if (showFollowButton &&
+                      !isCurrentUser &&
+                      isFollowing != null &&
+                      onToggleFollow != null) ...[
+                    const SizedBox(width: 12),
+                    _FollowButton(
+                      isFollowing: isFollowing!,
+                      onToggleFollow: onToggleFollow!,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         );
       },
