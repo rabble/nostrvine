@@ -34,9 +34,9 @@ void main() {
     });
 
     MyFollowersBloc createBloc() => MyFollowersBloc(
-          nostrClient: mockNostrClient,
-          followRepository: mockFollowRepository,
-        );
+      nostrClient: mockNostrClient,
+      followRepository: mockFollowRepository,
+    );
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
@@ -80,9 +80,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
         expect: () => [
-          const MyFollowersState(
-            status: MyFollowersStatus.loading,
-          ),
+          const MyFollowersState(status: MyFollowersStatus.loading),
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [
@@ -103,9 +101,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
         expect: () => [
-          const MyFollowersState(
-            status: MyFollowersStatus.loading,
-          ),
+          const MyFollowersState(status: MyFollowersStatus.loading),
           const MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [],
@@ -145,9 +141,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
         expect: () => [
-          const MyFollowersState(
-            status: MyFollowersStatus.loading,
-          ),
+          const MyFollowersState(status: MyFollowersStatus.loading),
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('follower1')],
@@ -158,18 +152,15 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, failure] when Nostr query fails',
         setUp: () {
-          when(() => mockNostrClient.queryEvents(any()))
-              .thenThrow(Exception('Network error'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
         expect: () => [
-          const MyFollowersState(
-            status: MyFollowersStatus.loading,
-          ),
-          const MyFollowersState(
-            status: MyFollowersStatus.failure,
-          ),
+          const MyFollowersState(status: MyFollowersStatus.loading),
+          const MyFollowersState(status: MyFollowersStatus.failure),
         ],
       );
     });

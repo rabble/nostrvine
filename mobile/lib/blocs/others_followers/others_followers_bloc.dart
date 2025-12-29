@@ -21,9 +21,9 @@ class OthersFollowersBloc
   OthersFollowersBloc({
     required NostrClient nostrClient,
     required FollowRepository followRepository,
-  })  : _nostrClient = nostrClient,
-        _followRepository = followRepository,
-        super(const OthersFollowersState()) {
+  }) : _nostrClient = nostrClient,
+       _followRepository = followRepository,
+       super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
     on<OthersFollowersToggleFollowRequested>(_onToggleFollowRequested);
   }

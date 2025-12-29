@@ -26,9 +26,8 @@ void main() {
       mockNostrClient = _MockNostrClient();
     });
 
-    OthersFollowingBloc createBloc() => OthersFollowingBloc(
-          nostrClient: mockNostrClient,
-        );
+    OthersFollowingBloc createBloc() =>
+        OthersFollowingBloc(nostrClient: mockNostrClient);
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
@@ -147,8 +146,9 @@ void main() {
       blocTest<OthersFollowingBloc, OthersFollowingState>(
         'emits [loading, failure] when Nostr query fails',
         setUp: () {
-          when(() => mockNostrClient.queryEvents(any()))
-              .thenThrow(Exception('Network error'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
         act: (bloc) =>

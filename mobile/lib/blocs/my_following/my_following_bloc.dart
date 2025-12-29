@@ -15,15 +15,14 @@ part 'my_following_state.dart';
 /// Initial state is set optimistically with cached repository data
 /// to prevent UI flash.
 class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
-  MyFollowingBloc({
-    required FollowRepository followRepository,
-  })  : _followRepository = followRepository,
-        super(
-          MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: followRepository.followingPubkeys,
-          ),
-        ) {
+  MyFollowingBloc({required FollowRepository followRepository})
+    : _followRepository = followRepository,
+      super(
+        MyFollowingState(
+          status: MyFollowingStatus.success,
+          followingPubkeys: followRepository.followingPubkeys,
+        ),
+      ) {
     on<MyFollowingListLoadRequested>(_onLoadRequested);
     on<MyFollowingToggleRequested>(_onToggleRequested);
   }

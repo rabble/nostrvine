@@ -38,9 +38,8 @@ void main() {
       followingStreamController.close();
     });
 
-    MyFollowingBloc createBloc() => MyFollowingBloc(
-          followRepository: mockFollowRepository,
-        );
+    MyFollowingBloc createBloc() =>
+        MyFollowingBloc(followRepository: mockFollowRepository);
 
     test('initial state is success with cached data', () {
       when(
@@ -122,10 +121,7 @@ void main() {
           ),
           MyFollowingState(
             status: MyFollowingStatus.success,
-            followingPubkeys: [
-              validPubkey('user1'),
-              validPubkey('user2'),
-            ],
+            followingPubkeys: [validPubkey('user1'), validPubkey('user2')],
           ),
         ],
       );
@@ -140,7 +136,8 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createBloc,
-        act: (bloc) => bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
+        act: (bloc) =>
+            bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
         verify: (_) {
           verify(
             () => mockFollowRepository.toggleFollow(validPubkey('user')),
@@ -156,7 +153,8 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
+        act: (bloc) =>
+            bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
         // Should not throw or emit error state - just logs
         expect: () => <MyFollowingState>[],
       );

@@ -28,9 +28,9 @@ class VideoFollowButton extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) => MyFollowingBloc(
-        followRepository: followRepository,
-      )..add(const MyFollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: VideoFollowButtonView(pubkey: pubkey),
     );
   }
@@ -68,7 +68,9 @@ class VideoFollowButtonView extends StatelessWidget {
               name: 'VideoFollowButton',
               category: LogCategory.ui,
             );
-            context.read<MyFollowingBloc>().add(MyFollowingToggleRequested(pubkey));
+            context.read<MyFollowingBloc>().add(
+              MyFollowingToggleRequested(pubkey),
+            );
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -45,8 +45,10 @@ class ProfileFollowersStat extends ConsumerWidget {
           followRepository: followRepository,
           nostrClient: nostrClient,
         )..add(OthersFollowersListLoadRequested(pubkey)),
-        child:
-            _OthersFollowersStatView(pubkey: pubkey, displayName: displayName),
+        child: _OthersFollowersStatView(
+          pubkey: pubkey,
+          displayName: displayName,
+        ),
       );
     }
   }
@@ -54,10 +56,7 @@ class ProfileFollowersStat extends ConsumerWidget {
 
 /// View widget for current user's followers stat.
 class _MyFollowersStatView extends StatelessWidget {
-  const _MyFollowersStatView({
-    required this.pubkey,
-    required this.displayName,
-  });
+  const _MyFollowersStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
@@ -66,7 +65,8 @@ class _MyFollowersStatView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<MyFollowersBloc, MyFollowersState>(
       builder: (context, state) {
-        final isLoading = state.status == MyFollowersStatus.initial ||
+        final isLoading =
+            state.status == MyFollowersStatus.initial ||
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
@@ -94,7 +94,8 @@ class _OthersFollowersStatView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
-        final isLoading = state.status == OthersFollowersStatus.initial ||
+        final isLoading =
+            state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
 
         return ProfileStatColumn(

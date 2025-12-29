@@ -9,8 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
-class _MockMyFollowingBloc
-    extends MockBloc<MyFollowingEvent, MyFollowingState>
+class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
 
 void main() {

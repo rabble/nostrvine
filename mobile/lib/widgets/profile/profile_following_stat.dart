@@ -33,18 +33,20 @@ class ProfileFollowingStat extends ConsumerWidget {
 
     if (isCurrentUser) {
       return BlocProvider(
-        create: (_) => MyFollowingBloc(
-          followRepository: followRepository,
-        )..add(const MyFollowingListLoadRequested()),
+        create: (_) =>
+            MyFollowingBloc(followRepository: followRepository)
+              ..add(const MyFollowingListLoadRequested()),
         child: _MyFollowingStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
       return BlocProvider(
-        create: (_) => OthersFollowingBloc(
-          nostrClient: nostrClient,
-        )..add(OthersFollowingListLoadRequested(pubkey)),
-        child:
-            _OthersFollowingStatView(pubkey: pubkey, displayName: displayName),
+        create: (_) =>
+            OthersFollowingBloc(nostrClient: nostrClient)
+              ..add(OthersFollowingListLoadRequested(pubkey)),
+        child: _OthersFollowingStatView(
+          pubkey: pubkey,
+          displayName: displayName,
+        ),
       );
     }
   }
@@ -52,10 +54,7 @@ class ProfileFollowingStat extends ConsumerWidget {
 
 /// View widget for current user's following stat.
 class _MyFollowingStatView extends StatelessWidget {
-  const _MyFollowingStatView({
-    required this.pubkey,
-    required this.displayName,
-  });
+  const _MyFollowingStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
@@ -92,7 +91,8 @@ class _OthersFollowingStatView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
-        final isLoading = state.status == OthersFollowingStatus.initial ||
+        final isLoading =
+            state.status == OthersFollowingStatus.initial ||
             state.status == OthersFollowingStatus.loading;
 
         return ProfileStatColumn(

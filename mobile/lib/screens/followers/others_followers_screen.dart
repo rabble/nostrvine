@@ -40,9 +40,9 @@ class OthersFollowersScreen extends ConsumerWidget {
           )..add(OthersFollowersListLoadRequested(pubkey)),
         ),
         BlocProvider(
-          create: (_) => MyFollowingBloc(
-            followRepository: followRepository,
-          )..add(const MyFollowingListLoadRequested()),
+          create: (_) =>
+              MyFollowingBloc(followRepository: followRepository)
+                ..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _OthersFollowersView(pubkey: pubkey, displayName: displayName),
@@ -51,10 +51,7 @@ class OthersFollowersScreen extends ConsumerWidget {
 }
 
 class _OthersFollowersView extends StatelessWidget {
-  const _OthersFollowersView({
-    required this.pubkey,
-    required this.displayName,
-  });
+  const _OthersFollowersView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
@@ -82,28 +79,25 @@ class _OthersFollowersView extends StatelessWidget {
       body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
         builder: (context, state) {
           return switch (state.status) {
-            OthersFollowersStatus.initial ||
-            OthersFollowersStatus.loading =>
-              const Center(
-                child: CircularProgressIndicator(),
-              ),
+            OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
+              const Center(child: CircularProgressIndicator()),
             OthersFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys,
-                targetPubkey: pubkey,
-              ),
+              followers: state.followersPubkeys,
+              targetPubkey: pubkey,
+            ),
             OthersFollowersStatus.failure => _FollowersErrorBody(
-                onRetry: () {
-                  final targetPubkey = context
-                      .read<OthersFollowersBloc>()
-                      .state
-                      .targetPubkey;
-                  if (targetPubkey != null) {
-                    context.read<OthersFollowersBloc>().add(
-                          OthersFollowersListLoadRequested(targetPubkey),
-                        );
-                  }
-                },
-              ),
+              onRetry: () {
+                final targetPubkey = context
+                    .read<OthersFollowersBloc>()
+                    .state
+                    .targetPubkey;
+                if (targetPubkey != null) {
+                  context.read<OthersFollowersBloc>().add(
+                    OthersFollowersListLoadRequested(targetPubkey),
+                  );
+                }
+              },
+            ),
           };
         },
       ),
@@ -129,8 +123,8 @@ class _FollowersListBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<OthersFollowersBloc>().add(
-              OthersFollowersListLoadRequested(targetPubkey),
-            );
+          OthersFollowersListLoadRequested(targetPubkey),
+        );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -147,8 +141,8 @@ class _FollowersListBody extends StatelessWidget {
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
-                        MyFollowingToggleRequested(userPubkey),
-                      );
+                    MyFollowingToggleRequested(userPubkey),
+                  );
                 },
               );
             },
@@ -198,10 +192,7 @@ class _FollowersErrorBody extends StatelessWidget {
             style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

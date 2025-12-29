@@ -28,9 +28,9 @@ class FollowFromProfileButton extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) => MyFollowingBloc(
-        followRepository: followRepository,
-      )..add(const MyFollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(pubkey: pubkey),
     );
   }

@@ -17,10 +17,9 @@ part 'others_following_state.dart';
 /// This is a read-only view - no follow/unfollow operations.
 class OthersFollowingBloc
     extends Bloc<OthersFollowingEvent, OthersFollowingState> {
-  OthersFollowingBloc({
-    required NostrClient nostrClient,
-  })  : _nostrClient = nostrClient,
-        super(const OthersFollowingState()) {
+  OthersFollowingBloc({required NostrClient nostrClient})
+    : _nostrClient = nostrClient,
+      super(const OthersFollowingState()) {
     on<OthersFollowingListLoadRequested>(_onLoadRequested);
   }
 

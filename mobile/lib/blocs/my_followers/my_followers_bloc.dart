@@ -20,9 +20,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   MyFollowersBloc({
     required NostrClient nostrClient,
     required FollowRepository followRepository,
-  })  : _nostrClient = nostrClient,
-        _followRepository = followRepository,
-        super(const MyFollowersState()) {
+  }) : _nostrClient = nostrClient,
+       _followRepository = followRepository,
+       super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
     on<MyFollowersToggleFollowRequested>(_onToggleFollowRequested);
   }
@@ -36,10 +36,7 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     Emitter<MyFollowersState> emit,
   ) async {
     emit(
-      state.copyWith(
-        status: MyFollowersStatus.loading,
-        followersPubkeys: [],
-      ),
+      state.copyWith(status: MyFollowersStatus.loading, followersPubkeys: []),
     );
 
     try {

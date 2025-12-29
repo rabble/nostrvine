@@ -32,9 +32,9 @@ void main() {
     });
 
     OthersFollowersBloc createBloc() => OthersFollowersBloc(
-          nostrClient: mockNostrClient,
-          followRepository: mockFollowRepository,
-        );
+      nostrClient: mockNostrClient,
+      followRepository: mockFollowRepository,
+    );
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
@@ -165,8 +165,9 @@ void main() {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
         'emits [loading, failure] when Nostr query fails',
         setUp: () {
-          when(() => mockNostrClient.queryEvents(any()))
-              .thenThrow(Exception('Network error'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
         act: (bloc) =>
@@ -208,8 +209,9 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createBloc,
-        act: (bloc) => bloc
-            .add(OthersFollowersToggleFollowRequested(validPubkey('follower'))),
+        act: (bloc) => bloc.add(
+          OthersFollowersToggleFollowRequested(validPubkey('follower')),
+        ),
         verify: (_) {
           verify(
             () => mockFollowRepository.toggleFollow(validPubkey('follower')),
@@ -225,8 +227,9 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        act: (bloc) => bloc
-            .add(OthersFollowersToggleFollowRequested(validPubkey('follower'))),
+        act: (bloc) => bloc.add(
+          OthersFollowersToggleFollowRequested(validPubkey('follower')),
+        ),
         // Should not throw or emit error state - just logs
         expect: () => <OthersFollowersState>[],
       );

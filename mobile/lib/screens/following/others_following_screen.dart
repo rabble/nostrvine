@@ -34,14 +34,14 @@ class OthersFollowingScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => OthersFollowingBloc(
-            nostrClient: nostrClient,
-          )..add(OthersFollowingListLoadRequested(pubkey)),
+          create: (_) =>
+              OthersFollowingBloc(nostrClient: nostrClient)
+                ..add(OthersFollowingListLoadRequested(pubkey)),
         ),
         BlocProvider(
-          create: (_) => MyFollowingBloc(
-            followRepository: followRepository,
-          )..add(const MyFollowingListLoadRequested()),
+          create: (_) =>
+              MyFollowingBloc(followRepository: followRepository)
+                ..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _OthersFollowingView(pubkey: pubkey, displayName: displayName),
@@ -50,10 +50,7 @@ class OthersFollowingScreen extends ConsumerWidget {
 }
 
 class _OthersFollowingView extends StatelessWidget {
-  const _OthersFollowingView({
-    required this.pubkey,
-    required this.displayName,
-  });
+  const _OthersFollowingView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
@@ -81,28 +78,25 @@ class _OthersFollowingView extends StatelessWidget {
       body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
         builder: (context, state) {
           return switch (state.status) {
-            OthersFollowingStatus.initial ||
-            OthersFollowingStatus.loading =>
-              const Center(
-                child: CircularProgressIndicator(),
-              ),
+            OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
+              const Center(child: CircularProgressIndicator()),
             OthersFollowingStatus.success => _FollowingListBody(
-                following: state.followingPubkeys,
-                targetPubkey: pubkey,
-              ),
+              following: state.followingPubkeys,
+              targetPubkey: pubkey,
+            ),
             OthersFollowingStatus.failure => _FollowingErrorBody(
-                onRetry: () {
-                  final targetPubkey = context
-                      .read<OthersFollowingBloc>()
-                      .state
-                      .targetPubkey;
-                  if (targetPubkey != null) {
-                    context.read<OthersFollowingBloc>().add(
-                          OthersFollowingListLoadRequested(targetPubkey),
-                        );
-                  }
-                },
-              ),
+              onRetry: () {
+                final targetPubkey = context
+                    .read<OthersFollowingBloc>()
+                    .state
+                    .targetPubkey;
+                if (targetPubkey != null) {
+                  context.read<OthersFollowingBloc>().add(
+                    OthersFollowingListLoadRequested(targetPubkey),
+                  );
+                }
+              },
+            ),
           };
         },
       ),
@@ -128,8 +122,8 @@ class _FollowingListBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<OthersFollowingBloc>().add(
-              OthersFollowingListLoadRequested(targetPubkey),
-            );
+          OthersFollowingListLoadRequested(targetPubkey),
+        );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -146,8 +140,8 @@ class _FollowingListBody extends StatelessWidget {
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
-                        MyFollowingToggleRequested(userPubkey),
-                      );
+                    MyFollowingToggleRequested(userPubkey),
+                  );
                 },
               );
             },
@@ -197,10 +191,7 @@ class _FollowingErrorBody extends StatelessWidget {
             style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

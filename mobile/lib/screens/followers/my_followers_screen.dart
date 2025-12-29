@@ -17,10 +17,7 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 /// Creates both [MyFollowersBloc] (for the list) and [MyFollowingBloc]
 /// (for follow button state - to show "follow back") and provides them.
 class MyFollowersScreen extends ConsumerWidget {
-  const MyFollowersScreen({
-    super.key,
-    required this.displayName,
-  });
+  const MyFollowersScreen({super.key, required this.displayName});
 
   final String? displayName;
 
@@ -38,9 +35,9 @@ class MyFollowersScreen extends ConsumerWidget {
           )..add(const MyFollowersListLoadRequested()),
         ),
         BlocProvider(
-          create: (_) => MyFollowingBloc(
-            followRepository: followRepository,
-          )..add(const MyFollowingListLoadRequested()),
+          create: (_) =>
+              MyFollowingBloc(followRepository: followRepository)
+                ..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _MyFollowersView(displayName: displayName),
@@ -76,19 +73,18 @@ class _MyFollowersView extends StatelessWidget {
       body: BlocBuilder<MyFollowersBloc, MyFollowersState>(
         builder: (context, state) {
           return switch (state.status) {
-            MyFollowersStatus.initial || MyFollowersStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
+            MyFollowersStatus.initial || MyFollowersStatus.loading =>
+              const Center(child: CircularProgressIndicator()),
             MyFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys,
-              ),
+              followers: state.followersPubkeys,
+            ),
             MyFollowersStatus.failure => _FollowersErrorBody(
-                onRetry: () {
-                  context.read<MyFollowersBloc>().add(
-                        const MyFollowersListLoadRequested(),
-                      );
-                },
-              ),
+              onRetry: () {
+                context.read<MyFollowersBloc>().add(
+                  const MyFollowersListLoadRequested(),
+                );
+              },
+            ),
           };
         },
       ),
@@ -109,7 +105,9 @@ class _FollowersListBody extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<MyFollowersBloc>().add(const MyFollowersListLoadRequested());
+        context.read<MyFollowersBloc>().add(
+          const MyFollowersListLoadRequested(),
+        );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -126,8 +124,8 @@ class _FollowersListBody extends StatelessWidget {
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
-                        MyFollowingToggleRequested(userPubkey),
-                      );
+                    MyFollowingToggleRequested(userPubkey),
+                  );
                 },
               );
             },
@@ -177,10 +175,7 @@ class _FollowersErrorBody extends StatelessWidget {
             style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

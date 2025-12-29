@@ -14,10 +14,7 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 ///
 /// Creates [MyFollowingBloc] and provides it to the view.
 class MyFollowingScreen extends ConsumerWidget {
-  const MyFollowingScreen({
-    super.key,
-    required this.displayName,
-  });
+  const MyFollowingScreen({super.key, required this.displayName});
 
   final String? displayName;
 
@@ -26,9 +23,9 @@ class MyFollowingScreen extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
 
     return BlocProvider(
-      create: (_) => MyFollowingBloc(
-        followRepository: followRepository,
-      )..add(const MyFollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: _MyFollowingView(displayName: displayName),
     );
   }
@@ -63,18 +60,18 @@ class _MyFollowingView extends StatelessWidget {
         builder: (context, state) {
           return switch (state.status) {
             MyFollowingStatus.initial => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: CircularProgressIndicator(),
+            ),
             MyFollowingStatus.success => _FollowingListBody(
-                following: state.followingPubkeys,
-              ),
+              following: state.followingPubkeys,
+            ),
             MyFollowingStatus.failure => _FollowingErrorBody(
-                onRetry: () {
-                  context.read<MyFollowingBloc>().add(
-                        const MyFollowingListLoadRequested(),
-                      );
-                },
-              ),
+              onRetry: () {
+                context.read<MyFollowingBloc>().add(
+                  const MyFollowingListLoadRequested(),
+                );
+              },
+            ),
           };
         },
       ),
@@ -95,7 +92,9 @@ class _FollowingListBody extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<MyFollowingBloc>().add(const MyFollowingListLoadRequested());
+        context.read<MyFollowingBloc>().add(
+          const MyFollowingListLoadRequested(),
+        );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -111,8 +110,8 @@ class _FollowingListBody extends StatelessWidget {
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
-                        MyFollowingToggleRequested(userPubkey),
-                      );
+                    MyFollowingToggleRequested(userPubkey),
+                  );
                 },
               );
             },
@@ -162,10 +161,7 @@ class _FollowingErrorBody extends StatelessWidget {
             style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
