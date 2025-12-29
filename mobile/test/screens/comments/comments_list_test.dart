@@ -2,7 +2,6 @@
 // ABOUTME: Tests loading, error, empty, and data state rendering
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:comments_repository/comments_repository.dart' as repo;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -48,11 +48,11 @@ class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
     child: Semantics(
       identifier: 'comments_loading_indicator',
       label: 'Loading comments',
-      child: CircularProgressIndicator(color: Colors.white),
+      child: const CircularProgressIndicator(color: Colors.white),
     ),
   );
 }
