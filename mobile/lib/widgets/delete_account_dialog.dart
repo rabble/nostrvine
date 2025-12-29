@@ -77,6 +77,7 @@ Future<void> showDeleteAllContentWarningDialog({
           fontWeight: FontWeight.bold,
         ),
       ),
+      scrollable: true,
       content: const Text(
         'WARNING: This action is PERMANENT and CANNOT be undone!\n\n'
         'This will:\n'

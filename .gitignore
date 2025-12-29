@@ -10,6 +10,9 @@
 .claude/settings.local.json
 .claude/*.local.md
 
+# Git worktrees
+.worktrees/
+
 # Flutter repo-specific
 /bin/cache/
 /bin/internal/bootstrap.bat

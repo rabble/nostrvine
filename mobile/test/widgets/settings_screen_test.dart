@@ -90,10 +90,60 @@ void main() {
           child: const MaterialApp(home: SettingsScreen()),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, isNotNull);
+
+      // Dispose and pump to clear any pending timers from overlay visibility
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('Settings screen reorganizes dev and danger items', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          child: const MaterialApp(home: SettingsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Preferences should be near the top (after Profile)
+      expect(find.text('PREFERENCES'), findsOneWidget);
+
+      // Scroll to find Developer Options under Network section
+      await tester.scrollUntilVisible(
+        find.text('Developer Options'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      // Developer Options should always be visible (not hidden behind 7-tap)
+      expect(find.text('Developer Options'), findsOneWidget);
+
+      // Scroll to find Account section at the bottom with key management
+      await tester.scrollUntilVisible(
+        find.text('Key Management'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      // Account section should have all key/account related items together
+      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Log Out'), findsOneWidget);
+      expect(find.text('Key Management'), findsOneWidget);
+      expect(find.text('Remove Keys from Device'), findsOneWidget);
+      expect(find.text('Delete Account and Data'), findsOneWidget);
+
+      // Dispose and pump to clear any pending timers from overlay visibility
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   });
 }

@@ -26,6 +26,13 @@ class GatewayClient {
   /// Request timeout duration
   static const Duration requestTimeout = Duration(seconds: 10);
 
+  /// Maximum length of the base64url-encoded filter query parameter.
+  ///
+  /// Many proxies/CDNs have practical URL size limits; if we exceed them,
+  /// the request may fail (e.g. 414 URI Too Long). When this limit is hit,
+  /// callers should fall back to WebSocket queries.
+  static const int maxEncodedFilterLength = 40000;
+
   /// URL of the Nostr Gateway API
   final String gatewayUrl;
 
@@ -71,6 +78,14 @@ class GatewayClient {
   Future<GatewayResponse> query(Filter filter) async {
     final filterJson = filter.toJson();
     final encoded = base64Url.encode(utf8.encode(jsonEncode(filterJson)));
+
+    // Guard against URL length limits.
+    if (encoded.length > maxEncodedFilterLength) {
+      throw GatewayException(
+        'Encoded filter too long: ${encoded.length} chars',
+        statusCode: 414,
+      );
+    }
 
     final response = await _doRequest(
       '/query',

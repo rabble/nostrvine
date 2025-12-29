@@ -188,6 +188,19 @@ extension Migrations on GeneratedDatabase {
 
       // Create new profile_statistics table with correct schema
       await m.createTable(schema.profileStatistics);
+
+      // Ensure hashtag_stats table exists.
+      // Some users may be missing this table due to database being created
+      // by nostr_sdk's embedded relay before our schema ran onCreate.
+      await customStatement('''
+        CREATE TABLE IF NOT EXISTS "hashtag_stats" (
+          "hashtag" TEXT NOT NULL PRIMARY KEY,
+          "video_count" INTEGER NULL,
+          "total_views" INTEGER NULL,
+          "total_likes" INTEGER NULL,
+          "cached_at" INTEGER NOT NULL
+        )
+      ''');
     },
   );
 }
