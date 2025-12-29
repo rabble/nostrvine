@@ -19,6 +19,16 @@ import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 import '../../helpers/test_helpers.dart';
 
+/// Maps [CommentsError] to user-facing strings for tests.
+String _errorToString(CommentsError error) {
+  return switch (error) {
+    CommentsError.loadFailed => 'Failed to load comments',
+    CommentsError.notAuthenticated => 'Please sign in to comment',
+    CommentsError.postCommentFailed => 'Failed to post comment',
+    CommentsError.postReplyFailed => 'Failed to post reply',
+  };
+}
+
 class MockSocialService extends Mock implements SocialService {}
 
 class MockAuthService extends Mock implements AuthService {}
@@ -304,9 +314,9 @@ class _CommentsScreenTestContent extends StatelessWidget {
           prev.error != next.error && next.error != null,
       listener: (context, state) {
         if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_errorToString(state.error!))),
+          );
           context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },

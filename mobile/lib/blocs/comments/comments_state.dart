@@ -18,6 +18,23 @@ enum CommentsStatus {
   failure,
 }
 
+/// Error types for l10n-friendly error handling.
+///
+/// The UI layer should map these to localized strings via BlocListener.
+enum CommentsError {
+  /// Failed to load comments from relays
+  loadFailed,
+
+  /// User must sign in to post comments
+  notAuthenticated,
+
+  /// Failed to post a new top-level comment
+  postCommentFailed,
+
+  /// Failed to post a reply to a comment
+  postReplyFailed,
+}
+
 /// State class for the CommentsBloc
 ///
 /// Uses [repo.CommentNode] from the comments_repository package
@@ -57,8 +74,9 @@ final class CommentsState extends Equatable {
   /// Total count of all comments (including replies)
   final int totalCommentCount;
 
-  /// Error message if status is failure
-  final String? error;
+  /// Error type for l10n-friendly error handling.
+  /// UI layer maps this to localized string via BlocListener.
+  final CommentsError? error;
 
   /// Text content of the main comment input
   final String mainInputText;
@@ -87,7 +105,7 @@ final class CommentsState extends Equatable {
     String? rootAuthorPubkey,
     List<CommentNode>? topLevelComments,
     int? totalCommentCount,
-    String? error,
+    CommentsError? error,
     bool clearError = false,
     String? mainInputText,
     Map<String, String>? replyInputTexts,

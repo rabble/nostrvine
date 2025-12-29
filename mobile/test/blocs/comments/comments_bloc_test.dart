@@ -148,7 +148,7 @@ void main() {
           ),
           isA<CommentsState>()
               .having((s) => s.status, 'status', CommentsStatus.failure)
-              .having((s) => s.error, 'error', 'Failed to load comments'),
+              .having((s) => s.error, 'error', CommentsError.loadFailed),
         ],
       );
 
@@ -235,7 +235,7 @@ void main() {
 
       blocTest<CommentsBloc, CommentsState>(
         'clears error when updating text',
-        seed: () => const CommentsState(error: 'Some error'),
+        seed: () => const CommentsState(error: CommentsError.loadFailed),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentTextChanged('New text')),
         expect: () => [
@@ -394,7 +394,7 @@ void main() {
           isA<CommentsState>().having(
             (s) => s.error,
             'error',
-            'Please sign in to comment',
+            CommentsError.notAuthenticated,
           ),
         ],
       );
@@ -433,7 +433,7 @@ void main() {
               .having((s) => s.topLevelComments.length, 'comments', 0)
               .having((s) => s.totalCommentCount, 'totalCount', 0)
               .having((s) => s.isPosting, 'isPosting', false)
-              .having((s) => s.error, 'error', 'Failed to post comment'),
+              .having((s) => s.error, 'error', CommentsError.postCommentFailed),
         ],
       );
 
@@ -491,7 +491,7 @@ void main() {
               )
               .having((s) => s.totalCommentCount, 'totalCount', 1)
               .having((s) => s.isPosting, 'isPosting', false)
-              .having((s) => s.error, 'error', 'Failed to post reply'),
+              .having((s) => s.error, 'error', CommentsError.postReplyFailed),
         ],
       );
     });
@@ -526,11 +526,11 @@ void main() {
 
       final updated = state.copyWith(
         status: CommentsStatus.loading,
-        error: 'Test error',
+        error: CommentsError.loadFailed,
       );
 
       expect(updated.status, CommentsStatus.loading);
-      expect(updated.error, 'Test error');
+      expect(updated.error, CommentsError.loadFailed);
       expect(updated.rootEventId, 'event1');
     });
 
@@ -550,7 +550,7 @@ void main() {
     });
 
     test('copyWith clearError removes error', () {
-      const state = CommentsState(error: 'Some error');
+      const state = CommentsState(error: CommentsError.loadFailed);
 
       final updated = state.copyWith(clearError: true);
 

@@ -10,6 +10,17 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 
+/// Maps [CommentsError] to user-facing strings.
+/// TODO(l10n): Replace with context.l10n when localization is added.
+String _errorToString(CommentsError error) {
+  return switch (error) {
+    CommentsError.loadFailed => 'Failed to load comments',
+    CommentsError.notAuthenticated => 'Please sign in to comment',
+    CommentsError.postCommentFailed => 'Failed to post comment',
+    CommentsError.postReplyFailed => 'Failed to post reply',
+  };
+}
+
 class CommentsScreen extends ConsumerWidget {
   const CommentsScreen({
     required this.videoEvent,
@@ -84,9 +95,9 @@ class _CommentsScreenBody extends StatelessWidget {
           prev.error != next.error && next.error != null,
       listener: (context, state) {
         if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_errorToString(state.error!))),
+          );
           context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },

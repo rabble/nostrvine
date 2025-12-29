@@ -25,7 +25,7 @@ class CommentsList extends StatelessWidget {
         }
 
         if (state.status == CommentsStatus.failure) {
-          return _ErrorState(error: state.error ?? 'Unknown error');
+          return const _ErrorState();
         }
 
         if (state.topLevelComments.isEmpty) {
@@ -58,15 +58,10 @@ class _LoadingState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error});
-
-  final String error;
+  const _ErrorState();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Text(
-      'Error loading comments: $error',
-      style: const TextStyle(color: Colors.red),
-    ),
+  Widget build(BuildContext context) => const Center(
+    child: Text('Failed to load comments', style: TextStyle(color: Colors.red)),
   );
 }

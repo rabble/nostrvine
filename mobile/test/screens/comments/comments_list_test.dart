@@ -92,13 +92,13 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.failure,
-        error: 'Network error occurred',
+        error: CommentsError.loadFailed,
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
-      expect(find.textContaining('Network error occurred'), findsOneWidget);
+      expect(find.textContaining('Failed to load comments'), findsOneWidget);
     });
 
     testWidgets('shows CommentsEmptyState when no comments', (tester) async {

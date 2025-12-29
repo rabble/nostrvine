@@ -73,7 +73,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.copyWith(
           status: CommentsStatus.failure,
-          error: 'Failed to load comments',
+          error: CommentsError.loadFailed,
         ),
       );
     }
@@ -116,7 +116,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     if (text.isEmpty) return;
 
     if (!_authService.isAuthenticated) {
-      emit(state.copyWith(error: 'Please sign in to comment'));
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
       return;
     }
 
@@ -170,7 +170,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.copyWith(
           isPosting: false,
-          error: isReply ? 'Failed to post reply' : 'Failed to post comment',
+          error: isReply
+              ? CommentsError.postReplyFailed
+              : CommentsError.postCommentFailed,
         ),
       );
     }
