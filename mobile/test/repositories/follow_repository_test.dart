@@ -64,8 +64,7 @@ void main() {
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Default nostr client unsubscribe - return completed future
-      when(() => mockNostrClient.unsubscribe(any()))
-          .thenAnswer((_) async {});
+      when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
       // Default personal event cache setup
       when(() => mockPersonalEventCache.isInitialized).thenReturn(false);
