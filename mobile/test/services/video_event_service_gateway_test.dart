@@ -1,14 +1,12 @@
 // ABOUTME: Tests for gateway query integration in VideoEventService
 // ABOUTME: Verifies that public feeds use the REST gateway for faster loading
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-// ignore: depend_on_referenced_packages
-import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:nostr_sdk/event.dart';
-import 'dart:async';
+import 'package:openvine/services/video_event_service.dart';
 
 // Import mocks from pagination test to avoid regenerating them
 import 'video_event_service_pagination_test.mocks.dart';
