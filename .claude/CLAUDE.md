@@ -352,18 +352,27 @@ OpenVine uses a **Riverpod-based reactive architecture** for managing video feed
 - Used for user profile pages to display author's video history
 
 
+## After Every Code Change (MANDATORY)
+
+**CRITICAL**: After making ANY code changes, ALWAYS run:
+```bash
+dart format lib test
+```
+
+This ensures consistent code formatting across the codebase. Do this immediately after editing files, not just before committing.
+
 ## Pre-Commit Workflow (MANDATORY)
 
 This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito). **ALWAYS** run these steps before committing:
 
-1. **Regenerate code** (if you modified files with `@riverpod`, `@freezed`, `@JsonSerializable`, or `@GenerateMocks` annotations):
+1. **Format code** (run after every change):
    ```bash
-   dart run build_runner build --delete-conflicting-outputs
+   dart format lib test
    ```
 
-2. **Format code**:
+2. **Regenerate code** (if you modified files with `@riverpod`, `@freezed`, `@JsonSerializable`, or `@GenerateMocks` annotations):
    ```bash
-   dart format --output=none --set-exit-if-changed lib test
+   dart run build_runner build --delete-conflicting-outputs
    ```
 
 3. **Analyze code**:

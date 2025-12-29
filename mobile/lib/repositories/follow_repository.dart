@@ -355,16 +355,13 @@ class FollowRepository {
     // Use a deterministic subscription ID so we can unsubscribe later
     _contactListSubscriptionId = 'follow_repo_contact_list_$currentUserPubkey';
 
-    final eventStream = _nostrClient.subscribe(
-      [
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: const [3], // NIP-02 contact list
-          limit: 1,
-        ),
-      ],
-      subscriptionId: _contactListSubscriptionId,
-    );
+    final eventStream = _nostrClient.subscribe([
+      Filter(
+        authors: [currentUserPubkey],
+        kinds: const [3], // NIP-02 contact list
+        limit: 1,
+      ),
+    ], subscriptionId: _contactListSubscriptionId);
 
     _contactListSubscription = eventStream.listen(
       (event) {
