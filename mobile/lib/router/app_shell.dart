@@ -225,11 +225,6 @@ class AppShell extends ConsumerWidget {
           return true;
         }
 
-        if (ctx.type == RouteType.explore ||
-            ctx.type == RouteType.notifications) {
-          return true;
-        }
-
         if (ctx.type == RouteType.profile) {
           final authService = ref.read(authServiceProvider);
           final currentNpub = authService.currentNpub;
