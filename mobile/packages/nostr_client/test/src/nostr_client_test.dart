@@ -2421,17 +2421,10 @@ void main() {
             timeout: any(named: 'timeout'),
           ),
         ).thenThrow(CountNotSupportedException('Not supported'));
-        // Mock gateway to return empty so it falls through to websocket
+        // Mock gateway to throw so it falls through to websocket
         when(
           () => mockGatewayClient.query(any()),
-        ).thenAnswer(
-          (_) async => const GatewayResponse(
-            events: [],
-            eose: true,
-            complete: true,
-            cached: false,
-          ),
-        );
+        ).thenThrow(Exception('Gateway unavailable'));
         when(
           () => mockNostr.queryEvents(
             any(),
