@@ -37,7 +37,9 @@
       "mcp__ide__getDiagnostics",
       "mcp__dart__dart_format",
       "Bash(dart run:*)",
-      "mcp__dart__pub"
+      "mcp__dart__pub",
+      "mcp__nostr__read_nip",
+      "mcp__dart__dart_fix"
     ],
     "deny": [],
     "ask": []

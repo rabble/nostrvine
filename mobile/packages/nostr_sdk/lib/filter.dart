@@ -26,6 +26,12 @@ class Filter {
   /// a list of values that are referenced in a "d" tag (NIP-33 addressable events)
   List<String>? d;
 
+  /// a list of event ids that are referenced in an uppercase "E" tag (NIP-22 root scope)
+  List<String>? uppercaseE;
+
+  /// a list of kind values that are referenced in an uppercase "K" tag (NIP-22 root kind)
+  List<String>? uppercaseK;
+
   /// a timestamp, events must be newer than this to pass
   int? since;
 
@@ -48,6 +54,8 @@ class Filter {
     this.t,
     this.h,
     this.d,
+    this.uppercaseE,
+    this.uppercaseK,
     this.since,
     this.until,
     this.limit,
@@ -66,6 +74,8 @@ class Filter {
     t = json['#t'] == null ? null : List<String>.from(json['#t']);
     h = json['#h'] == null ? null : List<String>.from(json['#h']);
     d = json['#d'] == null ? null : List<String>.from(json['#d']);
+    uppercaseE = json['#E'] == null ? null : List<String>.from(json['#E']);
+    uppercaseK = json['#K'] == null ? null : List<String>.from(json['#K']);
     since = json['since'];
     until = json['until'];
     limit = json['limit'];
@@ -98,6 +108,12 @@ class Filter {
     }
     if (d != null) {
       data['#d'] = d;
+    }
+    if (uppercaseE != null) {
+      data['#E'] = uppercaseE;
+    }
+    if (uppercaseK != null) {
+      data['#K'] = uppercaseK;
     }
     if (since != null) {
       data['since'] = since;
@@ -136,6 +152,8 @@ class Filter {
     List<String> ts = [];
     List<String> hs = [];
     List<String> ds = [];
+    List<String> uppercaseEs = [];
+    List<String> uppercaseKs = [];
     for (var tag in event.tags) {
       if (tag is List && tag.length > 1) {
         var k = tag[0];
@@ -151,6 +169,10 @@ class Filter {
           hs.add(v);
         } else if (k == "d") {
           ds.add(v);
+        } else if (k == "E") {
+          uppercaseEs.add(v);
+        } else if (k == "K") {
+          uppercaseKs.add(v);
         }
       }
     }
@@ -187,6 +209,20 @@ class Filter {
           return d!.contains(v);
         })))) {
       // filter query d but ds don't contains d.
+      return false;
+    }
+    if (uppercaseE != null &&
+        (!(uppercaseEs.any((v) {
+          return uppercaseE!.contains(v);
+        })))) {
+      // filter query E but Es don't contains E.
+      return false;
+    }
+    if (uppercaseK != null &&
+        (!(uppercaseKs.any((v) {
+          return uppercaseK!.contains(v);
+        })))) {
+      // filter query K but Ks don't contains K.
       return false;
     }
 

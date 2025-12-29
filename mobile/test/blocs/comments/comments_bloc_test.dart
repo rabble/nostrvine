@@ -35,11 +35,15 @@ void main() {
       ).thenReturn(validId('currentuser'));
     });
 
+    // Video kind 34236 for NIP-71 addressable short videos
+    const testRootEventKind = 34236;
+
     CommentsBloc createBloc({String? rootEventId, String? rootAuthorPubkey}) =>
         CommentsBloc(
           commentsRepository: mockCommentsRepository,
           authService: mockAuthService,
           rootEventId: rootEventId ?? validId('root'),
+          rootEventKind: testRootEventKind,
           rootAuthorPubkey: rootAuthorPubkey ?? validId('author'),
         );
 
@@ -77,6 +81,7 @@ void main() {
           when(
             () => mockCommentsRepository.loadComments(
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               limit: any(named: 'limit'),
             ),
           ).thenAnswer((_) async => thread);
@@ -102,6 +107,7 @@ void main() {
           when(
             () => mockCommentsRepository.loadComments(
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               limit: any(named: 'limit'),
             ),
           ).thenAnswer((_) async => repo.CommentThread.empty(validId('root')));
@@ -127,6 +133,7 @@ void main() {
           when(
             () => mockCommentsRepository.loadComments(
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               limit: any(named: 'limit'),
             ),
           ).thenThrow(Exception('Network error'));
@@ -183,6 +190,7 @@ void main() {
           when(
             () => mockCommentsRepository.loadComments(
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               limit: any(named: 'limit'),
             ),
           ).thenAnswer((_) async => thread);
@@ -289,6 +297,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: any(named: 'content'),
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
@@ -303,6 +312,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: 'Test comment',
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: null,
               replyToAuthorPubkey: null,
@@ -332,6 +342,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: any(named: 'content'),
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
@@ -354,6 +365,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: 'Reply text',
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: 'parent1',
               replyToAuthorPubkey: 'author1',
@@ -399,6 +411,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: any(named: 'content'),
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
@@ -436,6 +449,7 @@ void main() {
             () => mockCommentsRepository.postComment(
               content: any(named: 'content'),
               rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),

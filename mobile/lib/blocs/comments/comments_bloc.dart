@@ -22,12 +22,14 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required repo.CommentsRepository commentsRepository,
     required AuthService authService,
     required String rootEventId,
+    required int rootEventKind,
     required String rootAuthorPubkey,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
        super(
          CommentsState(
            rootEventId: rootEventId,
+           rootEventKind: rootEventKind,
            rootAuthorPubkey: rootAuthorPubkey,
          ),
        ) {
@@ -52,6 +54,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     try {
       final thread = await _commentsRepository.loadComments(
         rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
       );
 
       emit(
@@ -123,6 +126,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       final postedComment = await _commentsRepository.postComment(
         content: text,
         rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
         rootEventAuthorPubkey: state.rootAuthorPubkey,
         replyToEventId: event.parentCommentId,
         replyToAuthorPubkey: event.parentAuthorPubkey,

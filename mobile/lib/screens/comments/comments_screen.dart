@@ -1,10 +1,11 @@
 // ABOUTME: Screen for displaying and posting comments on videos with threaded reply support
-// ABOUTME: Uses BLoC pattern with Nostr Kind 1 events for comments
+// ABOUTME: Uses BLoC pattern with Nostr Kind 1111 (NIP-22) events for comments
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
@@ -55,6 +56,7 @@ class CommentsScreen extends ConsumerWidget {
         commentsRepository: commentsRepository,
         authService: authService,
         rootEventId: videoEvent.id,
+        rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
       )..add(const CommentsLoadRequested()),
       child: _CommentsScreenBody(

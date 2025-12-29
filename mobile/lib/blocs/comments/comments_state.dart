@@ -27,6 +27,7 @@ final class CommentsState extends Equatable {
   const CommentsState({
     this.status = CommentsStatus.initial,
     this.rootEventId = '',
+    this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
     this.topLevelComments = const [],
     this.totalCommentCount = 0,
@@ -42,6 +43,9 @@ final class CommentsState extends Equatable {
 
   /// The root event ID (video) for these comments
   final String rootEventId;
+
+  /// The kind of the root event (e.g., 34236 for videos)
+  final int rootEventKind;
 
   /// The author pubkey of the root event (video)
   final String rootAuthorPubkey;
@@ -79,6 +83,7 @@ final class CommentsState extends Equatable {
   CommentsState copyWith({
     CommentsStatus? status,
     String? rootEventId,
+    int? rootEventKind,
     String? rootAuthorPubkey,
     List<repo.CommentNode>? topLevelComments,
     int? totalCommentCount,
@@ -93,6 +98,7 @@ final class CommentsState extends Equatable {
     return CommentsState(
       status: status ?? this.status,
       rootEventId: rootEventId ?? this.rootEventId,
+      rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
       topLevelComments: topLevelComments ?? this.topLevelComments,
       totalCommentCount: totalCommentCount ?? this.totalCommentCount,
@@ -110,6 +116,7 @@ final class CommentsState extends Equatable {
   List<Object?> get props => [
     status,
     rootEventId,
+    rootEventKind,
     rootAuthorPubkey,
     topLevelComments,
     totalCommentCount,
