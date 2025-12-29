@@ -52,13 +52,6 @@ class Comment extends Equatable {
   /// If this is a reply, the public key of the parent comment author.
   final String? replyToAuthorPubkey;
 
-  /// Whether this is a top-level comment (not a reply to another comment).
-  bool get isTopLevel =>
-      replyToEventId == null || replyToEventId == rootEventId;
-
-  /// Whether this is a reply to another comment.
-  bool get isReply => !isTopLevel;
-
   /// Get relative time string (e.g., "2h ago", "1d ago").
   String get relativeTime {
     final now = DateTime.now();

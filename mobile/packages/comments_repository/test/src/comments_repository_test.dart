@@ -543,49 +543,6 @@ void main() {
   });
 
   group('Comment', () {
-    test('isTopLevel returns true for top-level comment', () {
-      final comment = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-      );
-
-      expect(comment.isTopLevel, isTrue);
-      expect(comment.isReply, isFalse);
-    });
-
-    test('isTopLevel returns false for reply', () {
-      final comment = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-        replyToEventId: 'parent',
-      );
-
-      expect(comment.isTopLevel, isFalse);
-      expect(comment.isReply, isTrue);
-    });
-
-    test('isTopLevel returns true when replyToEventId equals rootEventId', () {
-      final comment = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-        replyToEventId: 'root',
-      );
-
-      expect(comment.isTopLevel, isTrue);
-    });
-
     test('relativeTime returns correct strings', () {
       final now = DateTime.now();
 

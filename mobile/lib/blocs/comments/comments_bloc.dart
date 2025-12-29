@@ -16,7 +16,7 @@ part 'comments_state.dart';
 /// - Loading comments from Nostr relays via CommentsRepository
 /// - Building hierarchical comment trees
 /// - Managing input state for main comment and replies
-/// - Posting new comments with optimistic updates
+/// - Posting new comments
 class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   CommentsBloc({
     required repo.CommentsRepository commentsRepository,
@@ -41,7 +41,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final repo.CommentsRepository _commentsRepository;
   final AuthService _authService;
 
-  /// Handle request to load comments
   Future<void> _onLoadRequested(
     CommentsLoadRequested event,
     Emitter<CommentsState> emit,
@@ -77,26 +76,20 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  /// Handle text change for main input or reply
   void _onTextChanged(CommentTextChanged event, Emitter<CommentsState> emit) {
     if (event.commentId == null) {
-      // Main input
       emit(state.copyWith(mainInputText: event.text, clearError: true));
     } else {
-      // Reply input
       final updatedReplies = Map<String, String>.from(state.replyInputTexts);
       updatedReplies[event.commentId!] = event.text;
       emit(state.copyWith(replyInputTexts: updatedReplies, clearError: true));
     }
   }
 
-  /// Handle reply toggle
   void _onReplyToggled(CommentReplyToggled event, Emitter<CommentsState> emit) {
     if (state.activeReplyCommentId == event.commentId) {
-      // Close reply
       emit(state.copyWith(clearActiveReply: true));
     } else {
-      // Open reply, initialize text if needed
       final updatedReplies = Map<String, String>.from(state.replyInputTexts);
       updatedReplies.putIfAbsent(event.commentId, () => '');
       emit(
@@ -108,7 +101,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  /// Handle comment submission (main or reply)
   Future<void> _onSubmitted(
     CommentSubmitted event,
     Emitter<CommentsState> emit,
@@ -127,35 +119,42 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
     emit(state.copyWith(isPosting: true, clearError: true));
 
-    // Add optimistic update first (synchronous) so we have the temp ID
-    final tempCommentId = _addOptimisticUpdate(
-      content: text,
-      replyToEventId: event.parentCommentId,
-      replyToAuthorPubkey: event.parentAuthorPubkey,
-      emit: emit,
-    );
-
     try {
-      // Post the actual comment to repository
-      await _postCommentToRepository(
+      final postedComment = await _commentsRepository.postComment(
         content: text,
+        rootEventId: state.rootEventId,
+        rootEventAuthorPubkey: state.rootAuthorPubkey,
         replyToEventId: event.parentCommentId,
         replyToAuthorPubkey: event.parentAuthorPubkey,
       );
 
-      // Clear input on success
+      final updatedComments = _addCommentToTree(
+        state.topLevelComments,
+        postedComment,
+        event.parentCommentId,
+      );
+
       if (isReply) {
         final updatedReplies = Map<String, String>.from(state.replyInputTexts);
         updatedReplies[event.parentCommentId!] = '';
         emit(
           state.copyWith(
+            topLevelComments: updatedComments,
+            totalCommentCount: state.totalCommentCount + 1,
             replyInputTexts: updatedReplies,
             isPosting: false,
             clearActiveReply: true,
           ),
         );
       } else {
-        emit(state.copyWith(mainInputText: '', isPosting: false));
+        emit(
+          state.copyWith(
+            topLevelComments: updatedComments,
+            totalCommentCount: state.totalCommentCount + 1,
+            mainInputText: '',
+            isPosting: false,
+          ),
+        );
       }
     } catch (e) {
       Log.error(
@@ -164,15 +163,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
 
-      // Remove optimistic comment on failure
-      final updatedComments = _removeOptimisticComment(
-        state.topLevelComments,
-        tempCommentId,
-      );
       emit(
         state.copyWith(
-          topLevelComments: updatedComments,
-          totalCommentCount: state.totalCommentCount - 1,
           isPosting: false,
           error: isReply ? 'Failed to post reply' : 'Failed to post comment',
         ),
@@ -180,85 +172,20 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  /// Handle error clear
   void _onErrorCleared(CommentErrorCleared event, Emitter<CommentsState> emit) {
     emit(state.copyWith(clearError: true));
   }
 
-  /// Adds optimistic comment and posts to repository.
-  ///
-  /// Returns the temporary ID of the optimistic comment so it can be removed
-  /// on failure.
-  String _addOptimisticUpdate({
-    required String content,
-    required String? replyToEventId,
-    required String? replyToAuthorPubkey,
-    required Emitter<CommentsState> emit,
-  }) {
-    final currentUserPubkey = _authService.currentPublicKeyHex;
-    if (currentUserPubkey == null) {
-      throw Exception('User public key not found');
-    }
-
-    // Create optimistic comment for immediate UI feedback
-    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    final optimisticComment = repo.Comment(
-      id: tempId,
-      content: content,
-      authorPubkey: currentUserPubkey,
-      createdAt: DateTime.now(),
-      rootEventId: state.rootEventId,
-      replyToEventId: replyToEventId,
-      rootAuthorPubkey: state.rootAuthorPubkey,
-      replyToAuthorPubkey: replyToAuthorPubkey,
-    );
-
-    // Add optimistic comment to tree
-    final updatedComments = _addOptimisticComment(
-      state.topLevelComments,
-      optimisticComment,
-      replyToEventId,
-    );
-
-    emit(
-      state.copyWith(
-        topLevelComments: updatedComments,
-        totalCommentCount: state.totalCommentCount + 1,
-      ),
-    );
-
-    return tempId;
-  }
-
-  /// Posts a comment to the repository.
-  Future<void> _postCommentToRepository({
-    required String content,
-    required String? replyToEventId,
-    required String? replyToAuthorPubkey,
-  }) async {
-    await _commentsRepository.postComment(
-      content: content,
-      rootEventId: state.rootEventId,
-      rootEventAuthorPubkey: state.rootAuthorPubkey,
-      replyToEventId: replyToEventId,
-      replyToAuthorPubkey: replyToAuthorPubkey,
-    );
-  }
-
-  /// Add optimistic comment to tree.
-  ///
-  /// Uses [repo.CommentNode] from the repository layer directly.
-  List<repo.CommentNode> _addOptimisticComment(
+  /// Adds comment to tree. Top-level comments go first (newest first order).
+  List<repo.CommentNode> _addCommentToTree(
     List<repo.CommentNode> nodes,
     repo.Comment comment,
     String? replyToEventId,
   ) {
     if (replyToEventId == null) {
-      // Top-level comment - add at beginning (newest first)
       return [repo.CommentNode(comment: comment), ...nodes];
     }
 
-    // Find the parent and add as a reply
     return nodes.map((node) {
       if (node.comment.id == replyToEventId) {
         return node.copyWith(
@@ -269,40 +196,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         );
       } else if (node.replies.isNotEmpty) {
         return node.copyWith(
-          replies: _addOptimisticComment(node.replies, comment, replyToEventId),
+          replies: _addCommentToTree(node.replies, comment, replyToEventId),
         );
       }
       return node;
     }).toList();
-  }
-
-  /// Remove optimistic comment from tree by its temporary ID.
-  ///
-  /// Called when posting fails to rollback the optimistic update.
-  List<repo.CommentNode> _removeOptimisticComment(
-    List<repo.CommentNode> nodes,
-    String commentId,
-  ) {
-    final result = <repo.CommentNode>[];
-
-    for (final node in nodes) {
-      if (node.comment.id == commentId) {
-        // Skip this node (remove it)
-        continue;
-      }
-
-      // Recursively check replies
-      if (node.replies.isNotEmpty) {
-        result.add(
-          node.copyWith(
-            replies: _removeOptimisticComment(node.replies, commentId),
-          ),
-        );
-      } else {
-        result.add(node);
-      }
-    }
-
-    return result;
   }
 }

@@ -1,5 +1,5 @@
 // ABOUTME: Tests for CommentsBloc - loading comments, posting, and tree building
-// ABOUTME: Tests comment stream handling, optimistic updates, and error cases
+// ABOUTME: Tests comment stream handling and error cases
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart' as repo;
@@ -388,7 +388,7 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'removes optimistic comment when posting fails',
+        'emits error when posting fails',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
@@ -415,11 +415,7 @@ void main() {
         expect: () => [
           // First: isPosting = true
           isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second: optimistic comment added
-          isA<CommentsState>()
-              .having((s) => s.topLevelComments.length, 'comments', 1)
-              .having((s) => s.totalCommentCount, 'totalCount', 1),
-          // Third: optimistic comment removed on failure
+          // Second: error emitted, no comments added
           isA<CommentsState>()
               .having((s) => s.topLevelComments.length, 'comments', 0)
               .having((s) => s.totalCommentCount, 'totalCount', 0)
@@ -429,7 +425,7 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'removes optimistic reply when posting fails',
+        'emits error when posting reply fails',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
@@ -472,15 +468,7 @@ void main() {
         expect: () => [
           // First: isPosting = true
           isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second: optimistic reply added
-          isA<CommentsState>()
-              .having(
-                (s) => s.topLevelComments.first.replies.length,
-                'replies',
-                1,
-              )
-              .having((s) => s.totalCommentCount, 'totalCount', 2),
-          // Third: optimistic reply removed on failure
+          // Second: error emitted, no reply added
           isA<CommentsState>()
               .having(
                 (s) => s.topLevelComments.first.replies.length,
