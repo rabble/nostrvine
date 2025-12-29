@@ -51,6 +51,60 @@ void main() {
     });
 
     group('query', () {
+      test('throws when encoded filter is too long', () async {
+        // Build a filter that will exceed the gateway URL length limit.
+        // We use many authors because this is a realistic way to grow filters.
+        final authors = List.generate(
+          600,
+          (i) => i.toRadixString(16).padLeft(64, '0'),
+        );
+        final filter = Filter(kinds: [0], authors: authors, limit: 1);
+
+        // Sanity check: this should exceed the cap we enforce.
+        final filterJson = filter.toJson();
+        final encoded = base64Url.encode(utf8.encode(jsonEncode(filterJson)));
+        expect(
+          encoded.length,
+          greaterThan(GatewayClient.maxEncodedFilterLength),
+        );
+
+        // Stub a success response so the test FAILs (not errors)
+        // until we implement the length guard.
+        final mockResponse = MockResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.data).thenReturn({
+          'events': <Map<String, dynamic>>[],
+          'eose': true,
+          'complete': true,
+          'cached': false,
+        });
+        when(
+          () => mockDio.get<Map<String, dynamic>>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+          ),
+        ).thenAnswer((_) async => mockResponse);
+
+        expect(
+          () => gatewayClient.query(filter),
+          throwsA(
+            isA<GatewayException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              414,
+            ),
+          ),
+        );
+
+        // Should fail fast before issuing HTTP request.
+        verifyNever(
+          () => mockDio.get<Map<String, dynamic>>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+          ),
+        );
+      });
+
       test('returns GatewayResponse when request succeeds', () async {
         final filter = Filter(kinds: [0], limit: 10);
         final filterJson = filter.toJson();

@@ -13,12 +13,13 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/models/user_profile.dart' as profile_model;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:openvine/widgets/reserved_username_request_dialog.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -43,11 +44,32 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   bool _isWaitingForRelay = false; // Track relay confirmation phase
   File? _selectedImage;
   String? _uploadedImageUrl;
+  // Store notifier reference to safely call in deactivate
+  OverlayVisibility? _overlayNotifier;
 
   @override
   void initState() {
     super.initState();
     _loadExistingProfile();
+    // Mark settings as open to pause video playback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
+      _overlayNotifier?.setSettingsOpen(true);
+    });
+  }
+
+  @override
+  void deactivate() {
+    // Mark settings as closed when leaving
+    // Use cached notifier reference since ref is invalid during deactivate
+    // Must use Future to avoid modifying provider during widget tree build
+    final notifier = _overlayNotifier;
+    if (notifier != null) {
+      Future(() {
+        notifier.setSettingsOpen(false);
+      });
+    }
+    super.deactivate();
   }
 
   @override
@@ -1709,34 +1731,20 @@ class _UsernameReservedIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'If you are the original owner, contact support to claim it.',
+            'If you are the original owner, you can request to claim it.',
             style: TextStyle(color: Colors.grey[500], fontSize: 11),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () async {
-              // Capture messenger before async gap
-              final messenger = ScaffoldMessenger.of(context);
-              final uri = Uri.parse(
-                'mailto:support@divine.video?subject=Reserved Username Request - $username',
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (context) =>
+                    ReservedUsernameRequestDialog(username: username),
               );
-              try {
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not open email app'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (_) {
-                // Email launch failed - silently ignore
-              }
             },
-            icon: const Icon(Icons.email, size: 16),
-            label: const Text('Contact Support'),
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('Request Username'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange[400],
               side: BorderSide(color: Colors.orange[400]!),

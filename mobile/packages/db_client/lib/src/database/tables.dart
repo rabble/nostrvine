@@ -174,7 +174,7 @@ class VideoMetrics extends Table {
 @DataClassName('ProfileStatRow')
 class ProfileStats extends Table {
   @override
-  String get tableName => 'profile_stats';
+  String get tableName => 'profile_statistics';
 
   TextColumn get pubkey => text()();
   IntColumn get videoCount => integer().nullable().named('video_count')();

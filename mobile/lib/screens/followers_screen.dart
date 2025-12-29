@@ -17,7 +17,7 @@ class FollowersScreen extends ConsumerStatefulWidget {
   });
 
   final String pubkey;
-  final String displayName;
+  final String? displayName;
 
   @override
   ConsumerState<FollowersScreen> createState() => _FollowersScreenState();
@@ -116,9 +116,13 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final appBarTitle = widget.displayName?.isNotEmpty == true
+        ? '${widget.displayName}\'s Followers'
+        : 'Followers';
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: buildAppBar(context, '${widget.displayName}\'s Followers'),
+      appBar: buildAppBar(context, appBarTitle),
       body: buildListBody(
         context,
         _followers,

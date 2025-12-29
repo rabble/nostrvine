@@ -370,10 +370,6 @@ void main() {
             rootEventAuthorPubkey: testVideoAuthorPubkey,
           ),
         ).called(1);
-
-        // Note: On failure, _loadComments() is called to attempt recovery.
-        // The error state may be set briefly, then overwritten by _loadComments.
-        // This test verifies the posting attempt was made.
       });
 
       test('should add reply to correct parent comment', () async {

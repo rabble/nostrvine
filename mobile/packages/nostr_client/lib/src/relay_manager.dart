@@ -111,21 +111,31 @@ class RelayManager {
     final storage = _config.storage;
     if (storage != null) {
       final savedRelays = await storage.loadRelays();
-      _configuredRelays.addAll(savedRelays);
-      _log('Loaded ${savedRelays.length} relays from storage');
+      // Normalize loaded relays to prevent duplicates from URL format
+      // mismatches
+      for (final url in savedRelays) {
+        final normalized = _normalizeUrl(url);
+        if (normalized != null && !_configuredRelays.contains(normalized)) {
+          _configuredRelays.add(normalized);
+        }
+      }
+      _log('Loaded ${_configuredRelays.length} relays from storage');
     }
 
     // Ensure default relay is always included
-    if (!_configuredRelays.contains(_config.defaultRelayUrl)) {
-      _configuredRelays.insert(0, _config.defaultRelayUrl);
-      _log('Added default relay: ${_config.defaultRelayUrl}');
+    // (uses normalized URL for comparison)
+    final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
+    if (normalizedDefault != null &&
+        !_configuredRelays.contains(normalizedDefault)) {
+      _configuredRelays.insert(0, normalizedDefault);
+      _log('Added default relay: $normalizedDefault');
     }
 
     // Initialize status for all configured relays
     for (final url in _configuredRelays) {
       _relayStatuses[url] = RelayConnectionStatus.disconnected(
         url,
-        isDefault: url == _config.defaultRelayUrl,
+        isDefault: url == normalizedDefault,
       );
     }
 

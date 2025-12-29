@@ -31,87 +31,98 @@ class UserProfileTile extends ConsumerWidget {
       future: userProfileService.fetchProfile(pubkey),
       builder: (context, snapshot) {
         final profile = userProfileService.getCachedProfile(pubkey);
+        // wrapping with Semantics for testability and accessibility
+        return Semantics(
+          label: profile?.betterDisplayName('Unknown'),
+          container: true,
+          explicitChildNodes: false,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: VineTheme.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: GestureDetector(
+              onTap: onTap,
+              child: Row(
+                children: [
+                  // Avatar
+                  UserAvatar(imageUrl: profile?.picture, size: 48),
+                  const SizedBox(width: 12),
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              // Avatar
-              GestureDetector(
-                onTap: onTap,
-                child: UserAvatar(imageUrl: profile?.picture, size: 48),
-              ),
-              const SizedBox(width: 12),
-
-              // Name and details
-              Expanded(
-                child: GestureDetector(
-                  onTap: onTap,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        profile?.bestDisplayName ?? 'Loading...',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (profile?.about != null && profile!.about!.isNotEmpty)
+                  // Name and details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          profile.about!,
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
+                          profile?.bestDisplayName ?? 'Loading...',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
+                        if (profile?.about != null &&
+                            profile!.about!.isNotEmpty)
+                          Text(
+                            profile.about!,
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
 
-              // Follow button
-              if (showFollowButton && !isCurrentUser) ...[
-                const SizedBox(width: 12),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final isFollowing = ref.watch(isFollowingProvider(pubkey));
+                  // Follow button
+                  if (showFollowButton && !isCurrentUser) ...[
+                    const SizedBox(width: 12),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final isFollowing = ref.watch(
+                          isFollowingProvider(pubkey),
+                        );
 
-                    return SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () =>
-                            _toggleFollow(context, ref, pubkey, isFollowing),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isFollowing
-                              ? Colors.white
-                              : VineTheme.vineGreen,
-                          foregroundColor: isFollowing
-                              ? VineTheme.vineGreen
-                              : Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                        return SizedBox(
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: () => _toggleFollow(
+                              context,
+                              ref,
+                              pubkey,
+                              isFollowing,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isFollowing
+                                  ? Colors.white
+                                  : VineTheme.vineGreen,
+                              foregroundColor: isFollowing
+                                  ? VineTheme.vineGreen
+                                  : Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              isFollowing ? 'Following' : 'Follow',
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          isFollowing ? 'Following' : 'Follow',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ],
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         );
       },

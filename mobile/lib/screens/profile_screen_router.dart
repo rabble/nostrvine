@@ -18,8 +18,10 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/followers_screen.dart';
 import 'package:openvine/screens/following_screen.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -93,7 +95,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _navigateToFollowers(
     BuildContext context,
     String pubkey,
-    String displayName,
+    String? displayName,
   ) {
     // Navigate using root navigator to escape shell route
     Navigator.of(context, rootNavigator: true).push(
@@ -107,7 +109,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _navigateToFollowing(
     BuildContext context,
     String pubkey,
-    String displayName,
+    String? displayName,
   ) {
     // Navigate using root navigator to escape shell route
     Navigator.of(context, rootNavigator: true).push(
@@ -136,9 +138,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     return buildAsyncUI(
       pageContext,
       onData: (ctx) {
-        // Only handle profile routes
         if (ctx.type != RouteType.profile) {
-          return const Center(child: Text('Not a profile route'));
+          // During navigation transitions, we may briefly see non-profile routes.
+          // Just show nothing rather than an error message.
+          return const SizedBox.shrink();
         }
 
         // Convert npub to hex for profile feed provider
@@ -526,14 +529,17 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    if (profile == null) {
-      return SizedBox.shrink();
+    if (!isOwnProfile && profile == null) {
+      return const SizedBox.shrink();
     }
-    final profilePictureUrl = profile.picture;
-    final displayName = profile.bestDisplayName;
+
+    final profilePictureUrl = profile?.picture;
+    final displayName = profile?.bestDisplayName;
     final hasCustomName =
-        profile.name?.isNotEmpty == true ||
-        profile.displayName?.isNotEmpty == true;
+        profile?.name?.isNotEmpty == true ||
+        profile?.displayName?.isNotEmpty == true;
+    final nip05 = profile?.nip05;
+    final about = profile?.about;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -664,15 +670,15 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 ),
                 const SizedBox(height: 4),
                 // Show NIP-05 identifier if present
-                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                if (nip05 != null && nip05.isNotEmpty)
                   Text(
-                    profile.nip05!,
+                    nip05,
                     style: TextStyle(color: Colors.grey[400], fontSize: 13),
                   ),
                 const SizedBox(height: 4),
-                if (profile.about != null && profile.about!.isNotEmpty)
+                if (about != null && about.isNotEmpty)
                   SelectableText(
-                    profile.about!,
+                    about,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -724,12 +730,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   // Action methods
 
   Future<void> _setupProfile() async {
-    print(
-      '🔍 NAV DEBUG: ProfileScreenRouter._setupProfile() - about to push /setup-profile',
+    // Navigate using root navigator to escape shell route
+    // This prevents redirect issues when navigating from inside shell
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) => const ProfileSetupScreen(isNewUser: true),
+      ),
     );
-    print('🔍 NAV DEBUG: Current location: ${GoRouterState.of(context).uri}');
-    await context.push('/setup-profile');
-    print('🔍 NAV DEBUG: Returned from push /setup-profile');
   }
 
   Future<void> _editProfile() async {
@@ -772,12 +779,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     );
 
     if (result == 'edit') {
-      print(
-        '🔍 NAV DEBUG: ProfileScreenRouter._editProfile() - about to push /edit-profile',
+      // Navigate using root navigator to escape shell route
+      // This prevents redirect issues when navigating from inside shell
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (context) => const ProfileSetupScreen(isNewUser: false),
+        ),
       );
-      print('🔍 NAV DEBUG: Current location: ${GoRouterState.of(context).uri}');
-      await context.push('/edit-profile');
-      print('🔍 NAV DEBUG: Returned from push /edit-profile');
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -881,7 +889,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   void _openClips() {
-    context.push('/clips');
+    // Navigate using root navigator to escape shell route
+    // This prevents redirect issues when navigating from inside shell
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (context) => const ClipLibraryScreen()));
   }
 
   Future<void> _followUser(String pubkey) async {

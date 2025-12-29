@@ -5,6 +5,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/relay_gateway_settings.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
@@ -16,10 +17,14 @@ class NostrServiceFactory {
   ///
   /// Takes [keyContainer] directly since the nostrServiceProvider rebuilds
   /// when auth state changes, ensuring the key container is always current.
+  ///
+  /// Takes [environmentConfig] to determine the relay URL to use.
+  /// If not provided, falls back to [AppConstants.defaultRelayUrl].
   static NostrClient create({
     SecureKeyContainer? keyContainer,
     RelayStatisticsService? statisticsService,
     RelayGatewaySettings? gatewaySettings,
+    EnvironmentConfig? environmentConfig,
   }) {
     UnifiedLogger.info(
       'Creating NostrClient via factory',
@@ -36,8 +41,11 @@ class NostrServiceFactory {
     );
 
     // Create relay manager config with persistent storage
+    // Use relay URL from environment config if provided, otherwise fall back to default
+    final relayUrl =
+        environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
     final relayManagerConfig = RelayManagerConfig(
-      defaultRelayUrl: AppConstants.defaultRelayUrl,
+      defaultRelayUrl: relayUrl,
       storage: SharedPreferencesRelayStorage(),
     );
 

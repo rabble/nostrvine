@@ -53,7 +53,9 @@ void main() {
           (widget) =>
               widget is Image &&
               widget.image is AssetImage &&
-              (widget.image as AssetImage).assetName.contains('app_icon.png'),
+              (widget.image as AssetImage).assetName.contains(
+                'White cropped.png',
+              ),
         ),
         findsOneWidget,
         reason: 'Divine logo image should be displayed in drawer header',

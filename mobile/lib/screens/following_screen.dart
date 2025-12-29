@@ -18,7 +18,7 @@ class FollowingScreen extends ConsumerStatefulWidget {
   });
 
   final String pubkey;
-  final String displayName;
+  final String? displayName;
 
   @override
   ConsumerState<FollowingScreen> createState() => _FollowingScreenState();
@@ -147,9 +147,13 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final appBarTitle = widget.displayName?.isNotEmpty == true
+        ? '${widget.displayName}\'s Following'
+        : 'Following';
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: buildAppBar(context, '${widget.displayName}\'s Following'),
+      appBar: buildAppBar(context, appBarTitle),
       body: buildListBody(
         context,
         _following,

@@ -4,11 +4,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:nostr_client/nostr_client.dart'
+    show RelayConnectionStatus, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/reserved_username_request_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -132,6 +136,50 @@ Stream<Map<String, RelayStatistics>> relayStatisticsStream(Ref ref) async* {
   });
 
   yield* controller.stream;
+}
+
+/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
+/// Must be watched at app level to activate the bridge
+@Riverpod(keepAlive: true)
+void relayStatisticsBridge(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final statsService = ref.watch(relayStatisticsServiceProvider);
+
+  // Track previous states to detect changes
+  final Map<String, bool> previousStates = {};
+
+  // Helper to process status updates (used for both initial state and stream)
+  void processStatuses(Map<String, RelayConnectionStatus> statuses) {
+    for (final entry in statuses.entries) {
+      final url = entry.key;
+      final status = entry.value;
+      final wasConnected = previousStates[url] ?? false;
+      final isConnected =
+          status.isConnected || status.state == RelayState.authenticated;
+
+      // Only record changes to avoid excessive updates
+      if (isConnected && !wasConnected) {
+        statsService.recordConnection(url);
+      } else if (!isConnected && wasConnected) {
+        statsService.recordDisconnection(url, reason: status.errorMessage);
+      }
+
+      previousStates[url] = isConnected;
+    }
+
+    // Prune entries for relays no longer in the status map to prevent memory leak
+    previousStates.removeWhere((url, _) => !statuses.containsKey(url));
+  }
+
+  // Process current state immediately (relays may have connected before bridge started)
+  processStatuses(nostrService.relayStatuses);
+
+  // Listen to relay status stream for future updates
+  final subscription = nostrService.relayStatusStream.listen(processStatuses);
+
+  ref.onDispose(() {
+    subscription.cancel();
+  });
 }
 
 /// Analytics service with opt-out support
@@ -258,6 +306,12 @@ Nip05Service nip05Service(Ref ref) {
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);
   return UsernameRepository(nip05Service);
+}
+
+/// Reserved username request repository for claiming reserved usernames
+@riverpod
+ReservedUsernameRequestRepository reservedUsernameRequestRepository(Ref ref) {
+  return ReservedUsernameRequestRepository(http.Client());
 }
 
 /// Draft storage service for persisting vine drafts
