@@ -2,12 +2,14 @@
 // ABOUTME: Renders a comment with author info, content, and recursively renders replies
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/comments/comment_input_cubit.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments/comments.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
+import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -16,7 +18,7 @@ import 'package:openvine/widgets/user_name.dart';
 /// Supports thread nesting with visual indentation based on [depth].
 /// Shows author avatar, name, timestamp, and content.
 /// Includes a reply button that toggles an inline reply input.
-class CommentThread extends ConsumerWidget {
+class CommentThread extends StatelessWidget {
   const CommentThread({required this.node, this.depth = 0, super.key});
 
   /// The comment node containing the comment and its replies.
@@ -26,151 +28,152 @@ class CommentThread extends ConsumerWidget {
   final int depth;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final comment = node.comment;
-    final ctx = ref.watch(commentContextProvider);
-    final inputState = ref.watch(commentInputProvider(ctx.eventId, ctx.pubkey));
-    final isReplying = inputState.activeReplyCommentId == comment.id;
-    final isPostingReply = inputState.isReplyPosting(comment.id);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: EdgeInsets.only(left: depth * 24.0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return BlocBuilder<CommentInputCubit, CommentInputState>(
+      buildWhen: (prev, next) =>
+          prev.activeReplyCommentId != next.activeReplyCommentId ||
+          prev.isReplyPosting(comment.id) != next.isReplyPosting(comment.id),
+      builder: (context, inputState) {
+        final isReplying = inputState.activeReplyCommentId == comment.id;
+        final isPostingReply = inputState.isReplyPosting(comment.id);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: EdgeInsets.only(left: depth * 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Consumer(
-                    builder: (context, ref, _) {
-                      // Fetch profile for this comment author
-                      final userProfileService = ref.watch(
-                        userProfileServiceProvider,
-                      );
-                      final profile = userProfileService.getCachedProfile(
-                        comment.authorPubkey,
-                      );
-
-                      // If profile not cached and not known missing, fetch it
-                      if (profile == null &&
-                          !userProfileService.shouldSkipProfileFetch(
+                  Row(
+                    children: [
+                      Consumer(
+                        builder: (context, ref, _) {
+                          // Fetch profile for this comment author
+                          final userProfileService = ref.watch(
+                            userProfileServiceProvider,
+                          );
+                          final profile = userProfileService.getCachedProfile(
                             comment.authorPubkey,
-                          )) {
-                        Future.microtask(() {
-                          ref
-                              .read(userProfileProvider.notifier)
-                              .fetchProfile(comment.authorPubkey);
-                        });
-                      }
+                          );
 
-                      return UserAvatar(size: 32);
-                    },
+                          // If profile not cached and not known missing, fetch it
+                          if (profile == null &&
+                              !userProfileService.shouldSkipProfileFetch(
+                                comment.authorPubkey,
+                              )) {
+                            Future.microtask(() {
+                              ref
+                                  .read(userProfileProvider.notifier)
+                                  .fetchProfile(comment.authorPubkey);
+                            });
+                          }
+
+                          return UserAvatar(size: 32);
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            // Fetch profile for display name
+                            final userProfileService = ref.watch(
+                              userProfileServiceProvider,
+                            );
+                            final profile = userProfileService.getCachedProfile(
+                              comment.authorPubkey,
+                            );
+
+                            const style = TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.white54,
+                            );
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    // Navigate to profile screen
+                                    context.goProfileGrid(comment.authorPubkey);
+                                  },
+                                  child: profile == null
+                                      ? const Text('Unknown', style: style)
+                                      : UserName.fromUserProfile(
+                                          profile,
+                                          style: style,
+                                        ),
+                                ),
+                                Text(
+                                  comment.relativeTime,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        // Fetch profile for display name
-                        final userProfileService = ref.watch(
-                          userProfileServiceProvider,
-                        );
-                        final profile = userProfileService.getCachedProfile(
-                          comment.authorPubkey,
-                        );
-
-                        const style = TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.white54,
-                        );
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 44),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          comment.content,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                // Navigate to profile screen
-                                context.goProfileGrid(comment.authorPubkey);
+                            TextButton(
+                              onPressed: () {
+                                context.read<CommentInputCubit>().toggleReply(
+                                  comment.id,
+                                );
                               },
-                              child: profile == null
-                                  ? const Text('Unknown', style: style)
-                                  : UserName.fromUserProfile(
-                                      profile,
-                                      style: style,
-                                    ),
-                            ),
-                            Text(
-                              comment.relativeTime,
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
+                              child: Text(
+                                isReplying ? 'Cancel' : 'Reply',
+                                style: const TextStyle(color: Colors.white70),
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.only(left: 44),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SelectableText(
-                      comment.content,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            ref
-                                .read(
-                                  commentInputProvider(
-                                    ctx.eventId,
-                                    ctx.pubkey,
-                                  ).notifier,
-                                )
-                                .toggleReply(comment.id);
-                          },
-                          child: Text(
-                            isReplying ? 'Cancel' : 'Reply',
-                            style: const TextStyle(color: Colors.white70),
-                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  if (isReplying)
+                    _ReplyInputWrapper(
+                      parentCommentId: comment.id,
+                      parentAuthorPubkey: comment.authorPubkey,
+                      isPosting: isPostingReply,
+                    ),
+                ],
               ),
-              if (isReplying)
-                _ReplyInputWrapper(
-                  parentCommentId: comment.id,
-                  parentAuthorPubkey: comment.authorPubkey,
-                  isPosting: isPostingReply,
-                ),
-            ],
-          ),
-        ),
-        // Recursively render replies
-        ...node.replies.map(
-          (reply) => CommentThread(node: reply, depth: depth + 1),
-        ),
-      ],
+            ),
+            // Recursively render replies
+            ...node.replies.map(
+              (reply) => CommentThread(node: reply, depth: depth + 1),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 /// Wrapper for reply input that manages its own TextEditingController
-class _ReplyInputWrapper extends ConsumerStatefulWidget {
+class _ReplyInputWrapper extends StatefulWidget {
   const _ReplyInputWrapper({
     required this.parentCommentId,
     required this.parentAuthorPubkey,
@@ -182,17 +185,16 @@ class _ReplyInputWrapper extends ConsumerStatefulWidget {
   final bool isPosting;
 
   @override
-  ConsumerState<_ReplyInputWrapper> createState() => _ReplyInputWrapperState();
+  State<_ReplyInputWrapper> createState() => _ReplyInputWrapperState();
 }
 
-class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
+class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    final ctx = ref.read(commentContextProvider);
-    final inputState = ref.read(commentInputProvider(ctx.eventId, ctx.pubkey));
+    final inputState = context.read<CommentInputCubit>().state;
     _controller = TextEditingController(
       text: inputState.getReplyText(widget.parentCommentId),
     );
@@ -206,31 +208,38 @@ class _ReplyInputWrapperState extends ConsumerState<_ReplyInputWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final ctx = ref.watch(commentContextProvider);
-    final inputState = ref.watch(commentInputProvider(ctx.eventId, ctx.pubkey));
-    final currentText = inputState.getReplyText(widget.parentCommentId);
+    return BlocBuilder<CommentInputCubit, CommentInputState>(
+      buildWhen: (prev, next) =>
+          prev.getReplyText(widget.parentCommentId) !=
+          next.getReplyText(widget.parentCommentId),
+      builder: (context, inputState) {
+        final currentText = inputState.getReplyText(widget.parentCommentId);
 
-    // Sync controller with state (for when state changes externally,
-    // e.g., after post clears the text)
-    if (_controller.text != currentText) {
-      _controller.text = currentText;
-      _controller.selection = TextSelection.collapsed(
-        offset: currentText.length,
-      );
-    }
+        // Sync controller with state (for when state changes externally,
+        // e.g., after post clears the text)
+        if (_controller.text != currentText) {
+          _controller.text = currentText;
+          _controller.selection = TextSelection.collapsed(
+            offset: currentText.length,
+          );
+        }
 
-    return CommentsReplyInput(
-      controller: _controller,
-      isPosting: widget.isPosting,
-      onChanged: (text) {
-        ref
-            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
-            .updateReplyText(widget.parentCommentId, text);
-      },
-      onSubmit: () {
-        ref
-            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
-            .postReply(widget.parentCommentId, widget.parentAuthorPubkey);
+        return CommentsReplyInput(
+          controller: _controller,
+          isPosting: widget.isPosting,
+          onChanged: (text) {
+            context.read<CommentInputCubit>().updateReplyText(
+              widget.parentCommentId,
+              text,
+            );
+          },
+          onSubmit: () {
+            context.read<CommentInputCubit>().postReply(
+              widget.parentCommentId,
+              widget.parentAuthorPubkey,
+            );
+          },
+        );
       },
     );
   }

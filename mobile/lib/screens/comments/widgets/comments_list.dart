@@ -2,12 +2,11 @@
 // ABOUTME: Renders threaded comments using CommentThread widget
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/comments/comments.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/screens/comments/widgets/widgets.dart';
 
-class CommentsList extends ConsumerWidget {
+class CommentsList extends StatelessWidget {
   const CommentsList({
     required this.isOriginalVine,
     required this.scrollController,
@@ -18,28 +17,29 @@ class CommentsList extends ConsumerWidget {
   final ScrollController scrollController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ctx = ref.watch(commentContextProvider);
-    final state = ref.watch(commentsProvider(ctx.eventId, ctx.pubkey));
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      builder: (context, state) {
+        if (state.status == CommentsStatus.loading) {
+          return const _LoadingState();
+        }
 
-    if (state.isLoading) {
-      return const _LoadingState();
-    }
+        if (state.status == CommentsStatus.failure) {
+          return _ErrorState(error: state.error ?? 'Unknown error');
+        }
 
-    if (state.error != null) {
-      return _ErrorState(error: state.error!);
-    }
+        if (state.topLevelComments.isEmpty) {
+          return CommentsEmptyState(isClassicVine: isOriginalVine);
+        }
 
-    if (state.topLevelComments.isEmpty) {
-      return CommentsEmptyState(isClassicVine: isOriginalVine);
-    }
-
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: state.topLevelComments.length,
-      itemBuilder: (context, index) =>
-          CommentThread(node: state.topLevelComments[index]),
+        return ListView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.only(bottom: 80),
+          itemCount: state.topLevelComments.length,
+          itemBuilder: (context, index) =>
+              CommentThread(node: state.topLevelComments[index]),
+        );
+      },
     );
   }
 }

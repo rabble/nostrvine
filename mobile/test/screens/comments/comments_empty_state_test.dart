@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
+import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
   group('CommentsEmptyState', () {

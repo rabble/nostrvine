@@ -1,25 +1,28 @@
 // ABOUTME: Widget tests for CommentsList component
 // ABOUTME: Tests loading, error, empty, and data state rendering
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/comments/comment_input_cubit.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments/comment_context_provider.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/state/comments_state.dart';
-import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
-import 'package:openvine/screens/comments/widgets/comments_list.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/state/comment_input_state.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
-@GenerateMocks([UserProfileService])
-import 'comments_list_test.mocks.dart';
+class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
+    implements CommentsBloc {}
+
+class MockCommentInputCubit extends MockCubit<CommentInputState>
+    implements CommentInputCubit {}
 
 // Full 64-character test IDs
 const testVideoEventId =
@@ -30,11 +33,23 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentsList', () {
     late MockUserProfileService mockUserProfileService;
+    late MockCommentsBloc mockCommentsBloc;
+    late MockCommentInputCubit mockCommentInputCubit;
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
-      when(mockUserProfileService.shouldSkipProfileFetch(any)).thenReturn(true);
+      mockCommentsBloc = MockCommentsBloc();
+      mockCommentInputCubit = MockCommentInputCubit();
+
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(any()),
+      ).thenReturn(true);
+      when(
+        () => mockCommentInputCubit.state,
+      ).thenReturn(CommentInputState.initial);
     });
 
     Widget buildTestWidget({
@@ -45,22 +60,27 @@ void main() {
     }) {
       final sc = scrollController ?? ScrollController();
       final input = inputState ?? CommentInputState.initial;
-      final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
+
+      when(() => mockCommentsBloc.state).thenReturn(commentsState);
+      when(() => mockCommentInputCubit.state).thenReturn(input);
 
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-          commentContextProvider.overrideWithValue(ctx),
-          currentCommentsProvider.overrideWith((ref) => commentsState),
-          currentCommentInputProvider.overrideWith(
-            () => _MockCurrentCommentInput(input),
-          ),
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: CommentsList(
-              isOriginalVine: isOriginalVine,
-              scrollController: sc,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<CommentsBloc>.value(value: mockCommentsBloc),
+                BlocProvider<CommentInputCubit>.value(
+                  value: mockCommentInputCubit,
+                ),
+              ],
+              child: CommentsList(
+                isOriginalVine: isOriginalVine,
+                scrollController: sc,
+              ),
             ),
           ),
         ),
@@ -70,7 +90,8 @@ void main() {
     testWidgets('shows loading indicator when loading', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
-        isLoading: true,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.loading,
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -82,6 +103,8 @@ void main() {
     testWidgets('shows error message when state has error', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.failure,
         error: 'Network error occurred',
       );
 
@@ -94,6 +117,8 @@ void main() {
     testWidgets('shows CommentsEmptyState when no comments', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [],
       );
 
@@ -108,6 +133,8 @@ void main() {
     ) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [],
       );
 
@@ -140,6 +167,8 @@ void main() {
 
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [comment1, comment2],
         totalCommentCount: 2,
       );
@@ -155,6 +184,8 @@ void main() {
     testWidgets('shows Cancel when replying to comment', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [
           CommentNodeBuilder()
               .withComment(
@@ -186,6 +217,8 @@ void main() {
       final comments = CommentTreeBuilder.singleComment();
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: comments,
         totalCommentCount: 1,
       );
@@ -204,54 +237,4 @@ void main() {
       scrollController.dispose();
     });
   });
-}
-
-/// Mock CurrentCommentInput that manages state for testing
-class _MockCurrentCommentInput extends CurrentCommentInput {
-  _MockCurrentCommentInput(this._initialState);
-
-  final CommentInputState _initialState;
-
-  @override
-  CommentInputState build() => _initialState;
-
-  @override
-  void toggleReply(String commentId) {
-    if (state.activeReplyCommentId == commentId) {
-      state = state.copyWith(activeReplyCommentId: null);
-    } else {
-      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-      updatedReplies.putIfAbsent(commentId, () => '');
-      state = state.copyWith(
-        activeReplyCommentId: commentId,
-        replyInputTexts: updatedReplies,
-      );
-    }
-  }
-
-  @override
-  void updateMainText(String text) {
-    state = state.copyWith(mainInputText: text, error: null);
-  }
-
-  @override
-  void updateReplyText(String commentId, String text) {
-    final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-    updatedReplies[commentId] = text;
-    state = state.copyWith(replyInputTexts: updatedReplies, error: null);
-  }
-
-  @override
-  Future<void> postMainComment() async {}
-
-  @override
-  Future<void> postReply(
-    String parentCommentId,
-    String? parentAuthorPubkey,
-  ) async {}
-
-  @override
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
 }

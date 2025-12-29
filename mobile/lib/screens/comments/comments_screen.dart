@@ -1,11 +1,14 @@
 // ABOUTME: Screen for displaying and posting comments on videos with threaded reply support
-// ABOUTME: Uses Nostr Kind 1 events for comments with proper e/p tags for threading
+// ABOUTME: Uses BLoC pattern with Nostr Kind 1 events for comments
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/comments/comment_input_cubit.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/providers/comments/comments.dart';
-import 'package:openvine/screens/comments/widgets/comments.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/comments/widgets/widgets.dart';
 
 class CommentsScreen extends ConsumerWidget {
   const CommentsScreen({
@@ -45,11 +48,20 @@ class CommentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ctx = (eventId: videoEvent.id, pubkey: videoEvent.pubkey);
+    final socialService = ref.watch(socialServiceProvider);
+    final authService = ref.watch(authServiceProvider);
 
-    // Wrap children in ProviderScope with comment context override
-    return ProviderScope(
-      overrides: [commentContextProvider.overrideWithValue(ctx)],
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CommentsBloc>(
+          create: (_) => CommentsBloc(
+            socialService: socialService,
+            authService: authService,
+            rootEventId: videoEvent.id,
+            rootAuthorPubkey: videoEvent.pubkey,
+          )..add(const CommentsLoadRequested()),
+        ),
+      ],
       child: _CommentsScreenContent(
         videoEvent: videoEvent,
         sheetScrollController: sheetScrollController,
@@ -58,8 +70,8 @@ class CommentsScreen extends ConsumerWidget {
   }
 }
 
-/// Content widget that lives inside the ProviderScope
-class _CommentsScreenContent extends ConsumerWidget {
+/// Content widget that lives inside the BlocProvider
+class _CommentsScreenContent extends StatelessWidget {
   const _CommentsScreenContent({
     required this.videoEvent,
     required this.sheetScrollController,
@@ -69,57 +81,75 @@ class _CommentsScreenContent extends ConsumerWidget {
   final ScrollController sheetScrollController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ctx = ref.watch(commentContextProvider);
-
-    // Listen for errors and show snackbar
-    ref.listen(commentInputProvider(ctx.eventId, ctx.pubkey), (prev, next) {
-      final error = next.error;
-      if (error != null && prev?.error != error) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error)));
-        ref
-            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
-            .clearError();
-      }
-    });
-
-    return Column(
-      children: [
-        const CommentsDragHandle(),
-        CommentsHeader(onClose: () => Navigator.pop(context)),
-        const Divider(color: Colors.white24, height: 1),
-        Expanded(
-          child: CommentsList(
-            isOriginalVine: videoEvent.isOriginalVine,
-            scrollController: sheetScrollController,
-          ),
-        ),
-        const _MainCommentInput(),
-      ],
+  Widget build(BuildContext context) {
+    // Create CommentInputCubit here so it can access CommentsBloc
+    return BlocProvider<CommentInputCubit>(
+      create: (context) =>
+          CommentInputCubit(commentsBloc: context.read<CommentsBloc>()),
+      child: _CommentsScreenBody(
+        videoEvent: videoEvent,
+        sheetScrollController: sheetScrollController,
+      ),
     );
   }
 }
 
-/// Main comment input widget that reads from provider
-class _MainCommentInput extends ConsumerStatefulWidget {
+/// Body widget with error listener
+class _CommentsScreenBody extends StatelessWidget {
+  const _CommentsScreenBody({
+    required this.videoEvent,
+    required this.sheetScrollController,
+  });
+
+  final VideoEvent videoEvent;
+  final ScrollController sheetScrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<CommentInputCubit, CommentInputState>(
+      listenWhen: (prev, next) =>
+          prev.error != next.error && next.error != null,
+      listener: (context, state) {
+        if (state.error != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.error!)));
+          context.read<CommentInputCubit>().clearError();
+        }
+      },
+      child: Column(
+        children: [
+          const CommentsDragHandle(),
+          CommentsHeader(onClose: () => Navigator.pop(context)),
+          const Divider(color: Colors.white24, height: 1),
+          Expanded(
+            child: CommentsList(
+              isOriginalVine: videoEvent.isOriginalVine,
+              scrollController: sheetScrollController,
+            ),
+          ),
+          const _MainCommentInput(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Main comment input widget that reads from Cubit
+class _MainCommentInput extends StatefulWidget {
   const _MainCommentInput();
 
   @override
-  ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
+  State<_MainCommentInput> createState() => _MainCommentInputState();
 }
 
-class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
+class _MainCommentInputState extends State<_MainCommentInput> {
   late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    final ctx = ref.read(commentContextProvider);
-    final inputState = ref.read(
-      commentInputProvider(ctx.eventId, ctx.pubkey),
-    );
+    final inputState = context.read<CommentInputCubit>().state;
     _controller = TextEditingController(text: inputState.mainInputText);
   }
 
@@ -131,32 +161,30 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
 
   @override
   Widget build(BuildContext context) {
-    final ctx = ref.watch(commentContextProvider);
-    final inputState = ref.watch(
-      commentInputProvider(ctx.eventId, ctx.pubkey),
-    );
+    return BlocBuilder<CommentInputCubit, CommentInputState>(
+      buildWhen: (prev, next) =>
+          prev.mainInputText != next.mainInputText ||
+          prev.isMainPosting != next.isMainPosting,
+      builder: (context, inputState) {
+        // Sync controller with state (for when state changes externally,
+        // e.g., after post clears the text)
+        if (_controller.text != inputState.mainInputText) {
+          _controller.text = inputState.mainInputText;
+          _controller.selection = TextSelection.collapsed(
+            offset: inputState.mainInputText.length,
+          );
+        }
 
-    // Sync controller with state (for when state changes externally,
-    // e.g., after post clears the text)
-    if (_controller.text != inputState.mainInputText) {
-      _controller.text = inputState.mainInputText;
-      _controller.selection = TextSelection.collapsed(
-        offset: inputState.mainInputText.length,
-      );
-    }
-
-    return CommentInput(
-      controller: _controller,
-      isPosting: inputState.isMainPosting,
-      onChanged: (text) {
-        ref
-            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
-            .updateMainText(text);
-      },
-      onSubmit: () {
-        ref
-            .read(commentInputProvider(ctx.eventId, ctx.pubkey).notifier)
-            .postMainComment();
+        return CommentInput(
+          controller: _controller,
+          isPosting: inputState.isMainPosting,
+          onChanged: (text) {
+            context.read<CommentInputCubit>().updateMainText(text);
+          },
+          onSubmit: () {
+            context.read<CommentInputCubit>().postMainComment();
+          },
+        );
       },
     );
   }

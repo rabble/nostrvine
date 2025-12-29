@@ -1,26 +1,27 @@
 // ABOUTME: Widget tests for CommentThread component
 // ABOUTME: Tests comment rendering, nesting, reply toggle, and profile integration
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/comments/comment_input_cubit.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments/comment_context_provider.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/state/comments_state.dart';
-import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/state/comment_input_state.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
-@GenerateMocks([UserProfileService])
-import 'comment_thread_test.mocks.dart';
+class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockCommentInputCubit extends MockCubit<CommentInputState>
+    implements CommentInputCubit {}
 
 // Full 64-character test IDs
 const testVideoEventId =
@@ -31,11 +32,21 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentThread', () {
     late MockUserProfileService mockUserProfileService;
+    late MockCommentInputCubit mockCommentInputCubit;
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
-      when(mockUserProfileService.shouldSkipProfileFetch(any)).thenReturn(true);
+      mockCommentInputCubit = MockCommentInputCubit();
+
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(any()),
+      ).thenReturn(true);
+      when(
+        () => mockCommentInputCubit.state,
+      ).thenReturn(CommentInputState.initial);
     });
 
     Widget buildTestWidget({
@@ -43,21 +54,20 @@ void main() {
       int depth = 0,
       CommentInputState? inputState,
     }) {
-      final input = inputState ?? CommentInputState.initial;
-      final ctx = (eventId: testVideoEventId, pubkey: testVideoAuthorPubkey);
+      final state = inputState ?? CommentInputState.initial;
+      when(() => mockCommentInputCubit.state).thenReturn(state);
 
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-          commentContextProvider.overrideWithValue(ctx),
-          currentCommentInputProvider.overrideWith(
-            () => _MockCurrentCommentInput(input),
-          ),
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: CommentThread(node: node, depth: depth),
+            body: BlocProvider<CommentInputCubit>.value(
+              value: mockCommentInputCubit,
+              child: SingleChildScrollView(
+                child: CommentThread(node: node, depth: depth),
+              ),
             ),
           ),
         ),
@@ -108,7 +118,9 @@ void main() {
         name: 'testuser',
       );
       when(
-        mockUserProfileService.getCachedProfile(TestCommentIds.author1Pubkey),
+        () => mockUserProfileService.getCachedProfile(
+          TestCommentIds.author1Pubkey,
+        ),
       ).thenReturn(profile);
 
       final comment = CommentBuilder()
@@ -165,7 +177,7 @@ void main() {
       expect(find.text('Reply'), findsNothing);
     });
 
-    testWidgets('tapping Reply toggles reply mode', (tester) async {
+    testWidgets('tapping Reply calls toggleReply on cubit', (tester) async {
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
@@ -174,16 +186,14 @@ void main() {
       await tester.pumpWidget(buildTestWidget(node: node));
       await tester.pump();
 
-      // Initially shows Reply
-      expect(find.text('Reply'), findsOneWidget);
-
       // Tap Reply
       await tester.tap(find.text('Reply'));
       await tester.pump();
 
-      // Should now show Cancel and reply input
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Write a reply...'), findsOneWidget);
+      // Verify toggleReply was called
+      verify(
+        () => mockCommentInputCubit.toggleReply(TestCommentIds.comment1Id),
+      ).called(1);
     });
 
     testWidgets('shows CommentsReplyInput when replying', (tester) async {
@@ -282,54 +292,4 @@ void main() {
       expect(find.byType(UserAvatar), findsOneWidget);
     });
   });
-}
-
-/// Mock CurrentCommentInput that manages state for testing
-class _MockCurrentCommentInput extends CurrentCommentInput {
-  _MockCurrentCommentInput(this._initialState);
-
-  final CommentInputState _initialState;
-
-  @override
-  CommentInputState build() => _initialState;
-
-  @override
-  void toggleReply(String commentId) {
-    if (state.activeReplyCommentId == commentId) {
-      state = state.copyWith(activeReplyCommentId: null);
-    } else {
-      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-      updatedReplies.putIfAbsent(commentId, () => '');
-      state = state.copyWith(
-        activeReplyCommentId: commentId,
-        replyInputTexts: updatedReplies,
-      );
-    }
-  }
-
-  @override
-  void updateMainText(String text) {
-    state = state.copyWith(mainInputText: text, error: null);
-  }
-
-  @override
-  void updateReplyText(String commentId, String text) {
-    final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-    updatedReplies[commentId] = text;
-    state = state.copyWith(replyInputTexts: updatedReplies, error: null);
-  }
-
-  @override
-  Future<void> postMainComment() async {}
-
-  @override
-  Future<void> postReply(
-    String parentCommentId,
-    String? parentAuthorPubkey,
-  ) async {}
-
-  @override
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
 }

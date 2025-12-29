@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/comments/comments_screen.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'route_utils.dart';
 
