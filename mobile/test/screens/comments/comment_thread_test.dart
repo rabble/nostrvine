@@ -2,6 +2,7 @@
 // ABOUTME: Tests comment rendering, nesting, reply toggle, and profile integration
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart' as repo;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,7 +57,7 @@ void main() {
     });
 
     Widget buildTestWidget({
-      required CommentNode node,
+      required repo.CommentNode node,
       int depth = 0,
       CommentsState? state,
     }) {

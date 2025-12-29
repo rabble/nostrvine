@@ -386,6 +386,112 @@ void main() {
           ),
         ],
       );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'removes optimistic comment when posting fails',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        seed: () => const CommentsState(
+          mainInputText: 'Test comment',
+          topLevelComments: [],
+          totalCommentCount: 0,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
+        expect: () => [
+          // First: isPosting = true
+          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
+          // Second: optimistic comment added
+          isA<CommentsState>()
+              .having((s) => s.topLevelComments.length, 'comments', 1)
+              .having((s) => s.totalCommentCount, 'totalCount', 1),
+          // Third: optimistic comment removed on failure
+          isA<CommentsState>()
+              .having((s) => s.topLevelComments.length, 'comments', 0)
+              .having((s) => s.totalCommentCount, 'totalCount', 0)
+              .having((s) => s.isPosting, 'isPosting', false)
+              .having((s) => s.error, 'error', 'Failed to post comment'),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'removes optimistic reply when posting fails',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        seed: () {
+          final parentComment = repo.Comment(
+            id: validId('parent'),
+            content: 'Parent comment',
+            authorPubkey: validId('author1'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            replyInputTexts: {validId('parent'): 'Reply text'},
+            activeReplyCommentId: validId('parent'),
+            topLevelComments: [repo.CommentNode(comment: parentComment)],
+            totalCommentCount: 1,
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          CommentSubmitted(
+            parentCommentId: validId('parent'),
+            parentAuthorPubkey: validId('author1'),
+          ),
+        ),
+        expect: () => [
+          // First: isPosting = true
+          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
+          // Second: optimistic reply added
+          isA<CommentsState>()
+              .having(
+                (s) => s.topLevelComments.first.replies.length,
+                'replies',
+                1,
+              )
+              .having((s) => s.totalCommentCount, 'totalCount', 2),
+          // Third: optimistic reply removed on failure
+          isA<CommentsState>()
+              .having(
+                (s) => s.topLevelComments.first.replies.length,
+                'replies',
+                0,
+              )
+              .having((s) => s.totalCommentCount, 'totalCount', 1)
+              .having((s) => s.isPosting, 'isPosting', false)
+              .having((s) => s.error, 'error', 'Failed to post reply'),
+        ],
+      );
     });
   });
 
@@ -487,9 +593,9 @@ void main() {
     });
   });
 
-  group('CommentNode', () {
+  group('repo.CommentNode', () {
     test('totalReplyCount returns correct count including nested replies', () {
-      final node = CommentNode(
+      final node = repo.CommentNode(
         comment: repo.Comment(
           id: 'comment1',
           content: 'Parent',
@@ -499,7 +605,7 @@ void main() {
           rootAuthorPubkey: 'author',
         ),
         replies: [
-          CommentNode(
+          repo.CommentNode(
             comment: repo.Comment(
               id: 'reply1',
               content: 'Reply 1',
@@ -509,7 +615,7 @@ void main() {
               rootAuthorPubkey: 'author',
             ),
             replies: [
-              CommentNode(
+              repo.CommentNode(
                 comment: repo.Comment(
                   id: 'nested1',
                   content: 'Nested reply',
@@ -521,7 +627,7 @@ void main() {
               ),
             ],
           ),
-          CommentNode(
+          repo.CommentNode(
             comment: repo.Comment(
               id: 'reply2',
               content: 'Reply 2',
@@ -547,8 +653,8 @@ void main() {
         rootAuthorPubkey: 'author',
       );
 
-      final node1 = CommentNode(comment: comment);
-      final node2 = CommentNode(comment: comment);
+      final node1 = repo.CommentNode(comment: comment);
+      final node2 = repo.CommentNode(comment: comment);
 
       expect(node1, equals(node2));
     });

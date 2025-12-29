@@ -2,10 +2,13 @@
 // ABOUTME: Supports building nested comment trees for testing threaded displays
 
 import 'package:comments_repository/comments_repository.dart' as repo;
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+
 import 'comment_builder.dart';
 
-/// Fluent builder for creating CommentNode instances in tests.
+/// Fluent builder for creating [repo.CommentNode] instances in tests.
+///
+/// Uses [repo.CommentNode] from the comments_repository package,
+/// following clean architecture separation.
 ///
 /// Usage:
 /// ```dart
@@ -16,7 +19,7 @@ import 'comment_builder.dart';
 /// ```
 class CommentNodeBuilder {
   repo.Comment? _comment;
-  List<CommentNode> _replies = [];
+  List<repo.CommentNode> _replies = [];
 
   /// Set the comment for this node.
   CommentNodeBuilder withComment(repo.Comment comment) {
@@ -31,13 +34,13 @@ class CommentNodeBuilder {
   }
 
   /// Set the list of reply nodes.
-  CommentNodeBuilder withReplies(List<CommentNode> replies) {
+  CommentNodeBuilder withReplies(List<repo.CommentNode> replies) {
     _replies = replies;
     return this;
   }
 
   /// Add a single reply node.
-  CommentNodeBuilder addReply(CommentNode reply) {
+  CommentNodeBuilder addReply(repo.CommentNode reply) {
     _replies.add(reply);
     return this;
   }
@@ -48,24 +51,26 @@ class CommentNodeBuilder {
     return this;
   }
 
-  /// Build the CommentNode instance.
-  CommentNode build() {
+  /// Build the [repo.CommentNode] instance.
+  repo.CommentNode build() {
     if (_comment == null) {
       throw StateError(
         'Comment must be set before building CommentNode. '
         'Use withComment() or withCommentBuilder().',
       );
     }
-    return CommentNode(comment: _comment!, replies: _replies);
+    return repo.CommentNode(comment: _comment!, replies: _replies);
   }
 }
 
 /// Helper class for building comment trees for tests.
+///
+/// Uses [repo.CommentNode] from the repository layer.
 class CommentTreeBuilder {
-  final List<CommentNode> _topLevelComments = [];
+  final List<repo.CommentNode> _topLevelComments = [];
 
   /// Add a top-level comment node.
-  CommentTreeBuilder addTopLevel(CommentNode node) {
+  CommentTreeBuilder addTopLevel(repo.CommentNode node) {
     _topLevelComments.add(node);
     return this;
   }
@@ -77,7 +82,7 @@ class CommentTreeBuilder {
   }
 
   /// Build a simple tree with one top-level comment.
-  static List<CommentNode> singleComment({
+  static List<repo.CommentNode> singleComment({
     String content = 'Test comment',
     String? authorPubkey,
   }) => [
@@ -92,7 +97,7 @@ class CommentTreeBuilder {
   ];
 
   /// Build a tree with a parent and one reply.
-  static List<CommentNode> parentWithReply({
+  static List<repo.CommentNode> parentWithReply({
     String parentContent = 'Parent comment',
     String replyContent = 'Reply comment',
   }) {
@@ -121,5 +126,5 @@ class CommentTreeBuilder {
   }
 
   /// Build the list of top-level comment nodes.
-  List<CommentNode> build() => List.unmodifiable(_topLevelComments);
+  List<repo.CommentNode> build() => List.unmodifiable(_topLevelComments);
 }

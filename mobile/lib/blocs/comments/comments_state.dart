@@ -18,36 +18,11 @@ enum CommentsStatus {
   failure,
 }
 
-/// Immutable comment tree node for organizing threaded comments.
-///
-/// Wraps a repository Comment with its replies for tree traversal.
-class CommentNode extends Equatable {
-  const CommentNode({required this.comment, this.replies = const []});
-
-  final repo.Comment comment;
-  final List<CommentNode> replies;
-
-  /// Get total reply count including nested replies
-  int get totalReplyCount {
-    var count = replies.length;
-    for (final reply in replies) {
-      count += reply.totalReplyCount;
-    }
-    return count;
-  }
-
-  /// Create a copy with updated fields
-  CommentNode copyWith({repo.Comment? comment, List<CommentNode>? replies}) =>
-      CommentNode(
-        comment: comment ?? this.comment,
-        replies: replies ?? this.replies,
-      );
-
-  @override
-  List<Object?> get props => [comment, replies];
-}
-
 /// State class for the CommentsBloc
+///
+/// Uses [repo.CommentNode] from the comments_repository package
+/// to represent threaded comments. This follows clean architecture
+/// by keeping models in the repository layer.
 final class CommentsState extends Equatable {
   const CommentsState({
     this.status = CommentsStatus.initial,
@@ -71,8 +46,9 @@ final class CommentsState extends Equatable {
   /// The author pubkey of the root event (video)
   final String rootAuthorPubkey;
 
-  /// Top-level comments organized as a tree
-  final List<CommentNode> topLevelComments;
+  /// Top-level comments organized as a tree.
+  /// Uses [repo.CommentNode] from the repository layer.
+  final List<repo.CommentNode> topLevelComments;
 
   /// Total count of all comments (including replies)
   final int totalCommentCount;
@@ -104,7 +80,7 @@ final class CommentsState extends Equatable {
     CommentsStatus? status,
     String? rootEventId,
     String? rootAuthorPubkey,
-    List<CommentNode>? topLevelComments,
+    List<repo.CommentNode>? topLevelComments,
     int? totalCommentCount,
     String? error,
     bool clearError = false,
