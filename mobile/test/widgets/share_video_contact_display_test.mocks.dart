@@ -445,21 +445,6 @@ class MockUserProfileService extends _i1.Mock
           as String);
 
   @override
-  String? getAvatarUrl(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getAvatarUrl, [pubkey]))
-          as String?);
-
-  @override
-  String? getUserBio(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getUserBio, [pubkey])) as String?);
-
-  @override
-  void clearCache() => super.noSuchMethod(
-    Invocation.method(#clearCache, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
   void removeProfile(String? pubkey) => super.noSuchMethod(
     Invocation.method(#removeProfile, [pubkey]),
     returnValueForMissingStub: null,
@@ -474,14 +459,6 @@ class MockUserProfileService extends _i1.Mock
             ),
           )
           as _i4.Future<List<_i8.UserProfile>>);
-
-  @override
-  Map<String, dynamic> getCacheStats() =>
-      (super.noSuchMethod(
-            Invocation.method(#getCacheStats, []),
-            returnValue: <String, dynamic>{},
-          )
-          as Map<String, dynamic>);
 
   @override
   void handleProfileEventForTesting(_i5.Event? event) => super.noSuchMethod(
