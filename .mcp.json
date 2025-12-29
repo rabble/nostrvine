@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "nostr": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@nostrbook/mcp@latest"
+      ]
+    },
+    "dart": {
+      "command": "dart",
+      "args": [
+        "mcp-server"
+      ]
+    }
+  }
+}

@@ -1,12 +1,10 @@
 {
-  "mcpServers": {
-    "nostrbook": {
-      "command": "npx",
-      "args": ["-y", "@nostrbook/mcp@latest"]
-    },
-    "dart": {
-        "command": "dart",
-        "args": ["mcp-server"]
-    }
+  "permissions": {
+    "allow": [
+      "mcp__dart__*",
+      "mcp__nostr__*"
+    ],
+    "deny": [],
+    "ask": []
   }
 }
