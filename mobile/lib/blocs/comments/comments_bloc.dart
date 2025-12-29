@@ -1,7 +1,7 @@
 // ABOUTME: BLoC for managing comments on videos with threaded replies
 // ABOUTME: Handles loading, posting, and input state for comments
 
-import 'package:comments_repository/comments_repository.dart' as repo;
+import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -13,13 +13,13 @@ part 'comments_state.dart';
 /// BLoC for managing comments on a video.
 ///
 /// Handles:
-/// - Loading comments from Nostr relays via CommentsRepository
+/// - Loading comments from Nostr relays
 /// - Building hierarchical comment trees
 /// - Managing input state for main comment and replies
 /// - Posting new comments
 class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   CommentsBloc({
-    required repo.CommentsRepository commentsRepository,
+    required CommentsRepository commentsRepository,
     required AuthService authService,
     required String rootEventId,
     required int rootEventKind,
@@ -40,7 +40,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentErrorCleared>(_onErrorCleared);
   }
 
-  final repo.CommentsRepository _commentsRepository;
+  final CommentsRepository _commentsRepository;
   final AuthService _authService;
 
   Future<void> _onLoadRequested(
@@ -181,13 +181,13 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   }
 
   /// Adds comment to tree. Top-level comments go first (newest first order).
-  List<repo.CommentNode> _addCommentToTree(
-    List<repo.CommentNode> nodes,
-    repo.Comment comment,
+  List<CommentNode> _addCommentToTree(
+    List<CommentNode> nodes,
+    Comment comment,
     String? replyToEventId,
   ) {
     if (replyToEventId == null) {
-      return [repo.CommentNode(comment: comment), ...nodes];
+      return [CommentNode(comment: comment), ...nodes];
     }
 
     return nodes.map((node) {
@@ -195,7 +195,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         return node.copyWith(
           replies: [
             ...node.replies,
-            repo.CommentNode(comment: comment),
+            CommentNode(comment: comment),
           ],
         );
       } else if (node.replies.isNotEmpty) {

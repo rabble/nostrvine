@@ -51,8 +51,8 @@ final class CommentsState extends Equatable {
   final String rootAuthorPubkey;
 
   /// Top-level comments organized as a tree.
-  /// Uses [repo.CommentNode] from the repository layer.
-  final List<repo.CommentNode> topLevelComments;
+  /// Uses [CommentNode] from the repository layer.
+  final List<CommentNode> topLevelComments;
 
   /// Total count of all comments (including replies)
   final int totalCommentCount;
@@ -85,7 +85,7 @@ final class CommentsState extends Equatable {
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
-    List<repo.CommentNode>? topLevelComments,
+    List<CommentNode>? topLevelComments,
     int? totalCommentCount,
     String? error,
     bool clearError = false,

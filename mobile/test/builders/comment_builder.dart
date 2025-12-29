@@ -1,7 +1,7 @@
 // ABOUTME: Fluent builder for creating Comment instances in tests
 // ABOUTME: Provides sensible defaults and allows customization for test scenarios
 
-import 'package:comments_repository/comments_repository.dart' as repo;
+import 'package:comments_repository/comments_repository.dart';
 
 /// Fluent builder for creating Comment instances in tests.
 ///
@@ -98,7 +98,7 @@ class CommentBuilder {
   }
 
   /// Build the Comment instance.
-  repo.Comment build() => repo.Comment(
+  Comment build() => Comment(
     id: _id,
     content: _content,
     authorPubkey: _authorPubkey,

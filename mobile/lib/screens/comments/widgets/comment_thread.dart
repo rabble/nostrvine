@@ -1,7 +1,7 @@
 // ABOUTME: Threaded comment widget with nested replies
 // ABOUTME: Renders a comment with author info, content, and recursively renders replies
 
-import 'package:comments_repository/comments_repository.dart' as repo;
+import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,14 +19,13 @@ import 'package:openvine/widgets/user_name.dart';
 /// Shows author avatar, name, timestamp, and content.
 /// Includes a reply button that toggles an inline reply input.
 ///
-/// Uses [repo.CommentNode] from the comments_repository package,
+/// Uses [CommentNode] from the comments_repository package,
 /// following clean architecture separation of UI and repository layers.
 class CommentThread extends StatelessWidget {
   const CommentThread({required this.node, this.depth = 0, super.key});
 
   /// The comment node containing the comment and its replies.
-  /// Uses [repo.CommentNode] from the repository layer.
-  final repo.CommentNode node;
+  final CommentNode node;
 
   /// Current nesting depth for indentation (0 = top level).
   final int depth;

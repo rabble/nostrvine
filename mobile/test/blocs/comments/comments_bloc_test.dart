@@ -2,13 +2,13 @@
 // ABOUTME: Tests comment stream handling and error cases
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:comments_repository/comments_repository.dart' as repo;
+import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/services/auth_service.dart';
 
-class _MockCommentsRepository extends Mock implements repo.CommentsRepository {}
+class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -64,7 +64,7 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'emits [loading, success] when comments load successfully',
         setUp: () {
-          final comment = repo.Comment(
+          final comment = Comment(
             id: validId('comment1'),
             content: 'Test comment',
             authorPubkey: validId('commenter'),
@@ -72,9 +72,9 @@ void main() {
             rootEventId: validId('root'),
             rootAuthorPubkey: validId('author'),
           );
-          final thread = repo.CommentThread(
+          final thread = CommentThread(
             rootEventId: validId('root'),
-            topLevelComments: [repo.CommentNode(comment: comment)],
+            topLevelComments: [CommentNode(comment: comment)],
             totalCount: 1,
             commentCache: {comment.id: comment},
           );
@@ -110,7 +110,7 @@ void main() {
               rootEventKind: any(named: 'rootEventKind'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => repo.CommentThread.empty(validId('root')));
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
         },
         build: () => createBloc(),
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
@@ -155,7 +155,7 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'builds correct comment tree with replies',
         setUp: () {
-          final parentComment = repo.Comment(
+          final parentComment = Comment(
             id: validId('parent'),
             content: 'Parent comment',
             authorPubkey: validId('commenter1'),
@@ -163,7 +163,7 @@ void main() {
             rootEventId: validId('root'),
             rootAuthorPubkey: validId('author'),
           );
-          final replyComment = repo.Comment(
+          final replyComment = Comment(
             id: validId('reply'),
             content: 'Reply comment',
             authorPubkey: validId('commenter2'),
@@ -173,12 +173,12 @@ void main() {
             replyToEventId: parentComment.id,
             replyToAuthorPubkey: validId('commenter1'),
           );
-          final thread = repo.CommentThread(
+          final thread = CommentThread(
             rootEventId: validId('root'),
             topLevelComments: [
-              repo.CommentNode(
+              CommentNode(
                 comment: parentComment,
-                replies: [repo.CommentNode(comment: replyComment)],
+                replies: [CommentNode(comment: replyComment)],
               ),
             ],
             totalCount: 2,
@@ -285,7 +285,7 @@ void main() {
           ).thenReturn(validId('currentuser'));
 
           // Mock successful post
-          final postedComment = repo.Comment(
+          final postedComment = Comment(
             id: validId('posted'),
             content: 'Test',
             authorPubkey: validId('currentuser'),
@@ -329,7 +329,7 @@ void main() {
             () => mockAuthService.currentPublicKeyHex,
           ).thenReturn(validId('currentuser'));
 
-          final postedComment = repo.Comment(
+          final postedComment = Comment(
             id: validId('posted'),
             content: 'Reply',
             authorPubkey: validId('currentuser'),
@@ -457,7 +457,7 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         seed: () {
-          final parentComment = repo.Comment(
+          final parentComment = Comment(
             id: validId('parent'),
             content: 'Parent comment',
             authorPubkey: validId('author1'),
@@ -468,7 +468,7 @@ void main() {
           return CommentsState(
             replyInputTexts: {validId('parent'): 'Reply text'},
             activeReplyCommentId: validId('parent'),
-            topLevelComments: [repo.CommentNode(comment: parentComment)],
+            topLevelComments: [CommentNode(comment: parentComment)],
             totalCommentCount: 1,
           );
         },
@@ -595,10 +595,10 @@ void main() {
     });
   });
 
-  group('repo.CommentNode', () {
+  group('CommentNode', () {
     test('totalReplyCount returns correct count including nested replies', () {
-      final node = repo.CommentNode(
-        comment: repo.Comment(
+      final node = CommentNode(
+        comment: Comment(
           id: 'comment1',
           content: 'Parent',
           authorPubkey: 'author1',
@@ -607,8 +607,8 @@ void main() {
           rootAuthorPubkey: 'author',
         ),
         replies: [
-          repo.CommentNode(
-            comment: repo.Comment(
+          CommentNode(
+            comment: Comment(
               id: 'reply1',
               content: 'Reply 1',
               authorPubkey: 'author2',
@@ -617,8 +617,8 @@ void main() {
               rootAuthorPubkey: 'author',
             ),
             replies: [
-              repo.CommentNode(
-                comment: repo.Comment(
+              CommentNode(
+                comment: Comment(
                   id: 'nested1',
                   content: 'Nested reply',
                   authorPubkey: 'author3',
@@ -629,8 +629,8 @@ void main() {
               ),
             ],
           ),
-          repo.CommentNode(
-            comment: repo.Comment(
+          CommentNode(
+            comment: Comment(
               id: 'reply2',
               content: 'Reply 2',
               authorPubkey: 'author4',
@@ -646,7 +646,7 @@ void main() {
     });
 
     test('supports value equality', () {
-      final comment = repo.Comment(
+      final comment = Comment(
         id: 'comment1',
         content: 'Test',
         authorPubkey: 'author1',
@@ -655,8 +655,8 @@ void main() {
         rootAuthorPubkey: 'author',
       );
 
-      final node1 = repo.CommentNode(comment: comment);
-      final node2 = repo.CommentNode(comment: comment);
+      final node1 = CommentNode(comment: comment);
+      final node2 = CommentNode(comment: comment);
 
       expect(node1, equals(node2));
     });
