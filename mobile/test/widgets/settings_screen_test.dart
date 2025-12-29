@@ -107,9 +107,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Account section should have Log Out
-      expect(find.text('ACCOUNT'), findsOneWidget);
-      expect(find.text('Log Out'), findsOneWidget);
+      // Preferences should be near the top (after Profile)
+      expect(find.text('PREFERENCES'), findsOneWidget);
 
       // Scroll to find Developer Options under Network section
       await tester.scrollUntilVisible(
@@ -122,16 +121,18 @@ void main() {
       // Developer Options should always be visible (not hidden behind 7-tap)
       expect(find.text('Developer Options'), findsOneWidget);
 
-      // Scroll to find Danger Zone at the bottom
+      // Scroll to find Account section at the bottom with key management
       await tester.scrollUntilVisible(
-        find.text('DANGER ZONE'),
+        find.text('Key Management'),
         100,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
 
-      // Danger Zone section should exist at the bottom with destructive actions
-      expect(find.text('DANGER ZONE'), findsOneWidget);
+      // Account section should have all key/account related items together
+      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Log Out'), findsOneWidget);
+      expect(find.text('Key Management'), findsOneWidget);
       expect(find.text('Remove Keys from Device'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
     });

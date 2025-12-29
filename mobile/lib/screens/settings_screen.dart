@@ -71,26 +71,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: 'Update your display name, bio, and avatar',
                   onTap: () => context.push('/edit-profile'),
                 ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.key,
-                  title: 'Key Management',
-                  subtitle: 'Export, backup, and restore your Nostr keys',
-                  onTap: () => context.push('/key-management'),
-                ),
               ],
 
-              // Account Section (only show when authenticated)
-              if (isAuthenticated) ...[
-                _buildSectionHeader('Account'),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.logout,
-                  title: 'Log Out',
-                  subtitle: 'Sign out of your account (keeps your keys)',
-                  onTap: () => _handleLogout(context, ref),
-                ),
-              ],
+              // Preferences - most used settings near the top
+              _buildSectionHeader('Preferences'),
+              _buildSettingsTile(
+                context,
+                icon: Icons.notifications,
+                title: 'Notifications',
+                subtitle: 'Manage notification preferences',
+                onTap: () => context.push('/notification-settings'),
+              ),
+              _buildSettingsTile(
+                context,
+                icon: Icons.shield,
+                title: 'Safety & Privacy',
+                subtitle: 'Blocked users, muted content, and report history',
+                onTap: () => context.push('/safety-settings'),
+              ),
 
               // Network Configuration
               _buildSectionHeader('Network'),
@@ -115,8 +113,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Configure Blossom upload servers',
                 onTap: () => context.push('/blossom-settings'),
               ),
-
-              // Developer Options - always visible under Network for easy access
               _buildSettingsTile(
                 context,
                 icon: Icons.developer_mode,
@@ -124,23 +120,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Environment switcher and debug settings',
                 onTap: () => context.push('/developer-options'),
                 iconColor: Colors.orange,
-              ),
-
-              // Preferences
-              _buildSectionHeader('Preferences'),
-              _buildSettingsTile(
-                context,
-                icon: Icons.notifications,
-                title: 'Notifications',
-                subtitle: 'Manage notification preferences',
-                onTap: () => context.push('/notification-settings'),
-              ),
-              _buildSettingsTile(
-                context,
-                icon: Icons.shield,
-                title: 'Safety & Privacy',
-                subtitle: 'Blocked users, muted content, and report history',
-                onTap: () => context.push('/safety-settings'),
               ),
 
               // About
@@ -215,9 +194,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
 
-              // Dangerous account actions live at the bottom to reduce accidents
+              // Account and key management actions at the bottom
               if (isAuthenticated) ...[
-                _buildSectionHeader('Danger Zone'),
+                _buildSectionHeader('Account'),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.logout,
+                  title: 'Log Out',
+                  subtitle: 'Sign out of your account (keeps your keys)',
+                  onTap: () => _handleLogout(context, ref),
+                ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.key,
+                  title: 'Key Management',
+                  subtitle: 'Export, backup, and restore your Nostr keys',
+                  onTap: () => context.push('/key-management'),
+                ),
                 _buildSettingsTile(
                   context,
                   icon: Icons.key_off,
