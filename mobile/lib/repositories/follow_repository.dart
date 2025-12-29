@@ -48,6 +48,7 @@ class FollowRepository {
 
   // Real-time sync subscription for cross-device synchronization
   StreamSubscription<Event>? _contactListSubscription;
+  String? _contactListSubscriptionId;
 
   // Getters
   List<String> get followingPubkeys => List.unmodifiable(_followingPubkeys);
@@ -62,8 +63,12 @@ class FollowRepository {
   }
 
   /// Dispose resources
-  void dispose() {
+  Future<void> dispose() async {
     _contactListSubscription?.cancel();
+    if (_contactListSubscriptionId != null) {
+      await _nostrClient.unsubscribe(_contactListSubscriptionId!);
+      _contactListSubscriptionId = null;
+    }
     _followingSubject.close();
   }
 
@@ -347,13 +352,19 @@ class FollowRepository {
       category: LogCategory.system,
     );
 
-    final eventStream = _nostrClient.subscribe([
-      Filter(
-        authors: [currentUserPubkey],
-        kinds: const [3], // NIP-02 contact list
-        limit: 1,
-      ),
-    ]);
+    // Use a deterministic subscription ID so we can unsubscribe later
+    _contactListSubscriptionId = 'follow_repo_contact_list_$currentUserPubkey';
+
+    final eventStream = _nostrClient.subscribe(
+      [
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [3], // NIP-02 contact list
+          limit: 1,
+        ),
+      ],
+      subscriptionId: _contactListSubscriptionId,
+    );
 
     _contactListSubscription = eventStream.listen(
       (event) {
