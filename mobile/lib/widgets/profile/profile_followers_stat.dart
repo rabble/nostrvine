@@ -11,10 +11,6 @@ import 'package:openvine/screens/followers_screen.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
 /// Page widget that creates the [FollowersBloc] and provides it to the view.
-///
-/// Follows the VGV Page/View pattern:
-/// - Page: Creates and provides BLoC with dependencies
-/// - View: Consumes BLoC state and renders UI
 class ProfileFollowersStat extends ConsumerWidget {
   const ProfileFollowersStat({
     required this.pubkey,

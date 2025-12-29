@@ -12,10 +12,6 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 /// Page widget that creates the [FollowingBloc] and provides it to the view.
-///
-/// Follows the VGV Page/View pattern:
-/// - Page: Creates and provides BLoC with dependencies
-/// - View: Consumes BLoC state and renders UI
 class FollowingPage extends ConsumerWidget {
   const FollowingPage({
     super.key,

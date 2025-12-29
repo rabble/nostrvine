@@ -11,10 +11,6 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Page widget that creates the [FollowingBloc] and provides it to the view.
-///
-/// Follows the VGV Page/View pattern:
-/// - Page: Creates and provides BLoC with dependencies
-/// - View: Consumes BLoC state and renders UI
 class FollowFromProfileButton extends ConsumerWidget {
   const FollowFromProfileButton({super.key, required this.pubkey});
 

@@ -13,10 +13,6 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 /// Page widget that creates the BLoCs and provides them to the view.
-///
-/// Follows the VGV Page/View pattern:
-/// - Page: Creates and provides BLoCs with dependencies
-/// - View: Consumes BLoC state and renders UI
 class FollowersScreen extends ConsumerWidget {
   const FollowersScreen({
     super.key,
