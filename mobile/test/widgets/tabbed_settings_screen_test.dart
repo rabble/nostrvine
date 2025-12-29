@@ -179,6 +179,14 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
+      // Key Management is in Account section at the bottom, need to scroll
+      await tester.scrollUntilVisible(
+        find.text('Key Management'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
       // Should have Key Management button that navigates
       expect(find.text('Key Management'), findsOneWidget);
       expect(
