@@ -113,7 +113,8 @@ void main() {
         await repository.initialize();
         expect(repository.isInitialized, isTrue);
 
-        // Verify subscribe was only called once during first init
+        // Verify subscribe was called once during first init
+        // for real-time cross-device sync subscription
         verify(
           () => mockNostrClient.subscribe(
             any(),
@@ -532,6 +533,209 @@ void main() {
           () => repository.followingStream.listen((_) {}),
           returnsNormally,
         );
+      });
+    });
+
+    group('real-time sync', () {
+      late StreamController<Event> realTimeStreamController;
+
+      setUp(() {
+        realTimeStreamController = StreamController<Event>.broadcast();
+
+        // Override the default subscribe mock to use the stream controller
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((_) => realTimeStreamController.stream);
+      });
+
+      tearDown(() async {
+        await realTimeStreamController.close();
+      });
+
+      test('updates following list when newer Kind 3 event arrives', () async {
+        await repository.initialize();
+
+        expect(repository.followingPubkeys, isEmpty);
+
+        // Simulate remote Kind 3 event with a followed user
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(repository.followingPubkeys, contains(testTargetPubkey));
+        expect(repository.followingCount, 1);
+      });
+
+      test('updates with multiple followed users from remote event', () async {
+        await repository.initialize();
+
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', testTargetPubkey],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(repository.followingPubkeys, contains(testTargetPubkey));
+        expect(repository.followingPubkeys, contains(testTargetPubkey2));
+        expect(repository.followingCount, 2);
+      });
+
+      test('ignores Kind 3 events with older timestamps', () async {
+        await repository.initialize();
+
+        // First, add an event with a recent timestamp
+        final recentEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        realTimeStreamController.add(recentEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(repository.followingCount, 1);
+
+        // Now send an older event that should be ignored
+        final oldEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [], // Empty follow list
+          '',
+          createdAt:
+              DateTime.now().millisecondsSinceEpoch ~/ 1000 - 1000, // Older
+        );
+
+        realTimeStreamController.add(oldEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Should still have the original following list
+        expect(repository.followingPubkeys, contains(testTargetPubkey));
+        expect(repository.followingCount, 1);
+      });
+
+      test('ignores events from other users', () async {
+        const otherUserPubkey =
+            'd4e5f6789012345678901234567890abcdef1234567890123456789012ab1234';
+
+        await repository.initialize();
+
+        // Simulate Kind 3 event from a different user
+        final otherUserEvent = Event(
+          otherUserPubkey, // Different author
+          3,
+          [
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(otherUserEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Should not update following list
+        expect(repository.followingPubkeys, isEmpty);
+      });
+
+      test('ignores non-Kind-3 events', () async {
+        await repository.initialize();
+
+        // Simulate a different kind of event (Kind 1 = text note)
+        final textNoteEvent = Event(
+          testCurrentUserPubkey,
+          1, // Not Kind 3
+          [
+            ['p', testTargetPubkey],
+          ],
+          'Hello world',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(textNoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Should not update following list
+        expect(repository.followingPubkeys, isEmpty);
+      });
+
+      test('emits to followingStream when remote event arrives', () async {
+        await repository.initialize();
+
+        final emittedLists = <List<String>>[];
+        final subscription = repository.followingStream.listen(
+          emittedLists.add,
+        );
+
+        // Simulate remote Kind 3 event
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(emittedLists.length, greaterThanOrEqualTo(1));
+        expect(emittedLists.last, contains(testTargetPubkey));
+
+        await subscription.cancel();
+      });
+
+      test('cancels subscription on dispose', () async {
+        await repository.initialize();
+
+        repository.dispose();
+
+        // Verify that adding events after dispose doesn't cause issues
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          [
+            ['p', testTargetPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
+
+        // This should not throw or cause any updates
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Following list should remain empty (disposed before event processed)
+        expect(repository.followingPubkeys, isEmpty);
       });
     });
   });

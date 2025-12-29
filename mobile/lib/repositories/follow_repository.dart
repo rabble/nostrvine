@@ -4,7 +4,6 @@
 // TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
 // - PersonalEventCacheService (needs interface extraction)
-// - ImmediateCompletionHelper (needs to move to a shared package)
 // - unified_logger (needs logging abstraction)
 // See packages/nostr_client for the pattern to follow.
 
@@ -13,7 +12,6 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
@@ -48,6 +46,9 @@ class FollowRepository {
   Event? _currentUserContactListEvent;
   bool _isInitialized = false;
 
+  // Real-time sync subscription for cross-device synchronization
+  StreamSubscription<Event>? _contactListSubscription;
+
   // Getters
   List<String> get followingPubkeys => List.unmodifiable(_followingPubkeys);
   bool get isInitialized => _isInitialized;
@@ -62,6 +63,7 @@ class FollowRepository {
 
   /// Dispose resources
   void dispose() {
+    _contactListSubscription?.cancel();
     _followingSubject.close();
   }
 
@@ -94,9 +96,9 @@ class FollowRepository {
       // 2. Load from PersonalEventCache if available
       await _loadFromPersonalEventCache();
 
-      // 3. Sync from network for latest data
+      // 3. Subscribe to contact list for initial fetch and cross-device sync
       if (_nostrClient.hasKeys) {
-        await _syncFromNetwork();
+        _subscribeToContactList();
       }
 
       _isInitialized = true;
@@ -331,43 +333,43 @@ class FollowRepository {
     }
   }
 
-  /// Sync from network (fetch current user's Kind 3 contact list)
-  Future<void> _syncFromNetwork() async {
-    try {
-      final currentUserPubkey = _nostrClient.publicKey;
-      if (currentUserPubkey.isEmpty) return;
+  /// Subscribe to contact list for real time updates.
+  ///
+  /// Creates a long-running subscription to the current user's Kind 3 events.
+  /// When a newer contact list arrives (from another device), updates the local list.
+  void _subscribeToContactList() {
+    final currentUserPubkey = _nostrClient.publicKey;
+    if (currentUserPubkey.isEmpty) return;
 
-      Log.debug(
-        'Syncing follow list from network for: $currentUserPubkey',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
+    Log.debug(
+      'Subscribing to contact list for: $currentUserPubkey',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
 
-      final eventStream = _nostrClient.subscribe([
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: const [3], // NIP-02 contact list
-          limit: 1,
-        ),
-      ]);
+    final eventStream = _nostrClient.subscribe([
+      Filter(
+        authors: [currentUserPubkey],
+        kinds: const [3], // NIP-02 contact list
+        limit: 1,
+      ),
+    ]);
 
-      final contactListEvent =
-          await ContactListCompletionHelper.queryContactList(
-            eventStream: eventStream,
-            pubkey: currentUserPubkey,
-            fallbackTimeoutSeconds: 10,
-          );
-
-      if (contactListEvent != null) {
-        _processContactListEvent(contactListEvent);
-      }
-    } catch (e) {
-      Log.error(
-        'Error syncing follow list from network: $e',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
-    }
+    _contactListSubscription = eventStream.listen(
+      (event) {
+        // Only process Kind 3 events from the current user
+        if (event.kind == 3 && event.pubkey == currentUserPubkey) {
+          _processContactListEvent(event);
+        }
+      },
+      onError: (error) {
+        Log.error(
+          'Real-time contact list subscription error: $error',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      },
+    );
   }
 
   /// Broadcast updated contact list to network (Kind 3 event)
