@@ -19,6 +19,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -624,14 +625,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                           // Only show loading spinner for active video
                           if (isActive)
                             const Center(
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              child: BrandedLoadingIndicator(size: 60),
                             ),
                         ],
                       );

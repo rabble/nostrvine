@@ -11,6 +11,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 
@@ -305,6 +306,6 @@ class _PopularVideosLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: CircularProgressIndicator(color: VineTheme.vineGreen));
+    return const Center(child: BrandedLoadingIndicator(size: 80));
   }
 }
