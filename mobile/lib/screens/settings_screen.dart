@@ -42,7 +42,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final isAuthenticated = authService.isAuthenticated;
-    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -91,26 +90,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: 'Sign out of your account (keeps your keys)',
                   onTap: () => _handleLogout(context, ref),
                 ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.key_off,
-                  title: 'Remove Keys from Device',
-                  subtitle:
-                      'Delete your nsec from this device (content stays on relays)',
-                  onTap: () => _handleRemoveKeys(context, ref),
-                  iconColor: Colors.orange,
-                  titleColor: Colors.orange,
-                ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.delete_forever,
-                  title: 'Delete Account and Data',
-                  subtitle:
-                      'PERMANENTLY delete your account and all content from Nostr relays',
-                  onTap: () => _handleDeleteAllContent(context, ref),
-                  iconColor: Colors.red,
-                  titleColor: Colors.red,
-                ),
               ],
 
               // Network Configuration
@@ -137,18 +116,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push('/blossom-settings'),
               ),
 
-              // Developer Options (only visible when developer mode is enabled)
-              if (isDeveloperMode) ...[
-                _buildSectionHeader('Developer'),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.developer_mode,
-                  title: 'Developer Options',
-                  subtitle: 'Environment switcher and debug settings',
-                  onTap: () => context.push('/developer-options'),
-                  iconColor: Colors.orange,
-                ),
-              ],
+              // Developer Options - always visible under Network for easy access
+              _buildSettingsTile(
+                context,
+                icon: Icons.developer_mode,
+                title: 'Developer Options',
+                subtitle: 'Environment switcher and debug settings',
+                onTap: () => context.push('/developer-options'),
+                iconColor: Colors.orange,
+              ),
 
               // Preferences
               _buildSectionHeader('Preferences'),
@@ -238,6 +214,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   }
                 },
               ),
+
+              // Dangerous account actions live at the bottom to reduce accidents
+              if (isAuthenticated) ...[
+                _buildSectionHeader('Danger Zone'),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.key_off,
+                  title: 'Remove Keys from Device',
+                  subtitle:
+                      'Delete your nsec from this device (content stays on relays)',
+                  onTap: () => _handleRemoveKeys(context, ref),
+                  iconColor: Colors.orange,
+                  titleColor: Colors.orange,
+                ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.delete_forever,
+                  title: 'Delete Account and Data',
+                  subtitle:
+                      'PERMANENTLY delete your account and all content from Nostr relays',
+                  onTap: () => _handleDeleteAllContent(context, ref),
+                  iconColor: Colors.red,
+                  titleColor: Colors.red,
+                ),
+              ],
             ],
           ),
         ),

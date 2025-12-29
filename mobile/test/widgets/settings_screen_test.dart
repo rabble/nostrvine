@@ -95,5 +95,45 @@ void main() {
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, isNotNull);
     });
+
+    testWidgets('Settings screen reorganizes dev and danger items', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          child: const MaterialApp(home: SettingsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Account section should have Log Out
+      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Log Out'), findsOneWidget);
+
+      // Scroll to find Developer Options under Network section
+      await tester.scrollUntilVisible(
+        find.text('Developer Options'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      // Developer Options should always be visible (not hidden behind 7-tap)
+      expect(find.text('Developer Options'), findsOneWidget);
+
+      // Scroll to find Danger Zone at the bottom
+      await tester.scrollUntilVisible(
+        find.text('DANGER ZONE'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      // Danger Zone section should exist at the bottom with destructive actions
+      expect(find.text('DANGER ZONE'), findsOneWidget);
+      expect(find.text('Remove Keys from Device'), findsOneWidget);
+      expect(find.text('Delete Account and Data'), findsOneWidget);
+    });
   });
 }
