@@ -11,7 +11,7 @@ void main() {
   group('New Blossom Server Streaming Upload', () {
     const serverUrl = 'https://media.divine.video';
 
-    test('LIVE: Streaming upload to new Blossom server', () async {
+    test('LIVE: Streaming upload to new Blossom server', skip: true, () async {
       // Create a test video file (larger to test streaming)
       final testFile = File('test_streaming_upload.mp4');
       final testBytes = [
@@ -143,7 +143,7 @@ void main() {
       }
     });
 
-    test('Check new server upload endpoint is accessible', () async {
+    test('Check new server upload endpoint is accessible', skip: true, () async {
       final dio = Dio();
 
       try {
