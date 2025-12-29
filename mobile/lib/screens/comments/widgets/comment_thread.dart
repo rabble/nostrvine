@@ -140,15 +140,24 @@ class CommentThread extends StatelessWidget {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            TextButton(
-                              onPressed: () {
-                                context.read<CommentsBloc>().add(
-                                  CommentReplyToggled(comment.id),
-                                );
-                              },
-                              child: Text(
-                                isReplying ? 'Cancel' : 'Reply',
-                                style: const TextStyle(color: Colors.white70),
+                            Semantics(
+                              identifier: isReplying
+                                  ? 'cancel_reply_button'
+                                  : 'reply_button',
+                              button: true,
+                              label: isReplying
+                                  ? 'Cancel reply'
+                                  : 'Reply to comment',
+                              child: TextButton(
+                                onPressed: () {
+                                  context.read<CommentsBloc>().add(
+                                    CommentReplyToggled(comment.id),
+                                  );
+                                },
+                                child: Text(
+                                  isReplying ? 'Cancel' : 'Reply',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
                               ),
                             ),
                           ],

@@ -26,9 +26,14 @@ class CommentsHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: onClose,
+        Semantics(
+          identifier: 'close_comments_button',
+          button: true,
+          label: 'Close comments',
+          child: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: onClose,
+          ),
         ),
       ],
     ),
