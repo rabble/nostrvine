@@ -143,31 +143,35 @@ void main() {
       }
     });
 
-    test('Check new server upload endpoint is accessible', skip: true, () async {
-      final dio = Dio();
+    test(
+      'Check new server upload endpoint is accessible',
+      skip: true,
+      () async {
+        final dio = Dio();
 
-      try {
-        // Use GET instead of HEAD - some servers don't support HEAD
-        final response = await dio.get(
-          '$serverUrl/upload',
-          options: Options(
-            validateStatus: (status) => status != null && status < 500,
-          ),
-        );
+        try {
+          // Use GET instead of HEAD - some servers don't support HEAD
+          final response = await dio.get(
+            '$serverUrl/upload',
+            options: Options(
+              validateStatus: (status) => status != null && status < 500,
+            ),
+          );
 
-        print('📍 Upload endpoint response: ${response.statusCode}');
-        print('   Data: ${response.data}');
+          print('📍 Upload endpoint response: ${response.statusCode}');
+          print('   Data: ${response.data}');
 
-        expect(
-          response.statusCode,
-          lessThan(500),
-          reason: 'Upload endpoint should be accessible',
-        );
-      } catch (e) {
-        print('⚠️  Error checking endpoint: $e');
-        rethrow;
-      }
-    });
+          expect(
+            response.statusCode,
+            lessThan(500),
+            reason: 'Upload endpoint should be accessible',
+          );
+        } catch (e) {
+          print('⚠️  Error checking endpoint: $e');
+          rethrow;
+        }
+      },
+    );
 
     test('Compare streaming vs buffered hash for large file', () async {
       // Create a larger test file to ensure streaming works correctly
