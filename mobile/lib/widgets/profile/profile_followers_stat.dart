@@ -33,18 +33,16 @@ class ProfileFollowersStat extends ConsumerWidget {
 
     if (isCurrentUser) {
       return BlocProvider(
-        create: (_) => MyFollowersBloc(
-          followRepository: followRepository,
-          nostrClient: nostrClient,
-        )..add(const MyFollowersListLoadRequested()),
+        create: (_) =>
+            MyFollowersBloc(followRepository: followRepository)
+              ..add(const MyFollowersListLoadRequested()),
         child: _MyFollowersStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
       return BlocProvider(
-        create: (_) => OthersFollowersBloc(
-          followRepository: followRepository,
-          nostrClient: nostrClient,
-        )..add(OthersFollowersListLoadRequested(pubkey)),
+        create: (_) =>
+            OthersFollowersBloc(followRepository: followRepository)
+              ..add(OthersFollowersListLoadRequested(pubkey)),
         child: _OthersFollowersStatView(
           pubkey: pubkey,
           displayName: displayName,

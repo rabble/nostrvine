@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -24,15 +23,13 @@ class MyFollowersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => MyFollowersBloc(
-            nostrClient: nostrClient,
-            followRepository: followRepository,
-          )..add(const MyFollowersListLoadRequested()),
+          create: (_) =>
+              MyFollowersBloc(followRepository: followRepository)
+                ..add(const MyFollowersListLoadRequested()),
         ),
         BlocProvider(
           create: (_) =>

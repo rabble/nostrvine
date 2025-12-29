@@ -539,6 +539,178 @@ void main() {
       });
     });
 
+    group('getFollowers', () {
+      test('returns empty list when pubkey is empty', () async {
+        final followers = await repository.getFollowers('');
+
+        expect(followers, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('returns empty list when no followers', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, isEmpty);
+      });
+
+      test('returns list of follower pubkeys', () async {
+        const follower1 =
+            'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+        const follower2 =
+            'f6789012345678901234567890abcdef1234567890123456789012abcde12345';
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+            Event(
+              follower2,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, hasLength(2));
+        expect(followers, contains(follower1));
+        expect(followers, contains(follower2));
+      });
+
+      test('deduplicates followers from multiple events', () async {
+        const follower1 =
+            'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+            // Duplicate event from same author (e.g., older contact list)
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100000,
+            ),
+          ],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, hasLength(1));
+        expect(followers, contains(follower1));
+      });
+
+      test('queries with correct filter for Kind 3 events', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        await repository.getFollowers(testTargetPubkey);
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+
+        expect(captured, hasLength(1));
+        final filters = captured.first as List<Filter>;
+        expect(filters, hasLength(1));
+        expect(filters.first.kinds, equals([3]));
+        expect(filters.first.p, contains(testTargetPubkey));
+      });
+    });
+
+    group('getMyFollowers', () {
+      test('returns empty list when not authenticated', () async {
+        when(() => mockNostrClient.publicKey).thenReturn('');
+
+        final followers = await repository.getMyFollowers();
+
+        expect(followers, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('returns followers for current user', () async {
+        const follower1 =
+            'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+        const follower2 =
+            'f6789012345678901234567890abcdef1234567890123456789012abcde12345';
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+            Event(
+              follower2,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final followers = await repository.getMyFollowers();
+
+        expect(followers, hasLength(2));
+        expect(followers, contains(follower1));
+        expect(followers, contains(follower2));
+      });
+
+      test('queries with current user pubkey', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        await repository.getMyFollowers();
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+
+        expect(captured, hasLength(1));
+        final filters = captured.first as List<Filter>;
+        expect(filters, hasLength(1));
+        expect(filters.first.kinds, equals([3]));
+        expect(filters.first.p, contains(testCurrentUserPubkey));
+      });
+    });
+
     group('real-time sync', () {
       late StreamController<Event> realTimeStreamController;
 

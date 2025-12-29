@@ -1,21 +1,16 @@
 // ABOUTME: Tests for OthersFollowersBloc - another user's followers list
-// ABOUTME: Tests loading from Nostr, error handling, and follow operations
+// ABOUTME: Tests loading from repository, error handling, and follow operations
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-
-class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
   group('OthersFollowersBloc', () {
-    late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -27,14 +22,11 @@ void main() {
     }
 
     setUp(() {
-      mockNostrClient = _MockNostrClient();
       mockFollowRepository = _MockFollowRepository();
     });
 
-    OthersFollowersBloc createBloc() => OthersFollowersBloc(
-      nostrClient: mockNostrClient,
-      followRepository: mockFollowRepository,
-    );
+    OthersFollowersBloc createBloc() =>
+        OthersFollowersBloc(followRepository: mockFollowRepository);
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
@@ -50,29 +42,10 @@ void main() {
 
     group('OthersFollowersListLoadRequested', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'emits [loading, success] with followers from Nostr',
+        'emits [loading, success] with followers from repository',
         setUp: () {
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                validPubkey('follower1'),
-                3,
-                [
-                  ['p', validPubkey('target')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-              nostr_sdk.Event(
-                validPubkey('follower2'),
-                3,
-                [
-                  ['p', validPubkey('target')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ],
+          when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
+            (_) async => [validPubkey('follower1'), validPubkey('follower2')],
           );
         },
         build: createBloc,
@@ -98,7 +71,7 @@ void main() {
         'emits [loading, success] with empty list when no followers',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => []);
         },
         build: createBloc,
@@ -118,55 +91,10 @@ void main() {
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'deduplicates followers',
-        setUp: () {
-          final duplicatePubkey = validPubkey('follower1');
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                duplicatePubkey,
-                3,
-                [
-                  ['p', validPubkey('target')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-              // Duplicate event from same author
-              nostr_sdk.Event(
-                duplicatePubkey,
-                3,
-                [
-                  ['p', validPubkey('target')],
-                ],
-                '',
-                createdAt:
-                    DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100000,
-              ),
-            ],
-          );
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
-        expect: () => [
-          OthersFollowersState(
-            status: OthersFollowersStatus.loading,
-            targetPubkey: validPubkey('target'),
-          ),
-          OthersFollowersState(
-            status: OthersFollowersStatus.success,
-            followersPubkeys: [validPubkey('follower1')],
-            targetPubkey: validPubkey('target'),
-          ),
-        ],
-      );
-
-      blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'emits [loading, failure] when Nostr query fails',
+        'emits [loading, failure] when repository throws',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockFollowRepository.getFollowers(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
@@ -188,7 +116,7 @@ void main() {
         'stores targetPubkey in state for retry',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => []);
         },
         build: createBloc,
@@ -196,6 +124,23 @@ void main() {
             bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
         verify: (bloc) {
           expect(bloc.state.targetPubkey, validPubkey('target'));
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'calls repository with correct pubkey',
+        setUp: () {
+          when(
+            () => mockFollowRepository.getFollowers(any()),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (_) {
+          verify(
+            () => mockFollowRepository.getFollowers(validPubkey('target')),
+          ).called(1);
         },
       );
     });

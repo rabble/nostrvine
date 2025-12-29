@@ -75,6 +75,53 @@ class FollowRepository {
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
 
+  /// Get the list of followers for the current user.
+  ///
+  /// Queries Nostr relays for Kind 3 (contact list) events that mention
+  /// the current user's pubkey in their 'p' tags.
+  ///
+  /// Returns a list of unique pubkeys of users who follow the current user.
+  Future<List<String>> getMyFollowers() async {
+    return _fetchFollowers(_nostrClient.publicKey);
+  }
+
+  /// Get the list of followers for another user.
+  ///
+  /// Queries Nostr relays for Kind 3 (contact list) events that mention
+  /// the target pubkey in their 'p' tags.
+  ///
+  /// Returns a list of unique pubkeys of users who follow the target.
+  Future<List<String>> getFollowers(String pubkey) async {
+    return _fetchFollowers(pubkey);
+  }
+
+  /// Fetch followers for a given pubkey from Nostr relays.
+  ///
+  /// Queries for Kind 3 (contact list) events that mention the target pubkey
+  /// in their 'p' tags - these are users who follow the target.
+  Future<List<String>> _fetchFollowers(String pubkey) async {
+    if (pubkey.isEmpty) {
+      return [];
+    }
+
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const [3], // Contact lists
+        p: [pubkey], // Events that mention this pubkey
+      ),
+    ]);
+
+    // Extract unique follower pubkeys (authors of events that follow target)
+    final followers = <String>[];
+    for (final event in events) {
+      if (!followers.contains(event.pubkey)) {
+        followers.add(event.pubkey);
+      }
+    }
+
+    return followers;
+  }
+
   /// Toggle follow status for a user.
   Future<void> toggleFollow(String pubkey) async {
     if (isFollowing(pubkey)) {

@@ -1,21 +1,16 @@
 // ABOUTME: Tests for MyFollowersBloc - current user's followers list
-// ABOUTME: Tests loading from Nostr and follow-back operations
+// ABOUTME: Tests loading from repository and follow-back operations
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-
-class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
   group('MyFollowersBloc', () {
-    late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -27,16 +22,11 @@ void main() {
     }
 
     setUp(() {
-      mockNostrClient = _MockNostrClient();
       mockFollowRepository = _MockFollowRepository();
-
-      when(() => mockNostrClient.publicKey).thenReturn(validPubkey('current'));
     });
 
-    MyFollowersBloc createBloc() => MyFollowersBloc(
-      nostrClient: mockNostrClient,
-      followRepository: mockFollowRepository,
-    );
+    MyFollowersBloc createBloc() =>
+        MyFollowersBloc(followRepository: mockFollowRepository);
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
@@ -52,29 +42,10 @@ void main() {
 
     group('MyFollowersListLoadRequested', () {
       blocTest<MyFollowersBloc, MyFollowersState>(
-        'emits [loading, success] with followers from Nostr',
+        'emits [loading, success] with followers from repository',
         setUp: () {
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                validPubkey('follower1'),
-                3,
-                [
-                  ['p', validPubkey('current')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-              nostr_sdk.Event(
-                validPubkey('follower2'),
-                3,
-                [
-                  ['p', validPubkey('current')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ],
+          when(() => mockFollowRepository.getMyFollowers()).thenAnswer(
+            (_) async => [validPubkey('follower1'), validPubkey('follower2')],
           );
         },
         build: createBloc,
@@ -95,7 +66,7 @@ void main() {
         'emits [loading, success] with empty list when no followers',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockFollowRepository.getMyFollowers(),
           ).thenAnswer((_) async => []);
         },
         build: createBloc,
@@ -110,50 +81,10 @@ void main() {
       );
 
       blocTest<MyFollowersBloc, MyFollowersState>(
-        'deduplicates followers',
-        setUp: () {
-          final duplicatePubkey = validPubkey('follower1');
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                duplicatePubkey,
-                3,
-                [
-                  ['p', validPubkey('current')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-              // Duplicate event from same author
-              nostr_sdk.Event(
-                duplicatePubkey,
-                3,
-                [
-                  ['p', validPubkey('current')],
-                ],
-                '',
-                createdAt:
-                    DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100000,
-              ),
-            ],
-          );
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
-        expect: () => [
-          const MyFollowersState(status: MyFollowersStatus.loading),
-          MyFollowersState(
-            status: MyFollowersStatus.success,
-            followersPubkeys: [validPubkey('follower1')],
-          ),
-        ],
-      );
-
-      blocTest<MyFollowersBloc, MyFollowersState>(
-        'emits [loading, failure] when Nostr query fails',
+        'emits [loading, failure] when repository throws',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockFollowRepository.getMyFollowers(),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
