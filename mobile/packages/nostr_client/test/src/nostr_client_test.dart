@@ -212,45 +212,38 @@ void main() {
         );
       });
 
-      test('falls back to WebSocket when gateway returns empty', () async {
-        final filters = [
-          Filter(kinds: [EventKind.textNote], limit: 10),
-        ];
-        final events = [_createTestEvent()];
-        const emptyResponse = GatewayResponse(
-          events: [],
-          eose: true,
-          complete: true,
-          cached: false,
-        );
+      test(
+        'returns empty list when gateway returns empty (no WebSocket fallback)',
+        () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ];
+          const emptyResponse = GatewayResponse(
+            events: [],
+            eose: true,
+            complete: true,
+            cached: false,
+          );
 
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenAnswer((_) async => emptyResponse);
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => events);
+          when(
+            () => mockGatewayClient.query(any()),
+          ).thenAnswer((_) async => emptyResponse);
 
-        final result = await client.queryEvents(filters);
+          final result = await client.queryEvents(filters);
 
-        expect(result, equals(events));
-        verify(() => mockGatewayClient.query(any())).called(1);
-        verify(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).called(1);
-      });
+          expect(result, isEmpty);
+          verify(() => mockGatewayClient.query(any())).called(1);
+          verifyNever(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          );
+        },
+      );
 
       test('falls back to WebSocket when gateway throws', () async {
         final filters = [

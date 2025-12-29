@@ -149,8 +149,8 @@ class NostrClient {
   ///
   /// If [useCache] is `true` and cache is available, checks local cache first.
   /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for cached responses.
-  /// Falls back to WebSocket query if both are unavailable or empty.
+  /// the REST gateway for cached responses (empty responses are valid).
+  /// Falls back to WebSocket query only if cache misses and gateway fails.
   ///
   /// Results from gateway/websocket are cached for future queries.
   Future<List<Event>> queryEvents(
@@ -178,12 +178,15 @@ class NostrClient {
         final response = await _tryGateway(
           () => gatewayClient.query(filters.first),
         );
-        if (response != null && response.hasEvents) {
-          // Cache gateway results (fire-and-forget)
-          try {
-            unawaited(_nostrEventsDao?.upsertEventsBatch(response.events));
-          } on Object {
-            // Ignore cache errors
+        // Accept gateway response even if empty - null means gateway failed
+        if (response != null) {
+          // Cache gateway results if any (fire-and-forget)
+          if (response.hasEvents) {
+            try {
+              unawaited(_nostrEventsDao?.upsertEventsBatch(response.events));
+            } on Object {
+              // Ignore cache errors
+            }
           }
           return response.events;
         }
