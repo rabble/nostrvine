@@ -95,9 +95,9 @@ class _CommentsScreenBody extends StatelessWidget {
           prev.error != next.error && next.error != null,
       listener: (context, state) {
         if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_errorToString(state.error!))),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(_errorToString(state.error!))));
           context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },
