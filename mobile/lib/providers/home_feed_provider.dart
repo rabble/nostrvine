@@ -181,11 +181,7 @@ class HomeFeed extends _$HomeFeed {
 
     // Emit initial loading state so UI shows loading indicator instead of empty state
     state = const AsyncData(
-      VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-        isInitialLoad: true,
-      ),
+      VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
     );
 
     await videoEventService.subscribeToHomeFeed(
