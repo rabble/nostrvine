@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/comments/comment_input_cubit.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -31,13 +30,13 @@ class CommentThread extends StatelessWidget {
   Widget build(BuildContext context) {
     final comment = node.comment;
 
-    return BlocBuilder<CommentInputCubit, CommentInputState>(
+    return BlocBuilder<CommentsBloc, CommentsState>(
       buildWhen: (prev, next) =>
           prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.isReplyPosting(comment.id) != next.isReplyPosting(comment.id),
-      builder: (context, inputState) {
-        final isReplying = inputState.activeReplyCommentId == comment.id;
-        final isPostingReply = inputState.isReplyPosting(comment.id);
+      builder: (context, state) {
+        final isReplying = state.activeReplyCommentId == comment.id;
+        final isPostingReply = state.isReplyPosting(comment.id);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,8 +137,8 @@ class CommentThread extends StatelessWidget {
                           children: [
                             TextButton(
                               onPressed: () {
-                                context.read<CommentInputCubit>().toggleReply(
-                                  comment.id,
+                                context.read<CommentsBloc>().add(
+                                  CommentReplyToggled(comment.id),
                                 );
                               },
                               child: Text(
@@ -194,9 +193,9 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   @override
   void initState() {
     super.initState();
-    final inputState = context.read<CommentInputCubit>().state;
+    final state = context.read<CommentsBloc>().state;
     _controller = TextEditingController(
-      text: inputState.getReplyText(widget.parentCommentId),
+      text: state.getReplyText(widget.parentCommentId),
     );
   }
 
@@ -208,12 +207,12 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentInputCubit, CommentInputState>(
+    return BlocBuilder<CommentsBloc, CommentsState>(
       buildWhen: (prev, next) =>
           prev.getReplyText(widget.parentCommentId) !=
           next.getReplyText(widget.parentCommentId),
-      builder: (context, inputState) {
-        final currentText = inputState.getReplyText(widget.parentCommentId);
+      builder: (context, state) {
+        final currentText = state.getReplyText(widget.parentCommentId);
 
         // Sync controller with state (for when state changes externally,
         // e.g., after post clears the text)
@@ -228,15 +227,16 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
           controller: _controller,
           isPosting: widget.isPosting,
           onChanged: (text) {
-            context.read<CommentInputCubit>().updateReplyText(
-              widget.parentCommentId,
-              text,
+            context.read<CommentsBloc>().add(
+              CommentTextChanged(text, commentId: widget.parentCommentId),
             );
           },
           onSubmit: () {
-            context.read<CommentInputCubit>().postReply(
-              widget.parentCommentId,
-              widget.parentAuthorPubkey,
+            context.read<CommentsBloc>().add(
+              CommentSubmitted(
+                parentCommentId: widget.parentCommentId,
+                parentAuthorPubkey: widget.parentAuthorPubkey,
+              ),
             );
           },
         );

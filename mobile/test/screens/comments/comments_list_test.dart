@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/comments/comment_input_cubit.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
@@ -21,9 +20,6 @@ class MockUserProfileService extends Mock implements UserProfileService {}
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
     implements CommentsBloc {}
 
-class MockCommentInputCubit extends MockCubit<CommentInputState>
-    implements CommentInputCubit {}
-
 // Full 64-character test IDs
 const testVideoEventId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
@@ -34,12 +30,14 @@ void main() {
   group('CommentsList', () {
     late MockUserProfileService mockUserProfileService;
     late MockCommentsBloc mockCommentsBloc;
-    late MockCommentInputCubit mockCommentInputCubit;
+
+    setUpAll(() {
+      registerFallbackValue(const CommentsLoadRequested());
+    });
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
       mockCommentsBloc = MockCommentsBloc();
-      mockCommentInputCubit = MockCommentInputCubit();
 
       when(
         () => mockUserProfileService.getCachedProfile(any()),
@@ -47,22 +45,16 @@ void main() {
       when(
         () => mockUserProfileService.shouldSkipProfileFetch(any()),
       ).thenReturn(true);
-      when(
-        () => mockCommentInputCubit.state,
-      ).thenReturn(CommentInputState.initial);
     });
 
     Widget buildTestWidget({
       required CommentsState commentsState,
-      CommentInputState? inputState,
       bool isOriginalVine = false,
       ScrollController? scrollController,
     }) {
       final sc = scrollController ?? ScrollController();
-      final input = inputState ?? CommentInputState.initial;
 
       when(() => mockCommentsBloc.state).thenReturn(commentsState);
-      when(() => mockCommentInputCubit.state).thenReturn(input);
 
       return ProviderScope(
         overrides: [
@@ -70,13 +62,8 @@ void main() {
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<CommentsBloc>.value(value: mockCommentsBloc),
-                BlocProvider<CommentInputCubit>.value(
-                  value: mockCommentInputCubit,
-                ),
-              ],
+            body: BlocProvider<CommentsBloc>.value(
+              value: mockCommentsBloc,
               child: CommentsList(
                 isOriginalVine: isOriginalVine,
                 scrollController: sc,
@@ -197,16 +184,11 @@ void main() {
               .build(),
         ],
         totalCommentCount: 1,
-      );
-
-      final inputState = CommentInputState(
         activeReplyCommentId: TestCommentIds.comment1Id,
         replyInputTexts: {TestCommentIds.comment1Id: ''},
       );
 
-      await tester.pumpWidget(
-        buildTestWidget(commentsState: state, inputState: inputState),
-      );
+      await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);

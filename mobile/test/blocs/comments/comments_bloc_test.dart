@@ -1,26 +1,21 @@
 // ABOUTME: Tests for CommentsBloc - loading comments, posting, and tree building
 // ABOUTME: Tests comment stream handling, optimistic updates, and error cases
 
-import 'dart:async';
-
 import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart' as repo;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/models/comment.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/social_service.dart';
 
-class _MockSocialService extends Mock implements SocialService {}
+class _MockCommentsRepository extends Mock implements repo.CommentsRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('CommentsBloc', () {
-    late _MockSocialService mockSocialService;
+    late _MockCommentsRepository mockCommentsRepository;
     late _MockAuthService mockAuthService;
-    late StreamController<Event> commentsStreamController;
 
     // Helper to create valid hex IDs (64 hex characters)
     String validId(String suffix) {
@@ -31,9 +26,8 @@ void main() {
     }
 
     setUp(() {
-      mockSocialService = _MockSocialService();
+      mockCommentsRepository = _MockCommentsRepository();
       mockAuthService = _MockAuthService();
-      commentsStreamController = StreamController<Event>.broadcast();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
@@ -41,13 +35,9 @@ void main() {
       ).thenReturn(validId('currentuser'));
     });
 
-    tearDown(() {
-      commentsStreamController.close();
-    });
-
     CommentsBloc createBloc({String? rootEventId, String? rootAuthorPubkey}) =>
         CommentsBloc(
-          socialService: mockSocialService,
+          commentsRepository: mockCommentsRepository,
           authService: mockAuthService,
           rootEventId: rootEventId ?? validId('root'),
           rootAuthorPubkey: rootAuthorPubkey ?? validId('author'),
@@ -68,26 +58,31 @@ void main() {
 
     group('CommentsLoadRequested', () {
       blocTest<CommentsBloc, CommentsState>(
-        'emits [loading, success] when comments arrive from stream',
+        'emits [loading, success] when comments load successfully',
         setUp: () {
-          when(() => mockSocialService.fetchCommentsForEvent(any())).thenAnswer(
-            (_) => Stream.value(
-              Event(
-                validId('commenter'),
-                1,
-                [
-                  ['e', validId('root'), '', 'root'],
-                  ['p', validId('author')],
-                ],
-                'Test comment',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ),
+          final comment = repo.Comment(
+            id: validId('comment1'),
+            content: 'Test comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
           );
+          final thread = repo.CommentThread(
+            rootEventId: validId('root'),
+            topLevelComments: [repo.CommentNode(comment: comment)],
+            totalCount: 1,
+            commentCache: {comment.id: comment},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
         },
         build: () => createBloc(),
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.status,
@@ -102,15 +97,17 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'emits [loading, success] with empty list after timeout when no comments',
+        'emits [loading, success] with empty list when no comments',
         setUp: () {
           when(
-            () => mockSocialService.fetchCommentsForEvent(any()),
-          ).thenAnswer((_) => const Stream.empty());
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => repo.CommentThread.empty(validId('root')));
         },
         build: () => createBloc(),
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
-        wait: const Duration(seconds: 4),
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.status,
@@ -125,40 +122,73 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'builds correct comment tree with replies',
+        'emits [loading, failure] when loading fails',
         setUp: () {
-          // Create events - note: id is calculated automatically from content
-          final parentEvent = Event(
-            validId('commenter1'),
-            1,
-            [
-              ['e', validId('root'), '', 'root'],
-              ['p', validId('author')],
-            ],
-            'Parent comment',
-            createdAt: 1000000,
-          );
-
-          final replyEvent = Event(
-            validId('commenter2'),
-            1,
-            [
-              ['e', validId('root'), '', 'root'],
-              ['e', parentEvent.id, '', 'reply'],
-              ['p', validId('author')],
-              ['p', validId('commenter1')],
-            ],
-            'Reply comment',
-            createdAt: 1000001,
-          );
-
           when(
-            () => mockSocialService.fetchCommentsForEvent(any()),
-          ).thenAnswer((_) => Stream.fromIterable([parentEvent, replyEvent]));
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('Network error'));
         },
         build: () => createBloc(),
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
-        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.status, 'status', CommentsStatus.failure)
+              .having((s) => s.error, 'error', 'Failed to load comments'),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'builds correct comment tree with replies',
+        setUp: () {
+          final parentComment = repo.Comment(
+            id: validId('parent'),
+            content: 'Parent comment',
+            authorPubkey: validId('commenter1'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final replyComment = repo.Comment(
+            id: validId('reply'),
+            content: 'Reply comment',
+            authorPubkey: validId('commenter2'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000001000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            replyToEventId: parentComment.id,
+            replyToAuthorPubkey: validId('commenter1'),
+          );
+          final thread = repo.CommentThread(
+            rootEventId: validId('root'),
+            topLevelComments: [
+              repo.CommentNode(
+                comment: parentComment,
+                replies: [repo.CommentNode(comment: replyComment)],
+              ),
+            ],
+            totalCount: 2,
+            commentCache: {
+              parentComment.id: parentComment,
+              replyComment.id: replyComment,
+            },
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: () => createBloc(),
+        act: (bloc) => bloc.add(const CommentsLoadRequested()),
         verify: (bloc) {
           expect(bloc.state.topLevelComments.length, 1);
           expect(bloc.state.topLevelComments.first.replies.length, 1);
@@ -167,34 +197,111 @@ void main() {
       );
     });
 
-    group('CommentPostRequested', () {
+    group('CommentTextChanged', () {
       blocTest<CommentsBloc, CommentsState>(
-        'posts comment and reloads when authenticated',
+        'updates main input text when commentId is null',
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentTextChanged('Hello')),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.mainInputText,
+            'mainInputText',
+            'Hello',
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'updates reply text when commentId is provided',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const CommentTextChanged('Reply', commentId: 'comment1')),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.replyInputTexts['comment1'],
+            'replyInputText',
+            'Reply',
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'clears error when updating text',
+        seed: () => const CommentsState(error: 'Some error'),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentTextChanged('New text')),
+        expect: () => [
+          isA<CommentsState>()
+              .having((s) => s.mainInputText, 'mainInputText', 'New text')
+              .having((s) => s.error, 'error', null),
+        ],
+      );
+    });
+
+    group('CommentReplyToggled', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'opens reply for a comment',
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentReplyToggled('comment1')),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.activeReplyCommentId,
+            'activeReplyCommentId',
+            'comment1',
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'closes reply when toggling same comment',
+        seed: () => const CommentsState(activeReplyCommentId: 'comment1'),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentReplyToggled('comment1')),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.activeReplyCommentId,
+            'activeReplyCommentId',
+            null,
+          ),
+        ],
+      );
+    });
+
+    group('CommentSubmitted', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'posts main comment via repository when authenticated',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
             () => mockAuthService.currentPublicKeyHex,
           ).thenReturn(validId('currentuser'));
+
+          // Mock successful post
+          final postedComment = repo.Comment(
+            id: validId('posted'),
+            content: 'Test',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
           when(
-            () => mockSocialService.postComment(
+            () => mockCommentsRepository.postComment(
               content: any(named: 'content'),
               rootEventId: any(named: 'rootEventId'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
             ),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockSocialService.fetchCommentsForEvent(any()),
-          ).thenAnswer((_) => const Stream.empty());
+          ).thenAnswer((_) async => postedComment);
         },
-        build: () => createBloc(),
-        act: (bloc) => bloc.add(const CommentPostRequested(content: 'Test')),
-        wait: const Duration(seconds: 4),
+        seed: () => const CommentsState(mainInputText: 'Test comment'),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
         verify: (_) {
           verify(
-            () => mockSocialService.postComment(
-              content: 'Test',
+            () => mockCommentsRepository.postComment(
+              content: 'Test comment',
               rootEventId: any(named: 'rootEventId'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: null,
@@ -205,67 +312,77 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
+        'posts reply via repository when parentCommentId provided',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          final postedComment = repo.Comment(
+            id: validId('posted'),
+            content: 'Reply',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            replyToEventId: 'parent1',
+          );
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenAnswer((_) async => postedComment);
+        },
+        seed: () => const CommentsState(
+          replyInputTexts: {'parent1': 'Reply text'},
+          activeReplyCommentId: 'parent1',
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const CommentSubmitted(
+            parentCommentId: 'parent1',
+            parentAuthorPubkey: 'author1',
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'Reply text',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: 'parent1',
+              replyToAuthorPubkey: 'author1',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when text is empty',
+        seed: () => const CommentsState(mainInputText: ''),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
         'emits error when not authenticated',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
         },
-        build: () => createBloc(),
-        act: (bloc) => bloc.add(const CommentPostRequested(content: 'Test')),
+        seed: () => const CommentsState(mainInputText: 'Test'),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.error,
             'error',
             'Please sign in to comment',
-          ),
-        ],
-      );
-
-      blocTest<CommentsBloc, CommentsState>(
-        'emits error when content is empty',
-        setUp: () {
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        },
-        build: () => createBloc(),
-        act: (bloc) => bloc.add(const CommentPostRequested(content: '   ')),
-        expect: () => [
-          isA<CommentsState>().having(
-            (s) => s.error,
-            'error',
-            'Comment cannot be empty',
-          ),
-        ],
-      );
-    });
-
-    group('CommentExpansionToggled', () {
-      blocTest<CommentsBloc, CommentsState>(
-        'toggles expansion state of a comment',
-        seed: () => CommentsState(
-          status: CommentsStatus.success,
-          rootEventId: validId('root'),
-          rootAuthorPubkey: validId('author'),
-          topLevelComments: [
-            CommentNode(
-              comment: Comment(
-                id: validId('comment1'),
-                content: 'Test',
-                authorPubkey: validId('commenter'),
-                createdAt: DateTime.now(),
-                rootEventId: validId('root'),
-                rootAuthorPubkey: validId('author'),
-              ),
-              isExpanded: true,
-            ),
-          ],
-          totalCommentCount: 1,
-        ),
-        build: () => createBloc(),
-        act: (bloc) => bloc.add(CommentExpansionToggled(validId('comment1'))),
-        expect: () => [
-          isA<CommentsState>().having(
-            (s) => s.topLevelComments.first.isExpanded,
-            'isExpanded',
-            false,
           ),
         ],
       );
@@ -323,12 +440,57 @@ void main() {
       expect(updated.rootEventId, 'event1');
       expect(updated.totalCommentCount, 5);
     });
+
+    test('copyWith clearError removes error', () {
+      const state = CommentsState(error: 'Some error');
+
+      final updated = state.copyWith(clearError: true);
+
+      expect(updated.error, null);
+    });
+
+    test('copyWith clearActiveReply removes active reply', () {
+      const state = CommentsState(activeReplyCommentId: 'comment1');
+
+      final updated = state.copyWith(clearActiveReply: true);
+
+      expect(updated.activeReplyCommentId, null);
+    });
+
+    test('isReplyPosting returns true when posting reply to that comment', () {
+      const state = CommentsState(
+        isPosting: true,
+        activeReplyCommentId: 'comment1',
+      );
+
+      expect(state.isReplyPosting('comment1'), true);
+      expect(state.isReplyPosting('comment2'), false);
+    });
+
+    test('isReplyPosting returns false when not posting', () {
+      const state = CommentsState(
+        isPosting: false,
+        activeReplyCommentId: 'comment1',
+      );
+
+      expect(state.isReplyPosting('comment1'), false);
+    });
+
+    test('getReplyText returns empty string for unknown comment', () {
+      const state = CommentsState();
+      expect(state.getReplyText('unknown'), '');
+    });
+
+    test('getReplyText returns correct text for known comment', () {
+      const state = CommentsState(replyInputTexts: {'comment1': 'Reply text'});
+      expect(state.getReplyText('comment1'), 'Reply text');
+    });
   });
 
   group('CommentNode', () {
     test('totalReplyCount returns correct count including nested replies', () {
       final node = CommentNode(
-        comment: Comment(
+        comment: repo.Comment(
           id: 'comment1',
           content: 'Parent',
           authorPubkey: 'author1',
@@ -338,7 +500,7 @@ void main() {
         ),
         replies: [
           CommentNode(
-            comment: Comment(
+            comment: repo.Comment(
               id: 'reply1',
               content: 'Reply 1',
               authorPubkey: 'author2',
@@ -348,7 +510,7 @@ void main() {
             ),
             replies: [
               CommentNode(
-                comment: Comment(
+                comment: repo.Comment(
                   id: 'nested1',
                   content: 'Nested reply',
                   authorPubkey: 'author3',
@@ -360,7 +522,7 @@ void main() {
             ],
           ),
           CommentNode(
-            comment: Comment(
+            comment: repo.Comment(
               id: 'reply2',
               content: 'Reply 2',
               authorPubkey: 'author4',
@@ -376,7 +538,7 @@ void main() {
     });
 
     test('supports value equality', () {
-      final comment = Comment(
+      final comment = repo.Comment(
         id: 'comment1',
         content: 'Test',
         authorPubkey: 'author1',

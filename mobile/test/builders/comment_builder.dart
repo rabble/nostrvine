@@ -1,7 +1,7 @@
 // ABOUTME: Fluent builder for creating Comment instances in tests
 // ABOUTME: Provides sensible defaults and allows customization for test scenarios
 
-import 'package:openvine/models/comment.dart';
+import 'package:comments_repository/comments_repository.dart' as repo;
 
 /// Fluent builder for creating Comment instances in tests.
 ///
@@ -98,7 +98,7 @@ class CommentBuilder {
   }
 
   /// Build the Comment instance.
-  Comment build() => Comment(
+  repo.Comment build() => repo.Comment(
     id: _id,
     content: _content,
     authorPubkey: _authorPubkey,

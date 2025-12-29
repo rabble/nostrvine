@@ -1,5 +1,5 @@
 // ABOUTME: State class for the CommentsBloc
-// ABOUTME: Represents all possible states of the comments display
+// ABOUTME: Represents all possible states of the comments display and input
 
 part of 'comments_bloc.dart';
 
@@ -18,17 +18,14 @@ enum CommentsStatus {
   failure,
 }
 
-/// Immutable comment tree node for organizing threaded comments
+/// Immutable comment tree node for organizing threaded comments.
+///
+/// Wraps a repository Comment with its replies for tree traversal.
 class CommentNode extends Equatable {
-  const CommentNode({
-    required this.comment,
-    this.replies = const [],
-    this.isExpanded = true,
-  });
+  const CommentNode({required this.comment, this.replies = const []});
 
-  final Comment comment;
+  final repo.Comment comment;
   final List<CommentNode> replies;
-  final bool isExpanded;
 
   /// Get total reply count including nested replies
   int get totalReplyCount {
@@ -40,18 +37,14 @@ class CommentNode extends Equatable {
   }
 
   /// Create a copy with updated fields
-  CommentNode copyWith({
-    Comment? comment,
-    List<CommentNode>? replies,
-    bool? isExpanded,
-  }) => CommentNode(
-    comment: comment ?? this.comment,
-    replies: replies ?? this.replies,
-    isExpanded: isExpanded ?? this.isExpanded,
-  );
+  CommentNode copyWith({repo.Comment? comment, List<CommentNode>? replies}) =>
+      CommentNode(
+        comment: comment ?? this.comment,
+        replies: replies ?? this.replies,
+      );
 
   @override
-  List<Object?> get props => [comment, replies, isExpanded];
+  List<Object?> get props => [comment, replies];
 }
 
 /// State class for the CommentsBloc
@@ -62,8 +55,11 @@ final class CommentsState extends Equatable {
     this.rootAuthorPubkey = '',
     this.topLevelComments = const [],
     this.totalCommentCount = 0,
-    this.commentCache = const {},
     this.error,
+    this.mainInputText = '',
+    this.replyInputTexts = const {},
+    this.activeReplyCommentId,
+    this.isPosting = false,
   });
 
   /// The current status of the comments
@@ -81,11 +77,27 @@ final class CommentsState extends Equatable {
   /// Total count of all comments (including replies)
   final int totalCommentCount;
 
-  /// Cache of all comments by ID for quick lookup
-  final Map<String, Comment> commentCache;
-
   /// Error message if status is failure
   final String? error;
+
+  /// Text content of the main comment input
+  final String mainInputText;
+
+  /// Map of comment ID -> reply text for each active reply
+  final Map<String, String> replyInputTexts;
+
+  /// ID of the comment currently being replied to (shows reply input)
+  final String? activeReplyCommentId;
+
+  /// Whether a comment is currently being posted (main or reply)
+  final bool isPosting;
+
+  /// Check if we're posting a reply to a specific comment
+  bool isReplyPosting(String commentId) =>
+      isPosting && activeReplyCommentId == commentId;
+
+  /// Get the reply text for a specific comment
+  String getReplyText(String commentId) => replyInputTexts[commentId] ?? '';
 
   /// Create a copy with updated values
   CommentsState copyWith({
@@ -94,8 +106,13 @@ final class CommentsState extends Equatable {
     String? rootAuthorPubkey,
     List<CommentNode>? topLevelComments,
     int? totalCommentCount,
-    Map<String, Comment>? commentCache,
     String? error,
+    bool clearError = false,
+    String? mainInputText,
+    Map<String, String>? replyInputTexts,
+    String? activeReplyCommentId,
+    bool clearActiveReply = false,
+    bool? isPosting,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -103,8 +120,13 @@ final class CommentsState extends Equatable {
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
       topLevelComments: topLevelComments ?? this.topLevelComments,
       totalCommentCount: totalCommentCount ?? this.totalCommentCount,
-      commentCache: commentCache ?? this.commentCache,
-      error: error,
+      error: clearError ? null : error,
+      mainInputText: mainInputText ?? this.mainInputText,
+      replyInputTexts: replyInputTexts ?? this.replyInputTexts,
+      activeReplyCommentId: clearActiveReply
+          ? null
+          : (activeReplyCommentId ?? this.activeReplyCommentId),
+      isPosting: isPosting ?? this.isPosting,
     );
   }
 
@@ -115,7 +137,10 @@ final class CommentsState extends Equatable {
     rootAuthorPubkey,
     topLevelComments,
     totalCommentCount,
-    commentCache,
     error,
+    mainInputText,
+    replyInputTexts,
+    activeReplyCommentId,
+    isPosting,
   ];
 }

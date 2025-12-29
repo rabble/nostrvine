@@ -2657,6 +2657,80 @@ final class BugReportServiceProvider
 
 String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
 
+/// Provider for CommentsRepository instance
+///
+/// Creates a CommentsRepository for managing comments on events.
+/// Viewing comments works without authentication.
+/// Posting comments requires authentication (handled by AuthService in BLoC).
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+@ProviderFor(commentsRepository)
+const commentsRepositoryProvider = CommentsRepositoryProvider._();
+
+/// Provider for CommentsRepository instance
+///
+/// Creates a CommentsRepository for managing comments on events.
+/// Viewing comments works without authentication.
+/// Posting comments requires authentication (handled by AuthService in BLoC).
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+final class CommentsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CommentsRepository,
+          CommentsRepository,
+          CommentsRepository
+        >
+    with $Provider<CommentsRepository> {
+  /// Provider for CommentsRepository instance
+  ///
+  /// Creates a CommentsRepository for managing comments on events.
+  /// Viewing comments works without authentication.
+  /// Posting comments requires authentication (handled by AuthService in BLoC).
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  const CommentsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'commentsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$commentsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CommentsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CommentsRepository create(Ref ref) {
+    return commentsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CommentsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CommentsRepository>(value),
+    );
+  }
+}
+
+String _$commentsRepositoryHash() =>
+    r'0f9ae0f15ebfc8ccb85e8ae3e2e251527271f334';
+
 /// Provider for LikesRepository instance
 ///
 /// Creates a LikesRepository when the user is authenticated.

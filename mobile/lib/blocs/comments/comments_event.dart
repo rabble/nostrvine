@@ -13,47 +13,42 @@ final class CommentsLoadRequested extends CommentsEvent {
   const CommentsLoadRequested();
 }
 
-/// Request to post a new comment
-final class CommentPostRequested extends CommentsEvent {
-  const CommentPostRequested({
-    required this.content,
-    this.replyToEventId,
-    this.replyToAuthorPubkey,
-  });
+/// Update text for main input or a reply
+///
+/// If [commentId] is null, updates the main input text.
+/// If [commentId] is provided, updates the reply text for that comment.
+final class CommentTextChanged extends CommentsEvent {
+  const CommentTextChanged(this.text, {this.commentId});
 
-  /// The comment text content
-  final String content;
+  /// The new text content
+  final String text;
 
-  /// If replying to another comment, its event ID
-  final String? replyToEventId;
-
-  /// If replying to another comment, its author pubkey
-  final String? replyToAuthorPubkey;
+  /// Comment ID if this is a reply, null for main input
+  final String? commentId;
 }
 
-/// Request to toggle expansion state of a comment thread
-final class CommentExpansionToggled extends CommentsEvent {
-  const CommentExpansionToggled(this.commentId);
+/// Toggle reply mode for a comment (show/hide reply input)
+final class CommentReplyToggled extends CommentsEvent {
+  const CommentReplyToggled(this.commentId);
 
-  /// The comment ID to toggle expansion for
   final String commentId;
 }
 
-/// Internal event when a new comment arrives from the stream
-final class _CommentReceived extends CommentsEvent {
-  const _CommentReceived(this.comment);
+/// Submit a comment (main or reply)
+///
+/// If [parentCommentId] is null, submits a new top-level comment.
+/// If [parentCommentId] is provided, submits a reply to that comment.
+final class CommentSubmitted extends CommentsEvent {
+  const CommentSubmitted({this.parentCommentId, this.parentAuthorPubkey});
 
-  final Comment comment;
+  /// Parent comment ID if this is a reply, null for top-level comment
+  final String? parentCommentId;
+
+  /// Parent comment author's pubkey (for Nostr threading)
+  final String? parentAuthorPubkey;
 }
 
-/// Internal event when comment stream completes or times out
-final class _CommentsStreamCompleted extends CommentsEvent {
-  const _CommentsStreamCompleted();
-}
-
-/// Internal event when comment stream errors
-final class _CommentsStreamError extends CommentsEvent {
-  const _CommentsStreamError(this.error);
-
-  final Object error;
+/// Clear any error message
+final class CommentErrorCleared extends CommentsEvent {
+  const CommentErrorCleared();
 }

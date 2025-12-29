@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/comments/comment_input_cubit.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -20,8 +19,8 @@ import '../../builders/comment_node_builder.dart';
 
 class MockUserProfileService extends Mock implements UserProfileService {}
 
-class MockCommentInputCubit extends MockCubit<CommentInputState>
-    implements CommentInputCubit {}
+class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
+    implements CommentsBloc {}
 
 // Full 64-character test IDs
 const testVideoEventId =
@@ -32,11 +31,15 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentThread', () {
     late MockUserProfileService mockUserProfileService;
-    late MockCommentInputCubit mockCommentInputCubit;
+    late MockCommentsBloc mockCommentsBloc;
+
+    setUpAll(() {
+      registerFallbackValue(const CommentsLoadRequested());
+    });
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
-      mockCommentInputCubit = MockCommentInputCubit();
+      mockCommentsBloc = MockCommentsBloc();
 
       when(
         () => mockUserProfileService.getCachedProfile(any()),
@@ -44,18 +47,26 @@ void main() {
       when(
         () => mockUserProfileService.shouldSkipProfileFetch(any()),
       ).thenReturn(true);
-      when(
-        () => mockCommentInputCubit.state,
-      ).thenReturn(CommentInputState.initial);
+      when(() => mockCommentsBloc.state).thenReturn(
+        const CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+        ),
+      );
     });
 
     Widget buildTestWidget({
       required CommentNode node,
       int depth = 0,
-      CommentInputState? inputState,
+      CommentsState? state,
     }) {
-      final state = inputState ?? CommentInputState.initial;
-      when(() => mockCommentInputCubit.state).thenReturn(state);
+      final commentsState =
+          state ??
+          const CommentsState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+          );
+      when(() => mockCommentsBloc.state).thenReturn(commentsState);
 
       return ProviderScope(
         overrides: [
@@ -63,8 +74,8 @@ void main() {
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: BlocProvider<CommentInputCubit>.value(
-              value: mockCommentInputCubit,
+            body: BlocProvider<CommentsBloc>.value(
+              value: mockCommentsBloc,
               child: SingleChildScrollView(
                 child: CommentThread(node: node, depth: depth),
               ),
@@ -163,13 +174,15 @@ void main() {
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
-      final inputState = CommentInputState(
+      final commentsState = CommentsState(
+        rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
         activeReplyCommentId: TestCommentIds.comment1Id,
         replyInputTexts: {TestCommentIds.comment1Id: ''},
       );
 
       await tester.pumpWidget(
-        buildTestWidget(node: node, inputState: inputState),
+        buildTestWidget(node: node, state: commentsState),
       );
       await tester.pump();
 
@@ -177,7 +190,7 @@ void main() {
       expect(find.text('Reply'), findsNothing);
     });
 
-    testWidgets('tapping Reply calls toggleReply on cubit', (tester) async {
+    testWidgets('tapping Reply adds CommentReplyToggled event', (tester) async {
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
@@ -190,10 +203,11 @@ void main() {
       await tester.tap(find.text('Reply'));
       await tester.pump();
 
-      // Verify toggleReply was called
-      verify(
-        () => mockCommentInputCubit.toggleReply(TestCommentIds.comment1Id),
-      ).called(1);
+      // Verify event was added
+      final captured =
+          verify(() => mockCommentsBloc.add(captureAny())).captured.single
+              as CommentReplyToggled;
+      expect(captured.commentId, TestCommentIds.comment1Id);
     });
 
     testWidgets('shows CommentsReplyInput when replying', (tester) async {
@@ -202,13 +216,15 @@ void main() {
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
-      final inputState = CommentInputState(
+      final commentsState = CommentsState(
+        rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
         activeReplyCommentId: TestCommentIds.comment1Id,
         replyInputTexts: {TestCommentIds.comment1Id: ''},
       );
 
       await tester.pumpWidget(
-        buildTestWidget(node: node, inputState: inputState),
+        buildTestWidget(node: node, state: commentsState),
       );
       await tester.pump();
 

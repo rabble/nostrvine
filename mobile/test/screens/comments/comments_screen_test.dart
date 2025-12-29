@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/comments/comment_input_cubit.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -29,9 +28,6 @@ class MockUserProfileService extends Mock implements UserProfileService {}
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
     implements CommentsBloc {}
 
-class MockCommentInputCubit extends MockCubit<CommentInputState>
-    implements CommentInputCubit {}
-
 // Full 64-character test IDs
 const testVideoEventId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
@@ -44,16 +40,18 @@ void main() {
     late MockAuthService mockAuthService;
     late MockUserProfileService mockUserProfileService;
     late MockCommentsBloc mockCommentsBloc;
-    late MockCommentInputCubit mockCommentInputCubit;
     late ScrollController scrollController;
     late VideoEvent testVideoEvent;
+
+    setUpAll(() {
+      registerFallbackValue(const CommentsLoadRequested());
+    });
 
     setUp(() {
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
       mockUserProfileService = MockUserProfileService();
       mockCommentsBloc = MockCommentsBloc();
-      mockCommentInputCubit = MockCommentInputCubit();
       scrollController = ScrollController();
 
       testVideoEvent = TestHelpers.createVideoEvent(
@@ -81,9 +79,6 @@ void main() {
           topLevelComments: [],
         ),
       );
-      when(
-        () => mockCommentInputCubit.state,
-      ).thenReturn(CommentInputState.initial);
     });
 
     tearDown(() {
@@ -92,14 +87,10 @@ void main() {
 
     Widget buildTestWidget({
       CommentsState? commentsState,
-      CommentInputState? inputState,
       VideoEvent? videoEvent,
     }) {
       if (commentsState != null) {
         when(() => mockCommentsBloc.state).thenReturn(commentsState);
-      }
-      if (inputState != null) {
-        when(() => mockCommentInputCubit.state).thenReturn(inputState);
       }
 
       return ProviderScope(
@@ -110,13 +101,8 @@ void main() {
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<CommentsBloc>.value(value: mockCommentsBloc),
-                BlocProvider<CommentInputCubit>.value(
-                  value: mockCommentInputCubit,
-                ),
-              ],
+            body: BlocProvider<CommentsBloc>.value(
+              value: mockCommentsBloc,
               child: _CommentsScreenTestContent(
                 videoEvent: videoEvent ?? testVideoEvent,
                 sheetScrollController: scrollController,
@@ -173,21 +159,22 @@ void main() {
         expect(find.text('Add a comment...'), findsOneWidget);
       });
 
-      testWidgets('calls updateMainText on text entry', (tester) async {
+      testWidgets('adds CommentTextChanged on text entry', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
         await tester.enterText(find.byType(TextField).first, 'Test comment');
         await tester.pump();
 
-        verify(
-          () => mockCommentInputCubit.updateMainText('Test comment'),
-        ).called(1);
+        final captured =
+            verify(() => mockCommentsBloc.add(captureAny())).captured.last
+                as CommentTextChanged;
+        expect(captured.text, 'Test comment');
       });
     });
 
     group('reply toggling', () {
-      testWidgets('tapping Reply calls toggleReply', (tester) async {
+      testWidgets('tapping Reply adds CommentReplyToggled', (tester) async {
         final comments = [
           CommentNodeBuilder()
               .withComment(
@@ -214,9 +201,10 @@ void main() {
         await tester.tap(find.text('Reply'));
         await tester.pump();
 
-        verify(
-          () => mockCommentInputCubit.toggleReply(TestCommentIds.comment1Id),
-        ).called(1);
+        final captured =
+            verify(() => mockCommentsBloc.add(captureAny())).captured.last
+                as CommentReplyToggled;
+        expect(captured.commentId, TestCommentIds.comment1Id);
       });
 
       testWidgets('shows Cancel when replying', (tester) async {
@@ -237,16 +225,11 @@ void main() {
           status: CommentsStatus.success,
           topLevelComments: comments,
           totalCommentCount: 1,
-        );
-
-        final inputState = CommentInputState(
           activeReplyCommentId: TestCommentIds.comment1Id,
           replyInputTexts: {TestCommentIds.comment1Id: ''},
         );
 
-        await tester.pumpWidget(
-          buildTestWidget(commentsState: commentsState, inputState: inputState),
-        );
+        await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
         await tester.pump();
 
         expect(find.text('Cancel'), findsOneWidget);
@@ -289,7 +272,7 @@ void main() {
     });
 
     group('error handling', () {
-      testWidgets('renders without error when input state has no error', (
+      testWidgets('renders without error when state has no error', (
         tester,
       ) async {
         await tester.pumpWidget(buildTestWidget());
@@ -316,7 +299,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CommentInputCubit, CommentInputState>(
+    return BlocListener<CommentsBloc, CommentsState>(
       listenWhen: (prev, next) =>
           prev.error != next.error && next.error != null,
       listener: (context, state) {
@@ -324,7 +307,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(state.error!)));
-          context.read<CommentInputCubit>().clearError();
+          context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },
       child: Column(
@@ -345,7 +328,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
   }
 }
 
-/// Test version of main comment input that works with mocked cubit
+/// Test version of main comment input that works with mocked bloc
 class _MainCommentInputTest extends StatefulWidget {
   @override
   State<_MainCommentInputTest> createState() => _MainCommentInputTestState();
@@ -357,8 +340,8 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
   @override
   void initState() {
     super.initState();
-    final inputState = context.read<CommentInputCubit>().state;
-    _controller = TextEditingController(text: inputState.mainInputText);
+    final state = context.read<CommentsBloc>().state;
+    _controller = TextEditingController(text: state.mainInputText);
   }
 
   @override
@@ -369,26 +352,26 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentInputCubit, CommentInputState>(
+    return BlocBuilder<CommentsBloc, CommentsState>(
       buildWhen: (prev, next) =>
           prev.mainInputText != next.mainInputText ||
-          prev.isMainPosting != next.isMainPosting,
-      builder: (context, inputState) {
-        if (_controller.text != inputState.mainInputText) {
-          _controller.text = inputState.mainInputText;
+          prev.isPosting != next.isPosting,
+      builder: (context, state) {
+        if (_controller.text != state.mainInputText) {
+          _controller.text = state.mainInputText;
           _controller.selection = TextSelection.collapsed(
-            offset: inputState.mainInputText.length,
+            offset: state.mainInputText.length,
           );
         }
 
         return CommentInput(
           controller: _controller,
-          isPosting: inputState.isMainPosting,
+          isPosting: state.isPosting && state.activeReplyCommentId == null,
           onChanged: (text) {
-            context.read<CommentInputCubit>().updateMainText(text);
+            context.read<CommentsBloc>().add(CommentTextChanged(text));
           },
           onSubmit: () {
-            context.read<CommentInputCubit>().postMainComment();
+            context.read<CommentsBloc>().add(const CommentSubmitted());
           },
         );
       },

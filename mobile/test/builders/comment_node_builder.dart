@@ -1,8 +1,8 @@
 // ABOUTME: Fluent builder for creating CommentNode instances in tests
 // ABOUTME: Supports building nested comment trees for testing threaded displays
 
+import 'package:comments_repository/comments_repository.dart' as repo;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/models/comment.dart';
 import 'comment_builder.dart';
 
 /// Fluent builder for creating CommentNode instances in tests.
@@ -15,12 +15,11 @@ import 'comment_builder.dart';
 ///     .build();
 /// ```
 class CommentNodeBuilder {
-  Comment? _comment;
+  repo.Comment? _comment;
   List<CommentNode> _replies = [];
-  bool _isExpanded = true;
 
   /// Set the comment for this node.
-  CommentNodeBuilder withComment(Comment comment) {
+  CommentNodeBuilder withComment(repo.Comment comment) {
     _comment = comment;
     return this;
   }
@@ -49,12 +48,6 @@ class CommentNodeBuilder {
     return this;
   }
 
-  /// Set the expansion state.
-  CommentNodeBuilder withExpanded(bool isExpanded) {
-    _isExpanded = isExpanded;
-    return this;
-  }
-
   /// Build the CommentNode instance.
   CommentNode build() {
     if (_comment == null) {
@@ -63,11 +56,7 @@ class CommentNodeBuilder {
         'Use withComment() or withCommentBuilder().',
       );
     }
-    return CommentNode(
-      comment: _comment!,
-      replies: _replies,
-      isExpanded: _isExpanded,
-    );
+    return CommentNode(comment: _comment!, replies: _replies);
   }
 }
 
