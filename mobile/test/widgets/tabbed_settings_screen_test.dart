@@ -193,6 +193,10 @@ void main() {
         find.text('Export, backup, and restore your Nostr keys'),
         findsOneWidget,
       );
+
+      // Dispose and pump to clear any pending timers from overlay visibility
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   });
 

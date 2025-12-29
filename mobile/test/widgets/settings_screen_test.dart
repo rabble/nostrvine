@@ -90,10 +90,15 @@ void main() {
           child: const MaterialApp(home: SettingsScreen()),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, isNotNull);
+
+      // Dispose and pump to clear any pending timers from overlay visibility
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
 
     testWidgets('Settings screen reorganizes dev and danger items', (
@@ -135,6 +140,10 @@ void main() {
       expect(find.text('Key Management'), findsOneWidget);
       expect(find.text('Remove Keys from Device'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
+
+      // Dispose and pump to clear any pending timers from overlay visibility
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   });
 }
