@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -839,11 +840,6 @@ class VideoOverlayActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
 
-    final socialState = ref.watch(socialProvider);
-    final isLiked = socialState.isLiked(video.id);
-    final isLikeInProgress = socialState.isLikeInProgress(video.id);
-    final likeCount = socialState.likeCounts[video.id] ?? 0;
-
     // Check if there's meaningful text content to display
     final hasTextContent =
         video.content.isNotEmpty ||
@@ -878,16 +874,6 @@ class VideoOverlayActions extends ConsumerWidget {
                       .fetchProfile(video.pubkey);
                 });
               }
-
-              final authService = ref.watch(authServiceProvider);
-              final currentUserPubkey = authService.currentPublicKeyHex;
-              final isOwnVideo = currentUserPubkey == video.pubkey;
-
-              final socialState = ref.watch(socialProvider);
-              final isFollowing = socialState.isFollowing(video.pubkey);
-              final isFollowInProgress = socialState.isFollowInProgress(
-                video.pubkey,
-              );
 
               return Row(
                 mainAxisSize: MainAxisSize.min,
@@ -932,70 +918,9 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Follow button next to username (only for other users' videos)
-                  if (!isOwnVideo) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: isFollowInProgress
-                          ? null
-                          : () async {
-                              Log.info(
-                                '👤 Follow button tapped for ${video.pubkey}',
-                                name: 'VideoFeedItem',
-                                category: LogCategory.ui,
-                              );
-                              if (isFollowing) {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .unfollowUser(video.pubkey);
-                              } else {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .followUser(video.pubkey);
-                              }
-                            },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isFollowing
-                                      ? Colors.grey[800]
-                                      : VineTheme.vineGreen)
-                                  ?.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                (isFollowing
-                                        ? Colors.grey[600]
-                                        : VineTheme.vineGreen)
-                                    ?.withValues(alpha: 0.5) ??
-                                Colors.transparent,
-                            width: 1,
-                          ),
-                        ),
-                        child: isFollowInProgress
-                            ? const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                isFollowing ? 'Following' : 'Follow',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
+                  // Follow button (handles own video check internally)
+                  const SizedBox(width: 8),
+                  VideoFollowButton(pubkey: video.pubkey),
                 ],
               );
             },
@@ -1131,75 +1056,88 @@ class VideoOverlayActions extends ConsumerWidget {
               ignoring: false, // Action buttons SHOULD receive taps
               child: Column(
                 children: [
-                  // Like button
-                  Column(
-                    children: [
-                      Semantics(
-                        identifier: 'like_button',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: isLiked ? 'Unlike video' : 'Like video',
-                        child: CircularIconButton(
-                          onPressed: isLikeInProgress
-                              ? () {}
-                              : () async {
-                                  Log.info(
-                                    '❤️ Like button tapped for ${video.id}',
-                                    name: 'VideoFeedItem',
-                                    category: LogCategory.ui,
-                                  );
-                                  await ref
-                                      .read(socialProvider.notifier)
-                                      .toggleLike(video.id, video.pubkey);
-                                },
-                          icon: isLikeInProgress
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                  // Like button - wrapped in Consumer to isolate rebuilds
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final socialState = ref.watch(socialProvider);
+                      final isLiked = socialState.isLiked(video.id);
+                      final isLikeInProgress = socialState.isLikeInProgress(
+                        video.id,
+                      );
+                      final likeCount = socialState.likeCounts[video.id] ?? 0;
+
+                      return Column(
+                        children: [
+                          Semantics(
+                            identifier: 'like_button',
+                            container: true,
+                            explicitChildNodes: true,
+                            button: true,
+                            label: isLiked ? 'Unlike video' : 'Like video',
+                            child: CircularIconButton(
+                              onPressed: isLikeInProgress
+                                  ? () {}
+                                  : () async {
+                                      Log.info(
+                                        '❤️ Like button tapped for ${video.id}',
+                                        name: 'VideoFeedItem',
+                                        category: LogCategory.ui,
+                                      );
+                                      await ref
+                                          .read(socialProvider.notifier)
+                                          .toggleLike(video.id, video.pubkey);
+                                    },
+                              icon: isLikeInProgress
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(
+                                      isLiked
+                                          ? Icons.favorite
+                                          : Icons.favorite_outline,
+                                      color: isLiked
+                                          ? Colors.red
+                                          : Colors.white,
+                                      size: 32,
+                                    ),
+                            ),
+                          ),
+                          // Show total like count: new likes + original Vine likes
+                          if (likeCount > 0 ||
+                              (video.originalLikes != null &&
+                                  video.originalLikes! > 0)) ...[
+                            const SizedBox(height: 0),
+                            Text(
+                              StringUtils.formatCompactNumber(
+                                likeCount + (video.originalLikes ?? 0),
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 0),
+                                    blurRadius: 6,
+                                    color: Colors.black,
                                   ),
-                                )
-                              : Icon(
-                                  isLiked
-                                      ? Icons.favorite
-                                      : Icons.favorite_outline,
-                                  color: isLiked ? Colors.red : Colors.white,
-                                  size: 32,
-                                ),
-                        ),
-                      ),
-                      // Show total like count: new likes + original Vine likes
-                      if (likeCount > 0 ||
-                          (video.originalLikes != null &&
-                              video.originalLikes! > 0)) ...[
-                        const SizedBox(height: 0),
-                        Text(
-                          StringUtils.formatCompactNumber(
-                            likeCount + (video.originalLikes ?? 0),
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 3,
+                                    color: Colors.black,
+                                  ),
+                                ],
                               ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 16),
@@ -1292,15 +1230,19 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Repost/Revine button with count
-                  Builder(
-                    builder: (context) {
+                  // Repost/Revine button - wrapped in Consumer to isolate rebuilds
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final socialState = ref.watch(socialProvider);
                       // Construct addressable ID for repost state check
                       final dTag = video.rawTags['d'];
                       final addressableId = dTag != null
                           ? '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag'
                           : video.id;
                       final isReposted = socialState.hasReposted(addressableId);
+                      final isRepostInProgress = socialState.isRepostInProgress(
+                        video.id,
+                      );
 
                       return Column(
                         children: [
@@ -1313,8 +1255,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                 ? 'Remove repost'
                                 : 'Repost video',
                             child: CircularIconButton(
-                              onPressed:
-                                  socialState.isRepostInProgress(video.id)
+                              onPressed: isRepostInProgress
                                   ? () {}
                                   : () async {
                                       Log.info(
@@ -1326,7 +1267,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                           .read(socialProvider.notifier)
                                           .toggleRepost(video);
                                     },
-                              icon: socialState.isRepostInProgress(video.id)
+                              icon: isRepostInProgress
                                   ? const SizedBox(
                                       width: 24,
                                       height: 24,

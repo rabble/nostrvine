@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/optimistic_follow_provider.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 /// Action buttons shown on profile page
 /// Different buttons shown for own profile vs other user profiles
@@ -16,8 +15,6 @@ class ProfileActionButtons extends StatelessWidget {
     this.onEditProfile,
     this.onOpenClips,
     this.onShareProfile,
-    this.onFollowUser,
-    this.onUnfollowUser,
     this.onBlockUser,
     super.key,
   });
@@ -27,8 +24,6 @@ class ProfileActionButtons extends StatelessWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
   final VoidCallback? onShareProfile;
-  final VoidCallback? onFollowUser;
-  final VoidCallback? onUnfollowUser;
   final void Function(bool isCurrentlyBlocked)? onBlockUser;
 
   @override
@@ -83,38 +78,7 @@ class ProfileActionButtons extends StatelessWidget {
             ),
           ),
         ] else ...[
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final isFollowing = ref.watch(isFollowingProvider(userIdHex));
-                return isFollowing
-                    ? OutlinedButton(
-                        onPressed: onUnfollowUser,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: VineTheme.vineGreen,
-                          side: const BorderSide(color: VineTheme.vineGreen),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Following'),
-                      )
-                    : ElevatedButton(
-                        onPressed: onFollowUser,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: VineTheme.vineGreen,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Follow'),
-                      );
-              },
-            ),
-          ),
+          Expanded(child: FollowFromProfileButton(pubkey: userIdHex)),
           const SizedBox(width: 12),
           Consumer(
             builder: (context, ref, _) {

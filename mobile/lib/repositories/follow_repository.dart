@@ -16,6 +16,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repository for managing follow relationships.
@@ -37,9 +38,10 @@ class FollowRepository {
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
 
-  // Stream controller for reactive updates
-  final _followingStreamController = StreamController<List<String>>.broadcast();
-  Stream<List<String>> get followingStream => _followingStreamController.stream;
+  // BehaviorSubject replays last value to late subscribers, fixing race condition
+  // where BLoC subscribes AFTER initial emission
+  final _followingSubject = BehaviorSubject<List<String>>.seeded(const []);
+  Stream<List<String>> get followingStream => _followingSubject.stream;
 
   // In-memory cache
   List<String> _followingPubkeys = [];
@@ -53,18 +55,27 @@ class FollowRepository {
 
   /// Emit current state to stream
   void _emitFollowingList() {
-    if (!_followingStreamController.isClosed) {
-      _followingStreamController.add(List.unmodifiable(_followingPubkeys));
+    if (!_followingSubject.isClosed) {
+      _followingSubject.add(List.unmodifiable(_followingPubkeys));
     }
   }
 
   /// Dispose resources
   void dispose() {
-    _followingStreamController.close();
+    _followingSubject.close();
   }
 
   /// Check if current user is following a specific pubkey
   bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
+
+  /// Toggle follow status for a user.
+  Future<void> toggleFollow(String pubkey) async {
+    if (isFollowing(pubkey)) {
+      await unfollow(pubkey);
+    } else {
+      await follow(pubkey);
+    }
+  }
 
   /// Initialize the repository - load from local cache, then sync with network
   Future<void> initialize() async {

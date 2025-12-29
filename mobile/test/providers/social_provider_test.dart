@@ -156,48 +156,6 @@ void main() {
       expect(state.likeCounts[eventId], equals(0));
     });
 
-    test('should follow and unfollow users', () async {
-      const userToFollow = 'pubkey-to-follow';
-
-      // Setup authenticated user
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test-pubkey');
-
-      // Mock contact list event creation and broadcast
-      final mockContactEvent = MockEvent();
-      when(() => mockContactEvent.id).thenReturn('contact-event-id');
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: 3,
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => mockContactEvent);
-
-      final mockBroadcastResult = NostrBroadcastResult(
-        event: mockContactEvent,
-        successCount: 1,
-        totalRelays: 1,
-        results: {'relay1': true},
-        errors: {},
-      );
-      when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((_) async => mockBroadcastResult);
-
-      // Follow user
-      await container.read(socialProvider.notifier).followUser(userToFollow);
-
-      var state = container.read(socialProvider);
-      expect(state.followingPubkeys.contains(userToFollow), isTrue);
-
-      // Unfollow user
-      await container.read(socialProvider.notifier).unfollowUser(userToFollow);
-
-      state = container.read(socialProvider);
-      expect(state.followingPubkeys.contains(userToFollow), isFalse);
-    });
-
     test('should handle errors gracefully', () async {
       const eventId = 'test-event-id';
       const authorPubkey = 'author-pubkey';

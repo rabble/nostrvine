@@ -625,7 +625,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid user ID')),
             );
           }
-          return FollowingScreen(pubkey: pubkey, displayName: displayName);
+          return FollowingPage(pubkey: pubkey, displayName: displayName);
         },
       ),
       // Video detail route (for deep links)

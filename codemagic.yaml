@@ -52,7 +52,7 @@ definitions:
       name: Build and sign iOS
       script: |
         # Offset to continue from existing manual builds
-        BUILD_NUMBER=$((PROJECT_BUILD_NUMBER + 140))
+        BUILD_NUMBER=$((PROJECT_BUILD_NUMBER + 142))
         flutter build ipa --release --build-number=$BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \

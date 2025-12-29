@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/helpers/follow_actions_helper.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -19,8 +18,6 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/followers_screen.dart';
-import 'package:openvine/screens/following_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -30,6 +27,8 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
+import 'package:openvine/widgets/profile/profile_followers_stat.dart';
+import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -90,34 +89,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       // Still call fetchProfile to trigger background refresh if needed
       userProfileService.fetchProfile(userIdHex);
     }
-  }
-
-  void _navigateToFollowers(
-    BuildContext context,
-    String pubkey,
-    String? displayName,
-  ) {
-    // Navigate using root navigator to escape shell route
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowersScreen(pubkey: pubkey, displayName: displayName),
-      ),
-    );
-  }
-
-  void _navigateToFollowing(
-    BuildContext context,
-    String pubkey,
-    String? displayName,
-  ) {
-    // Navigate using root navigator to escape shell route
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowingScreen(pubkey: pubkey, displayName: displayName),
-      ),
-    );
   }
 
   @override
@@ -422,8 +393,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                               onEditProfile: _editProfile,
                               onOpenClips: _openClips,
                               onShareProfile: () => _shareProfile(userIdHex),
-                              onFollowUser: () => _followUser(userIdHex),
-                              onUnfollowUser: () => _unfollowUser(userIdHex),
                               onBlockUser: (isBlocked) =>
                                   _blockUser(userIdHex, isBlocked),
                             ),
@@ -628,23 +597,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                       isLoading: profileStatsAsync.isLoading,
                       onTap: null, // Videos aren't tappable
                     ),
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.followers
-                          : null,
-                      label: 'Followers',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: () =>
-                          _navigateToFollowers(context, userIdHex, displayName),
+                    ProfileFollowersStat(
+                      pubkey: userIdHex,
+                      displayName: displayName,
                     ),
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.following
-                          : null,
-                      label: 'Following',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: () =>
-                          _navigateToFollowing(context, userIdHex, displayName),
+                    ProfileFollowingStat(
+                      pubkey: userIdHex,
+                      displayName: displayName,
                     ),
                   ],
                 ),
@@ -895,24 +854,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       context,
       rootNavigator: true,
     ).push(MaterialPageRoute(builder: (context) => const ClipLibraryScreen()));
-  }
-
-  Future<void> _followUser(String pubkey) async {
-    await FollowActionsHelper.followUser(
-      ref: ref,
-      context: context,
-      pubkey: pubkey,
-      contextName: 'ProfileScreenRouter',
-    );
-  }
-
-  Future<void> _unfollowUser(String pubkey) async {
-    await FollowActionsHelper.unfollowUser(
-      ref: ref,
-      context: context,
-      pubkey: pubkey,
-      contextName: 'ProfileScreenRouter',
-    );
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {

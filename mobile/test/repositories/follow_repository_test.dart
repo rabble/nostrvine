@@ -324,6 +324,126 @@ void main() {
       });
     });
 
+    group('toggleFollow', () {
+      test('follows when not currently following', () async {
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
+
+        await repository.initialize();
+        expect(repository.isFollowing(testTargetPubkey), isFalse);
+
+        await repository.toggleFollow(testTargetPubkey);
+
+        expect(repository.isFollowing(testTargetPubkey), isTrue);
+      });
+
+      test('unfollows when currently following', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+
+        when(
+          () => mockPersonalEventCache.cacheUserEvent(any()),
+        ).thenReturn(null);
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+        expect(repository.isFollowing(testTargetPubkey), isTrue);
+
+        await repository.toggleFollow(testTargetPubkey);
+
+        expect(repository.isFollowing(testTargetPubkey), isFalse);
+      });
+
+      test('propagates errors from follow', () async {
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await repository.initialize();
+
+        await expectLater(
+          repository.toggleFollow(testTargetPubkey),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Failed to broadcast'),
+            ),
+          ),
+        );
+      });
+
+      test('propagates errors from unfollow', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        await expectLater(
+          repository.toggleFollow(testTargetPubkey),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Failed to broadcast'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('followingStream', () {
       test('is a broadcast stream', () {
         expect(repository.followingStream.isBroadcast, isTrue);

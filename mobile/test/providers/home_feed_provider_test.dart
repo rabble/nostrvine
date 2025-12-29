@@ -10,11 +10,13 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social;
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/state/social_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'home_feed_provider_test.mocks.dart';
 
@@ -35,9 +37,12 @@ void main() {
     late MockVideoEventService mockVideoEventService;
     late MockNostrClient mockNostrService;
     late MockSubscriptionManager mockSubscriptionManager;
+    late SharedPreferences sharedPreferences;
     final List<VoidCallback> registeredListeners = [];
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockVideoEventService = MockVideoEventService();
       mockNostrService = MockNostrClient();
       mockSubscriptionManager = MockSubscriptionManager();
@@ -51,6 +56,19 @@ void main() {
 
       // Setup nostrService isInitialized stub (needed for profile fetching)
       when(mockNostrService.isInitialized).thenReturn(true);
+      when(mockNostrService.hasKeys).thenReturn(true);
+      when(mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(
+        mockNostrService.subscribe(
+          any,
+          subscriptionId: anyNamed('subscriptionId'),
+          tempRelays: anyNamed('tempRelays'),
+          targetRelays: anyNamed('targetRelays'),
+          relayTypes: anyNamed('relayTypes'),
+          sendAfterAuth: anyNamed('sendAfterAuth'),
+          onEose: anyNamed('onEose'),
+        ),
+      ).thenAnswer((_) => Stream.empty());
 
       // Capture listeners when added
       when(mockVideoEventService.addListener(any)).thenAnswer((invocation) {
@@ -98,6 +116,7 @@ void main() {
       // Setup: User is not following anyone - create new container with overrides
       final testContainer = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           subscriptionManagerProvider.overrideWithValue(

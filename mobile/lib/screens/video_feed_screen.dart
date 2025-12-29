@@ -401,6 +401,11 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       onData: (feedState) {
         final videos = feedState.videos;
 
+        // Show loading indicator while initial load is in progress
+        if (videos.isEmpty && feedState.isInitialLoad) {
+          return _buildLoadingState();
+        }
+
         if (videos.isEmpty) {
           return _buildEmptyState();
         }

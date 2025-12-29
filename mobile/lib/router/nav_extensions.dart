@@ -158,4 +158,8 @@ extension NavX on BuildContext {
   Future<void> pushSettings() => push('/settings');
   Future<void> pushComments(VideoEvent video) =>
       CommentsScreen.show(this, video);
+  Future<void> pushFollowing(String pubkey, {String? displayName}) =>
+      push('/following/$pubkey', extra: displayName);
+  Future<void> pushFollowers(String pubkey, {String? displayName}) =>
+      push('/followers/$pubkey', extra: displayName);
 }
