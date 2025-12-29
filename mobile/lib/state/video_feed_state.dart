@@ -22,6 +22,10 @@ sealed class VideoFeedState with _$VideoFeedState {
     /// Refreshing state for pull-to-refresh
     @Default(false) bool isRefreshing,
 
+    /// Whether this is the initial load (videos may still be arriving)
+    /// When true and videos is empty, show loading indicator instead of empty state
+    @Default(false) bool isInitialLoad,
+
     /// Error message if any
     String? error,
 
