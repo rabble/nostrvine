@@ -24,6 +24,8 @@ enum RouteType {
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
+  following, // Following list screen
+  followers, // Followers list screen
 }
 
 /// Structured representation of a route
@@ -187,6 +189,14 @@ RouteContext parseRoute(String path) {
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
 
+    case 'following':
+      final followingPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.following, npub: followingPubkey);
+
+    case 'followers':
+      final followersPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.followers, npub: followersPubkey);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -302,5 +312,11 @@ String buildRoute(RouteContext context) {
 
     case RouteType.developerOptions:
       return '/developer-options';
+
+    case RouteType.following:
+      return '/following/${context.npub ?? ''}';
+
+    case RouteType.followers:
+      return '/followers/${context.npub ?? ''}';
   }
 }

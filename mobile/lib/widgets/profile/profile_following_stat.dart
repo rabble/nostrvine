@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/following/following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/screens/following_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
 /// Page widget that creates the [FollowingBloc] and provides it to the view.
@@ -70,11 +70,6 @@ class ProfileFollowingStatView extends StatelessWidget {
   }
 
   void _navigateToFollowing(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowingPage(pubkey: pubkey, displayName: displayName),
-      ),
-    );
+    context.push('/following/$pubkey', extra: displayName);
   }
 }
