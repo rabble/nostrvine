@@ -226,10 +226,12 @@ class AppShell extends ConsumerWidget {
         final isExploreVideo =
             ctx.type == RouteType.explore && ctx.videoIndex != null;
         // Notifications base state is index 0, not null
-        final isNotificationVideo = ctx.type == RouteType.notifications &&
+        final isNotificationVideo =
+            ctx.type == RouteType.notifications &&
             ctx.videoIndex != null &&
             ctx.videoIndex != 0;
-        final isOtherUserProfile = ctx.type == RouteType.profile &&
+        final isOtherUserProfile =
+            ctx.type == RouteType.profile &&
             ctx.npub != ref.read(authServiceProvider).currentNpub;
         final isProfileVideo =
             ctx.type == RouteType.profile && ctx.videoIndex != null;
