@@ -1,14 +1,14 @@
-// ABOUTME: State class for the FollowingBloc
-// ABOUTME: Represents all possible states of the following list display
+// ABOUTME: State class for OthersFollowingBloc
+// ABOUTME: Represents all possible states of another user's following list
 
-part of 'following_bloc.dart';
+part of 'others_following_bloc.dart';
 
 /// Enum representing the status of the following list loading
-enum FollowingStatus {
+enum OthersFollowingStatus {
   /// Initial state, no data loaded yet
   initial,
 
-  /// Currently loading data
+  /// Currently loading data from Nostr
   loading,
 
   /// Data loaded successfully
@@ -18,33 +18,30 @@ enum FollowingStatus {
   failure,
 }
 
-/// State class for the FollowingBloc
-final class FollowingState extends Equatable {
-  const FollowingState({
-    this.status = FollowingStatus.initial,
+/// State class for OthersFollowingBloc
+final class OthersFollowingState extends Equatable {
+  const OthersFollowingState({
+    this.status = OthersFollowingStatus.initial,
     this.followingPubkeys = const [],
     this.targetPubkey,
   });
 
   /// The current status of the following list
-  final FollowingStatus status;
+  final OthersFollowingStatus status;
 
-  /// List of pubkeys the user is following
+  /// List of pubkeys the target user is following
   final List<String> followingPubkeys;
 
-  /// The pubkey whose following list is being viewed
+  /// The pubkey whose following list is being viewed (for retry)
   final String? targetPubkey;
 
-  /// Check if the current user is following a specific pubkey
-  bool isFollowing(String pubkey) => followingPubkeys.contains(pubkey);
-
   /// Create a copy with updated values
-  FollowingState copyWith({
-    FollowingStatus? status,
+  OthersFollowingState copyWith({
+    OthersFollowingStatus? status,
     List<String>? followingPubkeys,
     String? targetPubkey,
   }) {
-    return FollowingState(
+    return OthersFollowingState(
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
       targetPubkey: targetPubkey ?? this.targetPubkey,

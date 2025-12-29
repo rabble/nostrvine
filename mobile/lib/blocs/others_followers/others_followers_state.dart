@@ -1,14 +1,14 @@
-// ABOUTME: State class for the FollowersBloc
-// ABOUTME: Represents all possible states of the followers list display
+// ABOUTME: State class for OthersFollowersBloc
+// ABOUTME: Represents all possible states of another user's followers list
 
-part of 'followers_bloc.dart';
+part of 'others_followers_bloc.dart';
 
 /// Enum representing the status of the followers list loading
-enum FollowersStatus {
+enum OthersFollowersStatus {
   /// Initial state, no data loaded yet
   initial,
 
-  /// Currently loading data
+  /// Currently loading data from Nostr
   loading,
 
   /// Data loaded successfully
@@ -18,30 +18,30 @@ enum FollowersStatus {
   failure,
 }
 
-/// State class for the FollowersBloc
-final class FollowersState extends Equatable {
-  const FollowersState({
-    this.status = FollowersStatus.initial,
+/// State class for OthersFollowersBloc
+final class OthersFollowersState extends Equatable {
+  const OthersFollowersState({
+    this.status = OthersFollowersStatus.initial,
     this.followersPubkeys = const [],
     this.targetPubkey,
   });
 
   /// The current status of the followers list
-  final FollowersStatus status;
+  final OthersFollowersStatus status;
 
   /// List of pubkeys who follow the target user
   final List<String> followersPubkeys;
 
-  /// The pubkey whose followers list is being viewed
+  /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;
 
   /// Create a copy with updated values
-  FollowersState copyWith({
-    FollowersStatus? status,
+  OthersFollowersState copyWith({
+    OthersFollowersStatus? status,
     List<String>? followersPubkeys,
     String? targetPubkey,
   }) {
-    return FollowersState(
+    return OthersFollowersState(
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
       targetPubkey: targetPubkey ?? this.targetPubkey,

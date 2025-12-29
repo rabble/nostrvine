@@ -15,8 +15,11 @@ import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
-import 'package:openvine/screens/followers_screen.dart';
-import 'package:openvine/screens/following_screen.dart';
+import 'package:openvine/screens/followers/my_followers_screen.dart';
+import 'package:openvine/screens/followers/others_followers_screen.dart';
+import 'package:openvine/screens/following/my_following_screen.dart';
+import 'package:openvine/screens/following/others_following_screen.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -596,36 +599,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'clips',
         builder: (_, __) => const ClipLibraryScreen(),
       ),
-      // Followers screen
+      // Followers screen - routes to My or Others based on pubkey
       GoRoute(
         path: '/followers/:pubkey',
         name: 'followers',
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
-          final displayName = st.extra as String? ?? 'User';
+          final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: const Center(child: Text('Invalid user ID')),
             );
           }
-          return FollowersScreen(pubkey: pubkey, displayName: displayName);
+          return _FollowersScreenRouter(
+            pubkey: pubkey,
+            displayName: displayName,
+          );
         },
       ),
-      // Following screen
+      // Following screen - routes to My or Others based on pubkey
       GoRoute(
         path: '/following/:pubkey',
         name: 'following',
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
-          final displayName = st.extra as String? ?? 'User';
+          final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: const Center(child: Text('Invalid user ID')),
             );
           }
-          return FollowingPage(pubkey: pubkey, displayName: displayName);
+          return _FollowingScreenRouter(
+            pubkey: pubkey,
+            displayName: displayName,
+          );
         },
       ),
       // Video detail route (for deep links)
@@ -662,3 +671,51 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Router widget that decides between MyFollowersScreen and OthersFollowersScreen
+/// based on whether the pubkey matches the current user.
+class _FollowersScreenRouter extends ConsumerWidget {
+  const _FollowersScreenRouter({
+    required this.pubkey,
+    required this.displayName,
+  });
+
+  final String pubkey;
+  final String? displayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final isCurrentUser = pubkey == nostrClient.publicKey;
+
+    if (isCurrentUser) {
+      return MyFollowersScreen(displayName: displayName);
+    } else {
+      return OthersFollowersScreen(pubkey: pubkey, displayName: displayName);
+    }
+  }
+}
+
+/// Router widget that decides between MyFollowingScreen and OthersFollowingScreen
+/// based on whether the pubkey matches the current user.
+class _FollowingScreenRouter extends ConsumerWidget {
+  const _FollowingScreenRouter({
+    required this.pubkey,
+    required this.displayName,
+  });
+
+  final String pubkey;
+  final String? displayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final isCurrentUser = pubkey == nostrClient.publicKey;
+
+    if (isCurrentUser) {
+      return MyFollowingScreen(displayName: displayName);
+    } else {
+      return OthersFollowingScreen(pubkey: pubkey, displayName: displayName);
+    }
+  }
+}
