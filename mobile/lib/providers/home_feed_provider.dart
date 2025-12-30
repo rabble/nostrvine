@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/social_providers.dart' as social;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
@@ -125,29 +124,31 @@ class HomeFeed extends _$HomeFeed {
     // Start timer immediately for first build
     startAutoRefresh();
 
-    Log.info(
-      '🏠 HomeFeed: BUILD #$buildId watching socialProvider...',
-      name: 'HomeFeedProvider',
-      category: LogCategory.video,
-    );
+    // Read following list from FollowRepository (source of truth for BLoC-based follow actions)
+    final followRepository = ref.read(followRepositoryProvider);
+    final followingPubkeys = followRepository.followingPubkeys;
 
-    // Read social provider to get following list
-    // Use ref.read() instead of ref.watch() to avoid rebuilding on every social state change
-    // We'll use ref.listen() below to invalidate only when following list changes
-    final socialData = ref.read(social.socialProvider);
-    final followingPubkeys = socialData.followingPubkeys;
+    // Get video event service for subscriptions and cache management
+    final videoEventService = ref.watch(videoEventServiceProvider);
 
-    // Listen to social provider and invalidate when following list changes
-    // or when social becomes initialized
-    ref.listen(social.socialProvider, (prev, next) {
-      final followingListChanged =
-          prev?.followingPubkeys != next.followingPubkeys;
-      final socialJustInitialized =
-          next.isInitialized && !(prev?.isInitialized ?? false);
+    // Listen to followingStream and invalidate when following list changes
+    // Skip the initial replay from BehaviorSubject using skip(1)
+    final followingSubscription = followRepository.followingStream
+        .skip(1) // Skip initial replay, only react to NEW emissions
+        .listen((newFollowingList) {
+          Log.info(
+            '🏠 HomeFeed: Stream received new following list (${newFollowingList.length} users), current build has ${followingPubkeys.length}',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+          if (ref.mounted) {
+            ref.invalidateSelf();
+          }
+        });
 
-      if (followingListChanged || socialJustInitialized) {
-        ref.invalidateSelf();
-      }
+    // Clean up stream subscription on dispose
+    ref.onDispose(() {
+      followingSubscription.cancel();
     });
 
     Log.info(
@@ -164,26 +165,41 @@ class HomeFeed extends _$HomeFeed {
         hasMoreContent: false,
         isLoadingMore: false,
         error: null,
-        lastUpdated: socialData.isInitialized ? DateTime.now() : null,
+        lastUpdated: DateTime.now(),
       );
     }
-
-    // Get video event service and subscribe to following feed
-    final videoEventService = ref.watch(videoEventServiceProvider);
 
     // Subscribe to home feed videos from followed authors using dedicated subscription type
     // NostrService now handles deduplication automatically
     // Request server-side sorting by created_at (newest first) if relay supports it
+    // Use force: true to ensure new subscription even if params seem similar
+    Log.info(
+      '🏠 HomeFeed: Subscribing with ${followingPubkeys.length} authors',
+      name: 'HomeFeedProvider',
+      category: LogCategory.video,
+    );
+
+    // Emit initial loading state so UI shows loading indicator instead of empty state
+    state = const AsyncData(
+      VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
+    );
+
     await videoEventService.subscribeToHomeFeed(
       followingPubkeys,
       limit: 100,
       sortBy: VideoSortField.createdAt, // Newest videos first (timeline order)
+      force: true,
+    );
+    Log.info(
+      '🏠 HomeFeed: After subscribe, cache has ${videoEventService.homeFeedVideos.length} videos',
+      name: 'HomeFeedProvider',
+      category: LogCategory.video,
     );
 
     // Wait for initial batch of videos to arrive from relay
     // Videos arrive in rapid succession, so we wait for the count to stabilize
     final completer = Completer<void>();
-    int stableCount = 0;
+    int stableCount = -1; // Start at -1 so first check always triggers timer
     Timer? stabilityTimer;
 
     void checkStability() {
@@ -219,6 +235,12 @@ class HomeFeed extends _$HomeFeed {
     videoEventService.removeListener(checkStability);
     stabilityTimer?.cancel();
 
+    Log.info(
+      '🏠 HomeFeed: After stability wait, cache has ${videoEventService.homeFeedVideos.length} videos',
+      name: 'HomeFeedProvider',
+      category: LogCategory.video,
+    );
+
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
       keepAliveLink.close();
@@ -231,13 +253,28 @@ class HomeFeed extends _$HomeFeed {
       );
     }
 
-    // Get videos from the dedicated home feed list (server-side filtered to only following)
+    // Get videos from the dedicated home feed list
     var followingVideos = List<VideoEvent>.from(
       videoEventService.homeFeedVideos,
     );
 
+    // Client-side filter to ensure only videos from currently followed users are shown
+    // This handles the case where cache contains videos from recently unfollowed users
+    final followingSet = followingPubkeys.toSet();
+    final beforeClientFilter = followingVideos.length;
+    followingVideos = followingVideos
+        .where((v) => followingSet.contains(v.pubkey))
+        .toList();
+    if (beforeClientFilter != followingVideos.length) {
+      Log.info(
+        '🏠 HomeFeed: Client-side filtered ${beforeClientFilter - followingVideos.length} videos from unfollowed users',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+    }
+
     Log.info(
-      '🏠 HomeFeed: Server-side filtered to ${followingVideos.length} videos from following',
+      '🏠 HomeFeed: ${followingVideos.length} videos from following',
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
@@ -384,8 +421,8 @@ class HomeFeed extends _$HomeFeed {
 
     try {
       final videoEventService = ref.read(videoEventServiceProvider);
-      final socialData = ref.read(social.socialProvider);
-      final followingPubkeys = socialData.followingPubkeys;
+      final followRepository = ref.read(followRepositoryProvider);
+      final followingPubkeys = followRepository.followingPubkeys;
 
       if (followingPubkeys.isEmpty) {
         // No one to load more from
@@ -483,8 +520,8 @@ class HomeFeed extends _$HomeFeed {
 
     // Get video event service and force a fresh subscription
     final videoEventService = ref.read(videoEventServiceProvider);
-    final socialData = ref.read(social.socialProvider);
-    final followingPubkeys = socialData.followingPubkeys;
+    final followRepository = ref.read(followRepositoryProvider);
+    final followingPubkeys = followRepository.followingPubkeys;
 
     if (followingPubkeys.isNotEmpty) {
       // Force new subscription to get fresh data from relay

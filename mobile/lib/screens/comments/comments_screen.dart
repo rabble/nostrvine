@@ -1,13 +1,27 @@
 // ABOUTME: Screen for displaying and posting comments on videos with threaded reply support
-// ABOUTME: Uses Nostr Kind 1 events for comments with proper e/p tags for threading
+// ABOUTME: Uses BLoC pattern with Nostr Kind 1111 (NIP-22) events for comments
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/comments/widgets/comments.dart';
+import 'package:openvine/screens/comments/widgets/widgets.dart';
 
-class CommentsScreen extends ConsumerStatefulWidget {
+/// Maps [CommentsError] to user-facing strings.
+/// TODO(l10n): Replace with context.l10n when localization is added.
+String _errorToString(CommentsError error) {
+  return switch (error) {
+    CommentsError.loadFailed => 'Failed to load comments',
+    CommentsError.notAuthenticated => 'Please sign in to comment',
+    CommentsError.postCommentFailed => 'Failed to post comment',
+    CommentsError.postReplyFailed => 'Failed to post reply',
+  };
+}
+
+class CommentsScreen extends ConsumerWidget {
   const CommentsScreen({
     required this.videoEvent,
     required this.sheetScrollController,
@@ -44,94 +58,118 @@ class CommentsScreen extends ConsumerStatefulWidget {
       );
 
   @override
-  ConsumerState<CommentsScreen> createState() => _CommentsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final authService = ref.watch(authServiceProvider);
+
+    return BlocProvider<CommentsBloc>(
+      create: (_) => CommentsBloc(
+        commentsRepository: commentsRepository,
+        authService: authService,
+        rootEventId: videoEvent.id,
+        rootEventKind: NIP71VideoKinds.addressableShortVideo,
+        rootAuthorPubkey: videoEvent.pubkey,
+      )..add(const CommentsLoadRequested()),
+      child: _CommentsScreenBody(
+        videoEvent: videoEvent,
+        sheetScrollController: sheetScrollController,
+      ),
+    );
+  }
 }
 
-class _CommentsScreenState extends ConsumerState<CommentsScreen> {
-  final _commentController = TextEditingController();
-  final _replyControllers = <String, TextEditingController>{};
-  String? _replyingToCommentId;
-  bool _isPosting = false;
+/// Body widget with error listener
+class _CommentsScreenBody extends StatelessWidget {
+  const _CommentsScreenBody({
+    required this.videoEvent,
+    required this.sheetScrollController,
+  });
+
+  final VideoEvent videoEvent;
+  final ScrollController sheetScrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<CommentsBloc, CommentsState>(
+      listenWhen: (prev, next) =>
+          prev.error != next.error && next.error != null,
+      listener: (context, state) {
+        if (state.error != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(_errorToString(state.error!))));
+          context.read<CommentsBloc>().add(const CommentErrorCleared());
+        }
+      },
+      child: Column(
+        children: [
+          const CommentsDragHandle(),
+          CommentsHeader(onClose: () => Navigator.pop(context)),
+          const Divider(color: Colors.white24, height: 1),
+          Expanded(
+            child: CommentsList(
+              isOriginalVine: videoEvent.isOriginalVine,
+              scrollController: sheetScrollController,
+            ),
+          ),
+          const _MainCommentInput(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Main comment input widget that reads from CommentsBloc state
+class _MainCommentInput extends StatefulWidget {
+  const _MainCommentInput();
+
+  @override
+  State<_MainCommentInput> createState() => _MainCommentInputState();
+}
+
+class _MainCommentInputState extends State<_MainCommentInput> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = context.read<CommentsBloc>().state;
+    _controller = TextEditingController(text: state.mainInputText);
+  }
 
   @override
   void dispose() {
-    _commentController.dispose();
-    for (final controller in _replyControllers.values) {
-      controller.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _postComment({String? replyToId}) async {
-    final controller = replyToId != null
-        ? _replyControllers[replyToId]
-        : _commentController;
-
-    if (controller == null || controller.text.trim().isEmpty) return;
-
-    setState(() => _isPosting = true);
-
-    try {
-      final socialService = ref.read(socialServiceProvider);
-      await socialService.postComment(
-        content: controller.text.trim(),
-        rootEventId: widget.videoEvent.id,
-        rootEventAuthorPubkey: widget.videoEvent.pubkey,
-        replyToEventId: replyToId,
-      );
-
-      controller.clear();
-      if (replyToId != null) {
-        setState(() => _replyingToCommentId = null);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isPosting = false);
-      }
-    }
-  }
-
-  void _handleReplyToggle(String commentId) {
-    setState(() {
-      if (_replyingToCommentId == commentId) {
-        _replyingToCommentId = null;
-      } else {
-        _replyingToCommentId = commentId;
-        _replyControllers[commentId] ??= TextEditingController();
-      }
-    });
-  }
-
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      const CommentsDragHandle(),
-      CommentsHeader(onClose: () => Navigator.pop(context)),
-      const Divider(color: Colors.white24, height: 1),
-      Expanded(
-        child: CommentsList(
-          videoEventId: widget.videoEvent.id,
-          videoEventPubkey: widget.videoEvent.pubkey,
-          isOriginalVine: widget.videoEvent.isOriginalVine,
-          scrollController: widget.sheetScrollController,
-          replyingToCommentId: _replyingToCommentId,
-          replyControllers: _replyControllers,
-          isPosting: _isPosting,
-          onReplyToggle: _handleReplyToggle,
-          onReplySubmit: (parentId) => _postComment(replyToId: parentId),
-        ),
-      ),
-      CommentInput(
-        controller: _commentController,
-        isPosting: _isPosting,
-        onSubmit: _postComment,
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      buildWhen: (prev, next) =>
+          prev.mainInputText != next.mainInputText ||
+          prev.isPosting != next.isPosting,
+      builder: (context, state) {
+        // Sync controller with state (for when state changes externally,
+        // e.g., after post clears the text)
+        if (_controller.text != state.mainInputText) {
+          _controller.text = state.mainInputText;
+          _controller.selection = TextSelection.collapsed(
+            offset: state.mainInputText.length,
+          );
+        }
+
+        return CommentInput(
+          controller: _controller,
+          isPosting: state.isPosting && state.activeReplyCommentId == null,
+          onChanged: (text) {
+            context.read<CommentsBloc>().add(CommentTextChanged(text));
+          },
+          onSubmit: () {
+            context.read<CommentsBloc>().add(const CommentSubmitted());
+          },
+        );
+      },
+    );
+  }
 }

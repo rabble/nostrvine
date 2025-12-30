@@ -1,23 +1,24 @@
 // ABOUTME: Widget tests for CommentsList component
 // ABOUTME: Tests loading, error, empty, and data state rendering
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
-import 'package:openvine/screens/comments/widgets/comments_list.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
-@GenerateMocks([UserProfileService])
-import 'comments_list_test.mocks.dart';
+class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
+    implements CommentsBloc {}
 
 // Full 64-character test IDs
 const testVideoEventId =
@@ -28,44 +29,45 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentsList', () {
     late MockUserProfileService mockUserProfileService;
+    late MockCommentsBloc mockCommentsBloc;
+
+    setUpAll(() {
+      registerFallbackValue(const CommentsLoadRequested());
+    });
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
-      when(mockUserProfileService.shouldSkipProfileFetch(any)).thenReturn(true);
+      mockCommentsBloc = MockCommentsBloc();
+
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(any()),
+      ).thenReturn(true);
     });
 
     Widget buildTestWidget({
       required CommentsState commentsState,
       bool isOriginalVine = false,
-      String? replyingToCommentId,
-      bool isPosting = false,
       ScrollController? scrollController,
-      Map<String, TextEditingController>? replyControllers,
     }) {
       final sc = scrollController ?? ScrollController();
-      final rc = replyControllers ?? <String, TextEditingController>{};
+
+      when(() => mockCommentsBloc.state).thenReturn(commentsState);
 
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
-          commentsProvider(
-            testVideoEventId,
-            testVideoAuthorPubkey,
-          ).overrideWith(() => _MockCommentsNotifier(commentsState)),
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: CommentsList(
-              videoEventId: testVideoEventId,
-              videoEventPubkey: testVideoAuthorPubkey,
-              isOriginalVine: isOriginalVine,
-              scrollController: sc,
-              replyingToCommentId: replyingToCommentId,
-              replyControllers: rc,
-              isPosting: isPosting,
-              onReplyToggle: (_) {},
-              onReplySubmit: (_) {},
+            body: BlocProvider<CommentsBloc>.value(
+              value: mockCommentsBloc,
+              child: CommentsList(
+                isOriginalVine: isOriginalVine,
+                scrollController: sc,
+              ),
             ),
           ),
         ),
@@ -75,7 +77,8 @@ void main() {
     testWidgets('shows loading indicator when loading', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
-        isLoading: true,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.loading,
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -87,18 +90,22 @@ void main() {
     testWidgets('shows error message when state has error', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
-        error: 'Network error occurred',
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.failure,
+        error: CommentsError.loadFailed,
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
-      expect(find.textContaining('Network error occurred'), findsOneWidget);
+      expect(find.textContaining('Failed to load comments'), findsOneWidget);
     });
 
     testWidgets('shows CommentsEmptyState when no comments', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [],
       );
 
@@ -113,6 +120,8 @@ void main() {
     ) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [],
       );
 
@@ -145,6 +154,8 @@ void main() {
 
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [comment1, comment2],
         totalCommentCount: 2,
       );
@@ -158,12 +169,10 @@ void main() {
     });
 
     testWidgets('shows Cancel when replying to comment', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: [
           CommentNodeBuilder()
               .withComment(
@@ -175,21 +184,14 @@ void main() {
               .build(),
         ],
         totalCommentCount: 1,
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
       );
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          commentsState: state,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
-      );
+      await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
-
-      // Clean up
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
     testWidgets('uses provided scroll controller', (tester) async {
@@ -197,6 +199,8 @@ void main() {
       final comments = CommentTreeBuilder.singleComment();
       final state = CommentsState(
         rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
         topLevelComments: comments,
         totalCommentCount: 1,
       );
@@ -215,13 +219,4 @@ void main() {
       scrollController.dispose();
     });
   });
-}
-
-/// Mock CommentsNotifier that returns a fixed state
-class _MockCommentsNotifier extends CommentsNotifier {
-  _MockCommentsNotifier(this._state);
-  final CommentsState _state;
-
-  @override
-  CommentsState build(String rootEventId, String rootAuthorPubkey) => _state;
 }

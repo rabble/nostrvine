@@ -295,24 +295,6 @@ class MockSocialService extends _i1.Mock implements _i6.SocialService {
           as _i5.Future<void>);
 
   @override
-  _i5.Future<void> followUser(String? pubkeyToFollow) =>
-      (super.noSuchMethod(
-            Invocation.method(#followUser, [pubkeyToFollow]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
-
-  @override
-  _i5.Future<void> unfollowUser(String? pubkeyToUnfollow) =>
-      (super.noSuchMethod(
-            Invocation.method(#unfollowUser, [pubkeyToUnfollow]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
-
-  @override
   _i5.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
       (super.noSuchMethod(
             Invocation.method(#getFollowerStats, [pubkey]),
@@ -1265,21 +1247,6 @@ class MockUserProfileService extends _i1.Mock
           as String);
 
   @override
-  String? getAvatarUrl(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getAvatarUrl, [pubkey]))
-          as String?);
-
-  @override
-  String? getUserBio(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getUserBio, [pubkey])) as String?);
-
-  @override
-  void clearCache() => super.noSuchMethod(
-    Invocation.method(#clearCache, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
   void removeProfile(String? pubkey) => super.noSuchMethod(
     Invocation.method(#removeProfile, [pubkey]),
     returnValueForMissingStub: null,
@@ -1294,14 +1261,6 @@ class MockUserProfileService extends _i1.Mock
             ),
           )
           as _i5.Future<List<_i13.UserProfile>>);
-
-  @override
-  Map<String, dynamic> getCacheStats() =>
-      (super.noSuchMethod(
-            Invocation.method(#getCacheStats, []),
-            returnValue: <String, dynamic>{},
-          )
-          as Map<String, dynamic>);
 
   @override
   void handleProfileEventForTesting(_i7.Event? event) => super.noSuchMethod(

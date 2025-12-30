@@ -204,6 +204,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     if (!mounted) return;
 
+    String? selectedSoundId;
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SoundPickerModal(
@@ -215,18 +217,21 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             ref
                 .read(videoEditorProvider(widget.videoPath).notifier)
                 .selectSound(soundId);
-            // Play the selected sound in preview
-            _loadAndPlaySound(soundId);
+            // Store selected sound ID to load after navigation completes
+            selectedSoundId = soundId;
             Navigator.of(context).pop();
           },
         ),
       ),
     );
 
-    // Resume video after returning from sound picker
+    // Load and play sound after returning from sound picker
+    // This ensures the navigation is complete before we start playing
     if (mounted) {
+      if (selectedSoundId != null) {
+        await _loadAndPlaySound(selectedSoundId);
+      }
       await _videoController?.play();
-      // Audio will resume via _loadAndPlaySound if a sound is selected
     }
   }
 
@@ -240,9 +245,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         category: LogCategory.video,
       );
 
-      // Get the current editor state for text overlays
+      // Get the current editor state for text overlays and sound
       final editorState = ref.read(videoEditorProvider(widget.videoPath));
       String finalVideoPath = widget.videoPath;
+
+      Log.info(
+        '📹 Editor state - overlays: ${editorState.textOverlays.length}, sound: ${editorState.selectedSoundId}',
+        category: LogCategory.video,
+      );
 
       // Apply text overlays if any exist
       if (editorState.textOverlays.isNotEmpty &&

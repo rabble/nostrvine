@@ -88,6 +88,7 @@ Future<void> clearAllProfileStatsCache() async {
   );
 }
 
+// TODO(any): refactor this method while doing https://github.com/divinevideo/divine-mobile/issues/571
 /// Async provider for loading profile statistics
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {

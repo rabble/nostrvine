@@ -48,8 +48,14 @@ Load and apply these standards when assisting with Flutter development. Standard
 Use these rules as the baseline for all Dart and Flutter development decisions.
 
 **Tool Preferences:**
-- When available, prefer the **Dart MCP Server** tool over the local `dart` CLI
-- Use official Dart/Flutter tooling for analysis and formatting
+- **ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for all Flutter/Dart operations including:
+  - Running tests (`mcp__dart__run_tests`)
+  - Analyzing code (`mcp__dart__analyze_files`)
+  - Formatting code (`mcp__dart__dart_format`)
+  - Running pub commands (`mcp__dart__pub`)
+  - Launching/debugging apps (`mcp__dart__launch_app`, `mcp__dart__hot_reload`)
+  - Searching pub.dev (`mcp__dart__pub_dev_search`)
+- **As MCP backup** use shell commands (`flutter test`, `dart analyze`, etc.).
 
 **Key Areas Covered:**
 - Dart language features and idioms
@@ -110,7 +116,14 @@ When working with Riverpod instead of BLoC as the state management framework, ei
 ```
 
 ### Nostr Protocol
-For a structured, detailed knowledge about Nostr for both humans and AI, uses the Nostr NCP (Nostrbook) if configured, if not, uses the following online documentation:
+**ALWAYS** use the **Nostr MCP Server** (`mcp__nostr__*`) for all Nostr-related lookups:
+- Reading NIPs (`mcp__nostr__read_nip`)
+- Looking up event kinds (`mcp__nostr__read_kind`)
+- Looking up tags (`mcp__nostr__read_tag`)
+- Reading protocol basics (`mcp__nostr__read_protocol`)
+- Browsing NIPs index (`mcp__nostr__read_nips_index`)
+
+Fallback documentation (only if MCP unavailable):
 ```
 https://nostrbook.dev/llms.txt
 ```

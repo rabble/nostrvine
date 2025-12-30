@@ -74,3 +74,8 @@ android/play-store-service-account.json
 # FVM Version Cache
 .fvm/
 .fvmrc
+.fvmrctest/examples/
+
+# Tests
+test*.mp4
+test/goldens/screens/failures/

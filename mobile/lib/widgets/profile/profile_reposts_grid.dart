@@ -72,9 +72,11 @@ class _RepostsEmptyState extends StatelessWidget {
   Widget build(BuildContext context) => CustomScrollView(
     slivers: [
       SliverFillRemaining(
+        hasScrollBody: false,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: const [
               Icon(Icons.repeat, color: Colors.grey, size: 64),
               SizedBox(height: 16),

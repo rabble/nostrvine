@@ -15,9 +15,18 @@ enum RouteType {
   editVideo, // Video editor screen for text/sound overlays
   importKey,
   settings,
+  relaySettings, // Relay configuration screen
+  relayDiagnostic, // Relay connectivity diagnostics
+  blossomSettings, // Blossom media server settings
+  notificationSettings, // Notification preferences
+  keyManagement, // Key backup/export screen
+  safetySettings, // Safety and privacy settings
   editProfile, // Profile editing screen
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
+  developerOptions, // Developer options (hidden, unlock by tapping version 7x)
+  following, // Following list screen
+  followers, // Followers list screen
 }
 
 /// Structured representation of a route
@@ -152,13 +161,25 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.editVideo);
 
     case 'settings':
-    case 'relay-settings':
-    case 'relay-diagnostic':
-    case 'blossom-settings':
-    case 'notification-settings':
-    case 'key-management':
-    case 'safety-settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'relay-settings':
+      return const RouteContext(type: RouteType.relaySettings);
+
+    case 'relay-diagnostic':
+      return const RouteContext(type: RouteType.relayDiagnostic);
+
+    case 'blossom-settings':
+      return const RouteContext(type: RouteType.blossomSettings);
+
+    case 'notification-settings':
+      return const RouteContext(type: RouteType.notificationSettings);
+
+    case 'key-management':
+      return const RouteContext(type: RouteType.keyManagement);
+
+    case 'safety-settings':
+      return const RouteContext(type: RouteType.safetySettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -175,6 +196,17 @@ RouteContext parseRoute(String path) {
 
     case 'welcome':
       return const RouteContext(type: RouteType.welcome);
+
+    case 'developer-options':
+      return const RouteContext(type: RouteType.developerOptions);
+
+    case 'following':
+      final followingPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.following, npub: followingPubkey);
+
+    case 'followers':
+      final followersPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
@@ -267,6 +299,24 @@ String buildRoute(RouteContext context) {
     case RouteType.settings:
       return '/settings';
 
+    case RouteType.relaySettings:
+      return '/relay-settings';
+
+    case RouteType.relayDiagnostic:
+      return '/relay-diagnostic';
+
+    case RouteType.blossomSettings:
+      return '/blossom-settings';
+
+    case RouteType.notificationSettings:
+      return '/notification-settings';
+
+    case RouteType.keyManagement:
+      return '/key-management';
+
+    case RouteType.safetySettings:
+      return '/safety-settings';
+
     case RouteType.editProfile:
       return '/edit-profile';
 
@@ -278,5 +328,14 @@ String buildRoute(RouteContext context) {
 
     case RouteType.welcome:
       return '/welcome';
+
+    case RouteType.developerOptions:
+      return '/developer-options';
+
+    case RouteType.following:
+      return '/following/${context.npub ?? ''}';
+
+    case RouteType.followers:
+      return '/followers/${context.npub ?? ''}';
   }
 }

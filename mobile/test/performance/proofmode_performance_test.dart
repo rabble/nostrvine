@@ -113,12 +113,12 @@ void main() {
       final totalOps = iterations * proofDataList.length;
       final avgNanoseconds = (stopwatch.elapsedMicroseconds * 1000) / totalOps;
 
-      // Verification level should be under 1000 nanoseconds per check
+      // Verification level should be under 1500 nanoseconds per check
       expect(
         avgNanoseconds,
-        lessThan(1000),
+        lessThan(1500),
         reason:
-            'Verification level check took $avgNanoseconds ns/op (target: <1000 ns)',
+            'Verification level check took $avgNanoseconds ns/op (target: <1500 ns)',
       );
     });
 

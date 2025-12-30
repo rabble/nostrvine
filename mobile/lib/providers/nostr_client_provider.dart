@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
@@ -23,23 +24,19 @@ class NostrService extends _$NostrService {
     final authService = ref.watch(authServiceProvider);
     final statisticsService = ref.watch(relayStatisticsServiceProvider);
     final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
+    final environmentConfig = ref.watch(currentEnvironmentProvider);
 
     _lastKeyContainerPubkey = authService.currentKeyContainer?.publicKeyHex;
 
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
 
-    ref.onDispose(() {
-      _authSubscription?.cancel();
-
-      state.dispose();
-    });
-
     // Create initial NostrClient
     final client = NostrServiceFactory.create(
       keyContainer: authService.currentKeyContainer,
       statisticsService: statisticsService,
       gatewaySettings: gatewaySettings,
+      environmentConfig: environmentConfig,
     );
 
     // Schedule initialization after build completes
@@ -61,6 +58,12 @@ class NostrService extends _$NostrService {
       }
     });
 
+    // Capture client reference for disposal - can't access state inside onDispose
+    ref.onDispose(() {
+      _authSubscription?.cancel();
+      client.dispose();
+    });
+
     return client;
   }
 
@@ -80,11 +83,13 @@ class NostrService extends _$NostrService {
       // Create new client with updated keyContainer
       final statisticsService = ref.read(relayStatisticsServiceProvider);
       final gatewaySettings = ref.read(relayGatewaySettingsProvider);
+      final environmentConfig = ref.read(currentEnvironmentProvider);
 
       final newClient = NostrServiceFactory.create(
         keyContainer: authService.currentKeyContainer,
         statisticsService: statisticsService,
         gatewaySettings: gatewaySettings,
+        environmentConfig: environmentConfig,
       );
 
       _lastKeyContainerPubkey = currentPubkey;

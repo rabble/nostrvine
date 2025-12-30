@@ -213,24 +213,6 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
-  /// Refresh home feed when following list changes
-  void _refreshHomeFeed() {
-    try {
-      ref.invalidate(homeFeedProvider);
-      Log.info(
-        '🔄 Triggered home feed refresh after following list change',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to refresh home feed: $e',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-    }
-  }
-
   /// Initialize the service
   /// NOTE: Contact fetching now handled by _ensureContactsFetched() called from auth listener
   Future<void> initialize() async {
@@ -982,6 +964,24 @@ class SocialNotifier extends _$SocialNotifier {
       final sample = followingPubkeys.take(5).map((p) => p).join(', ');
       Log.info(
         '👥 Following sample: $sample${followingPubkeys.length > 5 ? "..." : ""}',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Trigger home feed refresh after follow/unfollow
+  void _refreshHomeFeed() {
+    try {
+      ref.invalidate(homeFeedProvider);
+      Log.debug(
+        '🔄 Home feed invalidated after follow change',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to refresh home feed: $e',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );

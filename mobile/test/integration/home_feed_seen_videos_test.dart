@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/social_state.dart';
@@ -26,14 +29,34 @@ class _TestSocialNotifier extends SocialNotifier {
   SocialState build() => _state;
 }
 
-@GenerateMocks([VideoEventService])
+@GenerateMocks([VideoEventService, NostrClient])
 void main() {
   group('HomeFeed SeenVideos Integration', () {
     late MockVideoEventService mockVideoService;
+    late MockNostrClient mockNostrClient;
+    late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockVideoService = MockVideoEventService();
+      mockNostrClient = MockNostrClient();
+
+      // Setup nostr client mock
+      when(mockNostrClient.hasKeys).thenReturn(true);
+      when(mockNostrClient.isInitialized).thenReturn(true);
+      when(mockNostrClient.publicKey).thenReturn('test_pubkey');
+      when(
+        mockNostrClient.subscribe(
+          any,
+          subscriptionId: anyNamed('subscriptionId'),
+          tempRelays: anyNamed('tempRelays'),
+          targetRelays: anyNamed('targetRelays'),
+          relayTypes: anyNamed('relayTypes'),
+          sendAfterAuth: anyNamed('sendAfterAuth'),
+          onEose: anyNamed('onEose'),
+        ),
+      ).thenAnswer((_) => Stream.empty());
     });
 
     test('orders unseen videos before seen videos', () async {
@@ -79,7 +102,9 @@ void main() {
       // Create container with overrides
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoService),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
           socialProvider.overrideWith(() {
             return _TestSocialNotifier(
               SocialState(followingPubkeys: ['author1'], isInitialized: true),
@@ -151,7 +176,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoService),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
           socialProvider.overrideWith(() {
             return _TestSocialNotifier(
               SocialState(followingPubkeys: ['author1'], isInitialized: true),
@@ -201,7 +228,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoService),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
           socialProvider.overrideWith(() {
             return _TestSocialNotifier(
               SocialState(followingPubkeys: ['author1'], isInitialized: true),

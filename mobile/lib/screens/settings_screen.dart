@@ -5,17 +5,57 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/developer_mode_tap_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = '';
+  // Store notifier reference to safely call in deactivate
+  OverlayVisibility? _overlayNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+    // Mark settings as open to pause video playback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
+      _overlayNotifier?.setSettingsOpen(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Mark settings as closed when leaving
+    // Use cached notifier reference since ref is invalid during dispose
+    _overlayNotifier?.setSettingsOpen(false);
+    super.dispose();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final isAuthenticated = authService.isAuthenticated;
 
@@ -26,7 +66,7 @@ class SettingsScreen extends ConsumerWidget {
         foregroundColor: VineTheme.whiteText,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           tooltip: 'Back',
         ),
       ),
@@ -47,46 +87,24 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Update your display name, bio, and avatar',
                   onTap: () => context.push('/edit-profile'),
                 ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.key,
-                  title: 'Key Management',
-                  subtitle: 'Export, backup, and restore your Nostr keys',
-                  onTap: () => context.push('/key-management'),
-                ),
               ],
 
-              // Account Section (only show when authenticated)
-              if (isAuthenticated) ...[
-                _buildSectionHeader('Account'),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.logout,
-                  title: 'Log Out',
-                  subtitle: 'Sign out of your account (keeps your keys)',
-                  onTap: () => _handleLogout(context, ref),
-                ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.key_off,
-                  title: 'Remove Keys from Device',
-                  subtitle:
-                      'Delete your nsec from this device (content stays on relays)',
-                  onTap: () => _handleRemoveKeys(context, ref),
-                  iconColor: Colors.orange,
-                  titleColor: Colors.orange,
-                ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.delete_forever,
-                  title: 'Delete Account and Data',
-                  subtitle:
-                      'PERMANENTLY delete your account and all content from Nostr relays',
-                  onTap: () => _handleDeleteAllContent(context, ref),
-                  iconColor: Colors.red,
-                  titleColor: Colors.red,
-                ),
-              ],
+              // Preferences - most used settings near the top
+              _buildSectionHeader('Preferences'),
+              _buildSettingsTile(
+                context,
+                icon: Icons.notifications,
+                title: 'Notifications',
+                subtitle: 'Manage notification preferences',
+                onTap: () => context.push('/notification-settings'),
+              ),
+              _buildSettingsTile(
+                context,
+                icon: Icons.shield,
+                title: 'Safety & Privacy',
+                subtitle: 'Blocked users, muted content, and report history',
+                onTap: () => context.push('/safety-settings'),
+              ),
 
               // Network Configuration
               _buildSectionHeader('Network'),
@@ -111,23 +129,18 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Configure Blossom upload servers',
                 onTap: () => context.push('/blossom-settings'),
               ),
+              _buildSettingsTile(
+                context,
+                icon: Icons.developer_mode,
+                title: 'Developer Options',
+                subtitle: 'Environment switcher and debug settings',
+                onTap: () => context.push('/developer-options'),
+                iconColor: Colors.orange,
+              ),
 
-              // Preferences
-              _buildSectionHeader('Preferences'),
-              _buildSettingsTile(
-                context,
-                icon: Icons.notifications,
-                title: 'Notifications',
-                subtitle: 'Manage notification preferences',
-                onTap: () => context.push('/notification-settings'),
-              ),
-              _buildSettingsTile(
-                context,
-                icon: Icons.shield,
-                title: 'Safety & Privacy',
-                subtitle: 'Blocked users, muted content, and report history',
-                onTap: () => context.push('/safety-settings'),
-              ),
+              // About
+              _buildSectionHeader('About'),
+              _buildVersionTile(context, ref),
 
               // Support
               _buildSectionHeader('Support'),
@@ -196,6 +209,45 @@ class SettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
+
+              // Account and key management actions at the bottom
+              if (isAuthenticated) ...[
+                _buildSectionHeader('Account'),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.logout,
+                  title: 'Log Out',
+                  subtitle: 'Sign out of your account (keeps your keys)',
+                  onTap: () => _handleLogout(context, ref),
+                ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.key,
+                  title: 'Key Management',
+                  subtitle: 'Export, backup, and restore your Nostr keys',
+                  onTap: () => context.push('/key-management'),
+                ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.key_off,
+                  title: 'Remove Keys from Device',
+                  subtitle:
+                      'Delete your nsec from this device (content stays on relays)',
+                  onTap: () => _handleRemoveKeys(context, ref),
+                  iconColor: Colors.orange,
+                  titleColor: Colors.orange,
+                ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.delete_forever,
+                  title: 'Delete Account and Data',
+                  subtitle:
+                      'PERMANENTLY delete your account and all content from Nostr relays',
+                  onTap: () => _handleDeleteAllContent(context, ref),
+                  iconColor: Colors.red,
+                  titleColor: Colors.red,
+                ),
+              ],
             ],
           ),
         ),
@@ -241,6 +293,78 @@ class SettingsScreen extends ConsumerWidget {
     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
     onTap: onTap,
   );
+
+  Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
+    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
+    final environmentService = ref.watch(environmentServiceProvider);
+
+    // Read the new count after tapping
+    final newCount = ref.watch(developerModeTapCounterProvider);
+
+    return ListTile(
+      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
+      title: const Text(
+        'Version',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        _appVersion.isEmpty ? 'Loading...' : _appVersion,
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      onTap: () async {
+        if (isDeveloperMode) {
+          // Already unlocked - show message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Developer mode is already enabled'),
+              backgroundColor: VineTheme.vineGreen,
+            ),
+          );
+          return;
+        }
+
+        // Increment tap counter
+        ref.read(developerModeTapCounterProvider.notifier).tap();
+
+        Log.debug(
+          '👨‍💻 Dev mode count: ${newCount}',
+          name: 'SettingsScreen',
+          category: LogCategory.ui,
+        );
+
+        if (newCount >= 7) {
+          // Unlock developer mode
+          await environmentService.enableDeveloperMode();
+          ref.read(developerModeTapCounterProvider.notifier).reset();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Developer mode enabled!'),
+                backgroundColor: VineTheme.vineGreen,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (newCount >= 4) {
+          // Show hint message
+          final remaining = 7 - newCount;
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$remaining more taps to enable developer mode'),
+                duration: const Duration(milliseconds: 500),
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);

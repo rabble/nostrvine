@@ -1,45 +1,74 @@
 // ABOUTME: Widget tests for CommentThread component
 // ABOUTME: Tests comment rendering, nesting, reply toggle, and profile integration
 
+import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart'
+    hide CommentThread;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/comments_provider.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/screens/comments/widgets/comments_reply_input.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
-@GenerateMocks([UserProfileService])
-import 'comment_thread_test.mocks.dart';
+class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
+    implements CommentsBloc {}
+
+// Full 64-character test IDs
+const testVideoEventId =
+    'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+const testVideoAuthorPubkey =
+    'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a';
 
 void main() {
   group('CommentThread', () {
     late MockUserProfileService mockUserProfileService;
+    late MockCommentsBloc mockCommentsBloc;
+
+    setUpAll(() {
+      registerFallbackValue(const CommentsLoadRequested());
+    });
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
-      when(mockUserProfileService.shouldSkipProfileFetch(any)).thenReturn(true);
+      mockCommentsBloc = MockCommentsBloc();
+
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(any()),
+      ).thenReturn(true);
+      when(() => mockCommentsBloc.state).thenReturn(
+        const CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+        ),
+      );
     });
 
     Widget buildTestWidget({
       required CommentNode node,
       int depth = 0,
-      String? replyingToCommentId,
-      Map<String, TextEditingController>? replyControllers,
-      bool isPosting = false,
-      void Function(String)? onReplyToggle,
-      void Function(String)? onReplySubmit,
+      CommentsState? state,
     }) {
-      final rc = replyControllers ?? <String, TextEditingController>{};
+      final commentsState =
+          state ??
+          const CommentsState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+          );
+      when(() => mockCommentsBloc.state).thenReturn(commentsState);
 
       return ProviderScope(
         overrides: [
@@ -47,15 +76,10 @@ void main() {
         ],
         child: MaterialApp(
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: CommentThread(
-                node: node,
-                depth: depth,
-                replyingToCommentId: replyingToCommentId,
-                replyControllers: rc,
-                isPosting: isPosting,
-                onReplyToggle: onReplyToggle ?? (_) {},
-                onReplySubmit: onReplySubmit ?? (_) {},
+            body: BlocProvider<CommentsBloc>.value(
+              value: mockCommentsBloc,
+              child: SingleChildScrollView(
+                child: CommentThread(node: node, depth: depth),
               ),
             ),
           ),
@@ -107,7 +131,9 @@ void main() {
         name: 'testuser',
       );
       when(
-        mockUserProfileService.getCachedProfile(TestCommentIds.author1Pubkey),
+        () => mockUserProfileService.getCachedProfile(
+          TestCommentIds.author1Pubkey,
+        ),
       ).thenReturn(profile);
 
       final comment = CommentBuilder()
@@ -145,70 +171,66 @@ void main() {
     });
 
     testWidgets('shows Cancel when replying', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
+      final commentsState = CommentsState(
+        rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
+      );
+
       await tester.pumpWidget(
-        buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
+        buildTestWidget(node: node, state: commentsState),
       );
       await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Reply'), findsNothing);
-
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
-    testWidgets('calls onReplyToggle when Reply tapped', (tester) async {
-      var toggledId = '';
+    testWidgets('tapping Reply adds CommentReplyToggled event', (tester) async {
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
-      await tester.pumpWidget(
-        buildTestWidget(node: node, onReplyToggle: (id) => toggledId = id),
-      );
+      await tester.pumpWidget(buildTestWidget(node: node));
       await tester.pump();
 
+      // Tap Reply
       await tester.tap(find.text('Reply'));
       await tester.pump();
 
-      expect(toggledId, equals(TestCommentIds.comment1Id));
+      // Verify event was added
+      final captured =
+          verify(() => mockCommentsBloc.add(captureAny())).captured.single
+              as CommentReplyToggled;
+      expect(captured.commentId, TestCommentIds.comment1Id);
     });
 
     testWidgets('shows CommentsReplyInput when replying', (tester) async {
-      final replyControllers = {
-        TestCommentIds.comment1Id: TextEditingController(),
-      };
-
       final comment = CommentBuilder()
           .withId(TestCommentIds.comment1Id)
           .build();
       final node = CommentNodeBuilder().withComment(comment).build();
 
+      final commentsState = CommentsState(
+        rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        activeReplyCommentId: TestCommentIds.comment1Id,
+        replyInputTexts: {TestCommentIds.comment1Id: ''},
+      );
+
       await tester.pumpWidget(
-        buildTestWidget(
-          node: node,
-          replyingToCommentId: TestCommentIds.comment1Id,
-          replyControllers: replyControllers,
-        ),
+        buildTestWidget(node: node, state: commentsState),
       );
       await tester.pump();
 
       expect(find.byType(CommentsReplyInput), findsOneWidget);
-
-      replyControllers.values.forEach((c) => c.dispose());
     });
 
     testWidgets('renders nested replies', (tester) async {

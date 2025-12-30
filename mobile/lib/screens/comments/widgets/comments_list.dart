@@ -2,63 +2,44 @@
 // ABOUTME: Renders threaded comments using CommentThread widget
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/comments_provider.dart';
-import 'package:openvine/screens/comments/widgets/comment_thread.dart';
-import 'package:openvine/screens/comments/widgets/comments_empty_state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/screens/comments/widgets/widgets.dart';
 
-class CommentsList extends ConsumerWidget {
+class CommentsList extends StatelessWidget {
   const CommentsList({
-    required this.videoEventId,
-    required this.videoEventPubkey,
     required this.isOriginalVine,
     required this.scrollController,
-    required this.replyingToCommentId,
-    required this.replyControllers,
-    required this.isPosting,
-    required this.onReplyToggle,
-    required this.onReplySubmit,
     super.key,
   });
 
-  final String videoEventId;
-  final String videoEventPubkey;
   final bool isOriginalVine;
   final ScrollController scrollController;
-  final String? replyingToCommentId;
-  final Map<String, TextEditingController> replyControllers;
-  final bool isPosting;
-  final void Function(String commentId) onReplyToggle;
-  final void Function(String parentId) onReplySubmit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(commentsProvider(videoEventId, videoEventPubkey));
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      builder: (context, state) {
+        if (state.status == CommentsStatus.loading) {
+          return const _LoadingState();
+        }
 
-    if (state.isLoading) {
-      return const _LoadingState();
-    }
+        if (state.status == CommentsStatus.failure) {
+          return const _ErrorState();
+        }
 
-    if (state.error != null) {
-      return _ErrorState(error: state.error!);
-    }
+        if (state.topLevelComments.isEmpty) {
+          return CommentsEmptyState(isClassicVine: isOriginalVine);
+        }
 
-    if (state.topLevelComments.isEmpty) {
-      return CommentsEmptyState(isClassicVine: isOriginalVine);
-    }
-
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: state.topLevelComments.length,
-      itemBuilder: (context, index) => CommentThread(
-        node: state.topLevelComments[index],
-        replyingToCommentId: replyingToCommentId,
-        replyControllers: replyControllers,
-        isPosting: isPosting,
-        onReplyToggle: onReplyToggle,
-        onReplySubmit: onReplySubmit,
-      ),
+        return ListView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.only(bottom: 80),
+          itemCount: state.topLevelComments.length,
+          itemBuilder: (context, index) =>
+              CommentThread(node: state.topLevelComments[index]),
+        );
+      },
     );
   }
 }
@@ -67,20 +48,20 @@ class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: Colors.white));
+  Widget build(BuildContext context) => Center(
+    child: Semantics(
+      identifier: 'comments_loading_indicator',
+      label: 'Loading comments',
+      child: const CircularProgressIndicator(color: Colors.white),
+    ),
+  );
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error});
-
-  final String error;
+  const _ErrorState();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Text(
-      'Error loading comments: $error',
-      style: const TextStyle(color: Colors.red),
-    ),
+  Widget build(BuildContext context) => const Center(
+    child: Text('Failed to load comments', style: TextStyle(color: Colors.red)),
   );
 }

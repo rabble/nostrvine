@@ -1,11 +1,14 @@
 // ABOUTME: Fluent builder for creating CommentNode instances in tests
 // ABOUTME: Supports building nested comment trees for testing threaded displays
 
-import 'package:openvine/models/comment.dart';
-import 'package:openvine/providers/comments_provider.dart';
+import 'package:comments_repository/comments_repository.dart';
+
 import 'comment_builder.dart';
 
-/// Fluent builder for creating CommentNode instances in tests.
+/// Fluent builder for creating [CommentNode] instances in tests.
+///
+/// Uses [CommentNode] from the comments_repository package,
+/// following clean architecture separation.
 ///
 /// Usage:
 /// ```dart
@@ -17,7 +20,6 @@ import 'comment_builder.dart';
 class CommentNodeBuilder {
   Comment? _comment;
   List<CommentNode> _replies = [];
-  bool _isExpanded = true;
 
   /// Set the comment for this node.
   CommentNodeBuilder withComment(Comment comment) {
@@ -49,13 +51,7 @@ class CommentNodeBuilder {
     return this;
   }
 
-  /// Set the expansion state.
-  CommentNodeBuilder withExpanded(bool isExpanded) {
-    _isExpanded = isExpanded;
-    return this;
-  }
-
-  /// Build the CommentNode instance.
+  /// Build the [CommentNode] instance.
   CommentNode build() {
     if (_comment == null) {
       throw StateError(
@@ -63,15 +59,13 @@ class CommentNodeBuilder {
         'Use withComment() or withCommentBuilder().',
       );
     }
-    return CommentNode(
-      comment: _comment!,
-      replies: _replies,
-      isExpanded: _isExpanded,
-    );
+    return CommentNode(comment: _comment!, replies: _replies);
   }
 }
 
 /// Helper class for building comment trees for tests.
+///
+/// Uses [CommentNode] from the repository layer.
 class CommentTreeBuilder {
   final List<CommentNode> _topLevelComments = [];
 
