@@ -27,36 +27,38 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
   Future<List<VideoEvent>> build() async {
     // Watch likes state for reactive updates
     final likesState = ref.watch(likesProvider);
-    final likedEventIds = likesState.likedEventIds;
+    // Use ordered list (most recently liked first) instead of unordered set
+    final orderedLikedEventIds = likesState.orderedLikedEventIds;
 
     Log.info(
-      'ProfileLikedVideos: Building with ${likedEventIds.length} liked event IDs',
+      'ProfileLikedVideos: Building with ${orderedLikedEventIds.length} '
+      'liked event IDs',
       name: 'ProfileLikedVideosProvider',
       category: LogCategory.video,
     );
 
-    if (likedEventIds.isEmpty) {
+    if (orderedLikedEventIds.isEmpty) {
       return [];
     }
 
     // Get video service to check cache
     final videoService = ref.read(videoEventServiceProvider);
 
-    final cachedVideos = <VideoEvent>[];
+    final cachedVideosMap = <String, VideoEvent>{};
     final missingIds = <String>[];
 
     // Check cache first
-    for (final eventId in likedEventIds) {
+    for (final eventId in orderedLikedEventIds) {
       final cached = videoService.getVideoById(eventId);
       if (cached != null) {
-        cachedVideos.add(cached);
+        cachedVideosMap[eventId] = cached;
       } else {
         missingIds.add(eventId);
       }
     }
 
     Log.info(
-      'ProfileLikedVideos: Found ${cachedVideos.length} in cache, '
+      'ProfileLikedVideos: Found ${cachedVideosMap.length} in cache, '
       '${missingIds.length} need relay fetch',
       name: 'ProfileLikedVideosProvider',
       category: LogCategory.video,
@@ -69,7 +71,9 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
         nostrClient,
         missingIds,
       );
-      cachedVideos.addAll(fetchedVideos);
+      for (final video in fetchedVideos) {
+        cachedVideosMap[video.id] = video;
+      }
 
       Log.info(
         'ProfileLikedVideos: Fetched ${fetchedVideos.length} from relay',
@@ -78,11 +82,10 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
       );
     }
 
-    // Sort by like order (most recently liked first)
-    // Since likedEventIds is a Set, we use the order from the state
+    // Build ordered list using the recency-ordered IDs from likes state
     final orderedVideos = <VideoEvent>[];
-    for (final eventId in likedEventIds) {
-      final video = cachedVideos.where((v) => v.id == eventId).firstOrNull;
+    for (final eventId in orderedLikedEventIds) {
+      final video = cachedVideosMap[eventId];
       if (video != null) {
         orderedVideos.add(video);
       }
@@ -113,18 +116,31 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
     final videos = <VideoEvent>[];
     Timer? timeoutTimer;
 
+    // Generate unique subscription ID for cleanup
+    final subscriptionId =
+        'liked_videos_${DateTime.now().millisecondsSinceEpoch}';
+
+    /// Helper to clean up subscription resources
+    Future<void> cleanup() async {
+      timeoutTimer?.cancel();
+      await nostrClient.unsubscribe(subscriptionId);
+    }
+
     try {
       // Create filter for video events by ID
       // NIP-71 kinds: 34235 (horizontal), 34236 (vertical/short)
       final filter = Filter(ids: eventIds, kinds: [34235, 34236]);
 
-      final eventStream = nostrClient.subscribe([filter]);
+      final eventStream = nostrClient.subscribe([
+        filter,
+      ], subscriptionId: subscriptionId);
       late StreamSubscription<Event> subscription;
 
       // Set timeout for relay response
       timeoutTimer = Timer(const Duration(seconds: 5), () {
         if (!completer.isCompleted) {
           subscription.cancel();
+          cleanup();
           completer.complete(videos);
         }
       });
@@ -144,7 +160,7 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
         },
         onDone: () {
           if (!completer.isCompleted) {
-            timeoutTimer?.cancel();
+            cleanup();
             completer.complete(videos);
           }
         },
@@ -155,7 +171,7 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
             category: LogCategory.video,
           );
           if (!completer.isCompleted) {
-            timeoutTimer?.cancel();
+            cleanup();
             completer.complete(videos);
           }
         },
@@ -168,7 +184,7 @@ class ProfileLikedVideos extends _$ProfileLikedVideos {
         name: 'ProfileLikedVideosProvider',
         category: LogCategory.video,
       );
-      timeoutTimer?.cancel();
+      await cleanup();
       return videos;
     }
   }

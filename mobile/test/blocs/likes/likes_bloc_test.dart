@@ -385,12 +385,12 @@ void main() {
       expect(successState.isInitialized, isTrue);
     });
 
-    test('likeCount returns number of liked events', () {
+    test('totalLikedCount returns number of liked events', () {
       const emptyState = LikesState();
       const stateWithLikes = LikesState(likedEventIds: ['e1', 'e2', 'e3']);
 
-      expect(emptyState.likeCount, 0);
-      expect(stateWithLikes.likeCount, 3);
+      expect(emptyState.totalLikedCount, 0);
+      expect(stateWithLikes.totalLikedCount, 3);
     });
 
     test('copyWith creates copy with updated values', () {

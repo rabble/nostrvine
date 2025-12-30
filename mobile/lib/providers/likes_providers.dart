@@ -134,6 +134,7 @@ class LikesNotifier extends _$LikesNotifier {
     bool markInitialized = false,
   }) async {
     final likedIds = await repository.getLikedEventIds();
+    final orderedLikedIds = await repository.getOrderedLikedEventIds();
 
     // Build eventIdToReactionId map
     final eventIdToReactionId = <String, String>{};
@@ -146,6 +147,7 @@ class LikesNotifier extends _$LikesNotifier {
 
     state = state.copyWith(
       likedEventIds: likedIds,
+      orderedLikedEventIds: orderedLikedIds,
       eventIdToReactionId: eventIdToReactionId,
       isInitialized: markInitialized ? true : state.isInitialized,
       isSyncing: markInitialized ? false : state.isSyncing,
@@ -218,16 +220,22 @@ class LikesNotifier extends _$LikesNotifier {
         final record = await repository.getLikeRecord(eventId);
         state = state.copyWith(
           likedEventIds: {...state.likedEventIds, eventId},
+          // Prepend to ordered list (most recent first)
+          orderedLikedEventIds: [eventId, ...state.orderedLikedEventIds],
           eventIdToReactionId: record != null
               ? {...state.eventIdToReactionId, eventId: record.reactionEventId}
               : state.eventIdToReactionId,
         );
       } else {
         final newLikedIds = {...state.likedEventIds}..remove(eventId);
+        final newOrderedIds = state.orderedLikedEventIds
+            .where((id) => id != eventId)
+            .toList();
         final newEventIdToReactionId = {...state.eventIdToReactionId}
           ..remove(eventId);
         state = state.copyWith(
           likedEventIds: newLikedIds,
+          orderedLikedEventIds: newOrderedIds,
           eventIdToReactionId: newEventIdToReactionId,
         );
       }
@@ -278,6 +286,8 @@ class LikesNotifier extends _$LikesNotifier {
 
       state = state.copyWith(
         likedEventIds: {...state.likedEventIds, eventId},
+        // Prepend to ordered list (most recent first)
+        orderedLikedEventIds: [eventId, ...state.orderedLikedEventIds],
         eventIdToReactionId: {
           ...state.eventIdToReactionId,
           eventId: reactionEventId,
@@ -311,11 +321,15 @@ class LikesNotifier extends _$LikesNotifier {
       await repository.unlikeEvent(eventId);
 
       final newLikedIds = {...state.likedEventIds}..remove(eventId);
+      final newOrderedIds = state.orderedLikedEventIds
+          .where((id) => id != eventId)
+          .toList();
       final newEventIdToReactionId = {...state.eventIdToReactionId}
         ..remove(eventId);
 
       state = state.copyWith(
         likedEventIds: newLikedIds,
+        orderedLikedEventIds: newOrderedIds,
         eventIdToReactionId: newEventIdToReactionId,
       );
     } finally {

@@ -16,6 +16,10 @@ sealed class LikesState with _$LikesState {
     /// Set of event IDs that the user has liked
     @Default({}) Set<String> likedEventIds,
 
+    /// Liked event IDs ordered by recency (most recently liked first).
+    /// Use this when displaying liked videos to maintain consistent ordering.
+    @Default([]) List<String> orderedLikedEventIds,
+
     /// Map from target event ID to the reaction event ID
     /// Required for publishing Kind 5 deletion events when unliking
     @Default({}) Map<String, String> eventIdToReactionId,

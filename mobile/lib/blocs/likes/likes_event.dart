@@ -27,6 +27,14 @@ final class LikesToggleRequested extends LikesEvent {
   final String authorPubkey;
 }
 
+/// Fetch the public like count for an event from relays
+final class LikesCountFetchRequested extends LikesEvent {
+  const LikesCountFetchRequested({required this.eventId});
+
+  /// The event ID to fetch like count for
+  final String eventId;
+}
+
 /// Clear any error message
 final class LikesErrorCleared extends LikesEvent {
   const LikesErrorCleared();

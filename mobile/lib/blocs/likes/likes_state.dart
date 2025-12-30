@@ -40,6 +40,7 @@ enum LikesError {
 /// Contains minimal state needed for the UI:
 /// - [likedEventIds]: Ordered list of liked event IDs (most recent first)
 /// - [operationsInProgress]: Events currently being liked/unliked
+/// - [likeCounts]: Map of event ID to public like count
 ///
 /// The repository handles internal details like reaction event IDs.
 final class LikesState extends Equatable {
@@ -47,6 +48,7 @@ final class LikesState extends Equatable {
     this.status = LikesStatus.initial,
     this.likedEventIds = const [],
     this.operationsInProgress = const {},
+    this.likeCounts = const {},
     this.error,
   });
 
@@ -64,6 +66,11 @@ final class LikesState extends Equatable {
   /// Used to prevent duplicate operations and show loading state in UI.
   final Set<String> operationsInProgress;
 
+  /// Map from event ID to public like count (from all users).
+  ///
+  /// This is a cache of like counts fetched from relays.
+  final Map<String, int> likeCounts;
+
   /// Error type for l10n-friendly error handling.
   ///
   /// UI layer maps this to localized string via BlocListener.
@@ -76,17 +83,22 @@ final class LikesState extends Equatable {
   bool isOperationInProgress(String eventId) =>
       operationsInProgress.contains(eventId);
 
+  /// Get the like count for an event.
+  /// Returns 0 if no count is cached.
+  int getLikeCount(String eventId) => likeCounts[eventId] ?? 0;
+
   /// Whether the state has been successfully initialized.
   bool get isInitialized => status == LikesStatus.success;
 
   /// The number of liked events.
-  int get likeCount => likedEventIds.length;
+  int get totalLikedCount => likedEventIds.length;
 
   /// Create a copy with updated values.
   LikesState copyWith({
     LikesStatus? status,
     List<String>? likedEventIds,
     Set<String>? operationsInProgress,
+    Map<String, int>? likeCounts,
     LikesError? error,
     bool clearError = false,
   }) {
@@ -94,6 +106,7 @@ final class LikesState extends Equatable {
       status: status ?? this.status,
       likedEventIds: likedEventIds ?? this.likedEventIds,
       operationsInProgress: operationsInProgress ?? this.operationsInProgress,
+      likeCounts: likeCounts ?? this.likeCounts,
       error: clearError ? null : error,
     );
   }
@@ -103,6 +116,7 @@ final class LikesState extends Equatable {
     status,
     likedEventIds,
     operationsInProgress,
+    likeCounts,
     error,
   ];
 }

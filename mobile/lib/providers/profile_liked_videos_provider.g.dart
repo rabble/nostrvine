@@ -49,7 +49,7 @@ final class ProfileLikedVideosProvider
 }
 
 String _$profileLikedVideosHash() =>
-    r'559325a3ac1751fde8eebafd1ab98f8d8f52d90e';
+    r'bc0bfc61257c5233a326eba4e3e939b35d6296ce';
 
 /// Provider that returns videos the current user has liked
 ///

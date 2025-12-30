@@ -15,12 +15,14 @@ part 'likes_state.dart';
 /// - Syncing likes from local storage and Nostr relays
 /// - Toggling like status on events
 /// - Tracking like operations in progress for UI feedback
+/// - Fetching public like counts for events
 class LikesBloc extends Bloc<LikesEvent, LikesState> {
   LikesBloc({required LikesRepository likesRepository})
     : _likesRepository = likesRepository,
       super(const LikesState()) {
     on<LikesSyncRequested>(_onSyncRequested);
     on<LikesToggleRequested>(_onToggleRequested);
+    on<LikesCountFetchRequested>(_onCountFetchRequested);
     on<LikesErrorCleared>(_onErrorCleared);
   }
 
@@ -167,6 +169,27 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
   /// Handle error cleared event.
   void _onErrorCleared(LikesErrorCleared event, Emitter<LikesState> emit) {
     emit(state.copyWith(clearError: true));
+  }
+
+  /// Handle like count fetch request.
+  Future<void> _onCountFetchRequested(
+    LikesCountFetchRequested event,
+    Emitter<LikesState> emit,
+  ) async {
+    final eventId = event.eventId;
+
+    try {
+      final count = await _likesRepository.getLikeCount(eventId);
+
+      emit(state.copyWith(likeCounts: {...state.likeCounts, eventId: count}));
+    } catch (e) {
+      Log.error(
+        'LikesBloc: Failed to fetch like count - $e',
+        name: 'LikesBloc',
+        category: LogCategory.system,
+      );
+      // Silently fail - like count is optional UI enhancement
+    }
   }
 
   /// Helper to remove an item from a Set immutably.

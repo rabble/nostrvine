@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 mixin _$LikesState {
 
 /// Set of event IDs that the user has liked
- Set<String> get likedEventIds;/// Map from target event ID to the reaction event ID
+ Set<String> get likedEventIds;/// Liked event IDs ordered by recency (most recently liked first).
+/// Use this when displaying liked videos to maintain consistent ordering.
+ List<String> get orderedLikedEventIds;/// Map from target event ID to the reaction event ID
 /// Required for publishing Kind 5 deletion events when unliking
  Map<String, String> get eventIdToReactionId;/// Map from event ID to like count (public likes from all users)
  Map<String, int> get likeCounts;/// Whether the state has been initialized from local storage/relays
@@ -37,16 +39,16 @@ $LikesStateCopyWith<LikesState> get copyWith => _$LikesStateCopyWithImpl<LikesSt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LikesState&&const DeepCollectionEquality().equals(other.likedEventIds, likedEventIds)&&const DeepCollectionEquality().equals(other.eventIdToReactionId, eventIdToReactionId)&&const DeepCollectionEquality().equals(other.likeCounts, likeCounts)&&(identical(other.isInitialized, isInitialized) || other.isInitialized == isInitialized)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&const DeepCollectionEquality().equals(other.operationsInProgress, operationsInProgress)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LikesState&&const DeepCollectionEquality().equals(other.likedEventIds, likedEventIds)&&const DeepCollectionEquality().equals(other.orderedLikedEventIds, orderedLikedEventIds)&&const DeepCollectionEquality().equals(other.eventIdToReactionId, eventIdToReactionId)&&const DeepCollectionEquality().equals(other.likeCounts, likeCounts)&&(identical(other.isInitialized, isInitialized) || other.isInitialized == isInitialized)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&const DeepCollectionEquality().equals(other.operationsInProgress, operationsInProgress)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(likedEventIds),const DeepCollectionEquality().hash(eventIdToReactionId),const DeepCollectionEquality().hash(likeCounts),isInitialized,isSyncing,const DeepCollectionEquality().hash(operationsInProgress),error);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(likedEventIds),const DeepCollectionEquality().hash(orderedLikedEventIds),const DeepCollectionEquality().hash(eventIdToReactionId),const DeepCollectionEquality().hash(likeCounts),isInitialized,isSyncing,const DeepCollectionEquality().hash(operationsInProgress),error);
 
 @override
 String toString() {
-  return 'LikesState(likedEventIds: $likedEventIds, eventIdToReactionId: $eventIdToReactionId, likeCounts: $likeCounts, isInitialized: $isInitialized, isSyncing: $isSyncing, operationsInProgress: $operationsInProgress, error: $error)';
+  return 'LikesState(likedEventIds: $likedEventIds, orderedLikedEventIds: $orderedLikedEventIds, eventIdToReactionId: $eventIdToReactionId, likeCounts: $likeCounts, isInitialized: $isInitialized, isSyncing: $isSyncing, operationsInProgress: $operationsInProgress, error: $error)';
 }
 
 
@@ -57,7 +59,7 @@ abstract mixin class $LikesStateCopyWith<$Res>  {
   factory $LikesStateCopyWith(LikesState value, $Res Function(LikesState) _then) = _$LikesStateCopyWithImpl;
 @useResult
 $Res call({
- Set<String> likedEventIds, Map<String, String> eventIdToReactionId, Map<String, int> likeCounts, bool isInitialized, bool isSyncing, Set<String> operationsInProgress, String? error
+ Set<String> likedEventIds, List<String> orderedLikedEventIds, Map<String, String> eventIdToReactionId, Map<String, int> likeCounts, bool isInitialized, bool isSyncing, Set<String> operationsInProgress, String? error
 });
 
 
@@ -74,10 +76,11 @@ class _$LikesStateCopyWithImpl<$Res>
 
 /// Create a copy of LikesState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? likedEventIds = null,Object? eventIdToReactionId = null,Object? likeCounts = null,Object? isInitialized = null,Object? isSyncing = null,Object? operationsInProgress = null,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? likedEventIds = null,Object? orderedLikedEventIds = null,Object? eventIdToReactionId = null,Object? likeCounts = null,Object? isInitialized = null,Object? isSyncing = null,Object? operationsInProgress = null,Object? error = freezed,}) {
   return _then(_self.copyWith(
 likedEventIds: null == likedEventIds ? _self.likedEventIds : likedEventIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,eventIdToReactionId: null == eventIdToReactionId ? _self.eventIdToReactionId : eventIdToReactionId // ignore: cast_nullable_to_non_nullable
+as Set<String>,orderedLikedEventIds: null == orderedLikedEventIds ? _self.orderedLikedEventIds : orderedLikedEventIds // ignore: cast_nullable_to_non_nullable
+as List<String>,eventIdToReactionId: null == eventIdToReactionId ? _self.eventIdToReactionId : eventIdToReactionId // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,likeCounts: null == likeCounts ? _self.likeCounts : likeCounts // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,isInitialized: null == isInitialized ? _self.isInitialized : isInitialized // ignore: cast_nullable_to_non_nullable
 as bool,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable
@@ -165,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Set<String> likedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Set<String> likedEventIds,  List<String> orderedLikedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LikesState() when $default != null:
-return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);case _:
+return $default(_that.likedEventIds,_that.orderedLikedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);case _:
   return orElse();
 
 }
@@ -186,10 +189,10 @@ return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Set<String> likedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Set<String> likedEventIds,  List<String> orderedLikedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _LikesState():
-return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);}
+return $default(_that.likedEventIds,_that.orderedLikedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -203,10 +206,10 @@ return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Set<String> likedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Set<String> likedEventIds,  List<String> orderedLikedEventIds,  Map<String, String> eventIdToReactionId,  Map<String, int> likeCounts,  bool isInitialized,  bool isSyncing,  Set<String> operationsInProgress,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _LikesState() when $default != null:
-return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);case _:
+return $default(_that.likedEventIds,_that.orderedLikedEventIds,_that.eventIdToReactionId,_that.likeCounts,_that.isInitialized,_that.isSyncing,_that.operationsInProgress,_that.error);case _:
   return null;
 
 }
@@ -218,7 +221,7 @@ return $default(_that.likedEventIds,_that.eventIdToReactionId,_that.likeCounts,_
 @JsonSerializable()
 
 class _LikesState extends LikesState {
-  const _LikesState({final  Set<String> likedEventIds = const {}, final  Map<String, String> eventIdToReactionId = const {}, final  Map<String, int> likeCounts = const {}, this.isInitialized = false, this.isSyncing = false, final  Set<String> operationsInProgress = const {}, this.error}): _likedEventIds = likedEventIds,_eventIdToReactionId = eventIdToReactionId,_likeCounts = likeCounts,_operationsInProgress = operationsInProgress,super._();
+  const _LikesState({final  Set<String> likedEventIds = const {}, final  List<String> orderedLikedEventIds = const [], final  Map<String, String> eventIdToReactionId = const {}, final  Map<String, int> likeCounts = const {}, this.isInitialized = false, this.isSyncing = false, final  Set<String> operationsInProgress = const {}, this.error}): _likedEventIds = likedEventIds,_orderedLikedEventIds = orderedLikedEventIds,_eventIdToReactionId = eventIdToReactionId,_likeCounts = likeCounts,_operationsInProgress = operationsInProgress,super._();
   factory _LikesState.fromJson(Map<String, dynamic> json) => _$LikesStateFromJson(json);
 
 /// Set of event IDs that the user has liked
@@ -228,6 +231,17 @@ class _LikesState extends LikesState {
   if (_likedEventIds is EqualUnmodifiableSetView) return _likedEventIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableSetView(_likedEventIds);
+}
+
+/// Liked event IDs ordered by recency (most recently liked first).
+/// Use this when displaying liked videos to maintain consistent ordering.
+ final  List<String> _orderedLikedEventIds;
+/// Liked event IDs ordered by recency (most recently liked first).
+/// Use this when displaying liked videos to maintain consistent ordering.
+@override@JsonKey() List<String> get orderedLikedEventIds {
+  if (_orderedLikedEventIds is EqualUnmodifiableListView) return _orderedLikedEventIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_orderedLikedEventIds);
 }
 
 /// Map from target event ID to the reaction event ID
@@ -281,16 +295,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LikesState&&const DeepCollectionEquality().equals(other._likedEventIds, _likedEventIds)&&const DeepCollectionEquality().equals(other._eventIdToReactionId, _eventIdToReactionId)&&const DeepCollectionEquality().equals(other._likeCounts, _likeCounts)&&(identical(other.isInitialized, isInitialized) || other.isInitialized == isInitialized)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&const DeepCollectionEquality().equals(other._operationsInProgress, _operationsInProgress)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LikesState&&const DeepCollectionEquality().equals(other._likedEventIds, _likedEventIds)&&const DeepCollectionEquality().equals(other._orderedLikedEventIds, _orderedLikedEventIds)&&const DeepCollectionEquality().equals(other._eventIdToReactionId, _eventIdToReactionId)&&const DeepCollectionEquality().equals(other._likeCounts, _likeCounts)&&(identical(other.isInitialized, isInitialized) || other.isInitialized == isInitialized)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&const DeepCollectionEquality().equals(other._operationsInProgress, _operationsInProgress)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_likedEventIds),const DeepCollectionEquality().hash(_eventIdToReactionId),const DeepCollectionEquality().hash(_likeCounts),isInitialized,isSyncing,const DeepCollectionEquality().hash(_operationsInProgress),error);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_likedEventIds),const DeepCollectionEquality().hash(_orderedLikedEventIds),const DeepCollectionEquality().hash(_eventIdToReactionId),const DeepCollectionEquality().hash(_likeCounts),isInitialized,isSyncing,const DeepCollectionEquality().hash(_operationsInProgress),error);
 
 @override
 String toString() {
-  return 'LikesState(likedEventIds: $likedEventIds, eventIdToReactionId: $eventIdToReactionId, likeCounts: $likeCounts, isInitialized: $isInitialized, isSyncing: $isSyncing, operationsInProgress: $operationsInProgress, error: $error)';
+  return 'LikesState(likedEventIds: $likedEventIds, orderedLikedEventIds: $orderedLikedEventIds, eventIdToReactionId: $eventIdToReactionId, likeCounts: $likeCounts, isInitialized: $isInitialized, isSyncing: $isSyncing, operationsInProgress: $operationsInProgress, error: $error)';
 }
 
 
@@ -301,7 +315,7 @@ abstract mixin class _$LikesStateCopyWith<$Res> implements $LikesStateCopyWith<$
   factory _$LikesStateCopyWith(_LikesState value, $Res Function(_LikesState) _then) = __$LikesStateCopyWithImpl;
 @override @useResult
 $Res call({
- Set<String> likedEventIds, Map<String, String> eventIdToReactionId, Map<String, int> likeCounts, bool isInitialized, bool isSyncing, Set<String> operationsInProgress, String? error
+ Set<String> likedEventIds, List<String> orderedLikedEventIds, Map<String, String> eventIdToReactionId, Map<String, int> likeCounts, bool isInitialized, bool isSyncing, Set<String> operationsInProgress, String? error
 });
 
 
@@ -318,10 +332,11 @@ class __$LikesStateCopyWithImpl<$Res>
 
 /// Create a copy of LikesState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? likedEventIds = null,Object? eventIdToReactionId = null,Object? likeCounts = null,Object? isInitialized = null,Object? isSyncing = null,Object? operationsInProgress = null,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? likedEventIds = null,Object? orderedLikedEventIds = null,Object? eventIdToReactionId = null,Object? likeCounts = null,Object? isInitialized = null,Object? isSyncing = null,Object? operationsInProgress = null,Object? error = freezed,}) {
   return _then(_LikesState(
 likedEventIds: null == likedEventIds ? _self._likedEventIds : likedEventIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,eventIdToReactionId: null == eventIdToReactionId ? _self._eventIdToReactionId : eventIdToReactionId // ignore: cast_nullable_to_non_nullable
+as Set<String>,orderedLikedEventIds: null == orderedLikedEventIds ? _self._orderedLikedEventIds : orderedLikedEventIds // ignore: cast_nullable_to_non_nullable
+as List<String>,eventIdToReactionId: null == eventIdToReactionId ? _self._eventIdToReactionId : eventIdToReactionId // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,likeCounts: null == likeCounts ? _self._likeCounts : likeCounts // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,isInitialized: null == isInitialized ? _self.isInitialized : isInitialized // ignore: cast_nullable_to_non_nullable
 as bool,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable

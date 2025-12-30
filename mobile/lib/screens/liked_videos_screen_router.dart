@@ -2,9 +2,12 @@
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
-import 'package:openvine/providers/profile_liked_videos_provider.dart';
+import 'package:openvine/blocs/likes/likes_bloc.dart';
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -23,8 +26,7 @@ class LikedVideosScreenRouter extends ConsumerStatefulWidget {
 }
 
 class _LikedVideosScreenRouterState
-    extends ConsumerState<LikedVideosScreenRouter>
-    with AsyncValueUIHelpersMixin {
+    extends ConsumerState<LikedVideosScreenRouter> {
   @override
   Widget build(BuildContext context) {
     final routeCtx = ref.watch(pageContextProvider).asData?.value;
@@ -43,10 +45,25 @@ class _LikedVideosScreenRouterState
       );
     }
 
-    final videoIndex = routeCtx.videoIndex;
+    // Get repositories and services for BLoC creation
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final videoEventService = ref.watch(videoEventServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
 
-    // Watch the liked videos provider
-    final likedVideosAsync = ref.watch(profileLikedVideosProvider);
+    // If not authenticated, show empty state
+    if (likesRepository == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            'Please sign in to view liked videos',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final videoIndex = routeCtx.videoIndex;
 
     // Grid mode: no video index
     if (videoIndex == null) {
@@ -68,7 +85,22 @@ class _LikedVideosScreenRouterState
             onPressed: () => context.goMyProfile(),
           ),
         ),
-        body: const ProfileLikedGrid(),
+        body: MultiBlocProvider(
+          providers: [
+            BlocProvider<LikesBloc>(
+              create: (_) =>
+                  LikesBloc(likesRepository: likesRepository)
+                    ..add(const LikesSyncRequested()),
+            ),
+            BlocProvider<ProfileLikedVideosBloc>(
+              create: (_) => ProfileLikedVideosBloc(
+                videoEventService: videoEventService,
+                nostrClient: nostrClient,
+              ),
+            ),
+          ],
+          child: const ProfileLikedGrid(),
+        ),
       );
     }
 
@@ -79,48 +111,121 @@ class _LikedVideosScreenRouterState
       category: LogCategory.ui,
     );
 
-    return buildAsyncUI(
-      likedVideosAsync,
-      onLoading: () => const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    // For feed mode, we need to use the BLoC to get the videos
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<LikesBloc>(
+          create: (_) =>
+              LikesBloc(likesRepository: likesRepository)
+                ..add(const LikesSyncRequested()),
         ),
-      ),
-      onError: (err, stack) => Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Text(
-            'Error loading liked videos: $err',
-            style: const TextStyle(color: VineTheme.whiteText),
+        BlocProvider<ProfileLikedVideosBloc>(
+          create: (_) => ProfileLikedVideosBloc(
+            videoEventService: videoEventService,
+            nostrClient: nostrClient,
           ),
         ),
-      ),
-      onData: (videos) {
-        if (videos.isEmpty) {
-          return const Scaffold(
-            backgroundColor: Colors.black,
-            body: Center(
-              child: Text(
-                'No liked videos',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-            ),
-          );
-        }
+      ],
+      child: _LikedVideosFeedView(videoIndex: videoIndex),
+    );
+  }
+}
 
-        // Determine target index from route context
-        final safeIndex = videoIndex.clamp(0, videos.length - 1);
+/// Feed view that uses BLoC state to display videos
+class _LikedVideosFeedView extends StatefulWidget {
+  const _LikedVideosFeedView({required this.videoIndex});
 
-        // Feed mode - show fullscreen video player
-        return ExploreVideoScreenPure(
-          startingVideo: videos[safeIndex],
-          videoList: videos,
-          contextTitle: 'Liked Videos',
-          startingIndex: safeIndex,
-          onNavigate: (index) => context.goLikedVideos(index),
+  final int videoIndex;
+
+  @override
+  State<_LikedVideosFeedView> createState() => _LikedVideosFeedViewState();
+}
+
+class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger load when LikesBloc is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVideosIfNeeded();
+    });
+  }
+
+  void _loadVideosIfNeeded() {
+    if (!mounted) return;
+
+    final likesState = context.read<LikesBloc>().state;
+    if (likesState.isInitialized) {
+      context.read<ProfileLikedVideosBloc>().add(
+        ProfileLikedVideosLoadRequested(
+          likedEventIds: likesState.likedEventIds,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<LikesBloc, LikesState>(
+      listenWhen: (prev, curr) => !prev.isInitialized && curr.isInitialized,
+      listener: (context, likesState) {
+        context.read<ProfileLikedVideosBloc>().add(
+          ProfileLikedVideosLoadRequested(
+            likedEventIds: likesState.likedEventIds,
+          ),
         );
       },
+      child: BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        builder: (context, state) {
+          if (state.status == ProfileLikedVideosStatus.initial ||
+              state.status == ProfileLikedVideosStatus.loading) {
+            return const Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              ),
+            );
+          }
+
+          if (state.status == ProfileLikedVideosStatus.failure) {
+            return const Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: Text(
+                  'Error loading liked videos',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
+              ),
+            );
+          }
+
+          final videos = state.videos;
+
+          if (videos.isEmpty) {
+            return const Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: Text(
+                  'No liked videos',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
+              ),
+            );
+          }
+
+          // Determine target index from route context
+          final safeIndex = widget.videoIndex.clamp(0, videos.length - 1);
+
+          // Feed mode - show fullscreen video player
+          return ExploreVideoScreenPure(
+            startingVideo: videos[safeIndex],
+            videoList: videos,
+            contextTitle: 'Liked Videos',
+            startingIndex: safeIndex,
+            onNavigate: (index) => context.goLikedVideos(index),
+          );
+        },
+      ),
     );
   }
 }
