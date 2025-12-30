@@ -106,6 +106,37 @@ class NostrClient {
     }
   }
 
+  /// Handles a NIP-09 deletion event (Kind 5) by removing target events
+  /// from the local database.
+  ///
+  /// Extracts event IDs from 'e' tags and deletes them from both the events
+  /// table and video_metrics table.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored.
+  void _handleDeletionEvent(Event deletionEvent) {
+    if (deletionEvent.kind != EventKind.eventDeletion) return;
+
+    // Extract target event IDs from 'e' tags
+    final targetEventIds = <String>[];
+    for (final dynamic tag in deletionEvent.tags) {
+      if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        final eventId = tag[1];
+        if (eventId is String) {
+          targetEventIds.add(eventId);
+        }
+      }
+    }
+
+    if (targetEventIds.isEmpty) return;
+
+    // Delete target events from the database (fire-and-forget)
+    try {
+      unawaited(_nostrEventsDao?.deleteEventsByIds(targetEventIds));
+    } on Object {
+      // Ignore deletion errors
+    }
+  }
+
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
@@ -145,6 +176,7 @@ class NostrClient {
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
   /// Successfully sent events are cached locally with 1-week expiry.
+  /// For NIP-09 deletion events (Kind 5), removes target events from cache.
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
     Event event, {
@@ -155,7 +187,12 @@ class NostrClient {
       targetRelays: targetRelays,
     );
     if (sentEvent != null) {
-      _cacheEvent(sentEvent);
+      // Handle NIP-09 deletion events by removing targets from DB
+      if (sentEvent.kind == EventKind.eventDeletion) {
+        _handleDeletionEvent(sentEvent);
+      } else {
+        _cacheEvent(sentEvent);
+      }
     }
     return sentEvent;
   }
@@ -456,11 +493,16 @@ class NostrClient {
     final actualId = _nostr.subscribe(
       filtersJson,
       (event) {
-        // Auto-cache incoming events (fire-and-forget)
-        try {
-          unawaited(_nostrEventsDao?.upsertEvent(event));
-        } on Object {
-          // Ignore sync cache errors
+        // Handle NIP-09 deletion events by removing target events from DB
+        if (event.kind == EventKind.eventDeletion) {
+          _handleDeletionEvent(event);
+        } else {
+          // Auto-cache non-deletion events (fire-and-forget)
+          try {
+            unawaited(_nostrEventsDao?.upsertEvent(event));
+          } on Object {
+            // Ignore sync cache errors
+          }
         }
 
         if (!controller.isClosed) {
@@ -638,29 +680,45 @@ class NostrClient {
   }
 
   /// Deletes an event
+  ///
+  /// Sends a NIP-09 deletion event (Kind 5) and removes the target event
+  /// from the local database cache.
   Future<Event?> deleteEvent(
     String eventId, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.deleteEvent(
+    final deletionEvent = await _nostr.deleteEvent(
       eventId,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (deletionEvent != null) {
+      // Delete target event from local database
+      _handleDeletionEvent(deletionEvent);
+    }
+    return deletionEvent;
   }
 
   /// Deletes multiple events
+  ///
+  /// Sends a NIP-09 deletion event (Kind 5) and removes the target events
+  /// from the local database cache.
   Future<Event?> deleteEvents(
     List<String> eventIds, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.deleteEvents(
+    final deletionEvent = await _nostr.deleteEvents(
       eventIds,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (deletionEvent != null) {
+      // Delete target events from local database
+      _handleDeletionEvent(deletionEvent);
+    }
+    return deletionEvent;
   }
 
   /// Sends a contact list
@@ -747,8 +805,13 @@ class NostrClient {
       );
 
       if (sentEvent != null) {
-        // Cache successfully broadcast event
-        _cacheEvent(sentEvent);
+        // Handle NIP-09 deletion events by removing targets from DB
+        if (sentEvent.kind == EventKind.eventDeletion) {
+          _handleDeletionEvent(sentEvent);
+        } else {
+          // Cache successfully broadcast non-deletion event
+          _cacheEvent(sentEvent);
+        }
 
         // Event was accepted by at least one relay
         // Since nostr_sdk doesn't provide per-relay tracking,

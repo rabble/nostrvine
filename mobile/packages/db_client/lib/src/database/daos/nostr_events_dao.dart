@@ -488,6 +488,40 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Delete a single event by its ID.
+  ///
+  /// Used when processing NIP-09 deletion events (Kind 5) to remove the
+  /// target events from the local cache.
+  ///
+  /// Returns true if an event was deleted, false if no event was found.
+  Future<bool> deleteEventById(String eventId) async {
+    final rowsDeleted = await customUpdate(
+      'DELETE FROM event WHERE id = ?',
+      variables: [Variable.withString(eventId)],
+      updates: {nostrEvents},
+      updateKind: UpdateKind.delete,
+    );
+    return rowsDeleted > 0;
+  }
+
+  /// Delete multiple events by their IDs.
+  ///
+  /// Used when processing NIP-09 deletion events (Kind 5) that reference
+  /// multiple events via 'e' tags.
+  ///
+  /// Returns the number of events deleted.
+  Future<int> deleteEventsByIds(List<String> eventIds) async {
+    if (eventIds.isEmpty) return 0;
+
+    final placeholders = List.filled(eventIds.length, '?').join(', ');
+    return customUpdate(
+      'DELETE FROM event WHERE id IN ($placeholders)',
+      variables: eventIds.map(Variable.withString).toList(),
+      updates: {nostrEvents},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   /// Convert database row to Event model
   Event _rowToEvent(QueryRow row) {
     final tags = (jsonDecode(row.read<String>('tags')) as List)
