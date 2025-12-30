@@ -683,10 +683,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                               ),
                             ),
                             // Buffering indicator
-                            Offstage(
-                              offstage:
-                                  !(value.isInitialized && value.isBuffering),
-                              child: Positioned(
+                            if (value.isInitialized && value.isBuffering)
+                              Positioned(
                                 bottom: 0,
                                 left: 0,
                                 right: 0,
@@ -698,7 +696,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
-                            ),
                             // Play button when active and paused
                             if (isActive &&
                                 value.isInitialized &&
