@@ -43,18 +43,14 @@ void main() {
           when(
             () => mockLikesRepository.getOrderedLikedEventIds(),
           ).thenAnswer((_) async => ['event2', 'event1']);
-          when(
-            () => mockLikesRepository.getLikeRecord('event1'),
-          ).thenAnswer(
+          when(() => mockLikesRepository.getLikeRecord('event1')).thenAnswer(
             (_) async => LikeRecord(
               targetEventId: 'event1',
               reactionEventId: 'reaction1',
               createdAt: DateTime(2024),
             ),
           );
-          when(
-            () => mockLikesRepository.getLikeRecord('event2'),
-          ).thenAnswer(
+          when(() => mockLikesRepository.getLikeRecord('event2')).thenAnswer(
             (_) async => LikeRecord(
               targetEventId: 'event2',
               reactionEventId: 'reaction2',
@@ -70,10 +66,7 @@ void main() {
             status: LikesStatus.success,
             likedEventIds: {'event1', 'event2'},
             orderedLikedEventIds: ['event2', 'event1'],
-            eventIdToReactionId: {
-              'event1': 'reaction1',
-              'event2': 'reaction2',
-            },
+            eventIdToReactionId: {'event1': 'reaction1', 'event2': 'reaction2'},
           ),
         ],
       );
@@ -155,9 +148,7 @@ void main() {
               authorPubkey: 'author1',
             ),
           ).thenAnswer((_) async => true);
-          when(
-            () => mockLikesRepository.getLikeRecord('event1'),
-          ).thenAnswer(
+          when(() => mockLikesRepository.getLikeRecord('event1')).thenAnswer(
             (_) async => LikeRecord(
               targetEventId: 'event1',
               reactionEventId: 'reaction1',
@@ -168,7 +159,10 @@ void main() {
         build: createBloc,
         seed: () => const LikesState(status: LikesStatus.success),
         act: (bloc) => bloc.add(
-          const LikesToggleRequested(eventId: 'event1', authorPubkey: 'author1'),
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
         ),
         expect: () => [
           const LikesState(
@@ -202,7 +196,10 @@ void main() {
           eventIdToReactionId: {'event1': 'reaction1'},
         ),
         act: (bloc) => bloc.add(
-          const LikesToggleRequested(eventId: 'event1', authorPubkey: 'author1'),
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
         ),
         expect: () => [
           const LikesState(
@@ -224,7 +221,10 @@ void main() {
           operationsInProgress: {'event1'},
         ),
         act: (bloc) => bloc.add(
-          const LikesToggleRequested(eventId: 'event1', authorPubkey: 'author1'),
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
         ),
         expect: () => <LikesState>[],
       );
@@ -242,7 +242,10 @@ void main() {
         build: createBloc,
         seed: () => const LikesState(status: LikesStatus.success),
         act: (bloc) => bloc.add(
-          const LikesToggleRequested(eventId: 'event1', authorPubkey: 'author1'),
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
         ),
         expect: () => [
           const LikesState(
@@ -383,9 +386,7 @@ void main() {
     });
 
     test('getReactionEventId returns correct value', () {
-      const state = LikesState(
-        eventIdToReactionId: {'event1': 'reaction1'},
-      );
+      const state = LikesState(eventIdToReactionId: {'event1': 'reaction1'});
 
       expect(state.getReactionEventId('event1'), 'reaction1');
       expect(state.getReactionEventId('event2'), isNull);

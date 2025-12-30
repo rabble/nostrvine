@@ -76,7 +76,10 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
         category: LogCategory.system,
       );
       emit(
-        state.copyWith(status: LikesStatus.failure, error: LikesError.syncFailed),
+        state.copyWith(
+          status: LikesStatus.failure,
+          error: LikesError.syncFailed,
+        ),
       );
     } catch (e) {
       Log.error(
@@ -85,7 +88,10 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
         category: LogCategory.system,
       );
       emit(
-        state.copyWith(status: LikesStatus.failure, error: LikesError.syncFailed),
+        state.copyWith(
+          status: LikesStatus.failure,
+          error: LikesError.syncFailed,
+        ),
       );
     }
   }
@@ -121,7 +127,10 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
             // Prepend to ordered list (most recent first)
             orderedLikedEventIds: [eventId, ...state.orderedLikedEventIds],
             eventIdToReactionId: record != null
-                ? {...state.eventIdToReactionId, eventId: record.reactionEventId}
+                ? {
+                    ...state.eventIdToReactionId,
+                    eventId: record.reactionEventId,
+                  }
                 : state.eventIdToReactionId,
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,

@@ -29,10 +29,7 @@ final class LikesToggleRequested extends LikesEvent {
 
 /// Like an event (only likes, does not toggle)
 final class LikesLikeRequested extends LikesEvent {
-  const LikesLikeRequested({
-    required this.eventId,
-    required this.authorPubkey,
-  });
+  const LikesLikeRequested({required this.eventId, required this.authorPubkey});
 
   /// The event ID to like
   final String eventId;
