@@ -2,8 +2,10 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -11,7 +13,6 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -841,9 +842,15 @@ class VideoOverlayActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
 
-    final isLiked = ref.watch(isEventLikedProvider(video.id));
-    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
-    final likeCount = ref.watch(likeCountProvider(video.id));
+    // Get likes state from BLoC (provided at app level)
+    // If BLoC is not available (not authenticated), use defaults
+    final likesBloc = context.read<LikesBloc?>();
+    final likesState = likesBloc != null
+        ? context.watch<LikesBloc>().state
+        : const LikesState();
+    final isLiked = likesState.isLiked(video.id);
+    final isLikeInProgress = likesState.isOperationInProgress(video.id);
+    final likeCount = likesState.getLikeCount(video.id);
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -1074,17 +1081,19 @@ class VideoOverlayActions extends ConsumerWidget {
                           onPressed: isLikeInProgress
                               ? () {}
                               : () async {
+                                  final bloc = context.read<LikesBloc?>();
                                   Log.info(
-                                    '❤️ Like button tapped for ${video.id}',
+                                    '❤️ Like button tapped for ${video.id}, '
+                                    'bloc=${bloc != null ? "found" : "NOT FOUND"}',
                                     name: 'VideoFeedItem',
                                     category: LogCategory.ui,
                                   );
-                                  await ref
-                                      .read(likesProvider.notifier)
-                                      .toggleLike(
-                                        eventId: video.id,
-                                        authorPubkey: video.pubkey,
-                                      );
+                                  bloc?.add(
+                                    LikesToggleRequested(
+                                      eventId: video.id,
+                                      authorPubkey: video.pubkey,
+                                    ),
+                                  );
                                 },
                           icon: isLikeInProgress
                               ? const SizedBox(

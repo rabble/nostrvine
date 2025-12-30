@@ -87,10 +87,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
   @override
   Widget build(BuildContext context) {
-    // Get repository - null if not authenticated
-    final likesRepository = ref.watch(likesRepositoryProvider);
+    // Get services for ProfileLikedVideosBloc
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+
+    // Check if LikesBloc is available (provided at app level when authenticated)
+    final hasLikesBloc = context.read<LikesBloc?>() != null;
 
     // Build the base widget
     Widget tabContent = TabBarView(
@@ -102,22 +104,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ],
     );
 
-    // Wrap with BLoC providers if authenticated
-    if (likesRepository != null) {
-      tabContent = MultiBlocProvider(
-        providers: [
-          BlocProvider<LikesBloc>(
-            create: (_) =>
-                LikesBloc(likesRepository: likesRepository)
-                  ..add(const LikesSyncRequested()),
-          ),
-          BlocProvider<ProfileLikedVideosBloc>(
-            create: (_) => ProfileLikedVideosBloc(
-              videoEventService: videoEventService,
-              nostrClient: nostrClient,
-            ),
-          ),
-        ],
+    // Wrap with ProfileLikedVideosBloc if authenticated
+    // LikesBloc is provided at app level, no need to create it here
+    if (hasLikesBloc) {
+      tabContent = BlocProvider<ProfileLikedVideosBloc>(
+        create: (_) => ProfileLikedVideosBloc(
+          videoEventService: videoEventService,
+          nostrClient: nostrClient,
+        ),
         child: tabContent,
       );
     }

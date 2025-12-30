@@ -35,6 +35,7 @@ import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
+import 'package:openvine/widgets/app_likes_bloc_provider.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1023,8 +1024,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             ),
           );
 
-    // Wrap with geo-blocking check first, then lifecycle handler
-    Widget wrapped = GeoBlockingGate(child: AppLifecycleHandler(child: app));
+    // Wrap with geo-blocking check, likes bloc provider, then lifecycle handler
+    Widget wrapped = GeoBlockingGate(
+      child: AppLikesBlocProvider(child: AppLifecycleHandler(child: app)),
+    );
 
     if (crashProbe) {
       // Invisible crash probe: tap top-left corner 7 times within 5s to crash

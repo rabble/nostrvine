@@ -45,13 +45,15 @@ class _LikedVideosScreenRouterState
       );
     }
 
-    // Get repositories and services for BLoC creation
-    final likesRepository = ref.watch(likesRepositoryProvider);
+    // Get services for ProfileLikedVideosBloc
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
 
+    // Check if LikesBloc is available (provided at app level when authenticated)
+    final hasLikesBloc = context.read<LikesBloc?>() != null;
+
     // If not authenticated, show empty state
-    if (likesRepository == null) {
+    if (!hasLikesBloc) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -85,20 +87,12 @@ class _LikedVideosScreenRouterState
             onPressed: () => context.goMyProfile(),
           ),
         ),
-        body: MultiBlocProvider(
-          providers: [
-            BlocProvider<LikesBloc>(
-              create: (_) =>
-                  LikesBloc(likesRepository: likesRepository)
-                    ..add(const LikesSyncRequested()),
-            ),
-            BlocProvider<ProfileLikedVideosBloc>(
-              create: (_) => ProfileLikedVideosBloc(
-                videoEventService: videoEventService,
-                nostrClient: nostrClient,
-              ),
-            ),
-          ],
+        // LikesBloc is provided at app level, only provide ProfileLikedVideosBloc here
+        body: BlocProvider<ProfileLikedVideosBloc>(
+          create: (_) => ProfileLikedVideosBloc(
+            videoEventService: videoEventService,
+            nostrClient: nostrClient,
+          ),
           child: const ProfileLikedGrid(),
         ),
       );
@@ -111,21 +105,13 @@ class _LikedVideosScreenRouterState
       category: LogCategory.ui,
     );
 
-    // For feed mode, we need to use the BLoC to get the videos
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<LikesBloc>(
-          create: (_) =>
-              LikesBloc(likesRepository: likesRepository)
-                ..add(const LikesSyncRequested()),
-        ),
-        BlocProvider<ProfileLikedVideosBloc>(
-          create: (_) => ProfileLikedVideosBloc(
-            videoEventService: videoEventService,
-            nostrClient: nostrClient,
-          ),
-        ),
-      ],
+    // For feed mode, we need ProfileLikedVideosBloc to get the videos
+    // LikesBloc is provided at app level
+    return BlocProvider<ProfileLikedVideosBloc>(
+      create: (_) => ProfileLikedVideosBloc(
+        videoEventService: videoEventService,
+        nostrClient: nostrClient,
+      ),
       child: _LikedVideosFeedView(videoIndex: videoIndex),
     );
   }
