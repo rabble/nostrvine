@@ -97,18 +97,8 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
       return _buildGradientFallback();
     }
 
-    // Fallback gradient while decoding
-    return Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.grey.shade800, Colors.grey.shade600],
-        ),
-      ),
-    );
+    // Fallback while decoding - transparent since parent is black
+    return SizedBox(width: widget.width, height: widget.height);
   }
 
   Widget _buildGradientFallback() {
