@@ -224,10 +224,7 @@ class _Nip05Identifier extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      nip05,
-      style: TextStyle(color: Colors.grey[400], fontSize: 13),
-    );
+    return Text(nip05, style: TextStyle(color: Colors.grey[400], fontSize: 13));
   }
 }
 
@@ -241,11 +238,7 @@ class _AboutText extends StatelessWidget {
   Widget build(BuildContext context) {
     return SelectableText(
       about,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 14,
-        height: 1.3,
-      ),
+      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
     );
   }
 }

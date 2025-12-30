@@ -99,8 +99,9 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
 
     final listIndex = widget.videoIndex;
     final targetIndex = listIndex.clamp(0, widget.videos.length - 1);
-    final currentPage =
-        _pageController!.hasClients ? _pageController!.page?.round() : null;
+    final currentPage = _pageController!.hasClients
+        ? _pageController!.page?.round()
+        : null;
 
     Log.debug(
       '🔄 Checking sync: urlIndex=$listIndex, lastUrlIndex=$_lastVideoUrlIndex, '

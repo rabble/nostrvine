@@ -79,15 +79,15 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       AsyncLoading() => const ProfileLoadingView(),
       AsyncError(:final error) => Center(child: Text('Error: $error')),
       AsyncData(:final value) => _ProfileContentView(
-          routeContext: value,
-          scrollController: _scrollController,
-          onFetchProfile: _fetchProfileIfNeeded,
-          onSetupProfile: _setupProfile,
-          onEditProfile: _editProfile,
-          onOpenClips: _openClips,
-          onShareProfile: _shareProfile,
-          onBlockUser: _blockUser,
-        ),
+        routeContext: value,
+        scrollController: _scrollController,
+        onFetchProfile: _fetchProfileIfNeeded,
+        onSetupProfile: _setupProfile,
+        onEditProfile: _editProfile,
+        onOpenClips: _openClips,
+        onShareProfile: _shareProfile,
+        onBlockUser: _blockUser,
+      ),
     };
   }
 
@@ -366,9 +366,7 @@ class _ProfileContentView extends ConsumerWidget {
     // Check if this user has muted us (mutual mute blocking)
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-      return BlockedUserScreen(
-        onBack: () => Navigator.of(context).pop(),
-      );
+      return BlockedUserScreen(onBack: () => Navigator.of(context).pop());
     }
 
     // Fetch profile data if needed (post-frame to avoid build mutations)
@@ -462,27 +460,25 @@ class _ProfileDataView extends ConsumerWidget {
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
 
     // Get profile stats
-    final profileStatsAsync = ref.watch(
-      fetchProfileStatsProvider(userIdHex),
-    );
+    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
 
     return switch (videosAsync) {
       AsyncLoading() => const ProfileLoadingView(),
       AsyncError(:final error) => Center(child: Text('Error: $error')),
       AsyncData(:final value) => _ProfileViewSwitcher(
-          npub: npub,
-          userIdHex: userIdHex,
-          isOwnProfile: isOwnProfile,
-          videos: value.videos,
-          videoIndex: videoIndex,
-          profileStatsAsync: profileStatsAsync,
-          scrollController: scrollController,
-          onSetupProfile: onSetupProfile,
-          onEditProfile: onEditProfile,
-          onOpenClips: onOpenClips,
-          onShareProfile: onShareProfile,
-          onBlockUser: onBlockUser,
-        ),
+        npub: npub,
+        userIdHex: userIdHex,
+        isOwnProfile: isOwnProfile,
+        videos: value.videos,
+        videoIndex: videoIndex,
+        profileStatsAsync: profileStatsAsync,
+        scrollController: scrollController,
+        onSetupProfile: onSetupProfile,
+        onEditProfile: onEditProfile,
+        onOpenClips: onOpenClips,
+        onShareProfile: onShareProfile,
+        onBlockUser: onBlockUser,
+      ),
     };
   }
 }
