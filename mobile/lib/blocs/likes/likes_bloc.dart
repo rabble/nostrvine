@@ -42,13 +42,13 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
       // Sync with relays (also loads from local storage)
       await _likesRepository.syncUserReactions();
 
-      // Get the liked event IDs and ordered list
-      final likedIds = await _likesRepository.getLikedEventIds();
+      // Get ordered list and derive the Set from it
       final orderedIds = await _likesRepository.getOrderedLikedEventIds();
+      final likedIds = orderedIds.toSet();
 
       // Build eventIdToReactionId map
       final eventIdToReactionId = <String, String>{};
-      for (final eventId in likedIds) {
+      for (final eventId in orderedIds) {
         final record = await _likesRepository.getLikeRecord(eventId);
         if (record != null) {
           eventIdToReactionId[eventId] = record.reactionEventId;
