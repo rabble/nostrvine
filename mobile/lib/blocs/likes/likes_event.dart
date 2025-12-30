@@ -27,25 +27,6 @@ final class LikesToggleRequested extends LikesEvent {
   final String authorPubkey;
 }
 
-/// Like an event (only likes, does not toggle)
-final class LikesLikeRequested extends LikesEvent {
-  const LikesLikeRequested({required this.eventId, required this.authorPubkey});
-
-  /// The event ID to like
-  final String eventId;
-
-  /// The author's pubkey of the event
-  final String authorPubkey;
-}
-
-/// Unlike an event (only unlikes, does not toggle)
-final class LikesUnlikeRequested extends LikesEvent {
-  const LikesUnlikeRequested({required this.eventId});
-
-  /// The event ID to unlike
-  final String eventId;
-}
-
 /// Clear any error message
 final class LikesErrorCleared extends LikesEvent {
   const LikesErrorCleared();

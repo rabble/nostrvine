@@ -38,9 +38,6 @@ void main() {
             () => mockLikesRepository.syncUserReactions(),
           ).thenAnswer((_) async {});
           when(
-            () => mockLikesRepository.getLikedEventIds(),
-          ).thenAnswer((_) async => {'event1', 'event2'});
-          when(
             () => mockLikesRepository.getOrderedLikedEventIds(),
           ).thenAnswer((_) async => ['event2', 'event1']);
           when(() => mockLikesRepository.getLikeRecord('event1')).thenAnswer(
@@ -77,9 +74,6 @@ void main() {
           when(
             () => mockLikesRepository.syncUserReactions(),
           ).thenAnswer((_) async {});
-          when(
-            () => mockLikesRepository.getLikedEventIds(),
-          ).thenAnswer((_) async => <String>{});
           when(
             () => mockLikesRepository.getOrderedLikedEventIds(),
           ).thenAnswer((_) async => <String>[]);
@@ -121,9 +115,6 @@ void main() {
           when(
             () => mockLikesRepository.syncUserReactions(),
           ).thenAnswer((_) async {});
-          when(
-            () => mockLikesRepository.getLikedEventIds(),
-          ).thenAnswer((_) async => <String>{});
           when(
             () => mockLikesRepository.getOrderedLikedEventIds(),
           ).thenAnswer((_) async => <String>[]);
@@ -257,87 +248,6 @@ void main() {
             error: LikesError.likeFailed,
           ),
         ],
-      );
-    });
-
-    group('LikesLikeRequested', () {
-      blocTest<LikesBloc, LikesState>(
-        'likes an event when not already liked',
-        setUp: () {
-          when(
-            () => mockLikesRepository.likeEvent(
-              eventId: 'event1',
-              authorPubkey: 'author1',
-            ),
-          ).thenAnswer((_) async => 'reaction1');
-        },
-        build: createBloc,
-        seed: () => const LikesState(status: LikesStatus.success),
-        act: (bloc) => bloc.add(
-          const LikesLikeRequested(eventId: 'event1', authorPubkey: 'author1'),
-        ),
-        expect: () => [
-          const LikesState(
-            status: LikesStatus.success,
-            operationsInProgress: {'event1'},
-          ),
-          const LikesState(
-            status: LikesStatus.success,
-            likedEventIds: {'event1'},
-            orderedLikedEventIds: ['event1'],
-            eventIdToReactionId: {'event1': 'reaction1'},
-          ),
-        ],
-      );
-
-      blocTest<LikesBloc, LikesState>(
-        'does nothing when already liked',
-        build: createBloc,
-        seed: () => const LikesState(
-          status: LikesStatus.success,
-          likedEventIds: {'event1'},
-        ),
-        act: (bloc) => bloc.add(
-          const LikesLikeRequested(eventId: 'event1', authorPubkey: 'author1'),
-        ),
-        expect: () => <LikesState>[],
-      );
-    });
-
-    group('LikesUnlikeRequested', () {
-      blocTest<LikesBloc, LikesState>(
-        'unlikes an event when liked',
-        setUp: () {
-          when(
-            () => mockLikesRepository.unlikeEvent('event1'),
-          ).thenAnswer((_) async {});
-        },
-        build: createBloc,
-        seed: () => const LikesState(
-          status: LikesStatus.success,
-          likedEventIds: {'event1'},
-          orderedLikedEventIds: ['event1'],
-          eventIdToReactionId: {'event1': 'reaction1'},
-        ),
-        act: (bloc) => bloc.add(const LikesUnlikeRequested(eventId: 'event1')),
-        expect: () => [
-          const LikesState(
-            status: LikesStatus.success,
-            likedEventIds: {'event1'},
-            orderedLikedEventIds: ['event1'],
-            eventIdToReactionId: {'event1': 'reaction1'},
-            operationsInProgress: {'event1'},
-          ),
-          const LikesState(status: LikesStatus.success),
-        ],
-      );
-
-      blocTest<LikesBloc, LikesState>(
-        'does nothing when not liked',
-        build: createBloc,
-        seed: () => const LikesState(status: LikesStatus.success),
-        act: (bloc) => bloc.add(const LikesUnlikeRequested(eventId: 'event1')),
-        expect: () => <LikesState>[],
       );
     });
 
