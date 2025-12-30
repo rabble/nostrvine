@@ -47,6 +47,13 @@ void main() {
       when(
         () => mockLocalStorage.watchLikedEventIds(),
       ).thenAnswer((_) => Stream.value(<String>{}));
+      // Default: not liked, no record found
+      when(
+        () => mockLocalStorage.isLiked(any()),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockLocalStorage.getLikeRecord(any()),
+      ).thenAnswer((_) async => null);
     });
 
     tearDown(() {
@@ -344,6 +351,11 @@ void main() {
         when(
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [likeRecord]);
+
+        // Mock isLiked to return true since toggleLike queries DB directly
+        when(
+          () => mockLocalStorage.isLiked(testEventId),
+        ).thenAnswer((_) async => true);
 
         final mockDeletionEvent = MockEvent();
         when(

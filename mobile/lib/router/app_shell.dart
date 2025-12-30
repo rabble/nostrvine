@@ -221,23 +221,26 @@ class AppShell extends ConsumerWidget {
     final pageCtxAsync = ref.watch(pageContextProvider);
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
-        if (ctx.type == RouteType.hashtag || ctx.type == RouteType.search) {
-          return true;
-        }
+        final isSubRoute =
+            ctx.type == RouteType.hashtag || ctx.type == RouteType.search;
+        final isExploreVideo =
+            ctx.type == RouteType.explore && ctx.videoIndex != null;
+        // Notifications base state is index 0, not null
+        final isNotificationVideo =
+            ctx.type == RouteType.notifications &&
+            ctx.videoIndex != null &&
+            ctx.videoIndex != 0;
+        final isOtherUserProfile =
+            ctx.type == RouteType.profile &&
+            ctx.npub != ref.read(authServiceProvider).currentNpub;
+        final isProfileVideo =
+            ctx.type == RouteType.profile && ctx.videoIndex != null;
 
-        if (ctx.type == RouteType.explore ||
-            ctx.type == RouteType.notifications) {
-          return true;
-        }
-
-        if (ctx.type == RouteType.profile) {
-          final authService = ref.read(authServiceProvider);
-          final currentNpub = authService.currentNpub;
-
-          return ctx.npub != currentNpub;
-        }
-
-        return false;
+        return isSubRoute ||
+            isExploreVideo ||
+            isNotificationVideo ||
+            isOtherUserProfile ||
+            isProfileVideo;
       },
       orElse: () => false,
     );
@@ -282,33 +285,37 @@ class AppShell extends ConsumerWidget {
 
                   // For routes with videoIndex (feed mode), go to grid mode first
                   // This handles page-internal navigation before tab switching
-                  // For explore: go to grid mode (null index)
-                  // For notifications: go to index 0 (notifications always has an index)
-                  // For other routes: go to grid mode (null index)
-                  if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-                    RouteContext gridCtx;
-                    if (ctx.type == RouteType.notifications) {
-                      // Notifications always has an index, go to index 0
-                      gridCtx = RouteContext(
-                        type: ctx.type,
-                        hashtag: ctx.hashtag,
-                        searchTerm: ctx.searchTerm,
-                        npub: ctx.npub,
-                        videoIndex: 0,
-                      );
-                    } else {
-                      // For explore and other routes, go to grid mode (null index)
-                      gridCtx = RouteContext(
+                  // For explore/profile: any videoIndex (including 0) should go to grid (null)
+                  // For notifications: videoIndex > 0 should go to index 0
+                  if (ctx.videoIndex != null) {
+                    // For Explore and Profile, grid mode is null
+                    if (ctx.type == RouteType.explore ||
+                        ctx.type == RouteType.profile) {
+                      final gridCtx = RouteContext(
                         type: ctx.type,
                         hashtag: ctx.hashtag,
                         searchTerm: ctx.searchTerm,
                         npub: ctx.npub,
                         videoIndex: null,
                       );
+                      final newRoute = buildRoute(gridCtx);
+                      context.go(newRoute);
+                      return;
                     }
-                    final newRoute = buildRoute(gridCtx);
-                    context.go(newRoute);
-                    return;
+                    // For Notifications, index 0 is the base state
+                    if (ctx.type == RouteType.notifications &&
+                        ctx.videoIndex != 0) {
+                      final gridCtx = RouteContext(
+                        type: ctx.type,
+                        hashtag: ctx.hashtag,
+                        searchTerm: ctx.searchTerm,
+                        npub: ctx.npub,
+                        videoIndex: 0,
+                      );
+                      final newRoute = buildRoute(gridCtx);
+                      context.go(newRoute);
+                      return;
+                    }
                   }
 
                   // Check tab history for navigation

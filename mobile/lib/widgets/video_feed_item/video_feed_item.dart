@@ -11,9 +11,9 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
+import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -30,6 +30,7 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -840,6 +841,10 @@ class VideoOverlayActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
 
+    final isLiked = ref.watch(isEventLikedProvider(video.id));
+    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
+    final likeCount = ref.watch(likeCountProvider(video.id));
+
     // Check if there's meaningful text content to display
     final hasTextContent =
         video.content.isNotEmpty ||
@@ -1056,88 +1061,78 @@ class VideoOverlayActions extends ConsumerWidget {
               ignoring: false, // Action buttons SHOULD receive taps
               child: Column(
                 children: [
-                  // Like button - wrapped in Consumer to isolate rebuilds
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final socialState = ref.watch(socialProvider);
-                      final isLiked = socialState.isLiked(video.id);
-                      final isLikeInProgress = socialState.isLikeInProgress(
-                        video.id,
-                      );
-                      final likeCount = socialState.likeCounts[video.id] ?? 0;
-
-                      return Column(
-                        children: [
-                          Semantics(
-                            identifier: 'like_button',
-                            container: true,
-                            explicitChildNodes: true,
-                            button: true,
-                            label: isLiked ? 'Unlike video' : 'Like video',
-                            child: CircularIconButton(
-                              onPressed: isLikeInProgress
-                                  ? () {}
-                                  : () async {
-                                      Log.info(
-                                        '❤️ Like button tapped for ${video.id}',
-                                        name: 'VideoFeedItem',
-                                        category: LogCategory.ui,
+                  // Like button
+                  Column(
+                    children: [
+                      Semantics(
+                        identifier: 'like_button',
+                        container: true,
+                        explicitChildNodes: true,
+                        button: true,
+                        label: isLiked ? 'Unlike video' : 'Like video',
+                        child: CircularIconButton(
+                          onPressed: isLikeInProgress
+                              ? () {}
+                              : () async {
+                                  Log.info(
+                                    '❤️ Like button tapped for ${video.id}',
+                                    name: 'VideoFeedItem',
+                                    category: LogCategory.ui,
+                                  );
+                                  await ref
+                                      .read(likesProvider.notifier)
+                                      .toggleLike(
+                                        eventId: video.id,
+                                        authorPubkey: video.pubkey,
                                       );
-                                      await ref
-                                          .read(socialProvider.notifier)
-                                          .toggleLike(video.id, video.pubkey);
-                                    },
-                              icon: isLikeInProgress
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Icon(
-                                      isLiked
-                                          ? Icons.favorite
-                                          : Icons.favorite_outline,
-                                      color: isLiked
-                                          ? Colors.red
-                                          : Colors.white,
-                                      size: 32,
-                                    ),
-                            ),
+                                },
+                          icon: isLikeInProgress
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  isLiked
+                                      ? Icons.favorite
+                                      : Icons.favorite_outline,
+                                  color: isLiked ? Colors.red : Colors.white,
+                                  size: 32,
+                                ),
+                        ),
+                      ),
+                      // Show total like count: new likes + original Vine likes
+                      if (likeCount > 0 ||
+                          (video.originalLikes != null &&
+                              video.originalLikes! > 0)) ...[
+                        const SizedBox(height: 0),
+                        Text(
+                          StringUtils.formatCompactNumber(
+                            likeCount + (video.originalLikes ?? 0),
                           ),
-                          // Show total like count: new likes + original Vine likes
-                          if (likeCount > 0 ||
-                              (video.originalLikes != null &&
-                                  video.originalLikes! > 0)) ...[
-                            const SizedBox(height: 0),
-                            Text(
-                              StringUtils.formatCompactNumber(
-                                likeCount + (video.originalLikes ?? 0),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 0),
+                                blurRadius: 6,
+                                color: Colors.black,
                               ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(0, 0),
-                                    blurRadius: 6,
-                                    color: Colors.black,
-                                  ),
-                                  Shadow(
-                                    offset: Offset(1, 1),
-                                    blurRadius: 3,
-                                    color: Colors.black,
-                                  ),
-                                ],
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black,
                               ),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
 
                   const SizedBox(height: 16),

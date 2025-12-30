@@ -7,21 +7,6 @@ part of 'social_state.dart';
 // **************************************************************************
 
 _SocialState _$SocialStateFromJson(Map<String, dynamic> json) => _SocialState(
-  likedEventIds:
-      (json['likedEventIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toSet() ??
-      const {},
-  likeCounts:
-      (json['likeCounts'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, (e as num).toInt()),
-      ) ??
-      const {},
-  likeEventIdToReactionId:
-      (json['likeEventIdToReactionId'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as String),
-      ) ??
-      const {},
   repostedEventIds:
       (json['repostedEventIds'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -50,11 +35,6 @@ _SocialState _$SocialStateFromJson(Map<String, dynamic> json) => _SocialState(
   isLoading: json['isLoading'] as bool? ?? false,
   isInitialized: json['isInitialized'] as bool? ?? false,
   error: json['error'] as String?,
-  likesInProgress:
-      (json['likesInProgress'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toSet() ??
-      const {},
   repostsInProgress:
       (json['repostsInProgress'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -69,9 +49,6 @@ _SocialState _$SocialStateFromJson(Map<String, dynamic> json) => _SocialState(
 
 Map<String, dynamic> _$SocialStateToJson(_SocialState instance) =>
     <String, dynamic>{
-      'likedEventIds': instance.likedEventIds.toList(),
-      'likeCounts': instance.likeCounts,
-      'likeEventIdToReactionId': instance.likeEventIdToReactionId,
       'repostedEventIds': instance.repostedEventIds.toList(),
       'repostEventIdToRepostId': instance.repostEventIdToRepostId,
       'followingPubkeys': instance.followingPubkeys,
@@ -80,7 +57,6 @@ Map<String, dynamic> _$SocialStateToJson(_SocialState instance) =>
       'isLoading': instance.isLoading,
       'isInitialized': instance.isInitialized,
       'error': instance.error,
-      'likesInProgress': instance.likesInProgress.toList(),
       'repostsInProgress': instance.repostsInProgress.toList(),
       'followsInProgress': instance.followsInProgress.toList(),
     };

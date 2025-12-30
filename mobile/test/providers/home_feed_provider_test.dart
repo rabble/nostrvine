@@ -217,7 +217,6 @@ void main() {
                 SocialState(
                   followingPubkeys: const ['author1', 'author2'], // Same list!
                   isInitialized: true,
-                  likedEventIds: const {'like1'}, // Different likes
                   repostedEventIds: const {'repost1'}, // Different reposts
                 ),
               );

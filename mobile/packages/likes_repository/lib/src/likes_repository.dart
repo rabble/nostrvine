@@ -152,8 +152,13 @@ class LikesRepository {
   Future<void> unlikeEvent(String eventId) async {
     await _ensureInitialized();
 
-    // Get the reaction event ID from cache
-    final record = _likeRecords[eventId];
+    // Try in-memory cache first, then fall back to database
+    // This handles the case where the cache hasn't been populated yet
+    var record = _likeRecords[eventId];
+    if (record == null && _localStorage != null) {
+      record = await _localStorage.getLikeRecord(eventId);
+    }
+
     if (record == null) {
       throw NotLikedException(eventId);
     }
@@ -186,7 +191,13 @@ class LikesRepository {
   }) async {
     await _ensureInitialized();
 
-    if (_likeRecords.containsKey(eventId)) {
+    // Query the database directly as source of truth to avoid cache/db
+    // inconsistency after app restart
+    final isCurrentlyLiked =
+        await _localStorage?.isLiked(eventId) ??
+        _likeRecords.containsKey(eventId);
+
+    if (isCurrentlyLiked) {
       await unlikeEvent(eventId);
       return false;
     } else {

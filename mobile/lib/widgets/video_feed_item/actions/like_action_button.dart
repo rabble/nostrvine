@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
@@ -20,10 +20,9 @@ class LikeActionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final socialState = ref.watch(socialProvider);
-    final isLiked = socialState.isLiked(video.id);
-    final isLikeInProgress = socialState.isLikeInProgress(video.id);
-    final likeCount = socialState.likeCounts[video.id] ?? 0;
+    final isLiked = ref.watch(isEventLikedProvider(video.id));
+    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
+    final likeCount = ref.watch(likeCountProvider(video.id));
     final totalLikes = likeCount + (video.originalLikes ?? 0);
 
     return Column(
@@ -44,9 +43,20 @@ class LikeActionButton extends ConsumerWidget {
                       name: 'LikeActionButton',
                       category: LogCategory.ui,
                     );
-                    await ref
-                        .read(socialProvider.notifier)
-                        .toggleLike(video.id, video.pubkey);
+                    try {
+                      await ref
+                          .read(likesProvider.notifier)
+                          .toggleLike(
+                            eventId: video.id,
+                            authorPubkey: video.pubkey,
+                          );
+                    } catch (e) {
+                      Log.error(
+                        '❤️ Like action failed: $e',
+                        name: 'LikeActionButton',
+                        category: LogCategory.ui,
+                      );
+                    }
                   },
             icon: isLikeInProgress
                 ? const SizedBox(

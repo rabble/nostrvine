@@ -107,7 +107,7 @@ final class LikesNotifierProvider
   }
 }
 
-String _$likesNotifierHash() => r'0343b00565324fadd89bc3530f0c7ecac966cee0';
+String _$likesNotifierHash() => r'e66e53987dfcbccc5efbe6791bafd588948e18ca';
 
 /// Main likes state notifier
 ///
@@ -152,30 +152,15 @@ abstract class _$LikesNotifier extends $Notifier<LikesState> {
 }
 
 /// Convenience provider to check if a specific event is liked
-///
-/// Usage:
-/// ```dart
-/// final isLiked = ref.watch(isEventLikedProvider(eventId));
-/// ```
 
 @ProviderFor(isEventLiked)
 const isEventLikedProvider = IsEventLikedFamily._();
 
 /// Convenience provider to check if a specific event is liked
-///
-/// Usage:
-/// ```dart
-/// final isLiked = ref.watch(isEventLikedProvider(eventId));
-/// ```
 
 final class IsEventLikedProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Convenience provider to check if a specific event is liked
-  ///
-  /// Usage:
-  /// ```dart
-  /// final isLiked = ref.watch(isEventLikedProvider(eventId));
-  /// ```
   const IsEventLikedProvider._({
     required IsEventLikedFamily super.from,
     required String super.argument,
@@ -230,11 +215,6 @@ final class IsEventLikedProvider extends $FunctionalProvider<bool, bool, bool>
 String _$isEventLikedHash() => r'8c87bf774ab2d3d42f74dd81307e94ae9c027685';
 
 /// Convenience provider to check if a specific event is liked
-///
-/// Usage:
-/// ```dart
-/// final isLiked = ref.watch(isEventLikedProvider(eventId));
-/// ```
 
 final class IsEventLikedFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
@@ -248,11 +228,6 @@ final class IsEventLikedFamily extends $Family
       );
 
   /// Convenience provider to check if a specific event is liked
-  ///
-  /// Usage:
-  /// ```dart
-  /// final isLiked = ref.watch(isEventLikedProvider(eventId));
-  /// ```
 
   IsEventLikedProvider call(String eventId) =>
       IsEventLikedProvider._(argument: eventId, from: this);
@@ -262,31 +237,16 @@ final class IsEventLikedFamily extends $Family
 }
 
 /// Convenience provider to check if a like operation is in progress
-///
-/// Usage:
-/// ```dart
-/// final isLoading = ref.watch(isLikeInProgressProvider(eventId));
-/// ```
 
 @ProviderFor(isLikeInProgress)
 const isLikeInProgressProvider = IsLikeInProgressFamily._();
 
 /// Convenience provider to check if a like operation is in progress
-///
-/// Usage:
-/// ```dart
-/// final isLoading = ref.watch(isLikeInProgressProvider(eventId));
-/// ```
 
 final class IsLikeInProgressProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Convenience provider to check if a like operation is in progress
-  ///
-  /// Usage:
-  /// ```dart
-  /// final isLoading = ref.watch(isLikeInProgressProvider(eventId));
-  /// ```
   const IsLikeInProgressProvider._({
     required IsLikeInProgressFamily super.from,
     required String super.argument,
@@ -341,11 +301,6 @@ final class IsLikeInProgressProvider
 String _$isLikeInProgressHash() => r'3456f3be39a7eb837472d1ac11293b81fff9eec7';
 
 /// Convenience provider to check if a like operation is in progress
-///
-/// Usage:
-/// ```dart
-/// final isLoading = ref.watch(isLikeInProgressProvider(eventId));
-/// ```
 
 final class IsLikeInProgressFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
@@ -359,11 +314,6 @@ final class IsLikeInProgressFamily extends $Family
       );
 
   /// Convenience provider to check if a like operation is in progress
-  ///
-  /// Usage:
-  /// ```dart
-  /// final isLoading = ref.watch(isLikeInProgressProvider(eventId));
-  /// ```
 
   IsLikeInProgressProvider call(String eventId) =>
       IsLikeInProgressProvider._(argument: eventId, from: this);
@@ -373,30 +323,15 @@ final class IsLikeInProgressFamily extends $Family
 }
 
 /// Provider to get the cached like count for an event
-///
-/// Usage:
-/// ```dart
-/// final likeCount = ref.watch(likeCountProvider(eventId));
-/// ```
 
 @ProviderFor(likeCount)
 const likeCountProvider = LikeCountFamily._();
 
 /// Provider to get the cached like count for an event
-///
-/// Usage:
-/// ```dart
-/// final likeCount = ref.watch(likeCountProvider(eventId));
-/// ```
 
 final class LikeCountProvider extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
   /// Provider to get the cached like count for an event
-  ///
-  /// Usage:
-  /// ```dart
-  /// final likeCount = ref.watch(likeCountProvider(eventId));
-  /// ```
   const LikeCountProvider._({
     required LikeCountFamily super.from,
     required String super.argument,
@@ -451,11 +386,6 @@ final class LikeCountProvider extends $FunctionalProvider<int, int, int>
 String _$likeCountHash() => r'6b6efd6d2ce0e2588c7412e82573038f19bdb896';
 
 /// Provider to get the cached like count for an event
-///
-/// Usage:
-/// ```dart
-/// final likeCount = ref.watch(likeCountProvider(eventId));
-/// ```
 
 final class LikeCountFamily extends $Family
     with $FunctionalFamilyOverride<int, String> {
@@ -469,11 +399,6 @@ final class LikeCountFamily extends $Family
       );
 
   /// Provider to get the cached like count for an event
-  ///
-  /// Usage:
-  /// ```dart
-  /// final likeCount = ref.watch(likeCountProvider(eventId));
-  /// ```
 
   LikeCountProvider call(String eventId) =>
       LikeCountProvider._(argument: eventId, from: this);

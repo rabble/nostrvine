@@ -1,5 +1,6 @@
 // ABOUTME: Riverpod providers for social service with reactive state management
-// ABOUTME: Pure @riverpod functions for social interactions like likes, follows, and reposts
+// ABOUTME: Pure @riverpod functions for social interactions like follows and reposts
+// ABOUTME: Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 
 import 'dart:async';
 import 'dart:convert';
@@ -9,6 +10,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/state/social_state.dart';
@@ -20,13 +22,12 @@ part 'social_providers.g.dart';
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
+/// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 @Riverpod(keepAlive: true)
 class SocialNotifier extends _$SocialNotifier {
   // Managed subscription IDs
-  String? _likeSubscriptionId;
   String? _followSubscriptionId;
   String? _repostSubscriptionId;
-  String? _userLikesSubscriptionId;
   String? _userRepostsSubscriptionId;
 
   // Save subscription manager for safe disposal
@@ -187,14 +188,14 @@ class SocialNotifier extends _$SocialNotifier {
         category: LogCategory.system,
       );
 
-      // Load follow list and user's own reactions in parallel
+      // Load follow list and user's own reposts in parallel
       await Future.wait([
         _fetchCurrentUserFollowList(),
-        _fetchAllUserReactions(), // Bulk load user's own reactions
+        _fetchAllUserReposts(), // Bulk load user's own reposts
       ]);
 
       Log.info(
-        '✅ SocialNotifier: Contact list fetch complete, following=${state.followingPubkeys.length}, liked=${state.likedEventIds.length}, reposted=${state.repostedEventIds.length}',
+        '✅ SocialNotifier: Contact list fetch complete, following=${state.followingPubkeys.length}, reposted=${state.repostedEventIds.length}',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
@@ -271,159 +272,193 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
-  /// Toggle like on/off for an event
-  Future<void> toggleLike(String eventId, String authorPubkey) async {
+  /// Follow a user
+  Future<void> followUser(String pubkeyToFollow) async {
     final authService = ref.read(authServiceProvider);
 
     if (!authService.isAuthenticated) {
       Log.error(
-        'Cannot like - user not authenticated',
+        'Cannot follow - user not authenticated',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
       return;
     }
 
-    // Check if operation is already in progress
-    if (state.isLikeInProgress(eventId)) {
+    if (state.isFollowing(pubkeyToFollow)) {
       Log.debug(
-        'Like operation already in progress for $eventId',
+        'Already following user: $pubkeyToFollow',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
       return;
     }
 
-    Log.debug(
-      '❤️ Toggling like for event: ${eventId}...',
-      name: 'SocialNotifier',
-      category: LogCategory.system,
-    );
+    if (state.isFollowInProgress(pubkeyToFollow)) {
+      Log.debug(
+        'Follow operation already in progress for $pubkeyToFollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     // Add to in-progress set
     state = state.copyWith(
-      likesInProgress: {...state.likesInProgress, eventId},
+      followsInProgress: {...state.followsInProgress, pubkeyToFollow},
     );
 
     try {
-      final wasLiked = state.isLiked(eventId);
+      final newFollowingList = [...state.followingPubkeys, pubkeyToFollow];
 
-      if (!wasLiked) {
-        // Add like
-        final reactionEventId = await _publishLike(eventId, authorPubkey);
+      // Publish updated contact list
+      await _publishContactList(newFollowingList);
 
-        // Check if provider was disposed during async operation
-        if (!ref.mounted) {
-          Log.warning(
-            'Provider disposed during like operation - aborting',
-            name: 'SocialNotifier',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        // Update state - likeCounts tracks only NEW likes from Nostr
-        state = state.copyWith(
-          likedEventIds: {...state.likedEventIds, eventId},
-          likeEventIdToReactionId: {
-            ...state.likeEventIdToReactionId,
-            eventId: reactionEventId,
-          },
-          likeCounts: {
-            ...state.likeCounts,
-            eventId: (state.likeCounts[eventId] ?? 0) + 1,
-          },
-        );
-
-        Log.info(
-          'Like published for event: ${eventId}...',
+      // Check if provider was disposed during async operation
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during follow operation - aborting',
           name: 'SocialNotifier',
           category: LogCategory.system,
         );
-      } else {
-        // Unlike by publishing NIP-09 deletion event
-        final reactionEventId = state.likeEventIdToReactionId[eventId];
-        if (reactionEventId != null) {
-          await _publishUnlike(reactionEventId);
-
-          // Check if provider was disposed during async operation
-          if (!ref.mounted) {
-            Log.warning(
-              'Provider disposed during unlike operation - aborting',
-              name: 'SocialNotifier',
-              category: LogCategory.system,
-            );
-            return;
-          }
-
-          // Update state
-          final newLikedEventIds = {...state.likedEventIds}..remove(eventId);
-          final newLikeEventIdToReactionId = {...state.likeEventIdToReactionId}
-            ..remove(eventId);
-          final currentCount = state.likeCounts[eventId] ?? 0;
-
-          state = state.copyWith(
-            likedEventIds: newLikedEventIds,
-            likeEventIdToReactionId: newLikeEventIdToReactionId,
-            likeCounts: {
-              ...state.likeCounts,
-              eventId: currentCount > 0 ? currentCount - 1 : 0,
-            },
-          );
-
-          Log.info(
-            'Unlike (deletion) published for event: ${eventId}...',
-            name: 'SocialNotifier',
-            category: LogCategory.system,
-          );
-        } else {
-          Log.warning(
-            'Cannot unlike - reaction event ID not found',
-            name: 'SocialNotifier',
-            category: LogCategory.system,
-          );
-
-          // Fallback: remove from local state only
-          final newLikedEventIds = {...state.likedEventIds}..remove(eventId);
-          final currentCount = state.likeCounts[eventId] ?? 0;
-
-          state = state.copyWith(
-            likedEventIds: newLikedEventIds,
-            likeCounts: {
-              ...state.likeCounts,
-              eventId: currentCount > 0 ? currentCount - 1 : 0,
-            },
-          );
-        }
+        return;
       }
 
-      // Remove from in-progress set on success
-      if (ref.mounted) {
-        final newLikesInProgress = {...state.likesInProgress}..remove(eventId);
-        state = state.copyWith(likesInProgress: newLikesInProgress);
-      }
+      // Update state
+      state = state.copyWith(followingPubkeys: newFollowingList);
+
+      // Save to cache
+      _saveFollowingListToCache();
+
+      Log.info(
+        'Now following: $pubkeyToFollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+
+      // Trigger home feed refresh to show videos from newly followed user
+      _refreshHomeFeed();
     } catch (e) {
       Log.error(
-        'Error toggling like: $e',
+        'Error following user: $e',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
       // Check if provider was disposed during error handling
       if (!ref.mounted) {
         Log.warning(
-          'Provider disposed during like error handling - aborting',
+          'Provider disposed during follow error handling - aborting',
           name: 'SocialNotifier',
           category: LogCategory.system,
         );
         return;
       }
-      // Remove from in-progress set before updating error
-      final newLikesInProgress = {...state.likesInProgress}..remove(eventId);
-      state = state.copyWith(
-        error: e.toString(),
-        likesInProgress: newLikesInProgress,
-      );
+      state = state.copyWith(error: e.toString());
       rethrow;
+    } finally {
+      // Check if provider was disposed before cleanup
+      if (ref.mounted) {
+        // Remove from in-progress set
+        final newFollowsInProgress = {...state.followsInProgress}
+          ..remove(pubkeyToFollow);
+        state = state.copyWith(followsInProgress: newFollowsInProgress);
+      }
+    }
+  }
+
+  /// Unfollow a user
+  Future<void> unfollowUser(String pubkeyToUnfollow) async {
+    final authService = ref.read(authServiceProvider);
+
+    if (!authService.isAuthenticated) {
+      Log.error(
+        'Cannot unfollow - user not authenticated',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (!state.isFollowing(pubkeyToUnfollow)) {
+      Log.debug(
+        'Not following user: $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (state.isFollowInProgress(pubkeyToUnfollow)) {
+      Log.debug(
+        'Follow operation already in progress for $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Add to in-progress set
+    state = state.copyWith(
+      followsInProgress: {...state.followsInProgress, pubkeyToUnfollow},
+    );
+
+    try {
+      final newFollowingList = state.followingPubkeys
+          .where((p) => p != pubkeyToUnfollow)
+          .toList();
+
+      // Publish updated contact list
+      await _publishContactList(newFollowingList);
+
+      // Check if provider was disposed during async operation
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during unfollow operation - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Update state
+      state = state.copyWith(followingPubkeys: newFollowingList);
+
+      // Save to cache
+      _saveFollowingListToCache();
+
+      Log.info(
+        'Unfollowed: $pubkeyToUnfollow',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+
+      // Trigger home feed refresh to update feed
+      _refreshHomeFeed();
+    } catch (e) {
+      Log.error(
+        'Error unfollowing user: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      // Check if provider was disposed during error handling
+      if (!ref.mounted) {
+        Log.warning(
+          'Provider disposed during unfollow error handling - aborting',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    } finally {
+      // Check if provider was disposed before cleanup
+      if (ref.mounted) {
+        // Remove from in-progress set
+        final newFollowsInProgress = {...state.followsInProgress}
+          ..remove(pubkeyToUnfollow);
+        state = state.copyWith(followsInProgress: newFollowsInProgress);
+      }
     }
   }
 
@@ -725,8 +760,9 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
-  /// Fetch all user's reactions and reposts in bulk on startup
-  Future<void> _fetchAllUserReactions() async {
+  /// Fetch all user's reposts in bulk on startup
+  /// Note: Likes are now fetched by LikesProvider via LikesRepository
+  Future<void> _fetchAllUserReposts() async {
     final authService = ref.read(authServiceProvider);
     final nostrService = ref.read(nostrServiceProvider);
 
@@ -737,16 +773,9 @@ class SocialNotifier extends _$SocialNotifier {
 
     try {
       Log.info(
-        '📥 Fetching all user reactions and reposts',
+        '📥 Fetching all user reposts',
         name: 'SocialNotifier',
         category: LogCategory.system,
-      );
-
-      // Create filters for user's reactions and reposts
-      final reactionFilter = Filter(
-        kinds: const [7], // reactions
-        authors: [authService.currentPublicKeyHex!],
-        limit: 500, // Get last 500 reactions
       );
 
       final repostFilter = Filter(
@@ -755,13 +784,10 @@ class SocialNotifier extends _$SocialNotifier {
         limit: 500, // Get last 500 reposts
       );
 
-      // Query for reactions and reposts
       final completer = Completer<void>();
-      final reactionEvents = <Event>[];
       final repostEvents = <Event>[];
 
-      // Subscribe to both filters
-      final stream = nostrService.subscribe([reactionFilter, repostFilter]);
+      final stream = nostrService.subscribe([repostFilter]);
 
       late final StreamSubscription<Event> subscription;
 
@@ -775,9 +801,7 @@ class SocialNotifier extends _$SocialNotifier {
 
       subscription = stream.listen(
         (event) {
-          if (event.kind == 7) {
-            reactionEvents.add(event);
-          } else if (event.kind == 16) {
+          if (event.kind == 16) {
             repostEvents.add(event);
           }
         },
@@ -789,7 +813,7 @@ class SocialNotifier extends _$SocialNotifier {
         },
         onError: (error) {
           Log.error(
-            'Error fetching user reactions: $error',
+            'Error fetching user reposts: $error',
             name: 'SocialNotifier',
             category: LogCategory.system,
           );
@@ -805,29 +829,11 @@ class SocialNotifier extends _$SocialNotifier {
       // Check if provider was disposed during async operation
       if (!ref.mounted) {
         Log.warning(
-          'Provider disposed during reactions fetch - aborting',
+          'Provider disposed during reposts fetch - aborting',
           name: 'SocialNotifier',
           category: LogCategory.system,
         );
         return;
-      }
-
-      // Process reactions
-      final likedEventIds = <String>{};
-      final likeEventIdToReactionId = <String, String>{};
-
-      for (final event in reactionEvents) {
-        if (event.content == '+') {
-          // Find the 'e' tag which references the liked event
-          final eTags = event.tags.where(
-            (tag) => tag.length >= 2 && tag[0] == 'e',
-          );
-          if (eTags.isNotEmpty) {
-            final likedEventId = eTags.first[1];
-            likedEventIds.add(likedEventId);
-            likeEventIdToReactionId[likedEventId] = event.id;
-          }
-        }
       }
 
       // Process reposts
@@ -846,22 +852,20 @@ class SocialNotifier extends _$SocialNotifier {
         }
       }
 
-      // Update state with all reactions
+      // Update state with reposts
       state = state.copyWith(
-        likedEventIds: likedEventIds,
-        likeEventIdToReactionId: likeEventIdToReactionId,
         repostedEventIds: repostedEventIds,
         repostEventIdToRepostId: repostEventIdToRepostId,
       );
 
       Log.info(
-        '✅ Loaded ${likedEventIds.length} likes and ${repostedEventIds.length} reposts',
+        '✅ Loaded ${repostedEventIds.length} reposts',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'Error fetching user reactions: $e',
+        'Error fetching user reposts: $e',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
@@ -870,83 +874,44 @@ class SocialNotifier extends _$SocialNotifier {
 
   // Private helper methods
 
-  Future<String> _publishLike(String eventId, String authorPubkey) async {
+  Future<void> _publishContactList(List<String> followingPubkeys) async {
     try {
       final authService = ref.read(authServiceProvider);
       final nostrService = ref.read(nostrServiceProvider);
 
-      // Create NIP-25 reaction event (Kind 7)
+      // Build tags for contact list (NIP-02)
+      final tags = followingPubkeys.map((pubkey) => ['p', pubkey]).toList();
+
+      // Create Kind 3 event (contact list)
       final event = await authService.createAndSignEvent(
-        kind: 7,
-        content: '+', // Standard like reaction
-        tags: [
-          ['e', eventId], // Reference to liked event
-          ['p', authorPubkey], // Reference to liked event author
-        ],
+        kind: 3,
+        content: '', // Contact lists typically have empty content
+        tags: tags,
       );
 
       if (event == null) {
-        throw Exception('Failed to create like event');
+        throw Exception('Failed to create contact list event');
       }
 
-      // Broadcast the like event
+      // Broadcast the contact list event
       final result = await nostrService.broadcast(event);
 
       if (!result.isSuccessful) {
         final errorMessages = result.errors.values.join(', ');
-        throw Exception('Failed to broadcast like event: $errorMessages');
+        throw Exception('Failed to broadcast contact list: $errorMessages');
       }
+
+      // Update current contact list event
+      state = state.copyWith(currentUserContactListEvent: event);
 
       Log.debug(
-        'Like event broadcasted: ${event.id}',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-      return event.id;
-    } catch (e) {
-      Log.error(
-        'Error publishing like: $e',
-        name: 'SocialNotifier',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> _publishUnlike(String reactionEventId) async {
-    try {
-      final authService = ref.read(authServiceProvider);
-      final nostrService = ref.read(nostrServiceProvider);
-
-      // Create NIP-09 deletion event (Kind 5)
-      final deletionEvent = await authService.createAndSignEvent(
-        kind: 5,
-        content: 'Deleting like reaction',
-        tags: [
-          ['e', reactionEventId], // Reference to the reaction event to delete
-        ],
-      );
-
-      if (deletionEvent == null) {
-        throw Exception('Failed to create deletion event');
-      }
-
-      // Broadcast the deletion event
-      final result = await nostrService.broadcast(deletionEvent);
-
-      if (!result.isSuccessful) {
-        final errorMessages = result.errors.values.join(', ');
-        throw Exception('Failed to broadcast deletion event: $errorMessages');
-      }
-
-      Log.debug(
-        'Unlike (deletion) event broadcasted: ${deletionEvent.id}',
+        'Contact list published with ${followingPubkeys.length} contacts',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'Error publishing unlike: $e',
+        'Error publishing contact list: $e',
         name: 'SocialNotifier',
         category: LogCategory.system,
       );
@@ -1005,6 +970,24 @@ class SocialNotifier extends _$SocialNotifier {
     }
   }
 
+  /// Trigger home feed refresh after follow/unfollow
+  void _refreshHomeFeed() {
+    try {
+      ref.invalidate(homeFeedProvider);
+      Log.debug(
+        '🔄 Home feed invalidated after follow change',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to refresh home feed: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   void _cleanupSubscriptions() {
     try {
       // Use saved subscription manager reference instead of ref.read()
@@ -1018,17 +1001,11 @@ class SocialNotifier extends _$SocialNotifier {
         return;
       }
 
-      if (_likeSubscriptionId != null) {
-        _subscriptionManager.cancelSubscription(_likeSubscriptionId!);
-      }
       if (_followSubscriptionId != null) {
         _subscriptionManager.cancelSubscription(_followSubscriptionId!);
       }
       if (_repostSubscriptionId != null) {
         _subscriptionManager.cancelSubscription(_repostSubscriptionId!);
-      }
-      if (_userLikesSubscriptionId != null) {
-        _subscriptionManager.cancelSubscription(_userLikesSubscriptionId!);
       }
       if (_userRepostsSubscriptionId != null) {
         _subscriptionManager.cancelSubscription(_userRepostsSubscriptionId!);
