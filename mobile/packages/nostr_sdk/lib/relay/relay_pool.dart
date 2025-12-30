@@ -152,9 +152,7 @@ class RelayPool {
     bool sendAfterAuth, {
     bool runBeforeConnected = false,
   }) async {
-    if ((!runBeforeConnected &&
-            relay.relayStatus.connected != ClientConnected.connected) ||
-        !relay.relayStatus.readAccess) {
+    if (!relay.relayStatus.readAccess) {
       return false;
     }
 
@@ -177,12 +175,7 @@ class RelayPool {
           return true;
         }
       } else {
-        if (relay.relayStatus.connected == ClientConnected.connected) {
-          return relay.send(message);
-        } else {
-          relay.pendingMessages.add(message);
-          return true;
-        }
+        return relay.send(message);
       }
     } catch (err) {
       log(err.toString());
@@ -194,9 +187,7 @@ class RelayPool {
 
   void _broadcaseToCache(Map<String, dynamic> event) {
     for (var relay in _cacheRelays.values) {
-      if (relay.relayStatus.connected == ClientConnected.connected) {
-        relay.send(["EVENT", event]);
-      }
+      relay.send(["EVENT", event]);
     }
   }
 
@@ -516,9 +507,7 @@ class RelayPool {
     bool sendAfterAuth, {
     bool runBeforeConnected = false,
   }) async {
-    if ((!runBeforeConnected &&
-            relay.relayStatus.connected != ClientConnected.connected) ||
-        !relay.relayStatus.readAccess) {
+    if (!relay.relayStatus.readAccess) {
       return false;
     }
 
@@ -544,12 +533,7 @@ class RelayPool {
           return true;
         }
       } else {
-        if (relay.relayStatus.connected == ClientConnected.connected) {
-          return relay.send(message);
-        } else {
-          relay.pendingMessages.add(message);
-          return true;
-        }
+        return relay.send(message);
       }
     } catch (err) {
       log(err.toString());
@@ -784,11 +768,8 @@ class RelayPool {
     if (tempRelays != null) {
       for (var tempRelayAddr in tempRelays) {
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
-        if (tempRelay.relayStatus.connected == ClientConnected.connected) {
-          tempRelay.send(message);
-          hadSubmitSend = true;
-        } else {
-          tempRelay.pendingMessages.add(message);
+        var result = await tempRelay.send(message);
+        if (result) {
           hadSubmitSend = true;
         }
       }
@@ -1030,9 +1011,6 @@ class RelayPool {
 
     // Try each relay until one responds
     for (final relay in relaysToTry) {
-      if (relay.relayStatus.connected != ClientConnected.connected) {
-        continue;
-      }
       if (!relay.relayStatus.readAccess) {
         continue;
       }
