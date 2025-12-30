@@ -74,6 +74,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   int _playbackGeneration =
       0; // Prevents race conditions with rapid state changes
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
+  DateTime?
+  _loadingStartTime; // Track when loading started for delayed indicator
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -614,6 +616,29 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
                     // Show loading state while video initializes
                     if (!value.isInitialized) {
+                      // Track when loading started for this video
+                      _loadingStartTime ??= DateTime.now();
+
+                      // Only show loading indicator after 2 seconds of loading
+                      final loadingDuration = DateTime.now().difference(
+                        _loadingStartTime!,
+                      );
+                      final shouldShowIndicator =
+                          isActive && loadingDuration.inMilliseconds > 2000;
+
+                      // Schedule a rebuild after 2s if we haven't shown indicator yet
+                      if (isActive && !shouldShowIndicator) {
+                        Future.delayed(
+                          Duration(
+                            milliseconds:
+                                2000 - loadingDuration.inMilliseconds + 100,
+                          ),
+                          () {
+                            if (mounted) setState(() {});
+                          },
+                        );
+                      }
+
                       Log.debug(
                         '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
                         name: 'VideoFeedItem',
@@ -628,14 +653,17 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             BlurhashDisplay(blurhash: video.blurhash!)
                           else
                             Container(color: Colors.black),
-                          // Only show loading spinner for active video
-                          if (isActive)
+                          // Only show loading spinner after 2 seconds of loading
+                          if (shouldShowIndicator)
                             const Center(
                               child: BrandedLoadingIndicator(size: 60),
                             ),
                         ],
                       );
                     }
+
+                    // Video initialized - reset loading timer
+                    _loadingStartTime = null;
 
                     // Video is initialized - show first frame (even if not active)
                     // This enables seeing the video during swipe transitions
