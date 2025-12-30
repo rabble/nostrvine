@@ -12,6 +12,11 @@ _LikesState _$LikesStateFromJson(Map<String, dynamic> json) => _LikesState(
           ?.map((e) => e as String)
           .toSet() ??
       const {},
+  orderedLikedEventIds:
+      (json['orderedLikedEventIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   eventIdToReactionId:
       (json['eventIdToReactionId'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, e as String),
@@ -35,6 +40,7 @@ _LikesState _$LikesStateFromJson(Map<String, dynamic> json) => _LikesState(
 Map<String, dynamic> _$LikesStateToJson(_LikesState instance) =>
     <String, dynamic>{
       'likedEventIds': instance.likedEventIds.toList(),
+      'orderedLikedEventIds': instance.orderedLikedEventIds,
       'eventIdToReactionId': instance.eventIdToReactionId,
       'likeCounts': instance.likeCounts,
       'isInitialized': instance.isInitialized,
