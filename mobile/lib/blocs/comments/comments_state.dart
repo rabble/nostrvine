@@ -38,6 +38,9 @@ enum CommentsError {
   deleteCommentFailed,
 }
 
+/// Sentinel value to indicate a parameter was not provided in copyWith.
+const Object _undefined = Object();
+
 /// State class for the CommentsBloc
 ///
 /// Uses [repo.CommentNode] from the comments_repository package
@@ -50,13 +53,11 @@ final class CommentsState extends Equatable {
     this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
     this.topLevelComments = const [],
-    this.totalCommentCount = 0,
     this.error,
     this.mainInputText = '',
-    this.replyInputTexts = const {},
+    this.replyInputText = '',
     this.activeReplyCommentId,
     this.isPosting = false,
-    this.isDeleting = false,
   });
 
   /// The current status of the comments
@@ -75,9 +76,6 @@ final class CommentsState extends Equatable {
   /// Uses [CommentNode] from the repository layer.
   final List<CommentNode> topLevelComments;
 
-  /// Total count of all comments (including replies)
-  final int totalCommentCount;
-
   /// Error type for l10n-friendly error handling.
   /// UI layer maps this to localized string via BlocListener.
   final CommentsError? error;
@@ -85,8 +83,8 @@ final class CommentsState extends Equatable {
   /// Text content of the main comment input
   final String mainInputText;
 
-  /// Map of comment ID -> reply text for each active reply
-  final Map<String, String> replyInputTexts;
+  /// Text content of the active reply input
+  final String replyInputText;
 
   /// ID of the comment currently being replied to (shows reply input)
   final String? activeReplyCommentId;
@@ -94,32 +92,25 @@ final class CommentsState extends Equatable {
   /// Whether a comment is currently being posted (main or reply)
   final bool isPosting;
 
-  /// Whether a comment is currently being deleted
-  final bool isDeleting;
-
   /// Check if we're posting a reply to a specific comment
   bool isReplyPosting(String commentId) =>
       isPosting && activeReplyCommentId == commentId;
 
-  /// Get the reply text for a specific comment
-  String getReplyText(String commentId) => replyInputTexts[commentId] ?? '';
-
-  /// Create a copy with updated values
+  /// Create a copy with updated values.
+  ///
+  /// For [activeReplyCommentId], pass `null` to explicitly clear it,
+  /// or omit it to preserve the current value.
   CommentsState copyWith({
     CommentsStatus? status,
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
     List<CommentNode>? topLevelComments,
-    int? totalCommentCount,
     CommentsError? error,
-    bool clearError = false,
     String? mainInputText,
-    Map<String, String>? replyInputTexts,
-    String? activeReplyCommentId,
-    bool clearActiveReply = false,
+    String? replyInputText,
+    Object? activeReplyCommentId = _undefined,
     bool? isPosting,
-    bool? isDeleting,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -127,15 +118,13 @@ final class CommentsState extends Equatable {
       rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
       topLevelComments: topLevelComments ?? this.topLevelComments,
-      totalCommentCount: totalCommentCount ?? this.totalCommentCount,
-      error: clearError ? null : error,
+      error: error,
       mainInputText: mainInputText ?? this.mainInputText,
-      replyInputTexts: replyInputTexts ?? this.replyInputTexts,
-      activeReplyCommentId: clearActiveReply
-          ? null
-          : (activeReplyCommentId ?? this.activeReplyCommentId),
+      replyInputText: replyInputText ?? this.replyInputText,
+      activeReplyCommentId: identical(activeReplyCommentId, _undefined)
+          ? this.activeReplyCommentId
+          : activeReplyCommentId as String?,
       isPosting: isPosting ?? this.isPosting,
-      isDeleting: isDeleting ?? this.isDeleting,
     );
   }
 
@@ -146,12 +135,10 @@ final class CommentsState extends Equatable {
     rootEventKind,
     rootAuthorPubkey,
     topLevelComments,
-    totalCommentCount,
     error,
     mainInputText,
-    replyInputTexts,
+    replyInputText,
     activeReplyCommentId,
     isPosting,
-    isDeleting,
   ];
 }

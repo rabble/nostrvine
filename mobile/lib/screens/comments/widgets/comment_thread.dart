@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
@@ -127,10 +128,11 @@ class CommentThread extends StatelessWidget {
                       // 3-dot options menu (only visible for own comments)
                       Consumer(
                         builder: (context, ref, _) {
-                          final authService = ref.watch(authServiceProvider);
+                          final nostrService = ref.watch(nostrServiceProvider);
+                          final currentUserPubkey = nostrService.publicKey;
                           final isOwnComment =
-                              authService.currentPublicKeyHex ==
-                              comment.authorPubkey;
+                              currentUserPubkey.isNotEmpty &&
+                              currentUserPubkey == comment.authorPubkey;
 
                           if (!isOwnComment) {
                             return const SizedBox.shrink();
@@ -239,9 +241,7 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   void initState() {
     super.initState();
     final state = context.read<CommentsBloc>().state;
-    _controller = TextEditingController(
-      text: state.getReplyText(widget.parentCommentId),
-    );
+    _controller = TextEditingController(text: state.replyInputText);
   }
 
   @override
@@ -253,11 +253,9 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CommentsBloc, CommentsState>(
-      buildWhen: (prev, next) =>
-          prev.getReplyText(widget.parentCommentId) !=
-          next.getReplyText(widget.parentCommentId),
+      buildWhen: (prev, next) => prev.replyInputText != next.replyInputText,
       builder: (context, state) {
-        final currentText = state.getReplyText(widget.parentCommentId);
+        final currentText = state.replyInputText;
 
         // Sync controller with state (for when state changes externally,
         // e.g., after post clears the text)

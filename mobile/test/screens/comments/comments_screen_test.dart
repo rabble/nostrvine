@@ -7,9 +7,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/social_service.dart';
@@ -36,6 +38,8 @@ class MockAuthService extends Mock implements AuthService {}
 
 class MockUserProfileService extends Mock implements UserProfileService {}
 
+class MockNostrClient extends Mock implements NostrClient {}
+
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
     implements CommentsBloc {}
 
@@ -50,6 +54,7 @@ void main() {
     late MockSocialService mockSocialService;
     late MockAuthService mockAuthService;
     late MockUserProfileService mockUserProfileService;
+    late MockNostrClient mockNostrClient;
     late MockCommentsBloc mockCommentsBloc;
     late ScrollController scrollController;
     late VideoEvent testVideoEvent;
@@ -62,6 +67,7 @@ void main() {
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
       mockUserProfileService = MockUserProfileService();
+      mockNostrClient = MockNostrClient();
       mockCommentsBloc = MockCommentsBloc();
       scrollController = ScrollController();
 
@@ -80,6 +86,8 @@ void main() {
       when(
         () => mockSocialService.fetchCommentsForEvent(any()),
       ).thenAnswer((_) => const Stream.empty());
+      // Return empty string to indicate user is not the comment author (no 3-dot menu)
+      when(() => mockNostrClient.publicKey).thenReturn('');
 
       // Default state
       when(() => mockCommentsBloc.state).thenReturn(
@@ -109,6 +117,7 @@ void main() {
           socialServiceProvider.overrideWithValue(mockSocialService),
           authServiceProvider.overrideWithValue(mockAuthService),
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -202,8 +211,7 @@ void main() {
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           topLevelComments: comments,
-          totalCommentCount: 1,
-        );
+                  );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));
         await tester.pump();
@@ -235,9 +243,8 @@ void main() {
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           topLevelComments: comments,
-          totalCommentCount: 1,
-          activeReplyCommentId: TestCommentIds.comment1Id,
-          replyInputTexts: {TestCommentIds.comment1Id: ''},
+                    activeReplyCommentId: TestCommentIds.comment1Id,
+          replyInputText: '',
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
