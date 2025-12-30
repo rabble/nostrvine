@@ -94,6 +94,18 @@ class NostrClient {
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 
+  /// Helper to cache a successfully sent event with default expiry.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored since caching
+  /// failures should not affect the send operation's success.
+  void _cacheEvent(Event event) {
+    try {
+      unawaited(_nostrEventsDao?.upsertEvent(event));
+    } on Object {
+      // Ignore cache errors - send was already successful
+    }
+  }
+
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
@@ -132,15 +144,20 @@ class NostrClient {
   /// Publishes an event to relays
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
+  /// Successfully sent events are cached locally with 1-week expiry.
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
     Event event, {
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendEvent(
+    final sentEvent = await _nostr.sendEvent(
       event,
       targetRelays: targetRelays,
     );
+    if (sentEvent != null) {
+      _cacheEvent(sentEvent);
+    }
+    return sentEvent;
   }
 
   /// Queries events with given filters
@@ -577,21 +594,29 @@ class NostrClient {
   }
 
   /// Sends a like reaction to an event
+  ///
+  /// Successfully sent events are cached locally with 1-week expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendLike(
+    final likeEvent = await _nostr.sendLike(
       eventId,
       content: content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (likeEvent != null) {
+      _cacheEvent(likeEvent);
+    }
+    return likeEvent;
   }
 
   /// Sends a repost
+  ///
+  /// Successfully sent events are cached locally with 1-week expiry.
   Future<Event?> sendRepost(
     String eventId, {
     String? relayAddr,
@@ -599,13 +624,17 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendRepost(
+    final repostEvent = await _nostr.sendRepost(
       eventId,
       relayAddr: relayAddr,
       content: content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (repostEvent != null) {
+      _cacheEvent(repostEvent);
+    }
+    return repostEvent;
   }
 
   /// Deletes an event
@@ -635,18 +664,24 @@ class NostrClient {
   }
 
   /// Sends a contact list
+  ///
+  /// Successfully sent events are cached locally with 1-week expiry.
   Future<Event?> sendContactList(
     ContactList contacts,
     String content, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendContactList(
+    final contactListEvent = await _nostr.sendContactList(
       contacts,
       content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (contactListEvent != null) {
+      _cacheEvent(contactListEvent);
+    }
+    return contactListEvent;
   }
 
   /// Searches for video events using NIP-50 search
@@ -693,6 +728,7 @@ class NostrClient {
   ///
   /// Similar to [publishEvent] but returns detailed per-relay tracking.
   /// Use this when you need visibility into which relays accepted the event.
+  /// Successfully sent events are cached locally with 1-week expiry.
   ///
   /// Note: Per-relay tracking is currently based on the connected relays
   /// at broadcast time. The underlying nostr_sdk doesn't provide individual
@@ -711,6 +747,9 @@ class NostrClient {
       );
 
       if (sentEvent != null) {
+        // Cache successfully broadcast event
+        _cacheEvent(sentEvent);
+
         // Event was accepted by at least one relay
         // Since nostr_sdk doesn't provide per-relay tracking,
         // we mark all connected relays as successful
