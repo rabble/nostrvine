@@ -654,26 +654,18 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         ? value.size.height
                         : 1.0;
 
-                    // UNIFIED structure - no conditional returns to avoid flash
+                    // UNIFIED structure - use Offstage instead of conditional
+                    // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
                       child: Container(
                         color: Colors.black,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Thumbnail placeholder while video loads - prevents black flash during scroll
-                            if (!value.isInitialized &&
-                                video.thumbnailUrl != null)
-                              Image.network(
-                                video.thumbnailUrl!,
-                                fit: BoxFit.contain,
-                                alignment: Alignment.topCenter,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox.shrink(),
-                              ),
-                            // Video player - only render when initialized
-                            if (value.isInitialized)
-                              FittedBox(
+                            // Video player - use Offstage to keep in tree
+                            Offstage(
+                              offstage: !value.isInitialized,
+                              child: FittedBox(
                                 fit: BoxFit.contain,
                                 alignment: Alignment.topCenter,
                                 child: SizedBox(
@@ -682,14 +674,19 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   child: VideoPlayer(controller),
                                 ),
                               ),
+                            ),
                             // Loading indicator after 2s delay
-                            if (shouldShowIndicator)
-                              const Center(
+                            Offstage(
+                              offstage: !shouldShowIndicator,
+                              child: const Center(
                                 child: BrandedLoadingIndicator(size: 60),
                               ),
+                            ),
                             // Buffering indicator
-                            if (value.isInitialized && value.isBuffering)
-                              Positioned(
+                            Offstage(
+                              offstage:
+                                  !(value.isInitialized && value.isBuffering),
+                              child: Positioned(
                                 bottom: 0,
                                 left: 0,
                                 right: 0,
@@ -701,6 +698,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
+                            ),
                             // Play button when active and paused
                             if (isActive &&
                                 value.isInitialized &&
