@@ -271,16 +271,24 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   // Update tracked video stableId
                   _currentVideoStableId = videos[newIndex].stableId;
 
+                  // Update last URL index immediately to prevent rebuild flash
+                  _lastUrlIndex = newIndex;
+
                   // Guard: only navigate if URL doesn't match
+                  // Use addPostFrameCallback to defer URL update until after
+                  // the scroll animation completes, preventing mid-scroll rebuilds
                   if (newIndex != urlIndex) {
-                    context.go(
-                      buildRoute(
-                        RouteContext(
-                          type: RouteType.home,
-                          videoIndex: newIndex,
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      context.go(
+                        buildRoute(
+                          RouteContext(
+                            type: RouteType.home,
+                            videoIndex: newIndex,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    });
                   }
 
                   // Trigger pagination near end
