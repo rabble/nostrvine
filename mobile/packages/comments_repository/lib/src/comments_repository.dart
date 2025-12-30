@@ -445,4 +445,55 @@ class CommentsRepository {
       rootAuthorPubkey: '',
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Tree manipulation helpers
+  // ---------------------------------------------------------------------------
+
+  /// Handles a deleted comment in the tree.
+  ///
+  /// If the comment has replies, marks it as not found to preserve threading.
+  /// If the comment has no replies, removes it completely.
+  /// Also cleans up placeholder branches that no longer have real comments.
+  List<CommentNode> markCommentAsNotFound(
+    List<CommentNode> nodes,
+    String commentId,
+  ) {
+    final result = <CommentNode>[];
+
+    for (final node in nodes) {
+      if (node.comment.id == commentId) {
+        // Found the target comment
+        if (node.replies.isNotEmpty) {
+          // Has replies - keep as placeholder
+          result.add(node.copyWith(isNotFound: true));
+        }
+        // No replies - skip (remove from tree)
+      } else if (node.replies.isNotEmpty) {
+        // Not the target - recurse into replies
+        final updatedReplies = markCommentAsNotFound(node.replies, commentId);
+
+        // If this is a placeholder and has no real comments below, remove it
+        if (node.isNotFound && !_hasRealComments(updatedReplies)) {
+          continue;
+        }
+
+        result.add(node.copyWith(replies: updatedReplies));
+      } else {
+        // Not the target and no replies - keep as is
+        result.add(node);
+      }
+    }
+
+    return result;
+  }
+
+  /// Checks if any node in the list (or their descendants) is a real comment.
+  bool _hasRealComments(List<CommentNode> nodes) {
+    for (final node in nodes) {
+      if (!node.isNotFound) return true;
+      if (_hasRealComments(node.replies)) return true;
+    }
+    return false;
+  }
 }

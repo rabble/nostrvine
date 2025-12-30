@@ -211,7 +211,7 @@ void main() {
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           topLevelComments: comments,
-                  );
+        );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));
         await tester.pump();
@@ -243,7 +243,7 @@ void main() {
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           topLevelComments: comments,
-                    activeReplyCommentId: TestCommentIds.comment1Id,
+          activeReplyCommentId: TestCommentIds.comment1Id,
           replyInputText: '',
         );
 

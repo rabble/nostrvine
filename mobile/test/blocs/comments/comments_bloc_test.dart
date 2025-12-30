@@ -584,7 +584,6 @@ void main() {
 
       expect(state.isReplyPosting('comment1'), false);
     });
-
   });
 
   group('CommentNode', () {
