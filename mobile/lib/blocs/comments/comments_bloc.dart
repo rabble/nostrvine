@@ -38,6 +38,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentReplyToggled>(_onReplyToggled);
     on<CommentSubmitted>(_onSubmitted);
     on<CommentErrorCleared>(_onErrorCleared);
+    on<CommentDeleteRequested>(_onDeleteRequested);
   }
 
   final CommentsRepository _commentsRepository;
@@ -207,5 +208,64 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       }
       return node;
     }).toList();
+  }
+
+  Future<void> _onDeleteRequested(
+    CommentDeleteRequested event,
+    Emitter<CommentsState> emit,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    emit(state.copyWith(isDeleting: true, clearError: true));
+
+    try {
+      await _commentsRepository.deleteComment(commentId: event.commentId);
+
+      final updatedComments = _removeCommentFromTree(
+        state.topLevelComments,
+        event.commentId,
+      );
+
+      emit(
+        state.copyWith(
+          topLevelComments: updatedComments,
+          totalCommentCount: state.totalCommentCount - 1,
+          isDeleting: false,
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Error deleting comment: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      emit(
+        state.copyWith(
+          isDeleting: false,
+          error: CommentsError.deleteCommentFailed,
+        ),
+      );
+    }
+  }
+
+  /// Recursively removes a comment from the tree.
+  List<CommentNode> _removeCommentFromTree(
+    List<CommentNode> nodes,
+    String commentId,
+  ) {
+    return nodes
+        .where((node) => node.comment.id != commentId)
+        .map(
+          (node) => node.replies.isEmpty
+              ? node
+              : node.copyWith(
+                  replies: _removeCommentFromTree(node.replies, commentId),
+                ),
+        )
+        .toList();
   }
 }

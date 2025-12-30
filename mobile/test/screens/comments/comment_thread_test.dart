@@ -13,6 +13,7 @@ import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -20,6 +21,8 @@ import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
 class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockAuthService extends Mock implements AuthService {}
 
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
     implements CommentsBloc {}
@@ -33,6 +36,7 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentThread', () {
     late MockUserProfileService mockUserProfileService;
+    late MockAuthService mockAuthService;
     late MockCommentsBloc mockCommentsBloc;
 
     setUpAll(() {
@@ -41,6 +45,7 @@ void main() {
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
+      mockAuthService = MockAuthService();
       mockCommentsBloc = MockCommentsBloc();
 
       when(
@@ -49,6 +54,8 @@ void main() {
       when(
         () => mockUserProfileService.shouldSkipProfileFetch(any()),
       ).thenReturn(true);
+      // Return null to indicate user is not the comment author (no 3-dot menu)
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
       when(() => mockCommentsBloc.state).thenReturn(
         const CommentsState(
           rootEventId: testVideoEventId,
@@ -73,6 +80,7 @@ void main() {
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          authServiceProvider.overrideWithValue(mockAuthService),
         ],
         child: MaterialApp(
           home: Scaffold(

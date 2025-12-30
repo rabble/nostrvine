@@ -11,6 +11,9 @@ import 'package:rxdart/rxdart.dart';
 /// Kind 1111 is the NIP-22 comment kind for replying to non-Kind-1 events.
 const int _commentKind = EventKind.comment;
 
+/// Kind 5 is the NIP-09 deletion request kind.
+const int _deletionKind = EventKind.eventDeletion;
+
 /// Default limit for comment queries.
 const _defaultLimit = 100;
 
@@ -217,6 +220,47 @@ class CommentsRepository {
       return result.count;
     } on Exception catch (e) {
       throw CountCommentsFailedException('Failed to count comments: $e');
+    }
+  }
+
+  /// Deletes a comment by publishing a NIP-09 deletion request.
+  ///
+  /// Creates a Kind 5 event with an `e` tag referencing the comment
+  /// and a `k` tag specifying the comment kind (1111).
+  ///
+  /// Parameters:
+  /// - [commentId]: The ID of the comment event to delete
+  /// - [reason]: Optional reason for the deletion
+  ///
+  /// Throws [DeleteCommentFailedException] if broadcasting fails.
+  Future<void> deleteComment({
+    required String commentId,
+    String? reason,
+  }) async {
+    try {
+      // NIP-09: Build deletion request tags
+      final tags = <List<String>>[
+        ['e', commentId],
+        ['k', _commentKind.toString()],
+      ];
+
+      final event = Event(
+        _nostrClient.publicKey,
+        _deletionKind,
+        tags,
+        reason ?? '',
+      );
+
+      final sentEvent = await _nostrClient.publishEvent(event);
+      if (sentEvent == null) {
+        throw const DeleteCommentFailedException(
+          'Failed to publish deletion request',
+        );
+      }
+    } on CommentsRepositoryException {
+      rethrow;
+    } on Exception catch (e) {
+      throw DeleteCommentFailedException('Failed to delete comment: $e');
     }
   }
 

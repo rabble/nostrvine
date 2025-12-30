@@ -124,6 +124,38 @@ class CommentThread extends StatelessWidget {
                           },
                         ),
                       ),
+                      // 3-dot options menu (only visible for own comments)
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final authService = ref.watch(authServiceProvider);
+                          final isOwnComment =
+                              authService.currentPublicKeyHex ==
+                              comment.authorPubkey;
+
+                          if (!isOwnComment) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return IconButton(
+                            icon: const Icon(
+                              Icons.more_vert,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () async {
+                              final shouldDelete =
+                                  await CommentOptionsModal.show(context);
+                              if (shouldDelete == true && context.mounted) {
+                                context.read<CommentsBloc>().add(
+                                  CommentDeleteRequested(comment.id),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),

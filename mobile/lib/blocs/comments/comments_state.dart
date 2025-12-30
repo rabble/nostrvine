@@ -33,6 +33,9 @@ enum CommentsError {
 
   /// Failed to post a reply to a comment
   postReplyFailed,
+
+  /// Failed to delete a comment
+  deleteCommentFailed,
 }
 
 /// State class for the CommentsBloc
@@ -53,6 +56,7 @@ final class CommentsState extends Equatable {
     this.replyInputTexts = const {},
     this.activeReplyCommentId,
     this.isPosting = false,
+    this.isDeleting = false,
   });
 
   /// The current status of the comments
@@ -90,6 +94,9 @@ final class CommentsState extends Equatable {
   /// Whether a comment is currently being posted (main or reply)
   final bool isPosting;
 
+  /// Whether a comment is currently being deleted
+  final bool isDeleting;
+
   /// Check if we're posting a reply to a specific comment
   bool isReplyPosting(String commentId) =>
       isPosting && activeReplyCommentId == commentId;
@@ -112,6 +119,7 @@ final class CommentsState extends Equatable {
     String? activeReplyCommentId,
     bool clearActiveReply = false,
     bool? isPosting,
+    bool? isDeleting,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -127,6 +135,7 @@ final class CommentsState extends Equatable {
           ? null
           : (activeReplyCommentId ?? this.activeReplyCommentId),
       isPosting: isPosting ?? this.isPosting,
+      isDeleting: isDeleting ?? this.isDeleting,
     );
   }
 
@@ -143,5 +152,6 @@ final class CommentsState extends Equatable {
     replyInputTexts,
     activeReplyCommentId,
     isPosting,
+    isDeleting,
   ];
 }

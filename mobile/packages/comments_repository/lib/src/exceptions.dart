@@ -42,3 +42,9 @@ class InvalidCommentContentException extends CommentsRepositoryException {
   /// Creates a new invalid comment content exception.
   const InvalidCommentContentException([super.message]);
 }
+
+/// Exception thrown when deleting a comment fails.
+class DeleteCommentFailedException extends CommentsRepositoryException {
+  /// Creates a new delete comment failed exception.
+  const DeleteCommentFailedException([super.message]);
+}

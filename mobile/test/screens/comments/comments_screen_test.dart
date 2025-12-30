@@ -26,6 +26,7 @@ String _errorToString(CommentsError error) {
     CommentsError.notAuthenticated => 'Please sign in to comment',
     CommentsError.postCommentFailed => 'Failed to post comment',
     CommentsError.postReplyFailed => 'Failed to post reply',
+    CommentsError.deleteCommentFailed => 'Failed to delete comment',
   };
 }
 
