@@ -2,6 +2,7 @@
 // ABOUTME: Displays videos with swipe navigation, used from profile/hashtag grids
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -48,7 +49,8 @@ class FullscreenVideoFeedScreen extends ConsumerStatefulWidget {
 }
 
 class _FullscreenVideoFeedScreenState
-    extends ConsumerState<FullscreenVideoFeedScreen> with VideoPrefetchMixin {
+    extends ConsumerState<FullscreenVideoFeedScreen>
+    with VideoPrefetchMixin {
   late PageController _pageController;
   late int _currentIndex;
 
@@ -110,7 +112,11 @@ class _FullscreenVideoFeedScreenState
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        forceMaterialTransparency: true,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),

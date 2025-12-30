@@ -825,9 +825,9 @@ class VideoOverlayActions extends ConsumerWidget {
         // Bottom left column: Repost banner, author row, description
         // TODO(cleanup): Remove hasBottomNavigation and use only isFullscreen
         Positioned(
-          bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
+          bottom: hasBottomNavigation ? 16 : (isFullscreen ? 48 : 16),
           left: 16,
-          right: 80, // Leave space for action buttons
+          right: 16,
           child: AnimatedOpacity(
             opacity: isActive ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 200),
@@ -845,98 +845,102 @@ class VideoOverlayActions extends ConsumerWidget {
                 // Description (if there's text content)
                 if (hasTextContent) ...[
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Video title with clickable hashtags
-                        Semantics(
-                          identifier: 'video_description',
-                          container: true,
-                          explicitChildNodes: true,
-                          label: 'Video description',
-                          child: ClickableHashtagText(
-                            text: video.content.isNotEmpty
-                                ? video.content
-                                : video.title!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(0, 0),
-                                  blurRadius: 8,
-                                  color: Colors.black,
-                                ),
-                                Shadow(
-                                  offset: Offset(2, 2),
-                                  blurRadius: 4,
-                                  color: Colors.black,
-                                ),
-                              ],
-                            ),
-                            hashtagStyle: TextStyle(
-                              color: VineTheme.vineGreen,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                              shadows: const [
-                                Shadow(
-                                  offset: Offset(0, 0),
-                                  blurRadius: 8,
-                                  color: Colors.black,
-                                ),
-                                Shadow(
-                                  offset: Offset(2, 2),
-                                  blurRadius: 4,
-                                  color: Colors.black,
-                                ),
-                              ],
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // Show original loop count if available
-                        if (video.originalLoops != null &&
-                            video.originalLoops! > 0) ...[
-                          const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 64),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Video title with clickable hashtags
                           Semantics(
-                            identifier: 'loop_count',
+                            identifier: 'video_description',
                             container: true,
                             explicitChildNodes: true,
-                            label: 'Video loop count',
-                            child: Text(
-                              '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                            label: 'Video description',
+                            child: ClickableHashtagText(
+                              text: video.content.isNotEmpty
+                                  ? video.content
+                                  : video.title!,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
                                 shadows: [
                                   Shadow(
                                     offset: Offset(0, 0),
-                                    blurRadius: 6,
+                                    blurRadius: 8,
                                     color: Colors.black,
                                   ),
                                   Shadow(
-                                    offset: Offset(1, 1),
-                                    blurRadius: 3,
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
                                     color: Colors.black,
                                   ),
                                 ],
                               ),
+                              hashtagStyle: TextStyle(
+                                color: VineTheme.vineGreen,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 0),
+                                    blurRadius: 8,
+                                    color: Colors.black,
+                                  ),
+                                  Shadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          // Show original loop count if available
+                          if (video.originalLoops != null &&
+                              video.originalLoops! > 0) ...[
+                            const SizedBox(height: 4),
+                            Semantics(
+                              identifier: 'loop_count',
+                              container: true,
+                              explicitChildNodes: true,
+                              label: 'Video loop count',
+                              child: Text(
+                                '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 0),
+                                      blurRadius: 6,
+                                      color: Colors.black,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 3,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -947,7 +951,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // Action buttons at bottom right
         // In fullscreen mode (no bottom nav), add extra padding to avoid edge
         Positioned(
-          bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
+          bottom: hasBottomNavigation ? 16 : (isFullscreen ? 48 : 16),
           right: 16,
           child: AnimatedOpacity(
             opacity: isActive ? 1.0 : 0.0,
