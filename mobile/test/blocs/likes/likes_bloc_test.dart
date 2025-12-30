@@ -1,5 +1,5 @@
 // ABOUTME: Tests for LikesBloc - user's likes management
-// ABOUTME: Tests syncing, liking, unliking, and toggle operations
+// ABOUTME: Tests syncing, toggling likes, and state management
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,8 +23,6 @@ void main() {
       final bloc = createBloc();
       expect(bloc.state.status, LikesStatus.initial);
       expect(bloc.state.likedEventIds, isEmpty);
-      expect(bloc.state.orderedLikedEventIds, isEmpty);
-      expect(bloc.state.eventIdToReactionId, isEmpty);
       expect(bloc.state.operationsInProgress, isEmpty);
       expect(bloc.state.error, isNull);
       bloc.close();
@@ -34,24 +32,13 @@ void main() {
       blocTest<LikesBloc, LikesState>(
         'emits [syncing, success] with likes from repository',
         setUp: () {
-          when(
-            () => mockLikesRepository.syncUserReactions(),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockLikesRepository.getOrderedLikedEventIds(),
-          ).thenAnswer((_) async => ['event2', 'event1']);
-          when(() => mockLikesRepository.getLikeRecord('event1')).thenAnswer(
-            (_) async => LikeRecord(
-              targetEventId: 'event1',
-              reactionEventId: 'reaction1',
-              createdAt: DateTime(2024),
-            ),
-          );
-          when(() => mockLikesRepository.getLikeRecord('event2')).thenAnswer(
-            (_) async => LikeRecord(
-              targetEventId: 'event2',
-              reactionEventId: 'reaction2',
-              createdAt: DateTime(2024, 2),
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => const LikesSyncResult(
+              orderedEventIds: ['event2', 'event1'],
+              eventIdToReactionId: {
+                'event1': 'reaction1',
+                'event2': 'reaction2',
+              },
             ),
           );
         },
@@ -61,22 +48,17 @@ void main() {
           const LikesState(status: LikesStatus.syncing),
           const LikesState(
             status: LikesStatus.success,
-            likedEventIds: {'event1', 'event2'},
-            orderedLikedEventIds: ['event2', 'event1'],
-            eventIdToReactionId: {'event1': 'reaction1', 'event2': 'reaction2'},
+            likedEventIds: ['event2', 'event1'],
           ),
         ],
       );
 
       blocTest<LikesBloc, LikesState>(
-        'emits [syncing, success] with empty collections when no likes',
+        'emits [syncing, success] with empty list when no likes',
         setUp: () {
           when(
             () => mockLikesRepository.syncUserReactions(),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockLikesRepository.getOrderedLikedEventIds(),
-          ).thenAnswer((_) async => <String>[]);
+          ).thenAnswer((_) async => const LikesSyncResult.empty());
         },
         build: createBloc,
         act: (bloc) => bloc.add(const LikesSyncRequested()),
@@ -84,9 +66,7 @@ void main() {
           const LikesState(status: LikesStatus.syncing),
           const LikesState(
             status: LikesStatus.success,
-            likedEventIds: {},
-            orderedLikedEventIds: [],
-            eventIdToReactionId: {},
+            likedEventIds: [],
           ),
         ],
       );
@@ -114,10 +94,7 @@ void main() {
         setUp: () {
           when(
             () => mockLikesRepository.syncUserReactions(),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockLikesRepository.getOrderedLikedEventIds(),
-          ).thenAnswer((_) async => <String>[]);
+          ).thenAnswer((_) async => const LikesSyncResult.empty());
         },
         build: createBloc,
         seed: () => const LikesState(status: LikesStatus.syncing),
@@ -139,13 +116,6 @@ void main() {
               authorPubkey: 'author1',
             ),
           ).thenAnswer((_) async => true);
-          when(() => mockLikesRepository.getLikeRecord('event1')).thenAnswer(
-            (_) async => LikeRecord(
-              targetEventId: 'event1',
-              reactionEventId: 'reaction1',
-              createdAt: DateTime.now(),
-            ),
-          );
         },
         build: createBloc,
         seed: () => const LikesState(status: LikesStatus.success),
@@ -162,9 +132,41 @@ void main() {
           ),
           const LikesState(
             status: LikesStatus.success,
-            likedEventIds: {'event1'},
-            orderedLikedEventIds: ['event1'],
-            eventIdToReactionId: {'event1': 'reaction1'},
+            likedEventIds: ['event1'],
+          ),
+        ],
+      );
+
+      blocTest<LikesBloc, LikesState>(
+        'prepends new like to existing list',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: 'event2',
+              authorPubkey: 'author2',
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        build: createBloc,
+        seed: () => const LikesState(
+          status: LikesStatus.success,
+          likedEventIds: ['event1'],
+        ),
+        act: (bloc) => bloc.add(
+          const LikesToggleRequested(
+            eventId: 'event2',
+            authorPubkey: 'author2',
+          ),
+        ),
+        expect: () => [
+          const LikesState(
+            status: LikesStatus.success,
+            likedEventIds: ['event1'],
+            operationsInProgress: {'event2'},
+          ),
+          const LikesState(
+            status: LikesStatus.success,
+            likedEventIds: ['event2', 'event1'],
           ),
         ],
       );
@@ -182,9 +184,7 @@ void main() {
         build: createBloc,
         seed: () => const LikesState(
           status: LikesStatus.success,
-          likedEventIds: {'event1'},
-          orderedLikedEventIds: ['event1'],
-          eventIdToReactionId: {'event1': 'reaction1'},
+          likedEventIds: ['event1'],
         ),
         act: (bloc) => bloc.add(
           const LikesToggleRequested(
@@ -195,9 +195,7 @@ void main() {
         expect: () => [
           const LikesState(
             status: LikesStatus.success,
-            likedEventIds: {'event1'},
-            orderedLikedEventIds: ['event1'],
-            eventIdToReactionId: {'event1': 'reaction1'},
+            likedEventIds: ['event1'],
             operationsInProgress: {'event1'},
           ),
           const LikesState(status: LikesStatus.success),
@@ -221,7 +219,7 @@ void main() {
       );
 
       blocTest<LikesBloc, LikesState>(
-        'emits error when toggle fails',
+        'emits error when toggle fails with LikeFailedException',
         setUp: () {
           when(
             () => mockLikesRepository.toggleLike(
@@ -249,6 +247,95 @@ void main() {
           ),
         ],
       );
+
+      blocTest<LikesBloc, LikesState>(
+        'emits error when toggle fails with UnlikeFailedException',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: 'event1',
+              authorPubkey: 'author1',
+            ),
+          ).thenThrow(const UnlikeFailedException('Network error'));
+        },
+        build: createBloc,
+        seed: () => const LikesState(
+          status: LikesStatus.success,
+          likedEventIds: ['event1'],
+        ),
+        act: (bloc) => bloc.add(
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
+        ),
+        expect: () => [
+          const LikesState(
+            status: LikesStatus.success,
+            likedEventIds: ['event1'],
+            operationsInProgress: {'event1'},
+          ),
+          const LikesState(
+            status: LikesStatus.success,
+            likedEventIds: ['event1'],
+            error: LikesError.unlikeFailed,
+          ),
+        ],
+      );
+
+      blocTest<LikesBloc, LikesState>(
+        'clears operation when AlreadyLikedException thrown',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: 'event1',
+              authorPubkey: 'author1',
+            ),
+          ).thenThrow(const AlreadyLikedException('event1'));
+        },
+        build: createBloc,
+        seed: () => const LikesState(status: LikesStatus.success),
+        act: (bloc) => bloc.add(
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
+        ),
+        expect: () => [
+          const LikesState(
+            status: LikesStatus.success,
+            operationsInProgress: {'event1'},
+          ),
+          const LikesState(status: LikesStatus.success),
+        ],
+      );
+
+      blocTest<LikesBloc, LikesState>(
+        'clears operation when NotLikedException thrown',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: 'event1',
+              authorPubkey: 'author1',
+            ),
+          ).thenThrow(const NotLikedException('event1'));
+        },
+        build: createBloc,
+        seed: () => const LikesState(status: LikesStatus.success),
+        act: (bloc) => bloc.add(
+          const LikesToggleRequested(
+            eventId: 'event1',
+            authorPubkey: 'author1',
+          ),
+        ),
+        expect: () => [
+          const LikesState(
+            status: LikesStatus.success,
+            operationsInProgress: {'event1'},
+          ),
+          const LikesState(status: LikesStatus.success),
+        ],
+      );
     });
 
     group('LikesErrorCleared', () {
@@ -269,20 +356,18 @@ void main() {
     test('supports value equality', () {
       const state1 = LikesState(
         status: LikesStatus.success,
-        likedEventIds: {'event1'},
-        orderedLikedEventIds: ['event1'],
+        likedEventIds: ['event1'],
       );
       const state2 = LikesState(
         status: LikesStatus.success,
-        likedEventIds: {'event1'},
-        orderedLikedEventIds: ['event1'],
+        likedEventIds: ['event1'],
       );
 
       expect(state1, equals(state2));
     });
 
     test('isLiked returns correct value', () {
-      const state = LikesState(likedEventIds: {'event1', 'event2'});
+      const state = LikesState(likedEventIds: ['event1', 'event2']);
 
       expect(state.isLiked('event1'), isTrue);
       expect(state.isLiked('event3'), isFalse);
@@ -295,20 +380,6 @@ void main() {
       expect(state.isOperationInProgress('event2'), isFalse);
     });
 
-    test('getReactionEventId returns correct value', () {
-      const state = LikesState(eventIdToReactionId: {'event1': 'reaction1'});
-
-      expect(state.getReactionEventId('event1'), 'reaction1');
-      expect(state.getReactionEventId('event2'), isNull);
-    });
-
-    test('getLikeCount returns correct value', () {
-      const state = LikesState(likeCounts: {'event1': 42});
-
-      expect(state.getLikeCount('event1'), 42);
-      expect(state.getLikeCount('event2'), 0);
-    });
-
     test('isInitialized returns true when status is success', () {
       const initialState = LikesState();
       const successState = LikesState(status: LikesStatus.success);
@@ -317,30 +388,36 @@ void main() {
       expect(successState.isInitialized, isTrue);
     });
 
+    test('likeCount returns number of liked events', () {
+      const emptyState = LikesState();
+      const stateWithLikes = LikesState(likedEventIds: ['e1', 'e2', 'e3']);
+
+      expect(emptyState.likeCount, 0);
+      expect(stateWithLikes.likeCount, 3);
+    });
+
     test('copyWith creates copy with updated values', () {
       const state = LikesState();
 
       final updated = state.copyWith(
         status: LikesStatus.success,
-        likedEventIds: {'event1'},
-        orderedLikedEventIds: ['event1'],
+        likedEventIds: ['event1'],
       );
 
       expect(updated.status, LikesStatus.success);
-      expect(updated.likedEventIds, {'event1'});
-      expect(updated.orderedLikedEventIds, ['event1']);
+      expect(updated.likedEventIds, ['event1']);
     });
 
     test('copyWith preserves values when not specified', () {
       const state = LikesState(
         status: LikesStatus.success,
-        likedEventIds: {'event1'},
+        likedEventIds: ['event1'],
       );
 
       final updated = state.copyWith();
 
       expect(updated.status, LikesStatus.success);
-      expect(updated.likedEventIds, {'event1'});
+      expect(updated.likedEventIds, ['event1']);
     });
 
     test('copyWith clearError clears error', () {

@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
 import 'package:likes_repository/src/models/like_record.dart';
+import 'package:likes_repository/src/models/likes_sync_result.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
@@ -250,8 +251,10 @@ class LikesRepository {
   /// This should be called on startup to ensure local state matches relay
   /// state.
   ///
+  /// Returns a [LikesSyncResult] containing all synced data needed by the UI.
+  ///
   /// Throws `SyncFailedException` if syncing fails.
-  Future<void> syncUserReactions() async {
+  Future<LikesSyncResult> syncUserReactions() async {
     // First, load from local storage (fast)
     if (_localStorage != null) {
       final records = await _localStorage.getAllLikeRecords();
@@ -300,14 +303,34 @@ class LikesRepository {
 
       _emitLikedIds();
       _isInitialized = true;
+
+      return _buildSyncResult();
     } catch (e) {
       // If relay sync fails but we have local data, don't throw
       if (_likeRecords.isNotEmpty) {
         _isInitialized = true;
-        return;
+        return _buildSyncResult();
       }
       throw SyncFailedException('Failed to sync user reactions: $e');
     }
+  }
+
+  /// Builds a [LikesSyncResult] from the current in-memory cache.
+  LikesSyncResult _buildSyncResult() {
+    // Sort records by createdAt descending (most recent first)
+    final sortedRecords = _likeRecords.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final orderedEventIds = sortedRecords.map((r) => r.targetEventId).toList();
+    final eventIdToReactionId = <String, String>{};
+    for (final record in sortedRecords) {
+      eventIdToReactionId[record.targetEventId] = record.reactionEventId;
+    }
+
+    return LikesSyncResult(
+      orderedEventIds: orderedEventIds,
+      eventIdToReactionId: eventIdToReactionId,
+    );
   }
 
   /// Clear all local like data.

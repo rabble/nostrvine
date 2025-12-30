@@ -1,5 +1,5 @@
 // ABOUTME: BLoC for managing user likes (Kind 7 reactions) on Nostr events
-// ABOUTME: Handles syncing, liking, unliking, and tracking like state
+// ABOUTME: Handles syncing, toggling likes, and tracking operations in progress
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,9 +13,8 @@ part 'likes_state.dart';
 ///
 /// Handles:
 /// - Syncing likes from local storage and Nostr relays
-/// - Liking and unliking events
-/// - Tracking like operations in progress
-/// - Providing ordered liked event IDs for display
+/// - Toggling like status on events
+/// - Tracking like operations in progress for UI feedback
 class LikesBloc extends Bloc<LikesEvent, LikesState> {
   LikesBloc({required LikesRepository likesRepository})
     : _likesRepository = likesRepository,
@@ -27,7 +26,7 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
 
   final LikesRepository _likesRepository;
 
-  /// Handle request to sync likes from storage and relays
+  /// Handle request to sync likes from storage and relays.
   Future<void> _onSyncRequested(
     LikesSyncRequested event,
     Emitter<LikesState> emit,
@@ -37,33 +36,17 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
     emit(state.copyWith(status: LikesStatus.syncing, clearError: true));
 
     try {
-      // Sync with relays (also loads from local storage)
-      await _likesRepository.syncUserReactions();
-
-      // Get ordered list and derive the Set from it
-      final orderedIds = await _likesRepository.getOrderedLikedEventIds();
-      final likedIds = orderedIds.toSet();
-
-      // Build eventIdToReactionId map
-      final eventIdToReactionId = <String, String>{};
-      for (final eventId in orderedIds) {
-        final record = await _likesRepository.getLikeRecord(eventId);
-        if (record != null) {
-          eventIdToReactionId[eventId] = record.reactionEventId;
-        }
-      }
+      final result = await _likesRepository.syncUserReactions();
 
       emit(
         state.copyWith(
           status: LikesStatus.success,
-          likedEventIds: likedIds,
-          orderedLikedEventIds: orderedIds,
-          eventIdToReactionId: eventIdToReactionId,
+          likedEventIds: result.orderedEventIds,
         ),
       );
 
       Log.info(
-        'LikesBloc: Synced ${likedIds.length} likes',
+        'LikesBloc: Synced ${result.count} likes',
         name: 'LikesBloc',
         category: LogCategory.system,
       );
@@ -79,22 +62,10 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
           error: LikesError.syncFailed,
         ),
       );
-    } catch (e) {
-      Log.error(
-        'LikesBloc: Error syncing likes - $e',
-        name: 'LikesBloc',
-        category: LogCategory.system,
-      );
-      emit(
-        state.copyWith(
-          status: LikesStatus.failure,
-          error: LikesError.syncFailed,
-        ),
-      );
     }
   }
 
-  /// Handle toggle like request
+  /// Handle toggle like request.
   Future<void> _onToggleRequested(
     LikesToggleRequested event,
     Emitter<LikesState> emit,
@@ -118,18 +89,10 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
       );
 
       if (isNowLiked) {
-        final record = await _likesRepository.getLikeRecord(eventId);
+        // Prepend to list (most recent first)
         emit(
           state.copyWith(
-            likedEventIds: {...state.likedEventIds, eventId},
-            // Prepend to ordered list (most recent first)
-            orderedLikedEventIds: [eventId, ...state.orderedLikedEventIds],
-            eventIdToReactionId: record != null
-                ? {
-                    ...state.eventIdToReactionId,
-                    eventId: record.reactionEventId,
-                  }
-                : state.eventIdToReactionId,
+            likedEventIds: [eventId, ...state.likedEventIds],
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
@@ -137,16 +100,11 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
           ),
         );
       } else {
+        // Remove from list
         emit(
           state.copyWith(
-            likedEventIds: _removeFromSet(state.likedEventIds, eventId),
-            orderedLikedEventIds: state.orderedLikedEventIds
-                .where((id) => id != eventId)
-                .toList(),
-            eventIdToReactionId: _removeFromMap(
-              state.eventIdToReactionId,
-              eventId,
-            ),
+            likedEventIds:
+                state.likedEventIds.where((id) => id != eventId).toList(),
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
@@ -205,18 +163,13 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
     }
   }
 
-  /// Handle error cleared event
+  /// Handle error cleared event.
   void _onErrorCleared(LikesErrorCleared event, Emitter<LikesState> emit) {
     emit(state.copyWith(clearError: true));
   }
 
-  /// Helper to remove an item from a Set immutably
+  /// Helper to remove an item from a Set immutably.
   Set<String> _removeFromSet(Set<String> set, String item) {
     return {...set}..remove(item);
-  }
-
-  /// Helper to remove an item from a Map immutably
-  Map<String, String> _removeFromMap(Map<String, String> map, String key) {
-    return {...map}..remove(key);
   }
 }
