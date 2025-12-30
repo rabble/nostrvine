@@ -661,6 +661,16 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
+                            // Thumbnail placeholder while video loads - prevents black flash during scroll
+                            if (!value.isInitialized &&
+                                video.thumbnailUrl != null)
+                              Image.network(
+                                video.thumbnailUrl!,
+                                fit: BoxFit.contain,
+                                alignment: Alignment.topCenter,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
                             // Video player - only render when initialized
                             if (value.isInitialized)
                               FittedBox(
