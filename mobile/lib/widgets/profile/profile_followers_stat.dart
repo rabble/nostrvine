@@ -4,13 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/followers/followers_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
+import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/screens/followers_screen.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
-/// Page widget that creates the [FollowersBloc] and provides it to the view.
+/// Page widget that creates the appropriate followers BLoC based on pubkey.
 class ProfileFollowersStat extends ConsumerWidget {
   const ProfileFollowersStat({
     required this.pubkey,
@@ -28,23 +29,60 @@ class ProfileFollowersStat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final isCurrentUser = pubkey == nostrClient.publicKey;
 
-    return BlocProvider(
-      create: (_) => FollowersBloc(
-        followRepository: followRepository,
-        nostrClient: nostrClient,
-      )..add(FollowersListLoadRequested(pubkey)),
-      child: ProfileFollowersStatView(pubkey: pubkey, displayName: displayName),
+    if (isCurrentUser) {
+      return BlocProvider(
+        create: (_) =>
+            MyFollowersBloc(followRepository: followRepository)
+              ..add(const MyFollowersListLoadRequested()),
+        child: _MyFollowersStatView(pubkey: pubkey, displayName: displayName),
+      );
+    } else {
+      return BlocProvider(
+        create: (_) =>
+            OthersFollowersBloc(followRepository: followRepository)
+              ..add(OthersFollowersListLoadRequested(pubkey)),
+        child: _OthersFollowersStatView(
+          pubkey: pubkey,
+          displayName: displayName,
+        ),
+      );
+    }
+  }
+}
+
+/// View widget for current user's followers stat.
+class _MyFollowersStatView extends StatelessWidget {
+  const _MyFollowersStatView({required this.pubkey, required this.displayName});
+
+  final String pubkey;
+  final String? displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MyFollowersBloc, MyFollowersState>(
+      builder: (context, state) {
+        final isLoading =
+            state.status == MyFollowersStatus.initial ||
+            state.status == MyFollowersStatus.loading;
+
+        return ProfileStatColumn(
+          count: isLoading ? null : state.followersPubkeys.length,
+          label: 'Followers',
+          isLoading: isLoading,
+          onTap: () => context.push('/followers/$pubkey', extra: displayName),
+        );
+      },
     );
   }
 }
 
-/// View widget that consumes [FollowersBloc] state and renders the stat column.
-class ProfileFollowersStatView extends StatelessWidget {
-  const ProfileFollowersStatView({
+/// View widget for other user's followers stat.
+class _OthersFollowersStatView extends StatelessWidget {
+  const _OthersFollowersStatView({
     required this.pubkey,
     required this.displayName,
-    super.key,
   });
 
   final String pubkey;
@@ -52,28 +90,19 @@ class ProfileFollowersStatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FollowersBloc, FollowersState>(
+    return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
         final isLoading =
-            state.status == FollowersStatus.initial ||
-            state.status == FollowersStatus.loading;
+            state.status == OthersFollowersStatus.initial ||
+            state.status == OthersFollowersStatus.loading;
 
         return ProfileStatColumn(
           count: isLoading ? null : state.followersPubkeys.length,
           label: 'Followers',
           isLoading: isLoading,
-          onTap: () => _navigateToFollowers(context),
+          onTap: () => context.push('/followers/$pubkey', extra: displayName),
         );
       },
-    );
-  }
-
-  void _navigateToFollowers(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            FollowersScreen(pubkey: pubkey, displayName: displayName),
-      ),
     );
   }
 }

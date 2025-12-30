@@ -1,54 +1,39 @@
-// ABOUTME: Screen displaying list of users followed by the profile being viewed
-// ABOUTME: Uses Page/View pattern - Page creates BLoC, View consumes it
+// ABOUTME: Screen displaying current user's following list
+// ABOUTME: Uses MyFollowingBloc for reactive updates via repository
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/following/following_bloc.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
-/// Page widget that creates the [FollowingBloc] and provides it to the view.
-class FollowingPage extends ConsumerWidget {
-  const FollowingPage({
-    super.key,
-    required this.pubkey,
-    required this.displayName,
-  });
+/// Page widget for displaying current user's following list.
+///
+/// Creates [MyFollowingBloc] and provides it to the view.
+class MyFollowingScreen extends ConsumerWidget {
+  const MyFollowingScreen({super.key, required this.displayName});
 
-  final String pubkey;
   final String? displayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
 
     return BlocProvider(
-      create: (_) => FollowingBloc(
-        followRepository: followRepository,
-        nostrClient: nostrClient,
-        targetPubkey: pubkey,
-      )..add(const FollowingListLoadRequested()),
-      child: FollowingView(pubkey: pubkey, displayName: displayName),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
+      child: _MyFollowingView(displayName: displayName),
     );
   }
 }
 
-/// View widget that consumes [FollowingBloc] state and renders the UI.
-///
-/// Stateless widget that uses [BlocBuilder] to react to state changes.
-class FollowingView extends StatelessWidget {
-  const FollowingView({
-    super.key,
-    required this.pubkey,
-    required this.displayName,
-  });
+class _MyFollowingView extends StatelessWidget {
+  const _MyFollowingView({required this.displayName});
 
-  final String pubkey;
   final String? displayName;
 
   @override
@@ -71,17 +56,22 @@ class FollowingView extends StatelessWidget {
           ),
         ),
       ),
-      body: BlocBuilder<FollowingBloc, FollowingState>(
+      body: BlocBuilder<MyFollowingBloc, MyFollowingState>(
         builder: (context, state) {
           return switch (state.status) {
-            FollowingStatus.initial || FollowingStatus.loading => const Center(
+            MyFollowingStatus.initial => const Center(
               child: CircularProgressIndicator(),
             ),
-            FollowingStatus.success => _FollowingListBody(
+            MyFollowingStatus.success => _FollowingListBody(
               following: state.followingPubkeys,
-              pubkey: pubkey,
             ),
-            FollowingStatus.failure => const _FollowingErrorBody(),
+            MyFollowingStatus.failure => _FollowingErrorBody(
+              onRetry: () {
+                context.read<MyFollowingBloc>().add(
+                  const MyFollowingListLoadRequested(),
+                );
+              },
+            ),
           };
         },
       ),
@@ -90,10 +80,9 @@ class FollowingView extends StatelessWidget {
 }
 
 class _FollowingListBody extends StatelessWidget {
-  const _FollowingListBody({required this.following, required this.pubkey});
+  const _FollowingListBody({required this.following});
 
   final List<String> following;
-  final String pubkey;
 
   @override
   Widget build(BuildContext context) {
@@ -103,14 +92,16 @@ class _FollowingListBody extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<FollowingBloc>().add(const FollowingListLoadRequested());
+        context.read<MyFollowingBloc>().add(
+          const MyFollowingListLoadRequested(),
+        );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: following.length,
         itemBuilder: (context, index) {
           final userPubkey = following[index];
-          return BlocSelector<FollowingBloc, FollowingState, bool>(
+          return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
             selector: (state) => state.isFollowing(userPubkey),
             builder: (context, isFollowing) {
               return UserProfileTile(
@@ -118,8 +109,8 @@ class _FollowingListBody extends StatelessWidget {
                 onTap: () => context.goProfile(userPubkey, 0),
                 isFollowing: isFollowing,
                 onToggleFollow: () {
-                  context.read<FollowingBloc>().add(
-                    FollowToggleRequested(userPubkey),
+                  context.read<MyFollowingBloc>().add(
+                    MyFollowingToggleRequested(userPubkey),
                   );
                 },
               );
@@ -153,7 +144,9 @@ class _FollowingEmptyState extends StatelessWidget {
 }
 
 class _FollowingErrorBody extends StatelessWidget {
-  const _FollowingErrorBody();
+  const _FollowingErrorBody({required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -168,14 +161,7 @@ class _FollowingErrorBody extends StatelessWidget {
             style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              context.read<FollowingBloc>().add(
-                const FollowingListLoadRequested(),
-              );
-            },
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

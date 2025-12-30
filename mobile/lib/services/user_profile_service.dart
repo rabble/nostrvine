@@ -788,26 +788,6 @@ class UserProfileService extends ChangeNotifier {
         : 'User $pubkey';
   }
 
-  /// Get avatar URL for a user
-  String? getAvatarUrl(String pubkey) => _profileCache[pubkey]?.picture;
-
-  /// Get user bio/description
-  String? getUserBio(String pubkey) => _profileCache[pubkey]?.about;
-
-  /// Clear profile cache
-  void clearCache() {
-    _profileCache.clear();
-
-    // Notify listeners that all profiles are gone
-    notifyListeners();
-
-    Log.debug(
-      '🧹 Profile cache cleared',
-      name: 'UserProfileService',
-      category: LogCategory.system,
-    );
-  }
-
   /// Remove specific profile from cache
   void removeProfile(String pubkey) {
     if (_profileCache.remove(pubkey) != null) {
@@ -942,15 +922,6 @@ class UserProfileService extends ChangeNotifier {
       rethrow;
     }
   }
-
-  /// Get cache statistics
-  Map<String, dynamic> getCacheStats() => {
-    'cachedProfiles': _profileCache.length,
-    'pendingRequests': _pendingRequests.length,
-    'activeSubscriptions': _activeSubscriptionIds.length,
-    'managedSubscriptions': _activeSubscriptionIds.length,
-    'isInitialized': _isInitialized,
-  };
 
   /// Test helper method to process profile events directly
   /// Only for testing purposes

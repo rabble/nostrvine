@@ -4,13 +4,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/following/following_bloc.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Page widget that creates the [FollowingBloc] and provides it to the view.
+/// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 class FollowFromProfileButton extends ConsumerWidget {
   const FollowFromProfileButton({super.key, required this.pubkey});
 
@@ -28,17 +28,15 @@ class FollowFromProfileButton extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) => FollowingBloc(
-        followRepository: followRepository,
-        nostrClient: nostrClient,
-        targetPubkey: nostrClient.publicKey,
-      )..add(const FollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(pubkey: pubkey),
     );
   }
 }
 
-/// View widget that consumes [FollowingBloc] state and renders the follow button.
+/// View widget that consumes [MyFollowingBloc] state and renders the follow button.
 class FollowFromProfileButtonView extends StatelessWidget {
   @visibleForTesting
   const FollowFromProfileButtonView({required this.pubkey});
@@ -47,7 +45,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<FollowingBloc, FollowingState, bool>(
+    return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
       selector: (state) => state.isFollowing(pubkey),
       builder: (context, isFollowing) {
         return isFollowing
@@ -85,6 +83,6 @@ class FollowFromProfileButtonView extends StatelessWidget {
       name: 'FollowFromProfileButton',
       category: LogCategory.ui,
     );
-    context.read<FollowingBloc>().add(FollowToggleRequested(pubkey));
+    context.read<MyFollowingBloc>().add(MyFollowingToggleRequested(pubkey));
   }
 }

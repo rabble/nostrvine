@@ -4,13 +4,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/following/following_bloc.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Page widget that creates the [FollowingBloc] and provides it to the view.
+/// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 class VideoFollowButton extends ConsumerWidget {
   const VideoFollowButton({super.key, required this.pubkey});
 
@@ -28,17 +28,15 @@ class VideoFollowButton extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) => FollowingBloc(
-        followRepository: followRepository,
-        nostrClient: nostrClient,
-        targetPubkey: nostrClient.publicKey,
-      )..add(const FollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: VideoFollowButtonView(pubkey: pubkey),
     );
   }
 }
 
-/// View widget that consumes [FollowingBloc] state and renders the follow button.
+/// View widget that consumes [MyFollowingBloc] state and renders the follow button.
 class VideoFollowButtonView extends StatelessWidget {
   @visibleForTesting
   const VideoFollowButtonView({required this.pubkey});
@@ -48,13 +46,13 @@ class VideoFollowButtonView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocSelector<
-      FollowingBloc,
-      FollowingState,
+      MyFollowingBloc,
+      MyFollowingState,
       ({bool isFollowing, bool isReady})
     >(
       selector: (state) => (
         isFollowing: state.isFollowing(pubkey),
-        isReady: state.status == FollowingStatus.success,
+        isReady: state.status == MyFollowingStatus.success,
       ),
       builder: (context, data) {
         // Don't show button until status is success to prevent flash on Home feed
@@ -70,7 +68,9 @@ class VideoFollowButtonView extends StatelessWidget {
               name: 'VideoFollowButton',
               category: LogCategory.ui,
             );
-            context.read<FollowingBloc>().add(FollowToggleRequested(pubkey));
+            context.read<MyFollowingBloc>().add(
+              MyFollowingToggleRequested(pubkey),
+            );
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
