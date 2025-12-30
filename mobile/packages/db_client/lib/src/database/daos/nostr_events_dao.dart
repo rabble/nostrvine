@@ -10,12 +10,12 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 
 part 'nostr_events_dao.g.dart';
 
-/// Default cache expiry duration for Nostr events (1 week).
+/// Default cache expiry duration for Nostr events (1 day).
 ///
 /// All events stored in the database will expire after this duration
 /// to prevent unbounded cache growth. Events can be refreshed by
 /// re-fetching from relays.
-const Duration defaultEventCacheExpiry = Duration(days: 7);
+const Duration defaultEventCacheExpiry = Duration(days: 1);
 
 @DriftAccessor(tables: [NostrEvents, VideoMetrics])
 class NostrEventsDao extends DatabaseAccessor<AppDatabase>
