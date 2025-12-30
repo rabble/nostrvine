@@ -546,12 +546,16 @@ void main() {
       expect(updated.error, null);
     });
 
-    test('copyWith with explicit null clears activeReplyCommentId', () {
-      const state = CommentsState(activeReplyCommentId: 'comment1');
+    test('clearActiveReply clears activeReplyCommentId and replyInputText', () {
+      const state = CommentsState(
+        activeReplyCommentId: 'comment1',
+        replyInputText: 'draft reply',
+      );
 
-      final updated = state.copyWith(activeReplyCommentId: null);
+      final updated = state.clearActiveReply();
 
       expect(updated.activeReplyCommentId, null);
+      expect(updated.replyInputText, '');
     });
 
     test('copyWith preserves activeReplyCommentId when not provided', () {

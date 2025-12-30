@@ -89,7 +89,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
   void _onReplyToggled(CommentReplyToggled event, Emitter<CommentsState> emit) {
     if (state.activeReplyCommentId == event.commentId) {
-      emit(state.copyWith(activeReplyCommentId: null, replyInputText: ''));
+      emit(state.clearActiveReply());
     } else {
       emit(
         state.copyWith(
@@ -136,11 +136,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
       if (isReply) {
         emit(
-          state.copyWith(
+          state.clearActiveReply(
             topLevelComments: updatedComments,
             isPosting: false,
-            activeReplyCommentId: null,
-            replyInputText: '',
           ),
         );
       } else {

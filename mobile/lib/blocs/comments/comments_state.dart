@@ -38,9 +38,6 @@ enum CommentsError {
   deleteCommentFailed,
 }
 
-/// Sentinel value to indicate a parameter was not provided in copyWith.
-const Object _undefined = Object();
-
 /// State class for the CommentsBloc
 ///
 /// Uses [repo.CommentNode] from the comments_repository package
@@ -97,9 +94,6 @@ final class CommentsState extends Equatable {
       isPosting && activeReplyCommentId == commentId;
 
   /// Create a copy with updated values.
-  ///
-  /// For [activeReplyCommentId], pass `null` to explicitly clear it,
-  /// or omit it to preserve the current value.
   CommentsState copyWith({
     CommentsStatus? status,
     String? rootEventId,
@@ -109,7 +103,7 @@ final class CommentsState extends Equatable {
     CommentsError? error,
     String? mainInputText,
     String? replyInputText,
-    Object? activeReplyCommentId = _undefined,
+    String? activeReplyCommentId,
     bool? isPosting,
   }) {
     return CommentsState(
@@ -121,9 +115,25 @@ final class CommentsState extends Equatable {
       error: error,
       mainInputText: mainInputText ?? this.mainInputText,
       replyInputText: replyInputText ?? this.replyInputText,
-      activeReplyCommentId: identical(activeReplyCommentId, _undefined)
-          ? this.activeReplyCommentId
-          : activeReplyCommentId as String?,
+      activeReplyCommentId: activeReplyCommentId ?? this.activeReplyCommentId,
+      isPosting: isPosting ?? this.isPosting,
+    );
+  }
+
+  /// Creates a copy with the active reply cleared.
+  CommentsState clearActiveReply({
+    CommentsStatus? status,
+    List<CommentNode>? topLevelComments,
+    bool? isPosting,
+  }) {
+    return CommentsState(
+      status: status ?? this.status,
+      rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
+      rootAuthorPubkey: rootAuthorPubkey,
+      topLevelComments: topLevelComments ?? this.topLevelComments,
+      mainInputText: mainInputText,
+      replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
     );
   }
