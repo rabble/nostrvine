@@ -33,6 +33,26 @@ class CommentThread extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show placeholder for missing/deleted comments (only if they have replies)
+    if (node.isNotFound) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.only(left: depth * 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: const Text(
+              '[Comment not found]',
+              style: TextStyle(color: Colors.white38),
+            ),
+          ),
+          ...node.replies.map(
+            (reply) => CommentThread(node: reply, depth: depth + 1),
+          ),
+        ],
+      );
+    }
+
     final comment = node.comment;
 
     return BlocBuilder<CommentsBloc, CommentsState>(

@@ -211,7 +211,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     try {
       await _commentsRepository.deleteComment(commentId: event.commentId);
 
-      final updatedComments = _removeCommentFromTree(
+      final updatedComments = _markCommentAsNotFound(
         state.topLevelComments,
         event.commentId,
       );
@@ -228,21 +228,50 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  /// Recursively removes a comment from the tree.
-  /// Nostr delete is asynchronous, so we optimistically update the UI.
-  List<CommentNode> _removeCommentFromTree(
+  /// Recursively handles a deleted comment in the tree.
+  ///
+  /// If the comment has replies, marks it as not found to preserve threading.
+  /// If the comment has no replies, removes it completely.
+  /// Also cleans up placeholder branches that no longer have real comments.
+  List<CommentNode> _markCommentAsNotFound(
     List<CommentNode> nodes,
     String commentId,
   ) {
-    return nodes
-        .where((node) => node.comment.id != commentId)
-        .map(
-          (node) => node.replies.isEmpty
-              ? node
-              : node.copyWith(
-                  replies: _removeCommentFromTree(node.replies, commentId),
-                ),
-        )
-        .toList();
+    final result = <CommentNode>[];
+
+    for (final node in nodes) {
+      if (node.comment.id == commentId) {
+        // Found the target comment
+        if (node.replies.isNotEmpty) {
+          // Has replies - keep as placeholder
+          result.add(node.copyWith(isNotFound: true));
+        }
+        // No replies - skip (remove from tree)
+      } else if (node.replies.isNotEmpty) {
+        // Not the target - recurse into replies
+        final updatedReplies = _markCommentAsNotFound(node.replies, commentId);
+
+        // If this is a placeholder and has no real comments below, remove it
+        if (node.isNotFound && !_hasRealComments(updatedReplies)) {
+          continue;
+        }
+
+        result.add(node.copyWith(replies: updatedReplies));
+      } else {
+        // Not the target and no replies - keep as is
+        result.add(node);
+      }
+    }
+
+    return result;
+  }
+
+  /// Checks if any node in the list (or their descendants) is a real comment.
+  bool _hasRealComments(List<CommentNode> nodes) {
+    for (final node in nodes) {
+      if (!node.isNotFound) return true;
+      if (_hasRealComments(node.replies)) return true;
+    }
+    return false;
   }
 }

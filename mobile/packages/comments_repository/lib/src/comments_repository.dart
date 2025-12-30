@@ -353,6 +353,9 @@ class CommentsRepository {
   }
 
   /// Builds a CommentThread from a map of comments.
+  ///
+  /// Creates placeholder nodes for missing parent comments to preserve
+  /// thread structure when replies are received but their parents are not.
   CommentThread _buildThreadFromComments(
     Map<String, Comment> commentMap,
     String rootEventId,
@@ -361,22 +364,30 @@ class CommentsRepository {
       return CommentThread.empty(rootEventId);
     }
 
+    // Track missing parent IDs that need placeholder nodes
+    final missingParentIds = <String>{};
+
     // Build a map of parent comment ID -> child comment IDs
     final childrenMap = <String, List<String>>{};
     final topLevelIds = <String>[];
 
     for (final comment in commentMap.values) {
       final replyTo = comment.replyToEventId;
-      if (replyTo == null ||
-          replyTo == rootEventId ||
-          !commentMap.containsKey(replyTo)) {
-        // Top-level comment (direct reply to root or orphaned)
+      if (replyTo == null || replyTo == rootEventId) {
+        // Top-level comment (direct reply to root)
         topLevelIds.add(comment.id);
+      } else if (!commentMap.containsKey(replyTo)) {
+        // Parent not found - track it for placeholder creation
+        missingParentIds.add(replyTo);
+        (childrenMap[replyTo] ??= []).add(comment.id);
       } else {
         // Nested reply - add to parent's children list
         (childrenMap[replyTo] ??= []).add(comment.id);
       }
     }
+
+    // Add missing parents to top-level (they'll be rendered as placeholders)
+    topLevelIds.addAll(missingParentIds);
 
     // Cache for built nodes to avoid rebuilding
     final nodeCache = <String, CommentNode>{};
@@ -388,15 +399,24 @@ class CommentsRepository {
         return nodeCache[commentId]!;
       }
 
-      final comment = commentMap[commentId]!;
       final childIds = childrenMap[commentId] ?? <String>[];
+
+      // Check if this is a missing parent (placeholder)
+      final isMissing = missingParentIds.contains(commentId);
+      final comment = isMissing
+          ? _createPlaceholderComment(commentId, rootEventId)
+          : commentMap[commentId]!;
 
       // Recursively build child nodes
       final replies = childIds.map(buildNode).toList()
         // Sort replies by time (oldest first for chronological reading)
         ..sort((a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
 
-      final node = CommentNode(comment: comment, replies: replies);
+      final node = CommentNode(
+        comment: comment,
+        replies: replies,
+        isNotFound: isMissing,
+      );
       nodeCache[commentId] = node;
       return node;
     }
@@ -411,6 +431,18 @@ class CommentsRepository {
       topLevelComments: topLevel,
       totalCount: commentMap.length,
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
+    );
+  }
+
+  /// Creates a placeholder comment for a missing parent.
+  Comment _createPlaceholderComment(String commentId, String rootEventId) {
+    return Comment(
+      id: commentId,
+      content: '',
+      authorPubkey: '',
+      createdAt: DateTime.now(),
+      rootEventId: rootEventId,
+      rootAuthorPubkey: '',
     );
   }
 }
