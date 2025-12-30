@@ -53,7 +53,7 @@ class UserProfileTile extends ConsumerWidget {
         // wrapping with Semantics for testability and accessibility
         return Semantics(
           identifier: 'user_profile_tile_$pubkey',
-          label: profile?.betterDisplayName('Unknown'),
+          label: profile?.bestDisplayName ?? 'Loading...',
           container: true,
           explicitChildNodes: false,
           child: Container(
