@@ -523,18 +523,6 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   // Cache Expiry Management
   // ---------------------------------------------------------------------------
 
-  /// Insert or replace event with an expiry timestamp.
-  ///
-  /// **DEPRECATED**: Use [upsertEvent] instead, which now accepts an optional
-  /// [expireAt] parameter and defaults to 1-week expiry.
-  @Deprecated('Use upsertEvent(event, expireAt: expireAt) instead')
-  Future<void> upsertEventWithExpiry(
-    Event event, {
-    required int expireAt,
-  }) async {
-    await upsertEvent(event, expireAt: expireAt);
-  }
-
   /// Set the expiry timestamp for an existing event.
   ///
   /// Returns true if the event was found and updated, false if not found
@@ -551,29 +539,6 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
         Variable.withInt(expireAt),
         Variable.withString(eventId),
       ],
-      updates: {nostrEvents},
-      updateKind: UpdateKind.update,
-    );
-    return rowsAffected > 0;
-  }
-
-  /// Remove the expiry timestamp from an event (make it permanent).
-  ///
-  /// **DEPRECATED**: All events should have expiry to prevent unbounded cache
-  /// growth. Events without expiry will be deleted during cleanup.
-  ///
-  /// Returns true if the event was found and updated, false if not found
-  /// or if expire_at column doesn't exist.
-  @Deprecated('All events should have expiry. This method will be removed.')
-  Future<bool> clearEventExpiry(String eventId) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return false;
-    }
-
-    final rowsAffected = await customUpdate(
-      'UPDATE event SET expire_at = NULL WHERE id = ?',
-      variables: [Variable.withString(eventId)],
       updates: {nostrEvents},
       updateKind: UpdateKind.update,
     );
