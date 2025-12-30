@@ -30,7 +30,7 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
 
   /// Insert or replace event with NIP-01 replaceable event handling.
   ///
-  /// All events are stored with a default 1-week expiry to prevent unbounded
+  /// All events are stored with a default 1-day expiry to prevent unbounded
   /// cache growth. To customize the expiry, provide [expireAt] as a Unix
   /// timestamp.
   ///
@@ -199,7 +199,7 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
 
   /// Batch insert or replace multiple events in a single transaction.
   ///
-  /// All events are stored with a default 1-week expiry. To customize
+  /// All events are stored with a default 1-day expiry. To customize
   /// the expiry, provide [expireAt] as a Unix timestamp.
   ///
   /// Much more efficient than calling upsertEvent() repeatedly.
