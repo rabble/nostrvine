@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
@@ -32,6 +33,26 @@ class CommentThread extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show placeholder for missing/deleted comments (only if they have replies)
+    if (node.isNotFound) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.only(left: depth * 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: const Text(
+              '[Comment not found]',
+              style: TextStyle(color: Colors.white38),
+            ),
+          ),
+          ...node.replies.map(
+            (reply) => CommentThread(node: reply, depth: depth + 1),
+          ),
+        ],
+      );
+    }
+
     final comment = node.comment;
 
     return BlocBuilder<CommentsBloc, CommentsState>(
@@ -124,6 +145,39 @@ class CommentThread extends StatelessWidget {
                           },
                         ),
                       ),
+                      // 3-dot options menu (only visible for own comments)
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final nostrService = ref.watch(nostrServiceProvider);
+                          final currentUserPubkey = nostrService.publicKey;
+                          final isOwnComment =
+                              currentUserPubkey.isNotEmpty &&
+                              currentUserPubkey == comment.authorPubkey;
+
+                          if (!isOwnComment) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return IconButton(
+                            icon: const Icon(
+                              Icons.more_vert,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () async {
+                              final shouldDelete =
+                                  await CommentOptionsModal.show(context);
+                              if (shouldDelete == true && context.mounted) {
+                                context.read<CommentsBloc>().add(
+                                  CommentDeleteRequested(comment.id),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -207,9 +261,7 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   void initState() {
     super.initState();
     final state = context.read<CommentsBloc>().state;
-    _controller = TextEditingController(
-      text: state.getReplyText(widget.parentCommentId),
-    );
+    _controller = TextEditingController(text: state.replyInputText);
   }
 
   @override
@@ -221,11 +273,9 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CommentsBloc, CommentsState>(
-      buildWhen: (prev, next) =>
-          prev.getReplyText(widget.parentCommentId) !=
-          next.getReplyText(widget.parentCommentId),
+      buildWhen: (prev, next) => prev.replyInputText != next.replyInputText,
       builder: (context, state) {
-        final currentText = state.getReplyText(widget.parentCommentId);
+        final currentText = state.replyInputText;
 
         // Sync controller with state (for when state changes externally,
         // e.g., after post clears the text)

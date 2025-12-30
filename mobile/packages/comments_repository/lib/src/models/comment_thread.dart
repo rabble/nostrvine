@@ -14,6 +14,7 @@ class CommentNode extends Equatable {
   const CommentNode({
     required this.comment,
     this.replies = const [],
+    this.isNotFound = false,
   });
 
   /// The comment at this node.
@@ -21,6 +22,15 @@ class CommentNode extends Equatable {
 
   /// Direct replies to this comment.
   final List<CommentNode> replies;
+
+  /// Whether this comment was not found (deleted or never received).
+  ///
+  /// Used for placeholder nodes that preserve reply threading when:
+  /// - A comment was deleted by its author
+  /// - A parent comment wasn't received from relays but its replies were
+  ///
+  /// The UI should show "[Comment not found]" instead of the content.
+  final bool isNotFound;
 
   /// Total count of all replies including nested replies.
   int get totalReplyCount {
@@ -35,13 +45,15 @@ class CommentNode extends Equatable {
   CommentNode copyWith({
     Comment? comment,
     List<CommentNode>? replies,
+    bool? isNotFound,
   }) => CommentNode(
     comment: comment ?? this.comment,
     replies: replies ?? this.replies,
+    isNotFound: isNotFound ?? this.isNotFound,
   );
 
   @override
-  List<Object?> get props => [comment, replies];
+  List<Object?> get props => [comment, replies, isNotFound];
 }
 
 /// A complete comment thread containing all comments for an event.

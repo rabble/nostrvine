@@ -9,9 +9,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -20,6 +22,8 @@ import '../../builders/comment_builder.dart';
 import '../../builders/comment_node_builder.dart';
 
 class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockNostrClient extends Mock implements NostrClient {}
 
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
     implements CommentsBloc {}
@@ -33,6 +37,7 @@ const testVideoAuthorPubkey =
 void main() {
   group('CommentThread', () {
     late MockUserProfileService mockUserProfileService;
+    late MockNostrClient mockNostrClient;
     late MockCommentsBloc mockCommentsBloc;
 
     setUpAll(() {
@@ -41,6 +46,7 @@ void main() {
 
     setUp(() {
       mockUserProfileService = MockUserProfileService();
+      mockNostrClient = MockNostrClient();
       mockCommentsBloc = MockCommentsBloc();
 
       when(
@@ -49,6 +55,8 @@ void main() {
       when(
         () => mockUserProfileService.shouldSkipProfileFetch(any()),
       ).thenReturn(true);
+      // Return empty string to indicate user is not the comment author (no 3-dot menu)
+      when(() => mockNostrClient.publicKey).thenReturn('');
       when(() => mockCommentsBloc.state).thenReturn(
         const CommentsState(
           rootEventId: testVideoEventId,
@@ -73,6 +81,7 @@ void main() {
       return ProviderScope(
         overrides: [
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -180,7 +189,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         activeReplyCommentId: TestCommentIds.comment1Id,
-        replyInputTexts: {TestCommentIds.comment1Id: ''},
+        replyInputText: '',
       );
 
       await tester.pumpWidget(
@@ -222,7 +231,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         activeReplyCommentId: TestCommentIds.comment1Id,
-        replyInputTexts: {TestCommentIds.comment1Id: ''},
+        replyInputText: '',
       );
 
       await tester.pumpWidget(

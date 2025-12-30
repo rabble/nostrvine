@@ -1,41 +1,28 @@
 // ABOUTME: Router-driven Instagram-style profile screen implementation
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
-import 'package:openvine/mixins/page_controller_sync_mixin.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
+import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
-import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
-import 'package:openvine/widgets/profile/profile_followers_stat.dart';
-import 'package:openvine/widgets/profile/profile_following_stat.dart';
-import 'package:openvine/widgets/profile/profile_liked_grid.dart';
-import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
-import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
-import 'package:openvine/widgets/profile/profile_videos_grid.dart';
-import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/user_name.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_loading_view.dart';
+import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -48,24 +35,8 @@ class ProfileScreenRouter extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
-    with
-        TickerProviderStateMixin,
-        VideoPrefetchMixin,
-        PageControllerSyncMixin,
-        AsyncValueUIHelpersMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  PageController? _videoController; // For fullscreen video mode
-  int? _lastVideoUrlIndex; // Track URL changes for video mode
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-
-    // NOTE: Router-driven architecture - active video automatically updates based on URL
-    // No manual state management needed - tab changes trigger route changes which update activeVideoIdProvider
-  }
 
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
@@ -75,14 +46,14 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // Fetch profile (shows cached immediately, refreshes in background)
     if (!userProfileService.hasProfile(userIdHex)) {
       Log.debug(
-        '📥 Fetching uncached profile: ${userIdHex}',
+        '📥 Fetching uncached profile: $userIdHex',
         name: 'ProfileScreenRouter',
         category: LogCategory.ui,
       );
       userProfileService.fetchProfile(userIdHex);
     } else {
       Log.debug(
-        '📋 Using cached profile: ${userIdHex}',
+        '📋 Using cached profile: $userIdHex',
         name: 'ProfileScreenRouter',
         category: LogCategory.ui,
       );
@@ -93,9 +64,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _scrollController.dispose();
-    _videoController?.dispose();
     super.dispose();
   }
 
@@ -106,584 +75,20 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // Read derived context from router
     final pageContext = ref.watch(pageContextProvider);
 
-    return buildAsyncUI(
-      pageContext,
-      onData: (ctx) {
-        if (ctx.type != RouteType.profile) {
-          // During navigation transitions, we may briefly see non-profile routes.
-          // Just show nothing rather than an error message.
-          return const SizedBox.shrink();
-        }
-
-        // Convert npub to hex for profile feed provider
-        final npub = ctx.npub ?? '';
-
-        // Handle "me" special case - redirect to actual user profile
-        if (npub == 'me') {
-          final authService = ref.watch(authServiceProvider);
-          if (!authService.isAuthenticated ||
-              authService.currentPublicKeyHex == null) {
-            // Not authenticated - redirect to home
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                GoRouter.of(context).go('/home/0');
-              }
-            });
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          // Get current user's npub and redirect (preserve grid/feed mode from context)
-          final currentUserNpub = NostrKeyUtils.encodePubKey(
-            authService.currentPublicKeyHex!,
-          );
-          final videoIndex = ctx
-              .videoIndex; // Don't default to 0 - preserve null for grid mode
-
-          // Redirect to actual user profile using GoRouter explicitly
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              // Use context extension to properly handle null videoIndex (grid mode)
-              if (videoIndex != null) {
-                context.goProfile(currentUserNpub, videoIndex);
-              } else {
-                context.goProfileGrid(currentUserNpub);
-              }
-            }
-          });
-
-          // Show loading while redirecting
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final userIdHex = npubToHexOrNull(npub);
-
-        if (userIdHex == null) {
-          return const Center(child: Text('Invalid profile ID'));
-        }
-
-        // Get current user for comparison
-        final authService = ref.watch(authServiceProvider);
-        final currentUserHex = authService.currentPublicKeyHex;
-        final isOwnProfile = userIdHex == currentUserHex;
-
-        // Check if this user has muted us (mutual mute blocking)
-        final blocklistService = ref.watch(contentBlocklistServiceProvider);
-        if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-          return Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            body: const Center(
-              child: Text(
-                'This account is not available',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-            ),
-          );
-        }
-
-        // Get video data from profile feed
-        final videosAsync = ref.watch(profileFeedProvider(userIdHex));
-
-        // Get profile stats
-        final profileStatsAsync = ref.watch(
-          fetchProfileStatsProvider(userIdHex),
-        );
-
-        // Fetch profile data if needed (post-frame to avoid build mutations)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _fetchProfileIfNeeded(userIdHex, isOwnProfile);
-          }
-        });
-
-        // Check if we should show fullscreen video mode (videoIndex > 0)
-        final videoIndex = ctx.videoIndex;
-
-        // Show main profile UI
-        return buildAsyncUI(
-          videosAsync,
-          onData: (state) {
-            final videos = state.videos;
-
-            // If videoIndex is set, show fullscreen video mode
-            // Note: videoIndex maps directly to list index (0 = first video, 1 = second video, etc.)
-            // When videoIndex is null, show grid mode
-            if (videoIndex != null && videos.isNotEmpty) {
-              // videoIndex IS the list index - no conversion needed
-              final listIndex = videoIndex;
-              final safeIndex = listIndex.clamp(0, videos.length - 1);
-
-              Log.debug(
-                '🎬 ProfileScreenRouter video mode: videoIndex=$videoIndex, listIndex=$listIndex, safeIndex=$safeIndex, '
-                'videos.length=${videos.length}, controllerExists=${_videoController != null}, '
-                'lastUrlIndex=$_lastVideoUrlIndex',
-                name: 'ProfileScreenRouter',
-                category: LogCategory.video,
-              );
-
-              // Initialize controller once with URL index
-              if (_videoController == null) {
-                Log.info(
-                  '🆕 Creating PageController with initialPage=$safeIndex for videoIndex=$videoIndex',
-                  name: 'ProfileScreenRouter',
-                  category: LogCategory.video,
-                );
-                _videoController = PageController(initialPage: safeIndex);
-                _lastVideoUrlIndex =
-                    listIndex; // Track URL index, not safe index
-              } else {
-                // Sync controller when URL changes externally (back/forward/deeplink)
-                // OR when videos list changes (e.g., provider reloads)
-                // Only sync if controller already exists - initialPage handles first navigation
-                final targetIndex = listIndex.clamp(0, videos.length - 1);
-                final currentPage = _videoController!.hasClients
-                    ? _videoController!.page?.round()
-                    : null;
-
-                Log.debug(
-                  '🔄 Checking sync: urlIndex=$listIndex, lastUrlIndex=$_lastVideoUrlIndex, '
-                  'hasClients=${_videoController!.hasClients}, currentPage=$currentPage, targetIndex=$targetIndex',
-                  name: 'ProfileScreenRouter',
-                  category: LogCategory.video,
-                );
-
-                if (shouldSync(
-                  urlIndex: listIndex,
-                  lastUrlIndex: _lastVideoUrlIndex,
-                  controller: _videoController,
-                  targetIndex: targetIndex,
-                )) {
-                  Log.info(
-                    '📍 Syncing PageController: $currentPage → $targetIndex',
-                    name: 'ProfileScreenRouter',
-                    category: LogCategory.video,
-                  );
-                  _lastVideoUrlIndex = listIndex;
-                  syncPageController(
-                    controller: _videoController!,
-                    targetIndex: listIndex,
-                    itemCount: videos.length,
-                  );
-                }
-              }
-
-              // Pre-initialize controllers for adjacent videos on initial build
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                preInitializeControllers(
-                  ref: ref,
-                  currentIndex: safeIndex,
-                  videos: videos,
-                );
-              });
-
-              // Build fullscreen video PageView
-              return PageView.builder(
-                key: const Key('profile-video-page-view'),
-                controller: _videoController,
-                scrollDirection: Axis.vertical,
-                itemCount: videos.length,
-                onPageChanged: (newIndex) {
-                  // Update URL when swiping to stay in profile context
-                  // videoIndex maps directly to list index (no conversion needed)
-                  if (newIndex != videoIndex) {
-                    context.goProfile(npub, newIndex);
-                  }
-
-                  // Trigger pagination near end
-                  if (newIndex >= videos.length - 2) {
-                    ref
-                        .read(profileFeedProvider(userIdHex).notifier)
-                        .loadMore();
-                  }
-
-                  // Prefetch videos around current index
-                  checkForPrefetch(currentIndex: newIndex, videos: videos);
-
-                  // Pre-initialize controllers for adjacent videos
-                  preInitializeControllers(
-                    ref: ref,
-                    currentIndex: newIndex,
-                    videos: videos,
-                  );
-
-                  // Dispose controllers outside the keep range to free memory
-                  disposeControllersOutsideRange(
-                    ref: ref,
-                    currentIndex: newIndex,
-                    videos: videos,
-                  );
-                },
-                itemBuilder: (context, index) {
-                  if (index >= videos.length) return const SizedBox.shrink();
-
-                  // VideoFeedItem uses list index for active video detection
-                  // (URL manages 1-based indexing separately)
-                  final video = videos[index];
-                  return VideoFeedItem(
-                    key: ValueKey('video-${video.stableId}'),
-                    video: video,
-                    index: index, // Use list index for active video detection
-                    hasBottomNavigation:
-                        false, // Fullscreen mode, no bottom nav
-                    forceShowOverlay:
-                        isOwnProfile, // Show overlay controls on own profile
-                    contextTitle: ref
-                        .read(fetchUserProfileProvider(userIdHex))
-                        .value
-                        ?.betterDisplayName('Profile'),
-                  );
-                },
-              );
-            }
-
-            // Otherwise show Instagram-style grid view
-            return Stack(
-              children: [
-                DefaultTabController(
-                  length: 3,
-                  child: NestedScrollView(
-                    controller: _scrollController,
-                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                      // Profile Header
-                      SliverToBoxAdapter(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 600),
-                            child: _buildProfileHeader(
-                              authService,
-                              userIdHex,
-                              isOwnProfile,
-                              profileStatsAsync,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Stats Row
-                      SliverToBoxAdapter(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 600),
-                            child: ProfileStatsRowWidget(
-                              profileStatsAsync: profileStatsAsync,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Action Buttons
-                      SliverToBoxAdapter(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 600),
-                            child: ProfileActionButtons(
-                              userIdHex: userIdHex,
-                              isOwnProfile: isOwnProfile,
-                              onEditProfile: _editProfile,
-                              onOpenClips: _openClips,
-                              onShareProfile: () => _shareProfile(userIdHex),
-                              onBlockUser: (isBlocked) =>
-                                  _blockUser(userIdHex, isBlocked),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Sticky Tab Bar
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _SliverAppBarDelegate(
-                          TabBar(
-                            controller: _tabController,
-                            indicatorColor: Colors.white,
-                            indicatorWeight: 2,
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            dividerColor: Colors.transparent,
-                            labelColor: Colors.white,
-                            unselectedLabelColor: Colors.grey,
-                            tabs: const [
-                              Tab(icon: Icon(Icons.grid_on, size: 20)),
-                              Tab(icon: Icon(Icons.favorite_border, size: 20)),
-                              Tab(icon: Icon(Icons.repeat, size: 20)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    body: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        ProfileVideosGrid(videos: videos, userIdHex: userIdHex),
-                        const ProfileLikedGrid(),
-                        ProfileRepostsGrid(userIdHex: userIdHex),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-          onLoading: () => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(color: VineTheme.vineGreen),
-                SizedBox(height: 24),
-                Text(
-                  'Loading profile...',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'This may take a few moments',
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          onError: (error, stack) => Center(child: Text('Error: $error')),
-        );
-      },
-      onLoading: () => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(color: VineTheme.vineGreen),
-            SizedBox(height: 24),
-            Text(
-              'Loading profile...',
-              style: TextStyle(
-                color: VineTheme.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'This may take a few moments',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-            ),
-          ],
-        ),
+    return switch (pageContext) {
+      AsyncLoading() => const ProfileLoadingView(),
+      AsyncError(:final error) => Center(child: Text('Error: $error')),
+      AsyncData(:final value) => _ProfileContentView(
+        routeContext: value,
+        scrollController: _scrollController,
+        onFetchProfile: _fetchProfileIfNeeded,
+        onSetupProfile: _setupProfile,
+        onEditProfile: _editProfile,
+        onOpenClips: _openClips,
+        onShareProfile: _shareProfile,
+        onBlockUser: _blockUser,
       ),
-      onError: (error, stack) => Center(child: Text('Error: $error')),
-    );
-  }
-
-  Widget _buildProfileHeader(
-    AuthService authService,
-    String userIdHex,
-    bool isOwnProfile,
-    AsyncValue<ProfileStats> profileStatsAsync,
-  ) {
-    // Watch profile from relay (reactive)
-    final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
-    final profile = profileAsync.value;
-
-    if (!isOwnProfile && profile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final profilePictureUrl = profile?.picture;
-    final displayName = profile?.bestDisplayName;
-    final hasCustomName =
-        profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true;
-    final nip05 = profile?.nip05;
-    final about = profile?.about;
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Setup profile banner for new users with default names (only on own profile)
-          if (isOwnProfile && !hasCustomName)
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.purple, Colors.blue],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.person_add, color: Colors.white, size: 24),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Complete Your Profile',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Add your name, bio, and picture to get started',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _setupProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.purple,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Set Up',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Profile picture and stats row
-          Row(
-            children: [
-              // Profile picture
-              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 86),
-
-              const SizedBox(width: 20),
-
-              // Stats
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.videoCount
-                          : null,
-                      label: 'Videos',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: null, // Videos aren't tappable
-                    ),
-                    ProfileFollowersStat(
-                      pubkey: userIdHex,
-                      displayName: displayName,
-                    ),
-                    ProfileFollowingStat(
-                      pubkey: userIdHex,
-                      displayName: displayName,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Name and bio
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                UserName.fromPubKey(
-                  userIdHex,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Show NIP-05 identifier if present
-                if (nip05 != null && nip05.isNotEmpty)
-                  Text(
-                    nip05,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
-                  ),
-                const SizedBox(height: 4),
-                if (about != null && about.isNotEmpty)
-                  SelectableText(
-                    about,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      height: 1.3,
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                // Public key display with copy functionality
-                GestureDetector(
-                  onTap: () => _copyNpubToClipboard(userIdHex),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.grey[600]!, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: SelectableText(
-                            NostrKeyUtils.encodePubKey(userIdHex),
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                              fontFamily: 'monospace',
-                            ),
-                            maxLines: 1,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.copy, color: Colors.grey, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    };
   }
 
   // Action methods
@@ -907,58 +312,235 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       }
     }
   }
+}
 
-  Future<void> _copyNpubToClipboard(String userIdHex) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
+/// Private widget that handles profile content based on route context.
+class _ProfileContentView extends ConsumerWidget {
+  const _ProfileContentView({
+    required this.routeContext,
+    required this.scrollController,
+    required this.onFetchProfile,
+    required this.onSetupProfile,
+    required this.onEditProfile,
+    required this.onOpenClips,
+    required this.onShareProfile,
+    required this.onBlockUser,
+  });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Public key copied to clipboard'),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to copy: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+  final RouteContext routeContext;
+  final ScrollController scrollController;
+  final void Function(String userIdHex, bool isOwnProfile) onFetchProfile;
+  final VoidCallback onSetupProfile;
+  final VoidCallback onEditProfile;
+  final VoidCallback onOpenClips;
+  final void Function(String userIdHex) onShareProfile;
+  final void Function(String pubkey, bool isBlocked) onBlockUser;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (routeContext.type != RouteType.profile) {
+      // During navigation transitions, we may briefly see non-profile routes.
+      // Just show nothing rather than an error message.
+      return const SizedBox.shrink();
     }
+
+    // Convert npub to hex for profile feed provider
+    final npub = routeContext.npub ?? '';
+
+    // Handle "me" special case - redirect to actual user profile
+    if (npub == 'me') {
+      return _MeProfileRedirect(videoIndex: routeContext.videoIndex);
+    }
+
+    final userIdHex = npubToHexOrNull(npub);
+
+    if (userIdHex == null) {
+      return const Center(child: Text('Invalid profile ID'));
+    }
+
+    // Get current user for comparison
+    final authService = ref.watch(authServiceProvider);
+    final currentUserHex = authService.currentPublicKeyHex;
+    final isOwnProfile = userIdHex == currentUserHex;
+
+    // Check if this user has muted us (mutual mute blocking)
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
+      return BlockedUserScreen(onBack: () => Navigator.of(context).pop());
+    }
+
+    // Fetch profile data if needed (post-frame to avoid build mutations)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onFetchProfile(userIdHex, isOwnProfile);
+    });
+
+    return _ProfileDataView(
+      npub: npub,
+      userIdHex: userIdHex,
+      isOwnProfile: isOwnProfile,
+      videoIndex: routeContext.videoIndex,
+      scrollController: scrollController,
+      onSetupProfile: onSetupProfile,
+      onEditProfile: onEditProfile,
+      onOpenClips: onOpenClips,
+      onShareProfile: () => onShareProfile(userIdHex),
+      onBlockUser: (isBlocked) => onBlockUser(userIdHex, isBlocked),
+    );
   }
 }
 
-// Custom delegate for sticky tab bar
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
+/// Handles redirect when npub is "me".
+class _MeProfileRedirect extends ConsumerWidget {
+  const _MeProfileRedirect({required this.videoIndex});
 
-  final TabBar _tabBar;
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  final int? videoIndex;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => ColoredBox(color: VineTheme.backgroundColor, child: _tabBar);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+
+    if (!authService.isAuthenticated ||
+        authService.currentPublicKeyHex == null) {
+      // Not authenticated - redirect to home
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        GoRouter.of(context).go('/home/0');
+      });
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Get current user's npub and redirect (preserve grid/feed mode from context)
+    final currentUserNpub = NostrKeyUtils.encodePubKey(
+      authService.currentPublicKeyHex!,
+    );
+
+    // Redirect to actual user profile using GoRouter explicitly
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Use context extension to properly handle null videoIndex (grid mode)
+      if (videoIndex != null) {
+        context.goProfile(currentUserNpub, videoIndex!);
+      } else {
+        context.goProfileGrid(currentUserNpub);
+      }
+    });
+
+    // Show loading while redirecting
+    return const Center(child: CircularProgressIndicator());
+  }
+}
+
+/// Displays profile data after loading videos and stats.
+class _ProfileDataView extends ConsumerWidget {
+  const _ProfileDataView({
+    required this.npub,
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.videoIndex,
+    required this.scrollController,
+    required this.onSetupProfile,
+    required this.onEditProfile,
+    required this.onOpenClips,
+    required this.onShareProfile,
+    required this.onBlockUser,
+  });
+
+  final String npub;
+  final String userIdHex;
+  final bool isOwnProfile;
+  final int? videoIndex;
+  final ScrollController scrollController;
+  final VoidCallback onSetupProfile;
+  final VoidCallback onEditProfile;
+  final VoidCallback onOpenClips;
+  final VoidCallback onShareProfile;
+  final void Function(bool isBlocked) onBlockUser;
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get video data from profile feed
+    final videosAsync = ref.watch(profileFeedProvider(userIdHex));
+
+    // Get profile stats
+    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
+
+    return switch (videosAsync) {
+      AsyncLoading() => const ProfileLoadingView(),
+      AsyncError(:final error) => Center(child: Text('Error: $error')),
+      AsyncData(:final value) => _ProfileViewSwitcher(
+        npub: npub,
+        userIdHex: userIdHex,
+        isOwnProfile: isOwnProfile,
+        videos: value.videos,
+        videoIndex: videoIndex,
+        profileStatsAsync: profileStatsAsync,
+        scrollController: scrollController,
+        onSetupProfile: onSetupProfile,
+        onEditProfile: onEditProfile,
+        onOpenClips: onOpenClips,
+        onShareProfile: onShareProfile,
+        onBlockUser: onBlockUser,
+      ),
+    };
+  }
+}
+
+/// Switches between grid view and video feed view based on videoIndex.
+class _ProfileViewSwitcher extends StatelessWidget {
+  const _ProfileViewSwitcher({
+    required this.npub,
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.videos,
+    required this.videoIndex,
+    required this.profileStatsAsync,
+    required this.scrollController,
+    required this.onSetupProfile,
+    required this.onEditProfile,
+    required this.onOpenClips,
+    required this.onShareProfile,
+    required this.onBlockUser,
+  });
+
+  final String npub;
+  final String userIdHex;
+  final bool isOwnProfile;
+  final List<VideoEvent> videos;
+  final int? videoIndex;
+  final AsyncValue<ProfileStats> profileStatsAsync;
+  final ScrollController scrollController;
+  final VoidCallback onSetupProfile;
+  final VoidCallback onEditProfile;
+  final VoidCallback onOpenClips;
+  final VoidCallback onShareProfile;
+  final void Function(bool isBlocked) onBlockUser;
+
+  @override
+  Widget build(BuildContext context) {
+    // If videoIndex is set, show fullscreen video mode
+    // Note: videoIndex maps directly to list index (0 = first video, 1 = second video, etc.)
+    // When videoIndex is null, show grid mode
+    if (videoIndex != null && videos.isNotEmpty) {
+      return ProfileVideoFeedView(
+        npub: npub,
+        userIdHex: userIdHex,
+        isOwnProfile: isOwnProfile,
+        videos: videos,
+        videoIndex: videoIndex!,
+        onPageChanged: (newIndex) => context.goProfile(npub, newIndex),
+      );
+    }
+
+    // Otherwise show Instagram-style grid view
+    return ProfileGridView(
+      userIdHex: userIdHex,
+      isOwnProfile: isOwnProfile,
+      videos: videos,
+      profileStatsAsync: profileStatsAsync,
+      scrollController: scrollController,
+      onSetupProfile: onSetupProfile,
+      onEditProfile: onEditProfile,
+      onOpenClips: onOpenClips,
+      onShareProfile: onShareProfile,
+      onBlockUser: onBlockUser,
+    );
+  }
 }
