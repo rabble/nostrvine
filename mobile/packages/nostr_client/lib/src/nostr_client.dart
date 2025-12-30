@@ -175,7 +175,7 @@ class NostrClient {
   /// Publishes an event to relays
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
-  /// Successfully sent events are cached locally with 1-week expiry.
+  /// Successfully sent events are cached locally with 1-day expiry.
   /// For NIP-09 deletion events (Kind 5), removes target events from cache.
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
@@ -637,7 +637,7 @@ class NostrClient {
 
   /// Sends a like reaction to an event
   ///
-  /// Successfully sent events are cached locally with 1-week expiry.
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
@@ -658,7 +658,7 @@ class NostrClient {
 
   /// Sends a repost
   ///
-  /// Successfully sent events are cached locally with 1-week expiry.
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendRepost(
     String eventId, {
     String? relayAddr,
@@ -723,7 +723,7 @@ class NostrClient {
 
   /// Sends a contact list
   ///
-  /// Successfully sent events are cached locally with 1-week expiry.
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendContactList(
     ContactList contacts,
     String content, {
@@ -786,7 +786,7 @@ class NostrClient {
   ///
   /// Similar to [publishEvent] but returns detailed per-relay tracking.
   /// Use this when you need visibility into which relays accepted the event.
-  /// Successfully sent events are cached locally with 1-week expiry.
+  /// Successfully sent events are cached locally with 1-day expiry.
   ///
   /// Note: Per-relay tracking is currently based on the connected relays
   /// at broadcast time. The underlying nostr_sdk doesn't provide individual
