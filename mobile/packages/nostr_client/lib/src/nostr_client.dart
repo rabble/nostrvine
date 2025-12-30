@@ -199,12 +199,12 @@ class NostrClient {
 
   /// Queries events with given filters
   ///
-  /// Query flow: **Cache → Gateway → WebSocket**
+  /// Query flow: **Cache + (Gateway → WebSocket)**
   ///
-  /// If [useCache] is `true` and cache is available, checks local cache first.
-  /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for cached responses.
-  /// Falls back to WebSocket query if both are unavailable or empty.
+  /// If [useCache] is `true` and cache is available, retrieves cached events.
+  /// Then fetches from network (gateway if available, otherwise websocket).
+  /// Results are merged and deduplicated by event ID, with network events
+  /// taking precedence over cached events.
   ///
   /// Results from gateway/websocket are cached for future queries.
   Future<List<Event>> queryEvents(
@@ -216,13 +216,12 @@ class NostrClient {
     bool useGateway = true,
     bool useCache = true,
   }) async {
-    // 1. Check cache first (instant)
+    final cacheResults = <Event>[];
+
+    // 1. Get cache results (don't return early - we'll merge with network)
     final dao = _nostrEventsDao;
     if (useCache && dao != null && filters.length == 1) {
-      final cached = await dao.getEventsByFilter(filters.first);
-      if (cached.isNotEmpty) {
-        return cached;
-      }
+      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
     }
 
     // 2. Try gateway (fast REST)
@@ -239,14 +238,15 @@ class NostrClient {
           } on Object {
             // Ignore cache errors
           }
-          return response.events;
+          // Merge cache + gateway and return
+          return _mergeEvents(cacheResults, response.events);
         }
       }
     }
 
     // 3. Fall back to WebSocket query
     final filtersJson = filters.map((f) => f.toJson()).toList();
-    final events = await _nostr.queryEvents(
+    final websocketEvents = await _nostr.queryEvents(
       filtersJson,
       id: subscriptionId,
       tempRelays: tempRelays,
@@ -255,15 +255,16 @@ class NostrClient {
     );
 
     // Cache websocket results (fire-and-forget)
-    if (events.isNotEmpty) {
+    if (websocketEvents.isNotEmpty) {
       try {
-        unawaited(_nostrEventsDao?.upsertEventsBatch(events));
+        unawaited(_nostrEventsDao?.upsertEventsBatch(websocketEvents));
       } on Object {
         // Ignore cache errors
       }
     }
 
-    return events;
+    // Merge cache + websocket and return
+    return _mergeEvents(cacheResults, websocketEvents);
   }
 
   /// Counts events matching the given filters using NIP-45.
@@ -887,6 +888,24 @@ class NostrClient {
     final bytes = utf8.encode(jsonString);
     final digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  /// Merges cached and network events, deduplicating by event ID.
+  /// Network events take precedence (considered fresher).
+  List<Event> _mergeEvents(List<Event> cached, List<Event> network) {
+    if (cached.isEmpty) return network;
+    if (network.isEmpty) return cached;
+
+    final eventMap = <String, Event>{};
+    // Add cached events first
+    for (final event in cached) {
+      eventMap[event.id] = event;
+    }
+    // Network events overwrite cached (fresher data)
+    for (final event in network) {
+      eventMap[event.id] = event;
+    }
+    return eventMap.values.toList();
   }
 
   /// Attempts to execute a gateway operation
