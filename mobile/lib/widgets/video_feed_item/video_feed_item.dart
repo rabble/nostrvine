@@ -841,7 +841,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 8),
                 ],
                 // Author row with profile and follow button
-                VideoAuthorRow(video: video),
+                VideoAuthorRow(video: video, isFullscreen: isFullscreen),
                 // Description (if there's text content)
                 if (hasTextContent) ...[
                   const SizedBox(height: 8),
@@ -1565,9 +1565,14 @@ class _VideoEditButton extends ConsumerWidget {
 ///
 /// Displays the video author's name (tappable to go to profile) and a follow button.
 class VideoAuthorRow extends ConsumerWidget {
-  const VideoAuthorRow({super.key, required this.video});
+  const VideoAuthorRow({
+    super.key,
+    required this.video,
+    this.isFullscreen = false,
+  });
 
   final VideoEvent video;
+  final bool isFullscreen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1595,7 +1600,12 @@ class VideoAuthorRow extends ConsumerWidget {
               name: 'VideoFeedItem',
               category: LogCategory.ui,
             );
-            context.pushProfileGrid(video.pubkey);
+            // In fullscreen mode, use go() to properly navigate to shell route
+            if (isFullscreen) {
+              context.goToProfileGridFromFullscreen(video.pubkey);
+            } else {
+              context.pushProfileGrid(video.pubkey);
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

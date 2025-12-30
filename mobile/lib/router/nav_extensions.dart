@@ -144,6 +144,43 @@ extension NavX on BuildContext {
     );
   }
 
+  /// Navigate to profile grid, replacing navigation stack - use when navigating from fullscreen
+  /// Uses `go` instead of `pushReplacement` to properly handle shell route transitions
+  ///
+  /// TODO(navigation): This is a temporary fix. In the long run, viewing other users' profiles
+  /// should also be fullscreen (no bottom nav) similar to the video feed. Consider creating
+  /// a FullscreenProfileScreen that can be pushed from fullscreen video feed.
+  void goToProfileGridFromFullscreen(String identifier) {
+    // Handle 'me' special case - need to get current user's hex
+    String? currentUserHex;
+    if (identifier == 'me') {
+      // Access container to get auth service
+      final container = ProviderScope.containerOf(this, listen: false);
+      final authService = container.read(authServiceProvider);
+      currentUserHex = authService.currentPublicKeyHex;
+    }
+
+    // Normalize any format (npub/nprofile/hex/me) to npub for URL
+    final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
+    if (npub == null) {
+      // Invalid identifier - log warning and don't navigate
+      debugPrint('⚠️ Invalid public identifier: $identifier');
+      return;
+    }
+
+    // Use `go` for declarative navigation - this properly handles
+    // transitioning from non-shell routes to shell routes
+    go(
+      buildRoute(
+        RouteContext(
+          type: RouteType.profile,
+          npub: npub,
+          videoIndex: null, // Grid mode - no active video
+        ),
+      ),
+    );
+  }
+
   void goSearch([String? searchTerm, int? index]) => go(
     buildRoute(
       RouteContext(
