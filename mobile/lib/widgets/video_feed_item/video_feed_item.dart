@@ -649,13 +649,24 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
                     // Video is initialized - show first frame (even if not active)
                     // This enables seeing the video during swipe transitions
-                    // In fullscreen mode, use BoxFit.cover to fill the screen
+                    // In fullscreen mode:
+                    //   - Portrait videos (9:16): use BoxFit.cover to fill screen
+                    //   - Square/landscape videos (legacy Vine): use BoxFit.contain
+                    //     to stay centered without cropping
                     // In normal mode, use BoxFit.contain to preserve aspect ratio
+                    // Use actual video dimensions from controller (more reliable
+                    // than metadata which may be missing on legacy videos)
+                    final videoWidth = value.size.width;
+                    final videoHeight = value.size.height;
+                    final isPortraitVideo =
+                        videoHeight > 0 && videoHeight > videoWidth;
+                    final useFullscreenCover =
+                        widget.isFullscreen && isPortraitVideo;
                     return SizedBox.expand(
                       child: Container(
                         color: Colors.black,
                         child: FittedBox(
-                          fit: widget.isFullscreen
+                          fit: useFullscreenCover
                               ? BoxFit.cover
                               : BoxFit.contain,
                           alignment: widget.isFullscreen
