@@ -22,6 +22,22 @@ class BrandedLoadingIndicator extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('Failed to load loading-brand.gif: $error\n$stackTrace');
+          // Fallback to a simple colored box with error text for debugging
+          return Container(
+            width: size,
+            height: size,
+            color: Color.fromRGBO(255, 0, 0, 0.3),
+            child: Center(
+              child: Text(
+                'GIF load failed',
+                style: const TextStyle(fontSize: 10, color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
