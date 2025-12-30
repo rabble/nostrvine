@@ -48,6 +48,7 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.disableAutoplay = false,
     this.isActiveOverride,
     this.disableTapNavigation = false,
+    this.isFullscreen = false,
   });
 
   final VideoEvent video;
@@ -65,6 +66,10 @@ class VideoFeedItem extends ConsumerStatefulWidget {
   /// When true, tapping an inactive video won't navigate via router.
   /// Instead, it just calls onTap callback. Used for contexts with local state management.
   final bool disableTapNavigation;
+
+  /// When true, adds extra top padding to avoid overlapping with fullscreen
+  /// back button (e.g., in FullscreenVideoFeedScreen).
+  final bool isFullscreen;
 
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
@@ -322,7 +327,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             }
 
             // Check if video is still active (even if generation changed)
-            final stillActive = ref.read(isVideoActiveProvider(_stableVideoId));
+            // Use isActiveOverride if set (for self-managed screens like FullscreenVideoFeedScreen)
+            final bool stillActive =
+                widget.isActiveOverride ??
+                ref.read(isVideoActiveProvider(_stableVideoId));
 
             if (!stillActive) {
               // Video no longer active, don't play
@@ -715,81 +723,36 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               },
             ),
 
-            // Video overlay with actions
+            // Video overlay with actions (badges, title, action buttons)
             VideoOverlayActions(
               video: video,
               isVisible: overlayVisible,
               isActive: isActive,
               hasBottomNavigation: widget.hasBottomNavigation,
               contextTitle: widget.contextTitle,
+              isFullscreen: widget.isFullscreen,
             ),
 
-            // Repost header (shown at top if video is a repost)
-            if (video.isRepost && video.reposterPubkey != null)
-              Positioned(
-                top: MediaQuery.of(context).viewPadding.top + 8,
-                left: 16,
-                right: 16,
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    // Fetch reposter's profile
-                    final userProfileService = ref.watch(
-                      userProfileServiceProvider,
-                    );
-                    final reposterProfile = userProfileService.getCachedProfile(
-                      video.reposterPubkey!,
-                    );
-
-                    // If profile not cached, fetch it
-                    if (reposterProfile == null &&
-                        !userProfileService.shouldSkipProfileFetch(
-                          video.reposterPubkey!,
-                        )) {
-                      Future.microtask(() {
-                        userProfileService.fetchProfile(video.reposterPubkey!);
-                      });
-                    }
-
-                    final displayName =
-                        reposterProfile?.bestDisplayName ??
-                        video.reposterPubkey!.substring(0, 8);
-
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.repeat,
-                            color: VineTheme.vineGreen,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              '$displayName reposted',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+            // Author row and repost header at top left (in a Column)
+            Positioned(
+              top:
+                  MediaQuery.of(context).viewPadding.top +
+                  (widget.isFullscreen ? 112.0 : 16.0),
+              left: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Repost header (shown first if video is a repost)
+                  if (video.isRepost && video.reposterPubkey != null) ...[
+                    VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
+                    const SizedBox(height: 8),
+                  ],
+                  // Username and follow button
+                  VideoAuthorRow(video: video),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -829,6 +792,7 @@ class VideoOverlayActions extends ConsumerWidget {
     required this.isActive,
     this.hasBottomNavigation = true,
     this.contextTitle,
+    this.isFullscreen = false,
   });
 
   final VideoEvent video;
@@ -836,6 +800,7 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool isActive;
   final bool hasBottomNavigation;
   final String? contextTitle;
+  final bool isFullscreen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -854,86 +819,16 @@ class VideoOverlayActions extends ConsumerWidget {
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
     // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
     // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
+    // In fullscreen mode, add extra offset to clear the back button row (AppBar ~56px + padding)
     final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
+    final fullscreenOffset = isFullscreen ? 48.0 : 0.0;
+    final topOffset = (hasListHeader ? 80.0 : 16.0) + fullscreenOffset;
 
     return Stack(
       children: [
-        // Username and follow button at top left
-        Positioned(
-          top: MediaQuery.of(context).viewPadding.top + topOffset,
-          left: 16,
-          child: Consumer(
-            builder: (context, ref, _) {
-              // Watch UserProfileService directly (now a ChangeNotifier)
-              // This will rebuild when profiles are added/updated
-              final userProfileService = ref.watch(userProfileServiceProvider);
-              final profile = userProfileService.getCachedProfile(video.pubkey);
-
-              // If profile not cached and not known missing, fetch it
-              if (profile == null &&
-                  !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
-                Future.microtask(() {
-                  ref
-                      .read(userProfileProvider.notifier)
-                      .fetchProfile(video.pubkey);
-                });
-              }
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Username chip (tappable to go to profile)
-                  GestureDetector(
-                    onTap: () {
-                      Log.info(
-                        '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
-                        name: 'VideoFeedItem',
-                        category: LogCategory.ui,
-                      );
-                      context.pushProfileGrid(video.pubkey);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.person,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 6),
-                          UserName.fromPubKey(
-                            video.pubkey,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Follow button (handles own video check internally)
-                  const SizedBox(width: 8),
-                  VideoFollowButton(pubkey: video.pubkey),
-                ],
-              );
-            },
-          ),
-        ),
         // ProofMode and Vine badges in upper right corner (tappable)
         Positioned(
-          top: MediaQuery.of(context).viewPadding.top + 16,
+          top: MediaQuery.of(context).viewPadding.top + topOffset,
           right: 16,
           child: GestureDetector(
             onTap: () {
@@ -1658,6 +1553,122 @@ class _VideoEditButton extends ConsumerWidget {
           icon: const Icon(Icons.edit, color: Colors.white, size: 32),
         ),
       ],
+    );
+  }
+}
+
+/// Username and follow button row for video overlay.
+///
+/// Displays the video author's name (tappable to go to profile) and a follow button.
+class VideoAuthorRow extends ConsumerWidget {
+  const VideoAuthorRow({super.key, required this.video});
+
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch UserProfileService directly (now a ChangeNotifier)
+    // This will rebuild when profiles are added/updated
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final profile = userProfileService.getCachedProfile(video.pubkey);
+
+    // If profile not cached and not known missing, fetch it
+    if (profile == null &&
+        !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
+      Future.microtask(() {
+        ref.read(userProfileProvider.notifier).fetchProfile(video.pubkey);
+      });
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Username chip (tappable to go to profile)
+        GestureDetector(
+          onTap: () {
+            Log.info(
+              '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
+              name: 'VideoFeedItem',
+              category: LogCategory.ui,
+            );
+            context.pushProfileGrid(video.pubkey);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.person, size: 14, color: Colors.white),
+                const SizedBox(width: 6),
+                UserName.fromPubKey(
+                  video.pubkey,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Follow button (handles own video check internally)
+        const SizedBox(width: 8),
+        VideoFollowButton(pubkey: video.pubkey),
+      ],
+    );
+  }
+}
+
+/// Repost header banner showing who reposted the video.
+class VideoRepostHeader extends ConsumerWidget {
+  const VideoRepostHeader({super.key, required this.reposterPubkey});
+
+  final String reposterPubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Fetch reposter's profile
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final reposterProfile = userProfileService.getCachedProfile(reposterPubkey);
+
+    // If profile not cached, fetch it
+    if (reposterProfile == null &&
+        !userProfileService.shouldSkipProfileFetch(reposterPubkey)) {
+      Future.microtask(() {
+        userProfileService.fetchProfile(reposterPubkey);
+      });
+    }
+
+    final displayName =
+        reposterProfile?.bestDisplayName ?? reposterPubkey.substring(0, 8);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.repeat, color: VineTheme.vineGreen, size: 16),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '$displayName reposted',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

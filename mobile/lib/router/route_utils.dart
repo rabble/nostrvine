@@ -26,6 +26,7 @@ enum RouteType {
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
   following, // Following list screen
   followers, // Followers list screen
+  videoFeed, // Fullscreen video feed (pushed from grids)
 }
 
 /// Structured representation of a route
@@ -197,6 +198,9 @@ RouteContext parseRoute(String path) {
       final followersPubkey = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
+    case 'video-feed':
+      return const RouteContext(type: RouteType.videoFeed);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -318,5 +322,8 @@ String buildRoute(RouteContext context) {
 
     case RouteType.followers:
       return '/followers/${context.npub ?? ''}';
+
+    case RouteType.videoFeed:
+      return '/video-feed';
   }
 }

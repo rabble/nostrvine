@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'route_utils.dart';
 
@@ -162,4 +163,21 @@ extension NavX on BuildContext {
       push('/following/$pubkey', extra: displayName);
   Future<void> pushFollowers(String pubkey, {String? displayName}) =>
       push('/followers/$pubkey', extra: displayName);
+
+  /// Push fullscreen video feed (no bottom nav)
+  Future<void> pushVideoFeed({
+    required List<VideoEvent> videos,
+    required int initialIndex,
+    String? contextTitle,
+    VoidCallback? onLoadMore,
+  }) =>
+      push(
+        '/video-feed',
+        extra: FullscreenVideoFeedArgs(
+          videos: videos,
+          initialIndex: initialIndex,
+          contextTitle: contextTitle,
+          onLoadMore: onLoadMore,
+        ),
+      );
 }

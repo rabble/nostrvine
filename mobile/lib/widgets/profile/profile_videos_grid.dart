@@ -9,7 +9,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's videos on their profile
@@ -56,6 +55,9 @@ class ProfileVideosGrid extends ConsumerWidget {
                 videoEvent: videoEvent,
                 userIdHex: userIdHex,
                 index: index,
+                videos: videos,
+                onLoadMore: () =>
+                    ref.read(profileFeedProvider(userIdHex).notifier).loadMore(),
               );
             }, childCount: videos.length),
           ),
@@ -147,24 +149,31 @@ class _VideoGridTile extends StatelessWidget {
     required this.videoEvent,
     required this.userIdHex,
     required this.index,
+    required this.videos,
+    required this.onLoadMore,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
+  final List<VideoEvent> videos;
+  final VoidCallback onLoadMore;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: () {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
       Log.info(
         '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
-        'npub=$npub, videoId=${videoEvent.id}',
+        'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      context.goProfile(npub, index);
+      context.pushVideoFeed(
+        videos: videos,
+        initialIndex: index,
+        onLoadMore: onLoadMore,
+      );
       Log.info(
-        '✅ ProfileVideosGrid: Called goProfile($npub, $index)',
+        '✅ ProfileVideosGrid: Called pushVideoFeed with ${videos.length} videos at index $index',
         category: LogCategory.video,
       );
     },

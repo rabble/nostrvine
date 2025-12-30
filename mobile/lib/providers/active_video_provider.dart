@@ -80,6 +80,15 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.search:
       videosAsync = ref.watch(videosForSearchRouteProvider);
       break;
+    case RouteType.videoFeed:
+      // videoFeed route manages its own playback via passed videos
+      // Return null to let FullscreenVideoFeedScreen handle it internally
+      Log.debug(
+        '[ACTIVE] ❌ videoFeed route (self-managed)',
+        name: 'ActiveVideoProvider',
+        category: LogCategory.system,
+      );
+      return null;
     case RouteType.notifications:
     case RouteType.camera:
     case RouteType.clipManager:

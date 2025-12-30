@@ -31,6 +31,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
@@ -92,6 +93,7 @@ int tabIndexFromLocation(String loc) {
     case 'drafts':
     case 'followers':
     case 'following':
+    case 'video-feed':
       return -1; // Non-tab routes - no bottom nav
     default:
       return 0; // fallback to home
@@ -666,6 +668,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return VideoEditorScreen(videoPath: videoPath);
+        },
+      ),
+      // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
+      GoRoute(
+        path: '/video-feed',
+        name: 'video-feed',
+        builder: (ctx, st) {
+          final args = st.extra as FullscreenVideoFeedArgs?;
+          if (args == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('No videos to display')),
+            );
+          }
+          return FullscreenVideoFeedScreen(
+            videos: args.videos,
+            initialIndex: args.initialIndex,
+            contextTitle: args.contextTitle,
+            onLoadMore: args.onLoadMore,
+          );
         },
       ),
     ],
