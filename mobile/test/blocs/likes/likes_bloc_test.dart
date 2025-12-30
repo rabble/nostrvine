@@ -64,10 +64,7 @@ void main() {
         act: (bloc) => bloc.add(const LikesSyncRequested()),
         expect: () => [
           const LikesState(status: LikesStatus.syncing),
-          const LikesState(
-            status: LikesStatus.success,
-            likedEventIds: [],
-          ),
+          const LikesState(status: LikesStatus.success, likedEventIds: []),
         ],
       );
 

@@ -103,8 +103,9 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
         // Remove from list
         emit(
           state.copyWith(
-            likedEventIds:
-                state.likedEventIds.where((id) => id != eventId).toList(),
+            likedEventIds: state.likedEventIds
+                .where((id) => id != eventId)
+                .toList(),
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
