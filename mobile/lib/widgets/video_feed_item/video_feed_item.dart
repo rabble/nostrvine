@@ -19,6 +19,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -621,7 +622,12 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       return Stack(
                         fit: StackFit.expand,
                         children: [
-                          Container(color: Colors.black),
+                          // Show blurhash if available, otherwise black background
+                          if (video.blurhash != null &&
+                              video.blurhash!.isNotEmpty)
+                            BlurhashDisplay(blurhash: video.blurhash!)
+                          else
+                            Container(color: Colors.black),
                           // Only show loading spinner for active video
                           if (isActive)
                             const Center(
