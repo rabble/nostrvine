@@ -275,21 +275,21 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   _lastUrlIndex = newIndex;
 
                   // Guard: only navigate if URL doesn't match
-                  // Use addPostFrameCallback to defer URL update until after
-                  // the scroll animation completes, preventing mid-scroll rebuilds
-                  if (newIndex != urlIndex) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      context.go(
-                        buildRoute(
-                          RouteContext(
-                            type: RouteType.home,
-                            videoIndex: newIndex,
-                          ),
-                        ),
-                      );
-                    });
-                  }
+                  // TEMPORARILY DISABLED to test if this causes flicker
+                  // TODO: Re-enable after fixing flicker
+                  // if (newIndex != urlIndex) {
+                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+                  //     if (!mounted) return;
+                  //     context.go(
+                  //       buildRoute(
+                  //         RouteContext(
+                  //           type: RouteType.home,
+                  //           videoIndex: newIndex,
+                  //         ),
+                  //       ),
+                  //     );
+                  //   });
+                  // }
 
                   // Trigger pagination near end
                   if (newIndex >= itemCount - 2) {
