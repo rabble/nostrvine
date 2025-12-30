@@ -738,27 +738,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               contextTitle: widget.contextTitle,
               isFullscreen: widget.isFullscreen,
             ),
-
-            // Author row and repost header at top left (in a Column)
-            Positioned(
-              top:
-                  MediaQuery.of(context).viewPadding.top +
-                  (widget.isFullscreen ? 112.0 : 16.0),
-              left: 16,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Repost header (shown first if video is a repost)
-                  if (video.isRepost && video.reposterPubkey != null) ...[
-                    VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
-                    const SizedBox(height: 8),
-                  ],
-                  // Username and follow button
-                  VideoAuthorRow(video: video),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -843,115 +822,128 @@ class VideoOverlayActions extends ConsumerWidget {
             child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
           ),
         ),
-        // No gradient - using text background opacity instead for cleaner appearance
-        // Video title overlay at bottom left
-        // Only show if there's actual text content
+        // Bottom left column: Repost banner, author row, description
         // TODO(cleanup): Remove hasBottomNavigation and use only isFullscreen
-        if (hasTextContent)
-          Positioned(
-            bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
-            left: 16,
-            right: 80, // Leave space for action buttons
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Video title with clickable hashtags
-                    Semantics(
-                      identifier: 'video_description',
-                      container: true,
-                      explicitChildNodes: true,
-                      label: 'Video description',
-                      child: ClickableHashtagText(
-                        text: video.content.isNotEmpty
-                            ? video.content
-                            : video.title!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
-                            ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                        hashtagStyle: TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: const [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
-                            ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+        Positioned(
+          bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
+          left: 16,
+          right: 80, // Leave space for action buttons
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Repost banner (if video is a repost)
+                if (video.isRepost && video.reposterPubkey != null) ...[
+                  VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
+                  const SizedBox(height: 8),
+                ],
+                // Author row with profile and follow button
+                VideoAuthorRow(video: video),
+                // Description (if there's text content)
+                if (hasTextContent) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 4),
-                    // Show original loop count if available
-                    if (video.originalLoops != null &&
-                        video.originalLoops! > 0) ...[
-                      Semantics(
-                        identifier: 'loop_count',
-                        container: true,
-                        explicitChildNodes: true,
-                        label: 'Video loop count',
-                        child: Text(
-                          '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Video title with clickable hashtags
+                        Semantics(
+                          identifier: 'video_description',
+                          container: true,
+                          explicitChildNodes: true,
+                          label: 'Video description',
+                          child: ClickableHashtagText(
+                            text: video.content.isNotEmpty
+                                ? video.content
+                                : video.title!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 0),
+                                  blurRadius: 8,
+                                  color: Colors.black,
+                                ),
+                                Shadow(
+                                  offset: Offset(2, 2),
+                                  blurRadius: 4,
+                                  color: Colors.black,
+                                ),
+                              ],
+                            ),
+                            hashtagStyle: TextStyle(
+                              color: VineTheme.vineGreen,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 0),
+                                  blurRadius: 8,
+                                  color: Colors.black,
+                                ),
+                                Shadow(
+                                  offset: Offset(2, 2),
+                                  blurRadius: 4,
+                                  color: Colors.black,
+                                ),
+                              ],
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                  ],
-                ),
-              ),
+                        // Show original loop count if available
+                        if (video.originalLoops != null &&
+                            video.originalLoops! > 0) ...[
+                          const SizedBox(height: 4),
+                          Semantics(
+                            identifier: 'loop_count',
+                            container: true,
+                            explicitChildNodes: true,
+                            label: 'Video loop count',
+                            child: Text(
+                              '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 0),
+                                    blurRadius: 6,
+                                    color: Colors.black,
+                                  ),
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 3,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+        ),
         // Action buttons at bottom right
         // In fullscreen mode (no bottom nav), add extra padding to avoid edge
         Positioned(
