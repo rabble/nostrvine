@@ -89,6 +89,20 @@ class LikesRepository {
     return _likeRecords.keys.toSet();
   }
 
+  /// Get liked event IDs ordered by recency (most recently liked first).
+  ///
+  /// Returns a list of event IDs sorted by the `createdAt` timestamp
+  /// of the like reaction, with the most recent likes first.
+  Future<List<String>> getOrderedLikedEventIds() async {
+    await _ensureInitialized();
+
+    // Sort records by createdAt descending (most recent first)
+    final sortedRecords = _likeRecords.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return sortedRecords.map((r) => r.targetEventId).toList();
+  }
+
   /// Check if a specific event is liked.
   ///
   /// Returns `true` if the user has liked the event, `false` otherwise.

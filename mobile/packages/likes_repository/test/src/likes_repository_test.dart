@@ -149,6 +149,128 @@ void main() {
       });
     });
 
+    group('getOrderedLikedEventIds', () {
+      test('returns empty list when no likes', () async {
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getOrderedLikedEventIds();
+        expect(result, isEmpty);
+      });
+
+      test('returns event IDs ordered by createdAt descending', () async {
+        final oldestTime = DateTime(2024, 1, 1, 10);
+        final middleTime = DateTime(2024, 1, 1, 12);
+        final newestTime = DateTime(2024, 1, 1, 14);
+
+        final likeRecords = [
+          LikeRecord(
+            targetEventId: 'oldest_event_id_1234567890abcdef',
+            reactionEventId: 'reaction_oldest_1234567890abcdef',
+            createdAt: oldestTime,
+          ),
+          LikeRecord(
+            targetEventId: 'newest_event_id_1234567890abcdef',
+            reactionEventId: 'reaction_newest_1234567890abcdef',
+            createdAt: newestTime,
+          ),
+          LikeRecord(
+            targetEventId: 'middle_event_id_1234567890abcdef',
+            reactionEventId: 'reaction_middle_1234567890abcdef',
+            createdAt: middleTime,
+          ),
+        ];
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => likeRecords);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getOrderedLikedEventIds();
+
+        expect(result.length, equals(3));
+        expect(result[0], equals('newest_event_id_1234567890abcdef'));
+        expect(result[1], equals('middle_event_id_1234567890abcdef'));
+        expect(result[2], equals('oldest_event_id_1234567890abcdef'));
+      });
+
+      test('returns single event ID when only one like exists', () async {
+        final likeRecords = [
+          LikeRecord(
+            targetEventId: 'single_event_id_1234567890abcdef',
+            reactionEventId: 'reaction_single_1234567890abcdef',
+            createdAt: DateTime.now(),
+          ),
+        ];
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => likeRecords);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getOrderedLikedEventIds();
+
+        expect(result.length, equals(1));
+        expect(result[0], equals('single_event_id_1234567890abcdef'));
+      });
+
+      test('handles records with identical timestamps', () async {
+        final sameTime = DateTime(2024, 1, 1, 12);
+
+        final likeRecords = [
+          LikeRecord(
+            targetEventId: 'event_a_id_1234567890abcdef0123',
+            reactionEventId: 'reaction_a_1234567890abcdef0123',
+            createdAt: sameTime,
+          ),
+          LikeRecord(
+            targetEventId: 'event_b_id_1234567890abcdef0123',
+            reactionEventId: 'reaction_b_1234567890abcdef0123',
+            createdAt: sameTime,
+          ),
+        ];
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => likeRecords);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getOrderedLikedEventIds();
+
+        expect(result.length, equals(2));
+        expect(
+          result,
+          containsAll([
+            'event_a_id_1234567890abcdef0123',
+            'event_b_id_1234567890abcdef0123',
+          ]),
+        );
+      });
+
+      test('works without local storage', () async {
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        final result = await repository.getOrderedLikedEventIds();
+        expect(result, isEmpty);
+      });
+    });
+
     group('likeEvent', () {
       test('publishes like reaction and stores record', () async {
         final mockEvent = MockEvent();
