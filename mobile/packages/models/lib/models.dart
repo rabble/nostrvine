@@ -4,7 +4,6 @@ library;
 export 'src/aspect_ratio.dart';
 export 'src/bug_report_data.dart';
 export 'src/bug_report_result.dart';
-export 'src/comment.dart';
 export 'src/curation_publish_status.dart';
 export 'src/curation_set.dart';
 export 'src/divine_filter.dart';

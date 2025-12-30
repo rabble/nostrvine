@@ -75,8 +75,8 @@ class UserName extends ConsumerWidget {
           value.betterDisplayName(anonymousName),
           _isReserved(value),
         ),
-        AsyncData() || AsyncError() => ('Unknown', false),
-        AsyncLoading() => ('Loading...', false),
+        AsyncLoading() || AsyncData() => ('Loading...', false),
+        AsyncError() => ('Unknown', false),
       };
     }
 

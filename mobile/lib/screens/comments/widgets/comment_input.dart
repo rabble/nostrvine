@@ -11,6 +11,7 @@ class CommentInput extends StatelessWidget {
     required this.controller,
     required this.isPosting,
     required this.onSubmit,
+    this.onChanged,
     super.key,
   });
 
@@ -22,6 +23,9 @@ class CommentInput extends StatelessWidget {
 
   /// Callback when the send button is pressed.
   final VoidCallback onSubmit;
+
+  /// Callback when the text changes.
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -38,30 +42,43 @@ class CommentInput extends StatelessWidget {
     child: Row(
       children: [
         Expanded(
-          child: TextField(
-            controller: controller,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'Add a comment...',
-              hintStyle: TextStyle(color: Colors.white54),
-              border: InputBorder.none,
+          child: Semantics(
+            identifier: 'comment_text_field',
+            textField: true,
+            label: 'Comment input',
+            hint: 'Add a comment',
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              enableInteractiveSelection: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Add a comment...',
+                hintStyle: TextStyle(color: Colors.white54),
+                border: InputBorder.none,
+              ),
+              maxLines: null,
             ),
-            maxLines: null,
           ),
         ),
-        IconButton(
-          onPressed: isPosting ? null : onSubmit,
-          icon: isPosting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.send, color: Colors.white),
+        Semantics(
+          identifier: 'send_comment_button',
+          button: true,
+          enabled: !isPosting,
+          label: isPosting ? 'Posting comment' : 'Send comment',
+          child: IconButton(
+            onPressed: isPosting ? null : onSubmit,
+            icon: isPosting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.send, color: Colors.white),
+          ),
         ),
       ],
     ),

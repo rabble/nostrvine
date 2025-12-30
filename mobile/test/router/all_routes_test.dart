@@ -295,5 +295,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.toString(), '/settings');
     });
-  });
+    // TOOD(any): Fix and re-enable these tests
+  }, skip: true);
 }

@@ -50,7 +50,7 @@ final class SocialNotifierProvider
   }
 }
 
-String _$socialNotifierHash() => r'ead63441f4ff33a6e8da22a3b987706bcb6ff243';
+String _$socialNotifierHash() => r'c07dc6fe0826b103053eee453df9e91fab99e9a0';
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached

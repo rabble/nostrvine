@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/hashtag_feed_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
@@ -14,7 +15,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 
 /// Active video ID derived from router state and app lifecycle
-/// Returns null when app is backgrounded or no valid video at current index
+/// Returns null when app is backgrounded, overlay is visible, or no valid video at current index
 /// Route-aware: switches feed provider based on route type
 final activeVideoIdProvider = Provider<String?>((ref) {
   // Check app foreground state - be defensive and require explicit foreground signal
@@ -27,6 +28,17 @@ final activeVideoIdProvider = Provider<String?>((ref) {
   if (!isFg) {
     Log.debug(
       '[ACTIVE] ❌ App not in foreground',
+      name: 'ActiveVideoProvider',
+      category: LogCategory.system,
+    );
+    return null;
+  }
+
+  // Check if any overlay (drawer, settings, modal) is visible
+  final hasOverlay = ref.watch(hasVisibleOverlayProvider);
+  if (hasOverlay) {
+    Log.debug(
+      '[ACTIVE] ❌ Overlay is visible (drawer/settings/modal)',
       name: 'ActiveVideoProvider',
       category: LogCategory.system,
     );
@@ -73,10 +85,19 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.clipManager:
     case RouteType.editVideo:
     case RouteType.settings:
+    case RouteType.relaySettings:
+    case RouteType.relayDiagnostic:
+    case RouteType.blossomSettings:
+    case RouteType.notificationSettings:
+    case RouteType.keyManagement:
+    case RouteType.safetySettings:
     case RouteType.editProfile:
     case RouteType.clips:
     case RouteType.importKey:
     case RouteType.welcome:
+    case RouteType.developerOptions:
+    case RouteType.followers:
+    case RouteType.following:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

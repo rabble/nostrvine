@@ -6,24 +6,42 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/text_overlay.dart';
+import 'package:openvine/utils/device_memory_util.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class TextOverlayRenderer {
   /// Renders a list of text overlays to a PNG image
   ///
   /// [overlays] - List of TextOverlay objects to render
-  /// [videoSize] - Size of the video canvas in pixels
+  /// [videoSize] - Size of the video canvas in pixels (will be scaled down on low-memory devices)
   /// [previewSize] - Size of the preview where text was positioned (for scaling)
   ///
   /// Returns PNG image data as Uint8List
+  ///
+  /// Note: On low-memory devices, the overlay is rendered at a lower resolution
+  /// to prevent OOM crashes. FFmpeg will scale it to match the video.
   Future<Uint8List> renderOverlays(
     List<TextOverlay> overlays,
     Size videoSize, {
     Size? previewSize,
   }) async {
     try {
+      // Get memory-safe render size to prevent OOM on low-memory devices
+      final renderSize = await DeviceMemoryUtil.getMaxOverlayResolution(
+        videoSize,
+      );
+      final isScaledDown = renderSize.width < videoSize.width;
+
+      if (isScaledDown) {
+        Log.info(
+          'Scaling overlay from ${videoSize.width}x${videoSize.height} to ${renderSize.width}x${renderSize.height} for memory safety',
+          name: 'TextOverlayRenderer',
+          category: LogCategory.system,
+        );
+      }
+
       Log.info(
-        'Rendering ${overlays.length} overlays to ${videoSize.width}x${videoSize.height} canvas',
+        'Rendering ${overlays.length} overlays to ${renderSize.width}x${renderSize.height} canvas',
         name: 'TextOverlayRenderer',
         category: LogCategory.system,
       );
@@ -32,31 +50,36 @@ class TextOverlayRenderer {
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(
         recorder,
-        Rect.fromLTWH(0, 0, videoSize.width, videoSize.height),
+        Rect.fromLTWH(0, 0, renderSize.width, renderSize.height),
       );
 
       // Calculate scale factor for font sizing
-      // If previewSize is provided, scale fonts from preview size to video size
-      final scaleFactor = previewSize != null
-          ? videoSize.width / previewSize.width
-          : 1.0;
+      // Account for both preview-to-video scaling AND any memory-based downscaling
+      double scaleFactor = 1.0;
+      if (previewSize != null) {
+        // Scale from preview to render size (not video size)
+        scaleFactor = renderSize.width / previewSize.width;
+      } else if (isScaledDown) {
+        // If no preview size but we're scaling down, adjust fonts accordingly
+        scaleFactor = renderSize.width / videoSize.width;
+      }
 
       Log.info(
-        'Font scale factor: $scaleFactor (preview: ${previewSize?.width ?? 'N/A'}, video: ${videoSize.width})',
+        'Font scale factor: $scaleFactor (preview: ${previewSize?.width ?? 'N/A'}, render: ${renderSize.width})',
         name: 'TextOverlayRenderer',
         category: LogCategory.system,
       );
 
       // Render each overlay
       for (final overlay in overlays) {
-        _renderSingleOverlay(canvas, overlay, videoSize, scaleFactor);
+        _renderSingleOverlay(canvas, overlay, renderSize, scaleFactor);
       }
 
       // Convert canvas to image
       final picture = recorder.endRecording();
       final image = await picture.toImage(
-        videoSize.width.toInt(),
-        videoSize.height.toInt(),
+        renderSize.width.toInt(),
+        renderSize.height.toInt(),
       );
 
       // Encode image to PNG

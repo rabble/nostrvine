@@ -6,29 +6,46 @@ import 'package:openvine/router/route_utils.dart';
 
 void main() {
   group('Route Coverage Validation', () {
-    group('Settings routes parse to RouteType.settings', () {
-      // These routes were missing from parseRoute() causing the navigation bug
-      // where users saw "not a home route" when navigating to settings sub-screens
-      const settingsRoutes = [
-        '/settings',
-        '/relay-settings',
-        '/relay-diagnostic',
-        '/blossom-settings',
-        '/notification-settings',
-        '/key-management',
-        '/safety-settings',
-      ];
+    group('Settings routes parse to their own RouteTypes', () {
+      // Each settings sub-route has its own RouteType to prevent
+      // routeNormalizationProvider from redirecting them to /settings
+      test('/settings parses to RouteType.settings', () {
+        final context = parseRoute('/settings');
+        expect(context.type, RouteType.settings);
+      });
 
-      for (final route in settingsRoutes) {
-        test('$route parses to RouteType.settings', () {
-          final context = parseRoute(route);
-          expect(
-            context.type,
-            RouteType.settings,
-            reason: '$route should parse to RouteType.settings',
-          );
-        });
-      }
+      test('/relay-settings parses to RouteType.relaySettings', () {
+        final context = parseRoute('/relay-settings');
+        expect(context.type, RouteType.relaySettings);
+      });
+
+      test('/relay-diagnostic parses to RouteType.relayDiagnostic', () {
+        final context = parseRoute('/relay-diagnostic');
+        expect(context.type, RouteType.relayDiagnostic);
+      });
+
+      test('/blossom-settings parses to RouteType.blossomSettings', () {
+        final context = parseRoute('/blossom-settings');
+        expect(context.type, RouteType.blossomSettings);
+      });
+
+      test(
+        '/notification-settings parses to RouteType.notificationSettings',
+        () {
+          final context = parseRoute('/notification-settings');
+          expect(context.type, RouteType.notificationSettings);
+        },
+      );
+
+      test('/key-management parses to RouteType.keyManagement', () {
+        final context = parseRoute('/key-management');
+        expect(context.type, RouteType.keyManagement);
+      });
+
+      test('/safety-settings parses to RouteType.safetySettings', () {
+        final context = parseRoute('/safety-settings');
+        expect(context.type, RouteType.safetySettings);
+      });
     });
 
     group('Profile editing routes parse to RouteType.editProfile', () {
@@ -252,6 +269,12 @@ void main() {
         RouteType.editVideo: '/edit-video',
         RouteType.importKey: '/import-key',
         RouteType.settings: '/settings',
+        RouteType.relaySettings: '/relay-settings',
+        RouteType.relayDiagnostic: '/relay-diagnostic',
+        RouteType.blossomSettings: '/blossom-settings',
+        RouteType.notificationSettings: '/notification-settings',
+        RouteType.keyManagement: '/key-management',
+        RouteType.safetySettings: '/safety-settings',
         RouteType.editProfile: '/edit-profile',
         RouteType.clips: '/clips',
         RouteType.welcome: '/welcome',

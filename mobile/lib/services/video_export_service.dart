@@ -327,6 +327,8 @@ class VideoExportService {
   ///
   /// Uses FFmpeg overlay filter to composite the PNG on the video.
   /// The PNG should contain all text rendered by TextOverlayRenderer.
+  /// If the overlay is smaller than the video (for memory reasons),
+  /// FFmpeg will scale it up to match.
   Future<String> applyTextOverlay(
     String videoPath,
     Uint8List textOverlayImage,
@@ -348,15 +350,18 @@ class VideoExportService {
       await File(overlayPngPath).writeAsBytes(textOverlayImage);
 
       Log.info(
-        'Saved overlay PNG to: $overlayPngPath',
+        'Saved overlay PNG to: $overlayPngPath (${textOverlayImage.length} bytes)',
         name: 'VideoExportService',
         category: LogCategory.system,
       );
 
       // Run FFmpeg overlay command
-      // Use overlay filter to composite PNG on video
-      // Add format=nv12 for Android MediaCodec compatibility
-      final overlayFilter = '[0:v][1:v]overlay=0:0';
+      // Use scale2ref to scale the overlay PNG to match the video dimensions
+      // This handles cases where overlay was rendered at lower resolution for memory safety
+      // [0:v] is the video, [1:v] is the overlay PNG
+      // scale2ref scales the second input to match the first input's dimensions
+      final overlayFilter =
+          '[1:v][0:v]scale2ref[scaled][video];[video][scaled]overlay=0:0';
       final effectiveFilter = FFmpegEncoder.isAndroid
           ? '$overlayFilter,format=nv12'
           : overlayFilter;

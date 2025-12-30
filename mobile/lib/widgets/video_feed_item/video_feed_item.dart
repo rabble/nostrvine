@@ -30,6 +30,7 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -840,7 +841,6 @@ class VideoOverlayActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
 
-    final socialState = ref.watch(socialProvider);
     final isLiked = ref.watch(isEventLikedProvider(video.id));
     final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
     final likeCount = ref.watch(likeCountProvider(video.id));
@@ -879,16 +879,6 @@ class VideoOverlayActions extends ConsumerWidget {
                       .fetchProfile(video.pubkey);
                 });
               }
-
-              final authService = ref.watch(authServiceProvider);
-              final currentUserPubkey = authService.currentPublicKeyHex;
-              final isOwnVideo = currentUserPubkey == video.pubkey;
-
-              final socialState = ref.watch(socialProvider);
-              final isFollowing = socialState.isFollowing(video.pubkey);
-              final isFollowInProgress = socialState.isFollowInProgress(
-                video.pubkey,
-              );
 
               return Row(
                 mainAxisSize: MainAxisSize.min,
@@ -933,70 +923,9 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Follow button next to username (only for other users' videos)
-                  if (!isOwnVideo) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: isFollowInProgress
-                          ? null
-                          : () async {
-                              Log.info(
-                                '👤 Follow button tapped for ${video.pubkey}',
-                                name: 'VideoFeedItem',
-                                category: LogCategory.ui,
-                              );
-                              if (isFollowing) {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .unfollowUser(video.pubkey);
-                              } else {
-                                await ref
-                                    .read(socialProvider.notifier)
-                                    .followUser(video.pubkey);
-                              }
-                            },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isFollowing
-                                      ? Colors.grey[800]
-                                      : VineTheme.vineGreen)
-                                  ?.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                (isFollowing
-                                        ? Colors.grey[600]
-                                        : VineTheme.vineGreen)
-                                    ?.withValues(alpha: 0.5) ??
-                                Colors.transparent,
-                            width: 1,
-                          ),
-                        ),
-                        child: isFollowInProgress
-                            ? const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                isFollowing ? 'Following' : 'Follow',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
+                  // Follow button (handles own video check internally)
+                  const SizedBox(width: 8),
+                  VideoFollowButton(pubkey: video.pubkey),
                 ],
               );
             },
@@ -1296,15 +1225,19 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Repost/Revine button with count
-                  Builder(
-                    builder: (context) {
+                  // Repost/Revine button - wrapped in Consumer to isolate rebuilds
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final socialState = ref.watch(socialProvider);
                       // Construct addressable ID for repost state check
                       final dTag = video.rawTags['d'];
                       final addressableId = dTag != null
                           ? '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag'
                           : video.id;
                       final isReposted = socialState.hasReposted(addressableId);
+                      final isRepostInProgress = socialState.isRepostInProgress(
+                        video.id,
+                      );
 
                       return Column(
                         children: [
@@ -1317,8 +1250,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                 ? 'Remove repost'
                                 : 'Repost video',
                             child: CircularIconButton(
-                              onPressed:
-                                  socialState.isRepostInProgress(video.id)
+                              onPressed: isRepostInProgress
                                   ? () {}
                                   : () async {
                                       Log.info(
@@ -1330,7 +1262,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                           .read(socialProvider.notifier)
                                           .toggleRepost(video);
                                     },
-                              icon: socialState.isRepostInProgress(video.id)
+                              icon: isRepostInProgress
                                   ? const SizedBox(
                                       width: 24,
                                       height: 24,

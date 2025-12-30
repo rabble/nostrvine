@@ -12,7 +12,6 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -64,8 +63,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
   static int _buildCount = 0;
   static DateTime? _lastBuildTime;
-  static int _wrongRouteRedirectCount = 0;
-  static const _maxWrongRouteRedirects = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -89,42 +86,12 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     return buildAsyncUI(
       pageContext,
       onData: (ctx) {
-        // Only handle home routes - if we get here with wrong route, recover gracefully
+        // Only handle home routes - if we get here with wrong route, don't redirect
+        // Just return empty container and let GoRouter handle the correct widget
+        // This prevents redirect loops when navigating away from home
         if (ctx.type != RouteType.home) {
-          _wrongRouteRedirectCount++;
-
-          // Log to Crashlytics as this indicates a routing bug
-          final errorMessage =
-              'HomeScreenRouter received non-home route: ${ctx.type.name} (redirect attempt $_wrongRouteRedirectCount)';
-          Log.error(errorMessage, name: 'HomeScreenRouter');
-          CrashReportingService.instance.recordError(
-            StateError(errorMessage),
-            StackTrace.current,
-            reason: 'Router delivered wrong route type to HomeScreenRouter',
-          );
-
-          // Prevent infinite redirect loop
-          if (_wrongRouteRedirectCount > _maxWrongRouteRedirects) {
-            Log.error(
-              'Max wrong route redirects exceeded ($_wrongRouteRedirectCount) - stopping to prevent infinite loop',
-              name: 'HomeScreenRouter',
-            );
-            return const Center(
-              child: Text(
-                'Navigation error - please restart the app',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          }
-
-          // Show loading while redirecting
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          );
+          return const SizedBox.shrink();
         }
-
-        // Reset redirect counter on successful home route
-        _wrongRouteRedirectCount = 0;
 
         int urlIndex = 0;
 
