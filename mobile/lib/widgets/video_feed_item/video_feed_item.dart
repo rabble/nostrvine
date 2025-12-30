@@ -649,12 +649,18 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
                     // Video is initialized - show first frame (even if not active)
                     // This enables seeing the video during swipe transitions
+                    // In fullscreen mode, use BoxFit.cover to fill the screen
+                    // In normal mode, use BoxFit.contain to preserve aspect ratio
                     return SizedBox.expand(
                       child: Container(
                         color: Colors.black,
                         child: FittedBox(
-                          fit: BoxFit.contain,
-                          alignment: Alignment.topCenter,
+                          fit: widget.isFullscreen
+                              ? BoxFit.cover
+                              : BoxFit.contain,
+                          alignment: widget.isFullscreen
+                              ? Alignment.center
+                              : Alignment.topCenter,
                           child: SizedBox(
                             width: value.size.width == 0 ? 1 : value.size.width,
                             height: value.size.height == 0
@@ -840,9 +846,10 @@ class VideoOverlayActions extends ConsumerWidget {
         // No gradient - using text background opacity instead for cleaner appearance
         // Video title overlay at bottom left
         // Only show if there's actual text content
+        // TODO(cleanup): Remove hasBottomNavigation and use only isFullscreen
         if (hasTextContent)
           Positioned(
-            bottom: hasBottomNavigation ? 80 : 16,
+            bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
             left: 16,
             right: 80, // Leave space for action buttons
             child: AnimatedOpacity(
@@ -946,8 +953,9 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
           ),
         // Action buttons at bottom right
+        // In fullscreen mode (no bottom nav), add extra padding to avoid edge
         Positioned(
-          bottom: hasBottomNavigation ? 80 : 16,
+          bottom: hasBottomNavigation ? 80 : (isFullscreen ? 48 : 16),
           right: 16,
           child: AnimatedOpacity(
             opacity: isActive ? 1.0 : 0.0,
