@@ -128,6 +128,8 @@ class _LikedVideosFeedView extends StatefulWidget {
 }
 
 class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
+  List<String>? _lastLoadedIds;
+
   @override
   void initState() {
     super.initState();
@@ -142,24 +144,39 @@ class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
 
     final likesState = context.read<LikesBloc>().state;
     if (likesState.isInitialized) {
-      context.read<ProfileLikedVideosBloc>().add(
-        ProfileLikedVideosLoadRequested(
-          likedEventIds: likesState.likedEventIds,
-        ),
-      );
+      _triggerLoad(likesState.likedEventIds);
     }
+  }
+
+  void _triggerLoad(List<String> likedEventIds) {
+    // Only reload if IDs changed
+    if (_lastLoadedIds != null && _listEquals(_lastLoadedIds!, likedEventIds)) {
+      return;
+    }
+    _lastLoadedIds = List.from(likedEventIds);
+    context.read<ProfileLikedVideosBloc>().add(
+      ProfileLikedVideosLoadRequested(likedEventIds: likedEventIds),
+    );
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<LikesBloc, LikesState>(
-      listenWhen: (prev, curr) => !prev.isInitialized && curr.isInitialized,
+      listenWhen: (prev, curr) =>
+          prev.likedEventIds != curr.likedEventIds ||
+          (!prev.isInitialized && curr.isInitialized),
       listener: (context, likesState) {
-        context.read<ProfileLikedVideosBloc>().add(
-          ProfileLikedVideosLoadRequested(
-            likedEventIds: likesState.likedEventIds,
-          ),
-        );
+        if (likesState.isInitialized) {
+          _triggerLoad(likesState.likedEventIds);
+        }
       },
       child: BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         builder: (context, state) {
