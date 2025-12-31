@@ -271,25 +271,17 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   // Update tracked video stableId
                   _currentVideoStableId = videos[newIndex].stableId;
 
-                  // Update last URL index immediately to prevent rebuild flash
-                  _lastUrlIndex = newIndex;
-
                   // Guard: only navigate if URL doesn't match
-                  // TEMPORARILY DISABLED to test if this causes flicker
-                  // TODO: Re-enable after fixing flicker
-                  // if (newIndex != urlIndex) {
-                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-                  //     if (!mounted) return;
-                  //     context.go(
-                  //       buildRoute(
-                  //         RouteContext(
-                  //           type: RouteType.home,
-                  //           videoIndex: newIndex,
-                  //         ),
-                  //       ),
-                  //     );
-                  //   });
-                  // }
+                  if (newIndex != urlIndex) {
+                    context.go(
+                      buildRoute(
+                        RouteContext(
+                          type: RouteType.home,
+                          videoIndex: newIndex,
+                        ),
+                      ),
+                    );
+                  }
 
                   // Trigger pagination near end
                   if (newIndex >= itemCount - 2) {
