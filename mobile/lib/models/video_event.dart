@@ -46,6 +46,8 @@ class VideoEvent {
     this.originalComments,
     this.originalReposts,
     this.expirationTimestamp,
+    this.audioEventId,
+    this.audioEventRelay,
   });
 
   /// Create VideoEvent from Nostr event
@@ -101,6 +103,8 @@ class VideoEvent {
     int? originalComments;
     int? originalReposts;
     int? expirationTimestamp;
+    String? audioEventId;
+    String? audioEventRelay;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic> from different nostr implementations
@@ -352,7 +356,25 @@ class VideoEvent {
             );
           }
         case 'e':
-          // Event reference - check if it's a media URL in disguise
+          // Event reference - check for audio reference marker
+          // Format: ["e", "<audio-event-id>", "<relay>", "audio"]
+          // The marker can be at index 2 (no relay) or index 3 (with relay)
+          // Only use the first audio reference found
+          if (tag.length >= 3 && audioEventId == null) {
+            final marker = tag.length >= 4 ? tag[3] : tag[2];
+            if (marker == 'audio' && tagValue.isNotEmpty) {
+              audioEventId = tagValue;
+              // Relay hint is at index 2 if marker is at index 3
+              if (tag.length >= 4 && tag[2].isNotEmpty) {
+                audioEventRelay = tag[2];
+              }
+              developer.log(
+                '🎵 Found audio reference: $audioEventId (relay: $audioEventRelay)',
+                name: 'VideoEvent',
+              );
+            }
+          }
+          // Also check if it's a media URL in disguise (legacy behavior)
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
             developer.log(
@@ -534,6 +556,8 @@ class VideoEvent {
       originalComments: originalComments,
       originalReposts: originalReposts,
       expirationTimestamp: expirationTimestamp,
+      audioEventId: audioEventId,
+      audioEventRelay: audioEventRelay,
     );
   }
   final String id;
@@ -584,6 +608,18 @@ class VideoEvent {
   final int? originalReposts; // Original repost count from classic Vine
   final int?
   expirationTimestamp; // NIP-40 expiration timestamp (Unix timestamp in seconds)
+
+  // Audio reuse fields (NIP-71 extension)
+  /// Event ID of the referenced audio event (Kind 1063).
+  /// Parsed from ["e", "<audio-event-id>", "<relay>", "audio"] tag.
+  final String? audioEventId;
+
+  /// Optional relay hint for fetching the audio event.
+  final String? audioEventRelay;
+
+  /// Check if this video uses audio from another source.
+  /// Returns true if audioEventId is set.
+  bool get hasAudioReference => audioEventId != null;
 
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
@@ -956,6 +992,8 @@ class VideoEvent {
     String? reposterPubkey,
     List<String>? reposterPubkeys,
     DateTime? repostedAt,
+    String? audioEventId,
+    String? audioEventRelay,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -982,6 +1020,8 @@ class VideoEvent {
     reposterPubkey: reposterPubkey ?? this.reposterPubkey,
     reposterPubkeys: reposterPubkeys ?? this.reposterPubkeys,
     repostedAt: repostedAt ?? this.repostedAt,
+    audioEventId: audioEventId ?? this.audioEventId,
+    audioEventRelay: audioEventRelay ?? this.audioEventRelay,
   );
 
   @override
