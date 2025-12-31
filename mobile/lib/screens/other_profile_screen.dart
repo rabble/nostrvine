@@ -74,7 +74,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final userIdHex = npubToHexOrNull(widget.npub);
 
     if (userIdHex == null) {
-      return _buildErrorScreen('Invalid profile ID');
+      return _ProfileErrorScreen(
+        message: 'Invalid profile ID',
+        onBack: () => context.pop(),
+      );
     }
 
     // Check if this user is blocked
@@ -129,27 +132,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
         ),
       },
-    );
-  }
-
-  Widget _buildErrorScreen(String message) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      body: Center(
-        child: Text(message, style: const TextStyle(color: Colors.white)),
-      ),
     );
   }
 
@@ -247,5 +229,41 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         );
       }
     }
+  }
+}
+
+class _ProfileErrorScreen extends StatelessWidget {
+  const _ProfileErrorScreen({
+    required this.message,
+    required this.onBack,
+  });
+
+  final String message;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.whiteText,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: onBack,
+        ),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: Center(
+        child: Text(message, style: const TextStyle(color: Colors.white)),
+      ),
+    );
   }
 }
