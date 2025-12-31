@@ -1,6 +1,7 @@
 // ABOUTME: Factory for creating NostrClient instances
 // ABOUTME: Handles platform-appropriate client creation with proper configuration
 
+import 'package:db_client/db_client.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -20,11 +21,14 @@ class NostrServiceFactory {
   ///
   /// Takes [environmentConfig] to determine the relay URL to use.
   /// If not provided, falls back to [AppConstants.defaultRelayUrl].
+  ///
+  /// Takes [dbClient] for local event caching with optimistic updates.
   static NostrClient create({
     SecureKeyContainer? keyContainer,
     RelayStatisticsService? statisticsService,
     RelayGatewaySettings? gatewaySettings,
     EnvironmentConfig? environmentConfig,
+    AppDbClient? dbClient,
   }) {
     UnifiedLogger.info(
       'Creating NostrClient via factory',
@@ -64,6 +68,7 @@ class NostrServiceFactory {
       config: config,
       relayManagerConfig: relayManagerConfig,
       gatewayClient: gatewayClient,
+      dbClient: dbClient,
     );
   }
 

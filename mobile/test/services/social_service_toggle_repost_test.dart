@@ -111,15 +111,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockRepostEvent);
 
-        // Mock successful broadcast
-        when(mockNostrService.broadcast(mockRepostEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockRepostEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
+        // Mock successful publish
+        when(mockNostrService.publishEvent(mockRepostEvent)).thenAnswer(
+          (_) async => mockRepostEvent,
         );
 
         // Initially not reposted
@@ -148,8 +142,8 @@ void main() {
           ),
         ).called(1);
 
-        // Verify broadcast was called
-        verify(mockNostrService.broadcast(mockRepostEvent)).called(1);
+        // Verify publish was called
+        verify(mockNostrService.publishEvent(mockRepostEvent)).called(1);
 
         // Verify video is now reposted locally
         expect(
@@ -192,14 +186,8 @@ void main() {
           ),
         ).thenAnswer((_) async => mockRepostEvent);
 
-        when(mockNostrService.broadcast(mockRepostEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockRepostEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
+        when(mockNostrService.publishEvent(mockRepostEvent)).thenAnswer(
+          (_) async => mockRepostEvent,
         );
 
         // First toggle: repost the video
@@ -234,14 +222,8 @@ void main() {
           ),
         ).thenAnswer((_) async => mockDeletionEvent);
 
-        when(mockNostrService.broadcast(mockDeletionEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockDeletionEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
+        when(mockNostrService.publishEvent(mockDeletionEvent)).thenAnswer(
+          (_) async => mockDeletionEvent,
         );
 
         // Second toggle: unrepost the video
@@ -258,8 +240,8 @@ void main() {
           ),
         ).called(1);
 
-        // Verify deletion broadcast
-        verify(mockNostrService.broadcast(mockDeletionEvent)).called(1);
+        // Verify deletion publish
+        verify(mockNostrService.publishEvent(mockDeletionEvent)).called(1);
 
         // Verify video is no longer reposted locally
         expect(

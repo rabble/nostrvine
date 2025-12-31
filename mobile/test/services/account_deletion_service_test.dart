@@ -153,21 +153,15 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: expectedEvent,
-          successCount: 3,
-          totalRelays: 3,
-          results: {'relay1': true, 'relay2': true, 'relay3': true},
-          errors: {},
-        ),
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (_) async => expectedEvent,
       );
 
       // Act
       await expectLater(service.deleteAccount(), completes);
 
       // Assert
-      verify(mockNostrService.broadcast(any)).called(1);
+      verify(mockNostrService.publishEvent(any)).called(1);
     });
 
     test(
@@ -191,14 +185,8 @@ void main() {
           ),
         ).thenAnswer((_) async => expectedEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: expectedEvent,
-            successCount: 3,
-            totalRelays: 3,
-            results: {'relay1': true, 'relay2': true, 'relay3': true},
-            errors: {},
-          ),
+        when(mockNostrService.publishEvent(any)).thenAnswer(
+          (_) async => expectedEvent,
         );
 
         // Act
@@ -210,7 +198,7 @@ void main() {
       },
     );
 
-    test('deleteAccount should return failure when broadcast fails', () async {
+    test('deleteAccount should return failure when publish fails', () async {
       // Arrange
       final expectedEvent = createTestEvent(
         pubkey: testPublicKey,
@@ -229,14 +217,9 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: expectedEvent,
-          successCount: 0,
-          totalRelays: 3,
-          results: {'relay1': false, 'relay2': false, 'relay3': false},
-          errors: {'relay1': 'error1', 'relay2': 'error2', 'relay3': 'error3'},
-        ),
+      // publishEvent returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (_) async => null,
       );
 
       // Act
@@ -245,7 +228,7 @@ void main() {
       // Assert
       expect(result.success, isFalse);
       expect(result.error, isNotNull);
-      expect(result.error, contains('Failed to broadcast'));
+      expect(result.error, contains('Failed to publish'));
     });
 
     test('deleteAccount should fail when not authenticated', () async {
@@ -259,8 +242,8 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('Not authenticated'));
 
-      // Verify broadcast was NOT called
-      verifyNever(mockNostrService.broadcast(any));
+      // Verify publishEvent was NOT called
+      verifyNever(mockNostrService.publishEvent(any));
     });
 
     test(
@@ -282,8 +265,8 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('Failed to create deletion event'));
 
-        // Verify broadcast was NOT called
-        verifyNever(mockNostrService.broadcast(any));
+        // Verify publishEvent was NOT called
+        verifyNever(mockNostrService.publishEvent(any));
       },
     );
   });

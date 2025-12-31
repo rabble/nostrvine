@@ -1078,7 +1078,7 @@ class CurationService {
         success: isSuccess,
         successCount: isSuccess ? 1 : 0,
         totalRelays: 1,
-        eventId: isSuccess ? sentEvent?.id : null,
+        eventId: isSuccess ? sentEvent.id : null,
         errors: isSuccess ? {} : {'publish': 'Failed to publish to relays'},
         failedRelays: isSuccess ? [] : ['relays'],
       );

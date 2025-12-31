@@ -19,7 +19,7 @@ typedef OrderClause = List<OrderingTerm Function(Table)>;
 /// {@endtemplate}
 class DbClient {
   /// {@macro db_client}
-  DbClient({@visibleForTesting GeneratedDatabase? generatedDatabase}) {
+  DbClient({GeneratedDatabase? generatedDatabase}) {
     if (generatedDatabase != null) {
       this.generatedDatabase = generatedDatabase;
     }

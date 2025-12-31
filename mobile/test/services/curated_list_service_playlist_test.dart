@@ -31,23 +31,8 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'test_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
+      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       when(
@@ -164,7 +149,7 @@ void main() {
 
         await service.reorderVideos(list.id, ['video_2', 'video_1']);
 
-        verify(mockNostr.broadcast(any)).called(1);
+        verify(mockNostr.publishEvent(any)).called(1);
       });
 
       test('updates updatedAt timestamp', () async {

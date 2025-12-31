@@ -36,24 +36,9 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      // Mock successful event broadcasting
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'broadcast_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
+      // Mock successful event publishing
+      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync

@@ -32,24 +32,9 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      // Mock successful event broadcasting
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'broadcast_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
+      // Mock successful event publishing
+      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
@@ -160,7 +145,7 @@ void main() {
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
-        verify(mockNostr.broadcast(any)).called(1);
+        verify(mockNostr.publishEvent(any)).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -172,7 +157,7 @@ void main() {
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
-        verifyNever(mockNostr.broadcast(any));
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('saves to SharedPreferences after adding', () async {
@@ -266,7 +251,7 @@ void main() {
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
-        verify(mockNostr.broadcast(any)).called(1);
+        verify(mockNostr.publishEvent(any)).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -279,7 +264,7 @@ void main() {
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
-        verifyNever(mockNostr.broadcast(any));
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('saves to SharedPreferences after removing', () async {
