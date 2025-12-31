@@ -98,6 +98,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       appBar: AppBar(
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: VineTheme.whiteText,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
         title: Text(
           displayName,
           style: const TextStyle(
