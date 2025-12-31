@@ -107,7 +107,9 @@ class _FullscreenVideoFeedScreenState
         videoUrl: video.videoUrl!,
         videoEvent: video,
       );
-      controller = ref.read(individualVideoControllerProvider(controllerParams));
+      controller = ref.read(
+        individualVideoControllerProvider(controllerParams),
+      );
     } catch (e) {
       // Controller may not exist yet
       return;

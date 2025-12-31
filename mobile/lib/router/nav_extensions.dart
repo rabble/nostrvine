@@ -207,14 +207,13 @@ extension NavX on BuildContext {
     required int initialIndex,
     String? contextTitle,
     VoidCallback? onLoadMore,
-  }) =>
-      push(
-        '/video-feed',
-        extra: FullscreenVideoFeedArgs(
-          videos: videos,
-          initialIndex: initialIndex,
-          contextTitle: contextTitle,
-          onLoadMore: onLoadMore,
-        ),
-      );
+  }) => push(
+    '/video-feed',
+    extra: FullscreenVideoFeedArgs(
+      videos: videos,
+      initialIndex: initialIndex,
+      contextTitle: contextTitle,
+      onLoadMore: onLoadMore,
+    ),
+  );
 }

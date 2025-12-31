@@ -56,8 +56,9 @@ class ProfileVideosGrid extends ConsumerWidget {
                 userIdHex: userIdHex,
                 index: index,
                 videos: videos,
-                onLoadMore: () =>
-                    ref.read(profileFeedProvider(userIdHex).notifier).loadMore(),
+                onLoadMore: () => ref
+                    .read(profileFeedProvider(userIdHex).notifier)
+                    .loadMore(),
               );
             }, childCount: videos.length),
           ),
