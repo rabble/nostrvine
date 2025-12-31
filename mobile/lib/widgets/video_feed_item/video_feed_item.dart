@@ -657,10 +657,12 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     }
 
                     // Use video dimensions if available, otherwise placeholder
-                    final videoWidth =
-                        value.size.width > 0 ? value.size.width : 1.0;
-                    final videoHeight =
-                        value.size.height > 0 ? value.size.height : 1.0;
+                    final videoWidth = value.size.width > 0
+                        ? value.size.width
+                        : 1.0;
+                    final videoHeight = value.size.height > 0
+                        ? value.size.height
+                        : 1.0;
 
                     // In fullscreen mode:
                     //   - Portrait videos (9:16): use BoxFit.cover to fill screen
