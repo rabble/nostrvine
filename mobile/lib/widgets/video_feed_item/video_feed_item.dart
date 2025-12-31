@@ -1380,6 +1380,7 @@ class VideoOverlayActions extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ShareVideoMenu(video: video),
     );
