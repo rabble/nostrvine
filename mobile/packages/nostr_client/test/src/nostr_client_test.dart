@@ -1723,14 +1723,33 @@ void main() {
             () => mockNostrEventsDao.getEventsByFilter(any()),
           ).thenAnswer((_) async => cachedEvents);
 
+          // Gateway returns cached events (simulating network returning same data)
+          when(
+            () => mockGatewayClient.query(any()),
+          ).thenAnswer(
+            (_) async => GatewayResponse(
+              events: cachedEvents,
+              eose: true,
+              complete: true,
+              cached: false,
+            ),
+          );
+
+          // Stub upsertEventsBatch for the gateway cache write
+          when(
+            () => mockNostrEventsDao.upsertEventsBatch(any()),
+          ).thenAnswer((_) async {});
+
           final result = await clientWithCache.queryEvents(filters);
 
+          // Cache + gateway results merged (deduplicated to cachedEvents)
           expect(result, equals(cachedEvents));
           verify(
             () => mockNostrEventsDao.getEventsByFilter(filters.first),
           ).called(1);
-          // Should not call gateway or websocket when cache has results
-          verifyNever(() => mockGatewayClient.query(any()));
+          // Gateway IS called (cache + network merge strategy)
+          verify(() => mockGatewayClient.query(any())).called(1);
+          // WebSocket NOT called since gateway had events
           verifyNever(
             () => mockNostr.queryEvents(
               any(),
