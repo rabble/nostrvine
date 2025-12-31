@@ -893,12 +893,11 @@ class SocialNotifier extends _$SocialNotifier {
         throw Exception('Failed to create contact list event');
       }
 
-      // Broadcast the contact list event
-      final result = await nostrService.broadcast(event);
+      // Publish the contact list event
+      final sentEvent = await nostrService.publishEvent(event);
 
-      if (!result.isSuccessful) {
-        final errorMessages = result.errors.values.join(', ');
-        throw Exception('Failed to broadcast contact list: $errorMessages');
+      if (sentEvent == null) {
+        throw Exception('Failed to publish contact list to relays');
       }
 
       // Update current contact list event

@@ -94,7 +94,7 @@ class NostrClient {
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 
-  /// Helper to cache a successfully sent event with default expiry.
+  /// Helper to cache an event with default expiry.
   ///
   /// Fire-and-forget pattern - errors are silently ignored since caching
   /// failures should not affect the send operation's success.
@@ -102,7 +102,19 @@ class NostrClient {
     try {
       unawaited(_nostrEventsDao?.upsertEvent(event));
     } on Object {
-      // Ignore cache errors - send was already successful
+      // Ignore cache errors
+    }
+  }
+
+  /// Removes an optimistically cached event on send failure.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored since rollback
+  /// failures should not affect the operation's result.
+  void _rollbackCachedEvent(String eventId) {
+    try {
+      unawaited(_nostrEventsDao?.deleteEventsByIds([eventId]));
+    } on Object {
+      // Ignore rollback errors
     }
   }
 
@@ -175,25 +187,37 @@ class NostrClient {
   /// Publishes an event to relays
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
-  /// Successfully sent events are cached locally with 1-day expiry.
+  /// Uses optimistic caching: events are cached before sending and rolled
+  /// back on failure. Provides immediate local visibility for own events.
   /// For NIP-09 deletion events (Kind 5), removes target events from cache.
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
     Event event, {
     List<String>? targetRelays,
   }) async {
+    // Optimistic cache (skip deletion events - they remove, not add)
+    if (event.kind != EventKind.eventDeletion) {
+      _cacheEvent(event);
+    }
+
     final sentEvent = await _nostr.sendEvent(
       event,
       targetRelays: targetRelays,
     );
-    if (sentEvent != null) {
-      // Handle NIP-09 deletion events by removing targets from DB
-      if (sentEvent.kind == EventKind.eventDeletion) {
-        _handleDeletionEvent(sentEvent);
-      } else {
-        _cacheEvent(sentEvent);
+
+    if (sentEvent == null) {
+      // Rollback on failure
+      if (event.kind != EventKind.eventDeletion) {
+        _rollbackCachedEvent(event.id);
       }
+      return null;
     }
+
+    // Handle NIP-09 deletion events by removing targets from DB
+    if (sentEvent.kind == EventKind.eventDeletion) {
+      _handleDeletionEvent(sentEvent);
+    }
+
     return sentEvent;
   }
 
@@ -781,91 +805,6 @@ class NostrClient {
     );
 
     return subscribe([filter]);
-  }
-
-  /// Broadcasts an event to relays with result tracking
-  ///
-  /// Similar to [publishEvent] but returns detailed per-relay tracking.
-  /// Use this when you need visibility into which relays accepted the event.
-  /// Successfully sent events are cached locally with 1-day expiry.
-  ///
-  /// Note: Per-relay tracking is currently based on the connected relays
-  /// at broadcast time. The underlying nostr_sdk doesn't provide individual
-  /// relay responses, so results are inferred from overall success/failure.
-  Future<NostrBroadcastResult> broadcast(
-    Event event, {
-    List<String>? targetRelays,
-  }) async {
-    final relays = connectedRelays;
-    final totalRelays = targetRelays?.length ?? relays.length;
-
-    try {
-      final sentEvent = await _nostr.sendEvent(
-        event,
-        targetRelays: targetRelays,
-      );
-
-      if (sentEvent != null) {
-        // Handle NIP-09 deletion events by removing targets from DB
-        if (sentEvent.kind == EventKind.eventDeletion) {
-          _handleDeletionEvent(sentEvent);
-        } else {
-          // Cache successfully broadcast non-deletion event
-          _cacheEvent(sentEvent);
-        }
-
-        // Event was accepted by at least one relay
-        // Since nostr_sdk doesn't provide per-relay tracking,
-        // we mark all connected relays as successful
-        final results = <String, bool>{};
-        final relayList = targetRelays ?? relays;
-        for (final relay in relayList) {
-          results[relay] = true;
-        }
-
-        return NostrBroadcastResult(
-          event: sentEvent,
-          successCount: totalRelays,
-          totalRelays: totalRelays,
-          results: results,
-          errors: {},
-        );
-      } else {
-        // Event was not accepted by any relay
-        final results = <String, bool>{};
-        final errors = <String, String>{};
-        final relayList = targetRelays ?? relays;
-        for (final relay in relayList) {
-          results[relay] = false;
-          errors[relay] = 'Failed to send';
-        }
-
-        return NostrBroadcastResult(
-          event: null,
-          successCount: 0,
-          totalRelays: totalRelays,
-          results: results,
-          errors: errors,
-        );
-      }
-    } on Exception catch (e) {
-      // Exception during broadcast
-      final results = <String, bool>{};
-      final errors = <String, String>{};
-      final relayList = targetRelays ?? relays;
-      for (final relay in relayList) {
-        results[relay] = false;
-        errors[relay] = e.toString();
-      }
-
-      return NostrBroadcastResult(
-        event: null,
-        successCount: 0,
-        totalRelays: totalRelays,
-        results: results,
-        errors: errors,
-      );
-    }
   }
 
   /// Disposes the client and cleans up resources

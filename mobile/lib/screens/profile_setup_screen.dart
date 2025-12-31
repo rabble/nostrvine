@@ -1021,21 +1021,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         category: LogCategory.ui,
       );
 
-      final result = await nostrService.broadcast(event);
-      final success = result.isSuccessful;
+      final sentEvent = await nostrService.publishEvent(event);
+      final success = sentEvent != null;
 
       Log.info(
-        'Broadcast result: success=$success, successCount=${result.successCount}/${result.totalRelays}',
+        'Publish result: success=$success',
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
-      if (result.errors.isNotEmpty) {
-        Log.error(
-          'Broadcast errors: ${result.errors}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
 
       if (success) {
         // CRITICAL: Wait for relay to confirm it has the updated profile before navigating

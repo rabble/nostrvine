@@ -58,12 +58,6 @@ class _FakeCountResult_4 extends _i1.SmartFake implements _i5.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_5 extends _i1.SmartFake
-    implements _i5.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_5(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
 /// A class which mocks [BlossomUploadService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -834,30 +828,6 @@ class MockNostrClient extends _i1.Mock implements _i10.NostrClient {
             returnValue: _i6.Stream<_i9.Event>.empty(),
           )
           as _i6.Stream<_i9.Event>);
-
-  @override
-  _i6.Future<_i5.NostrBroadcastResult> broadcast(
-    _i9.Event? event, {
-    List<String>? targetRelays,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i6.Future<_i5.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_5(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i5.NostrBroadcastResult>);
 
   @override
   _i6.Future<void> dispose() =>

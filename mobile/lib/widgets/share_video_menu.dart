@@ -2504,9 +2504,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         throw Exception('Failed to create updated event');
       }
 
-      // Broadcast the updated event
+      // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.broadcast(event);
+      await nostrService.publishEvent(event);
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);

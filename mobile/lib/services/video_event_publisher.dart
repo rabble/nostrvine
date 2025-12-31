@@ -185,48 +185,24 @@ class VideoEventPublisher {
         );
       }
 
-      // Use the existing Nostr service to broadcast
-      final broadcastResult = await _nostrService.broadcast(event);
+      // Use the existing Nostr service to publish
+      final sentEvent = await _nostrService.publishEvent(event);
 
-      Log.info(
-        '✅ Event broadcast completed with result: successful=${broadcastResult.successCount}, failed=${broadcastResult.failedRelays.length}',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
-
-      // Check if broadcast was successful
-      if (broadcastResult.successCount > 0) {
+      // Check if publish was successful
+      if (sentEvent != null) {
         Log.info(
-          '✅ Event successfully published to ${broadcastResult.successCount} relay(s)',
+          '✅ Event successfully published to relays: ${event.id}',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-
-        // Log any relay-specific errors
-        if (broadcastResult.errors.isNotEmpty) {
-          for (final entry in broadcastResult.errors.entries) {
-            Log.warning(
-              'Relay ${entry.key} error: ${entry.value}',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-        }
 
         return true;
       } else {
         Log.error(
-          '❌ Event broadcast failed to all relays',
+          '❌ Event publish failed to all relays',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        for (final entry in broadcastResult.errors.entries) {
-          Log.error(
-            'Relay ${entry.key} error: ${entry.value}',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
         return false;
       }
     } catch (e) {

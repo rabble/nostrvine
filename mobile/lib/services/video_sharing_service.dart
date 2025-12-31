@@ -101,10 +101,10 @@ class VideoSharingService {
         return ShareResult.failure('Failed to create share message');
       }
 
-      // Broadcast the DM
-      final result = await _nostrService.broadcast(event);
+      // Publish the DM
+      final sentEvent = await _nostrService.publishEvent(event);
 
-      if (result.successCount > 0) {
+      if (sentEvent != null) {
         // Update sharing history
         _shareHistory[recipientPubkey] = DateTime.now();
         await _updateRecentlySharedWith(recipientPubkey);
@@ -117,7 +117,7 @@ class VideoSharingService {
 
         return ShareResult.createSuccess(event.id);
       } else {
-        return ShareResult.failure('Failed to broadcast share message');
+        return ShareResult.failure('Failed to publish share message');
       }
     } catch (e) {
       Log.error(
