@@ -963,7 +963,7 @@ class VideoOverlayActions extends ConsumerWidget {
           right: 16,
           child: GestureDetector(
             onTap: () {
-              _showBadgeExplanationModal(context, ref, video);
+              _showBadgeExplanationModal(context, ref, video, isActive);
             },
             child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
           ),
@@ -1356,7 +1356,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               name: 'VideoFeedItem',
                               category: LogCategory.ui,
                             );
-                            _showShareMenu(context, ref, video);
+                            _showShareMenu(context, ref, video, isActive);
                           },
                           icon: const Icon(
                             Icons.share_outlined,
@@ -1459,6 +1459,7 @@ class VideoOverlayActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing share menu
     bool wasPaused = false;
@@ -1511,9 +1512,6 @@ class VideoOverlayActions extends ConsumerWidget {
         final controller = ref.read(
           individualVideoControllerProvider(controllerParams),
         );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
         if (isActive &&
             controller.value.isInitialized &&
             !controller.value.isPlaying) {
@@ -1544,6 +1542,7 @@ class VideoOverlayActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing modal
     bool wasPaused = false;
@@ -1597,9 +1596,6 @@ class VideoOverlayActions extends ConsumerWidget {
         final controller = ref.read(
           individualVideoControllerProvider(controllerParams),
         );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
         // Only resume if video is still active (not scrolled away)
         if (isActive &&
             controller.value.isInitialized &&
