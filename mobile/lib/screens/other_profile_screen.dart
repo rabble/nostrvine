@@ -2,12 +2,12 @@
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -89,42 +89,42 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
 
+    // Watch profile reactively to get display name for AppBar
+    final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
+    final displayName = profileAsync.value?.bestDisplayName ?? 'Profile';
+
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        forceMaterialTransparency: true,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.whiteText,
+        title: Text(
+          displayName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: switch (videosAsync) {
-          AsyncLoading() => const ProfileLoadingView(),
-          AsyncError(:final error) => Center(
-            child: Text(
-              'Error: $error',
-              style: const TextStyle(color: Colors.white),
-            ),
+      body: switch (videosAsync) {
+        AsyncLoading() => const ProfileLoadingView(),
+        AsyncError(:final error) => Center(
+          child: Text(
+            'Error: $error',
+            style: const TextStyle(color: Colors.white),
           ),
-          AsyncData(:final value) => ProfileGridView(
-            userIdHex: userIdHex,
-            isOwnProfile: false,
-            videos: value.videos,
-            profileStatsAsync: profileStatsAsync,
-            scrollController: _scrollController,
-            onShareProfile: () => _shareProfile(userIdHex),
-            onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
-          ),
-        },
-      ),
+        ),
+        AsyncData(:final value) => ProfileGridView(
+          userIdHex: userIdHex,
+          isOwnProfile: false,
+          videos: value.videos,
+          profileStatsAsync: profileStatsAsync,
+          scrollController: _scrollController,
+          onShareProfile: () => _shareProfile(userIdHex),
+          onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
+        ),
+      },
     );
   }
 
@@ -132,11 +132,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.whiteText,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: Center(
