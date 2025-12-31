@@ -27,6 +27,7 @@ enum RouteType {
   following, // Following list screen
   followers, // Followers list screen
   videoFeed, // Fullscreen video feed (pushed from grids)
+  profileView, // Other user's profile (fullscreen, no bottom nav)
 }
 
 /// Structured representation of a route
@@ -201,6 +202,13 @@ RouteContext parseRoute(String path) {
     case 'video-feed':
       return const RouteContext(type: RouteType.videoFeed);
 
+    case 'profile-view':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final profileViewNpub = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -325,5 +333,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.videoFeed:
       return '/video-feed';
+
+    case RouteType.profileView:
+      final npub = Uri.encodeComponent(context.npub ?? '');
+      return '/profile-view/$npub';
   }
 }

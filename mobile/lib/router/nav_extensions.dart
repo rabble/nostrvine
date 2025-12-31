@@ -207,14 +207,42 @@ extension NavX on BuildContext {
     required int initialIndex,
     String? contextTitle,
     VoidCallback? onLoadMore,
-  }) =>
-      push(
-        '/video-feed',
-        extra: FullscreenVideoFeedArgs(
-          videos: videos,
-          initialIndex: initialIndex,
-          contextTitle: contextTitle,
-          onLoadMore: onLoadMore,
-        ),
-      );
+  }) => push(
+    '/video-feed',
+    extra: FullscreenVideoFeedArgs(
+      videos: videos,
+      initialIndex: initialIndex,
+      contextTitle: contextTitle,
+      onLoadMore: onLoadMore,
+    ),
+  );
+
+  /// Push other user's profile screen (fullscreen, no bottom nav)
+  ///
+  /// Use this when navigating to another user's profile from video feeds,
+  /// search results, comments, etc. For navigating to own profile, use
+  /// goProfileGrid('me') instead.
+  Future<void> pushOtherProfile(String identifier) {
+    // Handle 'me' special case - redirect to own profile tab instead
+    if (identifier == 'me') {
+      goProfileGrid('me');
+      return Future.value();
+    }
+
+    // Get current user's hex for normalization if needed
+    String? currentUserHex;
+    final container = ProviderScope.containerOf(this, listen: false);
+    final authService = container.read(authServiceProvider);
+    currentUserHex = authService.currentPublicKeyHex;
+
+    // Normalize any format (npub/nprofile/hex) to npub for URL
+    final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
+    if (npub == null) {
+      // Invalid identifier - log warning and don't push
+      debugPrint('⚠️ Invalid public identifier: $identifier');
+      return Future.value();
+    }
+
+    return push('/profile-view/$npub');
+  }
 }

@@ -1611,12 +1611,8 @@ class VideoAuthorRow extends ConsumerWidget {
               name: 'VideoFeedItem',
               category: LogCategory.ui,
             );
-            // In fullscreen mode, use go() to properly navigate to shell route
-            if (isFullscreen) {
-              context.goToProfileGridFromFullscreen(video.pubkey);
-            } else {
-              context.pushProfileGrid(video.pubkey);
-            }
+            // Push other user's profile (fullscreen, no bottom nav)
+            context.pushOtherProfile(video.pubkey);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

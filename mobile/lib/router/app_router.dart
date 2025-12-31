@@ -32,6 +32,7 @@ import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
@@ -94,6 +95,7 @@ int tabIndexFromLocation(String loc) {
     case 'followers':
     case 'following':
     case 'video-feed':
+    case 'profile-view':
       return -1; // Non-tab routes - no bottom nav
     default:
       return 0; // fallback to home
@@ -688,6 +690,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             contextTitle: args.contextTitle,
             onLoadMore: args.onLoadMore,
           );
+        },
+      ),
+      // Other user's profile screen (no bottom nav, pushed from feeds/search)
+      GoRoute(
+        path: '/profile-view/:npub',
+        name: 'profile-view',
+        builder: (ctx, st) {
+          final npub = st.pathParameters['npub'];
+          if (npub == null || npub.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid profile ID')),
+            );
+          }
+          return OtherProfileScreen(npub: npub);
         },
       ),
     ],
