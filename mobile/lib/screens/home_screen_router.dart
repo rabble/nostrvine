@@ -14,6 +14,7 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
@@ -106,12 +107,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             final videos = state.videos;
 
             if (state.lastUpdated == null && state.videos.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: VineTheme.whiteText,
-                  strokeWidth: 2,
-                ),
-              );
+              return const Center(child: BrandedLoadingIndicator(size: 80));
             }
 
             if (videos.isEmpty) {
@@ -275,17 +271,25 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   // Update tracked video stableId
                   _currentVideoStableId = videos[newIndex].stableId;
 
+                  // Update last URL index immediately to prevent rebuild flash
+                  _lastUrlIndex = newIndex;
+
                   // Guard: only navigate if URL doesn't match
-                  if (newIndex != urlIndex) {
-                    context.go(
-                      buildRoute(
-                        RouteContext(
-                          type: RouteType.home,
-                          videoIndex: newIndex,
-                        ),
-                      ),
-                    );
-                  }
+                  // TEMPORARILY DISABLED to test if this causes flicker
+                  // TODO: Re-enable after fixing flicker
+                  // if (newIndex != urlIndex) {
+                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+                  //     if (!mounted) return;
+                  //     context.go(
+                  //       buildRoute(
+                  //         RouteContext(
+                  //           type: RouteType.home,
+                  //           videoIndex: newIndex,
+                  //         ),
+                  //       ),
+                  //     );
+                  //   });
+                  // }
 
                   // Trigger pagination near end
                   if (newIndex >= itemCount - 2) {

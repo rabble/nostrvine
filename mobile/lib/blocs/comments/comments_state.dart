@@ -33,6 +33,9 @@ enum CommentsError {
 
   /// Failed to post a reply to a comment
   postReplyFailed,
+
+  /// Failed to delete a comment
+  deleteCommentFailed,
 }
 
 /// State class for the CommentsBloc
@@ -47,10 +50,9 @@ final class CommentsState extends Equatable {
     this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
     this.topLevelComments = const [],
-    this.totalCommentCount = 0,
     this.error,
     this.mainInputText = '',
-    this.replyInputTexts = const {},
+    this.replyInputText = '',
     this.activeReplyCommentId,
     this.isPosting = false,
   });
@@ -71,9 +73,6 @@ final class CommentsState extends Equatable {
   /// Uses [CommentNode] from the repository layer.
   final List<CommentNode> topLevelComments;
 
-  /// Total count of all comments (including replies)
-  final int totalCommentCount;
-
   /// Error type for l10n-friendly error handling.
   /// UI layer maps this to localized string via BlocListener.
   final CommentsError? error;
@@ -81,8 +80,8 @@ final class CommentsState extends Equatable {
   /// Text content of the main comment input
   final String mainInputText;
 
-  /// Map of comment ID -> reply text for each active reply
-  final Map<String, String> replyInputTexts;
+  /// Text content of the active reply input
+  final String replyInputText;
 
   /// ID of the comment currently being replied to (shows reply input)
   final String? activeReplyCommentId;
@@ -94,23 +93,17 @@ final class CommentsState extends Equatable {
   bool isReplyPosting(String commentId) =>
       isPosting && activeReplyCommentId == commentId;
 
-  /// Get the reply text for a specific comment
-  String getReplyText(String commentId) => replyInputTexts[commentId] ?? '';
-
-  /// Create a copy with updated values
+  /// Create a copy with updated values.
   CommentsState copyWith({
     CommentsStatus? status,
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
     List<CommentNode>? topLevelComments,
-    int? totalCommentCount,
     CommentsError? error,
-    bool clearError = false,
     String? mainInputText,
-    Map<String, String>? replyInputTexts,
+    String? replyInputText,
     String? activeReplyCommentId,
-    bool clearActiveReply = false,
     bool? isPosting,
   }) {
     return CommentsState(
@@ -119,13 +112,28 @@ final class CommentsState extends Equatable {
       rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
       topLevelComments: topLevelComments ?? this.topLevelComments,
-      totalCommentCount: totalCommentCount ?? this.totalCommentCount,
-      error: clearError ? null : error,
+      error: error,
       mainInputText: mainInputText ?? this.mainInputText,
-      replyInputTexts: replyInputTexts ?? this.replyInputTexts,
-      activeReplyCommentId: clearActiveReply
-          ? null
-          : (activeReplyCommentId ?? this.activeReplyCommentId),
+      replyInputText: replyInputText ?? this.replyInputText,
+      activeReplyCommentId: activeReplyCommentId ?? this.activeReplyCommentId,
+      isPosting: isPosting ?? this.isPosting,
+    );
+  }
+
+  /// Creates a copy with the active reply cleared.
+  CommentsState clearActiveReply({
+    CommentsStatus? status,
+    List<CommentNode>? topLevelComments,
+    bool? isPosting,
+  }) {
+    return CommentsState(
+      status: status ?? this.status,
+      rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
+      rootAuthorPubkey: rootAuthorPubkey,
+      topLevelComments: topLevelComments ?? this.topLevelComments,
+      mainInputText: mainInputText,
+      replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
     );
   }
@@ -137,10 +145,9 @@ final class CommentsState extends Equatable {
     rootEventKind,
     rootAuthorPubkey,
     topLevelComments,
-    totalCommentCount,
     error,
     mainInputText,
-    replyInputTexts,
+    replyInputText,
     activeReplyCommentId,
     isPosting,
   ];

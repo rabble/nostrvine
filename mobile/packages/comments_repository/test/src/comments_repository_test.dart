@@ -213,8 +213,8 @@ void main() {
         expect(replies.last.comment.content, 'New reply');
       });
 
-      test('handles orphan replies as top-level', () async {
-        // A reply to a non-existent comment should be treated as top-level
+      test('handles orphan replies with placeholder parent', () async {
+        // A reply to a non-existent comment creates a placeholder parent
         final orphanReply = _createCommentEvent(
           id: 'orphan',
           content: 'Orphan reply',
@@ -235,8 +235,16 @@ void main() {
           rootEventKind: _testRootEventKind,
         );
 
+        // Placeholder parent is created at top level
         expect(result.topLevelComments.length, equals(1));
-        expect(result.topLevelComments.first.comment.content, 'Orphan reply');
+        expect(result.topLevelComments.first.isNotFound, isTrue);
+        expect(result.topLevelComments.first.comment.id, 'nonexistent_parent');
+        // Orphan reply is nested under placeholder
+        expect(result.topLevelComments.first.replies.length, equals(1));
+        expect(
+          result.topLevelComments.first.replies.first.comment.content,
+          'Orphan reply',
+        );
       });
 
       test('throws LoadCommentsFailedException on error', () async {

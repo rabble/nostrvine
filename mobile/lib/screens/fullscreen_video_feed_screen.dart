@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:video_player/video_player.dart';
 
 /// Arguments for navigating to FullscreenVideoFeedScreen
 class FullscreenVideoFeedArgs {
@@ -72,9 +74,52 @@ class _FullscreenVideoFeedScreenState
   }
 
   @override
+  void deactivate() {
+    // Pause video when widget is deactivated (before dispose).
+    // This is called before the widget is removed from the tree,
+    // so ref is still safe to use here.
+    _pauseCurrentVideo();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Pause the currently active video to prevent background playback.
+  /// Called when navigating away from this screen.
+  void _pauseCurrentVideo() {
+    if (_currentIndex < 0 || _currentIndex >= widget.videos.length) {
+      return;
+    }
+
+    final video = widget.videos[_currentIndex];
+    if (video.videoUrl == null) {
+      return;
+    }
+
+    VideoPlayerController? controller;
+    try {
+      final controllerParams = VideoControllerParams(
+        videoId: video.id,
+        videoUrl: video.videoUrl!,
+        videoEvent: video,
+      );
+      controller = ref.read(individualVideoControllerProvider(controllerParams));
+    } catch (e) {
+      // Controller may not exist yet
+      return;
+    }
+
+    if (controller == null ||
+        !controller.value.isInitialized ||
+        !controller.value.isPlaying) {
+      return;
+    }
+
+    safePause(controller, video.id);
   }
 
   void _onPageChanged(int newIndex) {

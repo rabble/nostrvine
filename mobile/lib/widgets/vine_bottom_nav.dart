@@ -22,13 +22,26 @@ class VineBottomNav extends StatelessWidget {
       type: BottomNavigationBarType.fixed,
       elevation: 8,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'FEED'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'HOME',
+          tooltip: 'Home',
+        ),
         BottomNavigationBarItem(
           icon: Icon(Icons.notifications),
-          label: 'ACTIVITY',
+          label: 'Notifications',
+          tooltip: 'Notifications',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'EXPLORE'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'PROFILE'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.explore),
+          label: 'EXPLORE',
+          tooltip: 'Explore',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'PROFILE',
+          tooltip: 'Profile',
+        ),
       ],
     );
   }

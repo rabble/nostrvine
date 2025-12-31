@@ -50,6 +50,7 @@ class CommentInput extends StatelessWidget {
             child: TextField(
               controller: controller,
               onChanged: onChanged,
+              onTapOutside: (_) => FocusScope.of(context).unfocus(),
               enableInteractiveSelection: true,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(

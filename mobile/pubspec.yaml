@@ -98,6 +98,7 @@ dependencies:
   share_plus: ^12.0.0 # Cross-platform sharing
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
+
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
     path: packages/nostr_sdk
@@ -210,6 +211,7 @@ flutter:
     - assets/icon/divine_icon_transparent.png
     - assets/icon/divine_wordmark.png
     - assets/icon/user-avatar.png
+    - assets/loading-brand.gif
     - assets/seed_data/seed_events.sql
     - assets/seed_media/manifest.json
     - assets/seed_media/videos/

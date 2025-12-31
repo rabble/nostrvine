@@ -52,3 +52,11 @@ final class CommentSubmitted extends CommentsEvent {
 final class CommentErrorCleared extends CommentsEvent {
   const CommentErrorCleared();
 }
+
+/// Request to delete a comment
+final class CommentDeleteRequested extends CommentsEvent {
+  const CommentDeleteRequested(this.commentId);
+
+  /// The ID of the comment to delete
+  final String commentId;
+}

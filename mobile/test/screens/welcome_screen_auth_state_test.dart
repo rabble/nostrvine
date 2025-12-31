@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -44,11 +45,11 @@ void main() {
         ),
       );
 
-      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator animates continuously
+      // Use pump() instead of pumpAndSettle() because loading indicator animates continuously
       await tester.pump();
 
-      // Expect: Loading indicator shown
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Expect: Loading indicator shown (BrandedLoadingIndicator with GIF)
+      expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
 
       // Expect: Create/Import buttons NOT shown
       expect(find.text('Create New Identity'), findsNothing);
@@ -76,11 +77,11 @@ void main() {
         ),
       );
 
-      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator animates continuously
+      // Use pump() instead of pumpAndSettle() because loading indicator animates continuously
       await tester.pump();
 
-      // Expect: Loading indicator shown
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Expect: Loading indicator shown (BrandedLoadingIndicator with GIF)
+      expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
 
       // Expect: Create/Import buttons NOT shown
       expect(find.text('Create New Identity'), findsNothing);
@@ -210,8 +211,8 @@ void main() {
         authStateController.add(AuthState.checking);
         await tester.pump();
 
-        // Verify: Loading indicator shown initially
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // Verify: Loading indicator shown initially (BrandedLoadingIndicator with GIF)
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.widgetWithText(ElevatedButton, 'Continue'), findsNothing);
 
         // Simulate auth state changing to AUTHENTICATED (like in real app)
@@ -220,6 +221,8 @@ void main() {
         authStateController.add(AuthState.authenticated);
 
         // This should trigger a rebuild - the fix makes it work!
+        // Need multiple pumps to process stream event and rebuild widget tree
+        await tester.pump();
         await tester.pump();
 
         // Expect: Continue button should appear after auth completes (even if disabled)
@@ -231,7 +234,7 @@ void main() {
               'Continue button widget should appear when auth state changes to authenticated',
         );
         expect(
-          find.byType(CircularProgressIndicator),
+          find.byType(BrandedLoadingIndicator),
           findsNothing,
           reason: 'Loading indicator should disappear when auth completes',
         );
