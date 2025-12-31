@@ -176,11 +176,7 @@ class _FullscreenVideoFeedScreenState
     checkForPrefetch(currentIndex: newIndex, videos: videos);
 
     // Pre-initialize controllers for adjacent videos
-    preInitializeControllers(
-      ref: ref,
-      currentIndex: newIndex,
-      videos: videos,
-    );
+    preInitializeControllers(ref: ref, currentIndex: newIndex, videos: videos);
 
     // Dispose controllers outside the keep range to free memory
     disposeControllersOutsideRange(
