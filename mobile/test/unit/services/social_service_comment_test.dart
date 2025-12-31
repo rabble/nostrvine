@@ -146,9 +146,9 @@ void main() {
             ),
           ).thenAnswer((_) async => testEvent);
 
-          when(mockNostrService.publishEvent(testEvent)).thenAnswer(
-            (_) async => testEvent,
-          );
+          when(
+            mockNostrService.publishEvent(testEvent),
+          ).thenAnswer((_) async => testEvent);
 
           // Act
           await socialService.postComment(
@@ -210,9 +210,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.publishEvent(testEvent)).thenAnswer(
-          (_) async => testEvent,
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(
@@ -265,9 +265,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.publishEvent(testEvent)).thenAnswer(
-          (_) async => testEvent,
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(
@@ -336,9 +336,9 @@ void main() {
         ).thenAnswer((_) async => testEvent);
 
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(testEvent)).thenAnswer(
-          (_) async => null,
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => null);
 
         // Act & Assert
         expect(
@@ -387,9 +387,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.publishEvent(testEvent)).thenAnswer(
-          (_) async => testEvent,
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(

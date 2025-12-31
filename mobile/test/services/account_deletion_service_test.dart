@@ -153,9 +153,9 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => expectedEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => expectedEvent);
 
       // Act
       await expectLater(service.deleteAccount(), completes);
@@ -185,9 +185,9 @@ void main() {
           ),
         ).thenAnswer((_) async => expectedEvent);
 
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => expectedEvent,
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => expectedEvent);
 
         // Act
         final result = await service.deleteAccount();
@@ -218,9 +218,7 @@ void main() {
       ).thenAnswer((_) async => expectedEvent);
 
       // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => null,
-      );
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       // Act
       final result = await service.deleteAccount();

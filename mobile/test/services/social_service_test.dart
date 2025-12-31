@@ -117,9 +117,9 @@ void main() {
           ).thenAnswer((_) async => mockEvent);
 
           // Mock successful broadcast
-          when(mockNostrService.publishEvent(mockEvent)).thenAnswer(
-            (_) async => mockEvent,
-          );
+          when(
+            mockNostrService.publishEvent(mockEvent),
+          ).thenAnswer((_) async => mockEvent);
 
           // Test toggling like
           await socialService.toggleLike(testEventId, testAuthorPubkey);
@@ -168,9 +168,9 @@ void main() {
 
         // Mock failed broadcast
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(mockEvent)).thenAnswer(
-          (_) async => null,
-        );
+        when(
+          mockNostrService.publishEvent(mockEvent),
+        ).thenAnswer((_) async => null);
 
         // Test toggling like should throw exception
         expect(
@@ -1002,9 +1002,9 @@ void main() {
             ),
           ).thenAnswer((_) async => mockDeletionEvent);
 
-          when(mockNostrService.publishEvent(mockDeletionEvent)).thenAnswer(
-            (_) async => mockDeletionEvent,
-          );
+          when(
+            mockNostrService.publishEvent(mockDeletionEvent),
+          ).thenAnswer((_) async => mockDeletionEvent);
 
           // Test publishing deletion request
           await socialService.publishRightToBeForgotten();
@@ -1149,9 +1149,9 @@ void main() {
         ).thenAnswer((_) async => mockDeletionEvent);
 
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(mockDeletionEvent)).thenAnswer(
-          (_) async => null,
-        );
+        when(
+          mockNostrService.publishEvent(mockDeletionEvent),
+        ).thenAnswer((_) async => null);
 
         // Test should throw exception
         expect(
@@ -1214,9 +1214,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockDeletionEvent);
 
-        when(mockNostrService.publishEvent(mockDeletionEvent)).thenAnswer(
-          (_) async => mockDeletionEvent,
-        );
+        when(
+          mockNostrService.publishEvent(mockDeletionEvent),
+        ).thenAnswer((_) async => mockDeletionEvent);
 
         await socialService.publishRightToBeForgotten();
 

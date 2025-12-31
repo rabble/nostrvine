@@ -217,10 +217,7 @@ class TestNostrService implements NostrClient {
   }
 
   @override
-  Future<Event?> publishEvent(
-    Event event, {
-    List<String>? targetRelays,
-  }) async {
+  Future<Event?> publishEvent(Event event, {List<String>? targetRelays}) async {
     if (!_isConnected) throw StateError('Not connected');
     _storedEvents.add(event);
 

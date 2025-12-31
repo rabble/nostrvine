@@ -112,9 +112,9 @@ void main() {
         ).thenAnswer((_) async => mockRepostEvent);
 
         // Mock successful publish
-        when(mockNostrService.publishEvent(mockRepostEvent)).thenAnswer(
-          (_) async => mockRepostEvent,
-        );
+        when(
+          mockNostrService.publishEvent(mockRepostEvent),
+        ).thenAnswer((_) async => mockRepostEvent);
 
         // Initially not reposted
         expect(
@@ -186,9 +186,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockRepostEvent);
 
-        when(mockNostrService.publishEvent(mockRepostEvent)).thenAnswer(
-          (_) async => mockRepostEvent,
-        );
+        when(
+          mockNostrService.publishEvent(mockRepostEvent),
+        ).thenAnswer((_) async => mockRepostEvent);
 
         // First toggle: repost the video
         await socialService.toggleRepost(testVideo);
@@ -222,9 +222,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockDeletionEvent);
 
-        when(mockNostrService.publishEvent(mockDeletionEvent)).thenAnswer(
-          (_) async => mockDeletionEvent,
-        );
+        when(
+          mockNostrService.publishEvent(mockDeletionEvent),
+        ).thenAnswer((_) async => mockDeletionEvent);
 
         // Second toggle: unrepost the video
         await socialService.toggleRepost(testVideo);

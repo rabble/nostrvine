@@ -135,9 +135,9 @@ void main() {
           ),
         ).thenAnswer((_) async => reportEvent);
 
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => reportEvent,
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => reportEvent);
 
         // Act
         final result = await service.reportContent(
@@ -184,9 +184,9 @@ void main() {
           ),
         ).thenAnswer((_) async => reportEvent);
 
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => reportEvent,
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => reportEvent);
 
         final reasons = ContentFilterReason.values;
 
@@ -236,9 +236,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => reportEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
@@ -271,9 +271,7 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       // Mock failed publish - returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => null,
-      );
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       // Act
       final result = await service.reportContent(
@@ -309,9 +307,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => reportEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Act
       await service.reportContent(
@@ -430,9 +428,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => reportEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Now reportContent should work
       final result = await service.reportContent(

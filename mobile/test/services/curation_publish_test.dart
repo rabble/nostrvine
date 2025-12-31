@@ -163,9 +163,9 @@ void main() {
         final mockEvent = Event('test_pubkey', 30005, [
           ['d', 'test_id'],
         ], 'Test content');
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => mockEvent,
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => mockEvent);
 
         // When: Publishing a curation
         final result = await curationService.publishCuration(
@@ -189,9 +189,7 @@ void main() {
       test('should handle complete failure gracefully', () async {
         // Given: Mock failed broadcast
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => null,
-        );
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // When: Publishing a curation
         final result = await curationService.publishCuration(
@@ -231,9 +229,9 @@ void main() {
 
       test('should handle partial relay success', () async {
         // Given: Mock partial success
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => Event('test', 30005, [], ''),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing
         final result = await curationService.publishCuration(
@@ -254,9 +252,9 @@ void main() {
     group('Local Persistence', () {
       test('should mark curation as published locally after success', () async {
         // Given: Mock successful publish
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => Event('test', 30005, [], ''),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing curation
         await curationService.publishCuration(
@@ -277,9 +275,7 @@ void main() {
 
       test('should track failed publish attempts', () async {
         // Given: Mock failed publish - publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => null,
-        );
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // When: Publishing fails
         await curationService.publishCuration(
@@ -299,9 +295,9 @@ void main() {
 
       test('should persist publish status across service restarts', () async {
         // Given: Published curation
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => Event('test', 30005, [], ''),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         await curationService.publishCuration(
           id: 'persistent_curation',
@@ -331,9 +327,9 @@ void main() {
         'should retry unpublished curations with exponential backoff',
         () async {
           // Given: Failed initial publish - publishEvent returns null on failure
-          when(mockNostrService.publishEvent(any)).thenAnswer(
-            (_) async => null,
-          );
+          when(
+            mockNostrService.publishEvent(any),
+          ).thenAnswer((_) async => null);
 
           await curationService.publishCuration(
             id: 'retry_curation',
@@ -342,9 +338,9 @@ void main() {
           );
 
           // Mock successful retry - publishEvent returns the event on success
-          when(mockNostrService.publishEvent(any)).thenAnswer(
-            (_) async => Event('test', 30005, [], ''),
-          );
+          when(
+            mockNostrService.publishEvent(any),
+          ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
           // When: Background worker runs
           await curationService.retryUnpublishedCurations();
@@ -362,9 +358,7 @@ void main() {
       test('should stop retrying after max attempts', () async {
         // Given: Persistent failures
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => null,
-        );
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // When: Retrying multiple times
         for (var i = 0; i < 10; i++) {
@@ -398,9 +392,9 @@ void main() {
 
       test('should coalesce rapid updates to same curation', () async {
         // Given: Mock successful broadcast
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => Event('test', 30005, [], ''),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing same curation multiple times rapidly
         final futures = <Future>[];
@@ -460,9 +454,9 @@ void main() {
 
       test('should show relay success count in status', () async {
         // Given: Partial success
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => Event('test', 30005, [], ''),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing
         await curationService.publishCuration(
@@ -482,9 +476,7 @@ void main() {
       test('should show error status for failed publishes', () async {
         // Given: Failed publish
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => null,
-        );
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // When: Publishing fails
         await curationService.publishCuration(

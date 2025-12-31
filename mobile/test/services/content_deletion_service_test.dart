@@ -106,9 +106,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => deleteEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       final result = await service.deleteContent(
@@ -154,9 +154,9 @@ void main() {
           ),
         ).thenAnswer((_) async => deleteEvent);
 
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => deleteEvent,
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => deleteEvent);
 
         // Act
         await service.deleteContent(video: video, reason: 'Personal choice');
@@ -207,9 +207,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => deleteEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       await service.deleteContent(video: video, reason: 'Privacy concerns');
@@ -274,9 +274,7 @@ void main() {
         ).thenAnswer((_) async => deleteEvent);
 
         // Even when publishEvent returns null (failure), deletion is saved locally
-        when(mockNostrService.publishEvent(any)).thenAnswer(
-          (_) async => null,
-        );
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // Act
         final result = await service.deleteContent(
@@ -312,9 +310,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
-        (_) async => deleteEvent,
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       final result = await service.quickDelete(

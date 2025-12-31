@@ -114,9 +114,9 @@ void main() {
       ).thenAnswer((_) async => mockEvent);
 
       // Mock successful publish
-      when(mockNostrService.publishEvent(mockEvent)).thenAnswer(
-        (_) async => mockEvent,
-      );
+      when(
+        mockNostrService.publishEvent(mockEvent),
+      ).thenAnswer((_) async => mockEvent);
 
       // Test toggling like should succeed
       await socialService.toggleLike(testEventId, testAuthorPubkey);
