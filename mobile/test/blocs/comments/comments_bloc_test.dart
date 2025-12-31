@@ -96,8 +96,7 @@ void main() {
           ),
           isA<CommentsState>()
               .having((s) => s.status, 'status', CommentsStatus.success)
-              .having((s) => s.topLevelComments.length, 'comments count', 1)
-              .having((s) => s.totalCommentCount, 'total count', 1),
+              .having((s) => s.topLevelComments.length, 'comments count', 1),
         ],
       );
 
@@ -122,8 +121,7 @@ void main() {
           ),
           isA<CommentsState>()
               .having((s) => s.status, 'status', CommentsStatus.success)
-              .having((s) => s.topLevelComments, 'comments', isEmpty)
-              .having((s) => s.totalCommentCount, 'total count', 0),
+              .having((s) => s.topLevelComments, 'comments', isEmpty),
         ],
       );
 
@@ -200,7 +198,6 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.topLevelComments.length, 1);
           expect(bloc.state.topLevelComments.first.replies.length, 1);
-          expect(bloc.state.totalCommentCount, 2);
         },
       );
     });
@@ -226,7 +223,7 @@ void main() {
             bloc.add(const CommentTextChanged('Reply', commentId: 'comment1')),
         expect: () => [
           isA<CommentsState>().having(
-            (s) => s.replyInputTexts['comment1'],
+            (s) => s.replyInputText,
             'replyInputText',
             'Reply',
           ),
@@ -350,7 +347,7 @@ void main() {
           ).thenAnswer((_) async => postedComment);
         },
         seed: () => const CommentsState(
-          replyInputTexts: {'parent1': 'Reply text'},
+          replyInputText: 'Reply text',
           activeReplyCommentId: 'parent1',
         ),
         build: createBloc,
@@ -421,7 +418,6 @@ void main() {
         seed: () => const CommentsState(
           mainInputText: 'Test comment',
           topLevelComments: [],
-          totalCommentCount: 0,
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
@@ -431,7 +427,6 @@ void main() {
           // Second: error emitted, no comments added
           isA<CommentsState>()
               .having((s) => s.topLevelComments.length, 'comments', 0)
-              .having((s) => s.totalCommentCount, 'totalCount', 0)
               .having((s) => s.isPosting, 'isPosting', false)
               .having((s) => s.error, 'error', CommentsError.postCommentFailed),
         ],
@@ -466,10 +461,9 @@ void main() {
             rootAuthorPubkey: validId('author'),
           );
           return CommentsState(
-            replyInputTexts: {validId('parent'): 'Reply text'},
+            replyInputText: 'Reply text',
             activeReplyCommentId: validId('parent'),
             topLevelComments: [CommentNode(comment: parentComment)],
-            totalCommentCount: 1,
           );
         },
         build: createBloc,
@@ -489,7 +483,6 @@ void main() {
                 'replies',
                 0,
               )
-              .having((s) => s.totalCommentCount, 'totalCount', 1)
               .having((s) => s.isPosting, 'isPosting', false)
               .having((s) => s.error, 'error', CommentsError.postReplyFailed),
         ],
@@ -504,14 +497,12 @@ void main() {
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
         topLevelComments: const [],
-        totalCommentCount: 0,
       );
       final state2 = CommentsState(
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
         topLevelComments: const [],
-        totalCommentCount: 0,
       );
 
       expect(state1, equals(state2));
@@ -539,30 +530,40 @@ void main() {
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
-        totalCommentCount: 5,
       );
 
       final updated = state.copyWith();
 
       expect(updated.status, CommentsStatus.success);
       expect(updated.rootEventId, 'event1');
-      expect(updated.totalCommentCount, 5);
     });
 
-    test('copyWith clearError removes error', () {
+    test('copyWith sets error to null by default', () {
       const state = CommentsState(error: CommentsError.loadFailed);
 
-      final updated = state.copyWith(clearError: true);
+      final updated = state.copyWith();
 
       expect(updated.error, null);
     });
 
-    test('copyWith clearActiveReply removes active reply', () {
-      const state = CommentsState(activeReplyCommentId: 'comment1');
+    test('clearActiveReply clears activeReplyCommentId and replyInputText', () {
+      const state = CommentsState(
+        activeReplyCommentId: 'comment1',
+        replyInputText: 'draft reply',
+      );
 
-      final updated = state.copyWith(clearActiveReply: true);
+      final updated = state.clearActiveReply();
 
       expect(updated.activeReplyCommentId, null);
+      expect(updated.replyInputText, '');
+    });
+
+    test('copyWith preserves activeReplyCommentId when not provided', () {
+      const state = CommentsState(activeReplyCommentId: 'comment1');
+
+      final updated = state.copyWith(mainInputText: 'test');
+
+      expect(updated.activeReplyCommentId, 'comment1');
     });
 
     test('isReplyPosting returns true when posting reply to that comment', () {
@@ -582,16 +583,6 @@ void main() {
       );
 
       expect(state.isReplyPosting('comment1'), false);
-    });
-
-    test('getReplyText returns empty string for unknown comment', () {
-      const state = CommentsState();
-      expect(state.getReplyText('unknown'), '');
-    });
-
-    test('getReplyText returns correct text for known comment', () {
-      const state = CommentsState(replyInputTexts: {'comment1': 'Reply text'});
-      expect(state.getReplyText('comment1'), 'Reply text');
     });
   });
 

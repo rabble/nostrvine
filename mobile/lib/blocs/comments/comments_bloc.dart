@@ -38,6 +38,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentReplyToggled>(_onReplyToggled);
     on<CommentSubmitted>(_onSubmitted);
     on<CommentErrorCleared>(_onErrorCleared);
+    on<CommentDeleteRequested>(_onDeleteRequested);
   }
 
   final CommentsRepository _commentsRepository;
@@ -49,7 +50,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) async {
     if (state.status == CommentsStatus.loading) return;
 
-    emit(state.copyWith(status: CommentsStatus.loading, clearError: true));
+    emit(state.copyWith(status: CommentsStatus.loading));
 
     try {
       final thread = await _commentsRepository.loadComments(
@@ -61,7 +62,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         state.copyWith(
           status: CommentsStatus.success,
           topLevelComments: thread.topLevelComments,
-          totalCommentCount: thread.totalCount,
         ),
       );
     } catch (e) {
@@ -81,24 +81,20 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
   void _onTextChanged(CommentTextChanged event, Emitter<CommentsState> emit) {
     if (event.commentId == null) {
-      emit(state.copyWith(mainInputText: event.text, clearError: true));
+      emit(state.copyWith(mainInputText: event.text));
     } else {
-      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-      updatedReplies[event.commentId!] = event.text;
-      emit(state.copyWith(replyInputTexts: updatedReplies, clearError: true));
+      emit(state.copyWith(replyInputText: event.text));
     }
   }
 
   void _onReplyToggled(CommentReplyToggled event, Emitter<CommentsState> emit) {
     if (state.activeReplyCommentId == event.commentId) {
-      emit(state.copyWith(clearActiveReply: true));
+      emit(state.clearActiveReply());
     } else {
-      final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-      updatedReplies.putIfAbsent(event.commentId, () => '');
       emit(
         state.copyWith(
           activeReplyCommentId: event.commentId,
-          replyInputTexts: updatedReplies,
+          replyInputText: '',
         ),
       );
     }
@@ -110,7 +106,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) async {
     final isReply = event.parentCommentId != null;
     final text = isReply
-        ? state.getReplyText(event.parentCommentId!).trim()
+        ? state.replyInputText.trim()
         : state.mainInputText.trim();
 
     if (text.isEmpty) return;
@@ -120,7 +116,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       return;
     }
 
-    emit(state.copyWith(isPosting: true, clearError: true));
+    emit(state.copyWith(isPosting: true));
 
     try {
       final postedComment = await _commentsRepository.postComment(
@@ -139,22 +135,16 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       if (isReply) {
-        final updatedReplies = Map<String, String>.from(state.replyInputTexts);
-        updatedReplies[event.parentCommentId!] = '';
         emit(
-          state.copyWith(
+          state.clearActiveReply(
             topLevelComments: updatedComments,
-            totalCommentCount: state.totalCommentCount + 1,
-            replyInputTexts: updatedReplies,
             isPosting: false,
-            clearActiveReply: true,
           ),
         );
       } else {
         emit(
           state.copyWith(
             topLevelComments: updatedComments,
-            totalCommentCount: state.totalCommentCount + 1,
             mainInputText: '',
             isPosting: false,
           ),
@@ -179,7 +169,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   }
 
   void _onErrorCleared(CommentErrorCleared event, Emitter<CommentsState> emit) {
-    emit(state.copyWith(clearError: true));
+    emit(state.copyWith());
   }
 
   /// Adds comment to tree. Top-level comments go first (newest first order).
@@ -207,5 +197,34 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       }
       return node;
     }).toList();
+  }
+
+  Future<void> _onDeleteRequested(
+    CommentDeleteRequested event,
+    Emitter<CommentsState> emit,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    try {
+      await _commentsRepository.deleteComment(commentId: event.commentId);
+
+      final updatedComments = _commentsRepository.markCommentAsNotFound(
+        state.topLevelComments,
+        event.commentId,
+      );
+
+      emit(state.copyWith(topLevelComments: updatedComments));
+    } catch (e) {
+      Log.error(
+        'Error deleting comment: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      emit(state.copyWith(error: CommentsError.deleteCommentFailed));
+    }
   }
 }

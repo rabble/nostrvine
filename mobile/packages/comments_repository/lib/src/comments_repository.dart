@@ -11,6 +11,9 @@ import 'package:rxdart/rxdart.dart';
 /// Kind 1111 is the NIP-22 comment kind for replying to non-Kind-1 events.
 const int _commentKind = EventKind.comment;
 
+/// Kind 5 is the NIP-09 deletion request kind.
+const int _deletionKind = EventKind.eventDeletion;
+
 /// Default limit for comment queries.
 const _defaultLimit = 100;
 
@@ -220,6 +223,47 @@ class CommentsRepository {
     }
   }
 
+  /// Deletes a comment by publishing a NIP-09 deletion request.
+  ///
+  /// Creates a Kind 5 event with an `e` tag referencing the comment
+  /// and a `k` tag specifying the comment kind (1111).
+  ///
+  /// Parameters:
+  /// - [commentId]: The ID of the comment event to delete
+  /// - [reason]: Optional reason for the deletion
+  ///
+  /// Throws [DeleteCommentFailedException] if broadcasting fails.
+  Future<void> deleteComment({
+    required String commentId,
+    String? reason,
+  }) async {
+    try {
+      // NIP-09: Build deletion request tags
+      final tags = <List<String>>[
+        ['e', commentId],
+        ['k', _commentKind.toString()],
+      ];
+
+      final event = Event(
+        _nostrClient.publicKey,
+        _deletionKind,
+        tags,
+        reason ?? '',
+      );
+
+      final sentEvent = await _nostrClient.publishEvent(event);
+      if (sentEvent == null) {
+        throw const DeleteCommentFailedException(
+          'Failed to publish deletion request',
+        );
+      }
+    } on CommentsRepositoryException {
+      rethrow;
+    } on Exception catch (e) {
+      throw DeleteCommentFailedException('Failed to delete comment: $e');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -309,6 +353,9 @@ class CommentsRepository {
   }
 
   /// Builds a CommentThread from a map of comments.
+  ///
+  /// Creates placeholder nodes for missing parent comments to preserve
+  /// thread structure when replies are received but their parents are not.
   CommentThread _buildThreadFromComments(
     Map<String, Comment> commentMap,
     String rootEventId,
@@ -317,22 +364,30 @@ class CommentsRepository {
       return CommentThread.empty(rootEventId);
     }
 
+    // Track missing parent IDs that need placeholder nodes
+    final missingParentIds = <String>{};
+
     // Build a map of parent comment ID -> child comment IDs
     final childrenMap = <String, List<String>>{};
     final topLevelIds = <String>[];
 
     for (final comment in commentMap.values) {
       final replyTo = comment.replyToEventId;
-      if (replyTo == null ||
-          replyTo == rootEventId ||
-          !commentMap.containsKey(replyTo)) {
-        // Top-level comment (direct reply to root or orphaned)
+      if (replyTo == null || replyTo == rootEventId) {
+        // Top-level comment (direct reply to root)
         topLevelIds.add(comment.id);
+      } else if (!commentMap.containsKey(replyTo)) {
+        // Parent not found - track it for placeholder creation
+        missingParentIds.add(replyTo);
+        (childrenMap[replyTo] ??= []).add(comment.id);
       } else {
         // Nested reply - add to parent's children list
         (childrenMap[replyTo] ??= []).add(comment.id);
       }
     }
+
+    // Add missing parents to top-level (they'll be rendered as placeholders)
+    topLevelIds.addAll(missingParentIds);
 
     // Cache for built nodes to avoid rebuilding
     final nodeCache = <String, CommentNode>{};
@@ -344,15 +399,24 @@ class CommentsRepository {
         return nodeCache[commentId]!;
       }
 
-      final comment = commentMap[commentId]!;
       final childIds = childrenMap[commentId] ?? <String>[];
+
+      // Check if this is a missing parent (placeholder)
+      final isMissing = missingParentIds.contains(commentId);
+      final comment = isMissing
+          ? _createPlaceholderComment(commentId, rootEventId)
+          : commentMap[commentId]!;
 
       // Recursively build child nodes
       final replies = childIds.map(buildNode).toList()
         // Sort replies by time (oldest first for chronological reading)
         ..sort((a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
 
-      final node = CommentNode(comment: comment, replies: replies);
+      final node = CommentNode(
+        comment: comment,
+        replies: replies,
+        isNotFound: isMissing,
+      );
       nodeCache[commentId] = node;
       return node;
     }
@@ -368,5 +432,68 @@ class CommentsRepository {
       totalCount: commentMap.length,
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
     );
+  }
+
+  /// Creates a placeholder comment for a missing parent.
+  Comment _createPlaceholderComment(String commentId, String rootEventId) {
+    return Comment(
+      id: commentId,
+      content: '',
+      authorPubkey: '',
+      createdAt: DateTime.now(),
+      rootEventId: rootEventId,
+      rootAuthorPubkey: '',
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tree manipulation helpers
+  // ---------------------------------------------------------------------------
+
+  /// Handles a deleted comment in the tree.
+  ///
+  /// If the comment has replies, marks it as not found to preserve threading.
+  /// If the comment has no replies, removes it completely.
+  /// Also cleans up placeholder branches that no longer have real comments.
+  List<CommentNode> markCommentAsNotFound(
+    List<CommentNode> nodes,
+    String commentId,
+  ) {
+    final result = <CommentNode>[];
+
+    for (final node in nodes) {
+      if (node.comment.id == commentId) {
+        // Found the target comment
+        if (node.replies.isNotEmpty) {
+          // Has replies - keep as placeholder
+          result.add(node.copyWith(isNotFound: true));
+        }
+        // No replies - skip (remove from tree)
+      } else if (node.replies.isNotEmpty) {
+        // Not the target - recurse into replies
+        final updatedReplies = markCommentAsNotFound(node.replies, commentId);
+
+        // If this is a placeholder and has no real comments below, remove it
+        if (node.isNotFound && !_hasRealComments(updatedReplies)) {
+          continue;
+        }
+
+        result.add(node.copyWith(replies: updatedReplies));
+      } else {
+        // Not the target and no replies - keep as is
+        result.add(node);
+      }
+    }
+
+    return result;
+  }
+
+  /// Checks if any node in the list (or their descendants) is a real comment.
+  bool _hasRealComments(List<CommentNode> nodes) {
+    for (final node in nodes) {
+      if (!node.isNotFound) return true;
+      if (_hasRealComments(node.replies)) return true;
+    }
+    return false;
   }
 }

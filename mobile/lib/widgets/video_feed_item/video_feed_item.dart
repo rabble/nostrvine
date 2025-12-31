@@ -20,6 +20,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -79,6 +80,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   int _playbackGeneration =
       0; // Prevents race conditions with rapid state changes
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
+  DateTime?
+  _loadingStartTime; // Track when loading started for delayed indicator
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -620,7 +623,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       );
                     }
 
-                    // Show loading state while video initializes
+                    // Track loading time for delayed indicator
                     if (!value.isInitialized) {
                       Log.debug(
                         '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
@@ -654,14 +657,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     //   - Square/landscape videos (legacy Vine): use BoxFit.contain
                     //     to stay centered without cropping
                     // In normal mode, use BoxFit.contain to preserve aspect ratio
-                    // Use actual video dimensions from controller (more reliable
-                    // than metadata which may be missing on legacy videos)
-                    final videoWidth = value.size.width;
-                    final videoHeight = value.size.height;
-                    final isPortraitVideo =
-                        videoHeight > 0 && videoHeight > videoWidth;
+                    final videoWidth =
+                        value.size.width == 0 ? 1.0 : value.size.width;
+                    final videoHeight =
+                        value.size.height == 0 ? 1.0 : value.size.height;
+                    final isPortraitVideo = videoHeight > videoWidth;
                     final useFullscreenCover =
                         widget.isFullscreen && isPortraitVideo;
+
                     return SizedBox.expand(
                       child: Container(
                         color: Colors.black,
@@ -673,10 +676,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                               ? Alignment.center
                               : Alignment.topCenter,
                           child: SizedBox(
-                            width: value.size.width == 0 ? 1 : value.size.width,
-                            height: value.size.height == 0
-                                ? 1
-                                : value.size.height,
+                            width: videoWidth,
+                            height: videoHeight,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
