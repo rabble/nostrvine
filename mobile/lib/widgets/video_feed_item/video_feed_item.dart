@@ -625,6 +625,38 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
                     // Track loading time for delayed indicator
                     if (!value.isInitialized) {
+                      _loadingStartTime ??= DateTime.now();
+                    } else {
+                      _loadingStartTime = null;
+                    }
+
+                    // Only show loading indicator after 2 seconds
+                    final shouldShowIndicator =
+                        !value.isInitialized &&
+                        isActive &&
+                        _loadingStartTime != null &&
+                        DateTime.now()
+                                .difference(_loadingStartTime!)
+                                .inMilliseconds >
+                            2000;
+
+                    // Schedule rebuild after 2s if still loading
+                    if (!value.isInitialized &&
+                        isActive &&
+                        !shouldShowIndicator &&
+                        _loadingStartTime != null) {
+                      final elapsed = DateTime.now()
+                          .difference(_loadingStartTime!)
+                          .inMilliseconds;
+                      Future.delayed(
+                        Duration(milliseconds: 2100 - elapsed),
+                        () {
+                          if (mounted) setState(() {});
+                        },
+                      );
+                    }
+
+                    if (!value.isInitialized) {
                       Log.debug(
                         '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
                         name: 'VideoFeedItem',
@@ -634,17 +666,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         fit: StackFit.expand,
                         children: [
                           Container(color: Colors.black),
-                          // Only show loading spinner for active video
-                          if (isActive)
+                          // Only show loading spinner after 2s delay
+                          if (shouldShowIndicator)
                             const Center(
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              child: BrandedLoadingIndicator(size: 60),
                             ),
                         ],
                       );
