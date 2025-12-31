@@ -1723,7 +1723,8 @@ void main() {
             () => mockNostrEventsDao.getEventsByFilter(any()),
           ).thenAnswer((_) async => cachedEvents);
 
-          // Gateway returns cached events (simulating network returning same data)
+          // Gateway returns cached events
+          // (simulating network returning same data)
           when(
             () => mockGatewayClient.query(any()),
           ).thenAnswer(
