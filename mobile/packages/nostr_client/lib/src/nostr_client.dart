@@ -106,6 +106,22 @@ class NostrClient {
     }
   }
 
+  /// Checks if an event kind supports safe optimistic caching.
+  ///
+  /// Returns `false` for:
+  /// - Deletion events (Kind 5): They remove data, not add
+  /// - Replaceable events (Kind 0, 3, 10000-19999): Upsert deletes old event
+  /// - Parameterized replaceable (Kind 30000-39999): Same issue
+  ///
+  /// For these kinds, caching on success is safer to avoid data loss on
+  /// rollback.
+  bool _canOptimisticallyCache(int kind) {
+    if (kind == EventKind.eventDeletion) return false;
+    if (EventKind.isReplaceable(kind)) return false;
+    if (EventKind.isParameterizedReplaceable(kind)) return false;
+    return true;
+  }
+
   /// Removes an optimistically cached event on send failure.
   ///
   /// Fire-and-forget pattern - errors are silently ignored since rollback
@@ -187,16 +203,22 @@ class NostrClient {
   /// Publishes an event to relays
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
-  /// Uses optimistic caching: events are cached before sending and rolled
-  /// back on failure. Provides immediate local visibility for own events.
-  /// For NIP-09 deletion events (Kind 5), removes target events from cache.
+  ///
+  /// **Caching strategy:**
+  /// - Regular events: Optimistic cache before send, rollback on failure
+  /// - Replaceable events (0, 3, 10000-39999): Cache on success only
+  ///   (upsert deletes old record, so rollback would lose data)
+  /// - Deletion events (Kind 5): Removes target events from cache on success
+  ///
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
     Event event, {
     List<String>? targetRelays,
   }) async {
-    // Optimistic cache (skip deletion events - they remove, not add)
-    if (event.kind != EventKind.eventDeletion) {
+    final useOptimisticCache = _canOptimisticallyCache(event.kind);
+
+    // Optimistic cache for regular events only
+    if (useOptimisticCache) {
       _cacheEvent(event);
     }
 
@@ -206,16 +228,20 @@ class NostrClient {
     );
 
     if (sentEvent == null) {
-      // Rollback on failure
-      if (event.kind != EventKind.eventDeletion) {
+      // Rollback optimistic cache on failure
+      if (useOptimisticCache) {
         _rollbackCachedEvent(event.id);
       }
       return null;
     }
 
-    // Handle NIP-09 deletion events by removing targets from DB
+    // Handle successful send
     if (sentEvent.kind == EventKind.eventDeletion) {
+      // NIP-09: Remove target events from cache
       _handleDeletionEvent(sentEvent);
+    } else if (!useOptimisticCache) {
+      // Cache replaceable events on success (not optimistically)
+      _cacheEvent(sentEvent);
     }
 
     return sentEvent;
