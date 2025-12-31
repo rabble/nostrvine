@@ -8,6 +8,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -55,10 +56,6 @@ class ProfileVideosGrid extends ConsumerWidget {
                 videoEvent: videoEvent,
                 userIdHex: userIdHex,
                 index: index,
-                videos: videos,
-                onLoadMore: () => ref
-                    .read(profileFeedProvider(userIdHex).notifier)
-                    .loadMore(),
               );
             }, childCount: videos.length),
           ),
@@ -150,15 +147,11 @@ class _VideoGridTile extends StatelessWidget {
     required this.videoEvent,
     required this.userIdHex,
     required this.index,
-    required this.videos,
-    required this.onLoadMore,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
-  final List<VideoEvent> videos;
-  final VoidCallback onLoadMore;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -168,13 +161,13 @@ class _VideoGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
+      // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
       context.pushVideoFeed(
-        videos: videos,
+        source: ProfileFeedSource(userIdHex),
         initialIndex: index,
-        onLoadMore: onLoadMore,
       );
       Log.info(
-        '✅ ProfileVideosGrid: Called pushVideoFeed with ${videos.length} videos at index $index',
+        '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',
         category: LogCategory.video,
       );
     },

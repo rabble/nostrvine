@@ -683,10 +683,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return FullscreenVideoFeedScreen(
-            videos: args.videos,
+            source: args.source,
             initialIndex: args.initialIndex,
             contextTitle: args.contextTitle,
-            onLoadMore: args.onLoadMore,
           );
         },
       ),

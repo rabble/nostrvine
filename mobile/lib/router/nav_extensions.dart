@@ -202,18 +202,20 @@ extension NavX on BuildContext {
       push('/followers/$pubkey', extra: displayName);
 
   /// Push fullscreen video feed (no bottom nav)
+  ///
+  /// Pass a [VideoFeedSource] to determine how videos are loaded:
+  /// - [ProfileFeedSource] - Watches profileFeedProvider for reactive updates
+  /// - [StaticFeedSource] - Uses a static list (no reactive updates)
   Future<void> pushVideoFeed({
-    required List<VideoEvent> videos,
+    required VideoFeedSource source,
     required int initialIndex,
     String? contextTitle,
-    VoidCallback? onLoadMore,
   }) => push(
     '/video-feed',
     extra: FullscreenVideoFeedArgs(
-      videos: videos,
+      source: source,
       initialIndex: initialIndex,
       contextTitle: contextTitle,
-      onLoadMore: onLoadMore,
     ),
   );
 }
