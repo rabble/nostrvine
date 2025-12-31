@@ -656,99 +656,93 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       );
                     }
 
-                    if (!value.isInitialized) {
-                      Log.debug(
-                        '🖼️ SHOWING LOADING STATE [${video.id}] - video not initialized yet (initialized=${value.isInitialized}, playing=${value.isPlaying}, position=${value.position.inMilliseconds}ms)',
-                        name: 'VideoFeedItem',
-                        category: LogCategory.video,
-                      );
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Container(color: Colors.black),
-                          // Only show loading spinner after 2s delay
-                          if (shouldShowIndicator)
-                            const Center(
-                              child: BrandedLoadingIndicator(size: 60),
-                            ),
-                        ],
-                      );
-                    }
+                    // Use video dimensions if available, otherwise placeholder
+                    final videoWidth =
+                        value.size.width > 0 ? value.size.width : 1.0;
+                    final videoHeight =
+                        value.size.height > 0 ? value.size.height : 1.0;
 
-                    // Video is initialized - show first frame (even if not active)
-                    // This enables seeing the video during swipe transitions
                     // In fullscreen mode:
                     //   - Portrait videos (9:16): use BoxFit.cover to fill screen
                     //   - Square/landscape videos (legacy Vine): use BoxFit.contain
                     //     to stay centered without cropping
                     // In normal mode, use BoxFit.contain to preserve aspect ratio
-                    final videoWidth =
-                        value.size.width == 0 ? 1.0 : value.size.width;
-                    final videoHeight =
-                        value.size.height == 0 ? 1.0 : value.size.height;
                     final isPortraitVideo = videoHeight > videoWidth;
                     final useFullscreenCover =
                         widget.isFullscreen && isPortraitVideo;
 
+                    // UNIFIED structure - use Offstage instead of conditional
+                    // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
                       child: Container(
                         color: Colors.black,
-                        child: FittedBox(
-                          fit: useFullscreenCover
-                              ? BoxFit.cover
-                              : BoxFit.contain,
-                          alignment: widget.isFullscreen
-                              ? Alignment.center
-                              : Alignment.topCenter,
-                          child: SizedBox(
-                            width: videoWidth,
-                            height: videoHeight,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                VideoPlayer(controller),
-                                if (value.isBuffering)
-                                  Positioned(
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    child: const LinearProgressIndicator(
-                                      minHeight: 12,
-                                      backgroundColor: Colors.transparent,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                // Show play button only when active AND paused
-                                // (inactive videos just show first frame silently)
-                                if (isActive && !value.isPlaying)
-                                  Center(
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Semantics(
-                                        identifier: 'play_button',
-                                        container: true,
-                                        explicitChildNodes: true,
-                                        label: 'Play video',
-                                        child: const Icon(
-                                          Icons.play_arrow,
-                                          size: 56,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Video player - use Offstage to keep in tree
+                            Offstage(
+                              offstage: !value.isInitialized,
+                              child: FittedBox(
+                                fit: useFullscreenCover
+                                    ? BoxFit.cover
+                                    : BoxFit.contain,
+                                alignment: widget.isFullscreen
+                                    ? Alignment.center
+                                    : Alignment.topCenter,
+                                child: SizedBox(
+                                  width: videoWidth,
+                                  height: videoHeight,
+                                  child: VideoPlayer(controller),
+                                ),
+                              ),
                             ),
-                          ),
+                            // Loading indicator after 2s delay
+                            Offstage(
+                              offstage: !shouldShowIndicator,
+                              child: const Center(
+                                child: BrandedLoadingIndicator(size: 60),
+                              ),
+                            ),
+                            // Buffering indicator
+                            if (value.isInitialized && value.isBuffering)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: const LinearProgressIndicator(
+                                  minHeight: 12,
+                                  backgroundColor: Colors.transparent,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              ),
+                            // Play button when active and paused
+                            if (isActive &&
+                                value.isInitialized &&
+                                !value.isPlaying)
+                              Center(
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Semantics(
+                                    identifier: 'play_button',
+                                    container: true,
+                                    explicitChildNodes: true,
+                                    label: 'Play video',
+                                    child: const Icon(
+                                      Icons.play_arrow,
+                                      size: 56,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     );
