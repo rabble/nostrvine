@@ -7,7 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:video_player/video_player.dart';
 
 /// Arguments for navigating to FullscreenVideoFeedScreen
 class FullscreenVideoFeedArgs {
@@ -54,6 +57,11 @@ class _FullscreenVideoFeedScreenState
   late PageController _pageController;
   late int _currentIndex;
 
+  /// Cached controller for the current video - saved before deactivation
+  /// to allow safe pausing during dispose when ref is no longer available.
+  VideoPlayerController? _cachedCurrentController;
+  String? _cachedCurrentVideoId;
+
   @override
   void initState() {
     super.initState();
@@ -68,19 +76,88 @@ class _FullscreenVideoFeedScreenState
         currentIndex: _currentIndex,
         videos: widget.videos,
       );
+      // Cache the initial controller
+      _cacheCurrentController();
     });
+  }
+
+  /// Cache the current video's controller for safe access during dispose.
+  void _cacheCurrentController() {
+    if (_currentIndex >= 0 && _currentIndex < widget.videos.length) {
+      final video = widget.videos[_currentIndex];
+      if (video.videoUrl != null) {
+        try {
+          final controllerParams = VideoControllerParams(
+            videoId: video.id,
+            videoUrl: video.videoUrl!,
+            videoEvent: video,
+          );
+          _cachedCurrentController = ref.read(
+            individualVideoControllerProvider(controllerParams),
+          );
+          _cachedCurrentVideoId = video.id;
+        } catch (e) {
+          // Ignore errors - controller may not exist yet
+        }
+      }
+    }
+  }
+
+  @override
+  void deactivate() {
+    // Pause video when widget is deactivated (before dispose)
+    // This is called before the widget is removed from the tree,
+    // so ref is still safe to use here
+    _pauseCurrentVideo();
+    super.deactivate();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _cachedCurrentController = null;
+    _cachedCurrentVideoId = null;
     super.dispose();
+  }
+
+  /// Pause the currently active video to prevent background playback.
+  /// Called when navigating away from this screen.
+  void _pauseCurrentVideo() {
+    final controller = _cachedCurrentController;
+    final videoId = _cachedCurrentVideoId;
+
+    if (controller == null ||
+        videoId == null ||
+        !controller.value.isInitialized ||
+        !controller.value.isPlaying) {
+      return;
+    }
+
+    // Defer pause to after the current frame to avoid "setState during build" error.
+    // This can happen when deactivate() is called during a navigation build phase.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Re-check state since it may have changed by the time the callback runs
+      if (!controller.value.isInitialized || !controller.value.isPlaying) {
+        return;
+      }
+
+      Log.info(
+        '⏸️ FullscreenVideoFeedScreen: pausing video $videoId',
+        name: 'FullscreenVideoFeedScreen',
+        category: LogCategory.video,
+      );
+      // safePause handles disposal errors internally
+      safePause(controller, videoId);
+    });
   }
 
   void _onPageChanged(int newIndex) {
     setState(() {
       _currentIndex = newIndex;
     });
+
+    // Update cached controller for the new current video
+    _cacheCurrentController();
 
     // Trigger pagination near end
     if (newIndex >= widget.videos.length - 2) {
