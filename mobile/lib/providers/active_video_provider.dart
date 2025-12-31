@@ -157,22 +157,40 @@ final isVideoActiveProvider = Provider.family<bool, String>((ref, videoId) {
   return activeVideoId == videoId;
 });
 
-/// Auto-cleanup provider that disposes all video controllers when active video changes
-/// This ensures only one video can be playing at a time
-/// Must be watched at app level to activate
+/// Auto-cleanup provider that disposes all video controllers when navigating
+/// between different screens (e.g., home → explore, home → camera).
+///
+/// This ensures videos stop playing when leaving a video feed screen.
+/// Does NOT dispose on swipe within the same feed to avoid flicker.
+///
+/// Must be watched at app level to activate.
 final videoControllerAutoCleanupProvider = Provider<void>((ref) {
-  // Listen to active video changes and dispose all controllers when it changes
-  ref.listen<String?>(activeVideoIdProvider, (previous, next) {
-    // When active video changes, dispose all controllers to ensure clean state
-    if (previous != next && previous != null) {
+  // Track previous route type to detect screen changes vs swipes
+  RouteType? previousRouteType;
+
+  // Listen to page context changes to detect route type changes
+  ref.listen<AsyncValue<RouteContext>>(pageContextProvider, (previous, next) {
+    final prevCtx = previous?.asData?.value;
+    final nextCtx = next.asData?.value;
+
+    // Update previous route type for next comparison
+    final prevType = prevCtx?.type ?? previousRouteType;
+    final nextType = nextCtx?.type;
+
+    if (nextType != null) {
+      previousRouteType = nextType;
+    }
+
+    // Only dispose controllers when route TYPE changes (screen navigation)
+    // Don't dispose on videoIndex change (swipe within same feed)
+    if (prevType != null && nextType != null && prevType != nextType) {
       Log.info(
-        '🧹 Active video changed ($previous → $next), disposing all video controllers',
+        '🧹 Route type changed ($prevType → $nextType), disposing all video controllers',
         name: 'VideoControllerCleanup',
         category: LogCategory.video,
       );
 
-      // Dispose all controllers to force clean state
-      // The new active video will create its controller fresh
+      // Dispose all controllers when leaving a video feed screen
       disposeAllVideoControllers(ref.container);
     }
   }, fireImmediately: false);
