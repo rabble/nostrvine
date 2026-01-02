@@ -380,6 +380,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final drafts = await draftService.getAllDrafts();
     final draftCount = drafts.length;
 
+    if (!context.mounted) return;
+
     // If drafts exist, show warning dialog first
     if (draftCount > 0) {
       final draftWord = draftCount == 1 ? 'draft' : 'drafts';
@@ -413,8 +415,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
 
-      if (proceedWithWarning != true || !context.mounted) return;
+      if (proceedWithWarning != true) return;
     }
+
+    if (!context.mounted) return;
 
     // Show standard confirmation dialog
     final confirmed = await showDialog<bool>(
