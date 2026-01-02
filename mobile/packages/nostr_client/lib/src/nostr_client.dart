@@ -288,8 +288,12 @@ class NostrClient {
           } on Object {
             // Ignore cache errors
           }
-          // Merge cache + gateway and return
-          return _mergeEvents(cacheResults, response.events);
+          // Merge cache + gateway and return (respecting original limit)
+          return _mergeEvents(
+            cacheResults,
+            response.events,
+            limit: filters.first.limit,
+          );
         }
       }
     }
@@ -313,8 +317,10 @@ class NostrClient {
       }
     }
 
-    // Merge cache + websocket and return
-    return _mergeEvents(cacheResults, websocketEvents);
+    // Merge cache + websocket and return (respecting original limit)
+    // Use first filter's limit since cache only works with single filters
+    final limit = filters.isNotEmpty ? filters.first.limit : null;
+    return _mergeEvents(cacheResults, websocketEvents, limit: limit);
   }
 
   /// Counts events matching the given filters using NIP-45.
@@ -857,9 +863,30 @@ class NostrClient {
 
   /// Merges cached and network events, deduplicating by event ID.
   /// Network events take precedence (considered fresher).
-  List<Event> _mergeEvents(List<Event> cached, List<Event> network) {
-    if (cached.isEmpty) return network;
-    if (network.isEmpty) return cached;
+  ///
+  /// If [limit] is provided, returns at most [limit] events sorted by
+  /// `created_at` descending (most recent first). This ensures the original
+  /// filter's limit is respected even when combining multiple sources.
+  List<Event> _mergeEvents(
+    List<Event> cached,
+    List<Event> network, {
+    int? limit,
+  }) {
+    if (cached.isEmpty && network.isEmpty) return [];
+    if (cached.isEmpty) {
+      return limit != null && network.length > limit
+          ? (network..sort((a, b) => b.createdAt - a.createdAt))
+                .take(limit)
+                .toList()
+          : network;
+    }
+    if (network.isEmpty) {
+      return limit != null && cached.length > limit
+          ? (cached..sort((a, b) => b.createdAt - a.createdAt))
+                .take(limit)
+                .toList()
+          : cached;
+    }
 
     final eventMap = <String, Event>{};
     // Add cached events first
@@ -870,7 +897,16 @@ class NostrClient {
     for (final event in network) {
       eventMap[event.id] = event;
     }
-    return eventMap.values.toList();
+
+    final merged = eventMap.values.toList();
+
+    // Apply limit if specified, returning the most recent events
+    if (limit != null && merged.length > limit) {
+      merged.sort((a, b) => b.createdAt - a.createdAt);
+      return merged.take(limit).toList();
+    }
+
+    return merged;
   }
 
   /// Attempts to execute a gateway operation
