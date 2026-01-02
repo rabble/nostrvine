@@ -142,7 +142,8 @@ Future<void> showDeleteAllContentWarningDialog({
               final isValid = _verifyNsec(nsec, currentPublicKeyHex);
               if (!isValid) {
                 setState(() {
-                  errorMessage = 'Invalid nsec. Please enter the correct private key.';
+                  errorMessage =
+                      'Invalid nsec. Please enter the correct private key.';
                 });
                 return;
               }
