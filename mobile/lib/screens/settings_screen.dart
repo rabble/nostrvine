@@ -13,6 +13,8 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -369,7 +371,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
 
-    // Show confirmation dialog
+    // Check for existing drafts before showing logout confirmation
+    final prefs = await SharedPreferences.getInstance();
+    final draftService = DraftStorageService(prefs);
+    final drafts = await draftService.getAllDrafts();
+    final draftCount = drafts.length;
+
+    // If drafts exist, show warning dialog first
+    if (draftCount > 0) {
+      final draftWord = draftCount == 1 ? 'draft' : 'drafts';
+      final proceedWithWarning = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Text(
+            'Unsaved Drafts',
+            style: TextStyle(color: Colors.red),
+          ),
+          content: Text(
+            'You have $draftCount unsaved $draftWord. '
+            'Logging out will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
+            'Do you want to log out anyway?',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Log Out Anyway',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (proceedWithWarning != true || !context.mounted) return;
+    }
+
+    // Show standard confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
