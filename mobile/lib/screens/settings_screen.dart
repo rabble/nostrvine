@@ -219,7 +219,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context,
                   icon: Icons.logout,
                   title: 'Log Out',
-                  subtitle: 'Sign out of your account (keeps your keys)',
+                  subtitle:
+                      'Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.',
                   onTap: () => _handleLogout(context, ref),
                 ),
                 _buildSettingsTile(
@@ -234,17 +235,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.key_off,
                   title: 'Remove Keys from Device',
                   subtitle:
-                      'Delete your nsec from this device (content stays on relays)',
+                      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.',
                   onTap: () => _handleRemoveKeys(context, ref),
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
                 ),
+                const SizedBox(height: 16),
+                _buildSectionHeader('Danger Zone'),
                 _buildSettingsTile(
                   context,
                   icon: Icons.delete_forever,
                   title: 'Delete Account and Data',
                   subtitle:
-                      'PERMANENTLY delete your account and all content from Nostr relays',
+                      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.',
                   onTap: () => _handleDeleteAllContent(context, ref),
                   iconColor: Colors.red,
                   titleColor: Colors.red,
