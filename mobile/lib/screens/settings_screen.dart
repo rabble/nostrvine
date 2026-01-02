@@ -478,18 +478,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (!context.mounted) return;
           Navigator.of(context).pop();
 
-          // Show success message
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Keys removed from device. Your content remains on Nostr relays.',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: VineTheme.vineGreen,
-            ),
-          );
+          // User can import their keys from the welcome screen
         } catch (e) {
           // Close loading indicator
           if (!context.mounted) return;

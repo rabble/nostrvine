@@ -470,13 +470,14 @@ class AuthService {
         category: LogCategory.auth,
       );
 
-      if (deleteKeys) {
+      if (!deleteKeys) {
+        await _checkExistingAuth();
+      } else {
         Log.info(
-          'Auto-creating new identity after key deletion',
+          'Keys deleted - user must import keys to log back in',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        await _checkExistingAuth();
       }
     } catch (e) {
       Log.error(
