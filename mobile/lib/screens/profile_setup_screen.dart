@@ -13,6 +13,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/models/user_profile.dart' as profile_model;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -24,6 +26,37 @@ import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
+  /// Route name for edit profile.
+  static const editRouteName = 'edit-profile';
+
+  /// Route name for setup profile.
+  static const setupRouteName = 'setup-profile';
+
+  /// Path for edit profile route.
+  static const editPath = '/edit-profile';
+
+  /// Path for setup profile route.
+  static const setupPath = '/setup-profile';
+
+  /// Page builder for edit profile route.
+  static Page<void> editPageBuilder(BuildContext context, GoRouterState state) {
+    return StandardPage(
+      key: state.pageKey,
+      child: const ProfileSetupScreen(isNewUser: false),
+    );
+  }
+
+  /// Page builder for setup profile route.
+  static Page<void> setupPageBuilder(
+    BuildContext context,
+    GoRouterState state,
+  ) {
+    return StandardPage(
+      key: state.pageKey,
+      child: const ProfileSetupScreen(isNewUser: true),
+    );
+  }
+
   const ProfileSetupScreen({required this.isNewUser, super.key});
   final bool isNewUser;
 
@@ -193,15 +226,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               print('🟪 PROFILE_SETUP DEBUG: context.pop() failed: $e');
               final authService = ref.read(authServiceProvider);
               final currentPubkey = authService.currentPublicKeyHex;
-              if (currentPubkey != null) {
-                final npub = authService.currentNpub;
+              final npub = authService.currentNpub;
+              if (currentPubkey != null && npub != null) {
                 print(
                   '🟪 PROFILE_SETUP DEBUG: Navigating back to profile: $npub',
                 );
-                context.go('/profile/$npub');
+                context.goProfileGrid(npub);
               } else {
                 print('🟪 PROFILE_SETUP DEBUG: No user, navigating to home');
-                context.go('/home/0');
+                context.goHome();
               }
             }
           },
@@ -1188,7 +1221,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 context.pop(true); // Return true to indicate success
               } else {
                 // If we can't pop (edit-profile became root somehow), go home
-                context.go('/');
+                context.goHome();
               }
             }
           }
@@ -1237,7 +1270,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   ); // Return false to indicate partial success
                 } else {
                   // If we can't pop, go home
-                  context.go('/');
+                  context.goHome();
                 }
               }
             }

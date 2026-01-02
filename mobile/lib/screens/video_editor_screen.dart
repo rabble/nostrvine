@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/widgets/text_overlay/text_overlay_editor.dart';
 import 'package:openvine/widgets/text_overlay/draggable_text_overlay.dart';
@@ -24,6 +25,30 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 
 class VideoEditorScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'edit-video';
+
+  /// Path for this route.
+  static const path = '/edit-video';
+
+  /// Page builder for GoRouter.
+  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
+    final videoPath = state.extra as String?;
+    if (videoPath == null) {
+      return StandardPage(
+        key: state.pageKey,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('No video selected for editing')),
+        ),
+      );
+    }
+    return StandardPage(
+      key: state.pageKey,
+      child: VideoEditorScreen(videoPath: videoPath),
+    );
+  }
+
   const VideoEditorScreen({
     super.key,
     required this.videoPath,

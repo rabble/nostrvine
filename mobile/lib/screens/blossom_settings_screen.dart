@@ -3,11 +3,27 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class BlossomSettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'blossom-settings';
+
+  /// Path for this route.
+  static const path = '/blossom-settings';
+
+  /// Page builder for GoRouter.
+  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
+    return StandardPage(
+      key: state.pageKey,
+      child: const BlossomSettingsScreen(),
+    );
+  }
+
   const BlossomSettingsScreen({super.key});
 
   @override
@@ -104,7 +120,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
             backgroundColor: VineTheme.vineGreen,
           ),
         );
-        Navigator.pop(context);
+        context.pop();
       }
     } catch (e) {
       Log.error(

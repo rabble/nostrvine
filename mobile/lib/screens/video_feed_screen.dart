@@ -277,7 +277,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     // Update URL immediately to trigger derived provider chain
     // context.go() → routerLocationStream → pageContextProvider → activeVideoIdProvider → VideoFeedItem reacts
     if (!widget.disableNavigation) {
-      context.go('/home/$index');
+      context.goHome(index);
     }
 
     preInitializeControllers(ref: ref, currentIndex: index, videos: videos);

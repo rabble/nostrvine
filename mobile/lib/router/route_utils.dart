@@ -7,25 +7,16 @@ enum RouteType {
   explore,
   notifications,
   profile,
-  hashtag, // Still supported as push route within explore
-  search,
-  camera,
-  clipManager, // Clip management screen for recorded segments
-  editVideo, // Video editor screen for text/sound overlays
-  importKey,
-  settings,
-  relaySettings, // Relay configuration screen
-  relayDiagnostic, // Relay connectivity diagnostics
-  blossomSettings, // Blossom media server settings
-  notificationSettings, // Notification preferences
-  keyManagement, // Key backup/export screen
-  safetySettings, // Safety and privacy settings
+  hashtag, // Push route within explore tab
+  search, // Search screen
+  camera, // Camera capture
+  clipManager, // Clip management for recorded segments
+  editVideo, // Video editor for text/sound overlays
+  settings, // Settings screen
   editProfile, // Profile editing screen
-  clips, // Clip library screen (formerly drafts)
+  clips, // Clip library (formerly drafts)
+  importKey, // Key import screen
   welcome, // Welcome/onboarding screen
-  developerOptions, // Developer options (hidden, unlock by tapping version 7x)
-  following, // Following list screen
-  followers, // Followers list screen
 }
 
 /// Structured representation of a route
@@ -152,32 +143,12 @@ RouteContext parseRoute(String path) {
     case 'settings':
       return const RouteContext(type: RouteType.settings);
 
-    case 'relay-settings':
-      return const RouteContext(type: RouteType.relaySettings);
-
-    case 'relay-diagnostic':
-      return const RouteContext(type: RouteType.relayDiagnostic);
-
-    case 'blossom-settings':
-      return const RouteContext(type: RouteType.blossomSettings);
-
-    case 'notification-settings':
-      return const RouteContext(type: RouteType.notificationSettings);
-
-    case 'key-management':
-      return const RouteContext(type: RouteType.keyManagement);
-
-    case 'safety-settings':
-      return const RouteContext(type: RouteType.safetySettings);
-
     case 'edit-profile':
     case 'setup-profile':
-      // Profile editing screens - standalone routes outside ShellRoute
       return const RouteContext(type: RouteType.editProfile);
 
     case 'clips':
     case 'drafts': // Legacy route, redirects to clips
-      // Clip library screen - standalone route outside ShellRoute
       return const RouteContext(type: RouteType.clips);
 
     case 'import-key':
@@ -185,17 +156,6 @@ RouteContext parseRoute(String path) {
 
     case 'welcome':
       return const RouteContext(type: RouteType.welcome);
-
-    case 'developer-options':
-      return const RouteContext(type: RouteType.developerOptions);
-
-    case 'following':
-      final followingPubkey = Uri.decodeComponent(segments[1]);
-      return RouteContext(type: RouteType.following, npub: followingPubkey);
-
-    case 'followers':
-      final followersPubkey = Uri.decodeComponent(segments[1]);
-      return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
@@ -280,24 +240,6 @@ String buildRoute(RouteContext context) {
     case RouteType.settings:
       return '/settings';
 
-    case RouteType.relaySettings:
-      return '/relay-settings';
-
-    case RouteType.relayDiagnostic:
-      return '/relay-diagnostic';
-
-    case RouteType.blossomSettings:
-      return '/blossom-settings';
-
-    case RouteType.notificationSettings:
-      return '/notification-settings';
-
-    case RouteType.keyManagement:
-      return '/key-management';
-
-    case RouteType.safetySettings:
-      return '/safety-settings';
-
     case RouteType.editProfile:
       return '/edit-profile';
 
@@ -309,14 +251,28 @@ String buildRoute(RouteContext context) {
 
     case RouteType.welcome:
       return '/welcome';
-
-    case RouteType.developerOptions:
-      return '/developer-options';
-
-    case RouteType.following:
-      return '/following/${context.npub ?? ''}';
-
-    case RouteType.followers:
-      return '/followers/${context.npub ?? ''}';
   }
+}
+
+/// Maps RouteType to bottom navigation tab index.
+/// Returns null for non-tab routes (camera, settings, etc.)
+int? tabIndexForRouteType(RouteType type) {
+  return switch (type) {
+    RouteType.home => 0,
+    RouteType.explore || RouteType.hashtag || RouteType.search => 1,
+    RouteType.notifications => 2,
+    RouteType.profile => 3,
+    _ => null,
+  };
+}
+
+/// Maps bottom navigation tab index to default RouteType.
+RouteType routeTypeForTab(int index) {
+  return switch (index) {
+    0 => RouteType.home,
+    1 => RouteType.explore,
+    2 => RouteType.notifications,
+    3 => RouteType.profile,
+    _ => RouteType.home,
+  };
 }
