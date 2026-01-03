@@ -39,6 +39,7 @@ class VineTheme {
   static const Color iconButtonBackground = Color(0xFF032017);
   static const Color tabIconInactive = Color(0xFF40504A);
   static const Color tabIndicatorGreen = Color(0xFF27C58B);
+  static const Color cameraButtonGreen = Color(0xFF00B386);
 
   // Tab text style - Bricolage bold (800), 18px, 24px line height
   static TextStyle tabTextStyle({Color color = whiteText}) =>

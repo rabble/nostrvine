@@ -215,6 +215,7 @@ flutter:
     - assets/icon/menu.svg
     - assets/icon/search.svg
     - assets/icon/camera.svg
+    - assets/icon/retro-camera.svg
     - assets/icon/CaretLeft.svg
     - assets/icon/house.svg
     - assets/icon/compass.svg
