@@ -1,6 +1,7 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -885,6 +886,32 @@ class VideoOverlayActions extends ConsumerWidget {
 
     return Stack(
       children: [
+        // Bottom gradient overlay (sits below UI elements, only overlays video)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: FractionallySizedBox(
+              widthFactor: 1.0,
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height / 4,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.0),
+                        Colors.black.withValues(alpha: 0.5),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         // Username and follow button at top left
         Positioned(
           top: MediaQuery.of(context).viewPadding.top + topOffset,
@@ -968,111 +995,169 @@ class VideoOverlayActions extends ConsumerWidget {
             child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
           ),
         ),
-        // No gradient - using text background opacity instead for cleaner appearance
-        // Video title overlay at bottom left
-        // Only show if there's actual text content
-        if (hasTextContent)
-          Positioned(
-            bottom: 16,
+        // Author info and video description overlay at bottom left
+        Positioned(
+            bottom: 22,
             left: 16,
             right: 80, // Leave space for action buttons
             child: AnimatedOpacity(
               opacity: isActive ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Video title with clickable hashtags
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Author avatar and info row
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final userProfileService =
+                          ref.watch(userProfileServiceProvider);
+                      final profile =
+                          userProfileService.getCachedProfile(video.pubkey);
+                      final avatarUrl = profile?.picture;
+                      final displayName = profile?.bestDisplayName ?? 'Loading...';
+                      final loopCount = video.originalLoops ?? 0;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Avatar
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: avatarUrl != null && avatarUrl.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: avatarUrl,
+                                      width: 44,
+                                      height: 44,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: VineTheme.cardBackground,
+                                        child: const Icon(
+                                          Icons.person,
+                                          color: Colors.white54,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Container(
+                                        color: VineTheme.cardBackground,
+                                        child: const Icon(
+                                          Icons.person,
+                                          color: Colors.white54,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      color: VineTheme.cardBackground,
+                                      child: const Icon(
+                                        Icons.person,
+                                        color: Colors.white54,
+                                        size: 24,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // User name and loop count
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        displayName,
+                                        style: VineTheme.titleFont(
+                                          fontSize: 14,
+                                          height: 20 / 14,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (profile?.hasNip05 ?? false) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                Text(
+                                  // Show loops if >= 100, otherwise show post date
+                                  loopCount >= 100
+                                      ? '${StringUtils.formatCompactNumber(loopCount)} loops'
+                                      : video.relativeTime,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    height: 20 / 14,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  // Video description with clickable hashtags (only if there's text content)
+                  if (hasTextContent) ...[
+                    const SizedBox(height: 12),
                     Semantics(
-                      identifier: 'video_description',
-                      container: true,
-                      explicitChildNodes: true,
-                      label: 'Video description',
-                      child: ClickableHashtagText(
-                        text: video.content.isNotEmpty
-                            ? video.content
-                            : video.title!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
-                            ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                        hashtagStyle: TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: const [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
-                            ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Show original loop count if available
-                    if (video.originalLoops != null &&
-                        video.originalLoops! > 0) ...[
-                      Semantics(
-                        identifier: 'loop_count',
+                        identifier: 'video_description',
                         container: true,
                         explicitChildNodes: true,
-                        label: 'Video loop count',
-                        child: Text(
-                          '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                        label: 'Video description',
+                        child: ClickableHashtagText(
+                          text: (video.content.isNotEmpty
+                                  ? video.content
+                                  : video.title!)
+                              .trim(),
                           style: const TextStyle(
+                            fontFamily: 'Inter',
                             color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
+                            fontSize: 14,
+                            height: 20 / 14,
+                            letterSpacing: 0.25,
                           ),
+                          hashtagStyle: TextStyle(
+                            fontFamily: 'Inter',
+                            color: VineTheme.vineGreen,
+                            fontSize: 14,
+                            height: 20 / 14,
+                            letterSpacing: 0.25,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
