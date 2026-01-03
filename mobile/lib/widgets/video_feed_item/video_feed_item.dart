@@ -15,7 +15,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -30,7 +29,6 @@ import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
-import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -879,11 +877,6 @@ class VideoOverlayActions extends ConsumerWidget {
 
     // Stack does not block pointer events by default - taps pass through to GestureDetector below
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
-    // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
-    // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
-
     return Stack(
       children: [
         // Bottom gradient overlay (sits below UI elements, only overlays video)
@@ -912,77 +905,11 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
           ),
         ),
-        // Username and follow button at top left
+        // Follow button at top left (handles own video check internally)
         Positioned(
-          top: MediaQuery.of(context).viewPadding.top + topOffset,
+          top: MediaQuery.of(context).viewPadding.top + 16,
           left: 16,
-          child: Consumer(
-            builder: (context, ref, _) {
-              // Watch UserProfileService directly (now a ChangeNotifier)
-              // This will rebuild when profiles are added/updated
-              final userProfileService = ref.watch(userProfileServiceProvider);
-              final profile = userProfileService.getCachedProfile(video.pubkey);
-
-              // If profile not cached and not known missing, fetch it
-              if (profile == null &&
-                  !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
-                Future.microtask(() {
-                  ref
-                      .read(userProfileProvider.notifier)
-                      .fetchProfile(video.pubkey);
-                });
-              }
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Username chip (tappable to go to profile)
-                  GestureDetector(
-                    onTap: () {
-                      Log.info(
-                        '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
-                        name: 'VideoFeedItem',
-                        category: LogCategory.ui,
-                      );
-                      context.pushProfileGrid(video.pubkey);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.person,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 6),
-                          UserName.fromPubKey(
-                            video.pubkey,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Follow button (handles own video check internally)
-                  const SizedBox(width: 8),
-                  VideoFollowButton(pubkey: video.pubkey),
-                ],
-              );
-            },
-          ),
+          child: VideoFollowButton(pubkey: video.pubkey),
         ),
         // ProofMode and Vine badges in upper right corner (tappable)
         Positioned(
@@ -1018,29 +945,58 @@ class VideoOverlayActions extends ConsumerWidget {
                       final displayName = profile?.bestDisplayName ?? 'Loading...';
                       final loopCount = video.originalLoops ?? 0;
 
+                      void navigateToProfile() {
+                        Log.info(
+                          '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
+                          name: 'VideoFeedItem',
+                          category: LogCategory.ui,
+                        );
+                        context.pushProfileGrid(video.pubkey);
+                      }
+
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Avatar
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
+                          // Avatar (tappable to go to profile)
+                          GestureDetector(
+                            onTap: navigateToProfile,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: avatarUrl != null && avatarUrl.isNotEmpty
-                                  ? CachedNetworkImage(
-                                      imageUrl: avatarUrl,
-                                      width: 44,
-                                      height: 44,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => Container(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: avatarUrl != null && avatarUrl.isNotEmpty
+                                    ? CachedNetworkImage(
+                                        imageUrl: avatarUrl,
+                                        width: 44,
+                                        height: 44,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: VineTheme.cardBackground,
+                                          child: const Icon(
+                                            Icons.person,
+                                            color: Colors.white54,
+                                            size: 24,
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            Container(
+                                          color: VineTheme.cardBackground,
+                                          child: const Icon(
+                                            Icons.person,
+                                            color: Colors.white54,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
                                         color: VineTheme.cardBackground,
                                         child: const Icon(
                                           Icons.person,
@@ -1048,77 +1004,63 @@ class VideoOverlayActions extends ConsumerWidget {
                                           size: 24,
                                         ),
                                       ),
-                                      errorWidget: (context, url, error) =>
-                                          Container(
-                                        color: VineTheme.cardBackground,
-                                        child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white54,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    )
-                                  : Container(
-                                      color: VineTheme.cardBackground,
-                                      child: const Icon(
-                                        Icons.person,
-                                        color: Colors.white54,
-                                        size: 24,
-                                      ),
-                                    ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
-                          // User name and loop count
+                          // User name and loop count (tappable to go to profile)
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        displayName,
-                                        style: VineTheme.titleFont(
-                                          fontSize: 14,
-                                          height: 20 / 14,
-                                          color: Colors.white,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (profile?.hasNip05 ?? false) ...[
-                                      const SizedBox(width: 4),
-                                      Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.blue,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 10,
+                            child: GestureDetector(
+                              onTap: navigateToProfile,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          displayName,
+                                          style: VineTheme.titleFont(
+                                            fontSize: 14,
+                                            height: 20 / 14,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      if (profile?.hasNip05 ?? false) ...[
+                                        const SizedBox(width: 4),
+                                        Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.blue,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 10,
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                ),
-                                Text(
-                                  // Show loops if >= 100, otherwise show post date
-                                  loopCount >= 100
-                                      ? '${StringUtils.formatCompactNumber(loopCount)} loops'
-                                      : video.relativeTime,
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 14,
-                                    height: 20 / 14,
-                                    color: Colors.white70,
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    // Show loops if >= 100, otherwise show post date
+                                    loopCount >= 100
+                                        ? '${StringUtils.formatCompactNumber(loopCount)} loops'
+                                        : video.relativeTime,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      height: 20 / 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
