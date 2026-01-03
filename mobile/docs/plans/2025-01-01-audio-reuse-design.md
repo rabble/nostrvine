@@ -271,6 +271,54 @@ Videos using external audio include an `e` tag with "audio" marker.
 ["COUNT", "<sub-id>", {"kinds": [34236], "#e": ["<audio-event-id>"]}]
 ```
 
+## Edge Cases & Failure Handling
+
+- **Audio event missing / deleted / unavailable URL**: video still plays normally; attribution row hidden and “Use this sound” disabled.
+- **Audio event exists but relay unavailable**: allow opening Sound Detail if the event is cached; otherwise show a non-fatal error and retry.
+- **Duplicate audio events**: prefer de-dupe by `x` (sha256) when browsing sounds; if multiple Kind 1063 events share the same `x`, treat them as the same sound entity for list UI.
+- **Source video already uses external audio**:
+  - Publishing flow should clarify whether “Allow others to use this audio” applies to the video’s *final* mixed audio, or only the creator’s original audio.
+  - If it’s the final mixed audio, Kind 1063 `a` tag still points to the video; attribution should indicate both original sound creator and re-poster (future).
+- **Recording flow interruptions** (incoming call, app background): audio preview/recording should pause and resume safely; do not publish partial audio events.
+- **No headphones**: enforce mic-muted mode (as described) to avoid feedback/echo; explicitly warn user.
+
+## Implementation Notes
+
+### Audio Extraction / Mixing
+
+- Prefer a consistent extracted format for reuse (e.g., AAC LC) to keep playback/mixing predictable across platforms.
+- Extraction should be deterministic (same input → same `x` hash) by normalizing:
+  - Sample rate (e.g., 44.1kHz)
+  - Channels (stereo/mono)
+  - Bitrate (fixed)
+- Store the extracted audio locally until publish completes; delete on success and on user cancel.
+
+### Sound Identity
+
+- Treat the **sha256 `x`** tag as the primary identity for the “sound” concept in UI.
+- The **event id** remains the canonical reference in video events (`e` tag), but browsing and caching should key by `x` to avoid duplicates.
+
+### Caching
+
+- Cache fetched Kind 1063 events locally (by `id` and by `x`).
+- Cache usage counts separately with a TTL (e.g., 5–15 minutes), since counts can change rapidly.
+
+## Acceptance Criteria
+
+- User can publish a video with audio reuse enabled and a Kind 1063 event is published and linked to the Kind 34236 video.
+- User can tap “Use this sound” from a video that has an audio reference and land on recording with the sound preloaded.
+- User can browse sounds, preview a sound, and use it to record.
+- Video detail displays sound attribution when a video references an audio event.
+- Videos using a sound are queryable by `{"kinds": [34236], "#e": ["<audio-event-id>"]}`.
+- Failure states are non-fatal (missing audio event, missing URL, relay issues).
+
+## Open Questions
+
+- Should Kind 1063 be **replaceable/addressable** (has `d` tag) to allow updates (e.g., title edits), or intentionally immutable?
+- How should we define “trending” without a centralized backend (pure relay counts vs backend aggregation)?
+- For “Use this sound”, do we always reference the **audio event id** in Kind 34236, or can we reference by `x` when the event isn’t available (not recommended unless explicitly decided)?
+- Do we want to allow trimming/selecting a segment of a longer audio clip for reuse (not in current scope)?
+
 ## Future Considerations
 
 - Curated/licensed audio library (deals with artists)

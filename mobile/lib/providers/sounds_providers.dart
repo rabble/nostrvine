@@ -130,6 +130,10 @@ Future<int> soundUsageCount(Ref ref, String audioEventId) async {
 /// Used when user selects a sound to use in recording.
 /// Can be null when no sound is selected.
 ///
+/// Note: This provider uses `keepAlive: true` to persist across screen transitions.
+/// The selected sound must survive navigation from camera → ClipManager → VideoEditor.
+/// It should be explicitly cleared when the recording flow completes or is discarded.
+///
 /// Usage:
 /// ```dart
 /// // Read current selection
@@ -141,7 +145,7 @@ Future<int> soundUsageCount(Ref ref, String audioEventId) async {
 /// // Clear selection
 /// ref.read(selectedSoundProvider.notifier).state = null;
 /// ```
-@riverpod
+@Riverpod(keepAlive: true)
 class SelectedSound extends _$SelectedSound {
   @override
   AudioEvent? build() => null;
@@ -175,4 +179,26 @@ class SelectedSound extends _$SelectedSound {
 Stream<List<AudioEvent>> soundsStream(Ref ref) {
   final repository = ref.watch(soundsRepositoryProvider);
   return repository.soundsStream;
+}
+
+/// Family provider to fetch videos that use a specific sound.
+///
+/// Queries for Kind 34236 video events that reference the audio event ID
+/// in their tags. Returns a list of video event IDs.
+///
+/// Usage:
+/// ```dart
+/// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+/// videosAsync.when(
+///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+///   loading: () => LoadingSpinner(),
+///   error: (e, s) => ErrorWidget(message: e.toString()),
+/// );
+/// ```
+@riverpod
+Future<List<String>> videosUsingSound(Ref ref, String audioEventId) async {
+  if (audioEventId.isEmpty) return [];
+
+  final repository = ref.watch(soundsRepositoryProvider);
+  return repository.fetchVideosUsingSound(audioEventId);
 }

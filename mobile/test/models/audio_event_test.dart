@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/vine_sound.dart';
 
 // Valid 64-character hex pubkey for testing
 const testPubkey =
@@ -207,6 +208,95 @@ void main() {
         // Assert
         expect(audioEvent.url, isNull);
         expect(audioEvent.mimeType, isNull);
+      });
+    });
+
+    group('fromBundledSound', () {
+      test('creates AudioEvent from VineSound with correct fields', () {
+        // Arrange
+        final vineSound = VineSound(
+          id: 'bruh',
+          title: 'Bruh Sound Effect',
+          assetPath: 'assets/sounds/bruh-sound-effect.mp3',
+          duration: const Duration(milliseconds: 1000),
+          tags: ['meme', 'reaction', 'classic'],
+        );
+
+        // Act
+        final audioEvent = AudioEvent.fromBundledSound(vineSound);
+
+        // Assert
+        expect(audioEvent.id, equals('bundled_bruh'));
+        expect(audioEvent.pubkey, equals('bundled'));
+        expect(audioEvent.createdAt, equals(0));
+        expect(
+          audioEvent.url,
+          equals('asset://assets/sounds/bruh-sound-effect.mp3'),
+        );
+        expect(audioEvent.mimeType, equals('audio/mpeg'));
+        expect(audioEvent.duration, equals(1.0));
+        expect(audioEvent.title, equals('Bruh Sound Effect'));
+      });
+
+      test('isBundled returns true for bundled sounds', () {
+        final vineSound = VineSound(
+          id: 'test',
+          title: 'Test Sound',
+          assetPath: 'assets/sounds/test.mp3',
+          duration: const Duration(seconds: 2),
+        );
+
+        final audioEvent = AudioEvent.fromBundledSound(vineSound);
+
+        expect(audioEvent.isBundled, isTrue);
+      });
+
+      test('isBundled returns false for Nostr sounds', () {
+        final audioEvent = AudioEvent(
+          id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: 'https://blossom.example/audio.aac',
+        );
+
+        expect(audioEvent.isBundled, isFalse);
+      });
+
+      test('assetPath returns path for bundled sounds', () {
+        final vineSound = VineSound(
+          id: 'vine_boom',
+          title: 'Vine Boom',
+          assetPath: 'assets/sounds/vine-boom.mp3',
+          duration: const Duration(seconds: 7),
+        );
+
+        final audioEvent = AudioEvent.fromBundledSound(vineSound);
+
+        expect(audioEvent.assetPath, equals('assets/sounds/vine-boom.mp3'));
+      });
+
+      test('assetPath returns null for Nostr sounds', () {
+        final audioEvent = AudioEvent(
+          id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: 'https://blossom.example/audio.aac',
+        );
+
+        expect(audioEvent.assetPath, isNull);
+      });
+
+      test('converts duration correctly from milliseconds', () {
+        final vineSound = VineSound(
+          id: 'test',
+          title: 'Test',
+          assetPath: 'assets/sounds/test.mp3',
+          duration: const Duration(milliseconds: 4500),
+        );
+
+        final audioEvent = AudioEvent.fromBundledSound(vineSound);
+
+        expect(audioEvent.duration, equals(4.5));
       });
     });
 

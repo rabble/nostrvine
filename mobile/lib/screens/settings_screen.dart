@@ -133,6 +133,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Blocked users, muted content, and report history',
                 onTap: () => context.push('/safety-settings'),
               ),
+              _buildAudioSharingToggle(),
 
               // Network Configuration
               _buildSectionHeader('Network'),
@@ -324,6 +325,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
     onTap: onTap,
   );
+
+  Widget _buildAudioSharingToggle() {
+    final audioSharingService = ref.watch(
+      audioSharingPreferenceServiceProvider,
+    );
+    final isEnabled = audioSharingService.isAudioSharingEnabled;
+
+    return SwitchListTile(
+      value: isEnabled,
+      onChanged: (value) async {
+        await audioSharingService.setAudioSharingEnabled(value);
+        // Force rebuild to reflect the new state
+        setState(() {});
+      },
+      title: const Text(
+        'Make my audio available for reuse',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: const Text(
+        'When enabled, others can use audio from your videos',
+        style: TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
 
   Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);

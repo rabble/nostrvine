@@ -52,6 +52,20 @@ void main() {
       verify(() => mockPlayer.setUrl(testUrl)).called(1);
     });
 
+    test('loadAudio loads bundled audio from asset:// URL', () async {
+      const assetUrl = 'asset://assets/sounds/bruh-sound-effect.mp3';
+      const expectedAssetPath = 'assets/sounds/bruh-sound-effect.mp3';
+      when(
+        () => mockPlayer.setAsset(expectedAssetPath),
+      ).thenAnswer((_) async => const Duration(seconds: 1));
+
+      service = AudioPlaybackService(audioPlayer: mockPlayer);
+      await service.loadAudio(assetUrl);
+
+      verify(() => mockPlayer.setAsset(expectedAssetPath)).called(1);
+      verifyNever(() => mockPlayer.setUrl(any()));
+    });
+
     test('loadAudio from file path', () async {
       const testPath = '/path/to/audio.aac';
       when(

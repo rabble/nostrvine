@@ -1,27 +1,30 @@
 // ABOUTME: Video editor screen for adding text overlays and sound to recorded videos
 // ABOUTME: Dark-themed interface with video preview, text editing, and sound selection
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/widgets/text_overlay/text_overlay_editor.dart';
-import 'package:openvine/widgets/text_overlay/draggable_text_overlay.dart';
-import 'package:openvine/widgets/sound_picker/sound_picker_modal.dart';
-import 'package:video_player/video_player.dart';
-import 'dart:io';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/services/video_export_service.dart';
-import 'package:openvine/services/text_overlay_renderer.dart';
-import 'package:openvine/screens/pure/video_metadata_screen_pure.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/screens/pure/video_metadata_screen_pure.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/text_overlay_renderer.dart';
+import 'package:openvine/services/video_export_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/sound_picker/sound_picker_modal.dart';
+import 'package:openvine/widgets/text_overlay/draggable_text_overlay.dart';
+import 'package:openvine/widgets/text_overlay/text_overlay_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
 
 class VideoEditorScreen extends ConsumerStatefulWidget {
   const VideoEditorScreen({
@@ -29,11 +32,28 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
     required this.videoPath,
     this.onExport,
     this.onBack,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
   });
 
   final String videoPath;
   final VoidCallback? onExport;
   final VoidCallback? onBack;
+
+  /// External audio event ID from lip sync recording on camera screen.
+  /// When provided, this audio will be mixed into the final video.
+  final String? externalAudioEventId;
+
+  /// Direct URL to the external audio file (avoids re-fetching).
+  final String? externalAudioUrl;
+
+  /// Whether the external audio is a bundled asset.
+  final bool externalAudioIsBundled;
+
+  /// Asset path for bundled external audio.
+  final String? externalAudioAssetPath;
 
   @override
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
@@ -53,6 +73,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       '📹 VideoEditorScreen.initState() START - videoPath: ${widget.videoPath}',
       category: LogCategory.video,
     );
+
+    // Log external audio info from lip sync recording
+    if (widget.externalAudioEventId != null) {
+      Log.info(
+        '📹 External audio from lip sync: ${widget.externalAudioEventId}'
+        '${widget.externalAudioIsBundled ? " (bundled: ${widget.externalAudioAssetPath})" : ""}'
+        '${widget.externalAudioUrl != null && !widget.externalAudioIsBundled ? " (url: ${widget.externalAudioUrl})" : ""}',
+        category: LogCategory.video,
+      );
+    }
+
     _initializeVideo();
     _audioPlayer = AudioPlayer();
     Log.info(
@@ -83,18 +114,34 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       await controller.setLooping(true);
-      await controller.play();
-      Log.info('📹 Video started playing', category: LogCategory.video);
 
+      // If we have external audio from lip sync, mute video
+      if (widget.externalAudioUrl != null ||
+          widget.externalAudioAssetPath != null) {
+        await controller.setVolume(0.0);
+      }
+
+      // Set state BEFORE calling play() - on macOS, play() can hang
+      // This ensures the video displays even if play() blocks
       if (mounted) {
         setState(() {
           _videoController = controller;
           _isVideoInitialized = true;
         });
         Log.info(
-          '📹 _initializeVideo() COMPLETE - video is ready',
+          '📹 _initializeVideo() - video controller ready, starting playback',
           category: LogCategory.video,
         );
+      }
+
+      // Don't await play() - let it run asynchronously to avoid blocking
+      unawaited(controller.play());
+      Log.info('📹 Video playback started', category: LogCategory.video);
+
+      // Load external audio AFTER video is displayed - don't block on it
+      if (widget.externalAudioUrl != null ||
+          widget.externalAudioAssetPath != null) {
+        unawaited(_loadExternalAudio());
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -102,6 +149,44 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         category: LogCategory.video,
       );
       Log.error('📹 Stack trace: $stackTrace', category: LogCategory.video);
+    }
+  }
+
+  /// Load external audio from lip sync recording for preview playback
+  Future<void> _loadExternalAudio() async {
+    try {
+      if (widget.externalAudioIsBundled &&
+          widget.externalAudioAssetPath != null) {
+        // Bundled sound - load from asset
+        Log.info(
+          '📹 Loading bundled audio for preview: ${widget.externalAudioAssetPath}',
+          category: LogCategory.video,
+        );
+        await _audioPlayer?.setAsset(widget.externalAudioAssetPath!);
+      } else if (widget.externalAudioUrl != null) {
+        final audioUrl = widget.externalAudioUrl!;
+        if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+          // Remote sound - load from URL
+          Log.info(
+            '📹 Loading remote audio for preview: $audioUrl',
+            category: LogCategory.video,
+          );
+          await _audioPlayer?.setUrl(audioUrl);
+        }
+      }
+
+      await _audioPlayer?.setLoopMode(LoopMode.one);
+      await _audioPlayer?.play();
+
+      Log.info(
+        '📹 External audio loaded and playing for preview',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '📹 Failed to load external audio for preview: $e',
+        category: LogCategory.video,
+      );
     }
   }
 
@@ -287,8 +372,92 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         );
       }
 
-      // Apply sound overlay if one is selected
-      if (editorState.selectedSoundId != null) {
+      // Apply sound overlay - prioritize external audio from lip sync flow
+      if (widget.externalAudioUrl != null ||
+          widget.externalAudioAssetPath != null) {
+        // External audio from lip sync recording on camera screen
+        Log.info(
+          '📹 Mixing external audio from lip sync: ${widget.externalAudioEventId}',
+          category: LogCategory.video,
+        );
+
+        final exportService = VideoExportService();
+        final previousPath = finalVideoPath;
+
+        // Check if it's a bundled asset or remote URL
+        if (widget.externalAudioIsBundled &&
+            widget.externalAudioAssetPath != null) {
+          // Bundled sound - use mixAudio with asset path
+          Log.info(
+            '📹 Mixing bundled audio: ${widget.externalAudioAssetPath}',
+            category: LogCategory.video,
+          );
+          finalVideoPath = await exportService.mixAudio(
+            finalVideoPath,
+            widget.externalAudioAssetPath!,
+          );
+        } else if (widget.externalAudioUrl != null) {
+          final audioUrl = widget.externalAudioUrl!;
+
+          if (audioUrl.startsWith('http://') ||
+              audioUrl.startsWith('https://')) {
+            // Remote sound - download first then mix
+            Log.info(
+              '📹 Downloading remote audio: $audioUrl',
+              category: LogCategory.video,
+            );
+
+            // Download audio file to temp directory
+            final tempDir = await getTemporaryDirectory();
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final audioFilePath = '${tempDir.path}/audio_$timestamp.mp3';
+
+            final response = await http.get(Uri.parse(audioUrl));
+            if (response.statusCode == 200) {
+              await File(audioFilePath).writeAsBytes(response.bodyBytes);
+
+              finalVideoPath = await exportService.mixExternalAudio(
+                finalVideoPath,
+                audioFilePath,
+              );
+
+              // Clean up downloaded audio file
+              try {
+                await File(audioFilePath).delete();
+              } catch (_) {}
+            } else {
+              Log.warning(
+                '📹 Failed to download audio: HTTP ${response.statusCode}',
+                category: LogCategory.video,
+              );
+            }
+          } else {
+            Log.warning(
+              '📹 Unknown audio URL format: $audioUrl',
+              category: LogCategory.video,
+            );
+          }
+        }
+
+        // Clean up previous temp file if it was a temp file (not original)
+        if (previousPath != widget.videoPath &&
+            previousPath != finalVideoPath) {
+          try {
+            await File(previousPath).delete();
+          } catch (e) {
+            Log.warning(
+              'Failed to delete temp file: $previousPath',
+              category: LogCategory.video,
+            );
+          }
+        }
+
+        Log.info(
+          '📹 External audio mixed into video: $finalVideoPath',
+          category: LogCategory.video,
+        );
+      } else if (editorState.selectedSoundId != null) {
+        // Bundled sound from editor sound picker
         Log.info(
           '📹 Mixing sound: ${editorState.selectedSoundId}',
           category: LogCategory.video,

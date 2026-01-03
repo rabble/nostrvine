@@ -182,10 +182,7 @@ class _AudioWaveformState extends State<AudioWaveform>
             const SizedBox(height: _spacing),
 
             // Position text
-            SizedBox(
-              height: _textHeight,
-              child: _buildPositionText(),
-            ),
+            SizedBox(height: _textHeight, child: _buildPositionText()),
           ],
         ),
       ),
@@ -258,8 +255,10 @@ class _WaveformPainter extends CustomPainter {
       var heightMultiplier = barHeights[i];
       if (isPlaying) {
         // Add subtle animation to bars when playing
-        final animOffset = math.sin((i / barCount) * math.pi * 2 +
-                animationValue * math.pi * 2) *
+        final animOffset =
+            math.sin(
+              (i / barCount) * math.pi * 2 + animationValue * math.pi * 2,
+            ) *
             0.15;
         heightMultiplier = (heightMultiplier + animOffset).clamp(0.2, 1.0);
       }

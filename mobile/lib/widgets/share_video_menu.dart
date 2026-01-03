@@ -11,6 +11,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -429,6 +430,15 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         subtitle: 'Share via other apps or copy link',
         onTap: _shareExternally,
       ),
+
+      // Use this sound option (only if video has audio reference)
+      if (widget.video.hasAudioReference) ...[
+        const SizedBox(height: 8),
+        _UseThisSoundTile(
+          video: widget.video,
+          onDismiss: () => _safePop(context),
+        ),
+      ],
     ],
   );
 
@@ -3374,6 +3384,131 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
       'Navigating to list: ${list.name}',
       name: 'PublicListsSection',
       category: LogCategory.ui,
+    );
+  }
+}
+
+/// Action tile for "Use this sound" feature.
+///
+/// Fetches the audio event and navigates to SoundDetailScreen.
+/// Shows loading state while fetching audio, and handles errors gracefully.
+class _UseThisSoundTile extends ConsumerWidget {
+  const _UseThisSoundTile({required this.video, this.onDismiss});
+
+  final VideoEvent video;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only show if video has an audio reference
+    if (!video.hasAudioReference || video.audioEventId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Watch the audio event asynchronously
+    final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
+
+    return audioAsync.when(
+      data: (audio) {
+        if (audio == null) {
+          Log.warning(
+            'Audio event not found for video ${video.id}, hiding Use Sound tile',
+            name: 'ShareVideoMenu',
+            category: LogCategory.ui,
+          );
+          return const SizedBox.shrink();
+        }
+
+        return ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: VineTheme.vineGreen.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.music_note,
+              color: VineTheme.vineGreen,
+              size: 20,
+            ),
+          ),
+          title: const Text(
+            'Use this sound',
+            style: TextStyle(
+              color: VineTheme.whiteText,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            audio.title ?? 'Original sound',
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () {
+            Log.info(
+              'User tapped Use this sound: ${audio.id}',
+              name: 'ShareVideoMenu',
+              category: LogCategory.ui,
+            );
+
+            // Dismiss the share menu first
+            onDismiss?.call();
+
+            // Navigate to sound detail screen using GoRouter
+            context.push('/sound/${audio.id}', extra: audio);
+          },
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+        );
+      },
+      loading: () => ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: VineTheme.cardBackground,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: VineTheme.secondaryText,
+              ),
+            ),
+          ),
+        ),
+        title: const Text(
+          'Use this sound',
+          style: TextStyle(
+            color: VineTheme.secondaryText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: const Text(
+          'Loading...',
+          style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        ),
+        onTap: null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      error: (error, stack) {
+        Log.error(
+          'Failed to load audio for Use Sound tile: $error',
+          name: 'ShareVideoMenu',
+          category: LogCategory.ui,
+        );
+        return const SizedBox.shrink();
+      },
     );
   }
 }

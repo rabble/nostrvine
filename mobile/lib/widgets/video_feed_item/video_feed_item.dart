@@ -32,6 +32,7 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -355,6 +356,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 name: 'VideoFeedItem',
                 category: LogCategory.ui,
               );
+              controller.removeListener(checkAndPlay);
               return;
             }
 
@@ -1145,6 +1147,9 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                     ],
+                    // Audio attribution row (if video uses external audio)
+                    if (video.hasAudioReference)
+                      AudioAttributionRow(video: video),
                   ],
                 ),
               ),

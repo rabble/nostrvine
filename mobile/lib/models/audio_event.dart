@@ -2,6 +2,7 @@
 // ABOUTME: Used for audio reuse feature - parsing audio shared for use in other videos
 
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/vine_sound.dart';
 
 /// Kind number for audio file metadata events (NIP-94)
 const int audioEventKind = 1063;
@@ -94,6 +95,44 @@ class AudioEvent {
       sourceVideoReference: sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay,
     );
+  }
+
+  /// Create an AudioEvent from a bundled VineSound asset.
+  ///
+  /// Uses a special `asset://` URL scheme to indicate this is a bundled sound.
+  /// The ID is prefixed with `bundled_` to distinguish from Nostr events.
+  ///
+  /// Usage:
+  /// ```dart
+  /// final audioEvent = AudioEvent.fromBundledSound(vineSound);
+  /// if (audioEvent.isBundled) {
+  ///   // Play from assets
+  /// }
+  /// ```
+  factory AudioEvent.fromBundledSound(VineSound sound) {
+    return AudioEvent(
+      id: 'bundled_${sound.id}',
+      pubkey: 'bundled', // Indicates this is not from a Nostr user
+      createdAt: 0, // No timestamp for bundled sounds
+      url: 'asset://${sound.assetPath}',
+      mimeType: 'audio/mpeg',
+      duration: sound.durationInSeconds,
+      title: sound.title,
+    );
+  }
+
+  /// Whether this audio is a bundled sound (from app assets).
+  bool get isBundled => id.startsWith('bundled_');
+
+  /// Get the asset path for bundled sounds.
+  /// Returns null if this is not a bundled sound.
+  String? get assetPath {
+    if (!isBundled || url == null) return null;
+    const prefix = 'asset://';
+    if (url!.startsWith(prefix)) {
+      return url!.substring(prefix.length);
+    }
+    return null;
   }
 
   /// The Nostr event ID (64-character hex string).

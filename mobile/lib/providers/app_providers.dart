@@ -18,7 +18,9 @@ import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/api_service.dart';
+import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -209,6 +211,15 @@ AnalyticsService analyticsService(Ref ref) {
 @Riverpod(keepAlive: true)
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Audio sharing preference service for managing whether audio is available
+/// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
+  final service = AudioSharingPreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }
@@ -679,6 +690,8 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
+  final blossomUploadService = ref.watch(blossomUploadServiceProvider);
+  final userProfileService = ref.watch(userProfileServiceProvider);
 
   return VideoEventPublisher(
     uploadManager: uploadManager,
@@ -686,6 +699,8 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     authService: authService,
     personalEventCache: personalEventCache,
     videoEventService: videoEventService,
+    blossomUploadService: blossomUploadService,
+    userProfileService: userProfileService,
   );
 }
 
@@ -746,12 +761,17 @@ class CuratedListsState extends _$CuratedListsState {
       prefs: prefs,
     );
 
+    // Register dispose callback BEFORE async gap to avoid "ref already disposed" error
+    ref.onDispose(() => _service?.removeListener(_onServiceChanged));
+
     // Initialize the service to create default list and sync with relays
     await _service!.initialize();
 
+    // Check if provider was disposed during initialization
+    if (!ref.mounted) return [];
+
     // Listen to changes and update state
     _service!.addListener(_onServiceChanged);
-    ref.onDispose(() => _service?.removeListener(_onServiceChanged));
 
     return _service!.lists;
   }
@@ -913,6 +933,22 @@ Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
   final tracker = BrokenVideoTracker();
   await tracker.initialize();
   return tracker;
+}
+
+/// Audio playback service for sound playback during recording and preview
+///
+/// Used by SoundsScreen to preview sounds and by camera screen
+/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
+/// Uses keepAlive to persist across the session (not auto-disposed).
+@Riverpod(keepAlive: true)
+AudioPlaybackService audioPlaybackService(Ref ref) {
+  final service = AudioPlaybackService();
+
+  ref.onDispose(() async {
+    await service.dispose();
+  });
+
+  return service;
 }
 
 /// Bug report service for collecting diagnostics and sending encrypted reports

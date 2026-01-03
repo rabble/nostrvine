@@ -1143,6 +1143,296 @@ class BlossomUploadService {
     }
   }
 
+  /// Upload an audio file to the configured Blossom server
+  ///
+  /// This uses the same Blossom BUD-01 protocol as video/image uploads but with
+  /// audio MIME type. Used by the audio reuse feature when publishing videos
+  /// with allowAudioReuse enabled.
+  ///
+  /// Returns a [BlossomUploadResult] with the audio file URL on success.
+  Future<BlossomUploadResult> uploadAudio({
+    required File audioFile,
+    String mimeType = 'audio/aac',
+    void Function(double)? onProgress,
+  }) async {
+    try {
+      // Determine which server to use
+      final isCustomServerEnabled = await isBlossomEnabled();
+      String serverUrl;
+
+      if (isCustomServerEnabled) {
+        final customServerUrl = await getBlossomServer();
+        if (customServerUrl == null || customServerUrl.isEmpty) {
+          return const BlossomUploadResult(
+            success: false,
+            errorMessage: 'Custom Blossom server enabled but not configured',
+          );
+        }
+        serverUrl = customServerUrl;
+      } else {
+        serverUrl = defaultBlossomServer;
+      }
+
+      // Parse and validate server URL
+      final uri = Uri.tryParse(serverUrl);
+      if (uri == null) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Invalid Blossom server URL',
+        );
+      }
+
+      // Check authentication
+      if (!authService.isAuthenticated) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Not authenticated',
+        );
+      }
+
+      Log.info(
+        'Uploading audio to Blossom server: $serverUrl',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      // Report initial progress
+      onProgress?.call(0.1);
+
+      // Use streaming hash computation for memory efficiency
+      final hashResult = await HashUtil.sha256File(audioFile);
+      final fileHash = hashResult.hash;
+      final fileSize = hashResult.size;
+
+      Log.info(
+        'Audio file hash: $fileHash, size: $fileSize bytes',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      onProgress?.call(0.2);
+
+      // Create Blossom auth event
+      final authEvent = await _createBlossomAuthEvent(
+        url: '$serverUrl/upload',
+        method: 'PUT',
+        fileHash: fileHash,
+        fileSize: fileSize,
+        contentDescription: 'Upload audio to Blossom server',
+      );
+
+      if (authEvent == null) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Failed to create Blossom authentication',
+        );
+      }
+
+      // Prepare authorization header (BUD-01 requires standard base64 encoding)
+      final authEventJson = jsonEncode(authEvent.toJson());
+      final authHeader = 'Nostr ${base64.encode(utf8.encode(authEventJson))}';
+
+      Log.info(
+        'Sending PUT request for audio file',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      Log.info(
+        '  URL: $serverUrl/upload',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      Log.info(
+        '  File size: $fileSize bytes',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      // PUT request with file stream (Blossom BUD-01 spec)
+      final fileStream = audioFile.openRead();
+      final response = await dio.put(
+        '$serverUrl/upload',
+        data: fileStream,
+        options: Options(
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': mimeType,
+            'Content-Length': fileSize.toString(),
+          },
+          validateStatus: (status) => status != null && status < 500,
+        ),
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            final progress = 0.2 + (sent / total) * 0.7;
+            onProgress?.call(progress);
+          }
+        },
+      );
+
+      Log.info(
+        'Blossom audio response: ${response.statusCode}',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      // Handle HTTP 409 Conflict - file already exists
+      if (response.statusCode == 409) {
+        Log.info(
+          'Audio already exists on server (hash: $fileHash)',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
+        final extension = _getAudioExtensionFromMimeType(mimeType);
+        final existingUrl = 'https://cdn.divine.video/$fileHash$extension';
+        onProgress?.call(1.0);
+
+        return BlossomUploadResult(
+          success: true,
+          videoId: fileHash,
+          fallbackUrl: existingUrl,
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Log.info(
+          'Audio upload successful',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        onProgress?.call(0.95);
+
+        // Parse Blossom BUD-01 response: {sha256, url, size, type}
+        final blobData = response.data;
+
+        if (blobData is Map) {
+          final sha256 = blobData['sha256'] as String?;
+          final mediaUrl = blobData['url'] as String?;
+
+          if (mediaUrl != null && mediaUrl.isNotEmpty) {
+            final audioId = sha256 ?? fileHash;
+
+            // Fix the file extension if server returns wrong one
+            String correctedUrl = mediaUrl;
+            if (mediaUrl.endsWith('.mp4')) {
+              final extension = _getAudioExtensionFromMimeType(mimeType);
+              correctedUrl = mediaUrl.replaceAll(RegExp(r'\.mp4$'), extension);
+              Log.debug(
+                'Fixed server extension: .mp4 -> $extension for audio',
+                name: 'BlossomUploadService',
+                category: LogCategory.video,
+              );
+            }
+
+            onProgress?.call(1.0);
+
+            Log.info(
+              '  Audio URL: $correctedUrl',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+            Log.info(
+              '  SHA256: $sha256',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+
+            return BlossomUploadResult(
+              success: true,
+              fallbackUrl: correctedUrl,
+              videoId: audioId,
+            );
+          } else {
+            return const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Invalid Blossom response: missing URL field',
+            );
+          }
+        } else {
+          return const BlossomUploadResult(
+            success: false,
+            errorMessage: 'Invalid Blossom response format',
+          );
+        }
+      } else if (response.statusCode == 401) {
+        Log.error(
+          'Audio upload authentication failed: ${response.data}',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Authentication failed',
+        );
+      } else {
+        Log.error(
+          'Audio upload failed: ${response.statusCode}',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        return BlossomUploadResult(
+          success: false,
+          errorMessage: 'Audio upload failed: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      Log.error(
+        'Audio upload network error: ${e.message}',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      if (e.type == DioExceptionType.connectionTimeout) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Connection timeout - check server URL',
+        );
+      } else if (e.type == DioExceptionType.sendTimeout) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Send timeout - upload too slow or connection dropped',
+        );
+      } else {
+        return BlossomUploadResult(
+          success: false,
+          errorMessage: 'Network error: ${e.message}',
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'Audio upload error: $e',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return BlossomUploadResult(
+        success: false,
+        errorMessage: 'Audio upload failed: $e',
+      );
+    }
+  }
+
+  /// Get file extension from audio MIME type
+  String _getAudioExtensionFromMimeType(String mimeType) {
+    switch (mimeType.toLowerCase()) {
+      case 'audio/aac':
+        return '.aac';
+      case 'audio/mp4':
+      case 'audio/m4a':
+        return '.m4a';
+      case 'audio/mpeg':
+      case 'audio/mp3':
+        return '.mp3';
+      case 'audio/ogg':
+        return '.ogg';
+      case 'audio/wav':
+        return '.wav';
+      case 'audio/webm':
+        return '.webm';
+      default:
+        return '.aac';
+    }
+  }
+
   /// Map MIME types to file extensions for image uploads
   /// WORKAROUND: Blossom server returns .mp4 for all uploads, we need to fix it client-side
   String _getImageExtensionFromMimeType(String mimeType) {

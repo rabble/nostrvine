@@ -884,6 +884,31 @@ class MockBlossomUploadService extends _i1.Mock
             returnValue: _i8.Future<String?>.value(),
           )
           as _i8.Future<String?>);
+
+  @override
+  _i8.Future<_i5.BlossomUploadResult> uploadAudio({
+    required _i14.File? audioFile,
+    String? mimeType = 'audio/aac',
+    void Function(double)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadAudio, [], {
+              #audioFile: audioFile,
+              #mimeType: mimeType,
+              #onProgress: onProgress,
+            }),
+            returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_5(
+                this,
+                Invocation.method(#uploadAudio, [], {
+                  #audioFile: audioFile,
+                  #mimeType: mimeType,
+                  #onProgress: onProgress,
+                }),
+              ),
+            ),
+          )
+          as _i8.Future<_i5.BlossomUploadResult>);
 }
 
 /// A class which mocks [NotificationServiceEnhanced].

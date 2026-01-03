@@ -129,20 +129,37 @@ class AudioPlaybackService {
     return false;
   }
 
-  /// Loads audio from a URL.
+  /// Loads audio from a URL or asset path.
+  ///
+  /// Supports:
+  /// - HTTP/HTTPS URLs for remote audio
+  /// - `asset://` URLs for bundled sounds (e.g., "asset://assets/sounds/bruh.mp3")
   ///
   /// Returns the duration of the loaded audio.
   Future<Duration?> loadAudio(String url) async {
     try {
-      final duration = await _audioPlayer.setUrl(url);
-      Log.info(
-        'Loaded audio from URL: $url (duration: ${duration?.inSeconds}s)',
-        name: 'AudioPlaybackService',
-      );
+      Duration? duration;
+
+      // Check if this is a bundled asset URL
+      if (url.startsWith('asset://')) {
+        final assetPath = url.substring('asset://'.length);
+        duration = await _audioPlayer.setAsset(assetPath);
+        Log.info(
+          'Loaded audio from asset: $assetPath (duration: ${duration?.inSeconds}s)',
+          name: 'AudioPlaybackService',
+        );
+      } else {
+        duration = await _audioPlayer.setUrl(url);
+        Log.info(
+          'Loaded audio from URL: $url (duration: ${duration?.inSeconds}s)',
+          name: 'AudioPlaybackService',
+        );
+      }
+
       return duration;
     } catch (e) {
       Log.error(
-        'Failed to load audio from URL $url: $e',
+        'Failed to load audio from $url: $e',
         name: 'AudioPlaybackService',
       );
       rethrow;

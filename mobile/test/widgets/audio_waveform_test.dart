@@ -9,11 +9,7 @@ void main() {
   group('AudioWaveform', () {
     testWidgets('renders with default parameters', (WidgetTester tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       expect(find.byType(AudioWaveform), findsOneWidget);
@@ -31,11 +27,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(duration: null),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
       );
 
       expect(find.text('--:-- / --:--'), findsOneWidget);
@@ -303,11 +295,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(duration: null),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
       );
 
       // Verify Semantics widget exists
@@ -324,10 +312,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-              barCount: 20,
-            ),
+            body: AudioWaveform(duration: Duration(seconds: 6), barCount: 20),
           ),
         ),
       );
@@ -342,10 +327,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-              barCount: 30,
-            ),
+            body: AudioWaveform(duration: Duration(seconds: 6), barCount: 30),
           ),
         ),
       );
@@ -353,10 +335,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-              barCount: 40,
-            ),
+            body: AudioWaveform(duration: Duration(seconds: 6), barCount: 40),
           ),
         ),
       );
@@ -393,18 +372,12 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-            ),
-          ),
+          home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 
       // Find the position text and verify it uses white color
-      final textWidget = tester.widget<Text>(
-        find.text('0:00 / 0:06'),
-      );
+      final textWidget = tester.widget<Text>(find.text('0:00 / 0:06'));
 
       expect(textWidget.style?.color, Colors.white);
     });
@@ -413,16 +386,10 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(duration: null),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
       );
 
-      final textWidget = tester.widget<Text>(
-        find.text('--:-- / --:--'),
-      );
+      final textWidget = tester.widget<Text>(find.text('--:-- / --:--'));
 
       expect(textWidget.style?.color, Colors.grey);
     });

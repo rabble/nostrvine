@@ -15,10 +15,13 @@ import 'package:openvine/theme/vine_theme.dart';
 /// Normal mode displays:
 /// ```
 /// ┌─────────────────────────────────────────┐
-/// │  ♪ Original sound - @user1              │
+/// │  ▶️ Original sound - @user1           > │
 /// │    6s · 142 videos                      │
 /// └─────────────────────────────────────────┘
 /// ```
+/// - Tap play button (left) = preview sound
+/// - Tap tile body = select sound
+/// - Tap chevron (right) = navigate to sound detail
 ///
 /// Compact mode (for horizontal scroll):
 /// ```
@@ -33,6 +36,8 @@ class SoundTile extends StatelessWidget {
     required this.sound,
     this.onTap,
     this.onPlayPreview,
+    this.onDetailTap,
+    this.isPlaying = false,
     this.compact = false,
     this.videoCount,
     super.key,
@@ -41,11 +46,17 @@ class SoundTile extends StatelessWidget {
   /// The audio event to display.
   final AudioEvent sound;
 
-  /// Callback when the tile is tapped.
+  /// Callback when the tile body is tapped (select sound).
   final VoidCallback? onTap;
 
   /// Callback when the preview play button is tapped.
   final VoidCallback? onPlayPreview;
+
+  /// Callback when the chevron/detail button is tapped (navigate to detail).
+  final VoidCallback? onDetailTap;
+
+  /// Whether this sound is currently playing a preview.
+  final bool isPlaying;
 
   /// Whether to display in compact mode for horizontal scrolling.
   /// Defaults to false.
@@ -83,6 +94,9 @@ class SoundTile extends StatelessWidget {
   }
 
   /// Build the compact version for horizontal scroll.
+  ///
+  /// Shows the sound title (truncated) so users can identify the sound.
+  /// Tapping selects the sound for use in recording.
   Widget _buildCompactTile() {
     return Semantics(
       identifier: 'sound_tile_compact_${sound.id}',
@@ -97,24 +111,30 @@ class SoundTile extends StatelessWidget {
             color: VineTheme.cardBackground,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.music_note,
-                color: VineTheme.vineGreen,
-                size: 28,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _formatDuration(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.music_note,
+                  color: VineTheme.vineGreen,
+                  size: 24,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  _displayTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -180,8 +200,24 @@ class SoundTile extends StatelessWidget {
                     ),
                   ),
 
-                  // Chevron indicator
-                  const Icon(Icons.chevron_right, color: Colors.grey, size: 24),
+                  // Chevron indicator - tappable for detail navigation
+                  GestureDetector(
+                    onTap: onDetailTap,
+                    behavior: HitTestBehavior.opaque,
+                    child: Semantics(
+                      identifier: 'sound_tile_detail_${sound.id}',
+                      label: 'View details for $_displayTitle',
+                      button: true,
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -193,19 +229,24 @@ class SoundTile extends StatelessWidget {
 
   /// Build the play preview button.
   Widget _buildPlayPreviewButton() {
-    return GestureDetector(
-      onTap: onPlayPreview,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: VineTheme.vineGreen.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: const Icon(
-          Icons.play_arrow,
-          color: VineTheme.vineGreen,
-          size: 28,
+    return Semantics(
+      identifier: 'sound_tile_preview_${sound.id}',
+      label: isPlaying ? 'Stop preview' : 'Preview $_displayTitle',
+      button: true,
+      child: GestureDetector(
+        onTap: onPlayPreview,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: VineTheme.vineGreen.withValues(alpha: isPlaying ? 0.4 : 0.2),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Icon(
+            isPlaying ? Icons.stop : Icons.play_arrow,
+            color: VineTheme.vineGreen,
+            size: 28,
+          ),
         ),
       ),
     );

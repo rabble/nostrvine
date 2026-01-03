@@ -536,6 +536,65 @@ final class AgeVerificationServiceProvider
 String _$ageVerificationServiceHash() =>
     r'e866f0341e541ba27ba2b4e4278ed4b35edb8d8b';
 
+/// Audio sharing preference service for managing whether audio is available
+/// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
+
+@ProviderFor(audioSharingPreferenceService)
+const audioSharingPreferenceServiceProvider =
+    AudioSharingPreferenceServiceProvider._();
+
+/// Audio sharing preference service for managing whether audio is available
+/// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
+
+final class AudioSharingPreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AudioSharingPreferenceService,
+          AudioSharingPreferenceService,
+          AudioSharingPreferenceService
+        >
+    with $Provider<AudioSharingPreferenceService> {
+  /// Audio sharing preference service for managing whether audio is available
+  /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
+  const AudioSharingPreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioSharingPreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioSharingPreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioSharingPreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AudioSharingPreferenceService create(Ref ref) {
+    return audioSharingPreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioSharingPreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioSharingPreferenceService>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$audioSharingPreferenceServiceHash() =>
+    r'6d09af615c19937bc2842079c368161b513dd323';
+
 /// Geo-blocking service for regional compliance
 
 @ProviderFor(geoBlockingService)
@@ -2176,7 +2235,7 @@ final class VideoEventPublisherProvider
 }
 
 String _$videoEventPublisherHash() =>
-    r'c3075fa95de7b09347358e7c288d2c18c1d9e93a';
+    r'b14b2c63806aa23370d43e14d9a047b36dcde180';
 
 /// Curation Service - manages NIP-51 video curation sets
 
@@ -2300,7 +2359,7 @@ final class CuratedListsStateProvider
   CuratedListsState create() => CuratedListsState();
 }
 
-String _$curatedListsStateHash() => r'0051dfa40ef5ac983230025a2e4cbd0e2ea0b0e0';
+String _$curatedListsStateHash() => r'c6255dcf311db8ce01adb1aa64f5b40e38bd9729';
 
 /// Lists state notifier - manages curated lists state
 
@@ -2711,6 +2770,71 @@ final class BrokenVideoTrackerProvider
 
 String _$brokenVideoTrackerHash() =>
     r'36268bd477659a229f13da325ac23403a20e7fa7';
+
+/// Audio playback service for sound playback during recording and preview
+///
+/// Used by SoundsScreen to preview sounds and by camera screen
+/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
+/// Uses keepAlive to persist across the session (not auto-disposed).
+
+@ProviderFor(audioPlaybackService)
+const audioPlaybackServiceProvider = AudioPlaybackServiceProvider._();
+
+/// Audio playback service for sound playback during recording and preview
+///
+/// Used by SoundsScreen to preview sounds and by camera screen
+/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
+/// Uses keepAlive to persist across the session (not auto-disposed).
+
+final class AudioPlaybackServiceProvider
+    extends
+        $FunctionalProvider<
+          AudioPlaybackService,
+          AudioPlaybackService,
+          AudioPlaybackService
+        >
+    with $Provider<AudioPlaybackService> {
+  /// Audio playback service for sound playback during recording and preview
+  ///
+  /// Used by SoundsScreen to preview sounds and by camera screen
+  /// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
+  /// Uses keepAlive to persist across the session (not auto-disposed).
+  const AudioPlaybackServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioPlaybackServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioPlaybackServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioPlaybackService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AudioPlaybackService create(Ref ref) {
+    return audioPlaybackService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioPlaybackService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioPlaybackService>(value),
+    );
+  }
+}
+
+String _$audioPlaybackServiceHash() =>
+    r'dd192ad5fbcd8f4d42de658e409ef09f3c887f04';
 
 /// Bug report service for collecting diagnostics and sending encrypted reports
 

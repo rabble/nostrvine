@@ -204,6 +204,31 @@ class MockBlossomUploadService extends _i1.Mock
             returnValue: _i6.Future<String?>.value(),
           )
           as _i6.Future<String?>);
+
+  @override
+  _i6.Future<_i4.BlossomUploadResult> uploadAudio({
+    required _i7.File? audioFile,
+    String? mimeType = 'audio/aac',
+    void Function(double)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadAudio, [], {
+              #audioFile: audioFile,
+              #mimeType: mimeType,
+              #onProgress: onProgress,
+            }),
+            returnValue: _i6.Future<_i4.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_2(
+                this,
+                Invocation.method(#uploadAudio, [], {
+                  #audioFile: audioFile,
+                  #mimeType: mimeType,
+                  #onProgress: onProgress,
+                }),
+              ),
+            ),
+          )
+          as _i6.Future<_i4.BlossomUploadResult>);
 }
 
 /// A class which mocks [AuthService].

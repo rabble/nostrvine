@@ -175,10 +175,11 @@ void main() {
         expect(find.byIcon(Icons.music_note), findsOneWidget);
       });
 
-      testWidgets('displays duration in compact mode', (tester) async {
+      testWidgets('displays title in compact mode', (tester) async {
         await tester.pumpWidget(buildTestWidget(compact: true));
 
-        expect(find.text('6s'), findsOneWidget);
+        // Compact mode shows title (truncated) to help identify the sound
+        expect(find.text('Original sound - @testuser'), findsOneWidget);
       });
 
       testWidgets('does not display video count in compact mode', (
@@ -189,12 +190,11 @@ void main() {
         expect(find.textContaining('video'), findsNothing);
       });
 
-      testWidgets('does not display full title in compact mode', (
-        tester,
-      ) async {
+      testWidgets('does not display duration in compact mode', (tester) async {
         await tester.pumpWidget(buildTestWidget(compact: true));
 
-        expect(find.text('Original sound - @testuser'), findsNothing);
+        // Compact mode no longer shows duration - shows title instead
+        expect(find.text('6s'), findsNothing);
       });
 
       testWidgets('calls onTap when compact tile is tapped', (tester) async {

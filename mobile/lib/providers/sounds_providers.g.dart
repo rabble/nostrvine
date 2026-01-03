@@ -603,6 +603,10 @@ final class SoundUsageCountFamily extends $Family
 /// Used when user selects a sound to use in recording.
 /// Can be null when no sound is selected.
 ///
+/// Note: This provider uses `keepAlive: true` to persist across screen transitions.
+/// The selected sound must survive navigation from camera → ClipManager → VideoEditor.
+/// It should be explicitly cleared when the recording flow completes or is discarded.
+///
 /// Usage:
 /// ```dart
 /// // Read current selection
@@ -623,6 +627,10 @@ const selectedSoundProvider = SelectedSoundProvider._();
 /// Used when user selects a sound to use in recording.
 /// Can be null when no sound is selected.
 ///
+/// Note: This provider uses `keepAlive: true` to persist across screen transitions.
+/// The selected sound must survive navigation from camera → ClipManager → VideoEditor.
+/// It should be explicitly cleared when the recording flow completes or is discarded.
+///
 /// Usage:
 /// ```dart
 /// // Read current selection
@@ -641,6 +649,10 @@ final class SelectedSoundProvider
   /// Used when user selects a sound to use in recording.
   /// Can be null when no sound is selected.
   ///
+  /// Note: This provider uses `keepAlive: true` to persist across screen transitions.
+  /// The selected sound must survive navigation from camera → ClipManager → VideoEditor.
+  /// It should be explicitly cleared when the recording flow completes or is discarded.
+  ///
   /// Usage:
   /// ```dart
   /// // Read current selection
@@ -658,7 +670,7 @@ final class SelectedSoundProvider
         argument: null,
         retry: null,
         name: r'selectedSoundProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -679,12 +691,16 @@ final class SelectedSoundProvider
   }
 }
 
-String _$selectedSoundHash() => r'ad10a785eca078a1916e86a9708639a7b8c12d33';
+String _$selectedSoundHash() => r'886638f550d365dd220fc9034acef00622ce64ab';
 
 /// State provider for the currently selected sound.
 ///
 /// Used when user selects a sound to use in recording.
 /// Can be null when no sound is selected.
+///
+/// Note: This provider uses `keepAlive: true` to persist across screen transitions.
+/// The selected sound must survive navigation from camera → ClipManager → VideoEditor.
+/// It should be explicitly cleared when the recording flow completes or is discarded.
 ///
 /// Usage:
 /// ```dart
@@ -799,3 +815,152 @@ final class SoundsStreamProvider
 }
 
 String _$soundsStreamHash() => r'56ff68952009171af0f64e7beab9978232fc3cb4';
+
+/// Family provider to fetch videos that use a specific sound.
+///
+/// Queries for Kind 34236 video events that reference the audio event ID
+/// in their tags. Returns a list of video event IDs.
+///
+/// Usage:
+/// ```dart
+/// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+/// videosAsync.when(
+///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+///   loading: () => LoadingSpinner(),
+///   error: (e, s) => ErrorWidget(message: e.toString()),
+/// );
+/// ```
+
+@ProviderFor(videosUsingSound)
+const videosUsingSoundProvider = VideosUsingSoundFamily._();
+
+/// Family provider to fetch videos that use a specific sound.
+///
+/// Queries for Kind 34236 video events that reference the audio event ID
+/// in their tags. Returns a list of video event IDs.
+///
+/// Usage:
+/// ```dart
+/// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+/// videosAsync.when(
+///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+///   loading: () => LoadingSpinner(),
+///   error: (e, s) => ErrorWidget(message: e.toString()),
+/// );
+/// ```
+
+final class VideosUsingSoundProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<String>>,
+          List<String>,
+          FutureOr<List<String>>
+        >
+    with $FutureModifier<List<String>>, $FutureProvider<List<String>> {
+  /// Family provider to fetch videos that use a specific sound.
+  ///
+  /// Queries for Kind 34236 video events that reference the audio event ID
+  /// in their tags. Returns a list of video event IDs.
+  ///
+  /// Usage:
+  /// ```dart
+  /// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+  /// videosAsync.when(
+  ///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+  ///   loading: () => LoadingSpinner(),
+  ///   error: (e, s) => ErrorWidget(message: e.toString()),
+  /// );
+  /// ```
+  const VideosUsingSoundProvider._({
+    required VideosUsingSoundFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'videosUsingSoundProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$videosUsingSoundHash();
+
+  @override
+  String toString() {
+    return r'videosUsingSoundProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<String>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<String>> create(Ref ref) {
+    final argument = this.argument as String;
+    return videosUsingSound(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is VideosUsingSoundProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$videosUsingSoundHash() => r'f84cd3226592bd070cb9a0f1028e0b72cec47bed';
+
+/// Family provider to fetch videos that use a specific sound.
+///
+/// Queries for Kind 34236 video events that reference the audio event ID
+/// in their tags. Returns a list of video event IDs.
+///
+/// Usage:
+/// ```dart
+/// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+/// videosAsync.when(
+///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+///   loading: () => LoadingSpinner(),
+///   error: (e, s) => ErrorWidget(message: e.toString()),
+/// );
+/// ```
+
+final class VideosUsingSoundFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<String>>, String> {
+  const VideosUsingSoundFamily._()
+    : super(
+        retry: null,
+        name: r'videosUsingSoundProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Family provider to fetch videos that use a specific sound.
+  ///
+  /// Queries for Kind 34236 video events that reference the audio event ID
+  /// in their tags. Returns a list of video event IDs.
+  ///
+  /// Usage:
+  /// ```dart
+  /// final videosAsync = ref.watch(videosUsingSoundProvider('audio-event-id'));
+  /// videosAsync.when(
+  ///   data: (videoIds) => VideoGrid(videoIds: videoIds),
+  ///   loading: () => LoadingSpinner(),
+  ///   error: (e, s) => ErrorWidget(message: e.toString()),
+  /// );
+  /// ```
+
+  VideosUsingSoundProvider call(String audioEventId) =>
+      VideosUsingSoundProvider._(argument: audioEventId, from: this);
+
+  @override
+  String toString() => r'videosUsingSoundProvider';
+}

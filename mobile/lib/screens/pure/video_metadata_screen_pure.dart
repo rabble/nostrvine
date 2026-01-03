@@ -10,6 +10,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/models/pending_upload.dart'
     show UploadStatus, PendingUpload;
@@ -43,6 +44,8 @@ class _VideoMetadataScreenPureState
   bool _expirationConfirmed = false; // User must explicitly confirm expiration
   int _expirationHours = 24;
   bool _isPublishing = false;
+  bool?
+  _allowAudioReuse; // Per-video audio sharing override (null = not loaded)
   String _publishingStatus = '';
   double _uploadProgress = 0.0;
   String? _currentUploadId;
@@ -87,9 +90,16 @@ class _VideoMetadataScreenPureState
         },
       );
 
+      // Load the global audio sharing preference as default
+      final audioSharingService = ref.read(
+        audioSharingPreferenceServiceProvider,
+      );
+      final defaultAudioSharing = audioSharingService.isAudioSharingEnabled;
+
       if (mounted) {
         setState(() {
           _currentDraft = draft;
+          _allowAudioReuse = defaultAudioSharing;
         });
 
         // Populate form with draft data
@@ -101,7 +111,7 @@ class _VideoMetadataScreenPureState
         _hashtags.addAll(draft.hashtags);
 
         Log.info(
-          '📝 VideoMetadataScreenPure: Loaded draft ${draft.id}',
+          '📝 VideoMetadataScreenPure: Loaded draft ${draft.id}, audio sharing default: $defaultAudioSharing',
           category: LogCategory.video,
         );
 
@@ -900,6 +910,34 @@ class _VideoMetadataScreenPureState
                                       const SizedBox(height: 8),
                                     ],
 
+                                    // Audio sharing option - per-video override
+                                    if (_allowAudioReuse != null)
+                                      SwitchListTile(
+                                        title: const Text(
+                                          'Allow others to use this audio',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        subtitle: Text(
+                                          _allowAudioReuse!
+                                              ? 'Others can reuse audio from this video'
+                                              : 'Audio is exclusive to this video',
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                        value: _allowAudioReuse!,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _allowAudioReuse = value;
+                                          });
+                                        },
+                                        activeThumbColor: VineTheme.vineGreen,
+                                        secondary: const Icon(
+                                          Icons.music_note,
+                                          color: VineTheme.vineGreen,
+                                        ),
+                                      ),
+
                                     // ProofMode info panel
                                     // TODO: Add proofManifest to VineDraft model if needed
                                     // if (_currentDraft?.proofManifest != null) ...[
@@ -1247,6 +1285,7 @@ class _VideoMetadataScreenPureState
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
                   (_expirationHours * 3600)
             : null,
+        allowAudioReuse: _allowAudioReuse ?? false,
       );
 
       if (!published) {
@@ -1269,6 +1308,9 @@ class _VideoMetadataScreenPureState
 
       // Clear clip manager to allow recording new videos without "clear" prompt
       ref.read(clipManagerProvider.notifier).clearAll();
+
+      // Clear selected sound from lip sync recording flow
+      ref.read(selectedSoundProvider.notifier).clear();
 
       if (mounted) {
         setState(() {
