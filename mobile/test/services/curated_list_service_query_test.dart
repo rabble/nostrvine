@@ -581,8 +581,10 @@ void main() {
       test('streams lists immediately as they arrive', () async {
         // Setup: Mock events arriving one at a time
         final event1 = Event.fromJson({
-          'id': 'event1_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
-          'pubkey': 'pubkey1_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'id':
+              'event1_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+          'pubkey':
+              'pubkey1_123456789abcdef0123456789abcdef0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -595,8 +597,10 @@ void main() {
         });
 
         final event2 = Event.fromJson({
-          'id': 'event2_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
-          'pubkey': 'pubkey2_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'id':
+              'event2_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+          'pubkey':
+              'pubkey2_123456789abcdef0123456789abcdef0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -609,9 +613,9 @@ void main() {
         });
 
         // Mock subscribe to return events as a stream
-        when(mockNostr.subscribe(any)).thenAnswer(
-          (_) => Stream.fromIterable([event1, event2]),
-        );
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
 
         // Act: Collect streamed results
         final streamedResults = <List<CuratedList>>[];
@@ -628,10 +632,15 @@ void main() {
 
       test('deduplicates by d-tag keeping newest', () async {
         final olderEvent = Event.fromJson({
-          'id': 'older_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
-          'pubkey': 'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'id':
+              'older_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
           'created_at':
-              DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
+              DateTime.now()
+                  .subtract(const Duration(hours: 1))
+                  .millisecondsSinceEpoch ~/
+              1000,
           'kind': 30005,
           'tags': [
             ['d', 'same-list'],
@@ -643,8 +652,10 @@ void main() {
         });
 
         final newerEvent = Event.fromJson({
-          'id': 'newer_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
-          'pubkey': 'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'id':
+              'newer_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -657,9 +668,9 @@ void main() {
         });
 
         // Send older first, then newer
-        when(mockNostr.subscribe(any)).thenAnswer(
-          (_) => Stream.fromIterable([olderEvent, newerEvent]),
-        );
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
 
         List<CuratedList>? finalLists;
         await for (final lists in service.streamPublicListsFromRelays()) {
@@ -674,8 +685,10 @@ void main() {
 
       test('filters out empty lists', () async {
         final emptyList = Event.fromJson({
-          'id': 'empty_id_123456789abcdef0123456789abcdef0123456789abcdef01234567',
-          'pubkey': 'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'id':
+              'empty_id_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -688,8 +701,10 @@ void main() {
         });
 
         final nonEmptyList = Event.fromJson({
-          'id': 'nonempty_id_123456789abcdef0123456789abcdef0123456789abcdef0123',
-          'pubkey': 'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'id':
+              'nonempty_id_123456789abcdef0123456789abcdef0123456789abcdef0123',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -701,9 +716,9 @@ void main() {
           'sig': 'sig2',
         });
 
-        when(mockNostr.subscribe(any)).thenAnswer(
-          (_) => Stream.fromIterable([emptyList, nonEmptyList]),
-        );
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
 
         List<CuratedList>? finalLists;
         await for (final lists in service.streamPublicListsFromRelays()) {
@@ -718,10 +733,11 @@ void main() {
 
       test('supports pagination with until parameter', () async {
         final oldEvent = Event.fromJson({
-          'id': 'old_event_123456789abcdef0123456789abcdef0123456789abcdef012345',
-          'pubkey': 'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
-          'created_at':
-              DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
+          'id':
+              'old_event_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at': DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
             ['d', 'old-list'],
@@ -732,14 +748,16 @@ void main() {
           'sig': 'sig1',
         });
 
-        when(mockNostr.subscribe(any)).thenAnswer(
-          (_) => Stream.fromIterable([oldEvent]),
-        );
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
         final until = DateTime(2024, 6, 1);
         List<CuratedList>? results;
-        await for (final lists in service.streamPublicListsFromRelays(until: until)) {
+        await for (final lists in service.streamPublicListsFromRelays(
+          until: until,
+        )) {
           results = lists;
           if (lists.isNotEmpty) break;
         }

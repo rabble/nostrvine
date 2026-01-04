@@ -53,7 +53,9 @@ class ListAttributionChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: VineTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: VineTheme.vineGreen.withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

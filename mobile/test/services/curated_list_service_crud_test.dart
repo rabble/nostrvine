@@ -341,7 +341,10 @@ void main() {
 
       test('publishes public list to Nostr when it has videos', () async {
         // Create list, add a video, then verify publish
-        final list = await service.createList(name: 'Public List', isPublic: true);
+        final list = await service.createList(
+          name: 'Public List',
+          isPublic: true,
+        );
 
         // Add a video to the list so it will publish
         await service.addVideoToList(list!.id, 'test_video_id');

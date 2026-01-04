@@ -83,11 +83,14 @@ Future<void> _startOpenVineApp() async {
   StartupPerformanceService.instance.startPhase('audio_session');
   try {
     final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration(
-      avAudioSessionCategory: AVAudioSessionCategory.ambient,
-      avAudioSessionMode: AVAudioSessionMode.defaultMode,
-      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
-    ));
+    await session.configure(
+      const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.ambient,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.mixWithOthers,
+      ),
+    );
     Log.info(
       'Audio session configured to respect mute switch',
       name: 'Main',

@@ -44,9 +44,9 @@ void main() {
       when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
 
       // Stub subscribe for CurationService initialization (fetches Divine Team videos)
-      when(mockNostrService.subscribe(any)).thenAnswer(
-        (_) => const Stream<Event>.empty(),
-      );
+      when(
+        mockNostrService.subscribe(any),
+      ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Stub createAndSignEvent for AuthService (used in curation creation)
       when(

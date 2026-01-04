@@ -169,13 +169,12 @@ extension NavX on BuildContext {
     required String listName,
     List<String>? videoIds,
     String? authorPubkey,
-  }) =>
-      push(
-        '/list/${Uri.encodeComponent(listId)}',
-        extra: CuratedListRouteExtra(
-          listName: listName,
-          videoIds: videoIds,
-          authorPubkey: authorPubkey,
-        ),
-      );
+  }) => push(
+    '/list/${Uri.encodeComponent(listId)}',
+    extra: CuratedListRouteExtra(
+      listName: listName,
+      videoIds: videoIds,
+      authorPubkey: authorPubkey,
+    ),
+  );
 }

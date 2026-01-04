@@ -104,10 +104,7 @@ class BugReportService {
           };
         } else {
           // Unknown platform fallback
-          deviceInfo = {
-            'platform': 'unknown',
-            'version': 'unknown',
-          };
+          deviceInfo = {'platform': 'unknown', 'version': 'unknown'};
         }
       } catch (e) {
         Log.warning(
@@ -118,14 +115,14 @@ class BugReportService {
         final platform = Platform.isAndroid
             ? 'android'
             : Platform.isIOS
-                ? 'ios'
-                : Platform.isMacOS
-                    ? 'macos'
-                    : Platform.isWindows
-                        ? 'windows'
-                        : Platform.isLinux
-                            ? 'linux'
-                            : 'unknown';
+            ? 'ios'
+            : Platform.isMacOS
+            ? 'macos'
+            : Platform.isWindows
+            ? 'windows'
+            : Platform.isLinux
+            ? 'linux'
+            : 'unknown';
         deviceInfo = {
           'platform': platform,
           'version': 'unknown',

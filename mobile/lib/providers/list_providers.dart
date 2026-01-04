@@ -88,10 +88,14 @@ class DiscoveredLists extends _$DiscoveredLists {
   /// Add new lists (for pagination/streaming)
   void addLists(List<CuratedList> newLists) {
     final existingIds = state.lists.map((l) => l.id).toSet();
-    final trulyNew = newLists.where((l) => !existingIds.contains(l.id)).toList();
+    final trulyNew = newLists
+        .where((l) => !existingIds.contains(l.id))
+        .toList();
     if (trulyNew.isNotEmpty) {
       final combined = [...state.lists, ...trulyNew]
-        ..sort((a, b) => b.videoEventIds.length.compareTo(a.videoEventIds.length));
+        ..sort(
+          (a, b) => b.videoEventIds.length.compareTo(a.videoEventIds.length),
+        );
       state = state.copyWith(lists: combined);
     }
   }
