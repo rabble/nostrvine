@@ -99,7 +99,6 @@ class ProfileFeed extends _$ProfileFeed {
     });
 
     // Register for NEW video callbacks to auto-refresh when this user posts a new video
-    // This fixes the bug where newly posted videos don't appear until restart
     final unregisterNew = videoEventService.addNewVideoListener((
       newVideo,
       authorPubkey,
