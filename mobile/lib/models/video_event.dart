@@ -698,12 +698,6 @@ class VideoEvent {
     return !isFromDivineServer && !hasProofMode && !isOriginalVine;
   }
 
-  /// @deprecated Use shouldShowNotDivineBadge instead
-  /// Keeping for backward compatibility during migration
-  bool get shouldShowOriginalBadge {
-    return false; // No longer show misleading "Original" badge
-  }
-
   /// Comparator: items with no loop count first (new vines),
   /// then items with loop count sorted by amount desc.
   /// Within groups, break ties by most recent createdAt.
