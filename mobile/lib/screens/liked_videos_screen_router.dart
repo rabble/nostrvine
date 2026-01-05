@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
@@ -117,17 +118,18 @@ class _LikedVideosScreenRouterState
   }
 }
 
-/// Feed view that uses BLoC state to display videos
-class _LikedVideosFeedView extends StatefulWidget {
+/// Feed view that uses BLoC state to display videos and syncs to Riverpod bridge
+class _LikedVideosFeedView extends ConsumerStatefulWidget {
   const _LikedVideosFeedView({required this.videoIndex});
 
   final int videoIndex;
 
   @override
-  State<_LikedVideosFeedView> createState() => _LikedVideosFeedViewState();
+  ConsumerState<_LikedVideosFeedView> createState() =>
+      _LikedVideosFeedViewState();
 }
 
-class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
+class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
   List<String>? _lastLoadedIds;
 
   @override
@@ -137,6 +139,17 @@ class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadVideosIfNeeded();
     });
+  }
+
+  @override
+  void dispose() {
+    // Reset bridge state when leaving the feed
+    Future.microtask(() {
+      ref
+          .read(likedVideosFeedStateProvider.notifier)
+          .state = const LikedVideosBridgeState.initial();
+    });
+    super.dispose();
   }
 
   void _loadVideosIfNeeded() {
@@ -167,6 +180,18 @@ class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
     return true;
   }
 
+  /// Sync BLoC state to Riverpod bridge for activeVideoIdProvider
+  void _syncToBridge(ProfileLikedVideosState state) {
+    final isLoading = state.status == ProfileLikedVideosStatus.initial ||
+        state.status == ProfileLikedVideosStatus.loading;
+
+    ref.read(likedVideosFeedStateProvider.notifier).state =
+        LikedVideosBridgeState(
+      isLoading: isLoading,
+      videos: state.videos,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LikesBloc, LikesState>(
@@ -178,7 +203,11 @@ class _LikedVideosFeedViewState extends State<_LikedVideosFeedView> {
           _triggerLoad(likesState.likedEventIds);
         }
       },
-      child: BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+      child: BlocConsumer<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        listener: (context, state) {
+          // Sync BLoC state to Riverpod bridge whenever it changes
+          _syncToBridge(state);
+        },
         builder: (context, state) {
           if (state.status == ProfileLikedVideosStatus.initial ||
               state.status == ProfileLikedVideosStatus.loading) {

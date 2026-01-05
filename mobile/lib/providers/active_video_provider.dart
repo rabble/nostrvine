@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/hashtag_feed_providers.dart';
-import 'package:openvine/providers/liked_videos_feed_provider.dart';
+import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
