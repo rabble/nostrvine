@@ -20,17 +20,8 @@ void main() {
     late MockAuthService mockAuth;
     late SharedPreferences prefs;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
-      prefs = await SharedPreferences.getInstance();
-
-      when(mockAuth.isAuthenticated).thenReturn(true);
-      when(
-        mockAuth.currentPublicKeyHex,
-      ).thenReturn('test_pubkey_123456789abcdef');
-
+    // Helper to stub broadcast - call after reset(mockNostr)
+    void stubBroadcast() {
       when(mockNostr.broadcast(any)).thenAnswer((_) async {
         final event = Event.fromJson({
           'id': 'test_event_id',
@@ -49,6 +40,20 @@ void main() {
           errors: {},
         );
       });
+    }
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      mockNostr = MockNostrClient();
+      mockAuth = MockAuthService();
+      prefs = await SharedPreferences.getInstance();
+
+      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(
+        mockAuth.currentPublicKeyHex,
+      ).thenReturn('test_pubkey_123456789abcdef');
+
+      stubBroadcast();
 
       when(
         mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
@@ -166,9 +171,12 @@ void main() {
           isCollaborative: true,
           isPublic: true,
         );
+        // Add a video so the list isn't empty (empty lists skip publishing)
+        await service.addVideoToList(list!.id, 'test_video_id');
         reset(mockNostr);
+        stubBroadcast(); // Re-stub after reset for strict mocks
 
-        await service.addCollaborator(list!.id, 'collaborator_1');
+        await service.addCollaborator(list.id, 'collaborator_1');
 
         verify(mockNostr.broadcast(any)).called(1);
       });
@@ -243,8 +251,11 @@ void main() {
           isCollaborative: true,
           isPublic: true,
         );
-        await service.addCollaborator(list!.id, 'collaborator_1');
+        // Add a video so the list isn't empty (empty lists skip publishing)
+        await service.addVideoToList(list!.id, 'test_video_id');
+        await service.addCollaborator(list.id, 'collaborator_1');
         reset(mockNostr);
+        stubBroadcast(); // Re-stub after reset for strict mocks
 
         await service.removeCollaborator(list.id, 'collaborator_1');
 

@@ -48,10 +48,6 @@ class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
-  MockNostrClient() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   String get publicKey =>
       (super.noSuchMethod(
@@ -60,22 +56,38 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               this,
               Invocation.getter(#publicKey),
             ),
+            returnValueForMissingStub: _i5.dummyValue<String>(
+              this,
+              Invocation.getter(#publicKey),
+            ),
           )
           as String);
 
   @override
   bool get isInitialized =>
-      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
+      (super.noSuchMethod(
+            Invocation.getter(#isInitialized),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
           as bool);
 
   @override
   bool get isDisposed =>
-      (super.noSuchMethod(Invocation.getter(#isDisposed), returnValue: false)
+      (super.noSuchMethod(
+            Invocation.getter(#isDisposed),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
           as bool);
 
   @override
   bool get hasKeys =>
-      (super.noSuchMethod(Invocation.getter(#hasKeys), returnValue: false)
+      (super.noSuchMethod(
+            Invocation.getter(#hasKeys),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
           as bool);
 
   @override
@@ -83,6 +95,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#configuredRelays),
             returnValue: <String>[],
+            returnValueForMissingStub: <String>[],
           )
           as List<String>);
 
@@ -91,6 +104,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#connectedRelays),
             returnValue: <String>[],
+            returnValueForMissingStub: <String>[],
           )
           as List<String>);
 
@@ -99,6 +113,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#connectedRelayCount),
             returnValue: 0,
+            returnValueForMissingStub: 0,
           )
           as int);
 
@@ -107,6 +122,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#configuredRelayCount),
             returnValue: 0,
+            returnValueForMissingStub: 0,
           )
           as int);
 
@@ -115,6 +131,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#relayStatuses),
             returnValue: <String, _i2.RelayConnectionStatus>{},
+            returnValueForMissingStub: <String, _i2.RelayConnectionStatus>{},
           )
           as Map<String, _i2.RelayConnectionStatus>);
 
@@ -124,6 +141,8 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
             Invocation.getter(#relayStatusStream),
             returnValue:
                 _i6.Stream<Map<String, _i2.RelayConnectionStatus>>.empty(),
+            returnValueForMissingStub:
+                _i6.Stream<Map<String, _i2.RelayConnectionStatus>>.empty(),
           )
           as _i6.Stream<Map<String, _i2.RelayConnectionStatus>>);
 
@@ -132,6 +151,10 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.getter(#primaryRelay),
             returnValue: _i5.dummyValue<String>(
+              this,
+              Invocation.getter(#primaryRelay),
+            ),
+            returnValueForMissingStub: _i5.dummyValue<String>(
               this,
               Invocation.getter(#primaryRelay),
             ),
@@ -159,6 +182,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#targetRelays: targetRelays},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -186,6 +210,9 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               },
             ),
             returnValue: _i6.Future<List<_i7.Event>>.value(<_i7.Event>[]),
+            returnValueForMissingStub: _i6.Future<List<_i7.Event>>.value(
+              <_i7.Event>[],
+            ),
           )
           as _i6.Future<List<_i7.Event>>);
 
@@ -223,6 +250,21 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 ),
               ),
             ),
+            returnValueForMissingStub: _i6.Future<_i2.CountResult>.value(
+              _FakeCountResult_0(
+                this,
+                Invocation.method(
+                  #countEvents,
+                  [filters],
+                  {
+                    #subscriptionId: subscriptionId,
+                    #tempRelays: tempRelays,
+                    #relayTypes: relayTypes,
+                    #timeout: timeout,
+                  },
+                ),
+              ),
+            ),
           )
           as _i6.Future<_i2.CountResult>);
 
@@ -244,6 +286,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               },
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -260,6 +303,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#useGateway: useGateway, #useCache: useCache},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -287,6 +331,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               },
             ),
             returnValue: _i6.Stream<_i7.Event>.empty(),
+            returnValueForMissingStub: _i6.Stream<_i7.Event>.empty(),
           )
           as _i6.Stream<_i7.Event>);
 
@@ -313,6 +358,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.method(#addRelay, [relayUrl]),
             returnValue: _i6.Future<bool>.value(false),
+            returnValueForMissingStub: _i6.Future<bool>.value(false),
           )
           as _i6.Future<bool>);
 
@@ -321,6 +367,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
             returnValue: _i6.Future<bool>.value(false),
+            returnValueForMissingStub: _i6.Future<bool>.value(false),
           )
           as _i6.Future<bool>);
 
@@ -329,6 +376,8 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.method(#getRelayStats, []),
             returnValue: _i6.Future<Map<String, dynamic>?>.value(),
+            returnValueForMissingStub:
+                _i6.Future<Map<String, dynamic>?>.value(),
           )
           as _i6.Future<Map<String, dynamic>?>);
 
@@ -355,6 +404,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.method(#getRelayStatus, []),
             returnValue: <String, bool>{},
+            returnValueForMissingStub: <String, bool>{},
           )
           as Map<String, bool>);
 
@@ -376,6 +426,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               },
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -399,6 +450,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               },
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -415,6 +467,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -431,6 +484,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -448,6 +502,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#tempRelays: tempRelays, #targetRelays: targetRelays},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
@@ -466,6 +521,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
               {#authors: authors, #since: since, #until: until, #limit: limit},
             ),
             returnValue: _i6.Stream<_i7.Event>.empty(),
+            returnValueForMissingStub: _i6.Stream<_i7.Event>.empty(),
           )
           as _i6.Stream<_i7.Event>);
 
@@ -474,6 +530,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
       (super.noSuchMethod(
             Invocation.method(#searchUsers, [query], {#limit: limit}),
             returnValue: _i6.Stream<_i7.Event>.empty(),
+            returnValueForMissingStub: _i6.Stream<_i7.Event>.empty(),
           )
           as _i6.Stream<_i7.Event>);
 
@@ -498,6 +555,17 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 ),
               ),
             ),
+            returnValueForMissingStub:
+                _i6.Future<_i2.NostrBroadcastResult>.value(
+                  _FakeNostrBroadcastResult_1(
+                    this,
+                    Invocation.method(
+                      #broadcast,
+                      [event],
+                      {#targetRelays: targetRelays},
+                    ),
+                  ),
+                ),
           )
           as _i6.Future<_i2.NostrBroadcastResult>);
 
@@ -515,15 +583,12 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthService extends _i1.Mock implements _i3.AuthService {
-  MockAuthService() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i3.AuthState get authState =>
       (super.noSuchMethod(
             Invocation.getter(#authState),
             returnValue: _i3.AuthState.unauthenticated,
+            returnValueForMissingStub: _i3.AuthState.unauthenticated,
           )
           as _i3.AuthState);
 
@@ -532,6 +597,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
       (super.noSuchMethod(
             Invocation.getter(#authStateStream),
             returnValue: _i6.Stream<_i3.AuthState>.empty(),
+            returnValueForMissingStub: _i6.Stream<_i3.AuthState>.empty(),
           )
           as _i6.Stream<_i3.AuthState>);
 
@@ -540,6 +606,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
       (super.noSuchMethod(
             Invocation.getter(#profileStream),
             returnValue: _i6.Stream<_i3.UserProfile?>.empty(),
+            returnValueForMissingStub: _i6.Stream<_i3.UserProfile?>.empty(),
           )
           as _i6.Stream<_i3.UserProfile?>);
 
@@ -548,6 +615,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
       (super.noSuchMethod(
             Invocation.getter(#isAuthenticated),
             returnValue: false,
+            returnValueForMissingStub: false,
           )
           as bool);
 
@@ -556,6 +624,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
       (super.noSuchMethod(
             Invocation.getter(#userStats),
             returnValue: <String, dynamic>{},
+            returnValueForMissingStub: <String, dynamic>{},
           )
           as Map<String, dynamic>);
 
@@ -575,6 +644,14 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
+                this,
+                Invocation.method(#createNewIdentity, [], {
+                  #biometricPrompt: biometricPrompt,
+                }),
+              ),
+            ),
+            returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
               _FakeAuthResult_2(
                 this,
                 Invocation.method(#createNewIdentity, [], {
@@ -606,6 +683,16 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
                 ),
               ),
             ),
+            returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
+                this,
+                Invocation.method(
+                  #importFromNsec,
+                  [nsec],
+                  {#biometricPrompt: biometricPrompt},
+                ),
+              ),
+            ),
           )
           as _i6.Future<_i3.AuthResult>);
 
@@ -621,6 +708,16 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_2(
+                this,
+                Invocation.method(
+                  #importFromHex,
+                  [privateKeyHex],
+                  {#biometricPrompt: biometricPrompt},
+                ),
+              ),
+            ),
+            returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
               _FakeAuthResult_2(
                 this,
                 Invocation.method(
@@ -669,6 +766,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<String?>.value(),
+            returnValueForMissingStub: _i6.Future<String?>.value(),
           )
           as _i6.Future<String?>);
 
@@ -679,6 +777,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<String?>.value(),
+            returnValueForMissingStub: _i6.Future<String?>.value(),
           )
           as _i6.Future<String?>);
 
@@ -697,6 +796,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<_i7.Event?>.value(),
+            returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
 
