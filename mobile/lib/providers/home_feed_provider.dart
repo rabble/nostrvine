@@ -363,7 +363,7 @@ class HomeFeed extends _$HomeFeed {
       checkCache();
 
       await completer.future;
-      checkTimer?.cancel();
+      checkTimer.cancel();
 
       Log.info(
         '🏠 HomeFeed: Done waiting for subscribed list cache, has ${subscribedListCacheForListener.getVideos().length} videos',

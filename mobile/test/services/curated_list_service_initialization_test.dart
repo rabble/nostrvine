@@ -267,10 +267,6 @@ void main() {
         when(
           mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
         ).thenAnswer((invocation) {
-          // Get the onEose callback
-          final onEose =
-              invocation.namedArguments[const Symbol('onEose')] as Function?;
-
           // Return a stream that will emit an event after delay
           return Stream.fromFuture(relayResponseCompleter.future);
         });

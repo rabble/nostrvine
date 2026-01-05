@@ -100,11 +100,6 @@ class _VideoMetadataScreenPureState
   String? _backgroundUploadId;
   StreamSubscription? _uploadProgressListener;
 
-  // Background video processing state
-  bool _isProcessingVideo = false;
-  String _processingStatus = '';
-  Future<void>? _processingFuture;
-
   @override
   void initState() {
     super.initState();
@@ -172,7 +167,7 @@ class _VideoMetadataScreenPureState
             category: LogCategory.video,
           );
           // Start processing in background, then upload when done
-          _processingFuture = _processVideoInBackground();
+          _processVideoInBackground();
         } else {
           // No processing needed - start background upload immediately (Task 3)
           _startBackgroundUpload();
@@ -195,25 +190,12 @@ class _VideoMetadataScreenPureState
     }
 
     try {
-      if (mounted) {
-        setState(() {
-          _isProcessingVideo = true;
-          _processingStatus = 'Processing video...';
-        });
-      }
-
       String currentVideoPath = _currentDraft!.videoFile.path;
       final prefs = await SharedPreferences.getInstance();
       final draftService = DraftStorageService(prefs);
 
       // Step 1: Apply text overlays if any exist
       if (params.textOverlays.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _processingStatus = 'Adding text...';
-          });
-        }
-
         Log.info(
           '📝 Burning ${params.textOverlays.length} text overlays into video',
           category: LogCategory.video,
@@ -259,12 +241,6 @@ class _VideoMetadataScreenPureState
       // Step 2: Apply external audio from lip sync flow
       if (params.externalAudioUrl != null ||
           params.externalAudioAssetPath != null) {
-        if (mounted) {
-          setState(() {
-            _processingStatus = 'Mixing audio...';
-          });
-        }
-
         Log.info(
           '📝 Mixing external audio from lip sync: ${params.externalAudioEventId}',
           category: LogCategory.video,
@@ -322,12 +298,6 @@ class _VideoMetadataScreenPureState
       if (params.selectedSoundId != null &&
           params.externalAudioUrl == null &&
           params.externalAudioAssetPath == null) {
-        if (mounted) {
-          setState(() {
-            _processingStatus = 'Adding sound...';
-          });
-        }
-
         Log.info(
           '📝 Mixing sound: ${params.selectedSoundId}',
           category: LogCategory.video,
@@ -380,13 +350,6 @@ class _VideoMetadataScreenPureState
         );
       }
 
-      if (mounted) {
-        setState(() {
-          _isProcessingVideo = false;
-          _processingStatus = '';
-        });
-      }
-
       // Now start the background upload with processed video
       _startBackgroundUpload();
     } catch (e) {
@@ -396,11 +359,6 @@ class _VideoMetadataScreenPureState
       );
 
       if (mounted) {
-        setState(() {
-          _isProcessingVideo = false;
-          _processingStatus = '';
-        });
-
         // Still try to upload the original video
         _startBackgroundUpload();
       }

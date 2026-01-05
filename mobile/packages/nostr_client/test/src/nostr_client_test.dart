@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 class _MockNostr extends Mock implements Nostr {}
 
