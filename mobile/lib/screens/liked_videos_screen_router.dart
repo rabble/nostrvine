@@ -189,6 +189,30 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
         LikedVideosBridgeState(isLoading: isLoading, videos: state.videos);
   }
 
+  /// Immediately filter bridge videos when liked IDs change.
+  ///
+  /// This ensures [activeVideoIdProvider] stays in sync without waiting
+  /// for the BLoC to reload. Called before triggering the full BLoC reload.
+  void _filterBridgeVideos(List<String> currentLikedIds) {
+    final bridgeState = ref.read(likedVideosFeedStateProvider);
+    if (bridgeState.videos.isEmpty) return;
+
+    final likedIdSet = currentLikedIds.toSet();
+    final filteredVideos = bridgeState.videos
+        .where((v) => likedIdSet.contains(v.id))
+        .toList();
+
+    // Only update if something was actually filtered out
+    if (filteredVideos.length != bridgeState.videos.length) {
+      ref
+          .read(likedVideosFeedStateProvider.notifier)
+          .state = LikedVideosBridgeState(
+        isLoading: bridgeState.isLoading,
+        videos: filteredVideos,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LikesBloc, LikesState>(
@@ -197,6 +221,9 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           (!prev.isInitialized && curr.isInitialized),
       listener: (context, likesState) {
         if (likesState.isInitialized) {
+          // Immediately filter bridge to keep activeVideoIdProvider in sync
+          _filterBridgeVideos(likesState.likedEventIds);
+          // Then trigger full BLoC reload
           _triggerLoad(likesState.likedEventIds);
         }
       },
