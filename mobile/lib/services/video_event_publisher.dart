@@ -20,6 +20,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -773,6 +774,17 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           }
+        }
+
+        // Invalidate profile stats cache so video count updates immediately
+        final currentPubkey = _nostrService.publicKey;
+        if (currentPubkey.isNotEmpty) {
+          ProfileStatsCacheService().clearStats(currentPubkey);
+          Log.debug(
+            'Invalidated profile stats cache for new video',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
         }
 
         Log.info(
