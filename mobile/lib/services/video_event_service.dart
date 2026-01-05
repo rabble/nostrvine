@@ -4289,7 +4289,15 @@ class VideoEventService extends ChangeNotifier {
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
-      _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
+      final wasAdded = _addToAuthorBucket(
+        videoEvent,
+        authorHex,
+        isHistorical: isHistorical,
+      );
+      // Notify listeners when a new (non-historical) video is added
+      if (wasAdded && !isHistorical) {
+        _notifyNewVideo(videoEvent, authorHex);
+      }
     }
 
     final currentUserPubkey = _nostrService.publicKey;
