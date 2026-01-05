@@ -145,9 +145,8 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
   void dispose() {
     // Reset bridge state when leaving the feed
     Future.microtask(() {
-      ref
-          .read(likedVideosFeedStateProvider.notifier)
-          .state = const LikedVideosBridgeState.initial();
+      ref.read(likedVideosFeedStateProvider.notifier).state =
+          const LikedVideosBridgeState.initial();
     });
     super.dispose();
   }
@@ -182,14 +181,12 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
   /// Sync BLoC state to Riverpod bridge for activeVideoIdProvider
   void _syncToBridge(ProfileLikedVideosState state) {
-    final isLoading = state.status == ProfileLikedVideosStatus.initial ||
+    final isLoading =
+        state.status == ProfileLikedVideosStatus.initial ||
         state.status == ProfileLikedVideosStatus.loading;
 
     ref.read(likedVideosFeedStateProvider.notifier).state =
-        LikedVideosBridgeState(
-      isLoading: isLoading,
-      videos: state.videos,
-    );
+        LikedVideosBridgeState(isLoading: isLoading, videos: state.videos);
   }
 
   @override
