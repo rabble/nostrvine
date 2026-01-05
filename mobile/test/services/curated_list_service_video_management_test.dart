@@ -141,7 +141,7 @@ void main() {
           name: 'Test List',
           isPublic: true,
         );
-        reset(mockNostr); // Clear previous invocations
+        clearInteractions(mockNostr);
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
@@ -153,7 +153,7 @@ void main() {
           name: 'Test List',
           isPublic: false,
         );
-        reset(mockNostr); // Clear previous invocations
+        clearInteractions(mockNostr);
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
@@ -246,8 +246,10 @@ void main() {
           name: 'Test List',
           isPublic: true,
         );
+        // Add 2 videos so list isn't empty after removal (empty lists skip publish)
         await service.addVideoToList(list!.id, 'video_event_123');
-        reset(mockNostr); // Clear previous invocations
+        await service.addVideoToList(list.id, 'video_event_456');
+        clearInteractions(mockNostr);
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
@@ -260,7 +262,7 @@ void main() {
           isPublic: false,
         );
         await service.addVideoToList(list!.id, 'video_event_123');
-        reset(mockNostr); // Clear previous invocations
+        clearInteractions(mockNostr);
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 

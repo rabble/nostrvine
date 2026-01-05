@@ -167,7 +167,7 @@ class _VideoMetadataScreenPureState
             category: LogCategory.video,
           );
           // Start processing in background, then upload when done
-          unawaited(_processVideoInBackground());
+          _processVideoInBackground();
         } else {
           // No processing needed - start background upload immediately (Task 3)
           _startBackgroundUpload();

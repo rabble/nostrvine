@@ -5,8 +5,8 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:test/test.dart';
 
 void main() {
   late AppDatabase database;
@@ -155,17 +155,22 @@ void main() {
       );
 
       test(
-        'throws for repost events (kind 16) due to VideoEvent parsing',
+        'does not upsert video metrics for repost events (kind 16)',
         () async {
           final event = createEvent(kind: 16);
 
-          // upsertEvent stores the event first, then tries to parse metrics
-          // VideoEvent.fromNostrEvent() throws for non-34236 kinds
-          // The event is inserted but the method throws on metrics parsing
-          expect(
-            () => dao.upsertEvent(event),
-            throwsA(isA<ArgumentError>()),
-          );
+          // Kind 16 reposts reference videos but don't contain video metadata
+          // So they should be inserted without video metrics (no error thrown)
+          await dao.upsertEvent(event);
+
+          // Event should be inserted
+          final retrieved = await dao.getEventById(event.id);
+          expect(retrieved, isNotNull);
+          expect(retrieved!.kind, equals(16));
+
+          // But no video metrics should be created
+          final metrics = await appDbClient.getVideoMetrics(event.id);
+          expect(metrics, isNull);
         },
       );
 

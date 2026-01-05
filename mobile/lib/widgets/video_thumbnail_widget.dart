@@ -316,7 +316,8 @@ class _SafeNetworkImage extends StatelessWidget {
       errorWidget: (context, url, error) {
         // 404s are expected - thumbnail may not exist yet. Handle silently.
         final errorStr = error.toString();
-        final is404 = errorStr.contains('404') ||
+        final is404 =
+            errorStr.contains('404') ||
             (errorStr.contains('statusCode') && errorStr.contains('Invalid'));
 
         if (is404) {

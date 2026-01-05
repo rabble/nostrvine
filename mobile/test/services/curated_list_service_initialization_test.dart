@@ -247,7 +247,7 @@ void main() {
 
         when(
           mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-        ).thenAnswer((_) {
+        ).thenAnswer((invocation) {
           // Return a stream that will emit an event after delay
           return Stream.fromFuture(relayResponseCompleter.future);
         });

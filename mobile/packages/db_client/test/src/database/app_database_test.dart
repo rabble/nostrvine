@@ -6,8 +6,8 @@ import 'dart:io';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:test/test.dart';
 
 void main() {
   late AppDatabase database;
