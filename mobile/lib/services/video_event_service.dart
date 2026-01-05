@@ -4257,24 +4257,31 @@ class VideoEventService extends ChangeNotifier {
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
-      final bucket = _authorBuckets.putIfAbsent(authorHex, () => []);
+      _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
+    }
 
-      // For addressable events (NIP-71), deduplicate by (pubkey, vineId) pair
-      // since each update creates a new event ID but same vineId
-      final existingIndex = bucket.indexWhere(
-        (e) => e.vineId == videoEvent.vineId && e.pubkey == videoEvent.pubkey,
-      );
+    // CRITICAL FIX: Also add current user's videos to _authorBuckets regardless
+    // of subscription type. This ensures newly posted videos appear in profile
+    // immediately without requiring a restart.
+    // See: https://github.com/divinevideo/divine-mobile/issues/XXX
+    final currentUserPubkey = _nostrService.publicKey;
+    if (currentUserPubkey.isNotEmpty &&
+        subscriptionType != SubscriptionType.profile) {
+      // Determine the author for bucket assignment (reposter for reposts)
+      final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
+          ? videoEvent.reposterPubkey!
+          : videoEvent.pubkey;
 
-      if (existingIndex != -1) {
-        // Replace existing video with newer version (higher createdAt wins)
-        if (videoEvent.createdAt > bucket[existingIndex].createdAt) {
-          bucket[existingIndex] = videoEvent;
-        }
-      } else {
-        if (isHistorical) {
-          bucket.add(videoEvent);
-        } else {
-          bucket.insert(0, videoEvent);
+      // Only add if this is the current user's video
+      if (authorHex == currentUserPubkey) {
+        final wasAdded = _addToAuthorBucket(
+          videoEvent,
+          authorHex,
+          isHistorical: isHistorical,
+        );
+        if (wasAdded && !isHistorical) {
+          // Notify listeners that a new video was added for this user
+          _notifyNewVideo(videoEvent, authorHex);
         }
       }
     }
@@ -4326,6 +4333,37 @@ class VideoEventService extends ChangeNotifier {
 
       _lastDuplicateVideoLogTime = now;
       _duplicateVideoEventCount = 0;
+    }
+  }
+
+  /// Add a video to the author's bucket for profile feeds.
+  /// Returns true if the video was added (new), false if it was a duplicate or update.
+  bool _addToAuthorBucket(
+    VideoEvent videoEvent,
+    String authorHex, {
+    required bool isHistorical,
+  }) {
+    final bucket = _authorBuckets.putIfAbsent(authorHex, () => []);
+
+    // For addressable events (NIP-71), deduplicate by (pubkey, vineId) pair
+    // since each update creates a new event ID but same vineId
+    final existingIndex = bucket.indexWhere(
+      (e) => e.vineId == videoEvent.vineId && e.pubkey == videoEvent.pubkey,
+    );
+
+    if (existingIndex != -1) {
+      // Replace existing video with newer version (higher createdAt wins)
+      if (videoEvent.createdAt > bucket[existingIndex].createdAt) {
+        bucket[existingIndex] = videoEvent;
+      }
+      return false; // Not a new video, just an update
+    } else {
+      if (isHistorical) {
+        bucket.add(videoEvent);
+      } else {
+        bucket.insert(0, videoEvent);
+      }
+      return true; // New video was added
     }
   }
 
