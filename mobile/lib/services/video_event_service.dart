@@ -4292,10 +4292,6 @@ class VideoEventService extends ChangeNotifier {
       _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
     }
 
-    // CRITICAL FIX: Also add current user's videos to _authorBuckets regardless
-    // of subscription type. This ensures newly posted videos appear in profile
-    // immediately without requiring a restart.
-    // See: https://github.com/divinevideo/divine-mobile/issues/XXX
     final currentUserPubkey = _nostrService.publicKey;
     if (currentUserPubkey.isNotEmpty &&
         subscriptionType != SubscriptionType.profile) {
