@@ -33,25 +33,6 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'test_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
-      });
-
       when(
         mockAuth.createAndSignEvent(
           kind: anyNamed('kind'),
@@ -266,11 +247,7 @@ void main() {
 
         when(
           mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-        ).thenAnswer((invocation) {
-          // Get the onEose callback
-          final onEose =
-              invocation.namedArguments[const Symbol('onEose')] as Function?;
-
+        ).thenAnswer((_) {
           // Return a stream that will emit an event after delay
           return Stream.fromFuture(relayResponseCompleter.future);
         });

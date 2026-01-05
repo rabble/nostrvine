@@ -2,7 +2,6 @@
 // ABOUTME: Provides ticket creation via native iOS/Android SDKs or REST API for desktop
 
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/zendesk_config.dart';
