@@ -158,23 +158,28 @@ class CommentThread extends StatelessWidget {
                             return const SizedBox.shrink();
                           }
 
-                          return IconButton(
-                            icon: const Icon(
-                              Icons.more_vert,
-                              color: Colors.white54,
-                              size: 20,
+                          return Semantics(
+                            identifier: 'comment_options_button',
+                            button: true,
+                            label: 'Comment options',
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () async {
+                                final shouldDelete =
+                                    await CommentOptionsModal.show(context);
+                                if (shouldDelete == true && context.mounted) {
+                                  context.read<CommentsBloc>().add(
+                                    CommentDeleteRequested(comment.id),
+                                  );
+                                }
+                              },
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () async {
-                              final shouldDelete =
-                                  await CommentOptionsModal.show(context);
-                              if (shouldDelete == true && context.mounted) {
-                                context.read<CommentsBloc>().add(
-                                  CommentDeleteRequested(comment.id),
-                                );
-                              }
-                            },
                           );
                         },
                       ),

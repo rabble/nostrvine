@@ -35,12 +35,16 @@ class CommentOptionsModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(2),
+            Semantics(
+              identifier: 'comment_options_drag_handle',
+              label: 'Drag to resize options panel',
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -54,22 +58,32 @@ class CommentOptionsModal extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Divider(color: Colors.grey, height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text(
-                'Delete Comment',
-                style: TextStyle(color: Colors.red),
+            Semantics(
+              identifier: 'delete_comment_option',
+              button: true,
+              label: 'Delete comment',
+              child: ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text(
+                  'Delete Comment',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () => _showDeleteConfirmation(context),
               ),
-              onTap: () => _showDeleteConfirmation(context),
             ),
             const Divider(color: Colors.grey, height: 1),
-            ListTile(
-              leading: const Icon(Icons.close, color: Colors.white70),
-              title: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white70),
+            Semantics(
+              identifier: 'cancel_comment_options',
+              button: true,
+              label: 'Cancel and close options',
+              child: ListTile(
+                leading: const Icon(Icons.close, color: Colors.white70),
+                title: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                onTap: () => Navigator.of(context).pop(),
               ),
-              onTap: () => Navigator.of(context).pop(),
             ),
             const SizedBox(height: 8),
           ],
@@ -92,16 +106,26 @@ class CommentOptionsModal extends StatelessWidget {
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70),
+          Semantics(
+            identifier: 'cancel_delete_comment_button',
+            button: true,
+            label: 'Cancel delete',
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
+              ),
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          Semantics(
+            identifier: 'confirm_delete_comment_button',
+            button: true,
+            label: 'Confirm delete comment',
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ),
         ],
       ),

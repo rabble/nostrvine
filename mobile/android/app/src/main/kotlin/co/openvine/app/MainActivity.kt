@@ -231,11 +231,12 @@ class MainActivity : FlutterActivity() {
                         // Initialize Support SDK
                         Support.INSTANCE.init(Zendesk.INSTANCE)
 
-                        // Set anonymous identity by default
+                        // Set baseline anonymous identity so widget works immediately
+                        // Flutter will update with email-based identity when user logs in
                         val identity: Identity = AnonymousIdentity()
                         Zendesk.INSTANCE.setIdentity(identity)
 
-                        Log.d(ZENDESK_TAG, "Zendesk initialized successfully")
+                        Log.d(ZENDESK_TAG, "Zendesk initialized with anonymous identity")
                         result.success(true)
                     } catch (e: Exception) {
                         Log.e(ZENDESK_TAG, "Failed to initialize Zendesk", e)
@@ -275,6 +276,104 @@ class MainActivity : FlutterActivity() {
                     } catch (e: Exception) {
                         Log.e(ZENDESK_TAG, "Failed to show ticket list", e)
                         result.error("SHOW_LIST_FAILED", e.message, null)
+                    }
+                }
+
+                "setUserIdentity" -> {
+                    val args = call.arguments as? Map<*, *>
+                    val name = args?.get("name") as? String
+                    val email = args?.get("email") as? String
+
+                    if (name == null || email == null) {
+                        result.error("INVALID_ARGUMENT", "name and email are required", null)
+                        return@setMethodCallHandler
+                    }
+
+                    try {
+                        Log.d(ZENDESK_TAG, "Setting user identity - name: $name, email: $email")
+
+                        // Create anonymous identity with name and email identifiers
+                        val identity: Identity = AnonymousIdentity.Builder()
+                            .withNameIdentifier(name)
+                            .withEmailIdentifier(email)
+                            .build()
+                        Zendesk.INSTANCE.setIdentity(identity)
+
+                        Log.d(ZENDESK_TAG, "User identity set successfully")
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(ZENDESK_TAG, "Failed to set user identity", e)
+                        result.error("SET_IDENTITY_FAILED", e.message, null)
+                    }
+                }
+
+                "clearUserIdentity" -> {
+                    try {
+                        Log.d(ZENDESK_TAG, "Clearing user identity")
+
+                        // Reset to plain anonymous identity
+                        val identity: Identity = AnonymousIdentity()
+                        Zendesk.INSTANCE.setIdentity(identity)
+
+                        Log.d(ZENDESK_TAG, "User identity cleared")
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(ZENDESK_TAG, "Failed to clear user identity", e)
+                        result.error("CLEAR_IDENTITY_FAILED", e.message, null)
+                    }
+                }
+
+                "setAnonymousIdentity" -> {
+                    try {
+                        Log.d(ZENDESK_TAG, "Setting anonymous identity")
+
+                        // Set plain anonymous identity (for non-logged-in users)
+                        val identity: Identity = AnonymousIdentity()
+                        Zendesk.INSTANCE.setIdentity(identity)
+
+                        Log.d(ZENDESK_TAG, "Anonymous identity set")
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e(ZENDESK_TAG, "Failed to set anonymous identity", e)
+                        result.error("SET_ANONYMOUS_IDENTITY_FAILED", e.message, null)
+                    }
+                }
+
+                "createTicket" -> {
+                    val args = call.arguments as? Map<*, *>
+                    val subject = args?.get("subject") as? String
+                    val description = args?.get("description") as? String
+                    val tags = (args?.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+
+                    if (subject == null || description == null) {
+                        result.error("INVALID_ARGUMENT", "subject and description are required", null)
+                        return@setMethodCallHandler
+                    }
+
+                    try {
+                        Log.d(ZENDESK_TAG, "Creating ticket programmatically - subject: $subject")
+
+                        // Use RequestProvider to create ticket without UI
+                        val provider = zendesk.support.request.RequestProvider(Support.INSTANCE)
+                        val createRequest = zendesk.support.CreateRequest()
+                        createRequest.subject = subject
+                        createRequest.description = description
+                        createRequest.tags = tags
+
+                        provider.createRequest(createRequest, object : zendesk.core.ZendeskCallback<zendesk.support.request.Request>() {
+                            override fun onSuccess(request: zendesk.support.request.Request?) {
+                                Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
+                                result.success(true)
+                            }
+
+                            override fun onError(error: zendesk.core.ErrorResponse?) {
+                                Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
+                                result.success(false)
+                            }
+                        })
+                    } catch (e: Exception) {
+                        Log.e(ZENDESK_TAG, "Failed to create ticket", e)
+                        result.error("CREATE_TICKET_FAILED", e.message, null)
                     }
                 }
 

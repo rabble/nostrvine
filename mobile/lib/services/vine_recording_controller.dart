@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // camera_macos removed - using NativeMacOSCamera for both preview and recording
@@ -1241,6 +1242,12 @@ class VineRecordingController {
                 name: 'VineRecordingController',
                 category: LogCategory.system,
               );
+
+              // CRITICAL: Force UI update after segment is added
+              // The early _setState(paused) at the start of stopRecording happens
+              // BEFORE the segment is added, so UI has stale hasSegments=false.
+              // This ensures UI reflects the newly added segment.
+              _onStateChanged?.call();
             }
           } else {
             Log.warning(
@@ -1945,8 +1952,29 @@ class VineRecordingController {
 
         final tempDir = await getTemporaryDirectory();
 
+        // Probe actual video duration to validate segment timing
+        // This handles edge cases where auto-stop triggers during pause
+        double? videoDuration;
+        try {
+          final session = await FFprobeKit.getMediaInformation(recordingPath);
+          final mediaInfo = session.getMediaInformation();
+          if (mediaInfo != null) {
+            final durationStr = mediaInfo.getDuration();
+            if (durationStr != null && durationStr.isNotEmpty) {
+              videoDuration = double.tryParse(durationStr);
+            }
+          }
+        } catch (e) {
+          Log.warning(
+            '📹 Could not probe video duration: $e',
+            name: 'VineRecordingController',
+            category: LogCategory.system,
+          );
+        }
+
         Log.info(
-          '📹 Extracting ${virtualSegments.length} segments without concatenation (preserving original resolution)',
+          '📹 Extracting ${virtualSegments.length} segments without concatenation '
+          '(preserving original resolution, video duration: ${videoDuration?.toStringAsFixed(2) ?? "unknown"}s)',
           name: 'VineRecordingController',
           category: LogCategory.system,
         );
@@ -1954,8 +1982,43 @@ class VineRecordingController {
         for (var i = 0; i < virtualSegments.length; i++) {
           final segment = virtualSegments[i];
           final startOffset = segment.startTime.difference(recordingStartTime);
-          final startSec = startOffset.inMilliseconds / 1000.0;
-          final durationSec = segment.duration.inMilliseconds / 1000.0;
+          var startSec = startOffset.inMilliseconds / 1000.0;
+          var durationSec = segment.duration.inMilliseconds / 1000.0;
+
+          // Validate segment timing against actual video duration
+          if (videoDuration != null) {
+            if (startSec >= videoDuration) {
+              Log.warning(
+                '📹 Skipping segment $i: start time (${startSec.toStringAsFixed(2)}s) '
+                'exceeds video duration (${videoDuration.toStringAsFixed(2)}s)',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+              continue;
+            }
+
+            // Trim segment duration if it would extend past video end
+            final maxDuration = videoDuration - startSec;
+            if (durationSec > maxDuration) {
+              Log.info(
+                '📹 Trimming segment $i duration from ${durationSec.toStringAsFixed(2)}s '
+                'to ${maxDuration.toStringAsFixed(2)}s (video ends at ${videoDuration.toStringAsFixed(2)}s)',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+              durationSec = maxDuration;
+            }
+
+            // Skip segments with negligible duration after trimming
+            if (durationSec < 0.1) {
+              Log.warning(
+                '📹 Skipping segment $i: duration too short after trimming (${durationSec.toStringAsFixed(2)}s)',
+                name: 'VineRecordingController',
+                category: LogCategory.system,
+              );
+              continue;
+            }
+          }
 
           final outputPath =
               '${tempDir.path}/segment_${i}_${DateTime.now().millisecondsSinceEpoch}.mp4';

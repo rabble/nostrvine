@@ -116,7 +116,7 @@ final class HomeFeedProvider
   HomeFeed create() => HomeFeed();
 }
 
-String _$homeFeedHash() => r'cd44967ab3c9ddef7fc9176e5b728c679b68a06c';
+String _$homeFeedHash() => r'f3252c56b9be84ee61bfa748aac914a6fc705813';
 
 /// Home feed provider - shows videos only from people you follow
 ///

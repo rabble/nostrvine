@@ -43,6 +43,21 @@ void main() {
       when(mockVideoEventService.discoveryVideos).thenReturn([]);
       when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
 
+      // Stub subscribe for CurationService initialization (fetches Divine Team videos)
+      when(
+        mockNostrService.subscribe(any),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+
+      // Stub createAndSignEvent for AuthService (used in curation creation)
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+          biometricPrompt: anyNamed('biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => null);
+
       // Create test keypair
       testKeychain = Keychain.generate();
 

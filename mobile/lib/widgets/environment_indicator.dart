@@ -88,10 +88,10 @@ class EnvironmentBanner extends ConsumerWidget {
 }
 
 /// Helper function to get app bar color based on environment
-/// Production uses Divine green, other environments use their indicator color
+/// Production uses nav green, other environments use their indicator color
 Color getEnvironmentAppBarColor(EnvironmentConfig environment) {
   if (environment.isProduction) {
-    return VineTheme.vineGreen;
+    return VineTheme.navGreen;
   }
   return Color(environment.indicatorColorValue);
 }

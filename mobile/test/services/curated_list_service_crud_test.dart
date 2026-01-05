@@ -315,10 +315,17 @@ void main() {
         expect(service.lists.first.name, 'Test List');
       });
 
-      test('publishes public list to Nostr', () async {
-        await service.createList(name: 'Public List', isPublic: true);
+      test('publishes public list to Nostr when it has videos', () async {
+        // Create list, add a video, then verify publish
+        final list = await service.createList(
+          name: 'Public List',
+          isPublic: true,
+        );
 
-        // Should create and sign event
+        // Add a video to the list so it will publish
+        await service.addVideoToList(list!.id, 'test_video_id');
+
+        // Should create and sign event when video is added (not when empty)
         verify(
           mockAuth.createAndSignEvent(
             kind: 30005,
@@ -329,6 +336,20 @@ void main() {
 
         // Should publish event
         verify(mockNostr.publishEvent(any)).called(1);
+      });
+
+      test('does not publish empty public list to Nostr', () async {
+        await service.createList(name: 'Empty Public List', isPublic: true);
+
+        // Empty lists should not be published to avoid relay spam
+        verifyNever(
+          mockAuth.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        );
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('does not publish private list to Nostr', () async {
@@ -439,14 +460,16 @@ void main() {
         expect(updatedList.playOrder, PlayOrder.reverse);
       });
 
-      test('publishes update to Nostr for public list', () async {
+      test('publishes update to Nostr for public list with videos', () async {
         final list = await service.createList(
           name: 'Test List',
           isPublic: true,
         );
+        // Add a video so the list will be published (empty lists don't publish)
+        await service.addVideoToList(list!.id, 'test_video_id');
         reset(mockNostr); // Clear previous invocations
 
-        await service.updateList(listId: list!.id, name: 'Updated Name');
+        await service.updateList(listId: list.id, name: 'Updated Name');
 
         verify(mockNostr.publishEvent(any)).called(1);
       });

@@ -19,6 +19,7 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Feed context for filtering videos
@@ -420,16 +421,8 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     );
   }
 
-  Widget _buildLoadingState() => const Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircularProgressIndicator(color: Colors.white),
-        SizedBox(height: 16),
-        Text('Loading videos...', style: TextStyle(color: Colors.white)),
-      ],
-    ),
-  );
+  Widget _buildLoadingState() =>
+      const Center(child: BrandedLoadingIndicator(size: 100));
 
   Widget _buildEmptyState() {
     // Check if user is following anyone to show appropriate message
@@ -610,12 +603,19 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
         );
       },
       itemBuilder: (context, index) {
+        final video = videos[index];
+        // Check if this video is "list-only" (only in feed because of subscribed list)
+        final isListOnly = feedState.listOnlyVideoIds.contains(video.id);
+        final listSources = feedState.videoListSources[video.id];
+
         return VideoFeedItem(
-          key: ValueKey('video-${videos[index].id}'),
-          video: videos[index],
+          key: ValueKey('video-${video.id}'),
+          video: video,
           index: index,
           hasBottomNavigation: true,
           contextTitle: '', // Home feed has no context title
+          showListAttribution: isListOnly,
+          listSources: listSources,
         );
       },
     );

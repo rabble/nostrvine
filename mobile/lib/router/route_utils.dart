@@ -26,6 +26,8 @@ enum RouteType {
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
   following, // Following list screen
   followers, // Followers list screen
+  curatedList, // Curated video list screen (NIP-51 kind 30005)
+  sound, // Sound detail screen for audio reuse
 }
 
 /// Structured representation of a route
@@ -36,6 +38,8 @@ class RouteContext {
     this.npub,
     this.hashtag,
     this.searchTerm,
+    this.listId,
+    this.soundId,
   });
 
   final RouteType type;
@@ -43,6 +47,21 @@ class RouteContext {
   final String? npub;
   final String? hashtag;
   final String? searchTerm;
+  final String? listId;
+  final String? soundId;
+}
+
+/// Extra data for curated list route (passed via GoRouter extra)
+class CuratedListRouteExtra {
+  const CuratedListRouteExtra({
+    required this.listName,
+    this.videoIds,
+    this.authorPubkey,
+  });
+
+  final String listName;
+  final List<String>? videoIds;
+  final String? authorPubkey;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -197,6 +216,20 @@ RouteContext parseRoute(String path) {
       final followersPubkey = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
+    case 'list':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.explore);
+      }
+      final listId = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.curatedList, listId: listId);
+
+    case 'sound':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final soundId = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.sound, soundId: soundId);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -318,5 +351,12 @@ String buildRoute(RouteContext context) {
 
     case RouteType.followers:
       return '/followers/${context.npub ?? ''}';
+
+    case RouteType.curatedList:
+      final listId = Uri.encodeComponent(context.listId ?? '');
+      return '/list/$listId';
+
+    case RouteType.sound:
+      return '/sound/${context.soundId ?? ''}';
   }
 }

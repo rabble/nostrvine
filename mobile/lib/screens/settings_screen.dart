@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -13,6 +14,9 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -61,14 +65,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
           onPressed: () => context.pop(),
           tooltip: 'Back',
         ),
+        title: Text('Settings', style: VineTheme.titleFont()),
       ),
       backgroundColor: Colors.black,
       body: Align(
@@ -105,6 +133,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Blocked users, muted content, and report history',
                 onTap: () => context.push('/safety-settings'),
               ),
+              _buildAudioSharingToggle(),
 
               // Network Configuration
               _buildSectionHeader('Network'),
@@ -217,7 +246,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context,
                   icon: Icons.logout,
                   title: 'Log Out',
-                  subtitle: 'Sign out of your account (keeps your keys)',
+                  subtitle:
+                      'Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.',
                   onTap: () => _handleLogout(context, ref),
                 ),
                 _buildSettingsTile(
@@ -232,17 +262,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.key_off,
                   title: 'Remove Keys from Device',
                   subtitle:
-                      'Delete your nsec from this device (content stays on relays)',
+                      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.',
                   onTap: () => _handleRemoveKeys(context, ref),
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
                 ),
+                const SizedBox(height: 16),
+                _buildSectionHeader('Danger Zone'),
                 _buildSettingsTile(
                   context,
                   icon: Icons.delete_forever,
                   title: 'Delete Account and Data',
                   subtitle:
-                      'PERMANENTLY delete your account and all content from Nostr relays',
+                      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.',
                   onTap: () => _handleDeleteAllContent(context, ref),
                   iconColor: Colors.red,
                   titleColor: Colors.red,
@@ -293,6 +325,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
     onTap: onTap,
   );
+
+  Widget _buildAudioSharingToggle() {
+    final audioSharingService = ref.watch(
+      audioSharingPreferenceServiceProvider,
+    );
+    final isEnabled = audioSharingService.isAudioSharingEnabled;
+
+    return SwitchListTile(
+      value: isEnabled,
+      onChanged: (value) async {
+        await audioSharingService.setAudioSharingEnabled(value);
+        // Force rebuild to reflect the new state
+        setState(() {});
+      },
+      title: const Text(
+        'Make my audio available for reuse',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: const Text(
+        'When enabled, others can use audio from your videos',
+        style: TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
 
   Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
@@ -369,7 +431,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
 
-    // Show confirmation dialog
+    // Check for existing drafts before showing logout confirmation
+    final prefs = await SharedPreferences.getInstance();
+    final draftService = DraftStorageService(prefs);
+    final drafts = await draftService.getAllDrafts();
+    final draftCount = drafts.length;
+
+    if (!context.mounted) return;
+
+    // If drafts exist, show warning dialog first
+    if (draftCount > 0) {
+      final draftWord = draftCount == 1 ? 'draft' : 'drafts';
+      final proceedWithWarning = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Text(
+            'Unsaved Drafts',
+            style: TextStyle(color: Colors.red),
+          ),
+          content: Text(
+            'You have $draftCount unsaved $draftWord. '
+            'Logging out will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
+            'Do you want to log out anyway?',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Log Out Anyway',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (proceedWithWarning != true) return;
+    }
+
+    if (!context.mounted) return;
+
+    // Show standard confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -431,18 +539,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (!context.mounted) return;
           Navigator.of(context).pop();
 
-          // Show success message
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Keys removed from device. Your content remains on Nostr relays.',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: VineTheme.vineGreen,
-            ),
-          );
+          // User can import their keys from the welcome screen
         } catch (e) {
           // Close loading indicator
           if (!context.mounted) return;
@@ -472,9 +570,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
 
-    // Show double-confirmation warning dialogs
+    // Get current user's public key for nsec verification
+    final currentPublicKeyHex = authService.currentPublicKeyHex;
+    if (currentPublicKeyHex == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to verify identity. Please log in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show nsec verification dialog first, then standard delete dialog
     await showDeleteAllContentWarningDialog(
       context: context,
+      currentPublicKeyHex: currentPublicKeyHex,
       onConfirm: () async {
         // Show loading indicator
         if (!context.mounted) return;
@@ -551,13 +664,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   /// Show fallback support options when Zendesk is not available
-  void _showSupportFallback(
+  Future<void> _showSupportFallback(
     BuildContext context,
     WidgetRef ref,
     dynamic authService, // Type inferred from authServiceProvider
-  ) {
+  ) async {
     final bugReportService = ref.read(bugReportServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
+
+    // Set Zendesk user identity if we have a pubkey
+    if (userPubkey != null) {
+      try {
+        // Get user's npub
+        final npub = NostrKeyUtils.encodePubKey(userPubkey);
+
+        // Try to get user profile for display name and NIP-05
+        final userProfileService = ref.read(userProfileServiceProvider);
+        final profile = userProfileService.getCachedProfile(userPubkey);
+
+        await ZendeskSupportService.setUserIdentity(
+          displayName: profile?.bestDisplayName,
+          nip05: profile?.nip05,
+          npub: npub,
+        );
+      } catch (e) {
+        Log.warning(
+          'Failed to set Zendesk identity: $e',
+          category: LogCategory.system,
+        );
+      }
+    }
+
+    if (!context.mounted) return;
 
     showDialog(
       context: context,

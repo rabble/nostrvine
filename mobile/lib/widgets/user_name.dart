@@ -119,10 +119,11 @@ class UserName extends ConsumerWidget {
 
   bool _isReserved(UserProfile? userProfile) {
     if (userProfile == null) return false;
-    // TODO(any): We need to determine how we tell if a user's name is
-    // reserved or not. Existing code was adding a check mark if the
-    // user profile hasNip05.
-    // see https://github.com/nostr-protocol/nips/blob/master/05.md
-    return userProfile.hasNip05;
+    // NIP-05 verification requires an async HTTP call to the domain's
+    // .well-known/nostr.json endpoint. Having a NIP-05 field set does NOT
+    // mean it's verified - anyone can claim any NIP-05 in their profile.
+    // Until we have a cached verification provider, don't show the badge.
+    // See: https://github.com/nostr-protocol/nips/blob/master/05.md
+    return false;
   }
 }

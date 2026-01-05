@@ -360,15 +360,18 @@ class VideoExportService {
       // This handles cases where overlay was rendered at lower resolution for memory safety
       // [0:v] is the video, [1:v] is the overlay PNG
       // scale2ref scales the second input to match the first input's dimensions
+      // shortest=1 in overlay filter stops when video ends (more efficient than -shortest)
+      // eof_action=endall terminates filter immediately when video reaches EOF
       final overlayFilter =
-          '[1:v][0:v]scale2ref[scaled][video];[video][scaled]overlay=0:0';
+          '[1:v][0:v]scale2ref[scaled][video];[video][scaled]overlay=0:0:shortest=1:eof_action=endall';
       final effectiveFilter = FFmpegEncoder.isAndroid
           ? '$overlayFilter,format=nv12'
           : overlayFilter;
       final encoderArgs = _getVideoEncoderArgs();
       // -y flag to overwrite output (needed for fallback retry)
+      // -loop 1 loops the PNG overlay (single frame) to match video duration
       final command =
-          '-y -i "$videoPath" -i "$overlayPngPath" -filter_complex "$effectiveFilter" $encoderArgs -c:a copy "$outputPath"';
+          '-y -i "$videoPath" -loop 1 -i "$overlayPngPath" -filter_complex "$effectiveFilter" $encoderArgs -c:a copy "$outputPath"';
 
       Log.info(
         'Running FFmpeg overlay: $command',
@@ -399,6 +402,139 @@ class VideoExportService {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to apply text overlay: $e',
+        name: 'VideoExportService',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// Mixes external audio with video for "use this sound" recording flows.
+  ///
+  /// This method handles post-recording audio mixing for lip-sync mode,
+  /// where users record video to an external audio track.
+  ///
+  /// [videoPath] - Path to the recorded video file (may have original audio or be muted)
+  /// [externalAudioPath] - Path to the external audio file (from Kind 1063 audio event)
+  /// [voiceTrackPath] - Optional path to voice recording (when headphones enabled voice-over)
+  ///
+  /// Returns the path to the mixed video file.
+  ///
+  /// Cases handled:
+  /// - Video + external audio only (lip sync mode, no voice)
+  ///   Command: `ffmpeg -i video.mp4 -i audio.aac -c:v copy -map 0:v -map 1:a -shortest output.mp4`
+  /// - Video + external audio + voice (voice-over mode with headphones)
+  ///   Command: `ffmpeg -i video.mp4 -i external.aac -i voice.aac \
+  ///            -filter_complex "[1:a][2:a]amix=inputs=2:duration=shortest[a]" \
+  ///            -c:v copy -map 0:v -map "[a]" output.mp4`
+  ///
+  /// The original video's audio track is always replaced (not mixed),
+  /// since in lip-sync mode the video is recorded with mic muted.
+  Future<String> mixExternalAudio(
+    String videoPath,
+    String externalAudioPath, {
+    String? voiceTrackPath,
+  }) async {
+    try {
+      Log.info(
+        'Mixing external audio with video: external=$externalAudioPath, '
+        'voice=${voiceTrackPath ?? "none"}, video=$videoPath',
+        name: 'VideoExportService',
+        category: LogCategory.system,
+      );
+
+      // Get temp directory for output
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputPath = '${tempDir.path}/mixed_audio_$timestamp.mp4';
+
+      // Resolve external audio path (may be a file:// URL)
+      String resolvedExternalPath = externalAudioPath;
+      if (externalAudioPath.startsWith('file://')) {
+        resolvedExternalPath = externalAudioPath.replaceFirst('file://', '');
+      }
+
+      // Verify external audio file exists
+      final externalAudioFile = File(resolvedExternalPath);
+      if (!await externalAudioFile.exists()) {
+        throw Exception('External audio file not found: $resolvedExternalPath');
+      }
+
+      String command;
+
+      if (voiceTrackPath != null) {
+        // Case: Video + external audio + voice (voice-over mode)
+        // Mix external audio with voice track using amix filter
+        String resolvedVoicePath = voiceTrackPath;
+        if (voiceTrackPath.startsWith('file://')) {
+          resolvedVoicePath = voiceTrackPath.replaceFirst('file://', '');
+        }
+
+        // Verify voice file exists
+        final voiceFile = File(resolvedVoicePath);
+        if (!await voiceFile.exists()) {
+          throw Exception('Voice track file not found: $resolvedVoicePath');
+        }
+
+        Log.info(
+          'Mixing with voice track: $resolvedVoicePath',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+
+        // FFmpeg command for mixing external audio + voice:
+        // -i video.mp4 (input 0) - video file
+        // -i external.aac (input 1) - external audio from sound library
+        // -i voice.aac (input 2) - recorded voice track
+        // [1:a][2:a]amix=inputs=2:duration=shortest - mix audio streams
+        // -c:v copy - copy video stream without re-encoding
+        // -map 0:v - use video from input 0
+        // -map "[a]" - use mixed audio
+        command =
+            '-y -i "$videoPath" -i "$resolvedExternalPath" -i "$resolvedVoicePath" '
+            '-filter_complex "[1:a][2:a]amix=inputs=2:duration=shortest[a]" '
+            '-c:v copy -map 0:v -map "[a]" -c:a aac "$outputPath"';
+      } else {
+        // Case: Video + external audio only (lip sync mode)
+        // Simple audio replacement without mixing
+        // -c:v copy - copy video stream without re-encoding
+        // -map 0:v - use video from first input
+        // -map 1:a - use audio from second input
+        // -shortest - finish when shortest stream ends
+        command =
+            '-y -i "$videoPath" -i "$resolvedExternalPath" '
+            '-c:v copy -map 0:v -map 1:a -c:a aac -shortest "$outputPath"';
+      }
+
+      Log.info(
+        'Running FFmpeg external audio mix: $command',
+        name: 'VideoExportService',
+        category: LogCategory.system,
+      );
+
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+
+      // Clear sessions to free memory
+      await FFmpegEncoder.clearSessions();
+
+      if (ReturnCode.isSuccess(returnCode)) {
+        Log.info(
+          'Successfully mixed external audio to: $outputPath',
+          name: 'VideoExportService',
+          category: LogCategory.system,
+        );
+
+        return outputPath;
+      } else {
+        final output = await session.getOutput();
+        throw Exception('FFmpeg external audio mix failed: $output');
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to mix external audio: $e',
         name: 'VideoExportService',
         category: LogCategory.system,
         error: e,

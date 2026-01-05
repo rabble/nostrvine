@@ -3,11 +3,15 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Set up test environment with necessary mocks and platform channel handlers
 void setupTestEnvironment() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Disable Google Fonts runtime fetching to prevent network calls in tests
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Mock SharedPreferences
   SharedPreferences.setMockInitialValues({});

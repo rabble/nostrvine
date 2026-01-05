@@ -14,6 +14,7 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
@@ -38,12 +39,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
     final videosAsync = ref.read(videosForHomeRouteProvider);
 
-    // Redirect to home on next frame to avoid build-phase navigation
+    // Pre-initialize controllers on next frame (don't redirect - respect URL)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.go('/home/0');
-      }
-
       // Initial build pre initialization
       videosAsync.whenData((state) {
         preInitializeControllers(
@@ -106,12 +103,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             final videos = state.videos;
 
             if (state.lastUpdated == null && state.videos.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: VineTheme.whiteText,
-                  strokeWidth: 2,
-                ),
-              );
+              return const Center(child: BrandedLoadingIndicator(size: 80));
             }
 
             if (videos.isEmpty) {

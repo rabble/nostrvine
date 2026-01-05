@@ -66,8 +66,9 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     // Regular event: simple insert or replace by ID
     await _insertEvent(event, expireAt: effectiveExpireAt);
 
-    // Also upsert video metrics for video events and reposts
-    if (event.kind == 34236 || event.kind == 16) {
+    // Also upsert video metrics for video events (kind 34236 only)
+    // Note: Kind 16 reposts reference videos but don't contain video metadata
+    if (event.kind == 34236) {
       await db.videoMetricsDao.upsertVideoMetrics(event);
     }
   }

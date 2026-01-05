@@ -314,41 +314,22 @@ class _SafeNetworkImage extends StatelessWidget {
       cacheManager: openVineImageCache,
       placeholder: (context, url) => _buildFallback(),
       errorWidget: (context, url, error) {
-        // Log the specific error for debugging
-        Log.error(
-          '❌ Network image failed: $url',
+        // 404s are expected - thumbnail may not exist yet. Handle silently.
+        final errorStr = error.toString();
+        final is404 = errorStr.contains('404') ||
+            (errorStr.contains('statusCode') && errorStr.contains('Invalid'));
+
+        if (is404) {
+          // Expected case - just use fallback without logging
+          return _buildFallback();
+        }
+
+        // Only log unexpected errors (not 404s)
+        Log.warning(
+          '🖼️ Thumbnail load failed for video $videoId: ${error.runtimeType}',
           name: 'VideoThumbnailWidget',
           category: LogCategory.video,
         );
-        Log.error(
-          '❌ Error type: ${error.runtimeType}, Details: $error',
-          name: 'VideoThumbnailWidget',
-          category: LogCategory.video,
-        );
-
-        // Log the full stack trace if available
-        if (error is Exception) {
-          try {
-            final stackTrace = StackTrace.current;
-            Log.error(
-              '❌ Stack trace: $stackTrace',
-              name: 'VideoThumbnailWidget',
-              category: LogCategory.video,
-            );
-          } catch (e) {
-            // Ignore stack trace errors
-          }
-        }
-
-        // Check if this is specifically a 404 or HTTP error
-        if (error.toString().contains('404') ||
-            error.toString().contains('statusCode')) {
-          Log.warning(
-            '🖼️ HTTP error loading thumbnail for video $videoId (FULL ID), URL: $url',
-            name: 'VideoThumbnailWidget',
-            category: LogCategory.video,
-          );
-        }
 
         return _buildFallback();
       },
@@ -359,19 +340,9 @@ class _SafeNetworkImage extends StatelessWidget {
     // Don't show blurhash here - it's already shown as background in the outer Stack
     // Just show a transparent container so the background blurhash is visible
     if (blurhash != null && blurhash!.isNotEmpty) {
-      Log.debug(
-        '🎨 Image failed, showing transparent container to reveal background blurhash',
-        name: 'VideoThumbnailWidget',
-        category: LogCategory.video,
-      );
       return Container(width: width, height: height, color: Colors.transparent);
     }
     // Fall back to icon placeholder if no blurhash
-    Log.debug(
-      '📦 Image failed, no blurhash available, showing placeholder',
-      name: 'VideoThumbnailWidget',
-      category: LogCategory.video,
-    );
     return VideoIconPlaceholder(
       width: width,
       height: height,

@@ -44,20 +44,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       children: [
         // Tab bar for filtering notifications
         Container(
-          color: VineTheme.cardBackground,
+          color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            indicatorColor: VineTheme.whiteText,
-            indicatorWeight: 3,
+            padding: const EdgeInsets.only(left: 16),
+            indicatorColor: VineTheme.tabIndicatorGreen,
+            indicatorWeight: 4,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             labelColor: VineTheme.whiteText,
-            unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            unselectedLabelColor: VineTheme.tabIconInactive,
+            labelStyle: VineTheme.tabTextStyle(),
+            unselectedLabelStyle: VineTheme.tabTextStyle(
+              color: VineTheme.tabIconInactive,
             ),
             labelPadding: const EdgeInsets.symmetric(horizontal: 14),
             onTap: (index) {
