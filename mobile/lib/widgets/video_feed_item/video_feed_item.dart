@@ -852,6 +852,14 @@ class VideoOverlayActions extends ConsumerWidget {
     final isLikeInProgress = likesState.isOperationInProgress(video.id);
     final likeCount = likesState.getLikeCount(video.id);
 
+    // Fetch like count from Nostr when video becomes active
+    // Only fetch if we don't have a count yet (avoids redundant requests)
+    if (isActive && likesBloc != null && likeCount == 0) {
+      Future.microtask(() {
+        likesBloc.add(LikesCountFetchRequested(eventId: video.id));
+      });
+    }
+
     // Check if there's meaningful text content to display
     final hasTextContent =
         video.content.isNotEmpty ||

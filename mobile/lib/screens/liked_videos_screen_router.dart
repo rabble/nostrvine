@@ -50,11 +50,13 @@ class _LikedVideosScreenRouterState
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
 
-    // Check if LikesBloc is available (provided at app level when authenticated)
-    final hasLikesBloc = context.read<LikesBloc?>() != null;
+    // Check if user is authenticated by checking if likes repository is available
+    // This is safer than context.read<LikesBloc?>() which throws when no provider exists
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final isAuthenticated = likesRepository != null;
 
     // If not authenticated, show empty state
-    if (!hasLikesBloc) {
+    if (!isAuthenticated) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -144,10 +146,8 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
   @override
   void dispose() {
     // Reset bridge state when leaving the feed
-    Future.microtask(() {
-      ref.read(likedVideosFeedStateProvider.notifier).state =
-          const LikedVideosBridgeState.initial();
-    });
+    ref.read(likedVideosFeedStateProvider.notifier).state =
+        const LikedVideosBridgeState.initial();
     super.dispose();
   }
 
