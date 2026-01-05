@@ -15,8 +15,11 @@ import zendesk.core.AnonymousIdentity
 import zendesk.support.Support
 import zendesk.support.requestlist.RequestListActivity
 import zendesk.support.request.RequestActivity
-import zendesk.support.requestlist.RequestListConfiguration
-import zendesk.support.request.RequestConfiguration
+import zendesk.support.RequestProvider
+import zendesk.support.CreateRequest
+import zendesk.support.Request
+import com.zendesk.service.ZendeskCallback
+import com.zendesk.service.ErrorResponse
 
 class MainActivity : FlutterActivity() {
     companion object {
@@ -353,20 +356,25 @@ class MainActivity : FlutterActivity() {
                     try {
                         Log.d(ZENDESK_TAG, "Creating ticket programmatically - subject: $subject")
 
-                        // Use RequestProvider to create ticket without UI
-                        val provider = zendesk.support.request.RequestProvider(Support.INSTANCE)
-                        val createRequest = zendesk.support.CreateRequest()
+                        // Get RequestProvider from Support SDK
+                        val providerStore = Support.INSTANCE.provider()
+                        if (providerStore == null) {
+                            result.error("SDK_NOT_INITIALIZED", "Zendesk Support SDK not initialized", null)
+                            return@setMethodCallHandler
+                        }
+                        val provider: RequestProvider = providerStore.requestProvider()
+                        val createRequest = CreateRequest()
                         createRequest.subject = subject
                         createRequest.description = description
                         createRequest.tags = tags
 
-                        provider.createRequest(createRequest, object : zendesk.core.ZendeskCallback<zendesk.support.request.Request>() {
-                            override fun onSuccess(request: zendesk.support.request.Request?) {
+                        provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
+                            override fun onSuccess(request: Request?) {
                                 Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
                                 result.success(true)
                             }
 
-                            override fun onError(error: zendesk.core.ErrorResponse?) {
+                            override fun onError(error: ErrorResponse?) {
                                 Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
                                 result.success(false)
                             }
