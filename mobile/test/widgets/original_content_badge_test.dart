@@ -69,6 +69,9 @@ void main() {
         // Assert - should show Original badge (not a repost, not a vintage vine)
         expect(videoEvent.shouldShowOriginalBadge, true);
       },
+      // Skip: shouldShowOriginalBadge was deprecated, now always returns false
+      // Use shouldShowNotDivineBadge instead
+      skip: 'shouldShowOriginalBadge deprecated - use shouldShowNotDivineBadge',
     );
 
     test('VideoEvent.shouldShowOriginalBadge returns false for reposts', () {
@@ -151,6 +154,9 @@ void main() {
         expect(find.text('Original'), findsOneWidget);
         expect(find.byType(OriginalContentBadge), findsOneWidget);
       },
+      // Skip: shouldShowOriginalBadge was deprecated, now always returns false
+      // Use shouldShowNotDivineBadge instead
+      skip: true,
     );
 
     testWidgets(
