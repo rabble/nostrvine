@@ -17,6 +17,7 @@ class NostrBroadcastResult {
     required this.totalRelays,
     required this.results,
     required this.errors,
+    this.connectionError,
   });
 
   /// The event that was broadcast, or null if event creation failed
@@ -34,8 +35,16 @@ class NostrBroadcastResult {
   /// Per-relay errors: relay URL -> error message (only for failed relays)
   final Map<String, String> errors;
 
+  /// Error message when relay connection fails.
+  ///
+  /// Non-null when the broadcast could not be attempted due to
+  /// connectivity issues (e.g., no relays connected after reconnection
+  /// attempt). Null when relays were available and broadcast was attempted
+  /// (check [errors] for per-relay failures in that case).
+  final String? connectionError;
+
   /// Whether the broadcast was successful (at least one relay accepted)
-  bool get isSuccessful => successCount > 0;
+  bool get isSuccessful => connectionError == null && successCount > 0;
 
   /// Whether all relays successfully received the event
   bool get isCompleteSuccess => successCount == totalRelays;

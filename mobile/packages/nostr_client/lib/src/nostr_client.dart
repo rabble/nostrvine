@@ -701,6 +701,21 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
   }) async {
+    if (connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+
+      if (connectedRelays.isEmpty) {
+        return NostrBroadcastResult(
+          event: event,
+          successCount: 0,
+          totalRelays: 0,
+          results: {},
+          errors: {},
+          connectionError: 'No relays available after reconnection attempt',
+        );
+      }
+    }
+
     final relays = connectedRelays;
     final totalRelays = targetRelays?.length ?? relays.length;
 

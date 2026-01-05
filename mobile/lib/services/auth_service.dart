@@ -4,9 +4,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -552,14 +552,6 @@ class AuthService {
 
         // CRITICAL: divine relays require specific tags for storage
         final eventTags = List<List<String>>.from(tags ?? []);
-
-        // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python script order)
-        if (kind == 0) {
-          final expirationTimestamp =
-              (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
-              (72 * 60 * 60); // 72 hours
-          eventTags.add(['expiration', expirationTimestamp.toString()]);
-        }
 
         final event = Event(
           _currentKeyContainer!.publicKeyHex,
