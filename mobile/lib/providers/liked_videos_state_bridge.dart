@@ -22,14 +22,9 @@ final likedVideosFeedStateProvider = StateProvider<LikedVideosBridgeState>(
 ///
 /// Used to sync BLoC state to Riverpod for [activeVideoIdProvider].
 class LikedVideosBridgeState {
-  const LikedVideosBridgeState({
-    required this.isLoading,
-    required this.videos,
-  });
+  const LikedVideosBridgeState({required this.isLoading, required this.videos});
 
-  const LikedVideosBridgeState.initial()
-      : isLoading = true,
-        videos = const [];
+  const LikedVideosBridgeState.initial() : isLoading = true, videos = const [];
 
   final bool isLoading;
   final List<VideoEvent> videos;
