@@ -178,7 +178,7 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
         if (index >= widget.videos.length) return const SizedBox.shrink();
 
         // Use PageController as source of truth for active video
-        final currentPage = _pageController?.page?.round() ?? widget.startIndex;
+        final currentPage = _pageController?.page?.round() ?? widget.videoIndex;
         final isActive = index == currentPage;
 
         final video = widget.videos[index];
