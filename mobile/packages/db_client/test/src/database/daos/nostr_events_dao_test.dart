@@ -605,46 +605,49 @@ void main() {
         );
       });
 
-      test('filters by uppercase E tags (NIP-22 root event reference)', () async {
-        const rootEventId = 'root_video_event_id_123';
-        // NIP-22 comment (kind 1111) referencing a video
-        final comment1 = createEvent(
-          kind: 1111,
-          tags: [
-            ['E', rootEventId, '', testPubkey], // Uppercase E = root scope
-            ['K', '34236'],
-          ],
-          content: 'Great video!',
-          createdAt: 1000,
-        );
-        // Comment referencing a different root event
-        final comment2 = createEvent(
-          kind: 1111,
-          tags: [
-            ['E', 'other_root_event', '', testPubkey],
-            ['K', '34236'],
-          ],
-          content: 'Another comment',
-          createdAt: 2000,
-        );
-        // Regular event with lowercase e tag (not an uppercase E)
-        final regularEvent = createEvent(
-          tags: [
-            ['e', rootEventId],
-          ],
-          createdAt: 3000,
-        );
+      test(
+        'filters by uppercase E tags (NIP-22 root event reference)',
+        () async {
+          const rootEventId = 'root_video_event_id_123';
+          // NIP-22 comment (kind 1111) referencing a video
+          final comment1 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey], // Uppercase E = root scope
+              ['K', '34236'],
+            ],
+            content: 'Great video!',
+            createdAt: 1000,
+          );
+          // Comment referencing a different root event
+          final comment2 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', 'other_root_event', '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Another comment',
+            createdAt: 2000,
+          );
+          // Regular event with lowercase e tag (not an uppercase E)
+          final regularEvent = createEvent(
+            tags: [
+              ['e', rootEventId],
+            ],
+            createdAt: 3000,
+          );
 
-        await dao.upsertEventsBatch([comment1, comment2, regularEvent]);
+          await dao.upsertEventsBatch([comment1, comment2, regularEvent]);
 
-        final results = await dao.getEventsByFilter(
-          Filter(uppercaseE: [rootEventId]),
-        );
+          final results = await dao.getEventsByFilter(
+            Filter(uppercaseE: [rootEventId]),
+          );
 
-        expect(results.length, equals(1));
-        expect(results.first.id, equals(comment1.id));
-        expect(results.first.content, equals('Great video!'));
-      });
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(comment1.id));
+          expect(results.first.content, equals('Great video!'));
+        },
+      );
 
       test('filters by uppercase K tags (NIP-22 root event kind)', () async {
         // NIP-22 comment referencing a video (kind 34236)
