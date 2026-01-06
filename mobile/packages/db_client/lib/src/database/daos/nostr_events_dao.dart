@@ -354,6 +354,28 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       conditions.add('(${dTagConditions.join(' OR ')})');
     }
 
+    // Uppercase E tags (NIP-22 root event reference)
+    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
+    final uppercaseETags = filter.uppercaseE;
+    if (uppercaseETags != null && uppercaseETags.isNotEmpty) {
+      final eTagConditions = uppercaseETags.map((eventId) {
+        variables.add(Variable.withString('*"E"*"$eventId"*'));
+        return 'tags GLOB ?';
+      }).toList();
+      conditions.add('(${eTagConditions.join(' OR ')})');
+    }
+
+    // Uppercase K tags (NIP-22 root event kind)
+    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
+    final uppercaseKTags = filter.uppercaseK;
+    if (uppercaseKTags != null && uppercaseKTags.isNotEmpty) {
+      final kTagConditions = uppercaseKTags.map((kind) {
+        variables.add(Variable.withString('*"K"*"$kind"*'));
+        return 'tags GLOB ?';
+      }).toList();
+      conditions.add('(${kTagConditions.join(' OR ')})');
+    }
+
     // Content search filter (NIP-50 style, case insensitive)
     final search = filter.search;
     if (search != null && search.isNotEmpty) {
