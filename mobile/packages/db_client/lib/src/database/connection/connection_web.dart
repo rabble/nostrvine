@@ -1,23 +1,36 @@
-// ABOUTME: Web-specific database connection using IndexedDB
-// ABOUTME: Provides web-compatible storage through drift's web implementation
+// ABOUTME: Web-specific database connection using WASM-based SQLite
+// ABOUTME: Provides web-compatible storage through drift's wasm implementation
 
 import 'package:drift/drift.dart';
-// TODO(any): Migrate from deprecated drift/web.dart https://github.com/divinevideo/divine-mobile/issues/373
-// ignore_for_file: deprecated_member_use
-import 'package:drift/web.dart';
+import 'package:drift/wasm.dart';
 
 /// Open a database connection for web platform
-/// Uses IndexedDB through drift's web implementation
+/// Uses WASM-based SQLite through drift's modern wasm implementation
 QueryExecutor openConnection() {
-  return LazyDatabase(() async {
-    return WebDatabase(
-      'local_relay_db',
-    ); // Disabled - too verbose
-  });
+  return DatabaseConnection.delayed(
+    Future(() async {
+      final result = await WasmDatabase.open(
+        databaseName: 'divine_db',
+        sqlite3Uri: Uri.parse('sqlite3.wasm'),
+        driftWorkerUri: Uri.parse('drift_worker.js'),
+      );
+
+      if (result.missingFeatures.isNotEmpty) {
+        // Log missing browser features for debugging WASM database fallback
+        // ignore: avoid_print
+        print(
+          'Using ${result.chosenImplementation} due to missing '
+          'browser features: ${result.missingFeatures}',
+        );
+      }
+
+      return result.resolvedExecutor;
+    }),
+  );
 }
 
 /// Get path to shared database file
-/// On web, this returns a logical name for IndexedDB
+/// On web, this returns a logical name for the WASM database
 Future<String> getSharedDatabasePath() async {
-  return 'local_relay_db'; // IndexedDB database name
+  return 'divine_db'; // Database name for WASM storage
 }

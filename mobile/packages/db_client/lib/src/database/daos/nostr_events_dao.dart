@@ -79,14 +79,11 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// after that Unix timestamp.
   ///
   /// Uses customInsert with updates parameter to notify stream watchers.
-  /// Automatically handles case where expire_at column doesn't exist yet.
   Future<void> _insertEvent(Event event, {int? expireAt}) async {
-    // Use INSERT without expire_at column - it may not exist yet on older DBs
-    // This matches the schema created by nostr_sdk's embedded relay
     await customInsert(
       'INSERT OR REPLACE INTO event '
-      '(id, pubkey, created_at, kind, tags, content, sig, sources) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      '(id, pubkey, created_at, kind, tags, content, sig, sources, expire_at) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       variables: [
         Variable.withString(event.id),
         Variable.withString(event.pubkey),
@@ -96,14 +93,13 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
         Variable.withString(event.content),
         Variable.withString(event.sig),
         const Variable(null), // sources - not used yet
+        if (expireAt != null)
+          Variable.withInt(expireAt)
+        else
+          const Variable(null),
       ],
       updates: {nostrEvents},
     );
-
-    // Set expire_at separately via UPDATE if provided and column exists
-    if (expireAt != null && db.hasExpireAtColumn) {
-      await setEventExpiry(event.id, expireAt);
-    }
   }
 
   /// Upsert replaceable event (kind 0, 3, 10000-19999)
@@ -560,14 +556,8 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
 
   /// Set the expiry timestamp for an existing event.
   ///
-  /// Returns true if the event was found and updated, false if not found
-  /// or if expire_at column doesn't exist.
+  /// Returns true if the event was found and updated, false if not found.
   Future<bool> setEventExpiry(String eventId, int expireAt) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return false;
-    }
-
     final rowsAffected = await customUpdate(
       'UPDATE event SET expire_at = ? WHERE id = ?',
       variables: [
@@ -583,17 +573,10 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// Delete events that have expired or have no expiry set.
   ///
   /// If [before] is provided, deletes events expired before that timestamp.
-  /// Also deletes events with NULL expire_at (legacy events from before
-  /// the mandatory expiry policy).
+  /// Also deletes events with NULL expire_at (legacy events without expiry).
   ///
-  /// Returns the number of events deleted, or 0 if expire_at column doesn't
-  /// exist.
+  /// Returns the number of events deleted.
   Future<int> deleteExpiredEvents(int? before) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return 0;
-    }
-
     final nowUnix = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return customUpdate(
       'DELETE FROM event WHERE expire_at IS NULL OR expire_at < ?',
@@ -604,13 +587,7 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get the count of events that will expire before [before] Unix timestamp.
-  /// Returns 0 if expire_at column doesn't exist.
   Future<int> countExpiredEvents(int before) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return 0;
-    }
-
     final result = await customSelect(
       'SELECT COUNT(*) as count FROM event '
       'WHERE expire_at IS NOT NULL AND expire_at < ?',
