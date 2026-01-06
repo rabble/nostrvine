@@ -175,7 +175,8 @@ class AppDatabase extends _$AppDatabase {
       )
     ''');
 
-    // profile_statistics - cached profile stats (renamed from profile_stats in v3)
+    // profile_statistics - cached profile stats
+    // (renamed from profile_stats in v3)
     await customStatement('''
       CREATE TABLE IF NOT EXISTS "profile_statistics" (
         "pubkey" TEXT NOT NULL PRIMARY KEY,
