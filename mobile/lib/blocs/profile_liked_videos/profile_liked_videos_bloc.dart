@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -172,7 +171,6 @@ class ProfileLikedVideosBloc
 
     final completer = Completer<List<VideoEvent>>();
     final videos = <VideoEvent>[];
-    Timer? timeoutTimer;
 
     // Generate unique subscription ID for cleanup
     final subscriptionId =
@@ -180,7 +178,6 @@ class ProfileLikedVideosBloc
 
     /// Helper to clean up subscription resources
     Future<void> cleanup() async {
-      timeoutTimer?.cancel();
       await _nostrClient.unsubscribe(subscriptionId);
     }
 
@@ -192,18 +189,8 @@ class ProfileLikedVideosBloc
       final eventStream = _nostrClient.subscribe([
         filter,
       ], subscriptionId: subscriptionId);
-      late StreamSubscription<Event> subscription;
 
-      // Set timeout for relay response
-      timeoutTimer = Timer(const Duration(seconds: 5), () {
-        if (!completer.isCompleted) {
-          subscription.cancel();
-          cleanup();
-          completer.complete(videos);
-        }
-      });
-
-      subscription = eventStream.listen(
+      final subscription = eventStream.listen(
         (event) {
           try {
             final video = VideoEvent.fromNostrEvent(event);

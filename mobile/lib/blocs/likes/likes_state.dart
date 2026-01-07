@@ -87,6 +87,12 @@ final class LikesState extends Equatable {
   /// Returns 0 if no count is cached.
   int getLikeCount(String eventId) => likeCounts[eventId] ?? 0;
 
+  /// Check if a like count has been fetched for an event.
+  ///
+  /// Returns true if a count exists in the cache (even if zero),
+  /// false if the count hasn't been fetched yet.
+  bool hasLikeCount(String eventId) => likeCounts.containsKey(eventId);
+
   /// Whether the state has been successfully initialized.
   bool get isInitialized => status == LikesStatus.success;
 

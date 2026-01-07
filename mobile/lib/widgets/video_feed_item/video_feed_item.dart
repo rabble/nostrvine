@@ -914,11 +914,11 @@ class VideoOverlayActions extends ConsumerWidget {
     final likesState = likesBloc != null
         ? context.watch<LikesBloc>().state
         : const LikesState();
-    final likeCount = likesState.getLikeCount(video.id);
 
     // Fetch like count from Nostr when video becomes active
-    // Only fetch if we don't have a count yet (avoids redundant requests)
-    if (isActive && likesBloc != null && likeCount == 0) {
+    // Only fetch if we haven't fetched yet (hasLikeCount distinguishes
+    // "not fetched" from "fetched with zero likes")
+    if (isActive && likesBloc != null && !likesState.hasLikeCount(video.id)) {
       Future.microtask(() {
         likesBloc.add(LikesCountFetchRequested(eventId: video.id));
       });
