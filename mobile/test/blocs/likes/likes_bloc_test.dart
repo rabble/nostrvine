@@ -130,6 +130,7 @@ void main() {
           const LikesState(
             status: LikesStatus.success,
             likedEventIds: ['event1'],
+            likeCounts: {'event1': 1},
           ),
         ],
       );
@@ -164,6 +165,7 @@ void main() {
           const LikesState(
             status: LikesStatus.success,
             likedEventIds: ['event2', 'event1'],
+            likeCounts: {'event2': 1},
           ),
         ],
       );
@@ -195,7 +197,10 @@ void main() {
             likedEventIds: ['event1'],
             operationsInProgress: {'event1'},
           ),
-          const LikesState(status: LikesStatus.success),
+          const LikesState(
+            status: LikesStatus.success,
+            likeCounts: {'event1': 0},
+          ),
         ],
       );
 
@@ -385,12 +390,12 @@ void main() {
       expect(successState.isInitialized, isTrue);
     });
 
-    test('likeCount returns number of liked events', () {
+    test('totalLikedCount returns number of liked events', () {
       const emptyState = LikesState();
       const stateWithLikes = LikesState(likedEventIds: ['e1', 'e2', 'e3']);
 
-      expect(emptyState.likeCount, 0);
-      expect(stateWithLikes.likeCount, 3);
+      expect(emptyState.totalLikedCount, 0);
+      expect(stateWithLikes.totalLikedCount, 3);
     });
 
     test('copyWith creates copy with updated values', () {

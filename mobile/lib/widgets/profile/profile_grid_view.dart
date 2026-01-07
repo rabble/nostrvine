@@ -2,8 +2,13 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/likes/likes_bloc.dart';
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
@@ -14,7 +19,7 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
-class ProfileGridView extends StatefulWidget {
+class ProfileGridView extends ConsumerStatefulWidget {
   const ProfileGridView({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -61,10 +66,10 @@ class ProfileGridView extends StatefulWidget {
   final ScrollController? scrollController;
 
   @override
-  State<ProfileGridView> createState() => _ProfileGridViewState();
+  ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
 }
 
-class _ProfileGridViewState extends State<ProfileGridView>
+class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
@@ -82,6 +87,35 @@ class _ProfileGridViewState extends State<ProfileGridView>
 
   @override
   Widget build(BuildContext context) {
+    // Get services for ProfileLikedVideosBloc
+    final videoEventService = ref.watch(videoEventServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+
+    // Check if LikesBloc is available (provided at app level when authenticated)
+    final hasLikesBloc = context.read<LikesBloc?>() != null;
+
+    // Build the base widget
+    Widget tabContent = TabBarView(
+      controller: _tabController,
+      children: [
+        ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
+        const ProfileLikedGrid(),
+        ProfileRepostsGrid(userIdHex: widget.userIdHex),
+      ],
+    );
+
+    // Wrap with ProfileLikedVideosBloc if authenticated
+    // LikesBloc is provided at app level, no need to create it here
+    if (hasLikesBloc) {
+      tabContent = BlocProvider<ProfileLikedVideosBloc>(
+        create: (_) => ProfileLikedVideosBloc(
+          videoEventService: videoEventService,
+          nostrClient: nostrClient,
+        ),
+        child: tabContent,
+      );
+    }
+
     return DefaultTabController(
       length: 3,
       child: NestedScrollView(
@@ -155,17 +189,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
             ),
           ),
         ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            ProfileVideosGrid(
-              videos: widget.videos,
-              userIdHex: widget.userIdHex,
-            ),
-            const ProfileLikedGrid(),
-            ProfileRepostsGrid(userIdHex: widget.userIdHex),
-          ],
-        ),
+        body: tabContent,
       ),
     );
   }

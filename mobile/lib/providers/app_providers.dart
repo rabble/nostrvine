@@ -999,6 +999,10 @@ CommentsRepository commentsRepository(Ref ref) {
 LikesRepository? likesRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
+  // Watch auth state stream to react to auth changes (login/logout)
+  // This ensures the provider rebuilds when authentication completes
+  ref.watch(authStateStreamProvider);
+
   // Repository requires authentication
   if (!authService.isAuthenticated || authService.currentPublicKeyHex == null) {
     return null;

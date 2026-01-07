@@ -29,6 +29,11 @@ extension NavX on BuildContext {
     ),
   );
 
+  /// Navigate to liked videos feed at optional index
+  void goLikedVideos([int? index]) => go(
+    buildRoute(RouteContext(type: RouteType.likedVideos, videoIndex: index)),
+  );
+
   void goMyProfile() => goProfile('me');
 
   // TODO(548): Move all of the "me" logic into the router or the profile page

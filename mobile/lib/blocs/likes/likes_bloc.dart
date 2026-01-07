@@ -15,12 +15,14 @@ part 'likes_state.dart';
 /// - Syncing likes from local storage and Nostr relays
 /// - Toggling like status on events
 /// - Tracking like operations in progress for UI feedback
+/// - Fetching public like counts for events
 class LikesBloc extends Bloc<LikesEvent, LikesState> {
   LikesBloc({required LikesRepository likesRepository})
     : _likesRepository = likesRepository,
       super(const LikesState()) {
     on<LikesSyncRequested>(_onSyncRequested);
     on<LikesToggleRequested>(_onToggleRequested);
+    on<LikesCountFetchRequested>(_onCountFetchRequested);
     on<LikesErrorCleared>(_onErrorCleared);
   }
 
@@ -89,10 +91,12 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
       );
 
       if (isNowLiked) {
-        // Prepend to list (most recent first)
+        // Prepend to list (most recent first) and increment count
+        final currentCount = state.likeCounts[eventId] ?? 0;
         emit(
           state.copyWith(
             likedEventIds: [eventId, ...state.likedEventIds],
+            likeCounts: {...state.likeCounts, eventId: currentCount + 1},
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
@@ -100,12 +104,17 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
           ),
         );
       } else {
-        // Remove from list
+        // Remove from list and decrement count
+        final currentCount = state.likeCounts[eventId] ?? 0;
         emit(
           state.copyWith(
             likedEventIds: state.likedEventIds
                 .where((id) => id != eventId)
                 .toList(),
+            likeCounts: {
+              ...state.likeCounts,
+              eventId: currentCount > 0 ? currentCount - 1 : 0,
+            },
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
@@ -167,6 +176,27 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
   /// Handle error cleared event.
   void _onErrorCleared(LikesErrorCleared event, Emitter<LikesState> emit) {
     emit(state.copyWith(clearError: true));
+  }
+
+  /// Handle like count fetch request.
+  Future<void> _onCountFetchRequested(
+    LikesCountFetchRequested event,
+    Emitter<LikesState> emit,
+  ) async {
+    final eventId = event.eventId;
+
+    try {
+      final count = await _likesRepository.getLikeCount(eventId);
+
+      emit(state.copyWith(likeCounts: {...state.likeCounts, eventId: count}));
+    } catch (e) {
+      Log.error(
+        'LikesBloc: Failed to fetch like count - $e',
+        name: 'LikesBloc',
+        category: LogCategory.system,
+      );
+      // Silently fail - like count is optional UI enhancement
+    }
   }
 
   /// Helper to remove an item from a Set immutably.

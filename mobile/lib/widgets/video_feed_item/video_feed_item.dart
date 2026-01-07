@@ -2,8 +2,10 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -20,19 +22,19 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
-import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -851,6 +853,22 @@ class VideoOverlayActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
+
+    // Get likes state from BLoC (provided at app level)
+    // If BLoC is not available (not authenticated), use defaults
+    final likesBloc = context.read<LikesBloc?>();
+    final likesState = likesBloc != null
+        ? context.watch<LikesBloc>().state
+        : const LikesState();
+
+    // Fetch like count from Nostr when video becomes active
+    // Only fetch if we haven't fetched yet (hasLikeCount distinguishes
+    // "not fetched" from "fetched with zero likes")
+    if (isActive && likesBloc != null && !likesState.hasLikeCount(video.id)) {
+      Future.microtask(() {
+        likesBloc.add(LikesCountFetchRequested(eventId: video.id));
+      });
+    }
 
     // Check if there's meaningful text content to display
     final hasTextContent =

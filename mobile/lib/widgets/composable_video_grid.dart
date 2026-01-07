@@ -2,11 +2,12 @@
 // ABOUTME: Reusable component for Explore, Hashtag, and Search screens
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -516,14 +517,21 @@ class _VideoThumbnail extends StatelessWidget {
   );
 }
 
-class _VideoStats extends ConsumerWidget {
+class _VideoStats extends StatelessWidget {
   const _VideoStats({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final newLikeCount = ref.watch(likeCountProvider(video.id));
+  Widget build(BuildContext context) {
+    // Get likes count from BLoC (provided at app level)
+    // If BLoC is not available (not authenticated), use 0
+    final likesBloc = context.read<LikesBloc?>();
+    final newLikeCount = likesBloc != null
+        ? context.select<LikesBloc, int>(
+            (bloc) => bloc.state.getLikeCount(video.id),
+          )
+        : 0;
     final totalLikes = newLikeCount + (video.originalLikes ?? 0);
     final originalLoops = video.originalLoops;
 
