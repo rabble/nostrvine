@@ -177,6 +177,10 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
       itemBuilder: (context, index) {
         if (index >= widget.videos.length) return const SizedBox.shrink();
 
+        // Use PageController as source of truth for active video
+        final currentPage = _pageController?.page?.round() ?? widget.videoIndex;
+        final isActive = index == currentPage;
+
         final video = widget.videos[index];
         return VideoFeedItem(
           key: ValueKey('video-${video.stableId}'),
@@ -184,6 +188,7 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
           index: index,
           hasBottomNavigation: false,
           forceShowOverlay: widget.isOwnProfile,
+          isActiveOverride: isActive,
           contextTitle: ref
               .read(fetchUserProfileProvider(widget.userIdHex))
               .value

@@ -34,9 +34,15 @@ import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -94,7 +100,10 @@ int tabIndexFromLocation(String loc) {
     case 'followers':
     case 'following':
     case 'video-feed':
+    case 'sound':
       return -1; // Non-tab routes - no bottom nav
+    case 'list':
+      return 1; // List keeps explore tab active (like hashtag)
     default:
       return 0; // fallback to home
   }
@@ -461,6 +470,29 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
+
+          // CURATED LIST route (NIP-51 kind 30005 video lists)
+          GoRoute(
+            path: '/list/:listId',
+            name: 'list',
+            builder: (ctx, st) {
+              final listId = st.pathParameters['listId'];
+              if (listId == null || listId.isEmpty) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: const Center(child: Text('Invalid list ID')),
+                );
+              }
+              // Extra data contains listName, videoIds, authorPubkey
+              final extra = st.extra as CuratedListRouteExtra?;
+              return CuratedListFeedScreen(
+                listId: listId,
+                listName: extra?.listName ?? 'List',
+                videoIds: extra?.videoIds,
+                authorPubkey: extra?.authorPubkey,
+              );
+            },
+          ),
         ],
       ),
 
@@ -654,6 +686,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return VideoDetailScreen(videoId: videoId);
         },
       ),
+      // Sound detail route (for audio reuse feature)
+      GoRoute(
+        path: '/sound/:id',
+        name: 'sound',
+        builder: (ctx, st) {
+          final soundId = st.pathParameters['id'];
+          final sound = st.extra as AudioEvent?;
+          if (soundId == null || soundId.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid sound ID')),
+            );
+          }
+          // If sound was passed via extra, use it directly
+          // Otherwise, SoundDetailScreen will need to fetch it
+          if (sound != null) {
+            return SoundDetailScreen(sound: sound);
+          }
+          // Wrap in a loader that fetches the sound by ID
+          return _SoundDetailLoader(soundId: soundId);
+        },
+      ),
       // Video editor route (requires video passed via extra)
       GoRoute(
         path: '/edit-video',
@@ -738,5 +792,56 @@ class _FollowingScreenRouter extends ConsumerWidget {
     } else {
       return OthersFollowingScreen(pubkey: pubkey, displayName: displayName);
     }
+  }
+}
+
+/// Loader widget that fetches a sound by ID before displaying SoundDetailScreen.
+/// Used when navigating via deep link without the sound object.
+class _SoundDetailLoader extends ConsumerWidget {
+  const _SoundDetailLoader({required this.soundId});
+
+  final String soundId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final soundAsync = ref.watch(soundByIdProvider(soundId));
+
+    return soundAsync.when(
+      data: (sound) {
+        if (sound == null) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            appBar: AppBar(
+              backgroundColor: Colors.black,
+              title: const Text('Sound Not Found'),
+            ),
+            body: const Center(
+              child: Text(
+                'This sound could not be found',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        }
+        return SoundDetailScreen(sound: sound);
+      },
+      loading: () => const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: BrandedLoadingIndicator(size: 60)),
+      ),
+      error: (error, stack) => Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text('Error'),
+        ),
+        body: Center(
+          child: Text(
+            'Failed to load sound: $error',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
+    );
   }
 }

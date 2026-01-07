@@ -73,6 +73,9 @@ class ComposableVideoGrid extends ConsumerWidget {
       return emptyBuilder!();
     }
 
+    // Get subscribed list cache to check if videos are in lists
+    final subscribedListCache = ref.watch(subscribedListVideoCacheProvider);
+
     // Responsive column count: 3 for tablets/desktop (width >= 600), 2 for phones
     final screenWidth = MediaQuery.of(context).size.width;
     final responsiveCrossAxisCount = screenWidth >= 600 ? 3 : crossAxisCount;
@@ -88,6 +91,10 @@ class ComposableVideoGrid extends ConsumerWidget {
       itemCount: videosToShow.length,
       itemBuilder: (context, index) {
         final video = videosToShow[index];
+        // Check if video is in any subscribed lists
+        final listIds = subscribedListCache?.getListsForVideo(video.id);
+        final isInSubscribedList = listIds != null && listIds.isNotEmpty;
+
         return _VideoItem(
           video: video,
           aspectRatio: thumbnailAspectRatio,
@@ -95,6 +102,7 @@ class ComposableVideoGrid extends ConsumerWidget {
           index: index,
           displayedVideos: videosToShow,
           onLongPress: () => _showVideoContextMenu(context, ref, video),
+          isInSubscribedList: isInSubscribedList,
         );
       },
     );
@@ -355,6 +363,7 @@ class _VideoItem extends StatelessWidget {
     required this.onLongPress,
     required this.index,
     required this.displayedVideos,
+    this.isInSubscribedList = false,
   });
 
   final VideoEvent video;
@@ -363,6 +372,7 @@ class _VideoItem extends StatelessWidget {
   final VoidCallback onLongPress;
   final int index;
   final List<VideoEvent> displayedVideos;
+  final bool isInSubscribedList;
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +399,24 @@ class _VideoItem extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: _VideoInfoSection(video: video),
             ),
+            // Show list indicator badge if video is in subscribed lists
+            if (isInSubscribedList)
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: VineTheme.vineGreen.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.collections,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

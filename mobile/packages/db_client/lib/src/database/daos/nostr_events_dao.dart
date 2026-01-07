@@ -10,12 +10,29 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 
 part 'nostr_events_dao.g.dart';
 
+/// Default cache expiry duration for Nostr events (1 day).
+///
+/// All events stored in the database will expire after this duration
+/// to prevent unbounded cache growth. Events can be refreshed by
+/// re-fetching from relays.
+const Duration defaultEventCacheExpiry = Duration(days: 1);
+
 @DriftAccessor(tables: [NostrEvents, VideoMetrics])
 class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     with _$NostrEventsDaoMixin {
   NostrEventsDao(super.attachedDatabase);
 
-  /// Insert or replace event with NIP-01 replaceable event handling
+  /// Calculate expire_at Unix timestamp for an event using default expiry.
+  int _defaultExpireAt() {
+    return DateTime.now().add(defaultEventCacheExpiry).millisecondsSinceEpoch ~/
+        1000;
+  }
+
+  /// Insert or replace event with NIP-01 replaceable event handling.
+  ///
+  /// All events are stored with a default 1-day expiry to prevent unbounded
+  /// cache growth. To customize the expiry, provide [expireAt] as a Unix
+  /// timestamp.
   ///
   /// For regular events: uses INSERT OR REPLACE by event ID.
   ///
@@ -28,24 +45,30 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// For video events (kind 34236 or 16), also upserts video metrics to the
   /// video_metrics table for fast sorted queries.
-  Future<void> upsertEvent(Event event) async {
+  Future<void> upsertEvent(Event event, {int? expireAt}) async {
+    final effectiveExpireAt = expireAt ?? _defaultExpireAt();
+
     // Handle replaceable events (kind 0, 3, 10000-19999)
     if (EventKind.isReplaceable(event.kind)) {
-      await _upsertReplaceableEvent(event);
+      await _upsertReplaceableEvent(event, expireAt: effectiveExpireAt);
       return;
     }
 
     // Handle parameterized replaceable events (kind 30000-39999)
     if (EventKind.isParameterizedReplaceable(event.kind)) {
-      await _upsertParameterizedReplaceableEvent(event);
+      await _upsertParameterizedReplaceableEvent(
+        event,
+        expireAt: effectiveExpireAt,
+      );
       return;
     }
 
     // Regular event: simple insert or replace by ID
-    await _insertEvent(event);
+    await _insertEvent(event, expireAt: effectiveExpireAt);
 
-    // Also upsert video metrics for video events and reposts
-    if (event.kind == 34236 || event.kind == 16) {
+    // Also upsert video metrics for video events (kind 34236 only)
+    // Note: Kind 16 reposts reference videos but don't contain video metadata
+    if (event.kind == 34236) {
       await db.videoMetricsDao.upsertVideoMetrics(event);
     }
   }
@@ -56,14 +79,11 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// after that Unix timestamp.
   ///
   /// Uses customInsert with updates parameter to notify stream watchers.
-  /// Automatically handles case where expire_at column doesn't exist yet.
   Future<void> _insertEvent(Event event, {int? expireAt}) async {
-    // Use INSERT without expire_at column - it may not exist yet on older DBs
-    // This matches the schema created by nostr_sdk's embedded relay
     await customInsert(
       'INSERT OR REPLACE INTO event '
-      '(id, pubkey, created_at, kind, tags, content, sig, sources) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      '(id, pubkey, created_at, kind, tags, content, sig, sources, expire_at) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       variables: [
         Variable.withString(event.id),
         Variable.withString(event.pubkey),
@@ -73,21 +93,23 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
         Variable.withString(event.content),
         Variable.withString(event.sig),
         const Variable(null), // sources - not used yet
+        if (expireAt != null)
+          Variable.withInt(expireAt)
+        else
+          const Variable(null),
       ],
       updates: {nostrEvents},
     );
-
-    // Set expire_at separately via UPDATE if provided and column exists
-    if (expireAt != null && db.hasExpireAtColumn) {
-      await setEventExpiry(event.id, expireAt);
-    }
   }
 
   /// Upsert replaceable event (kind 0, 3, 10000-19999)
   ///
   /// Only stores the event if no existing event with same pubkey+kind exists,
   /// or if the new event has a higher created_at timestamp.
-  Future<void> _upsertReplaceableEvent(Event event) async {
+  Future<void> _upsertReplaceableEvent(
+    Event event, {
+    required int expireAt,
+  }) async {
     // Check if a newer event already exists for this pubkey+kind
     final existingRows = await customSelect(
       'SELECT id, created_at FROM event WHERE pubkey = ? AND kind = ? LIMIT 1',
@@ -114,14 +136,17 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       );
     }
 
-    await _insertEvent(event);
+    await _insertEvent(event, expireAt: expireAt);
   }
 
   /// Upsert parameterized replaceable event (kind 30000-39999)
   ///
   /// Only stores the event if no existing event with same pubkey+kind+d-tag
   /// exists, or if the new event has a higher created_at timestamp.
-  Future<void> _upsertParameterizedReplaceableEvent(Event event) async {
+  Future<void> _upsertParameterizedReplaceableEvent(
+    Event event, {
+    required int expireAt,
+  }) async {
     final dTagValue = event.dTagValue;
 
     // Check if a newer event already exists for this pubkey+kind+d-tag
@@ -161,7 +186,7 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       }
     }
 
-    await _insertEvent(event);
+    await _insertEvent(event, expireAt: expireAt);
 
     // Also upsert video metrics for video events
     if (event.kind == 34236) {
@@ -169,18 +194,23 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     }
   }
 
-  /// Batch insert or replace multiple events in a single transaction
+  /// Batch insert or replace multiple events in a single transaction.
+  ///
+  /// All events are stored with a default 1-day expiry. To customize
+  /// the expiry, provide [expireAt] as a Unix timestamp.
   ///
   /// Much more efficient than calling upsertEvent() repeatedly.
   /// Uses a single database transaction to avoid lock contention.
   /// Handles NIP-01 replaceable event semantics.
-  Future<void> upsertEventsBatch(List<Event> events) async {
+  Future<void> upsertEventsBatch(List<Event> events, {int? expireAt}) async {
     if (events.isEmpty) return;
+
+    final effectiveExpireAt = expireAt ?? _defaultExpireAt();
 
     await transaction(() async {
       // Batch upsert all events with replaceable logic
       for (final event in events) {
-        await upsertEvent(event);
+        await upsertEvent(event, expireAt: effectiveExpireAt);
       }
     });
   }
@@ -320,6 +350,28 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       conditions.add('(${dTagConditions.join(' OR ')})');
     }
 
+    // Uppercase E tags (NIP-22 root event reference)
+    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
+    final uppercaseETags = filter.uppercaseE;
+    if (uppercaseETags != null && uppercaseETags.isNotEmpty) {
+      final eTagConditions = uppercaseETags.map((eventId) {
+        variables.add(Variable.withString('*"E"*"$eventId"*'));
+        return 'tags GLOB ?';
+      }).toList();
+      conditions.add('(${eTagConditions.join(' OR ')})');
+    }
+
+    // Uppercase K tags (NIP-22 root event kind)
+    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
+    final uppercaseKTags = filter.uppercaseK;
+    if (uppercaseKTags != null && uppercaseKTags.isNotEmpty) {
+      final kTagConditions = uppercaseKTags.map((kind) {
+        variables.add(Variable.withString('*"K"*"$kind"*'));
+        return 'tags GLOB ?';
+      }).toList();
+      conditions.add('(${kTagConditions.join(' OR ')})');
+    }
+
     // Content search filter (NIP-50 style, case insensitive)
     final search = filter.search;
     if (search != null && search.isNotEmpty) {
@@ -455,6 +507,40 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Delete a single event by its ID.
+  ///
+  /// Used when processing NIP-09 deletion events (Kind 5) to remove the
+  /// target events from the local cache.
+  ///
+  /// Returns true if an event was deleted, false if no event was found.
+  Future<bool> deleteEventById(String eventId) async {
+    final rowsDeleted = await customUpdate(
+      'DELETE FROM event WHERE id = ?',
+      variables: [Variable.withString(eventId)],
+      updates: {nostrEvents},
+      updateKind: UpdateKind.delete,
+    );
+    return rowsDeleted > 0;
+  }
+
+  /// Delete multiple events by their IDs.
+  ///
+  /// Used when processing NIP-09 deletion events (Kind 5) that reference
+  /// multiple events via 'e' tags.
+  ///
+  /// Returns the number of events deleted.
+  Future<int> deleteEventsByIds(List<String> eventIds) async {
+    if (eventIds.isEmpty) return 0;
+
+    final placeholders = List.filled(eventIds.length, '?').join(', ');
+    return customUpdate(
+      'DELETE FROM event WHERE id IN ($placeholders)',
+      variables: eventIds.map(Variable.withString).toList(),
+      updates: {nostrEvents},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   /// Convert database row to Event model
   Event _rowToEvent(QueryRow row) {
     final tags = (jsonDecode(row.read<String>('tags')) as List)
@@ -490,125 +576,10 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   // Cache Expiry Management
   // ---------------------------------------------------------------------------
 
-  /// Insert or replace event with an expiry timestamp.
-  ///
-  /// The event will be marked for cache eviction after [expireAt] Unix
-  /// timestamp. Use [deleteExpiredEvents] to remove expired events.
-  Future<void> upsertEventWithExpiry(
-    Event event, {
-    required int expireAt,
-  }) async {
-    // Handle replaceable events (kind 0, 3, 10000-19999)
-    if (EventKind.isReplaceable(event.kind)) {
-      await _upsertReplaceableEventWithExpiry(event, expireAt: expireAt);
-      return;
-    }
-
-    // Handle parameterized replaceable events (kind 30000-39999)
-    if (EventKind.isParameterizedReplaceable(event.kind)) {
-      await _upsertParameterizedReplaceableEventWithExpiry(
-        event,
-        expireAt: expireAt,
-      );
-      return;
-    }
-
-    // Regular event: simple insert or replace by ID
-    await _insertEvent(event, expireAt: expireAt);
-
-    // Also upsert video metrics for video events and reposts
-    if (event.kind == 34236 || event.kind == 16) {
-      await db.videoMetricsDao.upsertVideoMetrics(event);
-    }
-  }
-
-  /// Upsert replaceable event with expiry.
-  Future<void> _upsertReplaceableEventWithExpiry(
-    Event event, {
-    required int expireAt,
-  }) async {
-    final existingRows = await customSelect(
-      'SELECT id, created_at FROM event WHERE pubkey = ? AND kind = ? LIMIT 1',
-      variables: [
-        Variable.withString(event.pubkey),
-        Variable.withInt(event.kind),
-      ],
-      readsFrom: {nostrEvents},
-    ).get();
-
-    if (existingRows.isNotEmpty) {
-      final existingCreatedAt = existingRows.first.read<int>('created_at');
-      if (event.createdAt <= existingCreatedAt) {
-        return;
-      }
-      final existingId = existingRows.first.read<String>('id');
-      await customUpdate(
-        'DELETE FROM event WHERE id = ?',
-        variables: [Variable.withString(existingId)],
-        updates: {nostrEvents},
-        updateKind: UpdateKind.delete,
-      );
-    }
-
-    await _insertEvent(event, expireAt: expireAt);
-  }
-
-  /// Upsert parameterized replaceable event with expiry.
-  Future<void> _upsertParameterizedReplaceableEventWithExpiry(
-    Event event, {
-    required int expireAt,
-  }) async {
-    final dTagValue = event.dTagValue;
-
-    final existingRows = await customSelect(
-      'SELECT id, created_at, tags FROM event WHERE pubkey = ? AND kind = ?',
-      variables: [
-        Variable.withString(event.pubkey),
-        Variable.withInt(event.kind),
-      ],
-      readsFrom: {nostrEvents},
-    ).get();
-
-    for (final row in existingRows) {
-      final tagsJson = row.read<String>('tags');
-      final tags = (jsonDecode(tagsJson) as List)
-          .map((tag) => (tag as List).map((e) => e.toString()).toList())
-          .toList();
-      final existingDTag = _extractDTagFromTags(tags);
-
-      if (existingDTag == dTagValue) {
-        final existingCreatedAt = row.read<int>('created_at');
-        if (event.createdAt <= existingCreatedAt) {
-          return;
-        }
-        final existingId = row.read<String>('id');
-        await customUpdate(
-          'DELETE FROM event WHERE id = ?',
-          variables: [Variable.withString(existingId)],
-          updates: {nostrEvents},
-          updateKind: UpdateKind.delete,
-        );
-        break;
-      }
-    }
-
-    await _insertEvent(event, expireAt: expireAt);
-
-    if (event.kind == 34236) {
-      await db.videoMetricsDao.upsertVideoMetrics(event);
-    }
-  }
-
   /// Set the expiry timestamp for an existing event.
   ///
-  /// Returns true if the event was found and updated, false if not found
-  /// or if expire_at column doesn't exist.
+  /// Returns true if the event was found and updated, false if not found.
   Future<bool> setEventExpiry(String eventId, int expireAt) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return false;
-    }
-
     final rowsAffected = await customUpdate(
       'UPDATE event SET expire_at = ? WHERE id = ?',
       variables: [
@@ -621,39 +592,16 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     return rowsAffected > 0;
   }
 
-  /// Remove the expiry timestamp from an event (make it permanent).
-  ///
-  /// Returns true if the event was found and updated, false if not found
-  /// or if expire_at column doesn't exist.
-  Future<bool> clearEventExpiry(String eventId) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return false;
-    }
-
-    final rowsAffected = await customUpdate(
-      'UPDATE event SET expire_at = NULL WHERE id = ?',
-      variables: [Variable.withString(eventId)],
-      updates: {nostrEvents},
-      updateKind: UpdateKind.update,
-    );
-    return rowsAffected > 0;
-  }
-
-  /// Delete events that have expired (expire_at < now).
+  /// Delete events that have expired or have no expiry set.
   ///
   /// If [before] is provided, deletes events expired before that timestamp.
-  /// Returns the number of events deleted, or 0 if expire_at column doesn't
-  /// exist.
+  /// Also deletes events with NULL expire_at (legacy events without expiry).
+  ///
+  /// Returns the number of events deleted.
   Future<int> deleteExpiredEvents(int? before) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return 0;
-    }
-
     final nowUnix = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return customUpdate(
-      'DELETE FROM event WHERE expire_at IS NOT NULL AND expire_at < ?',
+      'DELETE FROM event WHERE expire_at IS NULL OR expire_at < ?',
       variables: [Variable.withInt(before ?? nowUnix)],
       updates: {nostrEvents},
       updateKind: UpdateKind.delete,
@@ -661,13 +609,7 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get the count of events that will expire before [before] Unix timestamp.
-  /// Returns 0 if expire_at column doesn't exist.
   Future<int> countExpiredEvents(int before) async {
-    // Skip if expire_at column doesn't exist
-    if (!db.hasExpireAtColumn) {
-      return 0;
-    }
-
     final result = await customSelect(
       'SELECT COUNT(*) as count FROM event '
       'WHERE expire_at IS NOT NULL AND expire_at < ?',

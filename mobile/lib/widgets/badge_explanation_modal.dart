@@ -1,4 +1,4 @@
-// ABOUTME: Modal dialog explaining video badge origins (Vine archive vs ProofMode verification)
+// ABOUTME: Modal dialog explaining video badge origins (Vine archive vs Proofmode verification)
 // ABOUTME: Shows context-appropriate information based on video metadata
 
 import 'package:flutter/material.dart';
@@ -138,7 +138,7 @@ class _ProofModeExplanation extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'This video\'s authenticity is verified using ProofMode technology.',
+          'This video\'s authenticity is verified using Proofmode technology.',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -149,7 +149,7 @@ class _ProofModeExplanation extends StatelessWidget {
         _VerificationLevelCard(video: video),
         const SizedBox(height: 12),
         const Text(
-          'ProofMode helps verify that videos are authentic and not AI-generated or manipulated.',
+          'Proofmode helps verify that videos are authentic and not AI-generated or manipulated.',
           style: TextStyle(fontSize: 13, color: Colors.white70),
         ),
         const SizedBox(height: 12),
@@ -168,7 +168,7 @@ class _ProofModeExplanation extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Learn more about ProofMode verification',
+                    'Learn more about Proofmode verification',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue[700],

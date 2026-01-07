@@ -38,24 +38,9 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      // Mock successful event broadcasting
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'broadcast_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
+      // Mock successful event publishing
+      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
@@ -158,19 +143,10 @@ void main() {
           return Future.value(event);
         });
 
-        when(mockNostr.broadcast(any)).thenAnswer((invocation) {
+        when(mockNostr.publishEvent(any)).thenAnswer((invocation) {
           final event = invocation.positionalArguments[0] as Event;
           lists.add(event.toCuratedList());
-
-          return Future.value(
-            NostrBroadcastResult(
-              event: event,
-              successCount: 1,
-              totalRelays: 1,
-              results: {'wss://relay.example.com': true},
-              errors: {},
-            ),
-          );
+          return Future.value(event);
         });
 
         // Mock subscription to return collected lists
@@ -339,10 +315,17 @@ void main() {
         expect(service.lists.first.name, 'Test List');
       });
 
-      test('publishes public list to Nostr', () async {
-        await service.createList(name: 'Public List', isPublic: true);
+      test('publishes public list to Nostr when it has videos', () async {
+        // Create list, add a video, then verify publish
+        final list = await service.createList(
+          name: 'Public List',
+          isPublic: true,
+        );
 
-        // Should create and sign event
+        // Add a video to the list so it will publish
+        await service.addVideoToList(list!.id, 'test_video_id');
+
+        // Should create and sign event when video is added (not when empty)
         verify(
           mockAuth.createAndSignEvent(
             kind: 30005,
@@ -351,8 +334,22 @@ void main() {
           ),
         ).called(1);
 
-        // Should broadcast event
-        verify(mockNostr.broadcast(any)).called(1);
+        // Should publish event
+        verify(mockNostr.publishEvent(any)).called(1);
+      });
+
+      test('does not publish empty public list to Nostr', () async {
+        await service.createList(name: 'Empty Public List', isPublic: true);
+
+        // Empty lists should not be published to avoid relay spam
+        verifyNever(
+          mockAuth.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        );
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('does not publish private list to Nostr', () async {
@@ -366,7 +363,7 @@ void main() {
             tags: anyNamed('tags'),
           ),
         );
-        verifyNever(mockNostr.broadcast(any));
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('does not publish when user not authenticated', () async {
@@ -463,16 +460,18 @@ void main() {
         expect(updatedList.playOrder, PlayOrder.reverse);
       });
 
-      test('publishes update to Nostr for public list', () async {
+      test('publishes update to Nostr for public list with videos', () async {
         final list = await service.createList(
           name: 'Test List',
           isPublic: true,
         );
+        // Add a video so the list will be published (empty lists don't publish)
+        await service.addVideoToList(list!.id, 'test_video_id');
         reset(mockNostr); // Clear previous invocations
 
-        await service.updateList(listId: list!.id, name: 'Updated Name');
+        await service.updateList(listId: list.id, name: 'Updated Name');
 
-        verify(mockNostr.broadcast(any)).called(1);
+        verify(mockNostr.publishEvent(any)).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -484,7 +483,7 @@ void main() {
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verifyNever(mockNostr.broadcast(any));
+        verifyNever(mockNostr.publishEvent(any));
       });
 
       test('returns false for non-existent list', () async {

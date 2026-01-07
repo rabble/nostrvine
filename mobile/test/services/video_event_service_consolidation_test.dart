@@ -24,6 +24,7 @@ void main() {
 
     // Setup default mock behaviors
     when(mockNostrService.isInitialized).thenReturn(true);
+    when(mockNostrService.publicKey).thenReturn('');
     when(mockNostrService.connectedRelayCount).thenReturn(1);
     when(mockNostrService.connectedRelays).thenReturn(['wss://test.relay']);
 

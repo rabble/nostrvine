@@ -212,6 +212,13 @@ class VideoEventService extends ChangeNotifier {
   /// [updated] is the new video with updated metadata.
   final List<void Function(VideoEvent updated)> _onVideoUpdatedCallbacks = [];
 
+  /// Callback type for new video notifications.
+  /// Called when a NEW video is added (not an update to existing).
+  /// [newVideo] is the newly added video.
+  /// [authorPubkey] is the video author's pubkey (or reposter's pubkey for reposts).
+  final List<void Function(VideoEvent newVideo, String authorPubkey)>
+  _onNewVideoCallbacks = [];
+
   /// Register a callback to be notified when a video is updated.
   /// Returns a function that can be called to unregister the callback.
   VoidCallback addVideoUpdateListener(
@@ -219,6 +226,16 @@ class VideoEventService extends ChangeNotifier {
   ) {
     _onVideoUpdatedCallbacks.add(callback);
     return () => _onVideoUpdatedCallbacks.remove(callback);
+  }
+
+  /// Register a callback to be notified when a NEW video is added.
+  /// Returns a function that can be called to unregister the callback.
+  /// This is called for new videos added via any subscription type.
+  VoidCallback addNewVideoListener(
+    void Function(VideoEvent newVideo, String authorPubkey) callback,
+  ) {
+    _onNewVideoCallbacks.add(callback);
+    return () => _onNewVideoCallbacks.remove(callback);
   }
 
   /// Remove a previously registered video update callback.
@@ -234,6 +251,21 @@ class VideoEventService extends ChangeNotifier {
       } catch (e) {
         Log.error(
           'Error in video update callback: $e',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+  }
+
+  /// Notify all registered callbacks that a NEW video was added.
+  void _notifyNewVideo(VideoEvent newVideo, String authorPubkey) {
+    for (final callback in _onNewVideoCallbacks) {
+      try {
+        callback(newVideo, authorPubkey);
+      } catch (e) {
+        Log.error(
+          'Error in new video callback: $e',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -4257,24 +4289,35 @@ class VideoEventService extends ChangeNotifier {
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
-      final bucket = _authorBuckets.putIfAbsent(authorHex, () => []);
-
-      // For addressable events (NIP-71), deduplicate by (pubkey, vineId) pair
-      // since each update creates a new event ID but same vineId
-      final existingIndex = bucket.indexWhere(
-        (e) => e.vineId == videoEvent.vineId && e.pubkey == videoEvent.pubkey,
+      final wasAdded = _addToAuthorBucket(
+        videoEvent,
+        authorHex,
+        isHistorical: isHistorical,
       );
+      // Notify listeners when a new (non-historical) video is added
+      if (wasAdded && !isHistorical) {
+        _notifyNewVideo(videoEvent, authorHex);
+      }
+    }
 
-      if (existingIndex != -1) {
-        // Replace existing video with newer version (higher createdAt wins)
-        if (videoEvent.createdAt > bucket[existingIndex].createdAt) {
-          bucket[existingIndex] = videoEvent;
-        }
-      } else {
-        if (isHistorical) {
-          bucket.add(videoEvent);
-        } else {
-          bucket.insert(0, videoEvent);
+    final currentUserPubkey = _nostrService.publicKey;
+    if (currentUserPubkey.isNotEmpty &&
+        subscriptionType != SubscriptionType.profile) {
+      // Determine the author for bucket assignment (reposter for reposts)
+      final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
+          ? videoEvent.reposterPubkey!
+          : videoEvent.pubkey;
+
+      // Only add if this is the current user's video
+      if (authorHex == currentUserPubkey) {
+        final wasAdded = _addToAuthorBucket(
+          videoEvent,
+          authorHex,
+          isHistorical: isHistorical,
+        );
+        if (wasAdded && !isHistorical) {
+          // Notify listeners that a new video was added for this user
+          _notifyNewVideo(videoEvent, authorHex);
         }
       }
     }
@@ -4326,6 +4369,37 @@ class VideoEventService extends ChangeNotifier {
 
       _lastDuplicateVideoLogTime = now;
       _duplicateVideoEventCount = 0;
+    }
+  }
+
+  /// Add a video to the author's bucket for profile feeds.
+  /// Returns true if the video was added (new), false if it was a duplicate or update.
+  bool _addToAuthorBucket(
+    VideoEvent videoEvent,
+    String authorHex, {
+    required bool isHistorical,
+  }) {
+    final bucket = _authorBuckets.putIfAbsent(authorHex, () => []);
+
+    // For addressable events (NIP-71), deduplicate by (pubkey, vineId) pair
+    // since each update creates a new event ID but same vineId
+    final existingIndex = bucket.indexWhere(
+      (e) => e.vineId == videoEvent.vineId && e.pubkey == videoEvent.pubkey,
+    );
+
+    if (existingIndex != -1) {
+      // Replace existing video with newer version (higher createdAt wins)
+      if (videoEvent.createdAt > bucket[existingIndex].createdAt) {
+        bucket[existingIndex] = videoEvent;
+      }
+      return false; // Not a new video, just an update
+    } else {
+      if (isHistorical) {
+        bucket.add(videoEvent);
+      } else {
+        bucket.insert(0, videoEvent);
+      }
+      return true; // New video was added
     }
   }
 

@@ -1006,13 +1006,13 @@ class CurationService {
       }
 
       // Publish with timeout
-      final broadcastFuture = _nostrService.broadcast(event);
+      final publishFuture = _nostrService.publishEvent(event);
       final timeoutDuration = const Duration(seconds: 5);
 
-      NostrBroadcastResult? broadcastResult;
+      Event? sentEvent;
 
       try {
-        broadcastResult = await broadcastFuture.timeout(timeoutDuration);
+        sentEvent = await publishFuture.timeout(timeoutDuration);
       } on TimeoutException {
         Log.warning(
           'Curation publish timed out after 5s: $id',
@@ -1037,9 +1037,7 @@ class CurationService {
         );
       }
 
-      final successCount = broadcastResult.successCount;
-      final totalRelays = broadcastResult.totalRelays;
-      final isSuccess = successCount > 0;
+      final isSuccess = sentEvent != null;
 
       if (isSuccess) {
         // Mark as successfully published
@@ -1048,16 +1046,13 @@ class CurationService {
           isPublishing: false,
           isPublished: true,
           lastPublishedAt: DateTime.now(),
-          publishedEventId: broadcastResult.event?.id,
-          successfulRelays: broadcastResult.results.entries
-              .where((e) => e.value == true)
-              .map((e) => e.key)
-              .toList(),
+          publishedEventId: sentEvent.id,
+          successfulRelays: _nostrService.connectedRelays,
           lastAttemptAt: DateTime.now(),
         );
 
         Log.info(
-          '✅ Published curation "$title" to $successCount/$totalRelays relays',
+          '✅ Published curation "$title" to relays',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -1069,29 +1064,23 @@ class CurationService {
           isPublished: false,
           failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
           lastAttemptAt: DateTime.now(),
-          lastFailureReason: broadcastResult.errors.values.join('; '),
+          lastFailureReason: 'Failed to publish to relays',
         );
 
         Log.warning(
-          '❌ Failed to publish curation "$title": 0/$totalRelays relays succeeded',
+          '❌ Failed to publish curation "$title" to relays',
           name: 'CurationService',
           category: LogCategory.system,
         );
       }
 
-      // Build result
-      final failedRelays = broadcastResult.results.entries
-          .where((e) => e.value == false)
-          .map((e) => e.key)
-          .toList();
-
       return CurationPublishResult(
         success: isSuccess,
-        successCount: successCount,
-        totalRelays: totalRelays,
-        eventId: isSuccess ? broadcastResult.event?.id : null,
-        errors: broadcastResult.errors,
-        failedRelays: failedRelays,
+        successCount: isSuccess ? 1 : 0,
+        totalRelays: 1,
+        eventId: isSuccess ? sentEvent.id : null,
+        errors: isSuccess ? {} : {'publish': 'Failed to publish to relays'},
+        failedRelays: isSuccess ? [] : ['relays'],
       );
     } catch (e) {
       Log.error(

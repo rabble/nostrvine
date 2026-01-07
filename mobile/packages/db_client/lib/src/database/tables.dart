@@ -4,15 +4,14 @@
 
 import 'package:drift/drift.dart';
 
-/// Maps to nostr_sdk's existing 'event' table (read-only for now)
+/// Nostr events table storing all cached events from relays.
 ///
-/// This table is managed by nostr_sdk's embedded relay and contains all
-/// Nostr events.
-/// We map to it for querying but don't create/modify it.
+/// Contains all Nostr events including video events (kind 34236), profiles
+/// (kind 0), reactions (kind 7), etc.
 @DataClassName('NostrEventRow')
 class NostrEvents extends Table {
   @override
-  String get tableName => 'event'; // Use existing table from nostr_sdk
+  String get tableName => 'event';
 
   TextColumn get id => text()();
   TextColumn get pubkey => text()();

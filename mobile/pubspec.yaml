@@ -97,6 +97,7 @@ dependencies:
   flutter_cache_manager: ^3.3.1
   share_plus: ^12.0.0 # Cross-platform sharing
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
+  flutter_svg: ^2.0.10+1 # For custom SVG icons
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
 
   # Nostr SDK - Local package for comprehensive Nostr support
@@ -137,6 +138,7 @@ dependencies:
       ref: master
   convert: ^3.1.2
   just_audio: ^0.10.5
+  audio_session: ^0.2.2
   pro_video_editor: ^0.4.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
@@ -211,6 +213,14 @@ flutter:
     - assets/icon/divine_icon_transparent.png
     - assets/icon/divine_wordmark.png
     - assets/icon/user-avatar.png
+    - assets/icon/menu.svg
+    - assets/icon/search.svg
+    - assets/icon/camera.svg
+    - assets/icon/CaretLeft.svg
+    - assets/icon/house.svg
+    - assets/icon/compass.svg
+    - assets/icon/bell.svg
+    - assets/icon/userCircle.svg
     - assets/loading-brand.gif
     - assets/seed_data/seed_events.sql
     - assets/seed_media/manifest.json
@@ -233,6 +243,16 @@ flutter:
     - family: Pacifico
       fonts:
         - asset: assets/fonts/Pacifico-Regular.ttf
+    - family: BricolageGrotesque
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
+          weight: 800
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

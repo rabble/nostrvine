@@ -151,14 +151,51 @@ class HomeFeed extends _$HomeFeed {
       followingSubscription.cancel();
     });
 
+    // Watch curatedListsState to know if subscribed lists are still loading
+    // This is needed because subscribedListVideoCacheProvider returns null until
+    // CuratedListService finishes initializing (which includes relay fetch)
+    final curatedListsState = ref.watch(curatedListsStateProvider);
+    final isCuratedListsLoading = curatedListsState.isLoading;
+
+    // Watch subscribedListVideoCache - provider will rebuild when cache changes
+    // We listen to the cache's ChangeNotifier to invalidate when list videos change
+    final subscribedListCacheForListener = ref.watch(
+      subscribedListVideoCacheProvider,
+    );
+    if (subscribedListCacheForListener != null) {
+      void onCacheChanged() {
+        Log.debug(
+          '🏠 HomeFeed: SubscribedListVideoCache updated, refreshing from service',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+        if (ref.mounted) {
+          refreshFromService();
+        }
+      }
+
+      subscribedListCacheForListener.addListener(onCacheChanged);
+      ref.onDispose(() {
+        subscribedListCacheForListener.removeListener(onCacheChanged);
+      });
+    }
+
     Log.info(
-      '🏠 HomeFeed: BUILD #$buildId - User is following ${followingPubkeys.length} people',
+      '🏠 HomeFeed: BUILD #$buildId - User is following ${followingPubkeys.length} people, '
+      'curatedListsLoading=$isCuratedListsLoading, cache=${subscribedListCacheForListener != null ? "ready" : "null"}',
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
 
-    if (followingPubkeys.isEmpty) {
-      // Return empty state if not following anyone
+    // Even if not following anyone, we might have videos from subscribed lists
+    // Need to wait for CuratedListService to initialize before declaring empty
+    // hasSubscribedLists is true if cache is ready OR still loading
+    final hasSubscribedLists =
+        subscribedListCacheForListener != null || isCuratedListsLoading;
+
+    if (followingPubkeys.isEmpty && !hasSubscribedLists) {
+      // Return empty state only if not following anyone AND curated lists are done loading
+      // AND there's still no cache (meaning user has no subscribed lists)
       keepAliveLink.close();
       return VideoFeedState(
         videos: [],
@@ -169,77 +206,171 @@ class HomeFeed extends _$HomeFeed {
       );
     }
 
-    // Subscribe to home feed videos from followed authors using dedicated subscription type
-    // NostrService now handles deduplication automatically
-    // Request server-side sorting by created_at (newest first) if relay supports it
-    // Use force: true to ensure new subscription even if params seem similar
-    Log.info(
-      '🏠 HomeFeed: Subscribing with ${followingPubkeys.length} authors',
-      name: 'HomeFeedProvider',
-      category: LogCategory.video,
-    );
-
     // Emit initial loading state so UI shows loading indicator instead of empty state
     state = const AsyncData(
       VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
     );
 
-    await videoEventService.subscribeToHomeFeed(
-      followingPubkeys,
-      limit: 100,
-      sortBy: VideoSortField.createdAt, // Newest videos first (timeline order)
-      force: true,
-    );
-    Log.info(
-      '🏠 HomeFeed: After subscribe, cache has ${videoEventService.homeFeedVideos.length} videos',
-      name: 'HomeFeedProvider',
-      category: LogCategory.video,
-    );
+    // Only subscribe to home feed if we have following pubkeys
+    if (followingPubkeys.isNotEmpty) {
+      // Subscribe to home feed videos from followed authors using dedicated subscription type
+      // NostrService now handles deduplication automatically
+      // Request server-side sorting by created_at (newest first) if relay supports it
+      // Use force: true to ensure new subscription even if params seem similar
+      Log.info(
+        '🏠 HomeFeed: Subscribing with ${followingPubkeys.length} authors',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
 
-    // Wait for initial batch of videos to arrive from relay
-    // Videos arrive in rapid succession, so we wait for the count to stabilize
-    final completer = Completer<void>();
-    int stableCount = -1; // Start at -1 so first check always triggers timer
-    Timer? stabilityTimer;
+      await videoEventService.subscribeToHomeFeed(
+        followingPubkeys,
+        limit: 100,
+        sortBy:
+            VideoSortField.createdAt, // Newest videos first (timeline order)
+        force: true,
+      );
+      Log.info(
+        '🏠 HomeFeed: After subscribe, cache has ${videoEventService.homeFeedVideos.length} videos',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
 
-    void checkStability() {
-      final currentCount = videoEventService.homeFeedVideos.length;
-      if (currentCount != stableCount) {
-        // Count changed, reset stability timer
-        stableCount = currentCount;
-        stabilityTimer?.cancel();
-        stabilityTimer = Timer(const Duration(milliseconds: 300), () {
-          // Count stable for 300ms, we're done
+      // Wait for initial batch of videos to arrive from relay
+      // Videos arrive in rapid succession, so we wait for the count to stabilize
+      final completer = Completer<void>();
+      int stableCount = -1; // Start at -1 so first check always triggers timer
+      Timer? stabilityTimer;
+
+      void checkStability() {
+        final currentCount = videoEventService.homeFeedVideos.length;
+        if (currentCount != stableCount) {
+          // Count changed, reset stability timer
+          stableCount = currentCount;
+          stabilityTimer?.cancel();
+          stabilityTimer = Timer(const Duration(milliseconds: 300), () {
+            // Count stable for 300ms, we're done
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          });
+        }
+      }
+
+      videoEventService.addListener(checkStability);
+
+      // Also set a maximum wait time
+      Timer(const Duration(seconds: 3), () {
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      });
+
+      // Trigger initial check
+      checkStability();
+
+      await completer.future;
+
+      // Clean up
+      videoEventService.removeListener(checkStability);
+      stabilityTimer?.cancel();
+
+      Log.info(
+        '🏠 HomeFeed: After stability wait, cache has ${videoEventService.homeFeedVideos.length} videos',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+    } else {
+      // Not following anyone - need subscribed list cache to show any content
+      Log.info(
+        '🏠 HomeFeed: Not following anyone, waiting for subscribed list cache',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+
+      // If cache is null because CuratedListService is still loading,
+      // return loading state - provider will rebuild when cache becomes ready
+      if (subscribedListCacheForListener == null) {
+        if (isCuratedListsLoading) {
+          Log.info(
+            '🏠 HomeFeed: Cache not ready yet (curated lists still loading), returning loading state',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+          keepAliveLink.close();
+          return const VideoFeedState(
+            videos: [],
+            hasMoreContent: false,
+            isInitialLoad: true,
+          );
+        }
+        // If not loading and still null, user has no subscribed lists
+        Log.info(
+          '🏠 HomeFeed: No subscribed lists found',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+        keepAliveLink.close();
+        return VideoFeedState(
+          videos: [],
+          hasMoreContent: false,
+          isLoadingMore: false,
+          error: null,
+          lastUpdated: DateTime.now(),
+        );
+      }
+
+      // Cache is ready - wait for it to have videos (up to 2 seconds)
+      final completer = Completer<void>();
+      Timer? checkTimer;
+
+      void checkCache() {
+        final videos = subscribedListCacheForListener.getVideos();
+        if (videos.isNotEmpty) {
+          checkTimer?.cancel();
           if (!completer.isCompleted) {
             completer.complete();
           }
-        });
+        }
       }
+
+      // Check periodically
+      checkTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+        checkCache();
+      });
+
+      // Listen for cache updates
+      void onCacheUpdate() {
+        checkCache();
+      }
+
+      subscribedListCacheForListener.addListener(onCacheUpdate);
+
+      // Clean up listener when done
+      completer.future.then((_) {
+        subscribedListCacheForListener.removeListener(onCacheUpdate);
+      });
+
+      // Maximum wait time of 2 seconds (first video notifies immediately now)
+      Timer(const Duration(seconds: 2), () {
+        checkTimer?.cancel();
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      });
+
+      // Check immediately
+      checkCache();
+
+      await completer.future;
+      checkTimer.cancel();
+
+      Log.info(
+        '🏠 HomeFeed: Done waiting for subscribed list cache, has ${subscribedListCacheForListener.getVideos().length} videos',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
     }
-
-    videoEventService.addListener(checkStability);
-
-    // Also set a maximum wait time
-    Timer(const Duration(seconds: 3), () {
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-
-    // Trigger initial check
-    checkStability();
-
-    await completer.future;
-
-    // Clean up
-    videoEventService.removeListener(checkStability);
-    stabilityTimer?.cancel();
-
-    Log.info(
-      '🏠 HomeFeed: After stability wait, cache has ${videoEventService.homeFeedVideos.length} videos',
-      name: 'HomeFeedProvider',
-      category: LogCategory.video,
-    );
 
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
@@ -278,6 +409,39 @@ class HomeFeed extends _$HomeFeed {
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
+
+    // Track IDs of videos from followed users for deduplication
+    final followingVideoIds = followingVideos.map((v) => v.id).toSet();
+
+    // Merge videos from subscribed curated lists
+    final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
+    final subscribedVideos = subscribedListCache?.getVideos() ?? [];
+
+    // Track which videos are ONLY from subscribed lists (not from follows)
+    // and map each video to its source list(s)
+    final listOnlyVideoIds = <String>{};
+    final videoListSources = <String, Set<String>>{};
+
+    for (final video in subscribedVideos) {
+      final listIds = subscribedListCache?.getListsForVideo(video.id) ?? {};
+      if (listIds.isNotEmpty) {
+        videoListSources[video.id] = listIds;
+
+        if (!followingVideoIds.contains(video.id)) {
+          // Video is ONLY in feed because of subscribed list, not from follows
+          listOnlyVideoIds.add(video.id);
+          followingVideos.add(video);
+        }
+      }
+    }
+
+    if (listOnlyVideoIds.isNotEmpty) {
+      Log.info(
+        '🏠 HomeFeed: Merged ${listOnlyVideoIds.length} videos from subscribed lists',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+    }
 
     // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
     final beforeFilter = followingVideos.length;
@@ -325,12 +489,19 @@ class HomeFeed extends _$HomeFeed {
       );
     }
 
+    // Keep showing loading if we have no videos but might still be getting them from lists
+    // This prevents showing "empty" while subscribed list cache is still syncing
+    final stillLoadingLists = followingVideos.isEmpty && hasSubscribedLists;
+
     final feedState = VideoFeedState(
       videos: followingVideos,
       hasMoreContent: followingVideos.length >= 10,
       isLoadingMore: false,
+      isInitialLoad: stillLoadingLists,
       error: null,
       lastUpdated: DateTime.now(),
+      videoListSources: videoListSources,
+      listOnlyVideoIds: listOnlyVideoIds,
     );
 
     // Register for video update callbacks to auto-refresh when any video is updated
@@ -488,6 +659,29 @@ class HomeFeed extends _$HomeFeed {
     final videoEventService = ref.read(videoEventServiceProvider);
     var updatedVideos = List<VideoEvent>.from(videoEventService.homeFeedVideos);
 
+    // Track IDs of videos from followed users for deduplication
+    final followingVideoIds = updatedVideos.map((v) => v.id).toSet();
+
+    // Merge videos from subscribed curated lists
+    final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
+    final subscribedVideos = subscribedListCache?.getVideos() ?? [];
+
+    // Track which videos are ONLY from subscribed lists (not from follows)
+    final listOnlyVideoIds = <String>{};
+    final videoListSources = <String, Set<String>>{};
+
+    for (final video in subscribedVideos) {
+      final listIds = subscribedListCache?.getListsForVideo(video.id) ?? {};
+      if (listIds.isNotEmpty) {
+        videoListSources[video.id] = listIds;
+
+        if (!followingVideoIds.contains(video.id)) {
+          listOnlyVideoIds.add(video.id);
+          updatedVideos.add(video);
+        }
+      }
+    }
+
     // Apply same filtering as build()
     updatedVideos = updatedVideos
         .where((v) => v.isSupportedOnCurrentPlatform)
@@ -506,6 +700,8 @@ class HomeFeed extends _$HomeFeed {
         hasMoreContent: updatedVideos.length >= 10,
         isLoadingMore: false,
         lastUpdated: DateTime.now(),
+        videoListSources: videoListSources,
+        listOnlyVideoIds: listOnlyVideoIds,
       ),
     );
   }

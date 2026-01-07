@@ -117,15 +117,9 @@ void main() {
           ).thenAnswer((_) async => mockEvent);
 
           // Mock successful broadcast
-          when(mockNostrService.broadcast(mockEvent)).thenAnswer(
-            (_) async => NostrBroadcastResult(
-              event: mockEvent,
-              successCount: 1,
-              totalRelays: 1,
-              results: const {'relay1': true},
-              errors: const {},
-            ),
-          );
+          when(
+            mockNostrService.publishEvent(mockEvent),
+          ).thenAnswer((_) async => mockEvent);
 
           // Test toggling like
           await socialService.toggleLike(testEventId, testAuthorPubkey);
@@ -143,7 +137,7 @@ void main() {
           ).called(1);
 
           // Verify broadcast was called
-          verify(mockNostrService.broadcast(mockEvent)).called(1);
+          verify(mockNostrService.publishEvent(mockEvent)).called(1);
 
           // Verify event is now liked locally
           expect(socialService.isLiked(testEventId), true);
@@ -173,15 +167,10 @@ void main() {
         ).thenAnswer((_) async => mockEvent);
 
         // Mock failed broadcast
-        when(mockNostrService.broadcast(mockEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: const {'relay1': false},
-            errors: const {'relay1': 'Connection failed'},
-          ),
-        );
+        // publishEvent returns null on failure
+        when(
+          mockNostrService.publishEvent(mockEvent),
+        ).thenAnswer((_) async => null);
 
         // Test toggling like should throw exception
         expect(
@@ -1013,15 +1002,9 @@ void main() {
             ),
           ).thenAnswer((_) async => mockDeletionEvent);
 
-          when(mockNostrService.broadcast(mockDeletionEvent)).thenAnswer(
-            (_) async => NostrBroadcastResult(
-              event: mockDeletionEvent,
-              successCount: 1,
-              totalRelays: 1,
-              results: const {'relay1': true},
-              errors: const {},
-            ),
-          );
+          when(
+            mockNostrService.publishEvent(mockDeletionEvent),
+          ).thenAnswer((_) async => mockDeletionEvent);
 
           // Test publishing deletion request
           await socialService.publishRightToBeForgotten();
@@ -1045,8 +1028,8 @@ void main() {
             ),
           ).called(1);
 
-          // Verify broadcast was called
-          verify(mockNostrService.broadcast(mockDeletionEvent)).called(1);
+          // Verify publishEvent was called
+          verify(mockNostrService.publishEvent(mockDeletionEvent)).called(1);
         },
       );
 
@@ -1117,7 +1100,7 @@ void main() {
         );
 
         // Verify no broadcast was attempted
-        verifyNever(mockNostrService.broadcast(any));
+        verifyNever(mockNostrService.publishEvent(any));
       });
 
       test('should handle broadcast failure gracefully', () async {
@@ -1165,15 +1148,10 @@ void main() {
           ),
         ).thenAnswer((_) async => mockDeletionEvent);
 
-        when(mockNostrService.broadcast(mockDeletionEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockDeletionEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: const {'relay1': false},
-            errors: const {'relay1': 'Connection failed'},
-          ),
-        );
+        // publishEvent returns null on failure
+        when(
+          mockNostrService.publishEvent(mockDeletionEvent),
+        ).thenAnswer((_) async => null);
 
         // Test should throw exception
         expect(
@@ -1182,7 +1160,7 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('Failed to broadcast deletion request'),
+              contains('Failed to publish deletion request to relays'),
             ),
           ),
         );
@@ -1236,15 +1214,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockDeletionEvent);
 
-        when(mockNostrService.broadcast(mockDeletionEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockDeletionEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(mockDeletionEvent),
+        ).thenAnswer((_) async => mockDeletionEvent);
 
         await socialService.publishRightToBeForgotten();
 
@@ -1267,7 +1239,7 @@ void main() {
           ),
         ).called(1);
 
-        verify(mockNostrService.broadcast(mockDeletionEvent)).called(1);
+        verify(mockNostrService.publishEvent(mockDeletionEvent)).called(1);
       });
     });
   });
