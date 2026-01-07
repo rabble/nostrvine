@@ -99,7 +99,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
+        backgroundColor: VineTheme.navGreen,
         foregroundColor: VineTheme.whiteText,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -243,7 +243,7 @@ class _ProfileErrorScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
+        backgroundColor: VineTheme.navGreen,
         foregroundColor: VineTheme.whiteText,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
