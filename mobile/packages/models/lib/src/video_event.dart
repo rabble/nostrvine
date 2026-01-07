@@ -625,13 +625,6 @@ class VideoEvent {
     return !isRepost;
   }
 
-  /// Check if we should show the Original Content badge. Show for original
-  /// content that is NOT a vintage recovered vine AND does NOT have ProofMode
-  /// verification (those show ProofMode badge instead)
-  bool get shouldShowOriginalBadge {
-    return isOriginalContent && !isOriginalVine && !hasProofMode;
-  }
-
   /// Comparator: items with no loop count first (new vines),
   /// then items with loop count sorted by amount desc.
   /// Within groups, break ties by most recent createdAt.

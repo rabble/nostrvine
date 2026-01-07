@@ -339,9 +339,9 @@ void main() {
       expect(color, Color(devConfig.indicatorColorValue));
     });
 
-    test('returns VineTheme.vineGreen for production environment', () {
+    test('returns VineTheme.navGreen for production environment', () {
       final color = getEnvironmentAppBarColor(EnvironmentConfig.production);
-      expect(color, VineTheme.vineGreen);
+      expect(color, VineTheme.navGreen);
     });
   });
 }

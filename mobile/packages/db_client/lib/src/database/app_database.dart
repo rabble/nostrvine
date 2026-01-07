@@ -125,7 +125,7 @@ class AppDatabase extends _$AppDatabase {
   /// Runs cleanup of expired data from all tables.
   ///
   /// This method should be called during app startup to remove:
-  /// - Expired Nostr events (based on expire_at timestamp)
+  /// - Expired Nostr events (based on expire_at timestamp, including NULL)
   /// - Expired profile stats (older than 5 minutes)
   /// - Expired hashtag stats (older than 1 hour)
   /// - Old notifications (older than 7 days)
@@ -135,7 +135,7 @@ class AppDatabase extends _$AppDatabase {
   /// Note: This method handles cases where tables may not exist during
   /// migrations from older schema versions.
   Future<CleanupResult> runStartupCleanup() async {
-    // Delete expired events - safe since DAO checks hasExpireAtColumn
+    // Delete expired events (also deletes events with NULL expire_at)
     final expiredEventsDeleted = await nostrEventsDao.deleteExpiredEvents(null);
 
     // Delete expired profile stats (5 minute expiry)

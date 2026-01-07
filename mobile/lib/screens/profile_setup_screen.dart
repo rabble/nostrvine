@@ -9,6 +9,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/models/user_profile.dart' as profile_model;
@@ -174,40 +175,55 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Edit Profile'),
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
           onPressed: () {
-            print('🟪 PROFILE_SETUP DEBUG: Back button pressed');
-
             // Try to pop using context.pop() which GoRouter intercepts
             // This should work even if canPop() returns false
             try {
-              print('🟪 PROFILE_SETUP DEBUG: Attempting context.pop()');
               context.pop();
-              print('🟪 PROFILE_SETUP DEBUG: context.pop() succeeded');
             } catch (e) {
               // If pop fails, navigate to profile or home as fallback
-              print('🟪 PROFILE_SETUP DEBUG: context.pop() failed: $e');
               final authService = ref.read(authServiceProvider);
               final currentPubkey = authService.currentPublicKeyHex;
               if (currentPubkey != null) {
                 final npub = authService.currentNpub;
-                print(
-                  '🟪 PROFILE_SETUP DEBUG: Navigating back to profile: $npub',
-                );
                 context.go('/profile/$npub');
               } else {
-                print('🟪 PROFILE_SETUP DEBUG: No user, navigating to home');
                 context.go('/home/0');
               }
             }
           },
           tooltip: 'Back',
         ),
-      ), // appBar
+        title: Text('Edit Profile', style: VineTheme.titleFont()),
+      ),
       body: GestureDetector(
         onTap: () {
           // Dismiss keyboard when tapping outside text fields
@@ -1021,41 +1037,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         category: LogCategory.ui,
       );
 
-      final result = await nostrService.broadcast(event);
-      final success = result.isSuccessful;
-      final connectionError = result.connectionError;
+      final sentEvent = await nostrService.publishEvent(event);
+      final success = sentEvent != null;
 
       Log.info(
-        'Broadcast result: success=$success, successCount=${result.successCount}/${result.totalRelays}',
+        'Publish result: success=$success',
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
-      if (connectionError != null) {
-        Log.error(
-          connectionError,
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Unable to save. Please check your connection and try again.',
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-        return;
-      }
-      if (result.errors.isNotEmpty) {
-        Log.error(
-          'Broadcast errors: ${result.errors}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
 
       if (success) {
         // CRITICAL: Wait for relay to confirm it has the updated profile before navigating

@@ -117,18 +117,11 @@ void main() {
         return Future.value(capturedEvent);
       });
 
-      // Mock broadcast to succeed
-      when(() => mockNostrService.broadcast(any())).thenAnswer((
+      // Mock publish to succeed
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        );
+        return invocation.positionalArguments[0] as Event;
       });
 
       await publisher.publishDirectUpload(upload);
@@ -255,17 +248,10 @@ void main() {
         return Future.value(capturedEvent);
       });
 
-      when(() => mockNostrService.broadcast(any())).thenAnswer((
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        );
+        return invocation.positionalArguments[0] as Event;
       });
 
       await publisher.publishDirectUpload(upload);
@@ -329,17 +315,10 @@ void main() {
         return Future.value(capturedEvent);
       });
 
-      when(() => mockNostrService.broadcast(any())).thenAnswer((
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        );
+        return invocation.positionalArguments[0] as Event;
       });
 
       final result = await publisher.publishDirectUpload(upload);

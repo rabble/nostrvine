@@ -39,12 +39,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
     final videosAsync = ref.read(videosForHomeRouteProvider);
 
-    // Redirect to home on next frame to avoid build-phase navigation
+    // Pre-initialize controllers on next frame (don't redirect - respect URL)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.go('/home/0');
-      }
-
       // Initial build pre initialization
       videosAsync.whenData((state) {
         preInitializeControllers(

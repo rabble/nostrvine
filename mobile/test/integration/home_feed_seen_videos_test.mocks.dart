@@ -13,6 +13,7 @@ import 'package:nostr_sdk/event.dart' as _i9;
 import 'package:nostr_sdk/filter.dart' as _i12;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i13;
 import 'package:openvine/models/video_event.dart' as _i4;
+import 'package:openvine/repositories/follow_repository.dart' as _i14;
 import 'package:openvine/services/age_verification_service.dart' as _i8;
 import 'package:openvine/services/content_blocklist_service.dart' as _i7;
 import 'package:openvine/services/video_event_service.dart' as _i3;
@@ -35,12 +36,6 @@ import 'package:openvine/services/video_filter_builder.dart' as _i11;
 
 class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
   _FakeCountResult_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
-    implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -1225,33 +1220,113 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as _i10.Stream<_i9.Event>);
 
   @override
-  _i10.Future<_i2.NostrBroadcastResult> broadcast(
-    _i9.Event? event, {
-    List<String>? targetRelays,
-  }) =>
+  _i10.Future<void> dispose() =>
       (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i10.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
+            Invocation.method(#dispose, []),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
           )
-          as _i10.Future<_i2.NostrBroadcastResult>);
+          as _i10.Future<void>);
+}
+
+/// A class which mocks [FollowRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockFollowRepository extends _i1.Mock implements _i14.FollowRepository {
+  MockFollowRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i10.Stream<List<String>> get followingStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#followingStream),
+            returnValue: _i10.Stream<List<String>>.empty(),
+          )
+          as _i10.Stream<List<String>>);
+
+  @override
+  List<String> get followingPubkeys =>
+      (super.noSuchMethod(
+            Invocation.getter(#followingPubkeys),
+            returnValue: <String>[],
+          )
+          as List<String>);
+
+  @override
+  bool get isInitialized =>
+      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
+          as bool);
+
+  @override
+  int get followingCount =>
+      (super.noSuchMethod(Invocation.getter(#followingCount), returnValue: 0)
+          as int);
 
   @override
   _i10.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
+          )
+          as _i10.Future<void>);
+
+  @override
+  bool isFollowing(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#isFollowing, [pubkey]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  _i10.Future<List<String>> getMyFollowers() =>
+      (super.noSuchMethod(
+            Invocation.method(#getMyFollowers, []),
+            returnValue: _i10.Future<List<String>>.value(<String>[]),
+          )
+          as _i10.Future<List<String>>);
+
+  @override
+  _i10.Future<List<String>> getFollowers(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFollowers, [pubkey]),
+            returnValue: _i10.Future<List<String>>.value(<String>[]),
+          )
+          as _i10.Future<List<String>>);
+
+  @override
+  _i10.Future<void> toggleFollow(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#toggleFollow, [pubkey]),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
+          )
+          as _i10.Future<void>);
+
+  @override
+  _i10.Future<void> initialize() =>
+      (super.noSuchMethod(
+            Invocation.method(#initialize, []),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
+          )
+          as _i10.Future<void>);
+
+  @override
+  _i10.Future<void> follow(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#follow, [pubkey]),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
+          )
+          as _i10.Future<void>);
+
+  @override
+  _i10.Future<void> unfollow(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#unfollow, [pubkey]),
             returnValue: _i10.Future<void>.value(),
             returnValueForMissingStub: _i10.Future<void>.value(),
           )
