@@ -906,11 +906,13 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Consumer(
                     builder: (context, ref, _) {
-                      final curatedListState =
-                          ref.watch(curatedListsStateProvider);
+                      final curatedListState = ref.watch(
+                        curatedListsStateProvider,
+                      );
                       final curatedListService = curatedListState.whenOrNull(
-                        data: (_) =>
-                            ref.read(curatedListsStateProvider.notifier).service,
+                        data: (_) => ref
+                            .read(curatedListsStateProvider.notifier)
+                            .service,
                       );
 
                       return ListAttributionChip(
