@@ -233,10 +233,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 }
 
 class _ProfileErrorScreen extends StatelessWidget {
-  const _ProfileErrorScreen({
-    required this.message,
-    required this.onBack,
-  });
+  const _ProfileErrorScreen({required this.message, required this.onBack});
 
   final String message;
   final VoidCallback onBack;
