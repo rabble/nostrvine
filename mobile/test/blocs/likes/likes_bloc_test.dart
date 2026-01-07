@@ -130,6 +130,7 @@ void main() {
           const LikesState(
             status: LikesStatus.success,
             likedEventIds: ['event1'],
+            likeCounts: {'event1': 1},
           ),
         ],
       );
@@ -164,6 +165,7 @@ void main() {
           const LikesState(
             status: LikesStatus.success,
             likedEventIds: ['event2', 'event1'],
+            likeCounts: {'event2': 1},
           ),
         ],
       );
@@ -195,7 +197,10 @@ void main() {
             likedEventIds: ['event1'],
             operationsInProgress: {'event1'},
           ),
-          const LikesState(status: LikesStatus.success),
+          const LikesState(
+            status: LikesStatus.success,
+            likeCounts: {'event1': 0},
+          ),
         ],
       );
 
