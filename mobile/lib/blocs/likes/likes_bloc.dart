@@ -91,10 +91,12 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
       );
 
       if (isNowLiked) {
-        // Prepend to list (most recent first)
+        // Prepend to list (most recent first) and increment count
+        final currentCount = state.likeCounts[eventId] ?? 0;
         emit(
           state.copyWith(
             likedEventIds: [eventId, ...state.likedEventIds],
+            likeCounts: {...state.likeCounts, eventId: currentCount + 1},
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
@@ -102,12 +104,17 @@ class LikesBloc extends Bloc<LikesEvent, LikesState> {
           ),
         );
       } else {
-        // Remove from list
+        // Remove from list and decrement count
+        final currentCount = state.likeCounts[eventId] ?? 0;
         emit(
           state.copyWith(
             likedEventIds: state.likedEventIds
                 .where((id) => id != eventId)
                 .toList(),
+            likeCounts: {
+              ...state.likeCounts,
+              eventId: currentCount > 0 ? currentCount - 1 : 0,
+            },
             operationsInProgress: _removeFromSet(
               state.operationsInProgress,
               eventId,
