@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/likes/likes_bloc.dart';
+import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -90,6 +91,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Get services for ProfileLikedVideosBloc
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
 
     // Check if LikesBloc is available (provided at app level when authenticated)
     final hasLikesBloc = context.read<LikesBloc?>() != null;
@@ -116,7 +118,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       );
     }
 
-    return DefaultTabController(
+    // Build the main content
+    Widget content = DefaultTabController(
       length: 3,
       child: NestedScrollView(
         controller: widget.scrollController,
@@ -192,6 +195,18 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         body: tabContent,
       ),
     );
+
+    // Wrap with OthersFollowersBloc for other users' profiles
+    // This allows the follow button to update the followers count optimistically
+    if (!widget.isOwnProfile) {
+      return BlocProvider<OthersFollowersBloc>(
+        create: (_) => OthersFollowersBloc(followRepository: followRepository)
+          ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
 
