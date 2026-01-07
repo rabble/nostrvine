@@ -190,7 +190,7 @@ class ProfileLikedVideosBloc
         filter,
       ], subscriptionId: subscriptionId);
 
-      final subscription = eventStream.listen(
+      eventStream.listen(
         (event) {
           try {
             final video = VideoEvent.fromNostrEvent(event);
