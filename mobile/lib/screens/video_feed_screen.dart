@@ -608,14 +608,19 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
         final isListOnly = feedState.listOnlyVideoIds.contains(video.id);
         final listSources = feedState.videoListSources[video.id];
 
+        // Use PageController as source of truth for active video
+        final currentPage = _pageController.page?.round() ?? _currentIndex;
+        final isActive = index == currentPage;
+
         return VideoFeedItem(
           key: ValueKey('video-${video.id}'),
           video: video,
           index: index,
-          hasBottomNavigation: true,
+          hasBottomNavigation: false,
           contextTitle: '', // Home feed has no context title
           showListAttribution: isListOnly,
           listSources: listSources,
+          isActiveOverride: isActive,
         );
       },
     );

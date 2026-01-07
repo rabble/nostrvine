@@ -604,6 +604,136 @@ void main() {
           equals({event1.id, event2.id}),
         );
       });
+
+      test(
+        'filters by uppercase E tags (NIP-22 root event reference)',
+        () async {
+          const rootEventId = 'root_video_event_id_123';
+          // NIP-22 comment (kind 1111) referencing a video
+          final comment1 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey], // Uppercase E = root scope
+              ['K', '34236'],
+            ],
+            content: 'Great video!',
+            createdAt: 1000,
+          );
+          // Comment referencing a different root event
+          final comment2 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', 'other_root_event', '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Another comment',
+            createdAt: 2000,
+          );
+          // Regular event with lowercase e tag (not an uppercase E)
+          final regularEvent = createEvent(
+            tags: [
+              ['e', rootEventId],
+            ],
+            createdAt: 3000,
+          );
+
+          await dao.upsertEventsBatch([comment1, comment2, regularEvent]);
+
+          final results = await dao.getEventsByFilter(
+            Filter(uppercaseE: [rootEventId]),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(comment1.id));
+          expect(results.first.content, equals('Great video!'));
+        },
+      );
+
+      test('filters by uppercase K tags (NIP-22 root event kind)', () async {
+        // NIP-22 comment referencing a video (kind 34236)
+        final commentOnVideo = createEvent(
+          kind: 1111,
+          tags: [
+            ['E', 'video_event_id', '', testPubkey],
+            ['K', '34236'], // Uppercase K = root event kind
+          ],
+          content: 'Comment on video',
+          createdAt: 1000,
+        );
+        // NIP-22 comment referencing a different kind
+        final commentOnArticle = createEvent(
+          kind: 1111,
+          tags: [
+            ['E', 'article_event_id', '', testPubkey],
+            ['K', '30023'], // Long-form content kind
+          ],
+          content: 'Comment on article',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([commentOnVideo, commentOnArticle]);
+
+        final results = await dao.getEventsByFilter(
+          Filter(uppercaseK: ['34236']),
+        );
+
+        expect(results.length, equals(1));
+        expect(results.first.id, equals(commentOnVideo.id));
+      });
+
+      test(
+        'combines uppercaseE and uppercaseK filters for NIP-22 comments',
+        () async {
+          const rootEventId = 'specific_video_id';
+          // Comment on the specific video
+          final targetComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Target comment',
+            createdAt: 1000,
+          );
+          // Comment on different video
+          final otherVideoComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', 'other_video_id', '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Other video comment',
+            createdAt: 2000,
+          );
+          // Comment with right E but wrong K
+          final wrongKindComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey],
+              ['K', '30023'],
+            ],
+            content: 'Wrong kind comment',
+            createdAt: 3000,
+          );
+
+          await dao.upsertEventsBatch([
+            targetComment,
+            otherVideoComment,
+            wrongKindComment,
+          ]);
+
+          final results = await dao.getEventsByFilter(
+            Filter(
+              kinds: [1111],
+              uppercaseE: [rootEventId],
+              uppercaseK: ['34236'],
+            ),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(targetComment.id));
+        },
+      );
     });
 
     group('getEventById', () {

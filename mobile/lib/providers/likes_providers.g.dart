@@ -107,7 +107,7 @@ final class LikesNotifierProvider
   }
 }
 
-String _$likesNotifierHash() => r'e66e53987dfcbccc5efbe6791bafd588948e18ca';
+String _$likesNotifierHash() => r'b45a93a89d773a8af6761459d9f5f84ff79fb359';
 
 /// Main likes state notifier
 ///
@@ -212,7 +212,7 @@ final class IsEventLikedProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isEventLikedHash() => r'8c87bf774ab2d3d42f74dd81307e94ae9c027685';
+String _$isEventLikedHash() => r'1e0e8bd04a0235604878b509dd07312ec680dfe8';
 
 /// Convenience provider to check if a specific event is liked
 

@@ -308,12 +308,19 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   );
                 },
                 itemBuilder: (context, index) {
+                  // Use PageController as source of truth for active video,
+                  // not URL index. This prevents race conditions when videos
+                  // reorder and URL update is pending.
+                  final currentPage = _controller?.page?.round() ?? urlIndex;
+                  final isActive = index == currentPage;
+
                   return VideoFeedItem(
                     key: ValueKey('video-${videos[index].id}'),
                     video: videos[index],
                     index: index,
-                    hasBottomNavigation: true,
+                    hasBottomNavigation: false,
                     contextTitle: '', // Home feed has no context title
+                    isActiveOverride: isActive,
                   );
                 },
               ),
