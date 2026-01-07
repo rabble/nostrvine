@@ -141,7 +141,8 @@ class VideoErrorOverlay extends ConsumerWidget {
                           // NOTE: activeVideoIdProvider returns stableId (vineId ?? id),
                           // but we check both to be defensive against future changes.
                           final activeVideoId = ref.read(activeVideoIdProvider);
-                          final isThisVideoActive = activeVideoId == video.stableId ||
+                          final isThisVideoActive =
+                              activeVideoId == video.stableId ||
                               activeVideoId == video.id;
                           Log.info(
                             '🔐 [AGE-GATE] Checking active video: activeVideoId=$activeVideoId, stableId=${video.stableId}, id=${video.id}, match=$isThisVideoActive',
