@@ -93,8 +93,9 @@ void main() {
       when(() => mockNostr.close()).thenReturn(null);
       when(() => mockRelayManager.dispose()).thenAnswer((_) async {});
       // Default to having connected relays (tests can override if needed)
-      when(() => mockRelayManager.connectedRelays)
-          .thenReturn(['wss://relay.example.com']);
+      when(
+        () => mockRelayManager.connectedRelays,
+      ).thenReturn(['wss://relay.example.com']);
 
       client = NostrClient.forTesting(
         nostr: mockNostr,
@@ -189,8 +190,9 @@ void main() {
         when(() => mockRelayManager.connectedRelays).thenReturn([]);
         when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
           // Simulate successful reconnection by updating connected relays
-          when(() => mockRelayManager.connectedRelays)
-              .thenReturn(connectedRelays);
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(connectedRelays);
         });
         when(
           () => mockNostr.sendEvent(
@@ -235,7 +237,9 @@ void main() {
         final event = _createTestEvent();
         final connectedRelays = ['wss://relay1.example.com'];
 
-        when(() => mockRelayManager.connectedRelays).thenReturn(connectedRelays);
+        when(
+          () => mockRelayManager.connectedRelays,
+        ).thenReturn(connectedRelays);
         when(
           () => mockNostr.sendEvent(
             any(),
@@ -267,7 +271,9 @@ void main() {
           mockNostrEventsDao = _MockNostrEventsDao();
 
           when(() => mockDbClient.database).thenReturn(mockDatabase);
-          when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
 
           clientWithCache = NostrClient.forTesting(
             nostr: mockNostr,
@@ -289,8 +295,9 @@ void main() {
 
           // No relays connected, reconnection fails
           when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(mockRelayManager.retryDisconnectedRelays)
-              .thenAnswer((_) async {});
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
           when(
             () => mockNostrEventsDao.upsertEvent(any()),
           ).thenAnswer((_) async {});
@@ -304,8 +311,9 @@ void main() {
           // Should have optimistically cached the event
           verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
           // Should have rolled back the cache
-          verify(() => mockNostrEventsDao.deleteEventsByIds([event.id]))
-              .called(1);
+          verify(
+            () => mockNostrEventsDao.deleteEventsByIds([event.id]),
+          ).called(1);
         });
 
         test(
@@ -316,8 +324,9 @@ void main() {
 
             // No relays connected, reconnection fails
             when(() => mockRelayManager.connectedRelays).thenReturn([]);
-            when(mockRelayManager.retryDisconnectedRelays)
-                .thenAnswer((_) async {});
+            when(
+              mockRelayManager.retryDisconnectedRelays,
+            ).thenAnswer((_) async {});
             when(
               () => mockNostrEventsDao.upsertEvent(any()),
             ).thenAnswer((_) async {});
@@ -341,10 +350,10 @@ void main() {
 
           // Initially no relays, but reconnection succeeds
           when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(mockRelayManager.retryDisconnectedRelays)
-              .thenAnswer((_) async {
-            when(() => mockRelayManager.connectedRelays)
-                .thenReturn(connectedRelays);
+          when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
+            when(
+              () => mockRelayManager.connectedRelays,
+            ).thenReturn(connectedRelays);
           });
           when(
             () => mockNostr.sendEvent(
