@@ -145,40 +145,6 @@ void main() {
       );
     });
 
-    group('OthersFollowersToggleFollowRequested', () {
-      blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'calls toggleFollow on repository',
-        setUp: () {
-          when(
-            () => mockFollowRepository.toggleFollow(any()),
-          ).thenAnswer((_) async {});
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          OthersFollowersToggleFollowRequested(validPubkey('follower')),
-        ),
-        verify: (_) {
-          verify(
-            () => mockFollowRepository.toggleFollow(validPubkey('follower')),
-          ).called(1);
-        },
-      );
-
-      blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'handles toggleFollow error gracefully',
-        setUp: () {
-          when(
-            () => mockFollowRepository.toggleFollow(any()),
-          ).thenThrow(Exception('Network error'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          OthersFollowersToggleFollowRequested(validPubkey('follower')),
-        ),
-        // Should not throw or emit error state - just logs
-        expect: () => <OthersFollowersState>[],
-      );
-    });
   });
 
   group('OthersFollowersState', () {

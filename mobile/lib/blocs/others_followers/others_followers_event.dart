@@ -15,11 +15,3 @@ final class OthersFollowersListLoadRequested extends OthersFollowersEvent {
   /// The public key of the user whose followers list to load
   final String targetPubkey;
 }
-
-/// Request to toggle follow status for a follower.
-final class OthersFollowersToggleFollowRequested extends OthersFollowersEvent {
-  const OthersFollowersToggleFollowRequested(this.pubkey);
-
-  /// The public key of the follower to follow/unfollow
-  final String pubkey;
-}

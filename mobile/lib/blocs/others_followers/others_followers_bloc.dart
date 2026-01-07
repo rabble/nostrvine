@@ -19,7 +19,6 @@ class OthersFollowersBloc
     : _followRepository = followRepository,
       super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
-    on<OthersFollowersToggleFollowRequested>(_onToggleFollowRequested);
   }
 
   final FollowRepository _followRepository;
@@ -54,23 +53,6 @@ class OthersFollowersBloc
         category: LogCategory.system,
       );
       emit(state.copyWith(status: OthersFollowersStatus.failure));
-    }
-  }
-
-  /// Handle follow toggle request for a follower.
-  /// Delegates to repository which handles the toggle logic internally.
-  Future<void> _onToggleFollowRequested(
-    OthersFollowersToggleFollowRequested event,
-    Emitter<OthersFollowersState> emit,
-  ) async {
-    try {
-      await _followRepository.toggleFollow(event.pubkey);
-    } catch (e) {
-      Log.error(
-        'Failed to toggle follow for user: $e',
-        name: 'OthersFollowersBloc',
-        category: LogCategory.system,
-      );
     }
   }
 }
