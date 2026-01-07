@@ -48,36 +48,30 @@ class _FakeCountResult_1 extends _i1.SmartFake implements _i3.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_2 extends _i1.SmartFake
-    implements _i3.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_2(Object parent, Invocation parentInvocation)
+class _FakeAuthService_2 extends _i1.SmartFake implements _i2.AuthService {
+  _FakeAuthService_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthService_3 extends _i1.SmartFake implements _i2.AuthService {
-  _FakeAuthService_3(Object parent, Invocation parentInvocation)
+class _FakeDio_3 extends _i1.SmartFake implements _i4.Dio {
+  _FakeDio_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeDio_4 extends _i1.SmartFake implements _i4.Dio {
-  _FakeDio_4(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeBlossomUploadResult_5 extends _i1.SmartFake
+class _FakeBlossomUploadResult_4 extends _i1.SmartFake
     implements _i5.BlossomUploadResult {
-  _FakeBlossomUploadResult_5(Object parent, Invocation parentInvocation)
+  _FakeBlossomUploadResult_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBugReportData_6 extends _i1.SmartFake implements _i6.BugReportData {
-  _FakeBugReportData_6(Object parent, Invocation parentInvocation)
+class _FakeBugReportData_5 extends _i1.SmartFake implements _i6.BugReportData {
+  _FakeBugReportData_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeBugReportResult_7 extends _i1.SmartFake
+class _FakeBugReportResult_6 extends _i1.SmartFake
     implements _i7.BugReportResult {
-  _FakeBugReportResult_7(Object parent, Invocation parentInvocation)
+  _FakeBugReportResult_6(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -711,30 +705,6 @@ class MockNostrClient extends _i1.Mock implements _i11.NostrClient {
           as _i8.Stream<_i10.Event>);
 
   @override
-  _i8.Future<_i3.NostrBroadcastResult> broadcast(
-    _i10.Event? event, {
-    List<String>? targetRelays,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i8.Future<_i3.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_2(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
-          )
-          as _i8.Future<_i3.NostrBroadcastResult>);
-
-  @override
   _i8.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -757,7 +727,7 @@ class MockBlossomUploadService extends _i1.Mock
   _i2.AuthService get authService =>
       (super.noSuchMethod(
             Invocation.getter(#authService),
-            returnValue: _FakeAuthService_3(
+            returnValue: _FakeAuthService_2(
               this,
               Invocation.getter(#authService),
             ),
@@ -768,7 +738,7 @@ class MockBlossomUploadService extends _i1.Mock
   _i4.Dio get dio =>
       (super.noSuchMethod(
             Invocation.getter(#dio),
-            returnValue: _FakeDio_4(this, Invocation.getter(#dio)),
+            returnValue: _FakeDio_3(this, Invocation.getter(#dio)),
           )
           as _i4.Dio);
 
@@ -827,7 +797,7 @@ class MockBlossomUploadService extends _i1.Mock
               #onProgress: onProgress,
             }),
             returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_5(
+              _FakeBlossomUploadResult_4(
                 this,
                 Invocation.method(#uploadVideo, [], {
                   #videoFile: videoFile,
@@ -858,7 +828,7 @@ class MockBlossomUploadService extends _i1.Mock
               #onProgress: onProgress,
             }),
             returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
-              _FakeBlossomUploadResult_5(
+              _FakeBlossomUploadResult_4(
                 this,
                 Invocation.method(#uploadImage, [], {
                   #imageFile: imageFile,
@@ -884,6 +854,31 @@ class MockBlossomUploadService extends _i1.Mock
             returnValue: _i8.Future<String?>.value(),
           )
           as _i8.Future<String?>);
+
+  @override
+  _i8.Future<_i5.BlossomUploadResult> uploadAudio({
+    required _i14.File? audioFile,
+    String? mimeType = 'audio/aac',
+    void Function(double)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadAudio, [], {
+              #audioFile: audioFile,
+              #mimeType: mimeType,
+              #onProgress: onProgress,
+            }),
+            returnValue: _i8.Future<_i5.BlossomUploadResult>.value(
+              _FakeBlossomUploadResult_4(
+                this,
+                Invocation.method(#uploadAudio, [], {
+                  #audioFile: audioFile,
+                  #mimeType: mimeType,
+                  #onProgress: onProgress,
+                }),
+              ),
+            ),
+          )
+          as _i8.Future<_i5.BlossomUploadResult>);
 }
 
 /// A class which mocks [NotificationServiceEnhanced].
@@ -1043,7 +1038,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               #additionalContext: additionalContext,
             }),
             returnValue: _i8.Future<_i6.BugReportData>.value(
-              _FakeBugReportData_6(
+              _FakeBugReportData_5(
                 this,
                 Invocation.method(#collectDiagnostics, [], {
                   #userDescription: userDescription,
@@ -1060,7 +1055,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
   _i6.BugReportData sanitizeSensitiveData(_i6.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#sanitizeSensitiveData, [data]),
-            returnValue: _FakeBugReportData_6(
+            returnValue: _FakeBugReportData_5(
               this,
               Invocation.method(#sanitizeSensitiveData, [data]),
             ),
@@ -1080,7 +1075,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
       (super.noSuchMethod(
             Invocation.method(#sendBugReport, [data]),
             returnValue: _i8.Future<_i7.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_6(
                 this,
                 Invocation.method(#sendBugReport, [data]),
               ),
@@ -1099,7 +1094,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
               recipientPubkey,
             ]),
             returnValue: _i8.Future<_i7.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_6(
                 this,
                 Invocation.method(#sendBugReportToRecipient, [
                   data,
@@ -1117,7 +1112,7 @@ class MockBugReportService extends _i1.Mock implements _i18.BugReportService {
       (super.noSuchMethod(
             Invocation.method(#sendBugReportViaEmail, [data]),
             returnValue: _i8.Future<_i7.BugReportResult>.value(
-              _FakeBugReportResult_7(
+              _FakeBugReportResult_6(
                 this,
                 Invocation.method(#sendBugReportViaEmail, [data]),
               ),

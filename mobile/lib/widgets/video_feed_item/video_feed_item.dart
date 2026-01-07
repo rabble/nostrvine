@@ -11,12 +11,12 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
@@ -25,11 +25,14 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
+import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -50,6 +53,8 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.isActiveOverride,
     this.disableTapNavigation = false,
     this.isFullscreen = false,
+    this.listSources,
+    this.showListAttribution = false,
   });
 
   final VideoEvent video;
@@ -71,6 +76,12 @@ class VideoFeedItem extends ConsumerStatefulWidget {
   /// When true, adds extra top padding to avoid overlapping with fullscreen
   /// back button (e.g., in FullscreenVideoFeedScreen).
   final bool isFullscreen;
+
+  /// Set of curated list IDs this video is from (for list attribution display).
+  final Set<String>? listSources;
+
+  /// Whether to show the list attribution chip below the author info.
+  final bool showListAttribution;
 
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
@@ -353,6 +364,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 name: 'VideoFeedItem',
                 category: LogCategory.ui,
               );
+              controller.removeListener(checkAndPlay);
               return;
             }
 
@@ -451,9 +463,15 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     // Use override if provided (for custom contexts like lists), otherwise use provider
     // IMPORTANT: When override is non-null, skip provider watch entirely to avoid
     // Riverpod rebuilds interfering with local state management
-    final bool isActive = widget.isActiveOverride != null
+    final bool isActiveFromProvider = widget.isActiveOverride != null
         ? widget.isActiveOverride!
         : ref.watch(isVideoActiveProvider(video.stableId));
+
+    // Check if a dialog/modal is covering this screen - if so, pause playback
+    // ModalRoute.of(context)?.isCurrent returns false when a dialog is on top
+    final modalRoute = ModalRoute.of(context);
+    final isCurrentRoute = modalRoute?.isCurrent ?? true;
+    final bool isActive = isActiveFromProvider && isCurrentRoute;
 
     Log.debug(
       '📱 VideoFeedItem state: isActive=$isActive (override=${widget.isActiveOverride})',
@@ -770,6 +788,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               hasBottomNavigation: widget.hasBottomNavigation,
               contextTitle: widget.contextTitle,
               isFullscreen: widget.isFullscreen,
+              listSources: widget.listSources,
+              showListAttribution: widget.showListAttribution,
             ),
           ],
         ),
@@ -811,6 +831,8 @@ class VideoOverlayActions extends ConsumerWidget {
     this.hasBottomNavigation = true,
     this.contextTitle,
     this.isFullscreen = false,
+    this.listSources,
+    this.showListAttribution = false,
   });
 
   final VideoEvent video;
@@ -820,13 +842,15 @@ class VideoOverlayActions extends ConsumerWidget {
   final String? contextTitle;
   final bool isFullscreen;
 
+  /// Set of curated list IDs this video is from (for list attribution display).
+  final Set<String>? listSources;
+
+  /// Whether to show the list attribution chip below the author info.
+  final bool showListAttribution;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
-
-    final isLiked = ref.watch(isEventLikedProvider(video.id));
-    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
-    final likeCount = ref.watch(likeCountProvider(video.id));
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -850,7 +874,7 @@ class VideoOverlayActions extends ConsumerWidget {
           right: 16,
           child: GestureDetector(
             onTap: () {
-              _showBadgeExplanationModal(context, ref, video);
+              _showBadgeExplanationModal(context, ref, video, isActive);
             },
             child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
           ),
@@ -875,6 +899,43 @@ class VideoOverlayActions extends ConsumerWidget {
                 ],
                 // Author row with profile and follow button
                 VideoAuthorRow(video: video, isFullscreen: isFullscreen),
+                // List attribution chip (shown when video is from subscribed curated list)
+                if (showListAttribution &&
+                    listSources != null &&
+                    listSources!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final curatedListState = ref.watch(
+                        curatedListsStateProvider,
+                      );
+                      final curatedListService = curatedListState.whenOrNull(
+                        data: (_) => ref
+                            .read(curatedListsStateProvider.notifier)
+                            .service,
+                      );
+
+                      return ListAttributionChip(
+                        listIds: listSources!,
+                        listLookup: (listId) =>
+                            curatedListService?.getListById(listId),
+                        onListTap: (listId, listName) {
+                          final list = curatedListService?.getListById(listId);
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => CuratedListFeedScreen(
+                                listId: listId,
+                                listName: listName,
+                                videoIds: list?.videoEventIds,
+                                authorPubkey: list?.pubkey,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
                 // Description (if there's text content)
                 if (hasTextContent) ...[
                   const SizedBox(height: 8),
@@ -972,6 +1033,11 @@ class VideoOverlayActions extends ConsumerWidget {
                               ),
                             ),
                           ],
+                          // Audio attribution row (if video uses external audio)
+                          if (video.hasAudioReference) ...[
+                            const SizedBox(height: 4),
+                            AudioAttributionRow(video: video),
+                          ],
                         ],
                       ),
                     ),
@@ -993,79 +1059,8 @@ class VideoOverlayActions extends ConsumerWidget {
               ignoring: false, // Action buttons SHOULD receive taps
               child: Column(
                 children: [
-                  // Like button
-                  Column(
-                    children: [
-                      Semantics(
-                        identifier: 'like_button',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: isLiked ? 'Unlike video' : 'Like video',
-                        child: CircularIconButton(
-                          onPressed: isLikeInProgress
-                              ? () {}
-                              : () async {
-                                  Log.info(
-                                    '❤️ Like button tapped for ${video.id}',
-                                    name: 'VideoFeedItem',
-                                    category: LogCategory.ui,
-                                  );
-                                  await ref
-                                      .read(likesProvider.notifier)
-                                      .toggleLike(
-                                        eventId: video.id,
-                                        authorPubkey: video.pubkey,
-                                      );
-                                },
-                          icon: isLikeInProgress
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  isLiked
-                                      ? Icons.favorite
-                                      : Icons.favorite_outline,
-                                  color: isLiked ? Colors.red : Colors.white,
-                                  size: 32,
-                                ),
-                        ),
-                      ),
-                      // Show total like count: new likes + original Vine likes
-                      if (likeCount > 0 ||
-                          (video.originalLikes != null &&
-                              video.originalLikes! > 0)) ...[
-                        const SizedBox(height: 0),
-                        Text(
-                          StringUtils.formatCompactNumber(
-                            likeCount + (video.originalLikes ?? 0),
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  // Like button - uses dedicated widget for isolated rebuilds
+                  LikeActionButton(video: video),
 
                   const SizedBox(height: 16),
 
@@ -1262,7 +1257,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               name: 'VideoFeedItem',
                               category: LogCategory.ui,
                             );
-                            _showShareMenu(context, ref, video);
+                            _showShareMenu(context, ref, video, isActive);
                           },
                           icon: const Icon(
                             Icons.share_outlined,
@@ -1365,6 +1360,7 @@ class VideoOverlayActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing share menu
     bool wasPaused = false;
@@ -1407,50 +1403,15 @@ class VideoOverlayActions extends ConsumerWidget {
       builder: (context) => ShareVideoMenu(video: video),
     );
 
-    // Resume video after share menu closes if it was playing
-    if (wasPaused) {
-      try {
-        final controllerParams = VideoControllerParams(
-          videoId: video.id,
-          videoUrl: video.videoUrl!,
-          videoEvent: video,
-        );
-        final controller = ref.read(
-          individualVideoControllerProvider(controllerParams),
-        );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
-        if (isActive &&
-            controller.value.isInitialized &&
-            !controller.value.isPlaying) {
-          final resumed = await safePlay(controller, video.id);
-          if (resumed) {
-            Log.info(
-              '🎬 Resumed video after share menu closed',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-          }
-        }
-      } catch (e) {
-        final errorStr = e.toString().toLowerCase();
-        if (!errorStr.contains('no active player') &&
-            !errorStr.contains('disposed')) {
-          Log.error(
-            'Failed to resume video after share menu: $e',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    }
+    // Video stays paused after dialog closes - user must explicitly play
+    // or navigate to a new video to trigger auto-play
   }
 
   Future<void> _showBadgeExplanationModal(
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing modal
     bool wasPaused = false;
@@ -1493,47 +1454,8 @@ class VideoOverlayActions extends ConsumerWidget {
       builder: (context) => BadgeExplanationModal(video: video),
     );
 
-    // Resume video after modal closes if it was playing
-    if (wasPaused) {
-      try {
-        final controllerParams = VideoControllerParams(
-          videoId: video.id,
-          videoUrl: video.videoUrl!,
-          videoEvent: video,
-        );
-        final controller = ref.read(
-          individualVideoControllerProvider(controllerParams),
-        );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
-        // Only resume if video is still active (not scrolled away)
-        if (isActive &&
-            controller.value.isInitialized &&
-            !controller.value.isPlaying) {
-          // Use safePlay to handle disposed controller gracefully
-          final resumed = await safePlay(controller, video.id);
-          if (resumed) {
-            Log.info(
-              '🎬 Resumed video after badge modal closed',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-          }
-        }
-      } catch (e) {
-        // Ignore disposal errors
-        final errorStr = e.toString().toLowerCase();
-        if (!errorStr.contains('no active player') &&
-            !errorStr.contains('disposed')) {
-          Log.error(
-            'Failed to resume video after modal: $e',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    }
+    // Video stays paused after dialog closes - user must explicitly play
+    // or navigate to a new video to trigger auto-play
   }
 }
 

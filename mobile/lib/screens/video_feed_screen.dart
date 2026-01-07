@@ -603,12 +603,24 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
         );
       },
       itemBuilder: (context, index) {
+        final video = videos[index];
+        // Check if this video is "list-only" (only in feed because of subscribed list)
+        final isListOnly = feedState.listOnlyVideoIds.contains(video.id);
+        final listSources = feedState.videoListSources[video.id];
+
+        // Use PageController as source of truth for active video
+        final currentPage = _pageController.page?.round() ?? _currentIndex;
+        final isActive = index == currentPage;
+
         return VideoFeedItem(
-          key: ValueKey('video-${videos[index].id}'),
-          video: videos[index],
+          key: ValueKey('video-${video.id}'),
+          video: video,
           index: index,
-          hasBottomNavigation: true,
+          hasBottomNavigation: false,
           contextTitle: '', // Home feed has no context title
+          showListAttribution: isListOnly,
+          listSources: listSources,
+          isActiveOverride: isActive,
         );
       },
     );

@@ -90,14 +90,29 @@ class ProfileFeed extends _$ProfileFeed {
     );
 
     // Register for video update callbacks to auto-refresh when this user's video is updated
-    final unregister = videoEventService.addVideoUpdateListener((updated) {
+    final unregisterUpdate = videoEventService.addVideoUpdateListener((
+      updated,
+    ) {
       if (updated.pubkey == userId && ref.mounted) {
         refreshFromService();
       }
     });
 
-    // Clean up callback when provider is disposed
-    ref.onDispose(unregister);
+    // Register for NEW video callbacks to auto-refresh when this user posts a new video
+    final unregisterNew = videoEventService.addNewVideoListener((
+      newVideo,
+      authorPubkey,
+    ) {
+      if (authorPubkey == userId && ref.mounted) {
+        refreshFromService();
+      }
+    });
+
+    // Clean up callbacks when provider is disposed
+    ref.onDispose(() {
+      unregisterUpdate();
+      unregisterNew();
+    });
 
     Log.info(
       'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=${userId}...',

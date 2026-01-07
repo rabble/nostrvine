@@ -41,29 +41,9 @@ void main() {
     });
 
     test('should create encrypted gift wrap event', () async {
-      // Setup: Mock successful broadcast
-      when(mockNostrService.broadcast(any)).thenAnswer((_) async {
-        return NostrBroadcastResult(
-          event: Event.fromJson({
-            'id': 'test-gift-wrap-id',
-            'pubkey': 'random-ephemeral-pubkey', // Gift wrap uses random key
-            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            'kind': 1059, // GIFT_WRAP
-            'tags': [
-              ['p', recipientPubkey],
-              [
-                'expiration',
-                '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',
-              ],
-            ],
-            'content': 'encrypted-content',
-            'sig': 'test-signature',
-          }),
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+      // Setup: Mock successful publish - returns the event on success
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Execute: Send encrypted message
@@ -78,22 +58,16 @@ void main() {
       expect(result.recipientPubkey, equals(recipientPubkey));
       expect(result.error, isNull);
 
-      // Verify: Event was broadcast
-      verify(mockNostrService.broadcast(any)).called(1);
+      // Verify: Event was published
+      verify(mockNostrService.publishEvent(any)).called(1);
     });
 
     test('should create gift wrap with kind 1059', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: capturedEvent!,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+        return capturedEvent;
       });
 
       await service.sendPrivateMessage(
@@ -109,15 +83,9 @@ void main() {
     test('should include p tag with recipient pubkey', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: capturedEvent!,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+        return capturedEvent;
       });
 
       await service.sendPrivateMessage(
@@ -137,16 +105,10 @@ void main() {
     test('should use random ephemeral key for gift wrap', () async {
       final capturedEvents = <Event>[];
 
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
         final event = invocation.positionalArguments[0] as Event;
         capturedEvents.add(event);
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+        return event;
       });
 
       // Send two messages
@@ -170,15 +132,9 @@ void main() {
     test('should obfuscate timestamp with random offset', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: capturedEvent!,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+        return capturedEvent;
       });
 
       final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -197,30 +153,9 @@ void main() {
       expect(capturedEvent!.createdAt, lessThan(afterSend));
     });
 
-    test('should handle broadcast failure gracefully', () async {
-      // Setup: Mock broadcast failure
-      when(mockNostrService.broadcast(any)).thenAnswer((_) async {
-        return NostrBroadcastResult(
-          event: Event.fromJson({
-            'id': 'test-id',
-            'pubkey': 'test-pubkey',
-            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            'kind': 1059,
-            'tags': [
-              [
-                'expiration',
-                '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',
-              ],
-            ],
-            'content': '',
-            'sig': 'test-sig',
-          }),
-          successCount: 0,
-          totalRelays: 1,
-          results: {'local': false},
-          errors: {'local': 'Connection failed'},
-        );
-      });
+    test('should handle publish failure gracefully', () async {
+      // Setup: Mock publish failure - returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       // Execute: Attempt to send message
       final result = await service.sendPrivateMessage(
@@ -230,7 +165,7 @@ void main() {
 
       // Verify: Failure reported correctly
       expect(result.success, isFalse);
-      expect(result.error, contains('broadcast failed'));
+      expect(result.error, contains('publish failed'));
     });
 
     test('should fail when no keys available', () async {
@@ -252,15 +187,9 @@ void main() {
     test('should include additional tags if provided', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: capturedEvent!,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'local': true},
-          errors: {},
-        );
+        return capturedEvent;
       });
 
       await service.sendPrivateMessage(

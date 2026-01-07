@@ -175,17 +175,17 @@ class ContentReportingService {
         return ReportResult.failure('Failed to create report event');
       }
 
-      final broadcastResult = await _nostrService.broadcast(reportEvent);
-      if (broadcastResult.successCount == 0) {
+      final sentEvent = await _nostrService.publishEvent(reportEvent);
+      if (sentEvent == null) {
         Log.error(
-          'Failed to broadcast report to relays',
+          'Failed to publish report to relays',
           name: 'ContentReportingService',
           category: LogCategory.system,
         );
-        // Still save locally even if broadcast fails
+        // Still save locally even if publish fails
       } else {
         Log.info(
-          'Report broadcast to ${broadcastResult.successCount} relays',
+          'Report published to relays',
           name: 'ContentReportingService',
           category: LogCategory.system,
         );

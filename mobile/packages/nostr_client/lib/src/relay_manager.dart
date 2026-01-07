@@ -267,9 +267,15 @@ class RelayManager {
   // Reconnection
   // ---------------------------------------------------------------------------
 
-  /// Retry connecting to all disconnected relays
+  /// Retry connecting to all disconnected relays.
+  ///
+  /// Also checks for idle/dead connections (those that appear connected but
+  /// haven't received messages recently) and disconnects them first.
   Future<void> retryDisconnectedRelays() async {
     _log('Retrying disconnected relays');
+
+    // First, check health of all "connected" relays to detect dead connections
+    _checkRelayHealth();
 
     final disconnected = _configuredRelays.where((url) {
       final status = _relayStatuses[url];
@@ -295,6 +301,26 @@ class RelayManager {
     }
 
     _notifyStatusChange();
+  }
+
+  /// Check health of all connected relays and disconnect any that are idle.
+  ///
+  /// This detects "zombie" connections that appear connected but have actually
+  /// died silently (common with WebSockets after ~2 minutes of idle time).
+  void _checkRelayHealth() {
+    for (final url in _configuredRelays) {
+      final relay = _relayPool.getRelay(url);
+      if (relay == null) continue;
+
+      // Check if the relay supports health checks (RelayBase)
+      if (relay is RelayBase) {
+        final healthy = relay.checkHealth();
+        if (!healthy) {
+          _log('Relay $url failed health check, marking as disconnected');
+          _updateRelayStatus(url, RelayState.disconnected);
+        }
+      }
+    }
   }
 
   /// Force reconnect all relays (disconnect first, then reconnect)

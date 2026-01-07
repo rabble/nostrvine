@@ -71,32 +71,7 @@ class TestNostrService implements NostrClient {
     _currentUserPubkey = pubkey;
   }
 
-  @override
-  Future<NostrBroadcastResult> broadcast(
-    Event event, {
-    List<String>? targetRelays,
-  }) async {
-    if (!_isConnected) throw StateError('Not connected');
-    _storedEvents.add(event);
-
-    // Notify any matching subscriptions
-    for (final entry in _subscriptions.entries) {
-      final controller = entry.value;
-      if (!controller.isClosed) {
-        controller.add(event);
-      }
-    }
-
-    return NostrBroadcastResult(
-      event: event,
-      successCount: 1,
-      totalRelays: 1,
-      results: {'wss://test.relay': true},
-      errors: {},
-    );
-  }
-
-  Future<NostrBroadcastResult> publishFileMetadata({
+  Future<Event?> publishFileMetadata({
     required NIP94Metadata metadata,
     required String content,
     List<String> hashtags = const [],
@@ -118,10 +93,10 @@ class TestNostrService implements NostrClient {
       createdAt: NostrTimestamp.now(),
     );
 
-    return broadcast(event);
+    return publishEvent(event);
   }
 
-  Future<NostrBroadcastResult> publishVideoEvent({
+  Future<Event?> publishVideoEvent({
     required String videoUrl,
     required String content,
     String? title,
@@ -149,7 +124,7 @@ class TestNostrService implements NostrClient {
       createdAt: NostrTimestamp.now(),
     );
 
-    return broadcast(event);
+    return publishEvent(event);
   }
 
   @override
@@ -239,6 +214,22 @@ class TestNostrService implements NostrClient {
       }
     }
     return null;
+  }
+
+  @override
+  Future<Event?> publishEvent(Event event, {List<String>? targetRelays}) async {
+    if (!_isConnected) throw StateError('Not connected');
+    _storedEvents.add(event);
+
+    // Notify any matching subscriptions
+    for (final entry in _subscriptions.entries) {
+      final controller = entry.value;
+      if (!controller.isClosed) {
+        controller.add(event);
+      }
+    }
+
+    return event;
   }
 
   @override

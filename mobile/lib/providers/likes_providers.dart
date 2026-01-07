@@ -216,11 +216,22 @@ class LikesNotifier extends _$LikesNotifier {
       // Update local state
       if (isNowLiked) {
         final record = await repository.getLikeRecord(eventId);
+        final newLikedIds = {...state.likedEventIds, eventId};
+        Log.info(
+          '❤️ [toggleLike] Adding $eventId to liked set. New count: ${newLikedIds.length}',
+          name: 'LikesNotifier',
+          category: LogCategory.system,
+        );
         state = state.copyWith(
-          likedEventIds: {...state.likedEventIds, eventId},
+          likedEventIds: newLikedIds,
           eventIdToReactionId: record != null
               ? {...state.eventIdToReactionId, eventId: record.reactionEventId}
               : state.eventIdToReactionId,
+        );
+        Log.info(
+          '❤️ [toggleLike] State updated. likedEventIds now has ${state.likedEventIds.length} items, contains $eventId: ${state.likedEventIds.contains(eventId)}',
+          name: 'LikesNotifier',
+          category: LogCategory.system,
         );
       } else {
         final newLikedIds = {...state.likedEventIds}..remove(eventId);
@@ -361,7 +372,13 @@ class LikesNotifier extends _$LikesNotifier {
 @riverpod
 bool isEventLiked(Ref ref, String eventId) {
   final likesState = ref.watch(likesProvider);
-  return likesState.isLiked(eventId);
+  final isLiked = likesState.isLiked(eventId);
+  Log.debug(
+    '❤️ [isEventLiked] eventId=$eventId, isLiked=$isLiked, likedCount=${likesState.likedEventIds.length}',
+    name: 'LikesProviders',
+    category: LogCategory.system,
+  );
+  return isLiked;
 }
 
 /// Convenience provider to check if a like operation is in progress

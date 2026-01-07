@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/relay_gateway_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -25,6 +26,7 @@ class NostrService extends _$NostrService {
     final statisticsService = ref.watch(relayStatisticsServiceProvider);
     final gatewaySettings = ref.watch(relayGatewaySettingsProvider);
     final environmentConfig = ref.watch(currentEnvironmentProvider);
+    final dbClient = ref.watch(appDbClientProvider);
 
     _lastKeyContainerPubkey = authService.currentKeyContainer?.publicKeyHex;
 
@@ -37,6 +39,7 @@ class NostrService extends _$NostrService {
       statisticsService: statisticsService,
       gatewaySettings: gatewaySettings,
       environmentConfig: environmentConfig,
+      dbClient: dbClient,
     );
 
     // Schedule initialization after build completes
@@ -84,12 +87,14 @@ class NostrService extends _$NostrService {
       final statisticsService = ref.read(relayStatisticsServiceProvider);
       final gatewaySettings = ref.read(relayGatewaySettingsProvider);
       final environmentConfig = ref.read(currentEnvironmentProvider);
+      final dbClient = ref.read(appDbClientProvider);
 
       final newClient = NostrServiceFactory.create(
         keyContainer: authService.currentKeyContainer,
         statisticsService: statisticsService,
         gatewaySettings: gatewaySettings,
         environmentConfig: environmentConfig,
+        dbClient: dbClient,
       );
 
       _lastKeyContainerPubkey = currentPubkey;

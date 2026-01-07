@@ -75,7 +75,7 @@ void main() {
 
       // Verify search bar exists
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search videos, users, hashtags...'), findsOneWidget);
+      expect(find.text('Find something cool...'), findsOneWidget);
 
       // Verify tabs exist
       expect(find.text('Videos (0)'), findsOneWidget);

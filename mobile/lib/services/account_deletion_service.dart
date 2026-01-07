@@ -53,22 +53,22 @@ class AccountDeletionService {
         return DeleteAccountResult.failure('Failed to create deletion event');
       }
 
-      // Broadcast to all configured relays
-      final broadcastResult = await _nostrService.broadcast(event);
+      // Publish to all configured relays
+      final sentEvent = await _nostrService.publishEvent(event);
 
-      if (broadcastResult.successCount == 0) {
+      if (sentEvent == null) {
         Log.error(
-          'Failed to broadcast NIP-62 deletion request to any relay',
+          'Failed to publish NIP-62 deletion request to any relay',
           name: 'AccountDeletionService',
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          'Failed to broadcast deletion request to relays',
+          'Failed to publish deletion request to relays',
         );
       }
 
       Log.info(
-        'NIP-62 deletion request broadcast to ${broadcastResult.successCount} relay(s)',
+        'NIP-62 deletion request published to relays',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );

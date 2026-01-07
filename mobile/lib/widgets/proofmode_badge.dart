@@ -282,6 +282,81 @@ class OriginalVineBadge extends StatelessWidget {
   }
 }
 
+/// "Not Divine" badge for external/unverified content
+class NotDivineBadge extends StatelessWidget {
+  const NotDivineBadge({super.key, this.size = BadgeSize.small});
+
+  final BadgeSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final dimensions = _getDimensions(size);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dimensions.horizontalPadding,
+        vertical: dimensions.verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(dimensions.borderRadius),
+        border: Border.all(color: Colors.grey.shade700, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.public_off,
+            size: dimensions.iconSize,
+            color: Colors.grey.shade400,
+          ),
+          SizedBox(width: dimensions.iconTextSpacing),
+          Text(
+            'Not Divine',
+            style: TextStyle(
+              fontSize: dimensions.fontSize,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _BadgeDimensions _getDimensions(BadgeSize size) {
+    switch (size) {
+      case BadgeSize.small:
+        return const _BadgeDimensions(
+          horizontalPadding: 6,
+          verticalPadding: 2,
+          borderRadius: 4,
+          iconSize: 10,
+          fontSize: 10,
+          iconTextSpacing: 3,
+        );
+      case BadgeSize.medium:
+        return const _BadgeDimensions(
+          horizontalPadding: 8,
+          verticalPadding: 4,
+          borderRadius: 6,
+          iconSize: 12,
+          fontSize: 11,
+          iconTextSpacing: 4,
+        );
+      case BadgeSize.large:
+        return const _BadgeDimensions(
+          horizontalPadding: 10,
+          verticalPadding: 5,
+          borderRadius: 8,
+          iconSize: 14,
+          fontSize: 12,
+          iconTextSpacing: 5,
+        );
+    }
+  }
+}
+
 /// Badge size enum
 enum BadgeSize { small, medium, large }
 
