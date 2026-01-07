@@ -23,6 +23,7 @@ void main() {
 
     // Setup basic mock behavior
     when(mockNostrService.isInitialized).thenReturn(true);
+    when(mockNostrService.publicKey).thenReturn('');
     when(
       mockNostrService.connectedRelayCount,
     ).thenReturn(3); // Mock having connected relays

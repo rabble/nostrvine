@@ -55,7 +55,7 @@ void main() {
         // Capture the auto-generated event ID
         testEventId = publishedEvent.id;
 
-        // Mock successful event creation and broadcast
+        // Mock successful event creation and publish
         when(
           mockAuthService.createAndSignEvent(
             kind: 0,
@@ -64,15 +64,9 @@ void main() {
           ),
         ).thenAnswer((_) async => publishedEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: publishedEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => publishedEvent);
 
         // Mock profile fetches - first two return stale profile, third returns updated
         final staleProfile = UserProfile(
@@ -120,8 +114,8 @@ void main() {
           tags: [],
         );
 
-        final broadcastResult = await mockNostrService.broadcast(event!);
-        expect(broadcastResult.isSuccessful, isTrue);
+        final publishedResult = await mockNostrService.publishEvent(event!);
+        expect(publishedResult, isNotNull);
 
         // THE CRITICAL PART: Wait for relay to return updated profile
         // This logic should be in profile_setup_screen.dart but isn't yet
@@ -211,15 +205,9 @@ void main() {
         ),
       ).thenAnswer((_) async => publishedEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: publishedEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => publishedEvent);
 
       // Mock profile service to ALWAYS return stale profile
       final staleProfile = UserProfile(
@@ -244,7 +232,7 @@ void main() {
         tags: [],
       );
 
-      await mockNostrService.broadcast(event!);
+      await mockNostrService.publishEvent(event!);
 
       // Try to get updated profile with retries
       UserProfile? confirmedProfile;
@@ -313,15 +301,9 @@ void main() {
           ),
         ).thenAnswer((_) async => publishedEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: publishedEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => publishedEvent);
 
         // Mock profile service to return updated profile immediately
         final updatedProfile = UserProfile(
@@ -344,7 +326,7 @@ void main() {
           tags: [],
         );
 
-        await mockNostrService.broadcast(event!);
+        await mockNostrService.publishEvent(event!);
 
         // Try to get updated profile
         UserProfile? confirmedProfile;

@@ -52,7 +52,8 @@ class UserProfileTile extends ConsumerWidget {
         final profile = userProfileService.getCachedProfile(pubkey);
         // wrapping with Semantics for testability and accessibility
         return Semantics(
-          label: profile?.betterDisplayName('Unknown'),
+          identifier: 'user_profile_tile_$pubkey',
+          label: profile?.bestDisplayName ?? 'Loading...',
           container: true,
           explicitChildNodes: false,
           child: Container(

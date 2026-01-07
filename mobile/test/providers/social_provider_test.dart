@@ -121,16 +121,9 @@ void main() {
         ),
       ).thenAnswer((_) async => mockContactEvent);
 
-      final mockBroadcastResult = NostrBroadcastResult(
-        event: mockContactEvent,
-        successCount: 1,
-        totalRelays: 1,
-        results: {'relay1': true},
-        errors: {},
-      );
       when(
-        () => mockNostrService.broadcast(any()),
-      ).thenAnswer((_) async => mockBroadcastResult);
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => mockContactEvent);
 
       // Follow user
       await container.read(socialProvider.notifier).followUser(userToFollow);

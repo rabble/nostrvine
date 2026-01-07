@@ -18,7 +18,9 @@ import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/api_service.dart';
+import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -31,8 +33,9 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/curation_service.dart';
+import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
@@ -47,6 +50,8 @@ import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
@@ -210,6 +215,15 @@ AgeVerificationService ageVerificationService(Ref ref) {
   return service;
 }
 
+/// Audio sharing preference service for managing whether audio is available
+/// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
+  final service = AudioSharingPreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
 /// Geo-blocking service for regional compliance
 @riverpod
 GeoBlockingService geoBlockingService(Ref ref) {
@@ -357,6 +371,69 @@ Stream<AuthState> authStateStream(Ref ref) async* {
 
   // Then emit all future changes
   yield* authService.authStateStream;
+}
+
+/// Provider that sets Zendesk user identity when auth state changes
+/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+@Riverpod(keepAlive: true)
+void zendeskIdentitySync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final userProfileService = ref.watch(userProfileServiceProvider);
+
+  // Set initial identity if already authenticated
+  if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
+    _setZendeskIdentity(authService.currentPublicKeyHex!, userProfileService);
+  }
+
+  // Listen to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    if (authState == AuthState.authenticated) {
+      final pubkeyHex = authService.currentPublicKeyHex;
+      if (pubkeyHex != null) {
+        await _setZendeskIdentity(pubkeyHex, userProfileService);
+      }
+    } else if (authState == AuthState.unauthenticated) {
+      await ZendeskSupportService.clearUserIdentity();
+      Log.info(
+        'Zendesk identity cleared on logout',
+        name: 'ZendeskIdentitySync',
+        category: LogCategory.system,
+      );
+    }
+  });
+
+  ref.onDispose(() {
+    subscription.cancel();
+  });
+}
+
+/// Helper to set Zendesk identity from pubkey
+Future<void> _setZendeskIdentity(
+  String pubkeyHex,
+  UserProfileService userProfileService,
+) async {
+  try {
+    final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
+    final profile = userProfileService.getCachedProfile(pubkeyHex);
+
+    await ZendeskSupportService.setUserIdentity(
+      displayName: profile?.bestDisplayName,
+      nip05: profile?.nip05,
+      npub: npub,
+    );
+
+    Log.info(
+      'Zendesk identity set for user: ${profile?.bestDisplayName ?? npub}',
+      name: 'ZendeskIdentitySync',
+      category: LogCategory.system,
+    );
+  } catch (e) {
+    Log.warning(
+      'Failed to set Zendesk identity: $e',
+      name: 'ZendeskIdentitySync',
+      category: LogCategory.system,
+    );
+  }
 }
 
 /// User data cleanup service for handling identity changes
@@ -613,6 +690,8 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
+  final blossomUploadService = ref.watch(blossomUploadServiceProvider);
+  final userProfileService = ref.watch(userProfileServiceProvider);
 
   return VideoEventPublisher(
     uploadManager: uploadManager,
@@ -620,6 +699,8 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     authService: authService,
     personalEventCache: personalEventCache,
     videoEventService: videoEventService,
+    blossomUploadService: blossomUploadService,
+    userProfileService: userProfileService,
   );
 }
 
@@ -680,12 +761,17 @@ class CuratedListsState extends _$CuratedListsState {
       prefs: prefs,
     );
 
+    // Register dispose callback BEFORE async gap to avoid "ref already disposed" error
+    ref.onDispose(() => _service?.removeListener(_onServiceChanged));
+
     // Initialize the service to create default list and sync with relays
     await _service!.initialize();
 
+    // Check if provider was disposed during initialization
+    if (!ref.mounted) return [];
+
     // Listen to changes and update state
     _service!.addListener(_onServiceChanged);
-    ref.onDispose(() => _service?.removeListener(_onServiceChanged));
 
     return _service!.lists;
   }
@@ -694,6 +780,67 @@ class CuratedListsState extends _$CuratedListsState {
     // When service calls notifyListeners(), update the state
     state = AsyncValue.data(_service!.lists);
   }
+}
+
+/// Subscribed list video cache for merging subscribed list videos into home feed
+/// Depends on CuratedListService which is async, so watch the state provider
+@Riverpod(keepAlive: true)
+SubscribedListVideoCache? subscribedListVideoCache(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final videoEventService = ref.watch(videoEventServiceProvider);
+
+  // Watch the curated lists state to get the service when ready
+  final curatedListState = ref.watch(curatedListsStateProvider);
+
+  // Only create cache when CuratedListService is available
+  final curatedListService = curatedListState.whenOrNull(
+    data: (_) => ref.read(curatedListsStateProvider.notifier).service,
+  );
+
+  // Return null if CuratedListService isn't ready yet
+  if (curatedListService == null) {
+    return null;
+  }
+
+  final cache = SubscribedListVideoCache(
+    nostrService: nostrService,
+    videoEventService: videoEventService,
+    curatedListService: curatedListService,
+  );
+
+  // Wire up the sync triggers: when lists are subscribed/unsubscribed,
+  // sync/remove videos from the cache automatically
+  curatedListService.setOnListSubscribed((listId, videoIds) async {
+    Log.debug(
+      'Syncing subscribed list videos: $listId (${videoIds.length} videos)',
+      name: 'SubscribedListVideoCache',
+      category: LogCategory.video,
+    );
+    await cache.syncList(listId, videoIds);
+  });
+
+  curatedListService.setOnListUnsubscribed((listId) {
+    Log.debug(
+      'Removing unsubscribed list from cache: $listId',
+      name: 'SubscribedListVideoCache',
+      category: LogCategory.video,
+    );
+    cache.removeList(listId);
+  });
+
+  // Sync all subscribed lists on initialization
+  Future.microtask(() async {
+    await cache.syncAllSubscribedLists();
+  });
+
+  ref.onDispose(() {
+    // Clear callbacks when cache is disposed
+    curatedListService.setOnListSubscribed(null);
+    curatedListService.setOnListUnsubscribed(null);
+    cache.dispose();
+  });
+
+  return cache;
 }
 
 /// User list service for NIP-51 kind 30000 people lists
@@ -786,6 +933,22 @@ Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
   final tracker = BrokenVideoTracker();
   await tracker.initialize();
   return tracker;
+}
+
+/// Audio playback service for sound playback during recording and preview
+///
+/// Used by SoundsScreen to preview sounds and by camera screen
+/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
+/// Uses keepAlive to persist across the session (not auto-disposed).
+@Riverpod(keepAlive: true)
+AudioPlaybackService audioPlaybackService(Ref ref) {
+  final service = AudioPlaybackService();
+
+  ref.onDispose(() async {
+    await service.dispose();
+  });
+
+  return service;
 }
 
 /// Bug report service for collecting diagnostics and sending encrypted reports

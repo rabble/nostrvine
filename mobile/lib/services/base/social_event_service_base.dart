@@ -1,13 +1,13 @@
-// ABOUTME: Abstract base class providing shared event broadcasting patterns for social event services
-// ABOUTME: Handles event creation, signing, broadcasting, and caching with consistent error handling
+// ABOUTME: Abstract base class providing shared event publishing patterns for social event services
+// ABOUTME: Handles event creation, signing, publishing, and caching with consistent error handling
 
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 
-/// Base class for services that broadcast and manage social events (reactions, reposts, etc)
-/// Provides shared patterns for event lifecycle: create → sign → broadcast → cache
+/// Base class for services that publish and manage social events (reactions, reposts, etc)
+/// Provides shared patterns for event lifecycle: create → sign → publish → cache
 abstract class SocialEventServiceBase {
   /// Nostr service for broadcasting events to relays
   NostrClient get nostrService;
@@ -18,19 +18,18 @@ abstract class SocialEventServiceBase {
   /// Optional cache for storing user's own events locally
   PersonalEventCacheService? get personalEventCache;
 
-  /// Broadcasts event and caches it locally
+  /// Publishes event to relays and caches it locally
   ///
-  /// Throws Exception if broadcast fails
+  /// Throws Exception if publish fails
   Future<String> broadcastAndCacheEvent(Event event) async {
-    // Cache immediately before broadcasting (optimistic update)
+    // Cache immediately before publishing (optimistic update)
     personalEventCache?.cacheUserEvent(event);
 
-    // Broadcast to relays
-    final result = await nostrService.broadcast(event);
+    // Publish to relays
+    final sentEvent = await nostrService.publishEvent(event);
 
-    if (!result.isSuccessful) {
-      final errors = result.errors.values.join(', ');
-      throw Exception('Failed to broadcast event: $errors');
+    if (sentEvent == null) {
+      throw Exception('Failed to publish event to relays');
     }
 
     return event.id;

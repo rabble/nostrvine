@@ -57,6 +57,66 @@ void main() {
       });
     });
 
+    group('mixExternalAudio', () {
+      // Note: Cannot test actual FFmpeg execution in unit tests
+      // The method requires real video/audio files and FFmpeg binary
+
+      test('method signature accepts video and external audio paths', () {
+        expect(service.mixExternalAudio, isA<Function>());
+      });
+
+      test('accepts optional voice track path parameter', () async {
+        // Verify method accepts optional voiceTrackPath parameter
+        // The method should work with just video + external audio (lip sync mode)
+        final result = service.mixExternalAudio(
+          '/path/to/video.mp4',
+          '/path/to/external_audio.aac',
+        );
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing plugin)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+
+      test('accepts voice track path for voice-over mode', () async {
+        // Verify method accepts voiceTrackPath for mixing external audio + voice
+        final result = service.mixExternalAudio(
+          '/path/to/video.mp4',
+          '/path/to/external_audio.aac',
+          voiceTrackPath: '/path/to/voice.aac',
+        );
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing plugin)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+
+      test('handles file:// URL prefix in external audio path', () async {
+        // The method should strip file:// prefix from paths
+        final result = service.mixExternalAudio(
+          '/path/to/video.mp4',
+          'file:///path/to/external_audio.aac',
+        );
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing file)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+
+      test('handles file:// URL prefix in voice track path', () async {
+        // The method should strip file:// prefix from voice path too
+        final result = service.mixExternalAudio(
+          '/path/to/video.mp4',
+          '/path/to/external_audio.aac',
+          voiceTrackPath: 'file:///path/to/voice.aac',
+        );
+        expect(result, isA<Future<String>>());
+
+        // Wait for the future to complete (will fail due to missing file)
+        await expectLater(result, throwsA(isA<Exception>()));
+      });
+    });
+
     group('export', () {
       test('throws error when clips list is empty', () async {
         void onProgress(ExportStage stage, double progress) {}

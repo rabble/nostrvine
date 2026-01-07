@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -77,6 +78,33 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   StartupPerformanceService.instance.completePhase('bindings');
+
+  // Configure audio session to respect mute switch on iOS
+  // When device is in silent mode, videos play without audio (user expectation)
+  StartupPerformanceService.instance.startPhase('audio_session');
+  try {
+    final session = await AudioSession.instance;
+    await session.configure(
+      const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.ambient,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.mixWithOthers,
+      ),
+    );
+    Log.info(
+      'Audio session configured to respect mute switch',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  } catch (e) {
+    Log.warning(
+      'Failed to configure audio session: $e',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  }
+  StartupPerformanceService.instance.completePhase('audio_session');
 
   // Initialize crash reporting ASAP so we can use it for logging
   StartupPerformanceService.instance.startPhase('crash_reporting');

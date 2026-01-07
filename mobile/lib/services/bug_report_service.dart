@@ -64,6 +64,7 @@ class BugReportService {
         if (Platform.isAndroid) {
           final androidInfo = await deviceInfoPlugin.androidInfo;
           deviceInfo = {
+            'platform': 'android',
             'model': androidInfo.model,
             'manufacturer': androidInfo.manufacturer,
             'version': androidInfo.version.release,
@@ -73,18 +74,60 @@ class BugReportService {
         } else if (Platform.isIOS) {
           final iosInfo = await deviceInfoPlugin.iosInfo;
           deviceInfo = {
+            'platform': 'ios',
             'model': iosInfo.model,
             'systemName': iosInfo.systemName,
             'systemVersion': iosInfo.systemVersion,
             'name': iosInfo.name,
           };
+        } else if (Platform.isMacOS) {
+          final macInfo = await deviceInfoPlugin.macOsInfo;
+          deviceInfo = {
+            'platform': 'macos',
+            'model': macInfo.model,
+            'version': macInfo.osRelease,
+            'hostName': macInfo.hostName,
+          };
+        } else if (Platform.isWindows) {
+          final windowsInfo = await deviceInfoPlugin.windowsInfo;
+          deviceInfo = {
+            'platform': 'windows',
+            'version': windowsInfo.productName,
+            'computerName': windowsInfo.computerName,
+          };
+        } else if (Platform.isLinux) {
+          final linuxInfo = await deviceInfoPlugin.linuxInfo;
+          deviceInfo = {
+            'platform': 'linux',
+            'version': linuxInfo.version ?? 'unknown',
+            'name': linuxInfo.name,
+          };
+        } else {
+          // Unknown platform fallback
+          deviceInfo = {'platform': 'unknown', 'version': 'unknown'};
         }
       } catch (e) {
         Log.warning(
           'Failed to get device info: $e',
           category: LogCategory.system,
         );
-        deviceInfo = {'error': 'Failed to get device info'};
+        // Must include platform even in error case for Worker API compatibility
+        final platform = Platform.isAndroid
+            ? 'android'
+            : Platform.isIOS
+            ? 'ios'
+            : Platform.isMacOS
+            ? 'macos'
+            : Platform.isWindows
+            ? 'windows'
+            : Platform.isLinux
+            ? 'linux'
+            : 'unknown';
+        deviceInfo = {
+          'platform': platform,
+          'version': 'unknown',
+          'error': 'Failed to get device info',
+        };
       }
 
       // Get recent logs from LogCaptureService

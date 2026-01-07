@@ -34,19 +34,13 @@ class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
-    implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
+class _FakeAuthResult_1 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
-  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeKeychain_3 extends _i1.SmartFake implements _i4.Keychain {
-  _FakeKeychain_3(Object parent, Invocation parentInvocation)
+class _FakeKeychain_2 extends _i1.SmartFake implements _i4.Keychain {
+  _FakeKeychain_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -484,30 +478,6 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as _i7.Stream<_i8.Event>);
 
   @override
-  _i7.Future<_i2.NostrBroadcastResult> broadcast(
-    _i8.Event? event, {
-    List<String>? targetRelays,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i7.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
-          )
-          as _i7.Future<_i2.NostrBroadcastResult>);
-
-  @override
   _i7.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -581,7 +551,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -603,7 +573,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -627,7 +597,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -750,7 +720,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#generateKeys, []),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_3(this, Invocation.method(#generateKeys, [])),
+              _FakeKeychain_2(this, Invocation.method(#generateKeys, [])),
             ),
           )
           as _i7.Future<_i4.Keychain>);
@@ -760,7 +730,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#importPrivateKey, [privateKey]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_3(
+              _FakeKeychain_2(
                 this,
                 Invocation.method(#importPrivateKey, [privateKey]),
               ),
@@ -773,7 +743,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#importFromNsec, [nsec]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_3(this, Invocation.method(#importFromNsec, [nsec])),
+              _FakeKeychain_2(this, Invocation.method(#importFromNsec, [nsec])),
             ),
           )
           as _i7.Future<_i4.Keychain>);
@@ -841,7 +811,7 @@ class MockNostrKeyManager extends _i1.Mock implements _i4.NostrKeyManager {
       (super.noSuchMethod(
             Invocation.method(#restoreFromMnemonic, [mnemonic]),
             returnValue: _i7.Future<_i4.Keychain>.value(
-              _FakeKeychain_3(
+              _FakeKeychain_2(
                 this,
                 Invocation.method(#restoreFromMnemonic, [mnemonic]),
               ),

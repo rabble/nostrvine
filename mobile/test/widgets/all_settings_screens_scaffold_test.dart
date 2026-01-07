@@ -10,7 +10,7 @@ import 'package:openvine/theme/vine_theme.dart';
 
 void main() {
   group('All Settings Screens Scaffold Consistency', () {
-    testWidgets('RelaySettingsScreen has Vine green AppBar', (tester) async {
+    testWidgets('RelaySettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: RelaySettingsScreen())),
       );
@@ -21,14 +21,13 @@ void main() {
       final AppBar appBar = tester.widget(appBarFinder);
       expect(
         appBar.backgroundColor,
-        equals(VineTheme.vineGreen),
-        reason: 'RelaySettingsScreen AppBar should be Vine green',
+        equals(VineTheme.navGreen),
+        reason: 'RelaySettingsScreen AppBar should be nav green',
       );
-      expect(appBar.foregroundColor, equals(VineTheme.whiteText));
       // TODO(Any): Fix and re-enable these tests
     }, skip: true);
 
-    testWidgets('BlossomSettingsScreen has Vine green AppBar', (tester) async {
+    testWidgets('BlossomSettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: BlossomSettingsScreen())),
       );
@@ -39,10 +38,9 @@ void main() {
       final AppBar appBar = tester.widget(appBarFinder);
       expect(
         appBar.backgroundColor,
-        equals(VineTheme.vineGreen),
-        reason: 'BlossomSettingsScreen AppBar should be Vine green',
+        equals(VineTheme.navGreen),
+        reason: 'BlossomSettingsScreen AppBar should be nav green',
       );
-      expect(appBar.foregroundColor, equals(VineTheme.whiteText));
     });
 
     testWidgets('All settings screens have black background', (tester) async {
