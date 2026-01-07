@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'route_utils.dart';
 
@@ -148,6 +149,43 @@ extension NavX on BuildContext {
     );
   }
 
+  /// Navigate to profile grid, replacing navigation stack - use when navigating from fullscreen
+  /// Uses `go` instead of `pushReplacement` to properly handle shell route transitions
+  ///
+  /// TODO(navigation): This is a temporary fix. In the long run, viewing other users' profiles
+  /// should also be fullscreen (no bottom nav) similar to the video feed. Consider creating
+  /// a FullscreenProfileScreen that can be pushed from fullscreen video feed.
+  void goToProfileGridFromFullscreen(String identifier) {
+    // Handle 'me' special case - need to get current user's hex
+    String? currentUserHex;
+    if (identifier == 'me') {
+      // Access container to get auth service
+      final container = ProviderScope.containerOf(this, listen: false);
+      final authService = container.read(authServiceProvider);
+      currentUserHex = authService.currentPublicKeyHex;
+    }
+
+    // Normalize any format (npub/nprofile/hex/me) to npub for URL
+    final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
+    if (npub == null) {
+      // Invalid identifier - log warning and don't navigate
+      debugPrint('⚠️ Invalid public identifier: $identifier');
+      return;
+    }
+
+    // Use `go` for declarative navigation - this properly handles
+    // transitioning from non-shell routes to shell routes
+    go(
+      buildRoute(
+        RouteContext(
+          type: RouteType.profile,
+          npub: npub,
+          videoIndex: null, // Grid mode - no active video
+        ),
+      ),
+    );
+  }
+
   void goSearch([String? searchTerm, int? index]) => go(
     buildRoute(
       RouteContext(
@@ -167,6 +205,24 @@ extension NavX on BuildContext {
       push('/following/$pubkey', extra: displayName);
   Future<void> pushFollowers(String pubkey, {String? displayName}) =>
       push('/followers/$pubkey', extra: displayName);
+
+  /// Push fullscreen video feed (no bottom nav)
+  ///
+  /// Pass a [VideoFeedSource] to determine how videos are loaded:
+  /// - [ProfileFeedSource] - Watches profileFeedProvider for reactive updates
+  /// - [StaticFeedSource] - Uses a static list (no reactive updates)
+  Future<void> pushVideoFeed({
+    required VideoFeedSource source,
+    required int initialIndex,
+    String? contextTitle,
+  }) => push(
+    '/video-feed',
+    extra: FullscreenVideoFeedArgs(
+      source: source,
+      initialIndex: initialIndex,
+      contextTitle: contextTitle,
+    ),
+  );
 
   /// Push curated list screen (NIP-51 kind 30005 video lists)
   Future<void> pushCuratedList({
