@@ -290,7 +290,8 @@ void main() {
         });
 
         test('rolls back optimistic cache when reconnection fails', () async {
-          // Use a kind that DOES support optimistic caching (Kind 1 = text note)
+          // Use a kind that DOES support optimistic caching
+          // (Kind 1 = text note)
           final event = _createTestEvent(kind: EventKind.textNote);
 
           // No relays connected, reconnection fails
@@ -317,7 +318,8 @@ void main() {
         });
 
         test(
-          'does not roll back cache for replaceable events when reconnection fails',
+          'does not roll back cache for replaceable events when reconnection '
+          'fails',
           () async {
             // Use a replaceable event kind (Kind 0 = metadata)
             final event = _createTestEvent(kind: EventKind.metadata);
