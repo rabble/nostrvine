@@ -77,7 +77,7 @@ class _LikedVideosScreenRouterState
             likesRepository: likesRepository,
             videoEventService: videoEventService,
             nostrClient: nostrClient,
-          ),
+          )..add(const ProfileLikedVideosSyncRequested()),
           child: const ProfileLikedGrid(),
         ),
       );
@@ -95,7 +95,7 @@ class _LikedVideosScreenRouterState
         likesRepository: likesRepository,
         videoEventService: videoEventService,
         nostrClient: nostrClient,
-      ),
+      )..add(const ProfileLikedVideosSyncRequested()),
       child: _LikedVideosFeedView(videoIndex: videoIndex),
     );
   }
@@ -113,18 +113,6 @@ class _LikedVideosFeedView extends ConsumerStatefulWidget {
 }
 
 class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
-  @override
-  void initState() {
-    super.initState();
-    // Trigger sync on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<ProfileLikedVideosBloc>().add(
-        const ProfileLikedVideosSyncRequested(),
-      );
-    });
-  }
-
   @override
   void dispose() {
     // Reset bridge state when leaving the feed

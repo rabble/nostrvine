@@ -25,15 +25,10 @@ class VideoInteractionsLikeToggled extends VideoInteractionsEvent {
   const VideoInteractionsLikeToggled();
 }
 
-/// Notification that the global liked status changed.
+/// Request to start listening for liked IDs changes from the repository.
 ///
-/// Used to sync state when liked status changes from elsewhere
-/// (e.g., liked from another screen or synced from relay).
-class VideoInteractionsLikeStatusChanged extends VideoInteractionsEvent {
-  const VideoInteractionsLikeStatusChanged({required this.isLiked});
-
-  final bool isLiked;
-
-  @override
-  List<Object?> get props => [isLiked];
+/// This should be dispatched once when the video feed item is initialized.
+/// Uses emit.forEach internally to reactively update state when likes change.
+class VideoInteractionsSubscriptionRequested extends VideoInteractionsEvent {
+  const VideoInteractionsSubscriptionRequested();
 }

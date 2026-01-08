@@ -93,11 +93,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
     // Build the base widget with ProfileLikedVideosBloc
     final tabContent = BlocProvider<ProfileLikedVideosBloc>(
-      create: (_) => ProfileLikedVideosBloc(
-        likesRepository: likesRepository,
-        videoEventService: videoEventService,
-        nostrClient: nostrClient,
-      ),
+      create: (_) =>
+          ProfileLikedVideosBloc(
+              likesRepository: likesRepository,
+              videoEventService: videoEventService,
+              nostrClient: nostrClient,
+            )
+            ..add(const ProfileLikedVideosSubscriptionRequested())
+            ..add(const ProfileLikedVideosSyncRequested()),
       child: TabBarView(
         controller: _tabController,
         children: [

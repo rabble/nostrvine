@@ -35,26 +35,35 @@ class VideoInteractionsBloc
        super(const VideoInteractionsState()) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     on<VideoInteractionsLikeToggled>(_onLikeToggled);
-    on<VideoInteractionsLikeStatusChanged>(_onLikeStatusChanged);
-
-    // Subscribe to liked IDs stream to stay in sync
-    _likedIdsSubscription = _likesRepository.watchLikedEventIds().listen(
-      _onLikedIdsChanged,
-    );
+    on<VideoInteractionsSubscriptionRequested>(_onSubscriptionRequested);
   }
 
   final String _eventId;
   final String _authorPubkey;
   final LikesRepository _likesRepository;
   final CommentsRepository _commentsRepository;
-  StreamSubscription<Set<String>>? _likedIdsSubscription;
 
-  /// Handle changes to the global liked IDs set.
-  void _onLikedIdsChanged(Set<String> likedIds) {
-    final isLiked = likedIds.contains(_eventId);
-    if (isLiked != state.isLiked) {
-      add(VideoInteractionsLikeStatusChanged(isLiked: isLiked));
-    }
+  /// Subscribe to liked IDs changes and update like status reactively.
+  Future<void> _onSubscriptionRequested(
+    VideoInteractionsSubscriptionRequested event,
+    Emitter<VideoInteractionsState> emit,
+  ) async {
+    await emit.forEach<Set<String>>(
+      _likesRepository.watchLikedEventIds(),
+      onData: (likedIds) {
+        final isLiked = likedIds.contains(_eventId);
+        if (isLiked == state.isLiked) return state;
+
+        // Update like status and adjust count
+        final currentCount = state.likeCount ?? 0;
+        final newCount = isLiked ? currentCount + 1 : currentCount - 1;
+
+        return state.copyWith(
+          isLiked: isLiked,
+          likeCount: newCount < 0 ? 0 : newCount,
+        );
+      },
+    );
   }
 
   /// Handle request to fetch initial state.
@@ -155,30 +164,5 @@ class VideoInteractionsBloc
         ),
       );
     }
-  }
-
-  /// Handle external like status change notification.
-  void _onLikeStatusChanged(
-    VideoInteractionsLikeStatusChanged event,
-    Emitter<VideoInteractionsState> emit,
-  ) {
-    if (state.isLiked == event.isLiked) return;
-
-    // Update like status and adjust count
-    final currentCount = state.likeCount ?? 0;
-    final newCount = event.isLiked ? currentCount + 1 : currentCount - 1;
-
-    emit(
-      state.copyWith(
-        isLiked: event.isLiked,
-        likeCount: newCount < 0 ? 0 : newCount,
-      ),
-    );
-  }
-
-  @override
-  Future<void> close() {
-    _likedIdsSubscription?.cancel();
-    return super.close();
   }
 }

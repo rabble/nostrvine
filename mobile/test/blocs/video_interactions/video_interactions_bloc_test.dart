@@ -376,17 +376,21 @@ void main() {
       );
     });
 
-    group('VideoInteractionsLikeStatusChanged', () {
+    group('VideoInteractionsSubscriptionRequested', () {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status and increments count when liked externally',
+        'updates like status when stream emits with this event liked',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
           isLiked: false,
           likeCount: 10,
         ),
-        act: (bloc) =>
-            bloc.add(const VideoInteractionsLikeStatusChanged(isLiked: true)),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          likedIdsController.add({testEventId});
+        },
+        wait: const Duration(milliseconds: 100),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
@@ -397,15 +401,19 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status and decrements count when unliked externally',
+        'updates like status when stream emits without this event',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
           isLiked: true,
           likeCount: 10,
         ),
-        act: (bloc) =>
-            bloc.add(const VideoInteractionsLikeStatusChanged(isLiked: false)),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          likedIdsController.add(<String>{});
+        },
+        wait: const Duration(milliseconds: 100),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
@@ -423,55 +431,13 @@ void main() {
           isLiked: true,
           likeCount: 10,
         ),
-        act: (bloc) =>
-            bloc.add(const VideoInteractionsLikeStatusChanged(isLiked: true)),
-        expect: () => <VideoInteractionsState>[],
-      );
-    });
-
-    group('liked IDs stream synchronization', () {
-      test(
-        'updates state when liked IDs stream emits with this event liked',
-        () async {
-          final bloc = createBloc();
-
-          // Initial state has the video not liked
-          expect(bloc.state.isLiked, isFalse);
-
-          // Emit that this video is now liked via the stream
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
           likedIdsController.add({testEventId});
-
-          // Give time for the stream event to be processed
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          // State should now show liked
-          expect(bloc.state.isLiked, isTrue);
-
-          await bloc.close();
         },
-      );
-
-      test(
-        'updates state when liked IDs stream emits without this event',
-        () async {
-          // Start with video liked
-          final bloc = createBloc();
-
-          // Manually set state to liked via event
-          bloc.add(const VideoInteractionsLikeStatusChanged(isLiked: true));
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-          expect(bloc.state.isLiked, isTrue);
-
-          // Emit empty set (video no longer liked)
-          likedIdsController.add(<String>{});
-
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          // State should now show not liked
-          expect(bloc.state.isLiked, isFalse);
-
-          await bloc.close();
-        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => <VideoInteractionsState>[],
       );
     });
 

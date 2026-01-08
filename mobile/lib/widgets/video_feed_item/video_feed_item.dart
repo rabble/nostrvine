@@ -217,13 +217,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
 
-    // Only create bloc if likes repository is available (user authenticated)
     _interactionsBloc = VideoInteractionsBloc(
       eventId: widget.video.id,
       authorPubkey: widget.video.pubkey,
       likesRepository: likesRepository,
       commentsRepository: commentsRepository,
     );
+    // Start listening for liked IDs changes
+    _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
     // Trigger initial fetch
     _interactionsBloc.add(const VideoInteractionsFetchRequested());
     // Force rebuild to provide bloc

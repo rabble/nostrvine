@@ -22,20 +22,6 @@ class ProfileLikedGrid extends StatefulWidget {
 
 class _ProfileLikedGridState extends State<ProfileLikedGrid> {
   @override
-  void initState() {
-    super.initState();
-    // Start subscription and trigger sync on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final bloc = context.read<ProfileLikedVideosBloc>();
-      // Start listening for liked IDs changes
-      bloc.add(const ProfileLikedVideosSubscriptionRequested());
-      // Trigger initial sync
-      bloc.add(const ProfileLikedVideosSyncRequested());
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
       builder: (context, state) {
