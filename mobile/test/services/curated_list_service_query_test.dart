@@ -36,24 +36,9 @@ void main() {
         mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      // Mock successful event broadcasting
-      when(mockNostr.broadcast(any)).thenAnswer((_) async {
-        final event = Event.fromJson({
-          'id': 'broadcast_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test',
-          'sig': 'test_sig',
-        });
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay.example.com': true},
-          errors: {},
-        );
+      // Mock successful event publishing
+      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
@@ -575,6 +560,197 @@ void main() {
         expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
         // TODO(any): Fix and re-enable this test
       }, skip: true);
+    });
+
+    group('streamPublicListsFromRelays()', () {
+      test('streams lists immediately as they arrive', () async {
+        // Setup: Mock events arriving one at a time
+        final event1 = Event.fromJson({
+          'id':
+              'event1_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+          'pubkey':
+              'pubkey1_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'list-1'],
+            ['title', 'List One'],
+            ['a', '34236:somepubkey:videoid1'],
+          ],
+          'content': 'First list',
+          'sig': 'sig1',
+        });
+
+        final event2 = Event.fromJson({
+          'id':
+              'event2_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+          'pubkey':
+              'pubkey2_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'list-2'],
+            ['title', 'List Two'],
+            ['a', '34236:somepubkey:videoid2'],
+          ],
+          'content': 'Second list',
+          'sig': 'sig2',
+        });
+
+        // Mock subscribe to return events as a stream
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
+
+        // Act: Collect streamed results
+        final streamedResults = <List<CuratedList>>[];
+        await for (final lists in service.streamPublicListsFromRelays()) {
+          streamedResults.add(List.from(lists));
+          if (streamedResults.length >= 2) break; // Stop after 2 updates
+        }
+
+        // Assert: Should have received progressive updates
+        expect(streamedResults.length, 2);
+        expect(streamedResults[0].length, 1); // First update has 1 list
+        expect(streamedResults[1].length, 2); // Second update has 2 lists
+      });
+
+      test('deduplicates by d-tag keeping newest', () async {
+        final olderEvent = Event.fromJson({
+          'id':
+              'older_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at':
+              DateTime.now()
+                  .subtract(const Duration(hours: 1))
+                  .millisecondsSinceEpoch ~/
+              1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'same-list'],
+            ['title', 'Old Title'],
+            ['a', '34236:somepubkey:videoid1'],
+          ],
+          'content': 'Old version',
+          'sig': 'sig1',
+        });
+
+        final newerEvent = Event.fromJson({
+          'id':
+              'newer_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'same-list'],
+            ['title', 'New Title'],
+            ['a', '34236:somepubkey:videoid1'],
+          ],
+          'content': 'New version',
+          'sig': 'sig2',
+        });
+
+        // Send older first, then newer
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
+
+        List<CuratedList>? finalLists;
+        await for (final lists in service.streamPublicListsFromRelays()) {
+          finalLists = lists;
+          if (lists.isNotEmpty && lists.first.name == 'New Title') break;
+        }
+
+        // Should only have one list with the newer title
+        expect(finalLists?.length, 1);
+        expect(finalLists?.first.name, 'New Title');
+      });
+
+      test('filters out empty lists', () async {
+        final emptyList = Event.fromJson({
+          'id':
+              'empty_id_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'empty-list'],
+            ['title', 'Empty List'],
+            // No video references
+          ],
+          'content': 'No videos',
+          'sig': 'sig1',
+        });
+
+        final nonEmptyList = Event.fromJson({
+          'id':
+              'nonempty_id_123456789abcdef0123456789abcdef0123456789abcdef0123',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'non-empty-list'],
+            ['title', 'Non-Empty List'],
+            ['a', '34236:somepubkey:videoid1'],
+          ],
+          'content': 'Has videos',
+          'sig': 'sig2',
+        });
+
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
+
+        List<CuratedList>? finalLists;
+        await for (final lists in service.streamPublicListsFromRelays()) {
+          finalLists = lists;
+          if (lists.isNotEmpty) break;
+        }
+
+        // Should only have the non-empty list
+        expect(finalLists?.length, 1);
+        expect(finalLists?.first.name, 'Non-Empty List');
+      });
+
+      test('supports pagination with until parameter', () async {
+        final oldEvent = Event.fromJson({
+          'id':
+              'old_event_123456789abcdef0123456789abcdef0123456789abcdef012345',
+          'pubkey':
+              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+          'created_at': DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
+          'kind': 30005,
+          'tags': [
+            ['d', 'old-list'],
+            ['title', 'Old List'],
+            ['a', '34236:somepubkey:videoid1'],
+          ],
+          'content': 'Old list from 2024',
+          'sig': 'sig1',
+        });
+
+        when(
+          mockNostr.subscribe(any),
+        ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
+
+        // Act: Request with until date
+        final until = DateTime(2024, 6, 1);
+        List<CuratedList>? results;
+        await for (final lists in service.streamPublicListsFromRelays(
+          until: until,
+        )) {
+          results = lists;
+          if (lists.isNotEmpty) break;
+        }
+
+        // Verify subscribe was called (filter construction is internal)
+        verify(mockNostr.subscribe(any)).called(1);
+        expect(results?.isNotEmpty, true);
+      });
     });
   });
 }

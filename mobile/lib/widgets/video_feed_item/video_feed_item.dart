@@ -2,8 +2,10 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -11,25 +13,28 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/ui/overlay_policy.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -49,6 +54,9 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.disableAutoplay = false,
     this.isActiveOverride,
     this.disableTapNavigation = false,
+    this.isFullscreen = false,
+    this.listSources,
+    this.showListAttribution = false,
   });
 
   final VideoEvent video;
@@ -67,6 +75,16 @@ class VideoFeedItem extends ConsumerStatefulWidget {
   /// Instead, it just calls onTap callback. Used for contexts with local state management.
   final bool disableTapNavigation;
 
+  /// When true, adds extra top padding to avoid overlapping with fullscreen
+  /// back button (e.g., in FullscreenVideoFeedScreen).
+  final bool isFullscreen;
+
+  /// Set of curated list IDs this video is from (for list attribution display).
+  final Set<String>? listSources;
+
+  /// Whether to show the list attribution chip below the author info.
+  final bool showListAttribution;
+
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
 }
@@ -77,6 +95,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
   DateTime?
   _loadingStartTime; // Track when loading started for delayed indicator
+  late final VideoInteractionsBloc
+  _interactionsBloc; // Per-video interactions bloc
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -91,6 +111,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   @override
   void initState() {
     super.initState();
+
+    // Create VideoInteractionsBloc for this video immediately
+    // This must happen before build() to ensure the bloc is available
+    _createInteractionsBloc();
 
     // Listen for active state changes to control playback
     // Active state is now derived from URL + feed + foreground (pure provider)
@@ -190,8 +214,29 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     }
   }
 
+  /// Creates the VideoInteractionsBloc for this video.
+  /// Called synchronously in initState before the first build.
+  void _createInteractionsBloc() {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+
+    _interactionsBloc = VideoInteractionsBloc(
+      eventId: widget.video.id,
+      authorPubkey: widget.video.pubkey,
+      likesRepository: likesRepository,
+      commentsRepository: commentsRepository,
+    );
+    // Start listening for liked IDs changes
+    _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
+    // Trigger initial fetch
+    _interactionsBloc.add(const VideoInteractionsFetchRequested());
+  }
+
   @override
   void dispose() {
+    // Close the interactions bloc
+    _interactionsBloc.close();
+
     // When using override mode, we need to stop playback manually on dispose
     // (provider mode handles this automatically via provider cleanup)
     if (widget.isActiveOverride == true && widget.video.videoUrl != null) {
@@ -325,7 +370,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             }
 
             // Check if video is still active (even if generation changed)
-            final stillActive = ref.read(isVideoActiveProvider(_stableVideoId));
+            // Use isActiveOverride if set (for self-managed screens like FullscreenVideoFeedScreen)
+            final bool stillActive =
+                widget.isActiveOverride ??
+                ref.read(isVideoActiveProvider(_stableVideoId));
 
             if (!stillActive) {
               // Video no longer active, don't play
@@ -345,6 +393,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 name: 'VideoFeedItem',
                 category: LogCategory.ui,
               );
+              controller.removeListener(checkAndPlay);
               return;
             }
 
@@ -443,9 +492,15 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     // Use override if provided (for custom contexts like lists), otherwise use provider
     // IMPORTANT: When override is non-null, skip provider watch entirely to avoid
     // Riverpod rebuilds interfering with local state management
-    final bool isActive = widget.isActiveOverride != null
+    final bool isActiveFromProvider = widget.isActiveOverride != null
         ? widget.isActiveOverride!
         : ref.watch(isVideoActiveProvider(video.stableId));
+
+    // Check if a dialog/modal is covering this screen - if so, pause playback
+    // ModalRoute.of(context)?.isCurrent returns false when a dialog is on top
+    final modalRoute = ModalRoute.of(context);
+    final isCurrentRoute = modalRoute?.isCurrent ?? true;
+    final bool isActive = isActiveFromProvider && isCurrentRoute;
 
     Log.debug(
       '📱 VideoFeedItem state: isActive=$isActive (override=${widget.isActiveOverride})',
@@ -656,6 +711,15 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         ? value.size.height
                         : 1.0;
 
+                    // In fullscreen mode:
+                    //   - Portrait videos (9:16): use BoxFit.cover to fill screen
+                    //   - Square/landscape videos (legacy Vine): use BoxFit.contain
+                    //     to stay centered without cropping
+                    // In normal mode, use BoxFit.contain to preserve aspect ratio
+                    final isPortraitVideo = videoHeight > videoWidth;
+                    final useFullscreenCover =
+                        widget.isFullscreen && isPortraitVideo;
+
                     // UNIFIED structure - use Offstage instead of conditional
                     // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
@@ -668,8 +732,12 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             Offstage(
                               offstage: !value.isInitialized,
                               child: FittedBox(
-                                fit: BoxFit.contain,
-                                alignment: Alignment.topCenter,
+                                fit: useFullscreenCover
+                                    ? BoxFit.cover
+                                    : BoxFit.contain,
+                                alignment: widget.isFullscreen
+                                    ? Alignment.center
+                                    : Alignment.topCenter,
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
@@ -741,81 +809,21 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               },
             ),
 
-            // Video overlay with actions
-            VideoOverlayActions(
-              video: video,
-              isVisible: overlayVisible,
-              isActive: isActive,
-              hasBottomNavigation: widget.hasBottomNavigation,
-              contextTitle: widget.contextTitle,
-            ),
-
-            // Repost header (shown at top if video is a repost)
-            if (video.isRepost && video.reposterPubkey != null)
-              Positioned(
-                top: MediaQuery.of(context).viewPadding.top + 8,
-                left: 16,
-                right: 16,
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    // Fetch reposter's profile
-                    final userProfileService = ref.watch(
-                      userProfileServiceProvider,
-                    );
-                    final reposterProfile = userProfileService.getCachedProfile(
-                      video.reposterPubkey!,
-                    );
-
-                    // If profile not cached, fetch it
-                    if (reposterProfile == null &&
-                        !userProfileService.shouldSkipProfileFetch(
-                          video.reposterPubkey!,
-                        )) {
-                      Future.microtask(() {
-                        userProfileService.fetchProfile(video.reposterPubkey!);
-                      });
-                    }
-
-                    final displayName =
-                        reposterProfile?.bestDisplayName ??
-                        video.reposterPubkey!.substring(0, 8);
-
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.repeat,
-                            color: VineTheme.vineGreen,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              '$displayName reposted',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+            // Video overlay with actions (badges, title, action buttons)
+            // Wrap with VideoInteractionsBloc if available
+            BlocProvider<VideoInteractionsBloc>.value(
+              value: _interactionsBloc,
+              child: VideoOverlayActions(
+                video: video,
+                isVisible: overlayVisible,
+                isActive: isActive,
+                hasBottomNavigation: widget.hasBottomNavigation,
+                contextTitle: widget.contextTitle,
+                isFullscreen: widget.isFullscreen,
+                listSources: widget.listSources,
+                showListAttribution: widget.showListAttribution,
               ),
+            ),
           ],
         ),
       ),
@@ -855,6 +863,9 @@ class VideoOverlayActions extends ConsumerWidget {
     required this.isActive,
     this.hasBottomNavigation = true,
     this.contextTitle,
+    this.isFullscreen = false,
+    this.listSources,
+    this.showListAttribution = false,
   });
 
   final VideoEvent video;
@@ -862,14 +873,17 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool isActive;
   final bool hasBottomNavigation;
   final String? contextTitle;
+  final bool isFullscreen;
+
+  /// Set of curated list IDs this video is from (for list attribution display).
+  final Set<String>? listSources;
+
+  /// Whether to show the list attribution chip below the author info.
+  final bool showListAttribution;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
-
-    final isLiked = ref.watch(isEventLikedProvider(video.id));
-    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
-    final likeCount = ref.watch(likeCountProvider(video.id));
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -880,205 +894,196 @@ class VideoOverlayActions extends ConsumerWidget {
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
     // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
     // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
+    // In fullscreen mode, add extra offset to clear the back button row (AppBar ~56px + padding)
     final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
+    final fullscreenOffset = isFullscreen ? 48.0 : 0.0;
+    final topOffset = (hasListHeader ? 80.0 : 16.0) + fullscreenOffset;
 
     return Stack(
       children: [
-        // Username and follow button at top left
-        Positioned(
-          top: MediaQuery.of(context).viewPadding.top + topOffset,
-          left: 16,
-          child: Consumer(
-            builder: (context, ref, _) {
-              // Watch UserProfileService directly (now a ChangeNotifier)
-              // This will rebuild when profiles are added/updated
-              final userProfileService = ref.watch(userProfileServiceProvider);
-              final profile = userProfileService.getCachedProfile(video.pubkey);
-
-              // If profile not cached and not known missing, fetch it
-              if (profile == null &&
-                  !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
-                Future.microtask(() {
-                  ref
-                      .read(userProfileProvider.notifier)
-                      .fetchProfile(video.pubkey);
-                });
-              }
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Username chip (tappable to go to profile)
-                  GestureDetector(
-                    onTap: () {
-                      Log.info(
-                        '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
-                        name: 'VideoFeedItem',
-                        category: LogCategory.ui,
-                      );
-                      context.pushProfileGrid(video.pubkey);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.person,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 6),
-                          UserName.fromPubKey(
-                            video.pubkey,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Follow button (handles own video check internally)
-                  const SizedBox(width: 8),
-                  VideoFollowButton(pubkey: video.pubkey),
-                ],
-              );
-            },
-          ),
-        ),
         // ProofMode and Vine badges in upper right corner (tappable)
         Positioned(
-          top: MediaQuery.of(context).viewPadding.top + 16,
+          top: MediaQuery.of(context).viewPadding.top + topOffset,
           right: 16,
           child: GestureDetector(
             onTap: () {
-              _showBadgeExplanationModal(context, ref, video);
+              _showBadgeExplanationModal(context, ref, video, isActive);
             },
             child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
           ),
         ),
-        // No gradient - using text background opacity instead for cleaner appearance
-        // Video title overlay at bottom left
-        // Only show if there's actual text content
-        if (hasTextContent)
-          Positioned(
-            bottom: hasBottomNavigation ? 80 : 16,
-            left: 16,
-            right: 80, // Leave space for action buttons
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Video title with clickable hashtags
-                    Semantics(
-                      identifier: 'video_description',
-                      container: true,
-                      explicitChildNodes: true,
-                      label: 'Video description',
-                      child: ClickableHashtagText(
-                        text: video.content.isNotEmpty
-                            ? video.content
-                            : video.title!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
+        // Bottom left column: Repost banner, author row, description
+        // TODO(cleanup): Remove hasBottomNavigation and use only isFullscreen
+        Positioned(
+          bottom: hasBottomNavigation ? 16 : (isFullscreen ? 48 : 16),
+          left: 16,
+          right: 16,
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Repost banner (if video is a repost)
+                if (video.isRepost && video.reposterPubkey != null) ...[
+                  VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
+                  const SizedBox(height: 8),
+                ],
+                // Author row with profile and follow button
+                VideoAuthorRow(video: video, isFullscreen: isFullscreen),
+                // List attribution chip (shown when video is from subscribed curated list)
+                if (showListAttribution &&
+                    listSources != null &&
+                    listSources!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final curatedListState = ref.watch(
+                        curatedListsStateProvider,
+                      );
+                      final curatedListService = curatedListState.whenOrNull(
+                        data: (_) => ref
+                            .read(curatedListsStateProvider.notifier)
+                            .service,
+                      );
+
+                      return ListAttributionChip(
+                        listIds: listSources!,
+                        listLookup: (listId) =>
+                            curatedListService?.getListById(listId),
+                        onListTap: (listId, listName) {
+                          final list = curatedListService?.getListById(listId);
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => CuratedListFeedScreen(
+                                listId: listId,
+                                listName: listName,
+                                videoIds: list?.videoEventIds,
+                                authorPubkey: list?.pubkey,
+                              ),
                             ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+                // Description (if there's text content)
+                if (hasTextContent) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 64),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Video title with clickable hashtags
+                          Semantics(
+                            identifier: 'video_description',
+                            container: true,
+                            explicitChildNodes: true,
+                            label: 'Video description',
+                            child: ClickableHashtagText(
+                              text: video.content.isNotEmpty
+                                  ? video.content
+                                  : video.title!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 0),
+                                    blurRadius: 8,
+                                    color: Colors.black,
+                                  ),
+                                  Shadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              hashtagStyle: TextStyle(
+                                color: VineTheme.vineGreen,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 0),
+                                    blurRadius: 8,
+                                    color: Colors.black,
+                                  ),
+                                  Shadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Show original loop count if available
+                          if (video.originalLoops != null &&
+                              video.originalLoops! > 0) ...[
+                            const SizedBox(height: 4),
+                            Semantics(
+                              identifier: 'loop_count',
+                              container: true,
+                              explicitChildNodes: true,
+                              label: 'Video loop count',
+                              child: Text(
+                                '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 0),
+                                      blurRadius: 6,
+                                      color: Colors.black,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 3,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                        hashtagStyle: TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                          shadows: const [
-                            Shadow(
-                              offset: Offset(0, 0),
-                              blurRadius: 8,
-                              color: Colors.black,
-                            ),
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 4,
-                              color: Colors.black,
-                            ),
+                          // Audio attribution row (if video uses external audio)
+                          if (video.hasAudioReference) ...[
+                            const SizedBox(height: 4),
+                            AudioAttributionRow(video: video),
                           ],
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Show original loop count if available
-                    if (video.originalLoops != null &&
-                        video.originalLoops! > 0) ...[
-                      Semantics(
-                        identifier: 'loop_count',
-                        container: true,
-                        explicitChildNodes: true,
-                        label: 'Video loop count',
-                        child: Text(
-                          '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                  ],
-                ),
-              ),
+                  ),
+                ],
+              ],
             ),
           ),
+        ),
         // Action buttons at bottom right
+        // In fullscreen mode (no bottom nav), add extra padding to avoid edge
         Positioned(
-          bottom: hasBottomNavigation ? 80 : 16,
+          bottom: hasBottomNavigation ? 16 : (isFullscreen ? 48 : 16),
           right: 16,
           child: AnimatedOpacity(
             opacity: isActive ? 1.0 : 0.0,
@@ -1087,167 +1092,13 @@ class VideoOverlayActions extends ConsumerWidget {
               ignoring: false, // Action buttons SHOULD receive taps
               child: Column(
                 children: [
-                  // Like button
-                  Column(
-                    children: [
-                      Semantics(
-                        identifier: 'like_button',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: isLiked ? 'Unlike video' : 'Like video',
-                        child: CircularIconButton(
-                          onPressed: isLikeInProgress
-                              ? () {}
-                              : () async {
-                                  Log.info(
-                                    '❤️ Like button tapped for ${video.id}',
-                                    name: 'VideoFeedItem',
-                                    category: LogCategory.ui,
-                                  );
-                                  await ref
-                                      .read(likesProvider.notifier)
-                                      .toggleLike(
-                                        eventId: video.id,
-                                        authorPubkey: video.pubkey,
-                                      );
-                                },
-                          icon: isLikeInProgress
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  isLiked
-                                      ? Icons.favorite
-                                      : Icons.favorite_outline,
-                                  color: isLiked ? Colors.red : Colors.white,
-                                  size: 32,
-                                ),
-                        ),
-                      ),
-                      // Show total like count: new likes + original Vine likes
-                      if (likeCount > 0 ||
-                          (video.originalLikes != null &&
-                              video.originalLikes! > 0)) ...[
-                        const SizedBox(height: 0),
-                        Text(
-                          StringUtils.formatCompactNumber(
-                            likeCount + (video.originalLikes ?? 0),
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  // Like button - uses dedicated widget for isolated rebuilds
+                  LikeActionButton(video: video),
 
                   const SizedBox(height: 16),
 
-                  // Comment button with count
-                  Column(
-                    children: [
-                      Semantics(
-                        identifier: 'comments_button',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: 'View comments',
-                        child: CircularIconButton(
-                          onPressed: () {
-                            Log.info(
-                              '💬 Comment button tapped for ${video.id}',
-                              name: 'VideoFeedItem',
-                              category: LogCategory.ui,
-                            );
-                            // Pause video before navigating to comments
-                            if (video.videoUrl != null) {
-                              try {
-                                final controllerParams = VideoControllerParams(
-                                  videoId: video.id,
-                                  videoUrl: video.videoUrl!,
-                                  videoEvent: video,
-                                );
-                                final controller = ref.read(
-                                  individualVideoControllerProvider(
-                                    controllerParams,
-                                  ),
-                                );
-                                if (controller.value.isInitialized &&
-                                    controller.value.isPlaying) {
-                                  // Use safePause to handle disposed controller
-                                  safePause(controller, video.id);
-                                }
-                              } catch (e) {
-                                // Ignore disposal errors, log others
-                                final errorStr = e.toString().toLowerCase();
-                                if (!errorStr.contains('no active player') &&
-                                    !errorStr.contains('disposed')) {
-                                  Log.error(
-                                    'Failed to pause video before comments: $e',
-                                    name: 'VideoFeedItem',
-                                    category: LogCategory.video,
-                                  );
-                                }
-                              }
-                            }
-                            context.pushComments(video);
-                          },
-                          icon: const Icon(
-                            Icons.comment_outlined,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                      // Show original comment count if available
-                      if (video.originalComments != null &&
-                          video.originalComments! > 0) ...[
-                        const SizedBox(height: 0),
-                        Text(
-                          StringUtils.formatCompactNumber(
-                            video.originalComments!,
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  // Comment button with count - uses VideoInteractionsBloc
+                  _CommentActionButton(video: video, ref: ref),
 
                   const SizedBox(height: 16),
 
@@ -1356,7 +1207,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               name: 'VideoFeedItem',
                               category: LogCategory.ui,
                             );
-                            _showShareMenu(context, ref, video);
+                            _showShareMenu(context, ref, video, isActive);
                           },
                           icon: const Icon(
                             Icons.share_outlined,
@@ -1459,6 +1310,7 @@ class VideoOverlayActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing share menu
     bool wasPaused = false;
@@ -1496,54 +1348,20 @@ class VideoOverlayActions extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ShareVideoMenu(video: video),
     );
 
-    // Resume video after share menu closes if it was playing
-    if (wasPaused) {
-      try {
-        final controllerParams = VideoControllerParams(
-          videoId: video.id,
-          videoUrl: video.videoUrl!,
-          videoEvent: video,
-        );
-        final controller = ref.read(
-          individualVideoControllerProvider(controllerParams),
-        );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
-        if (isActive &&
-            controller.value.isInitialized &&
-            !controller.value.isPlaying) {
-          final resumed = await safePlay(controller, video.id);
-          if (resumed) {
-            Log.info(
-              '🎬 Resumed video after share menu closed',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-          }
-        }
-      } catch (e) {
-        final errorStr = e.toString().toLowerCase();
-        if (!errorStr.contains('no active player') &&
-            !errorStr.contains('disposed')) {
-          Log.error(
-            'Failed to resume video after share menu: $e',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    }
+    // Video stays paused after dialog closes - user must explicitly play
+    // or navigate to a new video to trigger auto-play
   }
 
   Future<void> _showBadgeExplanationModal(
     BuildContext context,
     WidgetRef ref,
     VideoEvent video,
+    bool isActive,
   ) async {
     // Pause video before showing modal
     bool wasPaused = false;
@@ -1586,47 +1404,8 @@ class VideoOverlayActions extends ConsumerWidget {
       builder: (context) => BadgeExplanationModal(video: video),
     );
 
-    // Resume video after modal closes if it was playing
-    if (wasPaused) {
-      try {
-        final controllerParams = VideoControllerParams(
-          videoId: video.id,
-          videoUrl: video.videoUrl!,
-          videoEvent: video,
-        );
-        final controller = ref.read(
-          individualVideoControllerProvider(controllerParams),
-        );
-        final stableId = video.vineId ?? video.id;
-        final isActive = ref.read(isVideoActiveProvider(stableId));
-
-        // Only resume if video is still active (not scrolled away)
-        if (isActive &&
-            controller.value.isInitialized &&
-            !controller.value.isPlaying) {
-          // Use safePlay to handle disposed controller gracefully
-          final resumed = await safePlay(controller, video.id);
-          if (resumed) {
-            Log.info(
-              '🎬 Resumed video after badge modal closed',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-          }
-        }
-      } catch (e) {
-        // Ignore disposal errors
-        final errorStr = e.toString().toLowerCase();
-        if (!errorStr.contains('no active player') &&
-            !errorStr.contains('disposed')) {
-          Log.error(
-            'Failed to resume video after modal: $e',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    }
+    // Video stays paused after dialog closes - user must explicitly play
+    // or navigate to a new video to trigger auto-play
   }
 }
 
@@ -1683,6 +1462,238 @@ class _VideoEditButton extends ConsumerWidget {
           tooltip: 'Edit video',
           icon: const Icon(Icons.edit, color: Colors.white, size: 32),
         ),
+      ],
+    );
+  }
+}
+
+/// Username and follow button row for video overlay.
+///
+/// Displays the video author's name (tappable to go to profile) and a follow button.
+class VideoAuthorRow extends ConsumerWidget {
+  const VideoAuthorRow({
+    super.key,
+    required this.video,
+    this.isFullscreen = false,
+  });
+
+  final VideoEvent video;
+  final bool isFullscreen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch UserProfileService directly (now a ChangeNotifier)
+    // This will rebuild when profiles are added/updated
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final profile = userProfileService.getCachedProfile(video.pubkey);
+
+    // If profile not cached and not known missing, fetch it
+    if (profile == null &&
+        !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
+      Future.microtask(() {
+        ref.read(userProfileProvider.notifier).fetchProfile(video.pubkey);
+      });
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Username chip (tappable to go to profile)
+        GestureDetector(
+          onTap: () {
+            Log.info(
+              '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
+              name: 'VideoFeedItem',
+              category: LogCategory.ui,
+            );
+            // Push other user's profile (fullscreen, no bottom nav)
+            context.pushOtherProfile(video.pubkey);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.person, size: 14, color: Colors.white),
+                const SizedBox(width: 6),
+                UserName.fromPubKey(
+                  video.pubkey,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Follow button (handles own video check internally)
+        const SizedBox(width: 8),
+        VideoFollowButton(pubkey: video.pubkey),
+      ],
+    );
+  }
+}
+
+/// Repost header banner showing who reposted the video.
+class VideoRepostHeader extends ConsumerWidget {
+  const VideoRepostHeader({super.key, required this.reposterPubkey});
+
+  final String reposterPubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Fetch reposter's profile
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final reposterProfile = userProfileService.getCachedProfile(reposterPubkey);
+
+    // If profile not cached, fetch it
+    if (reposterProfile == null &&
+        !userProfileService.shouldSkipProfileFetch(reposterPubkey)) {
+      Future.microtask(() {
+        userProfileService.fetchProfile(reposterPubkey);
+      });
+    }
+
+    final displayName =
+        reposterProfile?.bestDisplayName ?? reposterPubkey.substring(0, 8);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.repeat, color: VineTheme.vineGreen, size: 16),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '$displayName reposted',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Comment action button with count display.
+///
+/// Uses [VideoInteractionsBloc] for the comment count when available,
+/// falls back to showing original Vine comment count.
+class _CommentActionButton extends StatelessWidget {
+  const _CommentActionButton({required this.video, required this.ref});
+
+  final VideoEvent video;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    // Try to use VideoInteractionsBloc for comment count
+    final interactionsBloc = context.read<VideoInteractionsBloc?>();
+
+    if (interactionsBloc != null) {
+      return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
+        builder: (context, state) {
+          final commentCount = state.commentCount ?? 0;
+          final totalComments = commentCount + (video.originalComments ?? 0);
+          return _buildButton(context, totalComments);
+        },
+      );
+    }
+
+    // Fall back to original comment count
+    return _buildButton(context, video.originalComments ?? 0);
+  }
+
+  Widget _buildButton(BuildContext context, int totalComments) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          identifier: 'comments_button',
+          container: true,
+          explicitChildNodes: true,
+          button: true,
+          label: 'View comments',
+          child: CircularIconButton(
+            onPressed: () {
+              Log.info(
+                '💬 Comment button tapped for ${video.id}',
+                name: 'VideoFeedItem',
+                category: LogCategory.ui,
+              );
+              // Pause video before navigating to comments
+              if (video.videoUrl != null) {
+                try {
+                  final controllerParams = VideoControllerParams(
+                    videoId: video.id,
+                    videoUrl: video.videoUrl!,
+                    videoEvent: video,
+                  );
+                  final controller = ref.read(
+                    individualVideoControllerProvider(controllerParams),
+                  );
+                  if (controller.value.isInitialized &&
+                      controller.value.isPlaying) {
+                    safePause(controller, video.id);
+                  }
+                } catch (e) {
+                  final errorStr = e.toString().toLowerCase();
+                  if (!errorStr.contains('no active player') &&
+                      !errorStr.contains('disposed')) {
+                    Log.error(
+                      'Failed to pause video before comments: $e',
+                      name: 'VideoFeedItem',
+                      category: LogCategory.video,
+                    );
+                  }
+                }
+              }
+              context.pushComments(video);
+            },
+            icon: const Icon(
+              Icons.comment_outlined,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+        ),
+        if (totalComments > 0) ...[
+          const SizedBox(height: 0),
+          Text(
+            StringUtils.formatCompactNumber(totalComments),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  offset: Offset(0, 0),
+                  blurRadius: 6,
+                  color: Colors.black,
+                ),
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

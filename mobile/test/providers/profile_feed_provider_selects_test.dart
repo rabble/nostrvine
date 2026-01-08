@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/models/video_event.dart';

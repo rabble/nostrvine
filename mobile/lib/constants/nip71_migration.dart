@@ -8,14 +8,27 @@ class NIP71VideoKinds {
   static const int normalVideo = 21; // Normal videos (longer content)
   static const int addressableShortVideo = 34236; // Addressable short videos
   static const int addressableNormalVideo = 34235; // Addressable normal videos
+  static const int liveVideo = 34237; // Live video streams
 
   // Repost kinds
   static const int repost = 16; // NIP-18 generic reposts
 
-  /// Get all NIP-71 video kinds that OpenVine subscribes to
+  /// Get all NIP-71 video kinds that OpenVine subscribes to for discovery
   /// OpenVine only uses kind 34236 (addressable short videos)
   static List<int> getAllVideoKinds() {
     return [addressableShortVideo]; // Only kind 34236
+  }
+
+  /// Get ALL video kinds that should be accepted when reading from external sources
+  /// like curated lists created by other clients. More permissive than getAllVideoKinds().
+  static List<int> getAllAcceptableVideoKinds() {
+    return [
+      shortVideo, // 22 - legacy short video
+      normalVideo, // 21 - legacy normal video
+      addressableShortVideo, // 34236 - addressable short (our primary)
+      addressableNormalVideo, // 34235 - addressable normal/horizontal
+      liveVideo, // 34237 - live streams
+    ];
   }
 
   /// Get primary kinds for new video events
@@ -23,9 +36,14 @@ class NIP71VideoKinds {
     return [addressableShortVideo]; // Only kind 34236
   }
 
-  /// Check if a kind is a video event
+  /// Check if a kind is a video event (strict - for discovery feeds)
   static bool isVideoKind(int kind) {
     return getAllVideoKinds().contains(kind);
+  }
+
+  /// Check if a kind is any acceptable video event (permissive - for curated lists)
+  static bool isAcceptableVideoKind(int kind) {
+    return getAllAcceptableVideoKinds().contains(kind);
   }
 
   /// Get the preferred addressable kind for new events

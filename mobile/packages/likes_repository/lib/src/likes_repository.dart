@@ -41,20 +41,36 @@ const _reactionKind = 7;
 /// - Uses `LikesLocalStorage` to persist like records locally
 /// - Maintains an in-memory cache for fast lookups
 /// - Provides reactive streams for UI updates
+/// - Handles authentication state changes automatically
 class LikesRepository {
   /// Creates a new likes repository.
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
   /// - [localStorage]: Optional local storage for persistence
+  /// - [authStateStream]: Optional stream of authentication state
+  /// (true=authenticated)
+  /// - [isAuthenticated]: Initial authentication state
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
+    Stream<bool>? authStateStream,
+    bool isAuthenticated = false,
   }) : _nostrClient = nostrClient,
-       _localStorage = localStorage;
+       _localStorage = localStorage,
+       _isAuthenticated = isAuthenticated {
+    // Listen to auth state changes if stream provided
+    if (authStateStream != null) {
+      _authSubscription = authStateStream.listen(_handleAuthChange);
+    }
+  }
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
+  StreamSubscription<bool>? _authSubscription;
+
+  /// Whether the user is currently authenticated.
+  bool _isAuthenticated;
 
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
@@ -348,8 +364,33 @@ class LikesRepository {
   ///
   /// Should be called when the repository is no longer needed.
   void dispose() {
+    unawaited(_authSubscription?.cancel());
     unawaited(_likedIdsController.close());
   }
+
+  /// Handle authentication state changes.
+  ///
+  /// When user logs out, clears the cache.
+  /// When user logs in, triggers a sync.
+  void _handleAuthChange(bool isAuthenticated) {
+    if (isAuthenticated == _isAuthenticated) return;
+
+    _isAuthenticated = isAuthenticated;
+
+    if (!isAuthenticated) {
+      // User logged out - clear cache
+      unawaited(clearCache());
+    } else {
+      // User logged in - sync will be triggered by BLoC
+      // Just mark as not initialized so next operation triggers init
+      _isInitialized = false;
+    }
+  }
+
+  /// Whether the repository is ready for operations.
+  ///
+  /// Returns false if not authenticated.
+  bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {

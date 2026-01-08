@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -103,9 +104,38 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Relay Settings'),
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
+        ),
+        title: Text('Relays', style: VineTheme.titleFont()),
       ),
       backgroundColor: Colors.black,
       body: Column(

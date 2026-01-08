@@ -11,6 +11,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -25,6 +26,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/router/nav_extensions.dart';
 
 // TODO(any): Move this to a reusable widget
 Widget get _buildLoadingIndicator => Padding(
@@ -428,6 +430,15 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         subtitle: 'Share via other apps or copy link',
         onTap: _shareExternally,
       ),
+
+      // Use this sound option (only if video has audio reference)
+      if (widget.video.hasAudioReference) ...[
+        const SizedBox(height: 8),
+        _UseThisSoundTile(
+          video: widget.video,
+          onDismiss: () => _safePop(context),
+        ),
+      ],
     ],
   );
 
@@ -1914,67 +1925,64 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     ),
     content: SizedBox(
       width: double.maxFinite,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Why are you reporting this content?',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 400),
-            child: SingleChildScrollView(
-              child: RadioGroup<ContentFilterReason>(
-                groupValue: _selectedReason,
-                onChanged: (value) => setState(() => _selectedReason = value),
-                child: Column(
-                  children: ContentFilterReason.values
-                      .map(
-                        (reason) => RadioListTile<ContentFilterReason>(
-                          title: Text(
-                            _getReasonDisplayName(reason),
-                            style: const TextStyle(color: VineTheme.whiteText),
-                          ),
-                          value: reason,
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _detailsController,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              labelText: 'Additional details (optional)',
-              labelStyle: TextStyle(color: VineTheme.secondaryText),
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 8),
-          CheckboxListTile(
-            title: const Text(
-              'Block this user',
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Why are you reporting this content?',
               style: TextStyle(color: VineTheme.whiteText),
             ),
-            value: _blockUser,
-            onChanged: (value) => setState(() => _blockUser = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 16),
+            RadioGroup<ContentFilterReason>(
+              groupValue: _selectedReason,
+              onChanged: (value) => setState(() => _selectedReason = value),
+              child: Column(
+                children: ContentFilterReason.values
+                    .map(
+                      (reason) => RadioListTile<ContentFilterReason>(
+                        title: Text(
+                          _getReasonDisplayName(reason),
+                          style: const TextStyle(color: VineTheme.whiteText),
+                        ),
+                        value: reason,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _detailsController,
+              enableInteractiveSelection: true,
+              style: const TextStyle(color: VineTheme.whiteText),
+              decoration: const InputDecoration(
+                labelText: 'Additional details (optional)',
+                labelStyle: TextStyle(color: VineTheme.secondaryText),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              title: const Text(
+                'Block this user',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
+              value: _blockUser,
+              onChanged: (value) => setState(() => _blockUser = value ?? false),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ],
+        ),
       ),
     ),
     actions: [
@@ -2316,6 +2324,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   late TextEditingController _descriptionController;
   late TextEditingController _hashtagsController;
   bool _isUpdating = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -2383,16 +2392,35 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
             'Note: Only metadata can be edited. Video content cannot be changed.',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
           ),
+          const SizedBox(height: 16),
+          // Delete button
+          TextButton.icon(
+            onPressed: (_isUpdating || _isDeleting) ? null : _confirmDelete,
+            icon: _isDeleting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  )
+                : const Icon(Icons.delete_outline, color: Colors.red),
+            label: Text(
+              _isDeleting ? 'Deleting...' : 'Delete Video',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
         ],
       ),
     ),
     actions: [
       TextButton(
-        onPressed: _isUpdating ? null : () => context.pop(),
+        onPressed: (_isUpdating || _isDeleting) ? null : () => context.pop(),
         child: const Text('Cancel'),
       ),
       TextButton(
-        onPressed: _isUpdating ? null : _updateVideo,
+        onPressed: (_isUpdating || _isDeleting) ? null : _updateVideo,
         child: _isUpdating
             ? const SizedBox(
                 width: 16,
@@ -2504,9 +2532,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         throw Exception('Failed to create updated event');
       }
 
-      // Broadcast the updated event
+      // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.broadcast(event);
+      await nostrService.publishEvent(event);
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);
@@ -2544,6 +2572,91 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update video: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Delete Video?',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: const Text(
+          'This will send a deletion request to relays. '
+          'Note: Some relays may still have cached copies.',
+          style: TextStyle(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteVideo();
+    }
+  }
+
+  Future<void> _deleteVideo() async {
+    setState(() => _isDeleting = true);
+
+    try {
+      final deletionService = await ref.read(
+        contentDeletionServiceProvider.future,
+      );
+
+      final result = await deletionService.quickDelete(
+        video: widget.video,
+        reason: DeleteReason.personalChoice,
+      );
+
+      if (result.success) {
+        Log.info(
+          'Video deleted successfully: ${widget.video.id}',
+          name: 'EditVideoDialog',
+          category: LogCategory.ui,
+        );
+
+        if (mounted) {
+          context.pop(); // Close edit dialog
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video deletion requested'),
+              backgroundColor: VineTheme.vineGreen,
+            ),
+          );
+        }
+      } else {
+        throw Exception(result.error ?? 'Unknown error');
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to delete video: $e',
+        name: 'EditVideoDialog',
+        category: LogCategory.ui,
+      );
+
+      if (mounted) {
+        setState(() => _isDeleting = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete video: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -3236,72 +3349,79 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSubscribed
-                    ? VineTheme.vineGreen.withValues(alpha: 0.5)
-                    : Colors.grey.shade800,
+          child: GestureDetector(
+            onTap: () => _navigateToList(list),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: VineTheme.cardBackground,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSubscribed
+                      ? VineTheme.vineGreen.withValues(alpha: 0.5)
+                      : Colors.grey.shade800,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.video_library, color: VineTheme.vineGreen, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        list.name,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${list.videoEventIds.length} videos',
-                        style: TextStyle(
-                          color: VineTheme.secondaryText,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.video_library,
+                    color: VineTheme.vineGreen,
+                    size: 20,
                   ),
-                ),
-                TextButton(
-                  onPressed: () => _toggleSubscription(list),
-                  style: TextButton.styleFrom(
-                    backgroundColor: isSubscribed
-                        ? VineTheme.cardBackground
-                        : VineTheme.vineGreen,
-                    foregroundColor: isSubscribed
-                        ? VineTheme.vineGreen
-                        : VineTheme.backgroundColor,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      side: isSubscribed
-                          ? BorderSide(color: VineTheme.vineGreen)
-                          : BorderSide.none,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          list.name,
+                          style: const TextStyle(
+                            color: VineTheme.whiteText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${list.videoEventIds.length} videos',
+                          style: TextStyle(
+                            color: VineTheme.secondaryText,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Text(
-                    isSubscribed ? 'Subscribed' : 'Subscribe',
-                    style: const TextStyle(fontSize: 12),
+                  TextButton(
+                    onPressed: () => _toggleSubscription(list),
+                    style: TextButton.styleFrom(
+                      backgroundColor: isSubscribed
+                          ? VineTheme.cardBackground
+                          : VineTheme.vineGreen,
+                      foregroundColor: isSubscribed
+                          ? VineTheme.vineGreen
+                          : VineTheme.backgroundColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        side: isSubscribed
+                            ? BorderSide(color: VineTheme.vineGreen)
+                            : BorderSide.none,
+                      ),
+                    ),
+                    child: Text(
+                      isSubscribed ? 'Subscribed' : 'Subscribe',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -3351,5 +3471,149 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
         );
       }
     }
+  }
+
+  void _navigateToList(CuratedList list) {
+    // Close the share menu bottom sheet first
+    Navigator.of(context).pop();
+
+    // Navigate to the curated list feed screen
+    context.pushCuratedList(
+      listId: list.id,
+      listName: list.name,
+      videoIds: list.videoEventIds,
+      authorPubkey: list.pubkey,
+    );
+
+    Log.info(
+      'Navigating to list: ${list.name}',
+      name: 'PublicListsSection',
+      category: LogCategory.ui,
+    );
+  }
+}
+
+/// Action tile for "Use this sound" feature.
+///
+/// Fetches the audio event and navigates to SoundDetailScreen.
+/// Shows loading state while fetching audio, and handles errors gracefully.
+class _UseThisSoundTile extends ConsumerWidget {
+  const _UseThisSoundTile({required this.video, this.onDismiss});
+
+  final VideoEvent video;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only show if video has an audio reference
+    if (!video.hasAudioReference || video.audioEventId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Watch the audio event asynchronously
+    final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
+
+    return audioAsync.when(
+      data: (audio) {
+        if (audio == null) {
+          Log.warning(
+            'Audio event not found for video ${video.id}, hiding Use Sound tile',
+            name: 'ShareVideoMenu',
+            category: LogCategory.ui,
+          );
+          return const SizedBox.shrink();
+        }
+
+        return ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: VineTheme.vineGreen.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.music_note,
+              color: VineTheme.vineGreen,
+              size: 20,
+            ),
+          ),
+          title: const Text(
+            'Use this sound',
+            style: TextStyle(
+              color: VineTheme.whiteText,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            audio.title ?? 'Original sound',
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () {
+            Log.info(
+              'User tapped Use this sound: ${audio.id}',
+              name: 'ShareVideoMenu',
+              category: LogCategory.ui,
+            );
+
+            // Dismiss the share menu first
+            onDismiss?.call();
+
+            // Navigate to sound detail screen using GoRouter
+            context.push('/sound/${audio.id}', extra: audio);
+          },
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+        );
+      },
+      loading: () => ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: VineTheme.cardBackground,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: VineTheme.secondaryText,
+              ),
+            ),
+          ),
+        ),
+        title: const Text(
+          'Use this sound',
+          style: TextStyle(
+            color: VineTheme.secondaryText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: const Text(
+          'Loading...',
+          style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        ),
+        onTap: null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      error: (error, stack) {
+        Log.error(
+          'Failed to load audio for Use Sound tile: $error',
+          name: 'ShareVideoMenu',
+          category: LogCategory.ui,
+        );
+        return const SizedBox.shrink();
+      },
+    );
   }
 }

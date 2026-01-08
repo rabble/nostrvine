@@ -16,10 +16,18 @@ final class OthersFollowersListLoadRequested extends OthersFollowersEvent {
   final String targetPubkey;
 }
 
-/// Request to toggle follow status for a follower.
-final class OthersFollowersToggleFollowRequested extends OthersFollowersEvent {
-  const OthersFollowersToggleFollowRequested(this.pubkey);
+/// Optimistically increment follower count when current user follows.
+final class OthersFollowersIncrementRequested extends OthersFollowersEvent {
+  const OthersFollowersIncrementRequested(this.followerPubkey);
 
-  /// The public key of the follower to follow/unfollow
-  final String pubkey;
+  /// The public key of the new follower (current user)
+  final String followerPubkey;
+}
+
+/// Optimistically decrement follower count when current user unfollows.
+final class OthersFollowersDecrementRequested extends OthersFollowersEvent {
+  const OthersFollowersDecrementRequested(this.followerPubkey);
+
+  /// The public key of the follower to remove (current user)
+  final String followerPubkey;
 }

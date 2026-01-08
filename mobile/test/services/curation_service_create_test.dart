@@ -43,6 +43,21 @@ void main() {
       when(mockVideoEventService.discoveryVideos).thenReturn([]);
       when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
 
+      // Stub subscribe for CurationService initialization (fetches Divine Team videos)
+      when(
+        mockNostrService.subscribe(any),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+
+      // Stub createAndSignEvent for AuthService (used in curation creation)
+      when(
+        mockAuthService.createAndSignEvent(
+          kind: anyNamed('kind'),
+          content: anyNamed('content'),
+          tags: anyNamed('tags'),
+          biometricPrompt: anyNamed('biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => null);
+
       // Create test keypair
       testKeychain = Keychain.generate();
 
@@ -57,19 +72,8 @@ void main() {
     test('successfully creates and publishes curation set', () async {
       // Setup: Mock successful broadcast
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 3,
-          totalRelays: 3,
-          results: {
-            'wss://relay1.example.com': true,
-            'wss://relay2.example.com': true,
-            'wss://relay3.example.com': true,
-          },
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Execute
@@ -85,7 +89,7 @@ void main() {
       expect(result, isTrue);
 
       // Verify: Broadcast was called
-      verify(mockNostrService.broadcast(any)).called(1);
+      verify(mockNostrService.publishEvent(any)).called(1);
 
       // Verify: Local state was updated
       final storedSet = curationService.getCurationSet('test_list');
@@ -100,15 +104,8 @@ void main() {
 
     test('creates event with correct kind 30005', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': true},
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       await curationService.createCurationSet(
@@ -119,7 +116,7 @@ void main() {
 
       // Verify: Event has correct kind
       final capturedEvent =
-          verify(mockNostrService.broadcast(captureAny)).captured.single
+          verify(mockNostrService.publishEvent(captureAny)).captured.single
               as Event;
       expect(capturedEvent.kind, 30005);
       // TODO(any): Fix and re-enable this test
@@ -127,15 +124,8 @@ void main() {
 
     test('creates event with correct tags', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': true},
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       await curationService.createCurationSet(
@@ -148,7 +138,7 @@ void main() {
 
       // Verify: Event has correct tags
       final capturedEvent =
-          verify(mockNostrService.broadcast(captureAny)).captured.single
+          verify(mockNostrService.publishEvent(captureAny)).captured.single
               as Event;
 
       // Find specific tags
@@ -176,24 +166,8 @@ void main() {
 
     test('returns false when broadcast fails', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 0,
-          totalRelays: 3,
-          results: {
-            'wss://relay1.example.com': false,
-            'wss://relay2.example.com': false,
-            'wss://relay3.example.com': false,
-          },
-          errors: {
-            'wss://relay1.example.com': 'Connection failed',
-            'wss://relay2.example.com': 'Timeout',
-            'wss://relay3.example.com': 'Rejected',
-          },
-        );
-      });
+      // publishEvent returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       // Execute
       final result = await curationService.createCurationSet(
@@ -221,21 +195,13 @@ void main() {
       expect(result, isFalse);
 
       // Verify: Does not attempt to broadcast
-      verifyNever(mockNostrService.broadcast(any));
+      verifyNever(mockNostrService.publishEvent(any));
     });
 
     test('does not update local state when broadcast fails', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 0,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': false},
-          errors: {'wss://relay1.example.com': 'Failed'},
-        );
-      });
+      // publishEvent returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       await curationService.createCurationSet(
         id: 'failed_list',
@@ -250,15 +216,8 @@ void main() {
 
     test('uses curator pubkey from keyManager', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': true},
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       await curationService.createCurationSet(
@@ -269,7 +228,7 @@ void main() {
 
       // Verify: Event pubkey matches keypair
       final capturedEvent =
-          verify(mockNostrService.broadcast(captureAny)).captured.single
+          verify(mockNostrService.publishEvent(captureAny)).captured.single
               as Event;
       expect(capturedEvent.pubkey, testKeychain.public);
 
@@ -281,22 +240,8 @@ void main() {
 
     test('handles partial broadcast success', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 3,
-          results: {
-            'wss://relay1.example.com': true,
-            'wss://relay2.example.com': false,
-            'wss://relay3.example.com': false,
-          },
-          errors: {
-            'wss://relay2.example.com': 'Failed',
-            'wss://relay3.example.com': 'Timeout',
-          },
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Execute
@@ -317,7 +262,7 @@ void main() {
     test('handles broadcast exception', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
       when(
-        mockNostrService.broadcast(any),
+        mockNostrService.publishEvent(any),
       ).thenThrow(Exception('Network error'));
 
       // Execute - should not throw
@@ -337,15 +282,8 @@ void main() {
 
     test('creates curation set with empty video list', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': true},
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Execute: Create with no videos
@@ -366,15 +304,8 @@ void main() {
 
     test('creates curation set with minimal parameters', () async {
       when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.broadcast(any)).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments[0] as Event;
-        return NostrBroadcastResult(
-          event: event,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://relay1.example.com': true},
-          errors: {},
-        );
+      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
       });
 
       // Execute: Create with only required params

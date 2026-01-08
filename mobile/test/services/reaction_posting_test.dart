@@ -69,17 +69,9 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        // Mock broadcast failure with "relay closed" error
-        when(mockNostrService.broadcast(mockEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: mockEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: const {'relay1': false},
-            errors: const {
-              'relay1': 'Bad state: Cannot add new events after calling close',
-            },
-          ),
+        // Mock publish failure with "relay closed" error
+        when(mockNostrService.publishEvent(mockEvent)).thenThrow(
+          Exception('Bad state: Cannot add new events after calling close'),
         );
 
         // Test should throw exception with relay closed error
@@ -121,16 +113,10 @@ void main() {
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      // Mock successful broadcast
-      when(mockNostrService.broadcast(mockEvent)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: mockEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: const {'relay1': true},
-          errors: const {},
-        ),
-      );
+      // Mock successful publish
+      when(
+        mockNostrService.publishEvent(mockEvent),
+      ).thenAnswer((_) async => mockEvent);
 
       // Test toggling like should succeed
       await socialService.toggleLike(testEventId, testAuthorPubkey);
@@ -147,8 +133,8 @@ void main() {
         ),
       ).called(1);
 
-      // Verify broadcast was called
-      verify(mockNostrService.broadcast(mockEvent)).called(1);
+      // Verify publish was called
+      verify(mockNostrService.publishEvent(mockEvent)).called(1);
 
       // Verify event is now liked locally
       expect(socialService.isLiked(testEventId), true);

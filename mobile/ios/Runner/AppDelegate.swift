@@ -187,11 +187,12 @@ import SupportProvidersSDK
         // Initialize Support SDK
         Support.initialize(withZendesk: Zendesk.instance)
 
-        // Set anonymous identity by default
+        // Set baseline anonymous identity so widget works immediately
+        // Flutter will update with email-based identity when user logs in
         let identity = Identity.createAnonymous()
         Zendesk.instance?.setIdentity(identity)
 
-        NSLog("✅ Zendesk: Initialized successfully")
+        NSLog("✅ Zendesk: Initialized with anonymous identity")
         result(true)
 
       case "showNewTicket":
@@ -232,6 +233,49 @@ import SupportProvidersSDK
           NSLog("✅ Zendesk: Ticket list presented in navigation controller")
         }
 
+        result(true)
+
+      case "setUserIdentity":
+        guard let args = call.arguments as? [String: Any],
+              let name = args["name"] as? String,
+              let email = args["email"] as? String else {
+          result(FlutterError(
+            code: "INVALID_ARGUMENT",
+            message: "name and email are required",
+            details: nil
+          ))
+          return
+        }
+
+        NSLog("🎫 Zendesk: Setting user identity")
+        NSLog("🎫 Zendesk:   Name: \(name)")
+        NSLog("🎫 Zendesk:   Email: \(email)")
+
+        // Create anonymous identity with name and email identifiers
+        let identity = Identity.createAnonymous(name: name, email: email)
+        Zendesk.instance?.setIdentity(identity)
+
+        NSLog("✅ Zendesk: User identity set successfully")
+        result(true)
+
+      case "clearUserIdentity":
+        NSLog("🎫 Zendesk: Clearing user identity")
+
+        // Reset to plain anonymous identity
+        let identity = Identity.createAnonymous()
+        Zendesk.instance?.setIdentity(identity)
+
+        NSLog("✅ Zendesk: User identity cleared")
+        result(true)
+
+      case "setAnonymousIdentity":
+        NSLog("🎫 Zendesk: Setting anonymous identity")
+
+        // Set plain anonymous identity (for non-logged-in users)
+        let identity = Identity.createAnonymous()
+        Zendesk.instance?.setIdentity(identity)
+
+        NSLog("✅ Zendesk: Anonymous identity set")
         result(true)
 
       case "createTicket":

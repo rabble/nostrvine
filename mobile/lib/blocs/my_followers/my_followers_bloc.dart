@@ -18,7 +18,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     : _followRepository = followRepository,
       super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
-    on<MyFollowersToggleFollowRequested>(_onToggleFollowRequested);
   }
 
   final FollowRepository _followRepository;
@@ -47,23 +46,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
         category: LogCategory.system,
       );
       emit(state.copyWith(status: MyFollowersStatus.failure));
-    }
-  }
-
-  /// Handle follow toggle request for a follower (follow back).
-  /// Delegates to repository which handles the toggle logic internally.
-  Future<void> _onToggleFollowRequested(
-    MyFollowersToggleFollowRequested event,
-    Emitter<MyFollowersState> emit,
-  ) async {
-    try {
-      await _followRepository.toggleFollow(event.pubkey);
-    } catch (e) {
-      Log.error(
-        'Failed to toggle follow for user: $e',
-        name: 'MyFollowersBloc',
-        category: LogCategory.system,
-      );
     }
   }
 }

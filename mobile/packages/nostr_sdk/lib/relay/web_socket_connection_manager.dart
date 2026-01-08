@@ -24,11 +24,28 @@ class WebSocketConfig {
   /// Timeout for initial connection attempt
   final Duration connectionTimeout;
 
+  /// Interval for heartbeat checks (0 to disable)
+  ///
+  /// When enabled, the connection manager periodically checks if the
+  /// connection appears idle (no messages received). If idle for longer
+  /// than [idleTimeout], the connection is considered dead and will be
+  /// disconnected.
+  final Duration heartbeatInterval;
+
+  /// Maximum time without receiving a message before connection is
+  /// considered dead
+  ///
+  /// Only applies when [heartbeatInterval] is non-zero.
+  /// Set to Duration.zero to disable idle detection.
+  final Duration idleTimeout;
+
   const WebSocketConfig({
     this.maxReconnectAttempts = 10,
     this.baseReconnectDelay = const Duration(seconds: 2),
     this.maxReconnectDelay = const Duration(minutes: 5),
     this.connectionTimeout = const Duration(seconds: 30),
+    this.heartbeatInterval = const Duration(seconds: 30),
+    this.idleTimeout = const Duration(seconds: 90),
   });
 
   /// Default configuration
@@ -51,14 +68,18 @@ class DefaultWebSocketChannelFactory implements WebSocketChannelFactory {
 }
 
 /// {@template web_socket_connection_manager}
-/// Manages a single WebSocket connection with on-demand reconnection.
+/// Manages a single WebSocket connection with on-demand reconnection and
+/// idle detection.
 ///
 /// Reconnects automatically when:
 /// - Sending a message while disconnected (triggers reconnect attempt)
 /// - Connection is lost while active (stream error/done)
 ///
-/// Does NOT reconnect when:
-/// - Connection is idle and relay disconnects (no heartbeat)
+/// Idle Detection (heartbeat):
+/// - Tracks when the last message was received
+/// - Periodically checks if connection has been idle beyond [idleTimeout]
+/// - Forces disconnect when idle, enabling reconnection on next send
+/// - Configure via [WebSocketConfig.heartbeatInterval] and [idleTimeout]
 ///
 /// Designed for testability with:
 /// - Injectable WebSocketChannelFactory for mocking
@@ -91,6 +112,10 @@ class WebSocketConnectionManager {
 
   // Timers
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
+
+  // Activity tracking for idle detection
+  DateTime? _lastActivityAt;
 
   // Stream controllers for external consumers
   final _stateController = StreamController<ConnectionState>.broadcast();
@@ -114,6 +139,24 @@ class WebSocketConnectionManager {
 
   /// Number of reconnection attempts made
   int get reconnectAttempts => _reconnectAttempts;
+
+  /// When the last message was received (or connection established)
+  DateTime? get lastActivityAt => _lastActivityAt;
+
+  /// Duration since last activity (or null if never connected)
+  Duration? get idleDuration {
+    if (_lastActivityAt == null) return null;
+    return DateTime.now().difference(_lastActivityAt!);
+  }
+
+  /// Whether the connection appears idle (no activity beyond timeout)
+  bool get isIdle {
+    if (_state != ConnectionState.connected) return false;
+    if (config.idleTimeout == Duration.zero) return false;
+    final idle = idleDuration;
+    if (idle == null) return false;
+    return idle > config.idleTimeout;
+  }
 
   /// Logger function, can be overridden for testing
   void Function(String message) log;
@@ -163,6 +206,12 @@ class WebSocketConnectionManager {
       _reconnectTimer?.cancel();
       _reconnectTimer = null;
 
+      // Track connection time as initial activity
+      _lastActivityAt = DateTime.now();
+
+      // Start heartbeat timer if configured
+      _startHeartbeat();
+
       log('Connected to $url');
 
       return true;
@@ -175,6 +224,7 @@ class WebSocketConnectionManager {
   }
 
   void _onMessage(dynamic message) {
+    _lastActivityAt = DateTime.now();
     if (message is String) {
       _messageController.add(message);
     } else {
@@ -194,6 +244,7 @@ class WebSocketConnectionManager {
   }
 
   void _handleDisconnect() {
+    _stopHeartbeat();
     _channelSubscription?.cancel();
     _channelSubscription = null;
     _channel = null;
@@ -207,6 +258,7 @@ class WebSocketConnectionManager {
     _shouldReconnect = false;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _stopHeartbeat();
 
     await _closeChannel();
     _setState(ConnectionState.disconnected);
@@ -366,6 +418,52 @@ class WebSocketConnectionManager {
     await _closeChannel();
     _setState(ConnectionState.disconnected);
     return _doConnect();
+  }
+
+  // --- Heartbeat / Idle Detection ---
+
+  void _startHeartbeat() {
+    if (config.heartbeatInterval == Duration.zero) return;
+
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(config.heartbeatInterval, (_) {
+      _onHeartbeat();
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  void _onHeartbeat() {
+    if (_state != ConnectionState.connected) return;
+    if (config.idleTimeout == Duration.zero) return;
+
+    final idle = idleDuration;
+    if (idle != null && idle > config.idleTimeout) {
+      log(
+        'Connection idle for ${idle.inSeconds}s (timeout: '
+        '${config.idleTimeout.inSeconds}s), forcing disconnect',
+      );
+      _handleDisconnect();
+    }
+  }
+
+  /// Check if the connection is healthy and force disconnect if idle.
+  ///
+  /// Returns true if the connection is healthy (connected and not idle),
+  /// false if disconnected or was disconnected due to idle timeout.
+  bool checkHealth() {
+    if (_state != ConnectionState.connected) return false;
+
+    if (isIdle) {
+      log('Health check failed: connection idle, forcing disconnect');
+      _handleDisconnect();
+      return false;
+    }
+
+    return true;
   }
 
   // --- State management ---

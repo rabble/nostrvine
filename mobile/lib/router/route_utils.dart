@@ -7,16 +7,30 @@ enum RouteType {
   explore,
   notifications,
   profile,
-  hashtag, // Push route within explore tab
-  search, // Search screen
-  camera, // Camera capture
-  clipManager, // Clip management for recorded segments
-  editVideo, // Video editor for text/sound overlays
-  settings, // Settings screen
+  likedVideos, // Current user's liked videos feed
+  hashtag, // Still supported as push route within explore
+  search,
+  camera,
+  clipManager, // Clip management screen for recorded segments
+  editVideo, // Video editor screen for text/sound overlays
+  settings,
+  relaySettings, // Relay configuration screen
+  relayDiagnostic, // Relay connectivity diagnostics
+  blossomSettings, // Blossom media server settings
+  notificationSettings, // Notification preferences
+  keyManagement, // Key backup/export screen
+  safetySettings, // Safety and privacy settings
   editProfile, // Profile editing screen
   clips, // Clip library (formerly drafts)
   importKey, // Key import screen
   welcome, // Welcome/onboarding screen
+  developerOptions, // Developer options (hidden, unlock by tapping version 7x)
+  following, // Following list screen
+  followers, // Followers list screen
+  videoFeed, // Fullscreen video feed (pushed from grids)
+  profileView, // Other user's profile (fullscreen, no bottom nav)
+  curatedList, // Curated video list screen (NIP-51 kind 30005)
+  sound, // Sound detail screen for audio reuse
 }
 
 /// Structured representation of a route
@@ -27,6 +41,8 @@ class RouteContext {
     this.npub,
     this.hashtag,
     this.searchTerm,
+    this.listId,
+    this.soundId,
   });
 
   final RouteType type;
@@ -34,6 +50,21 @@ class RouteContext {
   final String? npub;
   final String? hashtag;
   final String? searchTerm;
+  final String? listId;
+  final String? soundId;
+}
+
+/// Extra data for curated list route (passed via GoRouter extra)
+class CuratedListRouteExtra {
+  const CuratedListRouteExtra({
+    required this.listName,
+    this.videoIds,
+    this.authorPubkey,
+  });
+
+  final String listName;
+  final List<String>? videoIds;
+  final String? authorPubkey;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -87,6 +118,16 @@ RouteContext parseRoute(String path) {
       final rawIndex = segments.length > 1 ? int.tryParse(segments[1]) ?? 0 : 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
       return RouteContext(type: RouteType.notifications, videoIndex: index);
+
+    case 'liked-videos':
+      // /liked-videos - grid mode
+      // /liked-videos/5 - feed mode at index 5
+      if (segments.length > 1) {
+        final rawIndex = int.tryParse(segments[1]);
+        final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
+        return RouteContext(type: RouteType.likedVideos, videoIndex: index);
+      }
+      return const RouteContext(type: RouteType.likedVideos);
 
     case 'hashtag':
       if (segments.length < 2) {
@@ -157,6 +198,40 @@ RouteContext parseRoute(String path) {
     case 'welcome':
       return const RouteContext(type: RouteType.welcome);
 
+    case 'developer-options':
+      return const RouteContext(type: RouteType.developerOptions);
+
+    case 'following':
+      final followingPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.following, npub: followingPubkey);
+
+    case 'followers':
+      final followersPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.followers, npub: followersPubkey);
+
+    case 'video-feed':
+      return const RouteContext(type: RouteType.videoFeed);
+    case 'list':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.explore);
+      }
+      final listId = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.curatedList, listId: listId);
+
+    case 'sound':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final soundId = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.sound, soundId: soundId);
+
+    case 'profile-view':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final profileViewNpub = Uri.decodeComponent(segments[1]);
+      return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -195,6 +270,14 @@ String buildRoute(RouteContext context) {
         return '/profile/$npub/$index';
       }
       return '/profile/$npub';
+
+    case RouteType.likedVideos:
+      if (context.videoIndex != null) {
+        final rawIndex = context.videoIndex!;
+        final index = rawIndex < 0 ? 0 : rawIndex;
+        return '/liked-videos/$index';
+      }
+      return '/liked-videos';
 
     case RouteType.hashtag:
       final hashtag = Uri.encodeComponent(context.hashtag ?? '');
@@ -251,6 +334,35 @@ String buildRoute(RouteContext context) {
 
     case RouteType.welcome:
       return '/welcome';
+
+    case RouteType.developerOptions:
+      return '/developer-options';
+
+    case RouteType.following:
+      return '/following/${context.npub ?? ''}';
+
+    case RouteType.followers:
+      return '/followers/${context.npub ?? ''}';
+
+    case RouteType.videoFeed:
+      return '/video-feed';
+
+    case RouteType.profileView:
+      final npub = Uri.encodeComponent(context.npub ?? '');
+      return '/profile-view/$npub';
+    case RouteType.curatedList:
+      final listId = Uri.encodeComponent(context.listId ?? '');
+      return '/list/$listId';
+
+    case RouteType.sound:
+      return '/sound/${context.soundId ?? ''}';
+    case RouteType.relaySettings:
+    case RouteType.relayDiagnostic:
+    case RouteType.blossomSettings:
+    case RouteType.notificationSettings:
+    case RouteType.keyManagement:
+    case RouteType.safetySettings:
+      throw UnimplementedError();
   }
 }
 

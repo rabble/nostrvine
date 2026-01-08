@@ -94,6 +94,77 @@ class NostrClient {
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 
+  /// Helper to cache an event with default expiry.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored since caching
+  /// failures should not affect the send operation's success.
+  void _cacheEvent(Event event) {
+    try {
+      unawaited(_nostrEventsDao?.upsertEvent(event));
+    } on Object {
+      // Ignore cache errors
+    }
+  }
+
+  /// Checks if an event kind supports safe optimistic caching.
+  ///
+  /// Returns `false` for:
+  /// - Deletion events (Kind 5): They remove data, not add
+  /// - Replaceable events (Kind 0, 3, 10000-19999): Upsert deletes old event
+  /// - Parameterized replaceable (Kind 30000-39999): Same issue
+  ///
+  /// For these kinds, caching on success is safer to avoid data loss on
+  /// rollback.
+  bool _canOptimisticallyCache(int kind) {
+    if (kind == EventKind.eventDeletion) return false;
+    if (EventKind.isReplaceable(kind)) return false;
+    if (EventKind.isParameterizedReplaceable(kind)) return false;
+    return true;
+  }
+
+  /// Removes an optimistically cached event on send failure.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored since rollback
+  /// failures should not affect the operation's result.
+  void _rollbackCachedEvent(String eventId) {
+    try {
+      unawaited(_nostrEventsDao?.deleteEventsByIds([eventId]));
+    } on Object {
+      // Ignore rollback errors
+    }
+  }
+
+  /// Handles a NIP-09 deletion event (Kind 5) by removing target events
+  /// from the local database.
+  ///
+  /// Extracts event IDs from 'e' tags and deletes them from both the events
+  /// table and video_metrics table.
+  ///
+  /// Fire-and-forget pattern - errors are silently ignored.
+  void _handleDeletionEvent(Event deletionEvent) {
+    if (deletionEvent.kind != EventKind.eventDeletion) return;
+
+    // Extract target event IDs from 'e' tags
+    final targetEventIds = <String>[];
+    for (final dynamic tag in deletionEvent.tags) {
+      if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        final eventId = tag[1];
+        if (eventId is String) {
+          targetEventIds.add(eventId);
+        }
+      }
+    }
+
+    if (targetEventIds.isEmpty) return;
+
+    // Delete target events from the database (fire-and-forget)
+    try {
+      unawaited(_nostrEventsDao?.deleteEventsByIds(targetEventIds));
+    } on Object {
+      // Ignore deletion errors
+    }
+  }
+
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
@@ -132,25 +203,71 @@ class NostrClient {
   /// Publishes an event to relays
   ///
   /// Delegates to nostr_sdk for relay management and broadcasting.
+  ///
+  /// **Caching strategy:**
+  /// - Regular events: Optimistic cache before send, rollback on failure
+  /// - Replaceable events (0, 3, 10000-39999): Cache on success only
+  ///   (upsert deletes old record, so rollback would lose data)
+  /// - Deletion events (Kind 5): Removes target events from cache on success
+  ///
   /// Returns the sent event if successful, or `null` if failed.
   Future<Event?> publishEvent(
     Event event, {
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendEvent(
+    final useOptimisticCache = _canOptimisticallyCache(event.kind);
+
+    // Optimistic cache for regular events only
+    if (useOptimisticCache) {
+      _cacheEvent(event);
+    }
+
+    // Checks health of relays, attempts reconnection if none connected,
+    // and exits if reconnect is unsuccessful
+    if (_relayManager.connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        // Rollback optimistic cache on failure
+        if (useOptimisticCache) {
+          _rollbackCachedEvent(event.id);
+        }
+        return null;
+      }
+    }
+
+    final sentEvent = await _nostr.sendEvent(
       event,
       targetRelays: targetRelays,
     );
+
+    if (sentEvent == null) {
+      // Rollback optimistic cache on failure
+      if (useOptimisticCache) {
+        _rollbackCachedEvent(event.id);
+      }
+      return null;
+    }
+
+    // Handle successful send
+    if (sentEvent.kind == EventKind.eventDeletion) {
+      // NIP-09: Remove target events from cache
+      _handleDeletionEvent(sentEvent);
+    } else if (!useOptimisticCache) {
+      // Cache replaceable events on success (not optimistically)
+      _cacheEvent(sentEvent);
+    }
+
+    return sentEvent;
   }
 
   /// Queries events with given filters
   ///
-  /// Query flow: **Cache → Gateway → WebSocket**
+  /// Query flow: **Cache + (Gateway → WebSocket)**
   ///
   /// If [useCache] is `true` and cache is available, checks local cache first.
   /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for cached responses.
-  /// Falls back to WebSocket query if both are unavailable or empty.
+  /// the REST gateway for cached responses (empty responses are valid).
+  /// Falls back to WebSocket query only if cache misses and gateway fails.
   ///
   /// Results from gateway/websocket are cached for future queries.
   Future<List<Event>> queryEvents(
@@ -162,13 +279,12 @@ class NostrClient {
     bool useGateway = true,
     bool useCache = true,
   }) async {
-    // 1. Check cache first (instant)
+    final cacheResults = <Event>[];
+
+    // 1. Get cache results (don't return early - we'll merge with network)
     final dao = _nostrEventsDao;
     if (useCache && dao != null && filters.length == 1) {
-      final cached = await dao.getEventsByFilter(filters.first);
-      if (cached.isNotEmpty) {
-        return cached;
-      }
+      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
     }
 
     // 2. Try gateway (fast REST)
@@ -178,21 +294,29 @@ class NostrClient {
         final response = await _tryGateway(
           () => gatewayClient.query(filters.first),
         );
-        if (response != null && response.hasEvents) {
-          // Cache gateway results (fire-and-forget)
-          try {
-            unawaited(_nostrEventsDao?.upsertEventsBatch(response.events));
-          } on Object {
-            // Ignore cache errors
+        // Accept gateway response even if empty - null means gateway failed
+        if (response != null) {
+          // Cache gateway results if any (fire-and-forget)
+          if (response.hasEvents) {
+            try {
+              unawaited(_nostrEventsDao?.upsertEventsBatch(response.events));
+            } on Object {
+              // Ignore cache errors
+            }
           }
-          return response.events;
+          // Merge cache + gateway and return (respecting original limit)
+          return _mergeEvents(
+            cacheResults,
+            response.events,
+            limit: filters.first.limit,
+          );
         }
       }
     }
 
     // 3. Fall back to WebSocket query
     final filtersJson = filters.map((f) => f.toJson()).toList();
-    final events = await _nostr.queryEvents(
+    final websocketEvents = await _nostr.queryEvents(
       filtersJson,
       id: subscriptionId,
       tempRelays: tempRelays,
@@ -201,15 +325,18 @@ class NostrClient {
     );
 
     // Cache websocket results (fire-and-forget)
-    if (events.isNotEmpty) {
+    if (websocketEvents.isNotEmpty) {
       try {
-        unawaited(_nostrEventsDao?.upsertEventsBatch(events));
+        unawaited(_nostrEventsDao?.upsertEventsBatch(websocketEvents));
       } on Object {
         // Ignore cache errors
       }
     }
 
-    return events;
+    // Merge cache + websocket and return (respecting original limit)
+    // Use first filter's limit since cache only works with single filters
+    final limit = filters.isNotEmpty ? filters.first.limit : null;
+    return _mergeEvents(cacheResults, websocketEvents, limit: limit);
   }
 
   /// Counts events matching the given filters using NIP-45.
@@ -439,11 +566,16 @@ class NostrClient {
     final actualId = _nostr.subscribe(
       filtersJson,
       (event) {
-        // Auto-cache incoming events (fire-and-forget)
-        try {
-          unawaited(_nostrEventsDao?.upsertEvent(event));
-        } on Object {
-          // Ignore sync cache errors
+        // Handle NIP-09 deletion events by removing target events from DB
+        if (event.kind == EventKind.eventDeletion) {
+          _handleDeletionEvent(event);
+        } else {
+          // Auto-cache non-deletion events (fire-and-forget)
+          try {
+            unawaited(_nostrEventsDao?.upsertEvent(event));
+          } on Object {
+            // Ignore sync cache errors
+          }
         }
 
         if (!controller.isClosed) {
@@ -577,21 +709,29 @@ class NostrClient {
   }
 
   /// Sends a like reaction to an event
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendLike(
+    final likeEvent = await _nostr.sendLike(
       eventId,
       content: content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (likeEvent != null) {
+      _cacheEvent(likeEvent);
+    }
+    return likeEvent;
   }
 
   /// Sends a repost
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendRepost(
     String eventId, {
     String? relayAddr,
@@ -599,54 +739,80 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendRepost(
+    final repostEvent = await _nostr.sendRepost(
       eventId,
       relayAddr: relayAddr,
       content: content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (repostEvent != null) {
+      _cacheEvent(repostEvent);
+    }
+    return repostEvent;
   }
 
   /// Deletes an event
+  ///
+  /// Sends a NIP-09 deletion event (Kind 5) and removes the target event
+  /// from the local database cache.
   Future<Event?> deleteEvent(
     String eventId, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.deleteEvent(
+    final deletionEvent = await _nostr.deleteEvent(
       eventId,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (deletionEvent != null) {
+      // Delete target event from local database
+      _handleDeletionEvent(deletionEvent);
+    }
+    return deletionEvent;
   }
 
   /// Deletes multiple events
+  ///
+  /// Sends a NIP-09 deletion event (Kind 5) and removes the target events
+  /// from the local database cache.
   Future<Event?> deleteEvents(
     List<String> eventIds, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.deleteEvents(
+    final deletionEvent = await _nostr.deleteEvents(
       eventIds,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (deletionEvent != null) {
+      // Delete target events from local database
+      _handleDeletionEvent(deletionEvent);
+    }
+    return deletionEvent;
   }
 
   /// Sends a contact list
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendContactList(
     ContactList contacts,
     String content, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    return _nostr.sendContactList(
+    final contactListEvent = await _nostr.sendContactList(
       contacts,
       content,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
+    if (contactListEvent != null) {
+      _cacheEvent(contactListEvent);
+    }
+    return contactListEvent;
   }
 
   /// Searches for video events using NIP-50 search
@@ -689,82 +855,6 @@ class NostrClient {
     return subscribe([filter]);
   }
 
-  /// Broadcasts an event to relays with result tracking
-  ///
-  /// Similar to [publishEvent] but returns detailed per-relay tracking.
-  /// Use this when you need visibility into which relays accepted the event.
-  ///
-  /// Note: Per-relay tracking is currently based on the connected relays
-  /// at broadcast time. The underlying nostr_sdk doesn't provide individual
-  /// relay responses, so results are inferred from overall success/failure.
-  Future<NostrBroadcastResult> broadcast(
-    Event event, {
-    List<String>? targetRelays,
-  }) async {
-    final relays = connectedRelays;
-    final totalRelays = targetRelays?.length ?? relays.length;
-
-    try {
-      final sentEvent = await _nostr.sendEvent(
-        event,
-        targetRelays: targetRelays,
-      );
-
-      if (sentEvent != null) {
-        // Event was accepted by at least one relay
-        // Since nostr_sdk doesn't provide per-relay tracking,
-        // we mark all connected relays as successful
-        final results = <String, bool>{};
-        final relayList = targetRelays ?? relays;
-        for (final relay in relayList) {
-          results[relay] = true;
-        }
-
-        return NostrBroadcastResult(
-          event: sentEvent,
-          successCount: totalRelays,
-          totalRelays: totalRelays,
-          results: results,
-          errors: {},
-        );
-      } else {
-        // Event was not accepted by any relay
-        final results = <String, bool>{};
-        final errors = <String, String>{};
-        final relayList = targetRelays ?? relays;
-        for (final relay in relayList) {
-          results[relay] = false;
-          errors[relay] = 'Failed to send';
-        }
-
-        return NostrBroadcastResult(
-          event: null,
-          successCount: 0,
-          totalRelays: totalRelays,
-          results: results,
-          errors: errors,
-        );
-      }
-    } on Exception catch (e) {
-      // Exception during broadcast
-      final results = <String, bool>{};
-      final errors = <String, String>{};
-      final relayList = targetRelays ?? relays;
-      for (final relay in relayList) {
-        results[relay] = false;
-        errors[relay] = e.toString();
-      }
-
-      return NostrBroadcastResult(
-        event: null,
-        successCount: 0,
-        totalRelays: totalRelays,
-        results: results,
-        errors: errors,
-      );
-    }
-  }
-
   /// Disposes the client and cleans up resources
   ///
   /// Closes all subscriptions, disconnects from relays, and cleans up
@@ -785,6 +875,54 @@ class NostrClient {
     final bytes = utf8.encode(jsonString);
     final digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  /// Merges cached and network events, deduplicating by event ID.
+  /// Network events take precedence (considered fresher).
+  ///
+  /// If [limit] is provided, returns at most [limit] events sorted by
+  /// `created_at` descending (most recent first). This ensures the original
+  /// filter's limit is respected even when combining multiple sources.
+  List<Event> _mergeEvents(
+    List<Event> cached,
+    List<Event> network, {
+    int? limit,
+  }) {
+    if (cached.isEmpty && network.isEmpty) return [];
+    if (cached.isEmpty) {
+      return limit != null && network.length > limit
+          ? (network..sort((a, b) => b.createdAt - a.createdAt))
+                .take(limit)
+                .toList()
+          : network;
+    }
+    if (network.isEmpty) {
+      return limit != null && cached.length > limit
+          ? (cached..sort((a, b) => b.createdAt - a.createdAt))
+                .take(limit)
+                .toList()
+          : cached;
+    }
+
+    final eventMap = <String, Event>{};
+    // Add cached events first
+    for (final event in cached) {
+      eventMap[event.id] = event;
+    }
+    // Network events overwrite cached (fresher data)
+    for (final event in network) {
+      eventMap[event.id] = event;
+    }
+
+    final merged = eventMap.values.toList();
+
+    // Apply limit if specified, returning the most recent events
+    if (limit != null && merged.length > limit) {
+      merged.sort((a, b) => b.createdAt - a.createdAt);
+      return merged.take(limit).toList();
+    }
+
+    return merged;
   }
 
   /// Attempts to execute a gateway operation

@@ -62,15 +62,9 @@ void main() {
         createdAt: 1234567890,
       );
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: mockEvent,
-          successCount: 3,
-          totalRelays: 3,
-          results: {'relay1': true, 'relay2': true, 'relay3': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => mockEvent);
 
       when(
         mockAuthService.signOut(deleteKeys: true),
@@ -107,8 +101,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100)); // Loading indicator
       await tester.pumpAndSettle(); // Complete deletion
 
-      // Verify NIP-62 event was broadcast
-      verify(mockNostrService.broadcast(any)).called(1);
+      // Verify NIP-62 event was published
+      verify(mockNostrService.publishEvent(any)).called(1);
 
       // Verify user was signed out with keys deleted
       verify(mockAuthService.signOut(deleteKeys: true)).called(1);
@@ -118,36 +112,15 @@ void main() {
       expect(find.text('Create New Account'), findsOneWidget);
     });
 
-    testWidgets('should show error when broadcast fails', (tester) async {
+    testWidgets('should show error when publish fails', (tester) async {
       // Arrange
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.currentProfile).thenReturn(null);
       when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(mockNostrService.hasKeys).thenReturn(true);
 
-      final mockEvent = Event(
-        testPublicKey,
-        62,
-        [
-          ['relay', 'ALL_RELAYS'],
-        ],
-        'User requested account deletion via diVine app',
-        createdAt: 1234567890,
-      );
-
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: mockEvent,
-          successCount: 0,
-          totalRelays: 3,
-          results: {'relay1': false, 'relay2': false, 'relay3': false},
-          errors: {
-            'relay1': 'Connection failed',
-            'relay2': 'Connection failed',
-            'relay3': 'Connection failed',
-          },
-        ),
-      );
+      // publishEvent returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       final deletionService = AccountDeletionService(
         nostrService: mockNostrService,

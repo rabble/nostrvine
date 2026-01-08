@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -27,7 +26,6 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -259,19 +257,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       children: [
         // Tabs always visible
         Container(
-          color: VineTheme.cardBackground,
+          color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
-            indicatorColor: VineTheme.whiteText,
-            indicatorWeight: 3,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            padding: const EdgeInsets.only(left: 16),
+            indicatorColor: VineTheme.tabIndicatorGreen,
+            indicatorWeight: 4,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             labelColor: VineTheme.whiteText,
-            unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            unselectedLabelColor: VineTheme.tabIconInactive,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            labelStyle: VineTheme.tabTextStyle(),
+            unselectedLabelStyle: VineTheme.tabTextStyle(
+              color: VineTheme.tabIconInactive,
             ),
             onTap: (index) {
               // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
@@ -634,13 +635,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => CuratedListFeedScreen(
-                                listId: curatedList.id,
-                                listName: curatedList.name,
-                              ),
-                            ),
+                          context.pushCuratedList(
+                            listId: curatedList.id,
+                            listName: curatedList.name,
                           );
                         },
                       ),
@@ -800,13 +797,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               );
               // Stop any playing videos before navigating
               disposeAllVideoControllers(ref);
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CuratedListFeedScreen(
-                    listId: curatedList.id,
-                    listName: curatedList.name,
-                  ),
-                ),
+              context.pushCuratedList(
+                listId: curatedList.id,
+                listName: curatedList.name,
               );
             },
           ),

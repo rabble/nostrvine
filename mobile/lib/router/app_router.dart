@@ -29,10 +29,14 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
@@ -358,6 +362,62 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
         pageBuilder: VideoEditorScreen.pageBuilder,
+      ),
+      // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
+      GoRoute(
+        path: '/video-feed',
+        name: 'video-feed',
+        builder: (ctx, st) {
+          final args = st.extra as FullscreenVideoFeedArgs?;
+          if (args == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('No videos to display')),
+            );
+          }
+          return FullscreenVideoFeedScreen(
+            source: args.source,
+            initialIndex: args.initialIndex,
+            contextTitle: args.contextTitle,
+          );
+        },
+      ),
+      // Other user's profile screen (no bottom nav, pushed from feeds/search)
+      GoRoute(
+        path: '/profile-view/:npub',
+        name: 'profile-view',
+        builder: (ctx, st) {
+          final npub = st.pathParameters['npub'];
+          if (npub == null || npub.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid profile ID')),
+            );
+          }
+          return OtherProfileScreen(npub: npub);
+        },
+      ),
+      // CURATED LIST route (NIP-51 kind 30005 video lists)
+      GoRoute(
+        path: '/list/:listId',
+        name: 'list',
+        builder: (ctx, st) {
+          final listId = st.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid list ID')),
+            );
+          }
+          // Extra data contains listName, videoIds, authorPubkey
+          final extra = st.extra as CuratedListRouteExtra?;
+          return CuratedListFeedScreen(
+            listId: listId,
+            listName: extra?.listName ?? 'List',
+            videoIds: extra?.videoIds,
+            authorPubkey: extra?.authorPubkey,
+          );
+        },
       ),
     ],
   );

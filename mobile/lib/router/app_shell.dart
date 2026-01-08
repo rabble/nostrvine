@@ -3,9 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
@@ -112,12 +114,12 @@ class AppShell extends ConsumerWidget {
 
     final titleWidget = Text(
       title,
-      // Use Pacifico font only for 'Divine' on home feed, system font elsewhere
+      // Use Pacifico font for 'Divine' branding, Bricolage Grotesque for other titles
       style: title == 'Divine'
           ? GoogleFonts.pacifico(
               textStyle: const TextStyle(fontSize: 24, letterSpacing: 0.2),
             )
-          : const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          : VineTheme.titleFont(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -156,8 +158,15 @@ class AppShell extends ConsumerWidget {
     // Initialize relay statistics bridge to record connection events
     ref.watch(relayStatisticsBridgeProvider);
 
-    // Watch page context to determine if back button should show
+    // Initialize Zendesk identity sync to keep user identity in sync with auth
+    ref.watch(zendeskIdentitySyncProvider);
+
+    // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
+    final isSearchRoute = pageCtxAsync.maybeWhen(
+      data: (ctx) => ctx.type == RouteType.search,
+      orElse: () => false,
+    );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
         final isSubRoute =
@@ -194,10 +203,34 @@ class AppShell extends ConsumerWidget {
       },
       appBar: AppBar(
         elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
         backgroundColor: getEnvironmentAppBarColor(environment),
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/CaretLeft.svg',
+                    width: 32,
+                    height: 32,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
                 onPressed: () {
                   Log.info(
                     '👆 User tapped back button',
@@ -205,11 +238,23 @@ class AppShell extends ConsumerWidget {
                     category: LogCategory.ui,
                   );
 
+                  // First, try to pop if there's something on the navigation stack
+                  // This handles pushed routes (e.g., list → profile → back to list)
+                  if (context.canPop()) {
+                    Log.info(
+                      '👈 Popping navigation stack',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.pop();
+                    return;
+                  }
+
                   // Get current route context
                   final ctx = ref.read(pageContextProvider).asData?.value;
                   if (ctx == null) return;
 
-                  // First, check if we're in a sub-route (hashtag, search, etc.)
+                  // Check if we're in a sub-route (hashtag, search, etc.)
                   // If so, navigate back to parent route
                   switch (ctx.type) {
                     case RouteType.hashtag:
@@ -272,7 +317,26 @@ class AppShell extends ConsumerWidget {
                 builder: (context) => IconButton(
                   key: const Key('menu-icon-button'),
                   tooltip: 'Menu',
-                  icon: const Icon(Icons.menu),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: VineTheme.iconButtonBackground,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/menu.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
                   onPressed: () {
                     Log.info(
                       '👆 User tapped menu button',
@@ -292,32 +356,74 @@ class AppShell extends ConsumerWidget {
             const EnvironmentBadge(),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Search',
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Log.info(
-                '👆 User tapped search button',
-                name: 'Navigation',
-                category: LogCategory.ui,
-              );
-              context.goSearch();
-            },
-          ),
-          IconButton(
-            tooltip: 'Open camera',
-            icon: const Icon(Icons.photo_camera_outlined),
-            onPressed: () {
-              Log.info(
-                '👆 User tapped camera button',
-                name: 'Navigation',
-                category: LogCategory.ui,
-              );
-              context.pushCamera();
-            },
-          ),
-        ],
+        actions: isSearchRoute
+            ? null
+            : [
+                IconButton(
+                  tooltip: 'Search',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: VineTheme.iconButtonBackground,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/search.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    Log.info(
+                      '👆 User tapped search button',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.goSearch();
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Open camera',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: VineTheme.iconButtonBackground,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/camera.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    Log.info(
+                      '👆 User tapped camera button',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.pushCamera();
+                  },
+                ),
+                const SizedBox(width: 16),
+              ],
       ),
       drawer: const VineDrawer(),
       body: navigationShell,
@@ -333,27 +439,6 @@ class AppShell extends ConsumerWidget {
               child: const Icon(Icons.home),
             ),
             label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              identifier: 'explore_tab',
-              child: const Icon(Icons.explore),
-            ),
-            label: 'Explore',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              identifier: 'notifications_tab',
-              child: const Icon(Icons.notifications),
-            ),
-            label: 'Notifications',
-          ),
-          BottomNavigationBarItem(
-            icon: Semantics(
-              identifier: 'profile_tab',
-              child: const Icon(Icons.person),
-            ),
-            label: 'Profile',
           ),
         ],
       ),

@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_transitions.dart';
@@ -151,9 +152,38 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Blossom Upload Settings'),
-          backgroundColor: VineTheme.vineGreen,
-          foregroundColor: VineTheme.whiteText,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
+          leadingWidth: 80,
+          centerTitle: false,
+          titleSpacing: 0,
+          backgroundColor: VineTheme.navGreen,
+          leading: IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: VineTheme.iconButtonBackground,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SvgPicture.asset(
+                'assets/icon/CaretLeft.svg',
+                width: 32,
+                height: 32,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            tooltip: 'Back',
+          ),
+          title: Text('Media Servers', style: VineTheme.titleFont()),
         ),
         backgroundColor: Colors.black,
         body: const Center(
@@ -164,9 +194,38 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Blossom Upload Settings'),
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
+        ),
+        title: Text('Media Servers', style: VineTheme.titleFont()),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveSettings,
@@ -187,6 +246,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                     ),
                   ),
           ),
+          const SizedBox(width: 16),
         ],
       ),
       backgroundColor: Colors.black,

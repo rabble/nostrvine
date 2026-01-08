@@ -10,14 +10,12 @@ import 'package:drift/web.dart';
 /// Uses IndexedDB through drift's web implementation
 QueryExecutor openConnection() {
   return LazyDatabase(() async {
-    return WebDatabase(
-      'local_relay_db',
-    ); // Disabled - too verbose
+    return WebDatabase('divine_db');
   });
 }
 
 /// Get path to shared database file
 /// On web, this returns a logical name for IndexedDB
 Future<String> getSharedDatabasePath() async {
-  return 'local_relay_db'; // IndexedDB database name
+  return 'divine_db'; // IndexedDB database name
 }
