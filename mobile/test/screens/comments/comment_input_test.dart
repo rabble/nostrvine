@@ -30,8 +30,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Add a comment...'), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      expect(find.text('Add comment...'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
     testWidgets('shows loading spinner when isPosting', (tester) async {
@@ -48,7 +48,7 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsNothing);
+      expect(find.byIcon(Icons.arrow_upward), findsNothing);
     });
 
     testWidgets('calls onSubmit when send tapped', (tester) async {
@@ -66,7 +66,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.send));
+      await tester.tap(find.byIcon(Icons.arrow_upward));
       await tester.pump();
 
       expect(submitted, isTrue);
