@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -35,21 +36,12 @@ class ProfileLikedVideosBloc
        _nostrClient = nostrClient,
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(_onSyncRequested);
-    on<ProfileLikedVideosRefreshRequested>(_onRefreshRequested);
-    on<_ProfileLikedVideosIdsChanged>(_onIdsChanged);
-
-    // Subscribe to liked IDs changes to keep list updated
-    _likedIdsSubscription = _likesRepository.watchLikedEventIds().listen((
-      likedIds,
-    ) {
-      add(_ProfileLikedVideosIdsChanged(likedIds.toList()));
-    });
+    on<ProfileLikedVideosSubscriptionRequested>(_onSubscriptionRequested);
   }
 
   final LikesRepository _likesRepository;
   final VideoEventService _videoEventService;
   final NostrClient _nostrClient;
-  StreamSubscription<Set<String>>? _likedIdsSubscription;
 
   /// Handle sync request - syncs liked IDs from repository then loads videos.
   Future<void> _onSyncRequested(
@@ -140,72 +132,55 @@ class ProfileLikedVideosBloc
     }
   }
 
-  /// Handle refresh request - re-sync and reload videos.
-  Future<void> _onRefreshRequested(
-    ProfileLikedVideosRefreshRequested event,
+  /// Subscribe to liked IDs changes and update the video list reactively.
+  ///
+  /// Uses emit.forEach to listen to the repository stream and emit state
+  /// changes when liked IDs change (videos added or removed).
+  Future<void> _onSubscriptionRequested(
+    ProfileLikedVideosSubscriptionRequested event,
     Emitter<ProfileLikedVideosState> emit,
   ) async {
-    add(const ProfileLikedVideosSyncRequested());
-  }
+    await emit.forEach<Set<String>>(
+      _likesRepository.watchLikedEventIds(),
+      onData: (likedIdsSet) {
+        final newIds = likedIdsSet.toList();
 
-  /// Handle liked IDs changes from the repository stream.
-  Future<void> _onIdsChanged(
-    _ProfileLikedVideosIdsChanged event,
-    Emitter<ProfileLikedVideosState> emit,
-  ) async {
-    final newIds = event.likedEventIds;
+        // Skip if IDs haven't changed
+        if (listEquals(newIds, state.likedEventIds)) return state;
 
-    // Skip if IDs haven't changed
-    if (_listEquals(newIds, state.likedEventIds)) return;
+        // Skip if we haven't done initial sync yet
+        if (state.status == ProfileLikedVideosStatus.initial ||
+            state.status == ProfileLikedVideosStatus.syncing) {
+          return state;
+        }
 
-    // Skip if we haven't done initial sync yet
-    if (state.status == ProfileLikedVideosStatus.initial ||
-        state.status == ProfileLikedVideosStatus.syncing) {
-      return;
-    }
+        Log.info(
+          'ProfileLikedVideosBloc: Liked IDs changed, updating list',
+          name: 'ProfileLikedVideosBloc',
+          category: LogCategory.video,
+        );
 
-    Log.info(
-      'ProfileLikedVideosBloc: Liked IDs changed, updating list',
-      name: 'ProfileLikedVideosBloc',
-      category: LogCategory.video,
+        // If a video was unliked, remove it from the list immediately
+        if (newIds.length < state.likedEventIds.length) {
+          final removedIds = state.likedEventIds
+              .where((id) => !newIds.contains(id))
+              .toSet();
+          final updatedVideos = state.videos
+              .where((v) => !removedIds.contains(v.id))
+              .toList();
+
+          return state.copyWith(likedEventIds: newIds, videos: updatedVideos);
+        }
+
+        // If a video was liked, we need to fetch it asynchronously
+        // For now, just update the IDs - the video will be fetched on next sync
+        if (newIds.length > state.likedEventIds.length) {
+          return state.copyWith(likedEventIds: newIds);
+        }
+
+        return state;
+      },
     );
-
-    // If a video was unliked, remove it from the list immediately
-    if (newIds.length < state.likedEventIds.length) {
-      final removedIds = state.likedEventIds
-          .where((id) => !newIds.contains(id))
-          .toSet();
-      final updatedVideos = state.videos
-          .where((v) => !removedIds.contains(v.id))
-          .toList();
-
-      emit(state.copyWith(likedEventIds: newIds, videos: updatedVideos));
-      return;
-    }
-
-    // If a video was liked, fetch and add it
-    if (newIds.length > state.likedEventIds.length) {
-      final addedIds = newIds
-          .where((id) => !state.likedEventIds.contains(id))
-          .toList();
-
-      if (addedIds.isNotEmpty) {
-        final newVideos = await _fetchVideos(addedIds);
-        // Prepend new videos (most recent first)
-        final updatedVideos = [...newVideos, ...state.videos];
-
-        emit(state.copyWith(likedEventIds: newIds, videos: updatedVideos));
-      }
-    }
-  }
-
-  /// Check if two lists are equal.
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 
   // TODO(any): Make logic easier, export part of logic in repository
@@ -329,11 +304,5 @@ class ProfileLikedVideosBloc
       await cleanup();
       return videos;
     }
-  }
-
-  @override
-  Future<void> close() {
-    _likedIdsSubscription?.cancel();
-    return super.close();
   }
 }

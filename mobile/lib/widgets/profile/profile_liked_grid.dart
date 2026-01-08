@@ -24,12 +24,14 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
   @override
   void initState() {
     super.initState();
-    // Trigger sync on first build
+    // Start subscription and trigger sync on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ProfileLikedVideosBloc>().add(
-        const ProfileLikedVideosSyncRequested(),
-      );
+      final bloc = context.read<ProfileLikedVideosBloc>();
+      // Start listening for liked IDs changes
+      bloc.add(const ProfileLikedVideosSubscriptionRequested());
+      // Trigger initial sync
+      bloc.add(const ProfileLikedVideosSyncRequested());
     });
   }
 

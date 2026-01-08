@@ -116,12 +116,6 @@ class VideoInteractionsBloc
     // Prevent double-taps
     if (state.isLikeInProgress) return;
 
-    // Check authentication
-    if (!_likesRepository.isAuthenticated) {
-      emit(state.copyWith(error: VideoInteractionsError.notAuthenticated));
-      return;
-    }
-
     emit(state.copyWith(isLikeInProgress: true, clearError: true));
 
     try {

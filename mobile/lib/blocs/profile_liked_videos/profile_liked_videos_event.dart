@@ -17,14 +17,11 @@ final class ProfileLikedVideosSyncRequested extends ProfileLikedVideosEvent {
   const ProfileLikedVideosSyncRequested();
 }
 
-/// Request to refresh liked videos (re-sync and reload)
-final class ProfileLikedVideosRefreshRequested extends ProfileLikedVideosEvent {
-  const ProfileLikedVideosRefreshRequested();
-}
-
-/// Internal event for when liked IDs change from the repository stream.
-final class _ProfileLikedVideosIdsChanged extends ProfileLikedVideosEvent {
-  const _ProfileLikedVideosIdsChanged(this.likedEventIds);
-
-  final List<String> likedEventIds;
+/// Request to start listening for liked IDs changes from the repository.
+///
+/// This should be dispatched once when the screen/widget is initialized.
+/// Uses emit.forEach internally to reactively update state when likes change.
+final class ProfileLikedVideosSubscriptionRequested
+    extends ProfileLikedVideosEvent {
+  const ProfileLikedVideosSubscriptionRequested();
 }

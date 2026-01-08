@@ -95,7 +95,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
   DateTime?
   _loadingStartTime; // Track when loading started for delayed indicator
-  VideoInteractionsBloc? _interactionsBloc; // Per-video interactions bloc
+  late VideoInteractionsBloc _interactionsBloc; // Per-video interactions bloc
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -218,24 +218,22 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final commentsRepository = ref.read(commentsRepositoryProvider);
 
     // Only create bloc if likes repository is available (user authenticated)
-    if (likesRepository != null) {
-      _interactionsBloc = VideoInteractionsBloc(
-        eventId: widget.video.id,
-        authorPubkey: widget.video.pubkey,
-        likesRepository: likesRepository,
-        commentsRepository: commentsRepository,
-      );
-      // Trigger initial fetch
-      _interactionsBloc!.add(const VideoInteractionsFetchRequested());
-      // Force rebuild to provide bloc
-      if (mounted) setState(() {});
-    }
+    _interactionsBloc = VideoInteractionsBloc(
+      eventId: widget.video.id,
+      authorPubkey: widget.video.pubkey,
+      likesRepository: likesRepository,
+      commentsRepository: commentsRepository,
+    );
+    // Trigger initial fetch
+    _interactionsBloc.add(const VideoInteractionsFetchRequested());
+    // Force rebuild to provide bloc
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     // Close the interactions bloc
-    _interactionsBloc?.close();
+    _interactionsBloc.close();
 
     // When using override mode, we need to stop playback manually on dispose
     // (provider mode handles this automatically via provider cleanup)
@@ -811,22 +809,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
             // Video overlay with actions (badges, title, action buttons)
             // Wrap with VideoInteractionsBloc if available
-            if (_interactionsBloc != null)
-              BlocProvider<VideoInteractionsBloc>.value(
-                value: _interactionsBloc!,
-                child: VideoOverlayActions(
-                  video: video,
-                  isVisible: overlayVisible,
-                  isActive: isActive,
-                  hasBottomNavigation: widget.hasBottomNavigation,
-                  contextTitle: widget.contextTitle,
-                  isFullscreen: widget.isFullscreen,
-                  listSources: widget.listSources,
-                  showListAttribution: widget.showListAttribution,
-                ),
-              )
-            else
-              VideoOverlayActions(
+            BlocProvider<VideoInteractionsBloc>.value(
+              value: _interactionsBloc!,
+              child: VideoOverlayActions(
                 video: video,
                 isVisible: overlayVisible,
                 isActive: isActive,
@@ -836,6 +821,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 listSources: widget.listSources,
                 showListAttribution: widget.showListAttribution,
               ),
+            ),
           ],
         ),
       ),

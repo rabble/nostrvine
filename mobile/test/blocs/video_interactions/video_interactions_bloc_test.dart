@@ -180,7 +180,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'likes video when not already liked',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
@@ -214,7 +213,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'unlikes video when already liked',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
@@ -248,7 +246,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'does not allow like count to go below zero',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
@@ -280,28 +277,7 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'emits error when not authenticated',
-        setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(false);
-        },
-        build: createBloc,
-        seed: () => const VideoInteractionsState(
-          status: VideoInteractionsStatus.success,
-        ),
-        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
-        expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            error: VideoInteractionsError.notAuthenticated,
-          ),
-        ],
-      );
-
-      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'does not toggle when operation already in progress',
-        setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
-        },
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -314,7 +290,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'handles AlreadyLikedException by updating state to liked',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
@@ -345,7 +320,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'handles NotLikedException by updating state to not liked',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
@@ -376,7 +350,6 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'emits error when toggle fails with generic exception',
         setUp: () {
-          when(() => mockLikesRepository.isAuthenticated).thenReturn(true);
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,

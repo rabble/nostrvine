@@ -296,30 +296,7 @@ void main() {
       );
     });
 
-    group('ProfileLikedVideosRefreshRequested', () {
-      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-        'triggers sync when refresh is requested',
-        setUp: () {
-          when(
-            () => mockLikesRepository.syncUserReactions(),
-          ).thenAnswer((_) async => const LikesSyncResult.empty());
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const ProfileLikedVideosRefreshRequested()),
-        expect: () => [
-          const ProfileLikedVideosState(
-            status: ProfileLikedVideosStatus.syncing,
-          ),
-          const ProfileLikedVideosState(
-            status: ProfileLikedVideosStatus.success,
-            videos: [],
-            likedEventIds: [],
-          ),
-        ],
-      );
-    });
-
-    group('liked IDs stream synchronization', () {
+    group('ProfileLikedVideosSubscriptionRequested', () {
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'removes video when unliked via stream',
         setUp: () {
@@ -339,7 +316,11 @@ void main() {
           likedEventIds: const ['event1', 'event2'],
           videos: [createTestVideo('event1'), createTestVideo('event2')],
         ),
-        act: (bloc) {
+        act: (bloc) async {
+          // Start subscription first
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          // Wait for subscription to be set up
+          await Future<void>.delayed(const Duration(milliseconds: 50));
           // Emit stream with event2 removed (unliked)
           likedIdsController.add({'event1'});
         },
@@ -349,6 +330,43 @@ void main() {
               .having((s) => s.likedEventIds, 'likedEventIds', ['event1'])
               .having((s) => s.videos.length, 'videos count', 1)
               .having((s) => s.videos.first.id, 'remaining video', 'event1'),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'ignores stream changes during initial or syncing status',
+        build: createBloc,
+        seed: () => const ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.syncing,
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          likedIdsController.add({'event1'});
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => <ProfileLikedVideosState>[],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'updates likedEventIds when video is liked',
+        build: createBloc,
+        seed: () => const ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: ['event1'],
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          likedIdsController.add({'event1', 'event2'});
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.likedEventIds,
+            'likedEventIds',
+            containsAll(['event1', 'event2']),
+          ),
         ],
       );
     });

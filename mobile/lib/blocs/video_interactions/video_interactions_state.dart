@@ -96,7 +96,4 @@ enum VideoInteractionsError {
 
   /// Failed to toggle like.
   likeFailed,
-
-  /// User is not authenticated.
-  notAuthenticated,
 }
