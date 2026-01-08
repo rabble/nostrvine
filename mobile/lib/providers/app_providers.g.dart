@@ -2984,12 +2984,8 @@ const likesRepositoryProvider = LikesRepositoryProvider._();
 
 final class LikesRepositoryProvider
     extends
-        $FunctionalProvider<
-          LikesRepository?,
-          LikesRepository?,
-          LikesRepository?
-        >
-    with $Provider<LikesRepository?> {
+        $FunctionalProvider<LikesRepository, LikesRepository, LikesRepository>
+    with $Provider<LikesRepository> {
   /// Provider for LikesRepository instance
   ///
   /// Creates a LikesRepository when the user is authenticated.
@@ -3014,21 +3010,21 @@ final class LikesRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<LikesRepository?> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<LikesRepository> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  LikesRepository? create(Ref ref) {
+  LikesRepository create(Ref ref) {
     return likesRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(LikesRepository? value) {
+  Override overrideWithValue(LikesRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<LikesRepository?>(value),
+      providerOverride: $SyncValueProvider<LikesRepository>(value),
     );
   }
 }
 
-String _$likesRepositoryHash() => r'5b133c74ae244649983764aac74fc774f765d076';
+String _$likesRepositoryHash() => r'3a2aed2fcddf0b6d6143c00e48e4bfd89a3cbec9';

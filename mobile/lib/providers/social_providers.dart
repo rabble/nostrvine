@@ -1,6 +1,5 @@
 // ABOUTME: Riverpod providers for social service with reactive state management
 // ABOUTME: Pure @riverpod functions for social interactions like follows and reposts
-// ABOUTME: Note: Likes are managed by LikesBloc (see blocs/likes/likes_bloc.dart)
 
 import 'dart:async';
 import 'dart:convert';
@@ -23,7 +22,6 @@ part 'social_providers.g.dart';
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-/// Note: Likes are managed by LikesBloc (see blocs/likes/likes_bloc.dart)
 @Riverpod(keepAlive: true)
 class SocialNotifier extends _$SocialNotifier {
   // Managed subscription IDs

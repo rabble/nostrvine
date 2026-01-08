@@ -1,5 +1,5 @@
 // ABOUTME: State class for the ProfileLikedVideosBloc
-// ABOUTME: Represents the loading state and video list for profile liked videos
+// ABOUTME: Represents the syncing/loading state and video list for profile liked videos
 
 part of 'profile_liked_videos_bloc.dart';
 
@@ -8,7 +8,10 @@ enum ProfileLikedVideosStatus {
   /// Initial state, no data loaded yet
   initial,
 
-  /// Currently loading liked videos
+  /// Currently syncing liked event IDs from repository
+  syncing,
+
+  /// Currently loading video data for liked IDs
   loading,
 
   /// Liked videos loaded successfully
@@ -20,6 +23,9 @@ enum ProfileLikedVideosStatus {
 
 /// Error types for l10n-friendly error handling.
 enum ProfileLikedVideosError {
+  /// Failed to sync liked event IDs from repository
+  syncFailed,
+
   /// Failed to load liked videos from cache or relays
   loadFailed,
 }
@@ -53,8 +59,10 @@ final class ProfileLikedVideosState extends Equatable {
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileLikedVideosStatus.success;
 
-  /// Whether the state is currently loading
-  bool get isLoading => status == ProfileLikedVideosStatus.loading;
+  /// Whether the state is currently loading or syncing
+  bool get isLoading =>
+      status == ProfileLikedVideosStatus.loading ||
+      status == ProfileLikedVideosStatus.syncing;
 
   /// Create a copy with updated values.
   ProfileLikedVideosState copyWith({
