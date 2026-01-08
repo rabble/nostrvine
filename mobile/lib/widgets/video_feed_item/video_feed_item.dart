@@ -95,7 +95,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
   DateTime?
   _loadingStartTime; // Track when loading started for delayed indicator
-  late final VideoInteractionsBloc _interactionsBloc; // Per-video interactions bloc
+  late final VideoInteractionsBloc
+  _interactionsBloc; // Per-video interactions bloc
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
