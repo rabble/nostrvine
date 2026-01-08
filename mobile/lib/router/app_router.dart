@@ -7,47 +7,47 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
+import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/clip_manager_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
-import 'package:openvine/screens/liked_videos_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/followers/my_followers_screen.dart';
 import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/screens/following/my_following_screen.dart';
 import 'package:openvine/screens/following/others_following_screen.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/clip_manager_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/developer_options_screen.dart';
-import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
-import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Navigator keys for per-tab state preservation
@@ -249,7 +249,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Redirect FROM /welcome TO /explore when TOS is accepted
-      if (location.startsWith('/welcome')) {
+      if (location.startsWith('/welcome') ||
+          location.startsWith('/import-key')) {
         final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
         if (hasAcceptedTerms) {
           Log.debug(

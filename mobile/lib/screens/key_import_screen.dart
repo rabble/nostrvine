@@ -1,10 +1,11 @@
 // ABOUTME: Screen for importing existing Nostr private keys (nsec or hex format)
 // ABOUTME: Validates keys and imports them securely for existing Nostr users
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -263,12 +264,24 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         // Clear the text field for security
         _keyController.clear();
 
+        // Start fetching the user's profile from relays in background
+        // This ensures profile data is available when user navigates to profile
+        final pubkeyHex = authService.currentPublicKeyHex;
+        if (pubkeyHex != null) {
+          final userProfileService = ref.read(userProfileServiceProvider);
+          unawaited(userProfileService.fetchProfile(pubkeyHex));
+          Log.info(
+            '📥 Started background fetch for imported user profile',
+            name: 'KeyImportScreen',
+            category: LogCategory.auth,
+          );
+        }
+
         // Accept TOS to transition auth state to authenticated
         // This avoids desync between prefs and auth state
+        // Router will automatically redirect to /explore when state changes
+        // (same pattern as WelcomeScreen)
         await authService.acceptTermsOfService();
-
-        // Navigate to home
-        context.go('/home/0');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
