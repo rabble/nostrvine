@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/likes/likes_bloc.dart';
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -95,6 +95,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
   DateTime?
   _loadingStartTime; // Track when loading started for delayed indicator
+  late VideoInteractionsBloc _interactionsBloc; // Per-video interactions bloc
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -115,6 +116,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     // OR from isActiveOverride for custom contexts like lists
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return; // Safety check: don't use ref if widget is disposed
+
+      // Create VideoInteractionsBloc for this video
+      _createInteractionsBloc();
 
       if (widget.disableAutoplay) {
         Log.info(
@@ -208,8 +212,30 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     }
   }
 
+  /// Creates the VideoInteractionsBloc for this video.
+  void _createInteractionsBloc() {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+
+    _interactionsBloc = VideoInteractionsBloc(
+      eventId: widget.video.id,
+      authorPubkey: widget.video.pubkey,
+      likesRepository: likesRepository,
+      commentsRepository: commentsRepository,
+    );
+    // Start listening for liked IDs changes
+    _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
+    // Trigger initial fetch
+    _interactionsBloc.add(const VideoInteractionsFetchRequested());
+    // Force rebuild to provide bloc
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    // Close the interactions bloc
+    _interactionsBloc.close();
+
     // When using override mode, we need to stop playback manually on dispose
     // (provider mode handles this automatically via provider cleanup)
     if (widget.isActiveOverride == true && widget.video.videoUrl != null) {
@@ -783,15 +809,19 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             ),
 
             // Video overlay with actions (badges, title, action buttons)
-            VideoOverlayActions(
-              video: video,
-              isVisible: overlayVisible,
-              isActive: isActive,
-              hasBottomNavigation: widget.hasBottomNavigation,
-              contextTitle: widget.contextTitle,
-              isFullscreen: widget.isFullscreen,
-              listSources: widget.listSources,
-              showListAttribution: widget.showListAttribution,
+            // Wrap with VideoInteractionsBloc if available
+            BlocProvider<VideoInteractionsBloc>.value(
+              value: _interactionsBloc,
+              child: VideoOverlayActions(
+                video: video,
+                isVisible: overlayVisible,
+                isActive: isActive,
+                hasBottomNavigation: widget.hasBottomNavigation,
+                contextTitle: widget.contextTitle,
+                isFullscreen: widget.isFullscreen,
+                listSources: widget.listSources,
+                showListAttribution: widget.showListAttribution,
+              ),
             ),
           ],
         ),
@@ -853,22 +883,6 @@ class VideoOverlayActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
-
-    // Get likes state from BLoC (provided at app level)
-    // If BLoC is not available (not authenticated), use defaults
-    final likesBloc = context.read<LikesBloc?>();
-    final likesState = likesBloc != null
-        ? context.watch<LikesBloc>().state
-        : const LikesState();
-
-    // Fetch like count from Nostr when video becomes active
-    // Only fetch if we haven't fetched yet (hasLikeCount distinguishes
-    // "not fetched" from "fetched with zero likes")
-    if (isActive && likesBloc != null && !likesState.hasLikeCount(video.id)) {
-      Future.microtask(() {
-        likesBloc.add(LikesCountFetchRequested(eventId: video.id));
-      });
-    }
 
     // Check if there's meaningful text content to display
     final hasTextContent =
@@ -1082,91 +1096,8 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Comment button with count
-                  Column(
-                    children: [
-                      Semantics(
-                        identifier: 'comments_button',
-                        container: true,
-                        explicitChildNodes: true,
-                        button: true,
-                        label: 'View comments',
-                        child: CircularIconButton(
-                          onPressed: () {
-                            Log.info(
-                              '💬 Comment button tapped for ${video.id}',
-                              name: 'VideoFeedItem',
-                              category: LogCategory.ui,
-                            );
-                            // Pause video before navigating to comments
-                            if (video.videoUrl != null) {
-                              try {
-                                final controllerParams = VideoControllerParams(
-                                  videoId: video.id,
-                                  videoUrl: video.videoUrl!,
-                                  videoEvent: video,
-                                );
-                                final controller = ref.read(
-                                  individualVideoControllerProvider(
-                                    controllerParams,
-                                  ),
-                                );
-                                if (controller.value.isInitialized &&
-                                    controller.value.isPlaying) {
-                                  // Use safePause to handle disposed controller
-                                  safePause(controller, video.id);
-                                }
-                              } catch (e) {
-                                // Ignore disposal errors, log others
-                                final errorStr = e.toString().toLowerCase();
-                                if (!errorStr.contains('no active player') &&
-                                    !errorStr.contains('disposed')) {
-                                  Log.error(
-                                    'Failed to pause video before comments: $e',
-                                    name: 'VideoFeedItem',
-                                    category: LogCategory.video,
-                                  );
-                                }
-                              }
-                            }
-                            context.pushComments(video);
-                          },
-                          icon: const Icon(
-                            Icons.comment_outlined,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                      // Show original comment count if available
-                      if (video.originalComments != null &&
-                          video.originalComments! > 0) ...[
-                        const SizedBox(height: 0),
-                        Text(
-                          StringUtils.formatCompactNumber(
-                            video.originalComments!,
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 0),
-                                blurRadius: 6,
-                                color: Colors.black,
-                              ),
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  // Comment button with count - uses VideoInteractionsBloc
+                  _CommentActionButton(video: video, ref: ref),
 
                   const SizedBox(height: 16),
 
@@ -1653,6 +1584,116 @@ class VideoRepostHeader extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Comment action button with count display.
+///
+/// Uses [VideoInteractionsBloc] for the comment count when available,
+/// falls back to showing original Vine comment count.
+class _CommentActionButton extends StatelessWidget {
+  const _CommentActionButton({required this.video, required this.ref});
+
+  final VideoEvent video;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    // Try to use VideoInteractionsBloc for comment count
+    final interactionsBloc = context.read<VideoInteractionsBloc?>();
+
+    if (interactionsBloc != null) {
+      return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
+        builder: (context, state) {
+          final commentCount = state.commentCount ?? 0;
+          final totalComments = commentCount + (video.originalComments ?? 0);
+          return _buildButton(context, totalComments);
+        },
+      );
+    }
+
+    // Fall back to original comment count
+    return _buildButton(context, video.originalComments ?? 0);
+  }
+
+  Widget _buildButton(BuildContext context, int totalComments) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          identifier: 'comments_button',
+          container: true,
+          explicitChildNodes: true,
+          button: true,
+          label: 'View comments',
+          child: CircularIconButton(
+            onPressed: () {
+              Log.info(
+                '💬 Comment button tapped for ${video.id}',
+                name: 'VideoFeedItem',
+                category: LogCategory.ui,
+              );
+              // Pause video before navigating to comments
+              if (video.videoUrl != null) {
+                try {
+                  final controllerParams = VideoControllerParams(
+                    videoId: video.id,
+                    videoUrl: video.videoUrl!,
+                    videoEvent: video,
+                  );
+                  final controller = ref.read(
+                    individualVideoControllerProvider(controllerParams),
+                  );
+                  if (controller.value.isInitialized &&
+                      controller.value.isPlaying) {
+                    safePause(controller, video.id);
+                  }
+                } catch (e) {
+                  final errorStr = e.toString().toLowerCase();
+                  if (!errorStr.contains('no active player') &&
+                      !errorStr.contains('disposed')) {
+                    Log.error(
+                      'Failed to pause video before comments: $e',
+                      name: 'VideoFeedItem',
+                      category: LogCategory.video,
+                    );
+                  }
+                }
+              }
+              context.pushComments(video);
+            },
+            icon: const Icon(
+              Icons.comment_outlined,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+        ),
+        if (totalComments > 0) ...[
+          const SizedBox(height: 0),
+          Text(
+            StringUtils.formatCompactNumber(totalComments),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  offset: Offset(0, 0),
+                  blurRadius: 6,
+                  color: Colors.black,
+                ),
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

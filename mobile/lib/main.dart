@@ -9,11 +9,9 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
@@ -1053,21 +1051,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             ),
           );
 
-    // Watch likes repository for auth changes - creates bloc when authenticated
-    final likesRepository = ref.watch(likesRepositoryProvider);
-
     // Wrap with geo-blocking check, then lifecycle handler
     Widget wrapped = GeoBlockingGate(child: AppLifecycleHandler(child: app));
-
-    // Conditionally wrap with LikesBloc when authenticated
-    if (likesRepository != null) {
-      wrapped = BlocProvider<LikesBloc>(
-        create: (_) =>
-            LikesBloc(likesRepository: likesRepository)
-              ..add(const LikesSyncRequested()),
-        child: wrapped,
-      );
-    }
 
     if (crashProbe) {
       // Invisible crash probe: tap top-left corner 7 times within 5s to crash

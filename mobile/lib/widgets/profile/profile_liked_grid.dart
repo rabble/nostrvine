@@ -4,7 +4,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -13,8 +12,7 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's liked videos
 ///
-/// Requires [LikesBloc] and [ProfileLikedVideosBloc] to be provided in the
-/// widget tree.
+/// Requires [ProfileLikedVideosBloc] to be provided in the widget tree.
 class ProfileLikedGrid extends StatefulWidget {
   const ProfileLikedGrid({super.key});
 
@@ -23,105 +21,57 @@ class ProfileLikedGrid extends StatefulWidget {
 }
 
 class _ProfileLikedGridState extends State<ProfileLikedGrid> {
-  List<String>? _lastLoadedIds;
-
-  @override
-  void initState() {
-    super.initState();
-    // Load videos on first build after LikesBloc is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadVideosIfNeeded();
-    });
-  }
-
-  void _loadVideosIfNeeded() {
-    if (!mounted) return;
-
-    final likesState = context.read<LikesBloc>().state;
-    if (likesState.isInitialized) {
-      _triggerLoad(likesState.likedEventIds);
-    }
-  }
-
-  void _triggerLoad(List<String> likedEventIds) {
-    // Only reload if IDs changed
-    if (_lastLoadedIds != null && _listEquals(_lastLoadedIds!, likedEventIds)) {
-      return;
-    }
-    _lastLoadedIds = List.from(likedEventIds);
-    context.read<ProfileLikedVideosBloc>().add(
-      ProfileLikedVideosLoadRequested(likedEventIds: likedEventIds),
-    );
-  }
-
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocListener<LikesBloc, LikesState>(
-      listenWhen: (prev, curr) =>
-          prev.likedEventIds != curr.likedEventIds ||
-          (!prev.isInitialized && curr.isInitialized),
-      listener: (context, likesState) {
-        if (likesState.isInitialized) {
-          _triggerLoad(likesState.likedEventIds);
-        }
-      },
-      child: BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-        builder: (context, state) {
-          if (state.status == ProfileLikedVideosStatus.initial ||
-              state.status == ProfileLikedVideosStatus.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            );
-          }
-
-          if (state.status == ProfileLikedVideosStatus.failure) {
-            return const Center(
-              child: Text(
-                'Error loading liked videos',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          }
-
-          final likedVideos = state.videos;
-
-          if (likedVideos.isEmpty) {
-            return const _LikedEmptyState();
-          }
-
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(2),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
-                    childAspectRatio: 1,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    if (index >= likedVideos.length) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final videoEvent = likedVideos[index];
-                    return _LikedGridTile(videoEvent: videoEvent, index: index);
-                  }, childCount: likedVideos.length),
-                ),
-              ),
-            ],
+    return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+      builder: (context, state) {
+        if (state.status == ProfileLikedVideosStatus.initial ||
+            state.status == ProfileLikedVideosStatus.syncing ||
+            state.status == ProfileLikedVideosStatus.loading) {
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
           );
-        },
-      ),
+        }
+
+        if (state.status == ProfileLikedVideosStatus.failure) {
+          return const Center(
+            child: Text(
+              'Error loading liked videos',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        final likedVideos = state.videos;
+
+        if (likedVideos.isEmpty) {
+          return const _LikedEmptyState();
+        }
+
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(2),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
+                  childAspectRatio: 1,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= likedVideos.length) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final videoEvent = likedVideos[index];
+                  return _LikedGridTile(videoEvent: videoEvent, index: index);
+                }, childCount: likedVideos.length),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

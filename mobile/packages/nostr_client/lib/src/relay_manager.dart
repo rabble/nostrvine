@@ -63,12 +63,14 @@ class RelayManager {
   List<String> get configuredRelays => List.unmodifiable(_configuredRelays);
 
   /// List of relay URLs currently connected
+  ///
+  /// Uses the internal status tracking which is updated synchronously after
+  /// successful connection
   List<String> get connectedRelays {
-    return _relayPool
-        .activeRelays()
-        .map((r) => r.url)
-        .where(_configuredRelays.contains)
-        .toList();
+    return _configuredRelays.where((url) {
+      final status = _relayStatuses[url];
+      return status != null && status.isConnected;
+    }).toList();
   }
 
   /// Number of configured relays
