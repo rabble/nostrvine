@@ -200,8 +200,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // This allows the follow button to update the followers count optimistically
     if (!widget.isOwnProfile) {
       return BlocProvider<OthersFollowersBloc>(
-        create: (_) => OthersFollowersBloc(followRepository: followRepository)
-          ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        create: (_) =>
+            OthersFollowersBloc(followRepository: followRepository)
+              ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
         child: content,
       );
     }

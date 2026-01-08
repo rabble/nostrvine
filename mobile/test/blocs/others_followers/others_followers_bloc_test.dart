@@ -173,8 +173,9 @@ void main() {
           followersPubkeys: [validPubkey('existing')],
           targetPubkey: validPubkey('target'),
         ),
-        act: (bloc) => bloc
-            .add(OthersFollowersIncrementRequested(validPubkey('existing'))),
+        act: (bloc) => bloc.add(
+          OthersFollowersIncrementRequested(validPubkey('existing')),
+        ),
         expect: () => <OthersFollowersState>[],
       );
 
@@ -209,8 +210,9 @@ void main() {
           ],
           targetPubkey: validPubkey('target'),
         ),
-        act: (bloc) => bloc
-            .add(OthersFollowersDecrementRequested(validPubkey('follower1'))),
+        act: (bloc) => bloc.add(
+          OthersFollowersDecrementRequested(validPubkey('follower1')),
+        ),
         expect: () => [
           OthersFollowersState(
             status: OthersFollowersStatus.success,
@@ -228,8 +230,9 @@ void main() {
           followersPubkeys: [validPubkey('existing')],
           targetPubkey: validPubkey('target'),
         ),
-        act: (bloc) => bloc
-            .add(OthersFollowersDecrementRequested(validPubkey('notexist'))),
+        act: (bloc) => bloc.add(
+          OthersFollowersDecrementRequested(validPubkey('notexist')),
+        ),
         expect: () => <OthersFollowersState>[],
       );
 
@@ -251,7 +254,6 @@ void main() {
         ],
       );
     });
-
   });
 
   group('OthersFollowersState', () {

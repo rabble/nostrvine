@@ -198,7 +198,8 @@ void main() {
           expect(captured.length, 1);
           expect(captured.first, isA<OthersFollowersIncrementRequested>());
           expect(
-            (captured.first as OthersFollowersIncrementRequested).followerPubkey,
+            (captured.first as OthersFollowersIncrementRequested)
+                .followerPubkey,
             currentUserPubkey,
           );
         },
@@ -241,7 +242,8 @@ void main() {
           expect(captured.length, 1);
           expect(captured.first, isA<OthersFollowersDecrementRequested>());
           expect(
-            (captured.first as OthersFollowersDecrementRequested).followerPubkey,
+            (captured.first as OthersFollowersDecrementRequested)
+                .followerPubkey,
             currentUserPubkey,
           );
         },
