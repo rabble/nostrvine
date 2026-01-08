@@ -245,6 +245,8 @@ flutter:
         - asset: assets/fonts/Pacifico-Regular.ttf
     - family: BricolageGrotesque
       fonts:
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
         - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
           weight: 800
     - family: Inter
