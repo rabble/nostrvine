@@ -810,7 +810,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             // Video overlay with actions (badges, title, action buttons)
             // Wrap with VideoInteractionsBloc if available
             BlocProvider<VideoInteractionsBloc>.value(
-              value: _interactionsBloc!,
+              value: _interactionsBloc,
               child: VideoOverlayActions(
                 video: video,
                 isVisible: overlayVisible,

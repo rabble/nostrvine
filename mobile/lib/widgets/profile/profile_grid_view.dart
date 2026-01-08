@@ -91,30 +91,22 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final nostrClient = ref.watch(nostrServiceProvider);
     final likesRepository = ref.watch(likesRepositoryProvider);
 
-    // Check if authenticated (likes repository available)
-    final isAuthenticated = likesRepository != null;
-
-    // Build the base widget
-    Widget tabContent = TabBarView(
-      controller: _tabController,
-      children: [
-        ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
-        const ProfileLikedGrid(),
-        ProfileRepostsGrid(userIdHex: widget.userIdHex),
-      ],
+    // Build the base widget with ProfileLikedVideosBloc
+    final tabContent = BlocProvider<ProfileLikedVideosBloc>(
+      create: (_) => ProfileLikedVideosBloc(
+        likesRepository: likesRepository,
+        videoEventService: videoEventService,
+        nostrClient: nostrClient,
+      ),
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
+          const ProfileLikedGrid(),
+          ProfileRepostsGrid(userIdHex: widget.userIdHex),
+        ],
+      ),
     );
-
-    // Wrap with ProfileLikedVideosBloc if authenticated
-    if (isAuthenticated) {
-      tabContent = BlocProvider<ProfileLikedVideosBloc>(
-        create: (_) => ProfileLikedVideosBloc(
-          likesRepository: likesRepository,
-          videoEventService: videoEventService,
-          nostrClient: nostrClient,
-        ),
-        child: tabContent,
-      );
-    }
 
     return DefaultTabController(
       length: 3,

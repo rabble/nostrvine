@@ -49,23 +49,7 @@ class _LikedVideosScreenRouterState
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
 
-    // Check if user is authenticated by checking if likes repository is available
     final likesRepository = ref.watch(likesRepositoryProvider);
-    final isAuthenticated = likesRepository != null;
-
-    // If not authenticated, show empty state
-    if (!isAuthenticated) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Text(
-            'Please sign in to view liked videos',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    }
-
     final videoIndex = routeCtx.videoIndex;
 
     // Grid mode: no video index
