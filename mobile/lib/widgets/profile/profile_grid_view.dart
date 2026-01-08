@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/blocs/likes/likes_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -90,9 +89,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Get services for ProfileLikedVideosBloc
     final videoEventService = ref.watch(videoEventServiceProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final likesRepository = ref.watch(likesRepositoryProvider);
 
-    // Check if LikesBloc is available (provided at app level when authenticated)
-    final hasLikesBloc = context.read<LikesBloc?>() != null;
+    // Check if authenticated (likes repository available)
+    final isAuthenticated = likesRepository != null;
 
     // Build the base widget
     Widget tabContent = TabBarView(
@@ -105,10 +105,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
 
     // Wrap with ProfileLikedVideosBloc if authenticated
-    // LikesBloc is provided at app level, no need to create it here
-    if (hasLikesBloc) {
+    if (isAuthenticated) {
       tabContent = BlocProvider<ProfileLikedVideosBloc>(
         create: (_) => ProfileLikedVideosBloc(
+          likesRepository: likesRepository,
           videoEventService: videoEventService,
           nostrClient: nostrClient,
         ),

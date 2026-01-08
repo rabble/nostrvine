@@ -1018,6 +1018,7 @@ LikesRepository? likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
+    isAuthenticated: true,
   );
 
   ref.onDispose(repository.dispose);
