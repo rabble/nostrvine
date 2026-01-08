@@ -562,10 +562,27 @@ void main() {
         );
       });
 
-      test('returns empty list when no relays connected', () {
-        when(() => mockRelayPool.activeRelays()).thenReturn([]);
+      test('returns empty list when no relays connected', () async {
+        // Create a fresh manager without initializing to test empty state
+        final uninitializedManager = RelayManager(
+          config: config,
+          relayPool: mockRelayPool,
+        );
 
-        expect(manager.connectedRelays, isEmpty);
+        expect(uninitializedManager.connectedRelays, isEmpty);
+      });
+
+      test('returns empty when all relays fail to connect', () async {
+        // Create manager where connection fails
+        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+
+        final failingManager = RelayManager(
+          config: config,
+          relayPool: mockRelayPool,
+        );
+        await failingManager.initialize();
+
+        expect(failingManager.connectedRelays, isEmpty);
       });
     });
 
