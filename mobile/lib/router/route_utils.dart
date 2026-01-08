@@ -184,6 +184,24 @@ RouteContext parseRoute(String path) {
     case 'settings':
       return const RouteContext(type: RouteType.settings);
 
+    case 'relay-settings':
+      return const RouteContext(type: RouteType.relaySettings);
+
+    case 'relay-diagnostic':
+      return const RouteContext(type: RouteType.relayDiagnostic);
+
+    case 'blossom-settings':
+      return const RouteContext(type: RouteType.blossomSettings);
+
+    case 'notification-settings':
+      return const RouteContext(type: RouteType.notificationSettings);
+
+    case 'key-management':
+      return const RouteContext(type: RouteType.keyManagement);
+
+    case 'safety-settings':
+      return const RouteContext(type: RouteType.safetySettings);
+
     case 'edit-profile':
     case 'setup-profile':
       return const RouteContext(type: RouteType.editProfile);
@@ -344,6 +362,24 @@ String buildRoute(RouteContext context) {
     case RouteType.followers:
       return '/followers/${context.npub ?? ''}';
 
+    case RouteType.relaySettings:
+      return '/relay-settings';
+
+    case RouteType.relayDiagnostic:
+      return '/relay-diagnostic';
+
+    case RouteType.blossomSettings:
+      return '/blossom-settings';
+
+    case RouteType.notificationSettings:
+      return '/notification-settings';
+
+    case RouteType.keyManagement:
+      return '/key-management';
+
+    case RouteType.safetySettings:
+      return '/safety-settings';
+
     case RouteType.videoFeed:
       return '/video-feed';
 
@@ -356,13 +392,6 @@ String buildRoute(RouteContext context) {
 
     case RouteType.sound:
       return '/sound/${context.soundId ?? ''}';
-    case RouteType.relaySettings:
-    case RouteType.relayDiagnostic:
-    case RouteType.blossomSettings:
-    case RouteType.notificationSettings:
-    case RouteType.keyManagement:
-    case RouteType.safetySettings:
-      throw UnimplementedError();
   }
 }
 
