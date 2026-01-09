@@ -1,6 +1,7 @@
 // ABOUTME: Pure universal camera screen using revolutionary Riverpod architecture
 // ABOUTME: Cross-platform recording without VideoManager dependencies using pure providers
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart' show FlashMode;
@@ -9,9 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:openvine/services/vine_recording_controller.dart'
     show ExtractedSegment;
@@ -20,6 +25,7 @@ import 'package:openvine/services/camera/native_macos_camera.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/audio_waveform.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/dynamic_zoom_selector.dart';
 import 'package:openvine/widgets/macos_camera_preview.dart'
@@ -54,6 +60,14 @@ class _UniversalCameraScreenPureState
   // Track current device orientation for debugging
   DeviceOrientation? _currentOrientation;
 
+  // Sound playback state for lip sync recording
+  bool _headphonesConnected = false;
+  bool _addVoiceEnabled = false;
+  Duration _audioPosition = Duration.zero;
+  Duration? _audioDuration;
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +88,9 @@ class _UniversalCameraScreenPureState
     });
 
     _initializeServices();
+
+    // Check for headphone connection to enable voice recording toggle
+    _checkHeadphoneConnection();
 
     // CRITICAL: Dispose all video controllers when entering camera screen
     // IndexedStack keeps widgets alive, so we must force-dispose controllers
@@ -103,6 +120,13 @@ class _UniversalCameraScreenPureState
   void dispose() {
     // Remove app lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
+
+    // Clean up audio subscriptions
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+
+    // Stop any playing audio when leaving camera screen
+    _stopAudioPlayback();
 
     // Provider handles disposal automatically
     super.dispose();
@@ -630,6 +654,14 @@ class _UniversalCameraScreenPureState
                   },
                 ),
 
+              // Sound selection and waveform display (above zoom selector)
+              Positioned(
+                bottom: 200,
+                left: 16,
+                right: 16,
+                child: _buildSoundSelectionUI(recordingState),
+              ),
+
               // Dynamic zoom selector (above recording controls)
               if (recordingState.isInitialized && !recordingState.isRecording)
                 Positioned(
@@ -1091,9 +1123,16 @@ class _UniversalCameraScreenPureState
         (cameraInterface is CamerAwesomeMobileCameraInterface &&
             cameraInterface.isFrontCamera);
 
+    final selectedSound = ref.watch(selectedSoundProvider);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Add sound button at top (only show when no sound selected)
+        if (selectedSound == null) ...[
+          _buildAddSoundCircularButton(),
+          const SizedBox(height: 12),
+        ],
         // Camera switch button (front/back)
         if (recordingState.canSwitchCamera) ...[
           CircularIconButton(
@@ -1144,6 +1183,354 @@ class _UniversalCameraScreenPureState
         onPressed: () => context.push('/clips'),
       ),
     );
+  }
+
+  /// Circular add sound button for side controls
+  Widget _buildAddSoundCircularButton() {
+    return CircularIconButton(
+      onPressed: _openSoundBrowser,
+      icon: Icon(Icons.music_note, color: VineTheme.vineGreen, size: 26),
+      backgroundOpacity: 0.5,
+    );
+  }
+
+  /// Build sound selection UI - shows selected sound with waveform (add button is in side controls)
+  Widget _buildSoundSelectionUI(VineRecordingUIState recordingState) {
+    final selectedSound = ref.watch(selectedSoundProvider);
+
+    // Only show when sound is selected (add button moved to side controls)
+    if (selectedSound == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Show selected sound display with waveform
+    return _buildSelectedSoundDisplay(selectedSound, recordingState);
+  }
+
+  /// Build the selected sound display with name, waveform, and controls
+  Widget _buildSelectedSoundDisplay(
+    AudioEvent sound,
+    VineRecordingUIState recordingState,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: VineTheme.vineGreen.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sound name and remove button row
+          Row(
+            children: [
+              Icon(Icons.music_note, color: VineTheme.vineGreen, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  sound.title ?? 'Untitled sound',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Remove button (hide while recording)
+              if (!recordingState.isRecording)
+                GestureDetector(
+                  onTap: _removeSelectedSound,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Audio waveform visualization
+          AudioWaveform(
+            isPlaying: recordingState.isRecording,
+            position: _audioPosition,
+            duration: _audioDuration,
+            height: 40,
+            color: VineTheme.vineGreen,
+          ),
+
+          // Add voice toggle (only shown when headphones connected)
+          if (_headphonesConnected && !recordingState.isRecording) ...[
+            const SizedBox(height: 8),
+            _buildAddVoiceToggle(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build the "Add your voice" toggle for mixing mic audio with selected sound
+  Widget _buildAddVoiceToggle() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _addVoiceEnabled = !_addVoiceEnabled;
+        });
+        _updateMicrophoneState();
+        Log.info(
+          '🎤 Add voice toggled: $_addVoiceEnabled',
+          category: LogCategory.video,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _addVoiceEnabled
+              ? VineTheme.vineGreen.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _addVoiceEnabled
+                ? VineTheme.vineGreen
+                : Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _addVoiceEnabled ? Icons.mic : Icons.mic_off,
+              color: _addVoiceEnabled ? VineTheme.vineGreen : Colors.grey,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Add your voice',
+              style: TextStyle(
+                color: _addVoiceEnabled ? Colors.white : Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Open the sound browser screen to select a sound
+  Future<void> _openSoundBrowser() async {
+    Log.info('🎵 Opening sound browser', category: LogCategory.video);
+
+    AudioEvent? selectedSound;
+
+    // Navigate to sounds screen with callback to capture selected sound
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => SoundsScreen(
+          onSoundSelected: (sound) {
+            selectedSound = sound;
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+
+    final sound = selectedSound;
+    if (sound != null && mounted) {
+      Log.info(
+        '🎵 Sound selected: ${sound.title ?? "Untitled"}',
+        category: LogCategory.video,
+      );
+      ref.read(selectedSoundProvider.notifier).select(sound);
+
+      // Preload the audio for playback during recording
+      await _preloadAudio(sound);
+    }
+  }
+
+  /// Remove the currently selected sound
+  void _removeSelectedSound() {
+    Log.info('🎵 Removing selected sound', category: LogCategory.video);
+    ref.read(selectedSoundProvider.notifier).clear();
+    _stopAudioPlayback();
+    setState(() {
+      _audioPosition = Duration.zero;
+      _audioDuration = null;
+    });
+  }
+
+  /// Check if headphones are connected
+  Future<void> _checkHeadphoneConnection() async {
+    try {
+      final audioService = ref.read(audioPlaybackServiceProvider);
+
+      // Check initial state
+      _headphonesConnected = audioService.areHeadphonesConnected;
+
+      // Listen for device changes using AudioPlaybackService
+      audioService.headphonesConnectedStream.listen((connected) {
+        _updateHeadphoneState(connected);
+      });
+
+      Log.info(
+        '🎧 Initial headphone state: $_headphonesConnected',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '🎧 Failed to check headphone connection: $e',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Update headphone connection state based on audio service
+  void _updateHeadphoneState(bool connected) {
+    final wasConnected = _headphonesConnected;
+    _headphonesConnected = connected;
+
+    if (wasConnected != _headphonesConnected && mounted) {
+      setState(() {});
+
+      // Disable voice recording when headphones disconnected
+      if (!_headphonesConnected && _addVoiceEnabled) {
+        _addVoiceEnabled = false;
+        _updateMicrophoneState();
+      }
+
+      Log.info(
+        '🎧 Headphone state changed: $_headphonesConnected',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Update microphone state based on sound selection and voice toggle
+  void _updateMicrophoneState() {
+    final selectedSound = ref.read(selectedSoundProvider);
+
+    // If sound is selected and voice is not enabled, mute the mic
+    // This prevents feedback when not using headphones
+    if (selectedSound != null && !_addVoiceEnabled) {
+      ref.read(vineRecordingProvider.notifier).setMicrophoneEnabled(false);
+      Log.info(
+        '🎤 Microphone disabled (sound selected, voice disabled)',
+        category: LogCategory.video,
+      );
+    } else {
+      ref.read(vineRecordingProvider.notifier).setMicrophoneEnabled(true);
+      Log.info('🎤 Microphone enabled', category: LogCategory.video);
+    }
+  }
+
+  /// Preload audio for playback during recording
+  Future<void> _preloadAudio(AudioEvent sound) async {
+    if (sound.url == null || sound.url!.isEmpty) {
+      Log.warning(
+        '🎵 Cannot preload audio - no URL available for sound: ${sound.title}',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    try {
+      final audioService = ref.read(audioPlaybackServiceProvider);
+      await audioService.loadAudio(sound.url!);
+
+      // Subscribe to position updates for waveform
+      _positionSubscription?.cancel();
+      _positionSubscription = audioService.positionStream.listen((position) {
+        if (mounted) {
+          setState(() {
+            _audioPosition = position;
+          });
+        }
+      });
+
+      // Subscribe to duration updates
+      _durationSubscription?.cancel();
+      _durationSubscription = audioService.durationStream.listen((duration) {
+        if (mounted && duration != null) {
+          setState(() {
+            _audioDuration = duration;
+          });
+        }
+      });
+
+      Log.info('🎵 Audio preloaded: ${sound.url}', category: LogCategory.video);
+    } catch (e) {
+      Log.error('🎵 Failed to preload audio: $e', category: LogCategory.video);
+    }
+  }
+
+  /// Start audio playback for lip sync recording
+  ///
+  /// Seeks to the cumulative recorded duration so that when recording
+  /// multiple segments, the audio continues from where it left off.
+  Future<void> _startAudioPlayback() async {
+    final selectedSound = ref.read(selectedSoundProvider);
+    if (selectedSound == null) return;
+
+    try {
+      final audioService = ref.read(audioPlaybackServiceProvider);
+
+      // Configure audio session for recording mode (allows playback during video recording)
+      await audioService.configureForRecording();
+
+      // Get cumulative recorded duration to sync audio with video segments
+      // This ensures audio continues from where previous segment ended
+      final recordingState = ref.read(vineRecordingProvider);
+      final cumulativeDuration = recordingState.totalRecordedDuration;
+
+      // Seek to the cumulative position and start playback
+      await audioService.seek(cumulativeDuration);
+      await audioService.play();
+
+      Log.info(
+        '🎵 Audio playback started for lip sync at ${cumulativeDuration.inMilliseconds}ms',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '🎵 Failed to start audio playback: $e',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Stop audio playback
+  Future<void> _stopAudioPlayback() async {
+    try {
+      final audioService = ref.read(audioPlaybackServiceProvider);
+      await audioService.pause();
+
+      // Reset audio session to default mode after recording
+      await audioService.resetAudioSession();
+
+      Log.info('🎵 Audio playback stopped', category: LogCategory.video);
+    } catch (e) {
+      Log.error(
+        '🎵 Failed to stop audio playback: $e',
+        category: LogCategory.video,
+      );
+    }
   }
 
   Widget _buildAspectRatioToggle(VineRecordingUIState recordingState) {
@@ -1290,9 +1677,20 @@ class _UniversalCameraScreenPureState
         await _startCountdownTimer();
       }
 
+      // Update microphone state based on sound selection before starting
+      final selectedSound = ref.read(selectedSoundProvider);
+      if (selectedSound != null) {
+        _updateMicrophoneState();
+      }
+
       final notifier = ref.read(vineRecordingProvider.notifier);
       Log.info('📹 Starting recording segment', category: LogCategory.video);
       await notifier.startRecording();
+
+      // Start audio playback for lip sync if sound is selected
+      if (selectedSound != null) {
+        await _startAudioPlayback();
+      }
     } catch (e) {
       Log.error(
         '📹 UniversalCameraScreenPure: Start recording failed: $e',
@@ -1333,6 +1731,9 @@ class _UniversalCameraScreenPureState
         category: LogCategory.video,
       );
       await notifier.stopSegment();
+
+      // Stop audio playback when segment ends
+      await _stopAudioPlayback();
 
       Log.info(
         '📹 Segment stopped, user can record more or tap Publish to finish',
@@ -1828,6 +2229,9 @@ class _UniversalCameraScreenPureState
 
       // Clear clips from ClipManager
       ref.read(clipManagerProvider.notifier).clearAll();
+
+      // Clear selected sound from lip sync flow
+      ref.read(selectedSoundProvider.notifier).clear();
 
       // Clean up temp files and reset vineRecordingProvider
       await ref.read(vineRecordingProvider.notifier).cleanupAndReset();

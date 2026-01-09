@@ -27,7 +27,6 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -624,13 +623,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => CuratedListFeedScreen(
-                                listId: curatedList.id,
-                                listName: curatedList.name,
-                              ),
-                            ),
+                          context.pushCuratedList(
+                            listId: curatedList.id,
+                            listName: curatedList.name,
                           );
                         },
                       ),
@@ -790,13 +785,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               );
               // Stop any playing videos before navigating
               disposeAllVideoControllers(ref);
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CuratedListFeedScreen(
-                    listId: curatedList.id,
-                    listName: curatedList.name,
-                  ),
-                ),
+              context.pushCuratedList(
+                listId: curatedList.id,
+                listName: curatedList.name,
               );
             },
           ),

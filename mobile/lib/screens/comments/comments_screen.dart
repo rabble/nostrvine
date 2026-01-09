@@ -10,6 +10,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Maps [CommentsError] to user-facing strings.
 /// TODO(l10n): Replace with context.l10n when localization is added.
@@ -79,9 +80,13 @@ class CommentsScreen extends ConsumerWidget {
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
       )..add(const CommentsLoadRequested()),
-      child: _CommentsScreenBody(
-        videoEvent: videoEvent,
-        sheetScrollController: sheetScrollController,
+      child: VineBottomSheet(
+        title: 'Comments',
+        body: _CommentsScreenBody(
+          videoEvent: videoEvent,
+          sheetScrollController: sheetScrollController,
+        ),
+        bottomInput: const _MainCommentInput(),
       ),
     );
   }
@@ -110,19 +115,11 @@ class _CommentsScreenBody extends StatelessWidget {
           context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },
-      child: Column(
-        children: [
-          const CommentsDragHandle(),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
-          const Divider(color: Colors.white24, height: 1),
-          Expanded(
-            child: CommentsList(
-              isOriginalVine: videoEvent.isOriginalVine,
-              scrollController: sheetScrollController,
-            ),
-          ),
-          const _MainCommentInput(),
-        ],
+      child: SizedBox(
+        child: CommentsList(
+          isOriginalVine: videoEvent.isOriginalVine,
+          scrollController: sheetScrollController,
+        ),
       ),
     );
   }

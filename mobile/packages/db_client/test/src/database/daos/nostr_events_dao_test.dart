@@ -5,8 +5,8 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:test/test.dart';
 
 void main() {
   late AppDatabase database;
@@ -155,17 +155,22 @@ void main() {
       );
 
       test(
-        'throws for repost events (kind 16) due to VideoEvent parsing',
+        'does not upsert video metrics for repost events (kind 16)',
         () async {
           final event = createEvent(kind: 16);
 
-          // upsertEvent stores the event first, then tries to parse metrics
-          // VideoEvent.fromNostrEvent() throws for non-34236 kinds
-          // The event is inserted but the method throws on metrics parsing
-          expect(
-            () => dao.upsertEvent(event),
-            throwsA(isA<ArgumentError>()),
-          );
+          // Kind 16 reposts reference videos but don't contain video metadata
+          // So they should be inserted without video metrics (no error thrown)
+          await dao.upsertEvent(event);
+
+          // Event should be inserted
+          final retrieved = await dao.getEventById(event.id);
+          expect(retrieved, isNotNull);
+          expect(retrieved!.kind, equals(16));
+
+          // But no video metrics should be created
+          final metrics = await appDbClient.getVideoMetrics(event.id);
+          expect(metrics, isNull);
         },
       );
 
@@ -599,6 +604,136 @@ void main() {
           equals({event1.id, event2.id}),
         );
       });
+
+      test(
+        'filters by uppercase E tags (NIP-22 root event reference)',
+        () async {
+          const rootEventId = 'root_video_event_id_123';
+          // NIP-22 comment (kind 1111) referencing a video
+          final comment1 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey], // Uppercase E = root scope
+              ['K', '34236'],
+            ],
+            content: 'Great video!',
+            createdAt: 1000,
+          );
+          // Comment referencing a different root event
+          final comment2 = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', 'other_root_event', '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Another comment',
+            createdAt: 2000,
+          );
+          // Regular event with lowercase e tag (not an uppercase E)
+          final regularEvent = createEvent(
+            tags: [
+              ['e', rootEventId],
+            ],
+            createdAt: 3000,
+          );
+
+          await dao.upsertEventsBatch([comment1, comment2, regularEvent]);
+
+          final results = await dao.getEventsByFilter(
+            Filter(uppercaseE: [rootEventId]),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(comment1.id));
+          expect(results.first.content, equals('Great video!'));
+        },
+      );
+
+      test('filters by uppercase K tags (NIP-22 root event kind)', () async {
+        // NIP-22 comment referencing a video (kind 34236)
+        final commentOnVideo = createEvent(
+          kind: 1111,
+          tags: [
+            ['E', 'video_event_id', '', testPubkey],
+            ['K', '34236'], // Uppercase K = root event kind
+          ],
+          content: 'Comment on video',
+          createdAt: 1000,
+        );
+        // NIP-22 comment referencing a different kind
+        final commentOnArticle = createEvent(
+          kind: 1111,
+          tags: [
+            ['E', 'article_event_id', '', testPubkey],
+            ['K', '30023'], // Long-form content kind
+          ],
+          content: 'Comment on article',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([commentOnVideo, commentOnArticle]);
+
+        final results = await dao.getEventsByFilter(
+          Filter(uppercaseK: ['34236']),
+        );
+
+        expect(results.length, equals(1));
+        expect(results.first.id, equals(commentOnVideo.id));
+      });
+
+      test(
+        'combines uppercaseE and uppercaseK filters for NIP-22 comments',
+        () async {
+          const rootEventId = 'specific_video_id';
+          // Comment on the specific video
+          final targetComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Target comment',
+            createdAt: 1000,
+          );
+          // Comment on different video
+          final otherVideoComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', 'other_video_id', '', testPubkey],
+              ['K', '34236'],
+            ],
+            content: 'Other video comment',
+            createdAt: 2000,
+          );
+          // Comment with right E but wrong K
+          final wrongKindComment = createEvent(
+            kind: 1111,
+            tags: [
+              ['E', rootEventId, '', testPubkey],
+              ['K', '30023'],
+            ],
+            content: 'Wrong kind comment',
+            createdAt: 3000,
+          );
+
+          await dao.upsertEventsBatch([
+            targetComment,
+            otherVideoComment,
+            wrongKindComment,
+          ]);
+
+          final results = await dao.getEventsByFilter(
+            Filter(
+              kinds: [1111],
+              uppercaseE: [rootEventId],
+              uppercaseK: ['34236'],
+            ),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(targetComment.id));
+        },
+      );
     });
 
     group('getEventById', () {
@@ -1154,12 +1289,12 @@ void main() {
       /// Helper to get current Unix timestamp
       int nowUnix() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      group('upsertEventWithExpiry', () {
+      group('upsertEvent with expiry', () {
         test('inserts event with expiry timestamp', () async {
           final event = createEvent(content: 'expiring event');
           final expireAt = nowUnix() + 3600; // 1 hour from now
 
-          await dao.upsertEventWithExpiry(event, expireAt: expireAt);
+          await dao.upsertEvent(event, expireAt: expireAt);
 
           final result = await dao.getEventById(event.id);
           expect(result, isNotNull);
@@ -1174,7 +1309,7 @@ void main() {
           );
           final expireAt = nowUnix() + 3600;
 
-          await dao.upsertEventWithExpiry(profile, expireAt: expireAt);
+          await dao.upsertEvent(profile, expireAt: expireAt);
 
           final result = await dao.getProfileByPubkey(testPubkey);
           expect(result, isNotNull);
@@ -1185,7 +1320,7 @@ void main() {
           final video = createVideoEvent(loops: 100);
           final expireAt = nowUnix() + 3600;
 
-          await dao.upsertEventWithExpiry(video, expireAt: expireAt);
+          await dao.upsertEvent(video, expireAt: expireAt);
 
           final result = await dao.getEventById(video.id);
           expect(result, isNotNull);
@@ -1213,24 +1348,6 @@ void main() {
         });
       });
 
-      group('clearEventExpiry', () {
-        test('removes expiry from event', () async {
-          final event = createEvent();
-          final expireAt = nowUnix() + 3600;
-          await dao.upsertEventWithExpiry(event, expireAt: expireAt);
-
-          final success = await dao.clearEventExpiry(event.id);
-
-          expect(success, isTrue);
-        });
-
-        test('returns false for non-existent event', () async {
-          final success = await dao.clearEventExpiry('nonexistent_id');
-
-          expect(success, isFalse);
-        });
-      });
-
       group('deleteExpiredEvents', () {
         test(
           'deletes events with expired timestamps using current time',
@@ -1248,8 +1365,8 @@ void main() {
               createdAt: 3000,
             );
 
-            await dao.upsertEventWithExpiry(expiredEvent, expireAt: pastExpiry);
-            await dao.upsertEventWithExpiry(validEvent, expireAt: futureExpiry);
+            await dao.upsertEvent(expiredEvent, expireAt: pastExpiry);
+            await dao.upsertEvent(validEvent, expireAt: futureExpiry);
             await dao.upsertEvent(noExpiryEvent);
 
             final deletedCount = await dao.deleteExpiredEvents(null);
@@ -1274,9 +1391,9 @@ void main() {
           final event2 = createEvent(content: 'event 2', createdAt: 2000);
           final event3 = createEvent(content: 'event 3', createdAt: 3000);
 
-          await dao.upsertEventWithExpiry(event1, expireAt: 100);
-          await dao.upsertEventWithExpiry(event2, expireAt: 200);
-          await dao.upsertEventWithExpiry(event3, expireAt: 300);
+          await dao.upsertEvent(event1, expireAt: 100);
+          await dao.upsertEvent(event2, expireAt: 200);
+          await dao.upsertEvent(event3, expireAt: 300);
 
           // Delete events expiring before 250
           final deletedCount = await dao.deleteExpiredEvents(250);
@@ -1292,7 +1409,7 @@ void main() {
         test('returns 0 when no expired events', () async {
           final futureExpiry = nowUnix() + 3600;
           final event = createEvent();
-          await dao.upsertEventWithExpiry(event, expireAt: futureExpiry);
+          await dao.upsertEvent(event, expireAt: futureExpiry);
 
           final deletedCount = await dao.deleteExpiredEvents(null);
 
@@ -1313,9 +1430,9 @@ void main() {
           final event3 = createEvent(content: 'event 3', createdAt: 3000);
           final noExpiry = createEvent(content: 'no expiry', createdAt: 4000);
 
-          await dao.upsertEventWithExpiry(event1, expireAt: 100);
-          await dao.upsertEventWithExpiry(event2, expireAt: 200);
-          await dao.upsertEventWithExpiry(event3, expireAt: 300);
+          await dao.upsertEvent(event1, expireAt: 100);
+          await dao.upsertEvent(event2, expireAt: 200);
+          await dao.upsertEvent(event3, expireAt: 300);
           await dao.upsertEvent(noExpiry);
 
           final count = await dao.countExpiredEvents(250);
@@ -1325,7 +1442,7 @@ void main() {
 
         test('returns 0 when no events will expire', () async {
           final event = createEvent();
-          await dao.upsertEventWithExpiry(event, expireAt: 1000);
+          await dao.upsertEvent(event, expireAt: 1000);
 
           final count = await dao.countExpiredEvents(500);
 

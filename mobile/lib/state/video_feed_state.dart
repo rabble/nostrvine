@@ -31,6 +31,14 @@ sealed class VideoFeedState with _$VideoFeedState {
 
     /// Timestamp of last update
     DateTime? lastUpdated,
+
+    /// Maps video IDs to the set of curated list IDs they appear in
+    /// Used to show "From list: X" attribution chip on videos
+    @Default({}) Map<String, Set<String>> videoListSources,
+
+    /// Set of video IDs that appear ONLY from subscribed lists (not from follows)
+    /// These videos should show the list attribution chip in the UI
+    @Default({}) Set<String> listOnlyVideoIds,
   }) = _VideoFeedState;
 
   const VideoFeedState._();

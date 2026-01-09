@@ -250,6 +250,9 @@ class AppShell extends ConsumerWidget {
     // Initialize relay statistics bridge to record connection events
     ref.watch(relayStatisticsBridgeProvider);
 
+    // Initialize Zendesk identity sync to keep user identity in sync with auth
+    ref.watch(zendeskIdentitySyncProvider);
+
     // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
     final isSearchRoute = pageCtxAsync.maybeWhen(
@@ -327,11 +330,23 @@ class AppShell extends ConsumerWidget {
                     category: LogCategory.ui,
                   );
 
+                  // First, try to pop if there's something on the navigation stack
+                  // This handles pushed routes (e.g., list → profile → back to list)
+                  if (context.canPop()) {
+                    Log.info(
+                      '👈 Popping navigation stack',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.pop();
+                    return;
+                  }
+
                   // Get current route context
                   final ctx = ref.read(pageContextProvider).asData?.value;
                   if (ctx == null) return;
 
-                  // First, check if we're in a sub-route (hashtag, search, etc.)
+                  // Check if we're in a sub-route (hashtag, search, etc.)
                   // If so, navigate back to parent route
                   switch (ctx.type) {
                     case RouteType.hashtag:
@@ -533,7 +548,7 @@ class AppShell extends ConsumerWidget {
                 currentIndex,
                 'explore_tab',
               ),
-              // Camera button in center
+              // Camera button in center of bottom nav
               Semantics(
                 identifier: 'camera_button',
                 button: true,

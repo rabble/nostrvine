@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -73,6 +72,9 @@ class ComposableVideoGrid extends ConsumerWidget {
       return emptyBuilder!();
     }
 
+    // Get subscribed list cache to check if videos are in lists
+    final subscribedListCache = ref.watch(subscribedListVideoCacheProvider);
+
     // Responsive column count: 3 for tablets/desktop (width >= 600), 2 for phones
     final screenWidth = MediaQuery.of(context).size.width;
     final responsiveCrossAxisCount = screenWidth >= 600 ? 3 : crossAxisCount;
@@ -88,6 +90,10 @@ class ComposableVideoGrid extends ConsumerWidget {
       itemCount: videosToShow.length,
       itemBuilder: (context, index) {
         final video = videosToShow[index];
+        // Check if video is in any subscribed lists
+        final listIds = subscribedListCache?.getListsForVideo(video.id);
+        final isInSubscribedList = listIds != null && listIds.isNotEmpty;
+
         return _VideoItem(
           video: video,
           aspectRatio: thumbnailAspectRatio,
@@ -95,6 +101,7 @@ class ComposableVideoGrid extends ConsumerWidget {
           index: index,
           displayedVideos: videosToShow,
           onLongPress: () => _showVideoContextMenu(context, ref, video),
+          isInSubscribedList: isInSubscribedList,
         );
       },
     );
@@ -355,6 +362,7 @@ class _VideoItem extends StatelessWidget {
     required this.onLongPress,
     required this.index,
     required this.displayedVideos,
+    this.isInSubscribedList = false,
   });
 
   final VideoEvent video;
@@ -363,6 +371,7 @@ class _VideoItem extends StatelessWidget {
   final VoidCallback onLongPress;
   final int index;
   final List<VideoEvent> displayedVideos;
+  final bool isInSubscribedList;
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +398,24 @@ class _VideoItem extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: _VideoInfoSection(video: video),
             ),
+            // Show list indicator badge if video is in subscribed lists
+            if (isInSubscribedList)
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: VineTheme.vineGreen.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.collections,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -488,15 +515,16 @@ class _VideoThumbnail extends StatelessWidget {
   );
 }
 
-class _VideoStats extends ConsumerWidget {
+class _VideoStats extends StatelessWidget {
   const _VideoStats({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final newLikeCount = ref.watch(likeCountProvider(video.id));
-    final totalLikes = newLikeCount + (video.originalLikes ?? 0);
+  Widget build(BuildContext context) {
+    // Show combined likes (original Vine likes + Nostr reactions)
+    // nostrLikeCount is populated by VideoEventService when videos are loaded
+    final totalLikes = video.totalLikes;
     final originalLoops = video.originalLoops;
 
     return Row(

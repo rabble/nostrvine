@@ -2,9 +2,9 @@
 // ABOUTME: Displays heart icon with like count, handles toggle like action.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/providers/likes_providers.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
@@ -13,18 +13,63 @@ import 'package:openvine/widgets/circular_icon_button.dart';
 ///
 /// Shows a heart icon that toggles between filled (liked) and outline (not liked).
 /// Displays the total like count combining Nostr likes and original Vine likes.
-class LikeActionButton extends ConsumerWidget {
+///
+/// Requires [VideoInteractionsBloc] to be provided in the widget tree.
+/// Shows a disabled state when the bloc is not available.
+class LikeActionButton extends StatelessWidget {
   const LikeActionButton({required this.video, super.key});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isLiked = ref.watch(isEventLikedProvider(video.id));
-    final isLikeInProgress = ref.watch(isLikeInProgressProvider(video.id));
-    final likeCount = ref.watch(likeCountProvider(video.id));
-    final totalLikes = likeCount + (video.originalLikes ?? 0);
+  Widget build(BuildContext context) {
+    final interactionsBloc = context.read<VideoInteractionsBloc?>();
 
+    if (interactionsBloc == null) {
+      // No bloc available - show disabled state with original likes only
+      return _buildButton(
+        context: context,
+        isLiked: false,
+        isLikeInProgress: false,
+        totalLikes: video.originalLikes ?? 0,
+        onPressed: null,
+      );
+    }
+
+    return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
+      builder: (context, state) {
+        final isLiked = state.isLiked;
+        final isLikeInProgress = state.isLikeInProgress;
+        final likeCount = state.likeCount ?? 0;
+        final totalLikes = likeCount + (video.originalLikes ?? 0);
+
+        return _buildButton(
+          context: context,
+          isLiked: isLiked,
+          isLikeInProgress: isLikeInProgress,
+          totalLikes: totalLikes,
+          onPressed: () {
+            Log.info(
+              '❤️ Like button tapped for ${video.id}',
+              name: 'LikeActionButton',
+              category: LogCategory.ui,
+            );
+            context.read<VideoInteractionsBloc>().add(
+              const VideoInteractionsLikeToggled(),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildButton({
+    required BuildContext context,
+    required bool isLiked,
+    required bool isLikeInProgress,
+    required int totalLikes,
+    required VoidCallback? onPressed,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -35,29 +80,9 @@ class LikeActionButton extends ConsumerWidget {
           button: true,
           label: isLiked ? 'Unlike video' : 'Like video',
           child: CircularIconButton(
-            onPressed: isLikeInProgress
+            onPressed: isLikeInProgress || onPressed == null
                 ? () {}
-                : () async {
-                    Log.info(
-                      '❤️ Like button tapped for ${video.id}',
-                      name: 'LikeActionButton',
-                      category: LogCategory.ui,
-                    );
-                    try {
-                      await ref
-                          .read(likesProvider.notifier)
-                          .toggleLike(
-                            eventId: video.id,
-                            authorPubkey: video.pubkey,
-                          );
-                    } catch (e) {
-                      Log.error(
-                        '❤️ Like action failed: $e',
-                        name: 'LikeActionButton',
-                        category: LogCategory.ui,
-                      );
-                    }
-                  },
+                : onPressed,
             icon: isLikeInProgress
                 ? const SizedBox(
                     width: 24,

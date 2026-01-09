@@ -1,50 +1,51 @@
 import 'dart:async';
+import 'dart:io'
+    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart'
+    as io;
 
+import 'package:audio_session/audio_session.dart';
+import 'package:db_client/db_client.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/network/vine_cdn_http_overrides.dart'
+    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
-import 'package:openvine/services/back_button_handler.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:db_client/db_client.dart';
-import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/draft_migration_service.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
-import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
-import 'package:openvine/router/last_tab_position_provider.dart';
+import 'package:openvine/services/back_button_handler.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/draft_migration_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/ffmpeg_encoder.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'dart:io'
-    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart'
-    as io;
-import 'package:openvine/network/vine_cdn_http_overrides.dart'
-    if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
@@ -76,6 +77,33 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   StartupPerformanceService.instance.completePhase('bindings');
+
+  // Configure audio session to respect mute switch on iOS
+  // When device is in silent mode, videos play without audio (user expectation)
+  StartupPerformanceService.instance.startPhase('audio_session');
+  try {
+    final session = await AudioSession.instance;
+    await session.configure(
+      const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.ambient,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.mixWithOthers,
+      ),
+    );
+    Log.info(
+      'Audio session configured to respect mute switch',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  } catch (e) {
+    Log.warning(
+      'Failed to configure audio session: $e',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  }
+  StartupPerformanceService.instance.completePhase('audio_session');
 
   // Initialize crash reporting ASAP so we can use it for logging
   StartupPerformanceService.instance.startPhase('crash_reporting');
@@ -1023,7 +1051,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             ),
           );
 
-    // Wrap with geo-blocking check first, then lifecycle handler
+    // Wrap with geo-blocking check, then lifecycle handler
     Widget wrapped = GeoBlockingGate(child: AppLifecycleHandler(child: app));
 
     if (crashProbe) {

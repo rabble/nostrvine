@@ -138,6 +138,7 @@ dependencies:
       ref: master
   convert: ^3.1.2
   just_audio: ^0.10.5
+  audio_session: ^0.2.2
   pro_video_editor: ^0.4.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
@@ -248,6 +249,8 @@ flutter:
         - asset: assets/fonts/Pacifico-Regular.ttf
     - family: BricolageGrotesque
       fonts:
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
         - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
           weight: 800
     - family: Inter

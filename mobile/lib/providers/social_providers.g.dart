@@ -10,19 +10,16 @@ part of 'social_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-/// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 
 @ProviderFor(SocialNotifier)
 const socialProvider = SocialNotifierProvider._();
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-/// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 final class SocialNotifierProvider
     extends $NotifierProvider<SocialNotifier, SocialState> {
   /// Social state notifier with reactive state management
   /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-  /// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
   const SocialNotifierProvider._()
     : super(
         from: null,
@@ -50,11 +47,10 @@ final class SocialNotifierProvider
   }
 }
 
-String _$socialNotifierHash() => r'c07dc6fe0826b103053eee453df9e91fab99e9a0';
+String _$socialNotifierHash() => r'61520b439c3d8b7d63c2f258bc17d57628968c35';
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-/// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 
 abstract class _$SocialNotifier extends $Notifier<SocialState> {
   SocialState build();

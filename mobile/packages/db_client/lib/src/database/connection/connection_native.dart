@@ -20,9 +20,8 @@ QueryExecutor openConnection() {
 
 /// Get path to shared database file
 ///
-/// Uses same pattern as nostr_sdk:
-/// {appDocuments}/openvine/database/local_relay.db
+/// Path: {appDocuments}/openvine/database/divine_db.db
 Future<String> getSharedDatabasePath() async {
   final docDir = await getApplicationDocumentsDirectory();
-  return p.join(docDir.path, 'openvine', 'database', 'local_relay.db');
+  return p.join(docDir.path, 'openvine', 'database', 'divine_db.db');
 }

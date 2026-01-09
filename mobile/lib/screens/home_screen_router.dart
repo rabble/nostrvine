@@ -39,12 +39,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
     final videosAsync = ref.read(videosForHomeRouteProvider);
 
-    // Redirect to home on next frame to avoid build-phase navigation
+    // Pre-initialize controllers on next frame (don't redirect - respect URL)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.go('/home/0');
-      }
-
       // Initial build pre initialization
       videosAsync.whenData((state) {
         preInitializeControllers(
@@ -271,25 +267,17 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   // Update tracked video stableId
                   _currentVideoStableId = videos[newIndex].stableId;
 
-                  // Update last URL index immediately to prevent rebuild flash
-                  _lastUrlIndex = newIndex;
-
                   // Guard: only navigate if URL doesn't match
-                  // TEMPORARILY DISABLED to test if this causes flicker
-                  // TODO: Re-enable after fixing flicker
-                  // if (newIndex != urlIndex) {
-                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-                  //     if (!mounted) return;
-                  //     context.go(
-                  //       buildRoute(
-                  //         RouteContext(
-                  //           type: RouteType.home,
-                  //           videoIndex: newIndex,
-                  //         ),
-                  //       ),
-                  //     );
-                  //   });
-                  // }
+                  if (newIndex != urlIndex) {
+                    context.go(
+                      buildRoute(
+                        RouteContext(
+                          type: RouteType.home,
+                          videoIndex: newIndex,
+                        ),
+                      ),
+                    );
+                  }
 
                   // Trigger pagination near end
                   if (newIndex >= itemCount - 2) {
@@ -320,13 +308,20 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   );
                 },
                 itemBuilder: (context, index) {
+                  // Use PageController as source of truth for active video,
+                  // not URL index. This prevents race conditions when videos
+                  // reorder and URL update is pending.
+                  final currentPage = _controller?.page?.round() ?? urlIndex;
+                  final isActive = index == currentPage;
+
                   return VideoFeedItem(
                     key: ValueKey('video-${videos[index].id}'),
                     video: videos[index],
                     index: index,
-                    hasBottomNavigation: true,
+                    hasBottomNavigation: false,
                     contextTitle: '', // Home feed has no context title
                     hideFollowButtonIfFollowing: true, // Home feed only shows followed users
+                    isActiveOverride: isActive,
                   );
                 },
               ),

@@ -159,9 +159,24 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
 
-    // Show double-confirmation warning dialogs (imported from delete_account_dialog.dart)
+    // Get current user's public key for nsec verification
+    final currentPublicKeyHex = authService.currentPublicKeyHex;
+    if (currentPublicKeyHex == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to verify identity. Please log in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show nsec verification dialog first, then standard delete dialog
     await showDeleteAllContentWarningDialog(
       context: context,
+      currentPublicKeyHex: currentPublicKeyHex,
       onConfirm: () async {
         // Show loading indicator
         if (!context.mounted) return;
