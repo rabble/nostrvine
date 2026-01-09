@@ -95,7 +95,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   DateTime? _lastTapTime; // Debounce rapid taps to prevent phantom pauses
   DateTime?
   _loadingStartTime; // Track when loading started for delayed indicator
-  late VideoInteractionsBloc _interactionsBloc; // Per-video interactions bloc
+  late final VideoInteractionsBloc
+  _interactionsBloc; // Per-video interactions bloc
 
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
@@ -111,14 +112,15 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   void initState() {
     super.initState();
 
+    // Create VideoInteractionsBloc for this video immediately
+    // This must happen before build() to ensure the bloc is available
+    _createInteractionsBloc();
+
     // Listen for active state changes to control playback
     // Active state is now derived from URL + feed + foreground (pure provider)
     // OR from isActiveOverride for custom contexts like lists
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return; // Safety check: don't use ref if widget is disposed
-
-      // Create VideoInteractionsBloc for this video
-      _createInteractionsBloc();
 
       if (widget.disableAutoplay) {
         Log.info(
@@ -213,6 +215,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   }
 
   /// Creates the VideoInteractionsBloc for this video.
+  /// Called synchronously in initState before the first build.
   void _createInteractionsBloc() {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
@@ -227,8 +230,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
     // Trigger initial fetch
     _interactionsBloc.add(const VideoInteractionsFetchRequested());
-    // Force rebuild to provide bloc
-    if (mounted) setState(() {});
   }
 
   @override

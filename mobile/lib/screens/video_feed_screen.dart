@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -277,7 +276,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
     // Update URL immediately to trigger derived provider chain
     // context.go() → routerLocationStream → pageContextProvider → activeVideoIdProvider → VideoFeedItem reacts
     if (!widget.disableNavigation) {
-      context.go('/home/$index');
+      context.goHome(index);
     }
 
     preInitializeControllers(ref: ref, currentIndex: index, videos: videos);

@@ -12,11 +12,3 @@ sealed class MyFollowersEvent {
 final class MyFollowersListLoadRequested extends MyFollowersEvent {
   const MyFollowersListLoadRequested();
 }
-
-/// Request to toggle follow status for a follower (follow back).
-final class MyFollowersToggleFollowRequested extends MyFollowersEvent {
-  const MyFollowersToggleFollowRequested(this.pubkey);
-
-  /// The public key of the follower to follow/unfollow
-  final String pubkey;
-}
