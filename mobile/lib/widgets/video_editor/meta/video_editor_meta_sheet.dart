@@ -3,18 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/models/video_editor/video_editor_meta.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/divine_icon_button.dart';
 import 'package:openvine/widgets/video_editor/meta/video_editor_meta_input.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Bottom sheet widget for editing video metadata.
 ///
@@ -41,8 +35,8 @@ class _VideoEditorMetaSheetState extends ConsumerState<VideoEditorMetaSheet> {
   /// posts => Not required anymore??
 
   /// Per-video audio sharing override (null = not loaded)
-  bool? _allowAudioReuse;
-  Duration? _expireTime;
+  // bool? _allowAudioReuse;
+  // Duration? _expireTime;
 
   @override
   void initState() {
@@ -72,7 +66,7 @@ class _VideoEditorMetaSheetState extends ConsumerState<VideoEditorMetaSheet> {
   Future<void> _loadDraft() async {
     try {
       if (widget.draftId == null) return;
-
+      /* TODO(@hm21): Temporary "commented out" create PR with only new files 
       final prefs = await SharedPreferences.getInstance();
       final draftService = DraftStorageService(prefs);
       final draft = await draftService.getDraftById(widget.draftId!);
@@ -115,7 +109,7 @@ class _VideoEditorMetaSheetState extends ConsumerState<VideoEditorMetaSheet> {
         '📝 VideoEditorMetaSheet: Loaded draft ${draft.id}, '
         'audio sharing default: $defaultAudioSharing',
         category: LogCategory.video,
-      );
+      ); */
     } catch (e) {
       Log.error('📝 Failed to load draft: $e', category: LogCategory.video);
     }
@@ -138,7 +132,8 @@ class _VideoEditorMetaSheetState extends ConsumerState<VideoEditorMetaSheet> {
   }
 
   void _handleMetaChanges() {
-    final meta = VideoEditorMeta(
+    // TODO(@hm21): Temporary "commented out" create PR with only new files
+    /* final meta = VideoEditorMeta(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       hashtags: _topics,
@@ -146,7 +141,7 @@ class _VideoEditorMetaSheetState extends ConsumerState<VideoEditorMetaSheet> {
       expireTime: _expireTime,
     );
 
-    ref.read(videoEditorProvider.notifier).setMetadata(meta);
+    ref.read(videoEditorProvider.notifier).setMetadata(meta); */
   }
 
   @override

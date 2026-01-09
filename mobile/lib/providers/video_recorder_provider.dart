@@ -10,13 +10,10 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_permission_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates
 class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
@@ -267,11 +264,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
       category: .video,
     );
     await _cameraService.startRecording();
-    ref.read(clipManagerProvider.notifier).startRecording();
+    // TODO(@hm21): Temporary "commented out" create PR with only new files
+    // ref.read(clipManagerProvider.notifier).startRecording();
   }
 
   /// Stop recording and process clip (metadata, thumbnail).
   Future<void> stopRecording() async {
+    /* TODO(@hm21): Temporary "commented out" create PR with only new files
     if (!state.isRecording) return;
 
     Log.info(
@@ -337,7 +336,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
         name: 'VideoRecorderNotifier',
         category: .video,
       );
-    }
+    }*/
   }
 
   /// Adjust zoom by vertical drag distance during long press.
@@ -426,8 +425,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
   Future<void> openVideoEditor(BuildContext context) async {
     await handleAppLifecycleState(.paused);
     if (!context.mounted) return;
-
-    await context.pushVideoEditor();
+    // TODO(@hm21): Temporary "commented out" create PR with only new files
+    // await context.pushVideoEditor();
     if (!context.mounted) return;
 
     await handleAppLifecycleState(.resumed);

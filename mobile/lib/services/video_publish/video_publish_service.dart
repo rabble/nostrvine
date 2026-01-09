@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/upload_progress_dialog.dart';
@@ -33,7 +27,8 @@ class VideoPublishService {
     this.ref = ref;
     this.context = context;
 
-    final uploadManager = ref.read(uploadManagerProvider);
+    //  TODO(@hm21): Temporary "commented out" create PR with only new files
+    // final uploadManager = ref.read(uploadManagerProvider);
 
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
@@ -45,7 +40,8 @@ class VideoPublishService {
 
     try {
       // Update draft status to "publishing"
-      final prefs = await SharedPreferences.getInstance();
+      /* TODO(@hm21): Temporary "commented out" create PR with only new files  
+     final prefs = await SharedPreferences.getInstance();
       final draftService = DraftStorageService(prefs);
 
       final publishing = draft.copyWith(publishStatus: .publishing);
@@ -129,7 +125,7 @@ class VideoPublishService {
       Log.info(
         '📝 Published successfully, returned to main screen',
         category: LogCategory.video,
-      );
+      ); */
     } catch (e, stackTrace) {
       _setPublishState(.error);
       await _handleUploadError(e, stackTrace, draft);
@@ -184,6 +180,7 @@ class VideoPublishService {
   }
 
   /// Start a new upload and poll for progress
+  /* TODO(@hm21): Temporary "commented out" create PR with only new files
   Future<PendingUpload> _startNewUpload(
     UploadManager uploadManager,
     String pubkey,
@@ -257,6 +254,7 @@ class VideoPublishService {
 
     return pendingUpload;
   }
+ */
 
   /// Retry a failed upload
   Future<void> _retryUpload() async {
@@ -424,6 +422,7 @@ class VideoPublishService {
     VineDraft draft,
   ) async {
     // Show technical details in a dialog
+    /* TODO(@hm21): Temporary "commented out" create PR with only new files
     final videoPath = await draft.clips.first.video.safeFilePath();
 
     final errorDetails =
@@ -514,5 +513,6 @@ Video: ${videoPath}
         ],
       ),
     );
+   */
   }
 }

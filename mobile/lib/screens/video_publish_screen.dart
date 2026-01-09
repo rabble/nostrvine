@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/widgets/video_publish/video_publish_bottom_bar.dart';
 import 'package:openvine/widgets/video_publish/video_publish_top_bar.dart';
-import 'package:openvine/widgets/video_publish/video_publish_video_preview.dart';
 
 /// Video publish screen for previewing and publishing edited videos.
 class VideoPublishScreen extends ConsumerWidget {
@@ -27,7 +26,8 @@ class VideoPublishScreen extends ConsumerWidget {
           fit: .expand,
           children: [
             // Video preview
-            Align(child: VideoPublishVideoPreview()),
+            // TODO(@hm21): Temporary "commented out" create PR with only new files
+            // Align(child: VideoPublishVideoPreview()),
 
             // Top navigation
             Align(alignment: .topCenter, child: VideoPublishTopBar()),

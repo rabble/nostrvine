@@ -44,7 +44,12 @@ class VideoRecorderSegmentBar extends ConsumerWidget {
   Widget _buildSegments(WidgetRef ref, BoxConstraints constraints) {
     final state = ref.watch(
       clipManagerProvider.select(
-        (s) => (clips: s.clips, activeRecording: s.activeRecordingDuration),
+        (s) => (
+          clips: s.clips,
+          // TODO(@hm21): Temporary "set to zero" create PR with only new files
+          // activeRecording: s.activeRecordingDuration,
+          activeRecording: Duration.zero,
+        ),
       ),
     );
 

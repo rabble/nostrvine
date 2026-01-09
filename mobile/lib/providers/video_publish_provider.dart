@@ -1,16 +1,12 @@
 // ABOUTME: Riverpod provider for managing video publish screen state
 // ABOUTME: Controls playback, mute state, and position tracking
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -33,6 +29,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Sets video data and metadata for publishing.
   void initialize({required VineDraft draft}) {
+    /* TODO(@hm21): Temporary "commented out" create PR with only new files
     this.draft = draft;
     state = state.copyWith(clip: draft.clips.first);
 
@@ -40,7 +37,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       '🎬 Video publish initialized with ${draft.clips.length} clip(s)',
       name: 'VideoPublishNotifier',
       category: .video,
-    );
+    );*/
   }
 
   /// Toggles between play and pause states.
@@ -172,6 +169,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         // When we publish a clip, we expect all the clips to be merged, so we
         // can read the first clip directly. Multiple clips are only required to
         // restore the editor state from drafts.
+        /* TODO(@hm21): Temporary "commented out" create PR with only new files
         final filePath = await draft!.clips.first.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
         String? proofManifestJson = result == null ? null : jsonEncode(result);
@@ -189,7 +187,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             name: 'VideoPublishNotifier',
             category: .video,
           );
-        }
+        } */
       }
 
       Log.info(

@@ -22,8 +22,9 @@ class VideoEditorMeta {
       title: draft.title,
       description: draft.description,
       hashtags: draft.hashtags,
-      allowAudioReuse: draft.allowAudioReuse,
-      expireTime: draft.expireTime,
+      // TODO(@hm21): Temporary "commented out" create PR with only new files
+      // allowAudioReuse: draft.allowAudioReuse,
+      // expireTime: draft.expireTime,
     );
   }
 

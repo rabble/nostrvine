@@ -34,19 +34,22 @@ class _VideoRecorderMoreSheetState
             BottomSheetListTile(
               iconPath: 'assets/icon/folder_open.svg',
               title: 'Add clip from Library',
+              /* TODO(@hm21): Temporary "commented out" create PR with only new files
               onTap: () => ref
                   .read(clipManagerProvider.notifier)
-                  .pickFromLibrary(context),
+                  .pickFromLibrary(context), */
             ),
             BottomSheetListTile(
               iconPath: 'assets/icon/save.svg',
               title: 'Save clip to Library',
-              onTap: hasClips ? clipsNotifier.saveClipsToLibrary : null,
+              // TODO(@hm21): Temporary "commented out" create PR with only new files
+              // onTap: hasClips ? clipsNotifier.saveClipsToLibrary : null,
             ),
             BottomSheetListTile(
               iconPath: 'assets/icon/undo.svg',
               title: 'Remove last clip',
-              onTap: hasClips ? clipsNotifier.removeLastClip : null,
+              // TODO(@hm21): Temporary "commented out" create PR with only new files
+              // onTap: hasClips ? clipsNotifier.removeLastClip : null,
               color: const Color(0xFFF44336),
             ),
             BottomSheetListTile(

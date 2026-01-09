@@ -293,7 +293,8 @@ class CameraPermissionService {
         );
 
         if (shouldOpenSettings ?? false) {
-          await NativeMacOSCamera.openSystemSettings();
+          // TODO(@hm21): Temporary "commented out" create PR with only new files
+          // await NativeMacOSCamera.openSystemSettings();
         }
 
         return false;
