@@ -5,9 +5,9 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
+import 'package:openvine/services/thumbnail_api_service.dart';
 
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 class VideoEvent {
@@ -48,6 +48,7 @@ class VideoEvent {
     this.expirationTimestamp,
     this.audioEventId,
     this.audioEventRelay,
+    this.nostrLikeCount,
   });
 
   /// Create VideoEvent from Nostr event
@@ -617,6 +618,15 @@ class VideoEvent {
   /// Optional relay hint for fetching the audio event.
   final String? audioEventRelay;
 
+  // Live Nostr reaction count (Kind 7 reactions from relays)
+  /// This is populated when videos are loaded and represents the current
+  /// like count from Nostr relays, separate from historical originalLikes.
+  final int? nostrLikeCount;
+
+  /// Combined total likes (original Vine likes + Nostr reactions).
+  /// Use this for display to show the complete like count.
+  int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
+
   /// Check if this video uses audio from another source.
   /// Returns true if audioEventId is set.
   bool get hasAudioReference => audioEventId != null;
@@ -988,6 +998,7 @@ class VideoEvent {
     DateTime? repostedAt,
     String? audioEventId,
     String? audioEventRelay,
+    int? nostrLikeCount,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1016,6 +1027,7 @@ class VideoEvent {
     repostedAt: repostedAt ?? this.repostedAt,
     audioEventId: audioEventId ?? this.audioEventId,
     audioEventRelay: audioEventRelay ?? this.audioEventRelay,
+    nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
   );
 
   @override

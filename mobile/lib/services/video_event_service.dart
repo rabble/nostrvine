@@ -22,24 +22,25 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_batcher.dart';
-import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/services/event_router.dart';
-import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -202,6 +203,7 @@ class VideoEventService extends ChangeNotifier {
   // Optional services for enhanced functionality
   ContentBlocklistService? _blocklistService;
   AgeVerificationService? _ageVerificationService;
+  LikesRepository? _likesRepository;
   final SubscriptionManager _subscriptionManager;
 
   // AUTH retry mechanism
@@ -290,6 +292,16 @@ class VideoEventService extends ChangeNotifier {
     _ageVerificationService = ageVerificationService;
     Log.debug(
       'Age verification service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
+  /// Set the likes repository for fetching live like counts
+  void setLikesRepository(LikesRepository likesRepository) {
+    _likesRepository = likesRepository;
+    Log.debug(
+      'Likes repository attached to VideoEventService',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -4201,6 +4213,12 @@ class VideoEventService extends ChangeNotifier {
       });
     }
 
+    // Fetch live Nostr like count for this video (fire-and-forget)
+    // This enriches the video with current reaction count from relays
+    if (_likesRepository != null) {
+      _fetchAndUpdateLikeCount(videoEvent, subscriptionType);
+    }
+
     // REMOVED: Eager caching here was causing 100+ simultaneous downloads
     // Instead, video caching is handled on-demand by individual video controllers
     // This prevents bandwidth saturation that slows first video load
@@ -4349,6 +4367,69 @@ class VideoEventService extends ChangeNotifier {
 
     // Schedule frame-based UI update for progressive loading
     _scheduleFrameUpdate();
+  }
+
+  /// Fetch and update the Nostr like count for a video.
+  /// This is called fire-and-forget when a video is added to a subscription.
+  /// Updates the video in place and notifies listeners when the count arrives.
+  Future<void> _fetchAndUpdateLikeCount(
+    VideoEvent videoEvent,
+    SubscriptionType subscriptionType,
+  ) async {
+    if (_likesRepository == null) return;
+
+    try {
+      final likeCount = await _likesRepository!.getLikeCount(videoEvent.id);
+
+      // Skip update if count is 0 (no change from default)
+      if (likeCount == 0) return;
+
+      // Find and update the video in the event list
+      final eventList = _eventLists[subscriptionType];
+      if (eventList == null) return;
+
+      final index = eventList.indexWhere((v) => v.id == videoEvent.id);
+      if (index == -1) return; // Video no longer in list
+
+      // Update the video with the like count
+      final updatedVideo = eventList[index].copyWith(nostrLikeCount: likeCount);
+      eventList[index] = updatedVideo;
+
+      // Also update in keyed buckets if applicable
+      if (subscriptionType == SubscriptionType.hashtag) {
+        for (final tag in videoEvent.hashtags) {
+          final bucket = _hashtagBuckets[tag];
+          if (bucket != null) {
+            final bucketIndex = bucket.indexWhere((v) => v.id == videoEvent.id);
+            if (bucketIndex != -1) {
+              bucket[bucketIndex] = updatedVideo;
+            }
+          }
+        }
+      } else if (subscriptionType == SubscriptionType.profile) {
+        final authorHex =
+            videoEvent.isRepost && videoEvent.reposterPubkey != null
+            ? videoEvent.reposterPubkey!
+            : videoEvent.pubkey;
+        final bucket = _authorBuckets[authorHex];
+        if (bucket != null) {
+          final bucketIndex = bucket.indexWhere((v) => v.id == videoEvent.id);
+          if (bucketIndex != -1) {
+            bucket[bucketIndex] = updatedVideo;
+          }
+        }
+      }
+
+      // Schedule a frame update to notify listeners
+      _scheduleFrameUpdate();
+    } catch (e) {
+      // Silently ignore errors - like count is non-critical
+      Log.verbose(
+        'Failed to fetch like count for ${videoEvent.id}: $e',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Log duplicate video events in an aggregated manner to reduce noise

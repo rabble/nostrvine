@@ -463,6 +463,8 @@ VideoEventService videoEventService(Ref ref) {
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
 
+  final likesRepository = ref.watch(likesRepositoryProvider);
+
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
@@ -472,6 +474,7 @@ VideoEventService videoEventService(Ref ref) {
   );
   service.setBlocklistService(blocklistService);
   service.setAgeVerificationService(ageVerificationService);
+  service.setLikesRepository(likesRepository);
   return service;
 }
 
