@@ -165,10 +165,10 @@ packages:
     dependency: transitive
     description:
       name: bloc
-      sha256: a2cebb899f91d36eeeaa55c7b20b5915db5a9df1b8fd4a3c9c825e22e474537d
+      sha256: a48653a82055a900b88cd35f92429f068c5a8057ae9b136d197b3d56c57efb81
       url: "https://pub.dev"
     source: hosted
-    version: "9.1.0"
+    version: "9.2.0"
   bloc_test:
     dependency: "direct dev"
     description:
@@ -265,61 +265,21 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.1"
-  camera:
+  camera_macos_plus:
     dependency: "direct main"
     description:
-      name: camera
-      sha256: eefad89f262a873f38d21e5eec853461737ea074d7c9ede39f3ceb135d201cab
+      name: camera_macos_plus
+      sha256: "1c4af91f15aec8d0be5f3e02a4d5ee17cdffcdf1cea6eeed6aa2022bfb587032"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.3"
-  camera_android_camerax:
-    dependency: transitive
-    description:
-      name: camera_android_camerax
-      sha256: b555c5748a9164830b3d57644e1c8a20408d0cae90b157f6af4b1ad5f5fb187a
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.26"
-  camera_avfoundation:
-    dependency: transitive
-    description:
-      name: camera_avfoundation
-      sha256: "035b90c1e33c2efad7548f402572078f6e514d4f82be0a315cd6c6af7e855aa8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.9.22+6"
-  camera_macos:
-    dependency: "direct main"
-    description:
-      name: camera_macos
-      sha256: a0e15729caf4e7c2831b9cd964e8c2e2ea985cd816e56316be03355de44aa743
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.9"
-  camera_platform_interface:
-    dependency: transitive
-    description:
-      name: camera_platform_interface
-      sha256: "98cfc9357e04bad617671b4c1f78a597f25f08003089dd94050709ae54effc63"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.12.0"
-  camera_web:
-    dependency: transitive
-    description:
-      name: camera_web
-      sha256: "3bc7bb1657a0f29c34116453c5d5e528c23efcf5e75aac0a3387cf108040bf65"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.5+2"
+    version: "0.0.3"
   camerawesome:
     dependency: "direct main"
     description:
       path: "."
       ref: master
-      resolved-ref: b2b891c754f0b5708f0964fe84788ba7daa18ed8
-      url: "https://github.com/VGVentures/CamerAwesome.git"
+      resolved-ref: "432059f362b1d499fc53fdd2c50bb3a521b0ab15"
+      url: "https://github.com/hm21/CamerAwesome.git"
     source: git
     version: "2.5.0"
   carousel_slider:
@@ -1327,6 +1287,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  linked_scroll_controller:
+    dependency: "direct main"
+    description:
+      name: linked_scroll_controller
+      sha256: e6020062bcf4ffc907ee7fd090fa971e65d8dfaac3c62baf601a3ced0b37986a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   lints:
     dependency: transitive
     description:
@@ -1639,14 +1607,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  pro_image_editor:
+    dependency: "direct main"
+    description:
+      name: pro_image_editor
+      sha256: baa12ac91b25617d0f98e3146a890edf47a2a6ab5f575cf3caf9abbb9366f24c
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.15.5"
   pro_video_editor:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: "7cedae0b7efee072024fcaeabfb3ac665c8a76475e594362162ee4eef8a22983"
+      sha256: "04f85966e2210267551e96047fa7532706ae400162b0748d2e8721f4736e479a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "1.2.1"
   process:
     dependency: transitive
     description:
