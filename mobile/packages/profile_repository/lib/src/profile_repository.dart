@@ -1,21 +1,27 @@
-// ABOUTME: Repository for publishing user profiles (Kind 0 metadata).
-// ABOUTME: Stateless executor that delegates to NostrClient for relay
-// ABOUTME: operations.
+// ABOUTME: Repository for fetching and publishing user profiles (Kind 0).
+// ABOUTME: Delegates to NostrClient for relay operations.
 // ABOUTME: Throws ProfilePublishFailedException on publish failure.
 
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:profile_repository/src/exceptions.dart';
 
-/// Repository for publishing user profiles (Kind 0 metadata).
+/// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
-  ///
-  /// Parameters:
-  /// - [nostrClient]: Client for Nostr relay communication.
   const ProfileRepository({required NostrClient nostrClient})
     : _nostrClient = nostrClient;
 
   final NostrClient _nostrClient;
+
+  /// Fetches a user profile by pubkey.
+  ///
+  /// Returns `null` if no profile exists for the given pubkey.
+  Future<UserProfile?> getProfile({required String pubkey}) async {
+    final profileEvent = await _nostrClient.fetchProfile(pubkey);
+    if (profileEvent == null) return null;
+    return UserProfile.fromNostrEvent(profileEvent);
+  }
 
   /// Publishes profile metadata to Nostr relays
   ///
