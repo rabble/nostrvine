@@ -48,6 +48,7 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.disableAutoplay = false,
     this.isActiveOverride,
     this.disableTapNavigation = false,
+    this.hideFollowButtonIfFollowing = false,
   });
 
   final VideoEvent video;
@@ -65,6 +66,11 @@ class VideoFeedItem extends ConsumerStatefulWidget {
   /// When true, tapping an inactive video won't navigate via router.
   /// Instead, it just calls onTap callback. Used for contexts with local state management.
   final bool disableTapNavigation;
+
+  /// When true, hides the follow button if already following the author.
+  /// Useful for Home feed (all videos are from followed users) and
+  /// Profile views of followed users.
+  final bool hideFollowButtonIfFollowing;
 
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
@@ -747,6 +753,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               isActive: isActive,
               hasBottomNavigation: widget.hasBottomNavigation,
               contextTitle: widget.contextTitle,
+              hideFollowButtonIfFollowing: widget.hideFollowButtonIfFollowing,
             ),
 
             // Repost header (shown at top if video is a repost)
@@ -854,6 +861,7 @@ class VideoOverlayActions extends ConsumerWidget {
     required this.isActive,
     this.hasBottomNavigation = true,
     this.contextTitle,
+    this.hideFollowButtonIfFollowing = false,
   });
 
   final VideoEvent video;
@@ -861,6 +869,7 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool isActive;
   final bool hasBottomNavigation;
   final String? contextTitle;
+  final bool hideFollowButtonIfFollowing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -905,12 +914,6 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
           ),
         ),
-        // Follow button at top left (handles own video check internally)
-        Positioned(
-          top: MediaQuery.of(context).viewPadding.top + 16,
-          left: 16,
-          child: VideoFollowButton(pubkey: video.pubkey),
-        ),
         // ProofMode and Vine badges in upper right corner (tappable)
         Positioned(
           top: MediaQuery.of(context).viewPadding.top + 16,
@@ -924,7 +927,7 @@ class VideoOverlayActions extends ConsumerWidget {
         ),
         // Author info and video description overlay at bottom left
         Positioned(
-            bottom: 22,
+            bottom: 14,
             left: 16,
             right: 80, // Leave space for action buttons
             child: AnimatedOpacity(
@@ -957,57 +960,79 @@ class VideoOverlayActions extends ConsumerWidget {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Avatar (tappable to go to profile)
-                          GestureDetector(
-                            onTap: navigateToProfile,
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: avatarUrl != null && avatarUrl.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: avatarUrl,
-                                        width: 44,
-                                        height: 44,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: VineTheme.cardBackground,
-                                          child: const Icon(
-                                            Icons.person,
-                                            color: Colors.white54,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        errorWidget: (context, url, error) =>
-                                            Container(
-                                          color: VineTheme.cardBackground,
-                                          child: const Icon(
-                                            Icons.person,
-                                            color: Colors.white54,
-                                            size: 24,
-                                          ),
-                                        ),
-                                      )
-                                    : Container(
-                                        color: VineTheme.cardBackground,
-                                        child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white54,
-                                          size: 24,
-                                        ),
+                          // Avatar with follow button overlay
+                          SizedBox(
+                            width: 58, // 48 avatar + space for follow button overflow
+                            height: 58,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // Avatar (tappable to go to profile)
+                                GestureDetector(
+                                  onTap: navigateToProfile,
+                                  child: Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
                                       ),
-                              ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: avatarUrl != null && avatarUrl.isNotEmpty
+                                          ? CachedNetworkImage(
+                                              imageUrl: avatarUrl,
+                                              width: 44,
+                                              height: 44,
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, url) => Container(
+                                                color: VineTheme.cardBackground,
+                                                child: const Icon(
+                                                  Icons.person,
+                                                  color: Colors.white54,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                              errorWidget: (context, url, error) =>
+                                                  Container(
+                                                color: VineTheme.cardBackground,
+                                                child: const Icon(
+                                                  Icons.person,
+                                                  color: Colors.white54,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                            )
+                                          : Container(
+                                              color: VineTheme.cardBackground,
+                                              child: const Icon(
+                                                Icons.person,
+                                                color: Colors.white54,
+                                                size: 24,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                // Follow button positioned at bottom-right of avatar
+                                // Button's bottom edge 3px below avatar's bottom (48+3=51)
+                                // Button's right edge 3px right of avatar's right (48+3=51)
+                                // Button is 20x20, so top-left at (31, 31)
+                                Positioned(
+                                  left: 31,
+                                  top: 31,
+                                  child: VideoFollowButton(
+                                    pubkey: video.pubkey,
+                                    hideIfFollowing: hideFollowButtonIfFollowing,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 6), // Reduced from 16 to account for wider avatar container
                           // User name and loop count (tappable to go to profile)
                           Expanded(
                             child: GestureDetector(
@@ -1069,7 +1094,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
                   // Video description with clickable hashtags (only if there's text content)
                   if (hasTextContent) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 2), // 2px + 10px from avatar container = 12px total
                     Semantics(
                         identifier: 'video_description',
                         container: true,
@@ -1098,6 +1123,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                     ),
+                    const SizedBox(height: 8), // Bottom spacing only when description exists
                   ],
                 ],
               ),
@@ -1563,7 +1589,81 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
 
                   // Edit button (only show for owned videos when feature is enabled)
-                  _VideoEditButton(video: video),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      // Check feature flag
+                      final featureFlagService = ref.watch(featureFlagServiceProvider);
+                      final isEditorEnabled = featureFlagService.isEnabled(
+                        FeatureFlag.enableVideoEditorV1,
+                      );
+
+                      if (!isEditorEnabled) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // Check ownership
+                      final authService = ref.watch(authServiceProvider);
+                      final currentUserPubkey = authService.currentPublicKeyHex;
+                      final isOwnVideo =
+                          currentUserPubkey != null && currentUserPubkey == video.pubkey;
+
+                      if (!isOwnVideo) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        children: [
+                          const SizedBox(height: 4),
+                          Semantics(
+                            identifier: 'edit_button',
+                            container: true,
+                            explicitChildNodes: true,
+                            button: true,
+                            label: 'Edit video',
+                            child: IconButton(
+                              padding: const EdgeInsets.all(8),
+                              constraints: const BoxConstraints.tightFor(
+                                width: 48,
+                                height: 48,
+                              ),
+                              style: IconButton.styleFrom(
+                                highlightColor: Colors.transparent,
+                                splashFactory: NoSplash.splashFactory,
+                              ),
+                              onPressed: () {
+                                Log.info(
+                                  '✏️ Edit button tapped for ${video.id}',
+                                  name: 'VideoFeedItem',
+                                  category: LogCategory.ui,
+                                );
+                                showEditDialogForVideo(context, video);
+                              },
+                              icon: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 15,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: SvgPicture.asset(
+                                  'assets/icon/content-controls/pencil.svg',
+                                  width: 32,
+                                  height: 32,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1748,60 +1848,3 @@ class VideoOverlayActions extends ConsumerWidget {
   }
 }
 
-/// Edit button shown only for owned videos when feature flag is enabled.
-///
-/// This widget checks:
-/// 1. Feature flag `enableVideoEditorV1` is enabled
-/// 2. Current user owns the video
-///
-/// If both conditions are met, displays an edit button that opens the
-/// video edit dialog.
-class _VideoEditButton extends ConsumerWidget {
-  const _VideoEditButton({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Check feature flag
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
-
-    if (!isEditorEnabled) {
-      return const SizedBox.shrink();
-    }
-
-    // Check ownership
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    final isOwnVideo =
-        currentUserPubkey != null && currentUserPubkey == video.pubkey;
-
-    if (!isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    // Show edit button
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        IconButton(
-          onPressed: () {
-            Log.info(
-              '✏️ Edit button tapped for ${video.id}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-
-            // Show edit dialog directly (works on all platforms)
-            showEditDialogForVideo(context, video);
-          },
-          tooltip: 'Edit video',
-          icon: const Icon(Icons.edit, color: Colors.white, size: 32),
-        ),
-      ],
-    );
-  }
-}

@@ -609,6 +609,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           index: index,
           hasBottomNavigation: true,
           contextTitle: '', // Home feed has no context title
+          hideFollowButtonIfFollowing: true, // Home feed only shows followed users
         );
       },
     );
