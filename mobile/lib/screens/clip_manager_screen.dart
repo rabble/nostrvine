@@ -15,7 +15,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -23,6 +25,17 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
 class ClipManagerScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'clip-manager';
+
+  /// Path for this route.
+  static const path = '/clip-manager';
+
+  /// Page builder for GoRouter.
+  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
+    return StandardPage(key: state.pageKey, child: const ClipManagerScreen());
+  }
+
   const ClipManagerScreen({
     super.key,
     this.onRecordMore,
@@ -354,7 +367,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
   }
 
   void _goToCamera() {
-    context.go('/camera');
+    context.go(UniversalCameraScreenPure.path);
   }
 
   void _selectClip(RecordingClip clip) {
@@ -775,7 +788,7 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
         );
 
         // Navigate back to camera
-        context.go('/camera');
+        context.go(UniversalCameraScreenPure.path);
       }
     } catch (e) {
       Log.error('📹 Failed to save clips: $e', category: LogCategory.video);

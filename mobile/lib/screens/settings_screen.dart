@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -22,6 +23,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'settings';
+
+  /// Path for this route.
+  static const path = '/settings';
+
+  /// Page builder for GoRouter.
+  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
+    return StandardPage(key: state.pageKey, child: const SettingsScreen());
+  }
+
   const SettingsScreen({super.key});
 
   @override

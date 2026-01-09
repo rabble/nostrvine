@@ -39,15 +39,9 @@ class ProfileFollowersStat extends ConsumerWidget {
         child: _MyFollowersStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
-      return BlocProvider(
-        create: (_) =>
-            OthersFollowersBloc(followRepository: followRepository)
-              ..add(OthersFollowersListLoadRequested(pubkey)),
-        child: _OthersFollowersStatView(
-          pubkey: pubkey,
-          displayName: displayName,
-        ),
-      );
+      // Use the OthersFollowersBloc from parent context (provided by ProfileGridView)
+      // This allows the follow button to update the count optimistically
+      return _OthersFollowersStatView(pubkey: pubkey, displayName: displayName);
     }
   }
 }

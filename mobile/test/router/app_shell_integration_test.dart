@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/route_normalization_provider.dart';
 import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 
@@ -33,10 +32,6 @@ void main() {
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
-
-      // Activate normalization provider
-      c.read(routeNormalizationProvider);
-
       await tester.pump();
 
       // Should start at initial location
@@ -53,9 +48,6 @@ void main() {
         addTearDown(c.dispose);
 
         await tester.pumpWidget(shell(c));
-
-        // Activate normalization provider
-        c.read(routeNormalizationProvider);
 
         c.read(goRouterProvider).go('/home/-3');
         await tester.pump(); // Process the navigation
@@ -83,8 +75,6 @@ void main() {
 
       await tester.pumpWidget(shell(c));
 
-      c.read(routeNormalizationProvider);
-
       c.read(goRouterProvider).go('/profile/npubXYZ/2');
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
@@ -104,8 +94,6 @@ void main() {
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
-
-      c.read(routeNormalizationProvider);
 
       c.read(goRouterProvider).go('/explore/5');
       await tester.pump(); // Process the navigation
@@ -128,8 +116,6 @@ void main() {
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
-
-      c.read(routeNormalizationProvider);
 
       c.read(goRouterProvider).go('/hashtag/rust/3');
       await tester.pump(); // Process the navigation
@@ -155,8 +141,6 @@ void main() {
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
-
-      c.read(routeNormalizationProvider);
 
       // Start at home/2
       c.read(goRouterProvider).go('/home/2');
@@ -200,8 +184,6 @@ void main() {
 
         await tester.pumpWidget(shell(c));
 
-        c.read(routeNormalizationProvider);
-
         // Navigate to /explore/7
         c.read(goRouterProvider).go('/explore/7');
         await tester.pump();
@@ -235,8 +217,6 @@ void main() {
 
       await tester.pumpWidget(shell(c));
 
-      c.read(routeNormalizationProvider);
-
       // Navigate to home/2
       c.read(goRouterProvider).go('/home/2');
       await tester.pump();
@@ -267,8 +247,6 @@ void main() {
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
-
-      c.read(routeNormalizationProvider);
 
       // Start at /home/7
       c.read(goRouterProvider).go('/home/7');

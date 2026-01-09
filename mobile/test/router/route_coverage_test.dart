@@ -6,46 +6,15 @@ import 'package:openvine/router/route_utils.dart';
 
 void main() {
   group('Route Coverage Validation', () {
-    group('Settings routes parse to their own RouteTypes', () {
-      // Each settings sub-route has its own RouteType to prevent
-      // routeNormalizationProvider from redirecting them to /settings
+    group('Settings routes parse correctly', () {
       test('/settings parses to RouteType.settings', () {
         final context = parseRoute('/settings');
         expect(context.type, RouteType.settings);
       });
 
-      test('/relay-settings parses to RouteType.relaySettings', () {
-        final context = parseRoute('/relay-settings');
-        expect(context.type, RouteType.relaySettings);
-      });
-
-      test('/relay-diagnostic parses to RouteType.relayDiagnostic', () {
-        final context = parseRoute('/relay-diagnostic');
-        expect(context.type, RouteType.relayDiagnostic);
-      });
-
-      test('/blossom-settings parses to RouteType.blossomSettings', () {
-        final context = parseRoute('/blossom-settings');
-        expect(context.type, RouteType.blossomSettings);
-      });
-
-      test(
-        '/notification-settings parses to RouteType.notificationSettings',
-        () {
-          final context = parseRoute('/notification-settings');
-          expect(context.type, RouteType.notificationSettings);
-        },
-      );
-
-      test('/key-management parses to RouteType.keyManagement', () {
-        final context = parseRoute('/key-management');
-        expect(context.type, RouteType.keyManagement);
-      });
-
-      test('/safety-settings parses to RouteType.safetySettings', () {
-        final context = parseRoute('/safety-settings');
-        expect(context.type, RouteType.safetySettings);
-      });
+      // Note: Settings sub-routes (relay-settings, blossom-settings, etc.)
+      // are now navigated to directly without RouteType parsing.
+      // They use Screen.pageBuilder pattern in app_router.dart.
     });
 
     group('Profile editing routes parse to RouteType.editProfile', () {
@@ -267,16 +236,10 @@ void main() {
         RouteType.camera: '/camera',
         RouteType.clipManager: '/clip-manager',
         RouteType.editVideo: '/edit-video',
-        RouteType.importKey: '/import-key',
         RouteType.settings: '/settings',
-        RouteType.relaySettings: '/relay-settings',
-        RouteType.relayDiagnostic: '/relay-diagnostic',
-        RouteType.blossomSettings: '/blossom-settings',
-        RouteType.notificationSettings: '/notification-settings',
-        RouteType.keyManagement: '/key-management',
-        RouteType.safetySettings: '/safety-settings',
         RouteType.editProfile: '/edit-profile',
         RouteType.clips: '/clips',
+        RouteType.importKey: '/import-key',
         RouteType.welcome: '/welcome',
       };
 

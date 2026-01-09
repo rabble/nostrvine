@@ -19,7 +19,8 @@ class OthersFollowersBloc
     : _followRepository = followRepository,
       super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
-    on<OthersFollowersToggleFollowRequested>(_onToggleFollowRequested);
+    on<OthersFollowersIncrementRequested>(_onIncrementRequested);
+    on<OthersFollowersDecrementRequested>(_onDecrementRequested);
   }
 
   final FollowRepository _followRepository;
@@ -57,17 +58,42 @@ class OthersFollowersBloc
     }
   }
 
-  /// Handle follow toggle request for a follower.
-  /// Delegates to repository which handles the toggle logic internally.
-  Future<void> _onToggleFollowRequested(
-    OthersFollowersToggleFollowRequested event,
+  /// Optimistically add a follower to the list
+  void _onIncrementRequested(
+    OthersFollowersIncrementRequested event,
     Emitter<OthersFollowersState> emit,
-  ) async {
-    try {
-      await _followRepository.toggleFollow(event.pubkey);
-    } catch (e) {
-      Log.error(
-        'Failed to toggle follow for user: $e',
+  ) {
+    // Only increment if not already in the list
+    if (!state.followersPubkeys.contains(event.followerPubkey)) {
+      emit(
+        state.copyWith(
+          followersPubkeys: [...state.followersPubkeys, event.followerPubkey],
+        ),
+      );
+      Log.debug(
+        'Optimistically added follower: ${event.followerPubkey}',
+        name: 'OthersFollowersBloc',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Optimistically remove a follower from the list
+  void _onDecrementRequested(
+    OthersFollowersDecrementRequested event,
+    Emitter<OthersFollowersState> emit,
+  ) {
+    // Only decrement if in the list
+    if (state.followersPubkeys.contains(event.followerPubkey)) {
+      emit(
+        state.copyWith(
+          followersPubkeys: state.followersPubkeys
+              .where((pubkey) => pubkey != event.followerPubkey)
+              .toList(),
+        ),
+      );
+      Log.debug(
+        'Optimistically removed follower: ${event.followerPubkey}',
         name: 'OthersFollowersBloc',
         category: LogCategory.system,
       );
