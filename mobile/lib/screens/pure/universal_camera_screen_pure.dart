@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -38,20 +37,6 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 
 /// Pure universal camera screen using revolutionary single-controller Riverpod architecture
 class UniversalCameraScreenPure extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'camera';
-
-  /// Path for this route.
-  static const path = '/camera';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return StandardPage(
-      key: state.pageKey,
-      child: const UniversalCameraScreenPure(),
-    );
-  }
-
   const UniversalCameraScreenPure({super.key});
 
   @override
@@ -911,8 +896,9 @@ class _UniversalCameraScreenPureState
               );
               // Try to pop if possible, otherwise go home
               // Camera can be reached via push (from FAB) or go (from ClipManager)
-              if (context.canPop()) {
-                context.pop();
+              final router = GoRouter.of(context);
+              if (router.canPop()) {
+                router.pop();
               } else {
                 // No screen to pop to (navigated via go), go home instead
                 context.goHome();

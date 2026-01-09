@@ -4,26 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'key-management';
-
-  /// Path for this route.
-  static const path = '/key-management';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return StandardPage(key: state.pageKey, child: const KeyManagementScreen());
-  }
-
   const KeyManagementScreen({super.key});
 
   @override
@@ -463,7 +451,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         );
 
         // Pop back to settings after successful import
-        context.pop();
+        Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {

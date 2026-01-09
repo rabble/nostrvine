@@ -6,24 +6,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'import-key';
-
-  /// Path for this route.
-  static const path = '/import-key';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return StandardPage(key: state.pageKey, child: const KeyImportScreen());
-  }
-
   const KeyImportScreen({super.key});
 
   @override

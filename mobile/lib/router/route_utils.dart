@@ -13,6 +13,7 @@ enum RouteType {
   camera,
   clipManager, // Clip management screen for recorded segments
   editVideo, // Video editor screen for text/sound overlays
+  importKey,
   settings,
   relaySettings, // Relay configuration screen
   relayDiagnostic, // Relay connectivity diagnostics
@@ -21,8 +22,7 @@ enum RouteType {
   keyManagement, // Key backup/export screen
   safetySettings, // Safety and privacy settings
   editProfile, // Profile editing screen
-  clips, // Clip library (formerly drafts)
-  importKey, // Key import screen
+  clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
   following, // Following list screen
@@ -204,10 +204,12 @@ RouteContext parseRoute(String path) {
 
     case 'edit-profile':
     case 'setup-profile':
+      // Profile editing screens - standalone routes outside ShellRoute
       return const RouteContext(type: RouteType.editProfile);
 
     case 'clips':
     case 'drafts': // Legacy route, redirects to clips
+      // Clip library screen - standalone route outside ShellRoute
       return const RouteContext(type: RouteType.clips);
 
     case 'import-key':
@@ -341,6 +343,24 @@ String buildRoute(RouteContext context) {
     case RouteType.settings:
       return '/settings';
 
+    case RouteType.relaySettings:
+      return '/relay-settings';
+
+    case RouteType.relayDiagnostic:
+      return '/relay-diagnostic';
+
+    case RouteType.blossomSettings:
+      return '/blossom-settings';
+
+    case RouteType.notificationSettings:
+      return '/notification-settings';
+
+    case RouteType.keyManagement:
+      return '/key-management';
+
+    case RouteType.safetySettings:
+      return '/safety-settings';
+
     case RouteType.editProfile:
       return '/edit-profile';
 
@@ -362,24 +382,6 @@ String buildRoute(RouteContext context) {
     case RouteType.followers:
       return '/followers/${context.npub ?? ''}';
 
-    case RouteType.relaySettings:
-      return '/relay-settings';
-
-    case RouteType.relayDiagnostic:
-      return '/relay-diagnostic';
-
-    case RouteType.blossomSettings:
-      return '/blossom-settings';
-
-    case RouteType.notificationSettings:
-      return '/notification-settings';
-
-    case RouteType.keyManagement:
-      return '/key-management';
-
-    case RouteType.safetySettings:
-      return '/safety-settings';
-
     case RouteType.videoFeed:
       return '/video-feed';
 
@@ -393,27 +395,4 @@ String buildRoute(RouteContext context) {
     case RouteType.sound:
       return '/sound/${context.soundId ?? ''}';
   }
-}
-
-/// Maps RouteType to bottom navigation tab index.
-/// Returns null for non-tab routes (camera, settings, etc.)
-int? tabIndexForRouteType(RouteType type) {
-  return switch (type) {
-    RouteType.home => 0,
-    RouteType.explore || RouteType.hashtag || RouteType.search => 1,
-    RouteType.notifications => 2,
-    RouteType.profile => 3,
-    _ => null,
-  };
-}
-
-/// Maps bottom navigation tab index to default RouteType.
-RouteType routeTypeForTab(int index) {
-  return switch (index) {
-    0 => RouteType.home,
-    1 => RouteType.explore,
-    2 => RouteType.notifications,
-    3 => RouteType.profile,
-    _ => RouteType.home,
-  };
 }

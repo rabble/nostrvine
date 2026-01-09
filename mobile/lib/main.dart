@@ -21,21 +21,23 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/last_tab_position_provider.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/route_normalization_provider.dart';
+import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/tab_history_provider.dart';
+import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
-import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -689,6 +691,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Activate route normalization at app root
+    ref.watch(routeNormalizationProvider);
+
     // Set up deep link listener (must be in build method per Riverpod rules)
     ref.listen<AsyncValue<DeepLink>>(deepLinksProvider, (previous, next) {
       Log.info(
@@ -875,54 +880,176 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
     final router = ref.read(goRouterProvider);
 
-    // Simplified back navigation - StatefulShellRoute handles tab state
-    Future<bool> handleBackNavigation(GoRouter router, WidgetRef ref) async {
-      final ctx = ref.read(pageContextProvider).value;
-      if (ctx == null) return false;
-
-      // Sub-route navigation: hashtag/search → explore
-      if (ctx.type == RouteType.hashtag || ctx.type == RouteType.search) {
-        router.go(ExploreScreen.path);
-        return true;
-      }
-
-      // Feed-to-grid fallback: video view → grid mode
-      if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        final gridCtx = RouteContext(
-          type: ctx.type,
-          hashtag: ctx.hashtag,
-          searchTerm: ctx.searchTerm,
-          npub: ctx.npub,
-          videoIndex: ctx.type == RouteType.notifications ? 0 : null,
-        );
-        router.go(buildRoute(gridCtx));
-        return true;
-      }
-
-      // Non-home to home: go home before exit
-      final currentTab = tabIndexForRouteType(ctx.type);
-      if (currentTab != null && currentTab != 0) {
-        router.go(HomeScreenRouter.pathForIndex(0));
-        return true;
-      }
-
-      return false; // Let system handle exit
+    // Initialize back button handler (Android only - uses platform channel)
+    if (!kIsWeb && io.Platform.isAndroid) {
+      BackButtonHandler.initialize(router, ref);
     }
 
-    // Use PopScope for all platforms - GoRouter handles back navigation
-    final app = PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        await handleBackNavigation(router, ref);
-      },
-      child: MaterialApp.router(
-        title: 'divine',
-        debugShowCheckedModeBanner: false,
-        theme: VineTheme.theme,
-        routerConfig: router,
-      ),
-    );
+    // Helper functions for tab navigation
+    RouteType _routeTypeForTab(int index) {
+      switch (index) {
+        case 0:
+          return RouteType.home;
+        case 1:
+          return RouteType.explore;
+        case 2:
+          return RouteType.notifications;
+        case 3:
+          return RouteType.profile;
+        default:
+          return RouteType.home;
+      }
+    }
+
+    int? _tabIndexFromRouteType(RouteType type) {
+      switch (type) {
+        case RouteType.home:
+          return 0;
+        case RouteType.explore:
+        case RouteType.hashtag: // Hashtag is part of explore tab
+          return 1;
+        case RouteType.notifications:
+          return 2;
+        case RouteType.profile:
+          return 3;
+        default:
+          return null; // Not a main tab route
+      }
+    }
+
+    // Helper function to handle back navigation (iOS/macOS/Windows use PopScope)
+    Future<bool> handleBackNavigation(GoRouter router, WidgetRef ref) async {
+      // Get current route context
+      final ctxAsync = ref.read(pageContextProvider);
+      final ctx = ctxAsync.value;
+      if (ctx == null) {
+        return false; // Not handled - let PopScope handle it
+      }
+
+      // First, check if we're in a sub-route (hashtag, search, etc.)
+      // If so, navigate back to parent route
+      switch (ctx.type) {
+        case RouteType.hashtag:
+        case RouteType.search:
+          // Go back to explore
+          router.go('/explore');
+          return true; // Handled
+
+        default:
+          break;
+      }
+
+      // For routes with videoIndex (feed mode), go to grid mode first
+      // This handles page-internal navigation before tab switching
+      // For explore: go to grid mode (null index)
+      // For notifications: go to index 0 (notifications always has an index)
+      // For other routes: go to grid mode (null index)
+      if (ctx.videoIndex != null && ctx.videoIndex != 0) {
+        RouteContext gridCtx;
+        if (ctx.type == RouteType.notifications) {
+          // Notifications always has an index, go to index 0
+          gridCtx = RouteContext(
+            type: ctx.type,
+            hashtag: ctx.hashtag,
+            searchTerm: ctx.searchTerm,
+            npub: ctx.npub,
+            videoIndex: 0,
+          );
+        } else {
+          // For explore and other routes, go to grid mode (null index)
+          gridCtx = RouteContext(
+            type: ctx.type,
+            hashtag: ctx.hashtag,
+            searchTerm: ctx.searchTerm,
+            npub: ctx.npub,
+            videoIndex: null,
+          );
+        }
+        final newRoute = buildRoute(gridCtx);
+        router.go(newRoute);
+        return true; // Handled
+      }
+
+      // Check tab history for navigation
+      final tabHistory = ref.read(tabHistoryProvider.notifier);
+      final previousTab = tabHistory.getPreviousTab();
+
+      // If there's a previous tab in history, navigate to it
+      if (previousTab != null) {
+        // Navigate to previous tab
+        final previousRouteType = _routeTypeForTab(previousTab);
+        final lastIndex = ref
+            .read(lastTabPositionProvider.notifier)
+            .getPosition(previousRouteType);
+
+        // Remove current tab from history before navigating
+        tabHistory.navigateBack();
+
+        // Navigate to previous tab using BuildContext extension methods
+        // We need a BuildContext for this, but we don't have one here
+        // So we'll use router.go directly
+        switch (previousTab) {
+          case 0:
+            router.go('/home/${lastIndex ?? 0}');
+            break;
+          case 1:
+            if (lastIndex != null) {
+              router.go('/explore/$lastIndex');
+            } else {
+              router.go('/explore');
+            }
+            break;
+          case 2:
+            router.go('/notifications/${lastIndex ?? 0}');
+            break;
+          case 3:
+            // Get current user's npub for profile
+            final authService = ref.read(authServiceProvider);
+            final currentNpub = authService.currentNpub;
+            if (currentNpub != null) {
+              router.go('/profile/$currentNpub');
+            } else {
+              router.go('/home/0');
+            }
+            break;
+        }
+        return true; // Handled
+      }
+
+      // No previous tab - check if we're on a non-home tab
+      // If so, go to home first before exiting
+      final currentTab = _tabIndexFromRouteType(ctx.type);
+      if (currentTab != null && currentTab != 0) {
+        // Go to home first
+        router.go('/home/0');
+        return true; // Handled
+      }
+
+      // Already at home with no history - let PopScope handle exit
+      return false; // Not handled - let PopScope handle it (may exit app)
+    }
+
+    // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
+    final app = (!kIsWeb && io.Platform.isAndroid)
+        ? MaterialApp.router(
+            title: 'divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+          )
+        : PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) async {
+              if (didPop) return;
+              await handleBackNavigation(router, ref);
+            },
+            child: MaterialApp.router(
+              title: 'divine',
+              debugShowCheckedModeBanner: false,
+              theme: VineTheme.theme,
+              routerConfig: router,
+            ),
+          );
 
     // Wrap with geo-blocking check, then lifecycle handler
     Widget wrapped = GeoBlockingGate(child: AppLifecycleHandler(child: app));

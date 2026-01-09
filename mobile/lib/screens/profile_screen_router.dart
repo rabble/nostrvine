@@ -27,22 +27,6 @@ import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
 class ProfileScreenRouter extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'profile';
-
-  /// Path for this route (grid mode).
-  static const path = '/profile/:npub';
-
-  /// Path for this route with index (feed mode).
-  static const pathWithIndex = '/profile/:npub/:index';
-
-  /// Build path for profile grid mode.
-  static String pathForNpub(String npub) => '/profile/$npub';
-
-  /// Build path for profile feed mode with specific index.
-  static String pathForNpubWithIndex(String npub, int index) =>
-      '/profile/$npub/$index';
-
   const ProfileScreenRouter({super.key});
 
   @override
@@ -220,7 +204,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
           await showDeleteAccountCompletionDialog(
             context: context,
             onCreateNewAccount: () {
-              context.go(ProfileSetupScreen.setupPath);
+              context.go('/setup-profile');
             },
           );
         } else {
@@ -434,7 +418,7 @@ class _MeProfileRedirect extends ConsumerWidget {
         authService.currentPublicKeyHex == null) {
       // Not authenticated - redirect to home
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.goHome();
+        GoRouter.of(context).go('/home/0');
       });
       return const Center(child: CircularProgressIndicator());
     }

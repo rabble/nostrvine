@@ -7,36 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/screens/video_feed_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'video';
-
-  /// Path for this route with video ID.
-  static const path = '/video/:id';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    final videoId = state.pathParameters['id'];
-    if (videoId == null || videoId.isEmpty) {
-      return StandardPage(
-        key: state.pageKey,
-        child: Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: Text('Invalid video ID')),
-        ),
-      );
-    }
-    return StandardPage(
-      key: state.pageKey,
-      child: VideoDetailScreen(videoId: videoId),
-    );
-  }
-
   const VideoDetailScreen({required this.videoId, super.key});
 
   final String videoId;

@@ -4,14 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/route_transitions.dart';
-import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -20,34 +16,6 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 /// Creates both [MyFollowersBloc] (for the list) and [MyFollowingBloc]
 /// (for follow button state - to show "follow back") and provides them.
 class MyFollowersScreen extends ConsumerWidget {
-  /// Route name for followers screen.
-  static const routeName = 'followers';
-
-  /// Path for this route with pubkey.
-  static const path = '/followers/:pubkey';
-
-  /// Page builder for GoRouter - routes to MyFollowersScreen or OthersFollowersScreen.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    final pubkey = state.pathParameters['pubkey'];
-    final displayName = state.extra as String?;
-
-    if (pubkey == null || pubkey.isEmpty) {
-      return StandardPage(
-        key: state.pageKey,
-        child: Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: Text('Invalid user ID')),
-        ),
-      );
-    }
-
-    // Determine if this is the current user
-    return StandardPage(
-      key: state.pageKey,
-      child: _FollowersScreenRouter(pubkey: pubkey, displayName: displayName),
-    );
-  }
-
   const MyFollowersScreen({super.key, required this.displayName});
 
   final String? displayName;
@@ -208,29 +176,5 @@ class _FollowersErrorBody extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Router widget that decides between MyFollowersScreen and OthersFollowersScreen
-/// based on whether the pubkey matches the current user.
-class _FollowersScreenRouter extends ConsumerWidget {
-  const _FollowersScreenRouter({
-    required this.pubkey,
-    required this.displayName,
-  });
-
-  final String pubkey;
-  final String? displayName;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
-
-    if (isCurrentUser) {
-      return MyFollowersScreen(displayName: displayName);
-    } else {
-      return OthersFollowersScreen(pubkey: pubkey, displayName: displayName);
-    }
   }
 }
