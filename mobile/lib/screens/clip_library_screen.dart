@@ -11,22 +11,10 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:video_player/video_player.dart';
 
 class ClipLibraryScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'clips';
-
-  /// Path for this route.
-  static const path = '/clips';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return StandardPage(key: state.pageKey, child: const ClipLibraryScreen());
-  }
-
   const ClipLibraryScreen({
     super.key,
     this.selectionMode = false,
@@ -141,25 +129,6 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       backgroundColor: VineTheme.vineGreen,
       foregroundColor: VineTheme.whiteText,
       title: Text(_buildAppBarTitle()),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-        onPressed: () {
-          if (_selectedClipIds.isNotEmpty && !widget.selectionMode) {
-            // Clear selection first
-            _clearSelection();
-          } else if (widget.selectionMode) {
-            Navigator.of(context).pop();
-          } else {
-            final authService = ref.read(authServiceProvider);
-            final npub = authService.currentNpub;
-            if (npub != null) {
-              context.goProfileGrid(npub);
-            } else {
-              context.goHome();
-            }
-          }
-        },
-      ),
       actions: [
         // Clear selection button when clips are selected
         if (_selectedClipIds.isNotEmpty && !widget.selectionMode)

@@ -1,41 +1,15 @@
-// ABOUTME: Reactive provider that parses router location into structured context
+// ABOUTME: Derived provider that parses router location into structured context
 // ABOUTME: Single source of truth for "what page are we on?"
 
-import 'dart:async';
 import 'package:riverpod/riverpod.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router_location_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
-/// Provider that exposes the raw router location stream.
+/// StreamProvider that derives structured page context from router location
 ///
-/// Exposed separately for test overrides - tests can inject mock location streams.
-final routerLocationStreamProvider = Provider<Stream<String>>((ref) {
-  final router = ref.read(goRouterProvider);
-  final ctrl = StreamController<String>(sync: true);
-
-  void emit() {
-    final location = router.routeInformationProvider.value.uri.toString();
-    if (!ctrl.isClosed) ctrl.add(location);
-  }
-
-  // Emit initial location immediately
-  emit();
-
-  // Listen for location changes
-  final delegate = router.routerDelegate;
-  delegate.addListener(emit);
-
-  ref.onDispose(() {
-    delegate.removeListener(emit);
-    ctrl.close();
-  });
-
-  return ctrl.stream;
-});
-
-/// StreamProvider that emits structured page context on route changes.
-///
-/// Derives RouteContext from router location stream.
+/// Uses async* to emit immediately when the raw location stream has a value.
+/// This ensures tests using Stream.value() get synchronous first emission.
 ///
 /// Example:
 /// ```dart
@@ -51,9 +25,22 @@ final routerLocationStreamProvider = Provider<Stream<String>>((ref) {
 /// );
 /// ```
 final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
+  // Get the raw location stream (overridable in tests)
   final locations = ref.watch(routerLocationStreamProvider);
 
+  // Emit a context immediately if the stream is a single-value Stream.value(...)
+  // (In tests we often use Stream.value('/profile/npub...'))
   await for (final loc in locations) {
-    yield parseRoute(loc);
+    print('🟪 PAGE_CONTEXT DEBUG: Raw location = $loc');
+    final ctx = parseRoute(loc);
+    print(
+      '🟪 PAGE_CONTEXT DEBUG: Parsed context = type=${ctx.type}, npub=${ctx.npub}, index=${ctx.videoIndex}',
+    );
+    Log.info(
+      'CTX derive: type=${ctx.type} npub=${ctx.npub} index=${ctx.videoIndex}',
+      name: 'Route',
+      category: LogCategory.system,
+    );
+    yield ctx;
   }
 });

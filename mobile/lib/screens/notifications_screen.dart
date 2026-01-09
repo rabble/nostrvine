@@ -12,15 +12,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'notifications';
-
-  /// Path for this route with index parameter.
-  static const path = '/notifications/:index';
-
-  /// Build path for a specific index.
-  static String pathForIndex(int index) => '/notifications/$index';
-
   const NotificationsScreen({super.key});
 
   @override

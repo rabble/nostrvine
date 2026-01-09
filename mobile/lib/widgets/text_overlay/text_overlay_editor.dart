@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/text_overlay.dart';
 import 'package:uuid/uuid.dart';
@@ -182,7 +181,7 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
                             : null,
                         onTap: () {
                           setState(() => _fontFamily = font);
-                          context.pop();
+                          Navigator.pop(context);
                         },
                       );
                     },

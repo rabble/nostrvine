@@ -4,13 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/route_transitions.dart';
-import 'package:openvine/screens/following/others_following_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -18,33 +14,6 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 ///
 /// Creates [MyFollowingBloc] and provides it to the view.
 class MyFollowingScreen extends ConsumerWidget {
-  /// Route name for following screen.
-  static const routeName = 'following';
-
-  /// Path for this route with pubkey.
-  static const path = '/following/:pubkey';
-
-  /// Page builder for GoRouter - routes to MyFollowingScreen or OthersFollowingScreen.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    final pubkey = state.pathParameters['pubkey'];
-    final displayName = state.extra as String?;
-
-    if (pubkey == null || pubkey.isEmpty) {
-      return StandardPage(
-        key: state.pageKey,
-        child: Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: Text('Invalid user ID')),
-        ),
-      );
-    }
-
-    return StandardPage(
-      key: state.pageKey,
-      child: _FollowingScreenRouter(pubkey: pubkey, displayName: displayName),
-    );
-  }
-
   const MyFollowingScreen({super.key, required this.displayName});
 
   final String? displayName;
@@ -196,29 +165,5 @@ class _FollowingErrorBody extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Router widget that decides between MyFollowingScreen and OthersFollowingScreen
-/// based on whether the pubkey matches the current user.
-class _FollowingScreenRouter extends ConsumerWidget {
-  const _FollowingScreenRouter({
-    required this.pubkey,
-    required this.displayName,
-  });
-
-  final String pubkey;
-  final String? displayName;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
-
-    if (isCurrentUser) {
-      return MyFollowingScreen(displayName: displayName);
-    } else {
-      return OthersFollowingScreen(pubkey: pubkey, displayName: displayName);
-    }
   }
 }

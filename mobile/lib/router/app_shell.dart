@@ -1,5 +1,5 @@
 // ABOUTME: AppShell widget providing bottom navigation and dynamic header
-// ABOUTME: Uses StatefulNavigationShell for automatic tab state preservation
+// ABOUTME: Header title uses Bricolage Grotesque font, includes camera button
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,11 +20,14 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'page_context_provider.dart';
 import 'route_utils.dart';
 import 'nav_extensions.dart';
+import 'last_tab_position_provider.dart';
+import 'tab_history_provider.dart';
 
 class AppShell extends ConsumerWidget {
-  const AppShell({super.key, required this.navigationShell});
+  const AppShell({super.key, required this.child, required this.currentIndex});
 
-  final StatefulNavigationShell navigationShell;
+  final Widget child;
+  final int currentIndex;
 
   String _titleFor(WidgetRef ref) {
     final ctx = ref.watch(pageContextProvider).asData?.value;
@@ -60,8 +63,47 @@ class AppShell extends ConsumerWidget {
     }
   }
 
-  /// Handles tab tap - uses StatefulNavigationShell.goBranch for state preservation
+  /// Maps tab index to RouteType
+  RouteType _routeTypeForTab(int index) {
+    switch (index) {
+      case 0:
+        return RouteType.home;
+      case 1:
+        return RouteType.explore;
+      case 2:
+        return RouteType.notifications;
+      case 3:
+        return RouteType.profile;
+      default:
+        return RouteType.home;
+    }
+  }
+
+  /// Maps RouteType to tab index
+  /// Returns null if not a main tab route
+  int? _tabIndexFromRouteType(RouteType type) {
+    switch (type) {
+      case RouteType.home:
+        return 0;
+      case RouteType.explore:
+      case RouteType.hashtag: // Hashtag is part of explore tab
+        return 1;
+      case RouteType.notifications:
+        return 2;
+      case RouteType.profile:
+        return 3;
+      default:
+        return null; // Not a main tab route
+    }
+  }
+
+  /// Handles tab tap - navigates to last known position in that tab
   void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
+    final routeType = _routeTypeForTab(tabIndex);
+    final lastIndex = ref
+        .read(lastTabPositionProvider.notifier)
+        .getPosition(routeType);
+
     // Log user interaction
     Log.info(
       '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(tabIndex)})',
@@ -71,17 +113,36 @@ class AppShell extends ConsumerWidget {
 
     // Pop any pushed routes (like CuratedListFeedScreen, UserListPeopleScreen)
     // that were pushed via Navigator.push() on top of the shell
+    // Only pop if there are actually pushed routes to avoid interfering with GoRouter
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
+      // There are pushed routes - pop them before navigating
+      // This ensures we return to the shell before GoRouter navigation
       navigator.popUntil((route) => route.isFirst);
     }
 
-    // Use goBranch for automatic state preservation per tab
-    // initialLocation: true navigates to the branch's initial route if already on this branch
-    navigationShell.goBranch(
-      tabIndex,
-      initialLocation: tabIndex == navigationShell.currentIndex,
-    );
+    // Navigate to last position in that tab
+    // GoRouter handles navigation state, but we need to clear pushed routes first
+    switch (tabIndex) {
+      case 0:
+        context.goHome(lastIndex ?? 0); // Home always has an index
+        break;
+      case 1:
+        // Always reset to grid mode (null) when tapping Explore tab
+        // This prevents the "No videos available" bug when returning from another tab
+        context.goExplore(null);
+        break;
+      case 2:
+        context.goNotifications(
+          lastIndex ?? 0,
+        ); // Notifications always has an index
+        break;
+      case 3:
+        // Always navigate to current user's profile when tapping Profile tab
+        // Navigation system will resolve 'me' to actual npub
+        context.goProfileGrid('me');
+        break;
+    }
   }
 
   String _tabName(int index) {
@@ -145,6 +206,37 @@ class AppShell extends ConsumerWidget {
         context.goExplore(null);
       },
       child: titleWidget,
+    );
+  }
+
+  /// Builds a tab button for the bottom navigation bar
+  Widget _buildTabButton(
+    BuildContext context,
+    WidgetRef ref,
+    String iconPath,
+    int tabIndex,
+    int currentIndex,
+    String semanticIdentifier,
+  ) {
+    final isSelected = currentIndex == tabIndex;
+    final iconColor = isSelected ? Colors.white : VineTheme.tabIconInactive;
+
+    return Semantics(
+      identifier: semanticIdentifier,
+      child: GestureDetector(
+        onTap: () => _handleTabTap(context, ref, tabIndex),
+        child: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(8),
+          child: SvgPicture.asset(
+            iconPath,
+            width: 32,
+            height: 32,
+            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          ),
+        ),
+      ),
     );
   }
 
@@ -260,7 +352,7 @@ class AppShell extends ConsumerWidget {
                     case RouteType.hashtag:
                     case RouteType.search:
                       // Go back to explore
-                      context.goExplore();
+                      context.go('/explore');
                       return;
 
                     default:
@@ -302,14 +394,49 @@ class AppShell extends ConsumerWidget {
                     }
                   }
 
-                  // Check if we're on a non-home tab - go to home first
-                  final currentTab = tabIndexForRouteType(ctx.type);
-                  if (currentTab != null && currentTab != 0) {
-                    context.goHome();
+                  // Check tab history for navigation
+                  final tabHistory = ref.read(tabHistoryProvider.notifier);
+                  final previousTab = tabHistory.getPreviousTab();
+
+                  // If there's a previous tab in history, navigate to it
+                  if (previousTab != null) {
+                    // Navigate to previous tab
+                    final previousRouteType = _routeTypeForTab(previousTab);
+                    final lastIndex = ref
+                        .read(lastTabPositionProvider.notifier)
+                        .getPosition(previousRouteType);
+
+                    // Remove current tab from history before navigating
+                    tabHistory.navigateBack();
+
+                    // Navigate to previous tab
+                    switch (previousTab) {
+                      case 0:
+                        context.goHome(lastIndex ?? 0);
+                        break;
+                      case 1:
+                        context.goExplore(lastIndex);
+                        break;
+                      case 2:
+                        context.goNotifications(lastIndex ?? 0);
+                        break;
+                      case 3:
+                        context.goProfileGrid('me');
+                        break;
+                    }
                     return;
                   }
 
-                  // Already at home base state - let system handle exit
+                  // No previous tab - check if we're on a non-home tab
+                  // If so, go to home first before exiting
+                  final currentTab = _tabIndexFromRouteType(ctx.type);
+                  if (currentTab != null && currentTab != 0) {
+                    // Go to home first
+                    context.go('/home/0');
+                    return;
+                  }
+
+                  // Already at home with no history - let system handle exit
                 },
               )
             : Builder(
@@ -426,21 +553,52 @@ class AppShell extends ConsumerWidget {
               ],
       ),
       drawer: const VineDrawer(),
-      body: navigationShell,
-      // Bottom nav visible for all shell routes
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => _handleTabTap(context, ref, index),
-        items: [
-          BottomNavigationBarItem(
-            icon: Semantics(
-              identifier: 'home_tab',
-              child: const Icon(Icons.home),
-            ),
-            label: 'Home',
+      body: child,
+      // Bottom nav visible for all shell routes (search, tabs, etc.)
+      // For search (currentIndex=-1), no tab is highlighted
+      bottomNavigationBar: Container(
+        color: VineTheme.navGreen,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildTabButton(
+                context,
+                ref,
+                'assets/icon/house.svg',
+                0,
+                currentIndex,
+                'home_tab',
+              ),
+              _buildTabButton(
+                context,
+                ref,
+                'assets/icon/compass.svg',
+                1,
+                currentIndex,
+                'explore_tab',
+              ),
+              _buildTabButton(
+                context,
+                ref,
+                'assets/icon/bell.svg',
+                2,
+                currentIndex,
+                'notifications_tab',
+              ),
+              _buildTabButton(
+                context,
+                ref,
+                'assets/icon/userCircle.svg',
+                3,
+                currentIndex,
+                'profile_tab',
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
