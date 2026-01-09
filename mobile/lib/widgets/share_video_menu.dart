@@ -1281,8 +1281,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           if (widget.onDismiss != null) {
             widget.onDismiss!();
           } else if (mounted) {
-            // Fallback: close the bottom sheet via go_router
-            context.pop();
+            // Fallback: close the bottom sheet via Navigator
+            Navigator.of(context).pop();
           }
 
           // Navigate back to previous screen (profile or feed)

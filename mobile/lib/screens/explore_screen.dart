@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -32,19 +33,6 @@ import 'package:openvine/utils/video_controller_cleanup.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'explore';
-
-  /// Path for this route (grid mode).
-  static const path = '/explore';
-
-  /// Path for this route with index (feed mode).
-  static const pathWithIndex = '/explore/:index';
-
-  /// Build path for grid mode or specific index.
-  static String pathForIndex(int? index) =>
-      index == null ? path : '/explore/$index';
-
   const ExploreScreen({super.key});
 
   @override
@@ -188,7 +176,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       // Navigate back to grid mode (no videoIndex) - URL will drive UI state
       // Note: This navigation resets to the grid view, preserving the current tab
       // because TabController's index persists across route changes
-      context.goExplore();
+      context.go('/explore');
 
       Log.info(
         '🎯 ExploreScreenPure: Reset to default state',
@@ -225,7 +213,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     ref.read(exploreTabVideosProvider.notifier).state = null;
 
     // Navigate back to grid mode (no videoIndex) - URL will drive UI state
-    context.goExplore();
+    context.go('/explore');
 
     Log.info(
       '🎯 ExploreScreenPure: Exited feed mode via URL navigation',

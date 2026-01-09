@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/router_location_provider.dart';
 
 void main() {
   group('Explore Active Video Provider', () {

@@ -9,6 +9,7 @@ import 'package:mockito/annotations.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/router_location_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 
 @GenerateNiceMocks([MockSpec<GoRouter>()])
