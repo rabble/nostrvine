@@ -258,9 +258,23 @@ class ProfileLikedVideosBloc
       // NIP-71 kinds: 34235 (horizontal), 34236 (vertical/short)
       final filter = Filter(ids: eventIds, kinds: [34235, 34236]);
 
-      final eventStream = _nostrClient.subscribe([
-        filter,
-      ], subscriptionId: subscriptionId);
+      final eventStream = _nostrClient.subscribe(
+        [filter],
+        subscriptionId: subscriptionId,
+        onEose: () {
+          // Complete when all relays finish sending stored events
+          if (!completer.isCompleted) {
+            Log.info(
+              'ProfileLikedVideosBloc: EOSE received, completing with '
+              '${videos.length} videos',
+              name: 'ProfileLikedVideosBloc',
+              category: LogCategory.video,
+            );
+            cleanup();
+            completer.complete(videos);
+          }
+        },
+      );
 
       eventStream.listen(
         (event) {
