@@ -899,14 +899,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       final usernameState = ref.read(usernameProvider);
       if (usernameState.canRegister) {
         try {
-          final relays = nostrService.connectedRelays.toList();
-
           final registrationResult = await ref
               .read(usernameProvider.notifier)
-              .registerUsername(
-                pubkey: authService.currentPublicKeyHex!,
-                relays: relays,
-              );
+              .registerUsername(pubkey: authService.currentPublicKeyHex!);
 
           if (registrationResult.isSuccess) {
             final nip05Identifier = '${usernameState.username}@divine.video';

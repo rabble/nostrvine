@@ -127,7 +127,6 @@ class UsernameNotifier extends _$UsernameNotifier {
   /// Updates state based on the result (e.g., reserved, taken).
   Future<UsernameRegistrationResult> registerUsername({
     required String pubkey,
-    required List<String> relays,
   }) async {
     if (!state.canRegister) {
       Log.warning(
@@ -152,7 +151,6 @@ class UsernameNotifier extends _$UsernameNotifier {
     final result = await repository.register(
       username: state.username,
       pubkey: pubkey,
-      relays: relays,
     );
 
     // Update state based on result

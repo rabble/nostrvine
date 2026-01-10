@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:nostr_client/nostr_client.dart';
 
 /// Status of a username registration attempt
 enum UsernameRegistrationStatus {
@@ -29,11 +30,13 @@ class UsernameRegistrationResult {
 
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class Nip05Service {
-  Nip05Service({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  Nip05Service({http.Client? httpClient, required NostrClient nostrClient})
+    : _httpClient = httpClient ?? http.Client(),
+      _nostrClient = nostrClient;
   static const String _baseUrl =
       'https://nostrvine-backend.protestnet.workers.dev';
   final http.Client _httpClient;
+  final NostrClient _nostrClient;
 
   String? _currentUsername;
   bool _isVerified = false;
@@ -87,8 +90,8 @@ class Nip05Service {
   Future<UsernameRegistrationResult> registerUsername(
     String username,
     String pubkey,
-    List<String> relays,
   ) async {
+    final relays = _nostrClient.connectedRelays;
     if (!_isValidUsername(username)) {
       _error = 'Invalid username format';
 

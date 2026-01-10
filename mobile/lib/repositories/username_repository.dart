@@ -39,8 +39,7 @@ class UsernameRepository {
   Future<UsernameRegistrationResult> register({
     required String username,
     required String pubkey,
-    required List<String> relays,
   }) {
-    return _nip05Service.registerUsername(username, pubkey, relays);
+    return _nip05Service.registerUsername(username, pubkey);
   }
 }
