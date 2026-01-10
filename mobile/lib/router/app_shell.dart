@@ -22,6 +22,7 @@ import 'route_utils.dart';
 import 'nav_extensions.dart';
 import 'last_tab_position_provider.dart';
 import 'tab_history_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.currentIndex});
@@ -35,6 +36,20 @@ class AppShell extends ConsumerWidget {
       case RouteType.home:
         return 'Home';
       case RouteType.explore:
+        // When in feed mode (watching a video), show the tab name
+        if (ctx?.videoIndex != null) {
+          final tabIndex = ref.watch(exploreTabIndexProvider);
+          switch (tabIndex) {
+            case 0:
+              return 'New Videos';
+            case 1:
+              return 'Popular Videos';
+            case 2:
+              return 'Lists';
+            default:
+              return 'Explore';
+          }
+        }
         return 'Explore';
       case RouteType.notifications:
         return 'Notifications';

@@ -240,10 +240,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   Widget build(BuildContext context) {
     ref.watch(exploreTabVideoUpdateListenerProvider);
 
-    // Always show Column with TabBar + content
+    // Derive feed mode from URL
+    final pageContext = ref.watch(pageContextProvider);
+    final isInFeedMode =
+        pageContext.whenOrNull(
+          data: (ctx) =>
+              ctx.type == RouteType.explore && ctx.videoIndex != null,
+        ) ??
+        false;
+
+    // Hide tabs when in feed mode (watching a video)
+    if (isInFeedMode) {
+      return _buildContent();
+    }
+
+    // Show Column with TabBar + content in grid mode
     return Column(
       children: [
-        // Tabs always visible
+        // Tabs only visible in grid mode
         Container(
           color: VineTheme.navGreen,
           child: TabBar(
