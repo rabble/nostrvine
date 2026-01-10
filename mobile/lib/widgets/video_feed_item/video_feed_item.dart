@@ -717,14 +717,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         ? value.size.height
                         : 1.0;
 
-                    // In fullscreen mode:
-                    //   - Portrait videos (9:16): use BoxFit.cover to fill screen
-                    //   - Square/landscape videos (legacy Vine): use BoxFit.contain
-                    //     to stay centered without cropping
-                    // In normal mode, use BoxFit.contain to preserve aspect ratio
+                    // Portrait videos (9:16): use BoxFit.cover to fill screen
+                    // Square/landscape videos (legacy Vine): use BoxFit.contain
+                    //   to stay centered without cropping
                     final isPortraitVideo = videoHeight > videoWidth;
-                    final useFullscreenCover =
-                        widget.isFullscreen && isPortraitVideo;
+                    final useCoverFit = isPortraitVideo;
 
                     // UNIFIED structure - use Offstage instead of conditional
                     // widgets to maintain stable widget tree during scroll
@@ -738,12 +735,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             Offstage(
                               offstage: !value.isInitialized,
                               child: FittedBox(
-                                fit: useFullscreenCover
+                                fit: useCoverFit
                                     ? BoxFit.cover
                                     : BoxFit.contain,
-                                alignment: widget.isFullscreen
-                                    ? Alignment.center
-                                    : Alignment.topCenter,
+                                alignment: Alignment.center,
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
