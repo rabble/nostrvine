@@ -683,7 +683,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          Navigator.of(context).push(
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) =>
                                   UserListPeopleScreen(userList: userList),

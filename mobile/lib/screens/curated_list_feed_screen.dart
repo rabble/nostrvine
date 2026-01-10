@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -54,22 +55,42 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       backgroundColor: VineTheme.backgroundColor,
       appBar: _activeVideoIndex == null
           ? AppBar(
-              backgroundColor: VineTheme.cardBackground,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 72,
+              leadingWidth: 80,
+              centerTitle: false,
+              titleSpacing: 0,
+              backgroundColor: VineTheme.navGreen,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/CaretLeft.svg',
+                    width: 32,
+                    height: 32,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
                 onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Back',
               ),
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    widget.listName,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(widget.listName, style: VineTheme.titleFont()),
                   if (widget.authorPubkey != null) ...[
                     const SizedBox(height: 2),
                     GestureDetector(
@@ -81,15 +102,15 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                           Text(
                             'by ',
                             style: TextStyle(
-                              color: VineTheme.secondaryText,
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
                           Flexible(
                             child: UserName.fromPubKey(
                               widget.authorPubkey!,
-                              style: TextStyle(
-                                color: VineTheme.vineGreen,
+                              style: const TextStyle(
+                                color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -103,7 +124,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   ],
                 ],
               ),
-              actions: [_buildSubscribeButton()],
+              actions: [_buildSubscribeButton(), const SizedBox(width: 16)],
             )
           : null,
       body: videosAsync.when(
