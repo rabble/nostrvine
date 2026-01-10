@@ -228,7 +228,7 @@ class _FullscreenVideoFeedScreenState
               height: 48,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: VineTheme.iconButtonBackground.withValues(alpha: 0.25),
+                color: Colors.black.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: SvgPicture.asset(
@@ -270,7 +270,7 @@ class _FullscreenVideoFeedScreenState
             height: 48,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground.withValues(alpha: 0.25),
+              color: Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
             ),
             child: SvgPicture.asset(
