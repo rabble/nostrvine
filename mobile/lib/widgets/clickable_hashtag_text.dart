@@ -36,12 +36,7 @@ class ClickableHashtagText extends StatelessWidget {
 
     // If no hashtags, return simple text
     if (hashtags.isEmpty) {
-      return Text(
-        text,
-        style: style,
-        maxLines: maxLines,
-        overflow: overflow,
-      );
+      return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
     // Build text spans with clickable hashtags

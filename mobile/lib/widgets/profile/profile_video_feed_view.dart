@@ -193,7 +193,8 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
               .read(fetchUserProfileProvider(widget.userIdHex))
               .value
               ?.betterDisplayName('Profile'),
-          hideFollowButtonIfFollowing: true, // Hide if already following this profile's user
+          hideFollowButtonIfFollowing:
+              true, // Hide if already following this profile's user
         );
       },
     );
