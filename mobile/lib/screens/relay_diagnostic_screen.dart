@@ -306,7 +306,26 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         title: Text('Relay Diagnostics', style: VineTheme.titleFont()),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: VineTheme.iconButtonBackground,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SvgPicture.asset(
+                'assets/icon/ArrowClockwise.svg',
+                width: 32,
+                height: 32,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
             onPressed: _refreshDiagnostics,
             tooltip: 'Refresh diagnostics',
           ),
