@@ -15,11 +15,9 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
@@ -34,7 +32,6 @@ import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/dynamic_zoom_selector.dart';
 import 'package:openvine/widgets/macos_camera_preview.dart'
     show CameraPreviewPlaceholder;
-import 'package:models/models.dart' as vine show AspectRatio;
 
 /// Pure universal camera screen using revolutionary single-controller Riverpod architecture
 ///
@@ -49,7 +46,7 @@ class UniversalCameraScreenPure extends ConsumerStatefulWidget {
 }
 
 class _UniversalCameraScreenPureState
-    extends ConsumerState<UniversalCameraScreenPure> {
+    extends ConsumerState<UniversalCameraScreenPure> with WidgetsBindingObserver {
   String? _errorMessage;
   bool _isProcessing = false;
   bool _isInitializing = false;
