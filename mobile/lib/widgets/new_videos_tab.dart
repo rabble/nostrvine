@@ -104,10 +104,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
         _feedTracker?.trackEmptyFeed('new_vines');
       }
 
-      return _NewVideosContent(
-        videos: videos,
-        onVideoTap: widget.onVideoTap,
-      );
+      return _NewVideosContent(videos: videos, onVideoTap: widget.onVideoTap);
     }
 
     if (popularNowAsync.hasError) {
@@ -171,10 +168,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 
 /// Content widget displaying the video grid
 class _NewVideosContent extends ConsumerWidget {
-  const _NewVideosContent({
-    required this.videos,
-    required this.onVideoTap,
-  });
+  const _NewVideosContent({required this.videos, required this.onVideoTap});
 
   final List<VideoEvent> videos;
   final void Function(List<VideoEvent> videos, int index) onVideoTap;
