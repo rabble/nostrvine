@@ -8,7 +8,9 @@ import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Maps [CommentsError] to user-facing strings.
 /// TODO(l10n): Replace with context.l10n when localization is added.
@@ -33,30 +35,37 @@ class CommentsScreen extends ConsumerWidget {
   final ScrollController sheetScrollController;
 
   /// Shows comments as a modal bottom sheet overlay
-  static Future<void> show(BuildContext context, VideoEvent video) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) => DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: CommentsScreen(
-              videoEvent: video,
-              sheetScrollController: scrollController,
+  static Future<void> show(BuildContext context, VideoEvent video) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+    overlayNotifier.setModalOpen(true);
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Colors.black87,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
           ),
+          child: CommentsScreen(
+            videoEvent: video,
+            sheetScrollController: scrollController,
+          ),
         ),
-      );
+      ),
+    ).whenComplete(() {
+      overlayNotifier.setModalOpen(false);
+    });
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,9 +80,13 @@ class CommentsScreen extends ConsumerWidget {
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
       )..add(const CommentsLoadRequested()),
-      child: _CommentsScreenBody(
-        videoEvent: videoEvent,
-        sheetScrollController: sheetScrollController,
+      child: VineBottomSheet(
+        title: 'Comments',
+        body: _CommentsScreenBody(
+          videoEvent: videoEvent,
+          sheetScrollController: sheetScrollController,
+        ),
+        bottomInput: const _MainCommentInput(),
       ),
     );
   }
@@ -102,19 +115,11 @@ class _CommentsScreenBody extends StatelessWidget {
           context.read<CommentsBloc>().add(const CommentErrorCleared());
         }
       },
-      child: Column(
-        children: [
-          const CommentsDragHandle(),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
-          const Divider(color: Colors.white24, height: 1),
-          Expanded(
-            child: CommentsList(
-              isOriginalVine: videoEvent.isOriginalVine,
-              scrollController: sheetScrollController,
-            ),
-          ),
-          const _MainCommentInput(),
-        ],
+      child: SizedBox(
+        child: CommentsList(
+          isOriginalVine: videoEvent.isOriginalVine,
+          scrollController: sheetScrollController,
+        ),
       ),
     );
   }

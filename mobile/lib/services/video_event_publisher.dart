@@ -7,15 +7,20 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/blurhash_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -29,16 +34,25 @@ class VideoEventPublisher {
     AuthService? authService,
     PersonalEventCacheService? personalEventCache,
     VideoEventService? videoEventService,
+    BlossomUploadService? blossomUploadService,
+    UserProfileService? userProfileService,
+    AudioExtractionService? audioExtractionService,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
        _personalEventCache = personalEventCache,
-       _videoEventService = videoEventService;
+       _videoEventService = videoEventService,
+       _blossomUploadService = blossomUploadService,
+       _userProfileService = userProfileService,
+       _audioExtractionService = audioExtractionService;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
   final PersonalEventCacheService? _personalEventCache;
   final VideoEventService? _videoEventService;
+  final BlossomUploadService? _blossomUploadService;
+  final UserProfileService? _userProfileService;
+  final AudioExtractionService? _audioExtractionService;
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -185,48 +199,24 @@ class VideoEventPublisher {
         );
       }
 
-      // Use the existing Nostr service to broadcast
-      final broadcastResult = await _nostrService.broadcast(event);
+      // Use the existing Nostr service to publish
+      final sentEvent = await _nostrService.publishEvent(event);
 
-      Log.info(
-        '✅ Event broadcast completed with result: successful=${broadcastResult.successCount}, failed=${broadcastResult.failedRelays.length}',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
-
-      // Check if broadcast was successful
-      if (broadcastResult.successCount > 0) {
+      // Check if publish was successful
+      if (sentEvent != null) {
         Log.info(
-          '✅ Event successfully published to ${broadcastResult.successCount} relay(s)',
+          '✅ Event successfully published to relays: ${event.id}',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-
-        // Log any relay-specific errors
-        if (broadcastResult.errors.isNotEmpty) {
-          for (final entry in broadcastResult.errors.entries) {
-            Log.warning(
-              'Relay ${entry.key} error: ${entry.value}',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-        }
 
         return true;
       } else {
         Log.error(
-          '❌ Event broadcast failed to all relays',
+          '❌ Event publish failed to all relays',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        for (final entry in broadcastResult.errors.entries) {
-          Log.error(
-            'Relay ${entry.key} error: ${entry.value}',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
         return false;
       }
     } catch (e) {
@@ -253,6 +243,7 @@ class VideoEventPublisher {
     String? description,
     List<String>? hashtags,
     int? expirationTimestamp,
+    bool allowAudioReuse = false,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -264,6 +255,7 @@ class VideoEventPublisher {
     return publishDirectUpload(
       updatedUpload,
       expirationTimestamp: expirationTimestamp,
+      allowAudioReuse: allowAudioReuse,
     );
   }
 
@@ -271,6 +263,7 @@ class VideoEventPublisher {
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
+    bool allowAudioReuse = false,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -527,6 +520,60 @@ class VideoEventPublisher {
         tags.add(['expiration', expirationTimestamp.toString()]);
       }
 
+      // Handle audio reuse: extract audio, upload, publish Kind 1063 event
+      // Then add e tag linking video to audio event
+      String? audioEventId;
+      if (allowAudioReuse && upload.localVideoPath.isNotEmpty) {
+        tags.add(['allow_audio_reuse', 'true']);
+        Log.info(
+          'Audio reuse enabled - starting audio publishing flow',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+
+        // Get the user's pubkey for the audio event
+        final userPubkey = _authService?.currentPublicKeyHex;
+        if (userPubkey != null) {
+          // Get a relay hint from connected relays
+          String relayHint = 'wss://relay.divine.video';
+          if (_nostrService.connectedRelays.isNotEmpty) {
+            relayHint = _nostrService.connectedRelays.first;
+          }
+
+          // Publish audio event first (we need its ID for the video event)
+          audioEventId = await _publishAudioEvent(
+            videoPath: upload.localVideoPath,
+            videoDTag: dTag,
+            pubkey: userPubkey,
+            relayHint: relayHint,
+            videoTitle: upload.title,
+          );
+
+          if (audioEventId != null) {
+            // Add e tag referencing the audio event
+            // Format: ["e", <audio-event-id>, <relay-hint>, "audio"]
+            tags.add(['e', audioEventId, relayHint, 'audio']);
+            Log.info(
+              'Added audio reference e tag: $audioEventId',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          } else {
+            Log.warning(
+              'Audio publishing failed - continuing with video-only publish',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+        } else {
+          Log.warning(
+            'No user pubkey available - skipping audio publishing',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
+
       // Add ProofMode tags if native proof exists
       if (upload.hasProofMode) {
         try {
@@ -729,6 +776,17 @@ class VideoEventPublisher {
           }
         }
 
+        // Invalidate profile stats cache so video count updates immediately
+        final currentPubkey = _nostrService.publicKey;
+        if (currentPubkey.isNotEmpty) {
+          ProfileStatsCacheService().clearStats(currentPubkey);
+          Log.debug(
+            'Invalidated profile stats cache for new video',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+
         Log.info(
           'Successfully published direct upload: ${event.id}',
           name: 'VideoEventPublisher',
@@ -765,9 +823,282 @@ class VideoEventPublisher {
     }
   }
 
+  /// Extracts audio from video, uploads to Blossom, and publishes Kind 1063 event
+  ///
+  /// Returns the event ID of the published audio event, or null if any step fails.
+  /// Failures in audio publishing are handled gracefully - video still publishes.
+  ///
+  /// The audio title uses the video title if provided, falling back to
+  /// "Original sound - @username" format.
+  Future<String?> _publishAudioEvent({
+    required String videoPath,
+    required String videoDTag,
+    required String pubkey,
+    required String relayHint,
+    String? videoTitle,
+  }) async {
+    Log.info(
+      'Starting audio extraction and publishing flow',
+      name: 'VideoEventPublisher',
+      category: LogCategory.video,
+    );
+
+    // Check required services
+    if (_blossomUploadService == null) {
+      Log.warning(
+        'BlossomUploadService not available - skipping audio publishing',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final audioExtractionService =
+        _audioExtractionService ?? AudioExtractionService();
+
+    AudioExtractionResult? extractionResult;
+    try {
+      // Step 1: Extract audio from video
+      Log.info(
+        'Step 1: Extracting audio from video: $videoPath',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      extractionResult = await audioExtractionService.extractAudio(videoPath);
+
+      Log.info(
+        'Audio extraction successful: ${extractionResult.audioFilePath}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      Log.debug(
+        'Audio details: duration=${extractionResult.duration}s, '
+        'size=${extractionResult.fileSize}B, '
+        'mimeType=${extractionResult.mimeType}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Step 2: Upload audio to Blossom
+      Log.info(
+        'Step 2: Uploading audio to Blossom',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      final audioFile = File(extractionResult.audioFilePath);
+      // _blossomUploadService is guaranteed non-null here (checked at method start)
+      final blossomService = _blossomUploadService;
+      final uploadResult = await blossomService.uploadAudio(
+        audioFile: audioFile,
+        mimeType: extractionResult.mimeType,
+      );
+
+      if (!uploadResult.success) {
+        Log.error(
+          'Audio upload failed: ${uploadResult.errorMessage}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+
+      final audioUrl = uploadResult.fallbackUrl ?? uploadResult.url;
+      if (audioUrl == null) {
+        Log.error(
+          'Audio upload succeeded but no URL returned',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+
+      Log.info(
+        'Audio upload successful: $audioUrl',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Step 3: Create audio title from video title or fallback to username
+      String audioTitle;
+      if (videoTitle != null && videoTitle.isNotEmpty) {
+        // Use the video title as the audio title
+        audioTitle = videoTitle;
+        Log.debug(
+          'Audio title set from video title: $audioTitle',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      } else {
+        // Fallback to "Original sound - @username" format
+        audioTitle = 'Original sound';
+        if (_userProfileService != null) {
+          try {
+            final profile = await _userProfileService.fetchProfile(pubkey);
+            if (profile != null) {
+              // Use bestDisplayName which has proper fallback logic:
+              // displayName -> name -> truncated npub
+              final displayName = profile.bestDisplayName;
+              audioTitle = 'Original sound - @$displayName';
+              Log.debug(
+                'Audio title set from profile: $audioTitle',
+                name: 'VideoEventPublisher',
+                category: LogCategory.video,
+              );
+            } else {
+              Log.warning(
+                'Profile not found for pubkey, using default audio title',
+                name: 'VideoEventPublisher',
+                category: LogCategory.video,
+              );
+            }
+          } catch (e) {
+            Log.warning(
+              'Failed to fetch profile for audio title: $e',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+        }
+      }
+
+      Log.debug(
+        'Audio title: $audioTitle',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Step 4: Create Kind 1063 audio event
+      Log.info(
+        'Step 3: Creating Kind 1063 audio event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Build the source video reference: "kind:pubkey:d-tag"
+      final sourceVideoReference =
+          '${NIP71VideoKinds.getPreferredAddressableKind()}:$pubkey:$videoDTag';
+
+      // Create AudioEvent for tag generation
+      final audioEvent = AudioEvent(
+        id: '', // Will be set by signing
+        pubkey: pubkey,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        url: audioUrl,
+        mimeType: extractionResult.mimeType,
+        sha256: extractionResult.sha256Hash,
+        fileSize: extractionResult.fileSize,
+        duration: extractionResult.duration,
+        title: audioTitle,
+        sourceVideoReference: sourceVideoReference,
+        sourceVideoRelay: relayHint,
+      );
+
+      // Generate tags from the AudioEvent model
+      final audioTags = audioEvent.toTags();
+
+      // Create and sign the audio event
+      if (_authService == null || !_authService.isAuthenticated) {
+        Log.error(
+          'Auth service not available or not authenticated',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+
+      final signedAudioEvent = await _authService.createAndSignEvent(
+        kind: audioEventKind, // Kind 1063
+        content: '', // Empty content per NIP-94
+        tags: audioTags,
+      );
+
+      if (signedAudioEvent == null) {
+        Log.error(
+          'Failed to create and sign audio event',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+
+      Log.info(
+        'Created audio event: ${signedAudioEvent.id}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      // Step 5: Publish audio event to relays
+      Log.info(
+        'Step 4: Publishing audio event to relays',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      final publishResult = await _publishEventToNostr(signedAudioEvent);
+
+      if (!publishResult) {
+        Log.error(
+          'Failed to publish audio event to relays',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+
+      Log.info(
+        'Audio event published successfully: ${signedAudioEvent.id}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      return signedAudioEvent.id;
+    } on AudioExtractionException catch (e) {
+      Log.warning(
+        'Audio extraction failed: ${e.message}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Audio publishing failed: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      Log.verbose(
+        'Stack trace: $stackTrace',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    } finally {
+      // Clean up temporary audio file
+      if (extractionResult != null) {
+        try {
+          await audioExtractionService.cleanupAudioFile(
+            extractionResult.audioFilePath,
+          );
+          Log.debug(
+            'Cleaned up temporary audio file',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        } catch (e) {
+          Log.warning(
+            'Failed to cleanup temporary audio file: $e',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
+    }
+  }
+
   void dispose() {
     Log.debug(
-      '📱️ Disposing VideoEventPublisher',
+      'Disposing VideoEventPublisher',
       name: 'VideoEventPublisher',
       category: LogCategory.video,
     );

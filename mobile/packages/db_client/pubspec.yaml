@@ -6,10 +6,13 @@ resolution: workspace
 
 environment:
   sdk: ^3.9.0
+  flutter: ">=3.3.0"
 
 dependencies:
   collection: ^1.19.1
   drift: ^2.29.0
+  flutter:
+    sdk: flutter
   meta: ^1.16.0
   models:
     path: ../models
@@ -21,7 +24,8 @@ dependencies:
 dev_dependencies:
   build_runner: ^2.7.1
   drift_dev: ^2.29.0
+  flutter_test:
+    sdk: flutter
   mocktail: ^1.0.4
   sqlite3: ^2.7.6
-  test: ^1.26.3
   very_good_analysis: ^10.0.0

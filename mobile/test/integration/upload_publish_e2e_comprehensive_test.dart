@@ -314,7 +314,7 @@ void main() {
         // PHASE 4: Verify event was broadcast to relays
         print('📤 PHASE 4: Verifying relay broadcast...');
 
-        verify(mockNostrService.broadcast(any)).called(1);
+        verify(mockNostrService.publishEvent(any)).called(1);
 
         print('✅ Event was broadcast to relays');
 
@@ -564,20 +564,10 @@ void _configureMockAuthService(MockAuthService mock, String testPublicKey) {
   });
 }
 
-/// Configure mock Nostr service to simulate relay broadcasting
+/// Configure mock Nostr service to simulate relay publishing
 void _configureMockNostrService(MockNostrClient mock) {
-  when(mock.broadcast(any)).thenAnswer((invocation) async {
-    return NostrBroadcastResult(
-      event: invocation.positionalArguments[0] as Event,
-      successCount: 3,
-      totalRelays: 3,
-      results: {
-        'relay1.example.com': true,
-        'relay2.example.com': true,
-        'relay3.example.com': true,
-      },
-      errors: {},
-    );
+  when(mock.publishEvent(any)).thenAnswer((invocation) async {
+    return invocation.positionalArguments[0] as Event;
   });
 }
 

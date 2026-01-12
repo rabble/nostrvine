@@ -75,19 +75,8 @@ void main() {
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: Event(
-            '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-            0,
-            [],
-            '',
-          ),
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Act
@@ -135,19 +124,8 @@ void main() {
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: Event(
-            '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-            0,
-            [],
-            '',
-          ),
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Act
@@ -157,12 +135,11 @@ void main() {
         tags: [],
       );
 
-      final publishResult = await mockNostrService.broadcast(event);
+      final publishResult = await mockNostrService.publishEvent(event);
 
-      // Assert
-      expect(publishResult.isSuccessful, isTrue);
-      expect(publishResult.successCount, equals(1));
-      verify(mockNostrService.broadcast(event)).called(1);
+      // Assert - publishEvent returns non-null on success
+      expect(publishResult, isNotNull);
+      verify(mockNostrService.publishEvent(event)).called(1);
     });
 
     test('should handle publish failure gracefully', () async {
@@ -183,12 +160,12 @@ void main() {
       ).thenAnswer((_) async => mockEvent);
 
       when(
-        mockNostrService.broadcast(any),
+        mockNostrService.publishEvent(any),
       ).thenThrow(Exception('Network error'));
 
       // Act & Assert
       expect(
-        () => mockNostrService.broadcast(mockEvent),
+        () => mockNostrService.publishEvent(mockEvent),
         throwsA(isA<Exception>()),
       );
     });
@@ -217,19 +194,8 @@ void main() {
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: Event(
-            '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-            0,
-            [],
-            '',
-          ),
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Mock profile service to update cache
@@ -244,7 +210,7 @@ void main() {
         tags: [],
       );
 
-      await mockNostrService.broadcast(event);
+      await mockNostrService.publishEvent(event);
 
       // Update cache with new profile
       final updatedProfile = UserProfile(
@@ -352,40 +318,29 @@ void main() {
         ),
       ).thenAnswer((_) async => mockEvent2);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: Event(
-            '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-            0,
-            [],
-            '',
-          ),
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
+      when(mockNostrService.publishEvent(any)).thenAnswer(
+        (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Act - simulate concurrent updates
       final future1 = mockAuthService
           .createAndSignEvent(kind: 0, content: '{"name":"Update 1"}', tags: [])
-          .then((event) => mockNostrService.broadcast(event));
+          .then((event) => mockNostrService.publishEvent(event));
 
       final future2 = mockAuthService
           .createAndSignEvent(kind: 0, content: '{"name":"Update 2"}', tags: [])
-          .then((event) => mockNostrService.broadcast(event));
+          .then((event) => mockNostrService.publishEvent(event));
 
       // Wait for both to complete
       final results = await Future.wait([future1, future2]);
 
-      // Assert both should succeed
+      // Assert both should succeed - publishEvent returns non-null on success
       expect(results.length, equals(2));
-      expect(results[0].isSuccessful, isTrue);
-      expect(results[1].isSuccessful, isTrue);
+      expect(results[0], isNotNull);
+      expect(results[1], isNotNull);
 
       // Both events should have been published
-      verify(mockNostrService.broadcast(any)).called(2);
+      verify(mockNostrService.publishEvent(any)).called(2);
     });
 
     test('should retry failed publishes with exponential backoff', () async {
@@ -409,7 +364,7 @@ void main() {
 
       // First two attempts fail, third succeeds
       when(
-        mockNostrService.broadcast(any),
+        mockNostrService.publishEvent(any),
       ).thenThrow(Exception('Network error'));
 
       // This test verifies that retry logic would work if implemented
@@ -421,7 +376,7 @@ void main() {
       for (var i = 0; i < 3; i++) {
         try {
           attempts++;
-          await mockNostrService.broadcast(mockEvent);
+          await mockNostrService.publishEvent(mockEvent);
           break; // Success, exit loop
         } catch (e) {
           if (attempts >= 3) rethrow;

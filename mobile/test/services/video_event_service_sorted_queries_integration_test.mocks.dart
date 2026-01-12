@@ -39,20 +39,14 @@ class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
-    implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
+class _FakeAppDatabase_1 extends _i1.SmartFake implements _i3.AppDatabase {
+  _FakeAppDatabase_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAppDatabase_2 extends _i1.SmartFake implements _i3.AppDatabase {
-  _FakeAppDatabase_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeRelayCapabilities_3 extends _i1.SmartFake
+class _FakeRelayCapabilities_2 extends _i1.SmartFake
     implements _i4.RelayCapabilities {
-  _FakeRelayCapabilities_3(Object parent, Invocation parentInvocation)
+  _FakeRelayCapabilities_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -490,30 +484,6 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as _i7.Stream<_i8.Event>);
 
   @override
-  _i7.Future<_i2.NostrBroadcastResult> broadcast(
-    _i8.Event? event, {
-    List<String>? targetRelays,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i7.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
-          )
-          as _i7.Future<_i2.NostrBroadcastResult>);
-
-  @override
   _i7.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -826,7 +796,7 @@ class MockEventRouter extends _i1.Mock implements _i14.EventRouter {
   _i3.AppDatabase get db =>
       (super.noSuchMethod(
             Invocation.getter(#db),
-            returnValue: _FakeAppDatabase_2(this, Invocation.getter(#db)),
+            returnValue: _FakeAppDatabase_1(this, Invocation.getter(#db)),
           )
           as _i3.AppDatabase);
 
@@ -854,7 +824,7 @@ class MockRelayCapabilityService extends _i1.Mock
       (super.noSuchMethod(
             Invocation.method(#getRelayCapabilities, [relayWsUrl]),
             returnValue: _i7.Future<_i4.RelayCapabilities>.value(
-              _FakeRelayCapabilities_3(
+              _FakeRelayCapabilities_2(
                 this,
                 Invocation.method(#getRelayCapabilities, [relayWsUrl]),
               ),

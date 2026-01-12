@@ -25,6 +25,7 @@ void main() {
       mockSubscriptionManager = MockSubscriptionManager();
 
       when(mockNostrService.isInitialized).thenReturn(true);
+      when(mockNostrService.publicKey).thenReturn('');
 
       service = VideoEventService(
         mockNostrService,
@@ -285,6 +286,7 @@ void main() {
       mockSubscriptionManager = MockSubscriptionManager();
 
       when(mockNostrService.isInitialized).thenReturn(true);
+      when(mockNostrService.publicKey).thenReturn('');
 
       service = VideoEventService(
         mockNostrService,

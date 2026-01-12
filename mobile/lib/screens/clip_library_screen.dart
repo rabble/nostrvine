@@ -129,25 +129,6 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       backgroundColor: VineTheme.vineGreen,
       foregroundColor: VineTheme.whiteText,
       title: Text(_buildAppBarTitle()),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-        onPressed: () {
-          if (_selectedClipIds.isNotEmpty && !widget.selectionMode) {
-            // Clear selection first
-            _clearSelection();
-          } else if (widget.selectionMode) {
-            Navigator.of(context).pop();
-          } else {
-            final authService = ref.read(authServiceProvider);
-            final npub = authService.currentNpub;
-            if (npub != null) {
-              context.go('/profile/$npub');
-            } else {
-              context.go('/home/0');
-            }
-          }
-        },
-      ),
       actions: [
         // Clear selection button when clips are selected
         if (_selectedClipIds.isNotEmpty && !widget.selectionMode)

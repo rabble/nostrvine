@@ -2,14 +2,22 @@
 // ABOUTME: Adds metadata to recorded videos before publishing without VideoManager dependencies
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:openvine/models/text_overlay.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/services/text_overlay_renderer.dart';
+import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/models/pending_upload.dart'
     show UploadStatus, PendingUpload;
@@ -22,11 +30,46 @@ import 'package:openvine/widgets/upload_progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/utils/video_duration_extractor.dart';
 
+/// Parameters for background video processing (text overlays, audio mixing)
+class VideoProcessingParams {
+  const VideoProcessingParams({
+    this.textOverlays = const [],
+    this.selectedSoundId,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+    this.previewSize,
+  });
+
+  final List<TextOverlay> textOverlays;
+  final String? selectedSoundId;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
+  final Size? previewSize;
+
+  bool get needsProcessing =>
+      textOverlays.isNotEmpty ||
+      selectedSoundId != null ||
+      externalAudioUrl != null ||
+      externalAudioAssetPath != null;
+}
+
 /// Pure video metadata screen using revolutionary single-controller Riverpod architecture
 class VideoMetadataScreenPure extends ConsumerStatefulWidget {
-  const VideoMetadataScreenPure({super.key, required this.draftId});
+  const VideoMetadataScreenPure({
+    super.key,
+    required this.draftId,
+    this.processingParams,
+  });
 
   final String draftId;
+
+  /// Optional processing parameters for background video processing
+  /// When provided, the screen will process the video before starting upload
+  final VideoProcessingParams? processingParams;
 
   @override
   ConsumerState<VideoMetadataScreenPure> createState() =>
@@ -43,6 +86,8 @@ class _VideoMetadataScreenPureState
   bool _expirationConfirmed = false; // User must explicitly confirm expiration
   int _expirationHours = 24;
   bool _isPublishing = false;
+  bool?
+  _allowAudioReuse; // Per-video audio sharing override (null = not loaded)
   String _publishingStatus = '';
   double _uploadProgress = 0.0;
   String? _currentUploadId;
@@ -87,9 +132,16 @@ class _VideoMetadataScreenPureState
         },
       );
 
+      // Load the global audio sharing preference as default
+      final audioSharingService = ref.read(
+        audioSharingPreferenceServiceProvider,
+      );
+      final defaultAudioSharing = audioSharingService.isAudioSharingEnabled;
+
       if (mounted) {
         setState(() {
           _currentDraft = draft;
+          _allowAudioReuse = defaultAudioSharing;
         });
 
         // Populate form with draft data
@@ -101,18 +153,215 @@ class _VideoMetadataScreenPureState
         _hashtags.addAll(draft.hashtags);
 
         Log.info(
-          '📝 VideoMetadataScreenPure: Loaded draft ${draft.id}',
+          '📝 VideoMetadataScreenPure: Loaded draft ${draft.id}, audio sharing default: $defaultAudioSharing',
           category: LogCategory.video,
         );
 
         // Initialize video preview
         _initializeVideoPreview();
 
-        // Start background upload immediately (Task 3)
-        _startBackgroundUpload();
+        // Check if we need to process video first (text overlays, audio mixing)
+        if (widget.processingParams?.needsProcessing == true) {
+          Log.info(
+            '📝 Starting background video processing',
+            category: LogCategory.video,
+          );
+          // Start processing in background, then upload when done
+          _processVideoInBackground();
+        } else {
+          // No processing needed - start background upload immediately (Task 3)
+          _startBackgroundUpload();
+        }
       }
     } catch (e) {
       Log.error('📝 Failed to load draft: $e', category: LogCategory.video);
+    }
+  }
+
+  /// Process video in background (text overlays, audio mixing)
+  /// Updates draft with processed video file when complete
+  Future<void> _processVideoInBackground() async {
+    if (_currentDraft == null || widget.processingParams == null) return;
+
+    final params = widget.processingParams!;
+    if (!params.needsProcessing) {
+      _startBackgroundUpload();
+      return;
+    }
+
+    try {
+      String currentVideoPath = _currentDraft!.videoFile.path;
+      final prefs = await SharedPreferences.getInstance();
+      final draftService = DraftStorageService(prefs);
+
+      // Step 1: Apply text overlays if any exist
+      if (params.textOverlays.isNotEmpty) {
+        Log.info(
+          '📝 Burning ${params.textOverlays.length} text overlays into video',
+          category: LogCategory.video,
+        );
+
+        // Get video size from the video controller or use a default
+        Size videoSize;
+        if (_videoController != null && _isVideoInitialized) {
+          videoSize = _videoController!.value.size;
+        } else {
+          // Fallback to 1080p
+          videoSize = const Size(1080, 1920);
+        }
+
+        final renderer = TextOverlayRenderer();
+        final overlayImage = await renderer.renderOverlays(
+          params.textOverlays,
+          videoSize,
+          previewSize: params.previewSize,
+        );
+
+        final exportService = VideoExportService();
+        final newPath = await exportService.applyTextOverlay(
+          currentVideoPath,
+          overlayImage,
+        );
+
+        // Clean up previous temp file if different from original
+        if (currentVideoPath != _currentDraft!.videoFile.path) {
+          try {
+            await File(currentVideoPath).delete();
+          } catch (_) {}
+        }
+
+        currentVideoPath = newPath;
+
+        Log.info(
+          '📝 Text overlays burned into video: $currentVideoPath',
+          category: LogCategory.video,
+        );
+      }
+
+      // Step 2: Apply external audio from lip sync flow
+      if (params.externalAudioUrl != null ||
+          params.externalAudioAssetPath != null) {
+        Log.info(
+          '📝 Mixing external audio from lip sync: ${params.externalAudioEventId}',
+          category: LogCategory.video,
+        );
+
+        final exportService = VideoExportService();
+        final previousPath = currentVideoPath;
+
+        if (params.externalAudioIsBundled &&
+            params.externalAudioAssetPath != null) {
+          // Bundled sound
+          currentVideoPath = await exportService.mixAudio(
+            currentVideoPath,
+            params.externalAudioAssetPath!,
+          );
+        } else if (params.externalAudioUrl != null) {
+          final audioUrl = params.externalAudioUrl!;
+          if (audioUrl.startsWith('http://') ||
+              audioUrl.startsWith('https://')) {
+            // Download remote audio first
+            final tempDir = await getTemporaryDirectory();
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final audioFilePath = '${tempDir.path}/audio_$timestamp.mp3';
+
+            final response = await http.get(Uri.parse(audioUrl));
+            if (response.statusCode == 200) {
+              await File(audioFilePath).writeAsBytes(response.bodyBytes);
+              currentVideoPath = await exportService.mixExternalAudio(
+                currentVideoPath,
+                audioFilePath,
+              );
+              // Clean up downloaded audio
+              try {
+                await File(audioFilePath).delete();
+              } catch (_) {}
+            }
+          }
+        }
+
+        // Clean up previous temp file
+        if (previousPath != _currentDraft!.videoFile.path &&
+            previousPath != currentVideoPath) {
+          try {
+            await File(previousPath).delete();
+          } catch (_) {}
+        }
+
+        Log.info(
+          '📝 External audio mixed into video: $currentVideoPath',
+          category: LogCategory.video,
+        );
+      }
+
+      // Step 3: Apply sound from sound picker (if no external audio)
+      if (params.selectedSoundId != null &&
+          params.externalAudioUrl == null &&
+          params.externalAudioAssetPath == null) {
+        Log.info(
+          '📝 Mixing sound: ${params.selectedSoundId}',
+          category: LogCategory.video,
+        );
+
+        final soundService = await ref.read(soundLibraryServiceProvider.future);
+        final sound = soundService.getSoundById(params.selectedSoundId!);
+
+        if (sound != null) {
+          final exportService = VideoExportService();
+          final previousPath = currentVideoPath;
+
+          currentVideoPath = await exportService.mixAudio(
+            currentVideoPath,
+            sound.assetPath,
+          );
+
+          // Clean up previous temp file
+          if (previousPath != _currentDraft!.videoFile.path) {
+            try {
+              await File(previousPath).delete();
+            } catch (_) {}
+          }
+
+          Log.info(
+            '📝 Sound mixed into video: $currentVideoPath',
+            category: LogCategory.video,
+          );
+        }
+      }
+
+      // Update draft with processed video file
+      if (currentVideoPath != _currentDraft!.videoFile.path) {
+        final updatedDraft = _currentDraft!.copyWith(
+          videoFile: File(currentVideoPath),
+        );
+
+        // Save updated draft
+        await draftService.saveDraft(updatedDraft);
+
+        if (mounted) {
+          setState(() {
+            _currentDraft = updatedDraft;
+          });
+        }
+
+        Log.info(
+          '📝 Draft updated with processed video: $currentVideoPath',
+          category: LogCategory.video,
+        );
+      }
+
+      // Now start the background upload with processed video
+      _startBackgroundUpload();
+    } catch (e) {
+      Log.error(
+        '📝 Background video processing failed: $e',
+        category: LogCategory.video,
+      );
+
+      if (mounted) {
+        // Still try to upload the original video
+        _startBackgroundUpload();
+      }
     }
   }
 
@@ -900,6 +1149,34 @@ class _VideoMetadataScreenPureState
                                       const SizedBox(height: 8),
                                     ],
 
+                                    // Audio sharing option - per-video override
+                                    if (_allowAudioReuse != null)
+                                      SwitchListTile(
+                                        title: const Text(
+                                          'Allow others to use this audio',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        subtitle: Text(
+                                          _allowAudioReuse!
+                                              ? 'Others can reuse audio from this video'
+                                              : 'Audio is exclusive to this video',
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                        value: _allowAudioReuse!,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _allowAudioReuse = value;
+                                          });
+                                        },
+                                        activeThumbColor: VineTheme.vineGreen,
+                                        secondary: const Icon(
+                                          Icons.music_note,
+                                          color: VineTheme.vineGreen,
+                                        ),
+                                      ),
+
                                     // ProofMode info panel
                                     // TODO: Add proofManifest to VineDraft model if needed
                                     // if (_currentDraft?.proofManifest != null) ...[
@@ -1247,6 +1524,7 @@ class _VideoMetadataScreenPureState
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
                   (_expirationHours * 3600)
             : null,
+        allowAudioReuse: _allowAudioReuse ?? false,
       );
 
       if (!published) {
@@ -1269,6 +1547,9 @@ class _VideoMetadataScreenPureState
 
       // Clear clip manager to allow recording new videos without "clear" prompt
       ref.read(clipManagerProvider.notifier).clearAll();
+
+      // Clear selected sound from lip sync recording flow
+      ref.read(selectedSoundProvider.notifier).clear();
 
       if (mounted) {
         setState(() {

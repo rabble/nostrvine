@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 /// Show warning dialog for removing keys from device only
@@ -59,65 +61,136 @@ Future<void> showRemoveKeysWarningDialog({
   );
 }
 
-/// Show FIRST warning dialog before deleting all content from relays
+/// Show FIRST dialog asking for nsec verification before deleting account
 Future<void> showDeleteAllContentWarningDialog({
   required BuildContext context,
+  required String currentPublicKeyHex,
   required VoidCallback onConfirm,
 }) {
+  final nsecController = TextEditingController();
+  String? errorMessage;
+
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        '🚨 DELETE ALL CONTENT?',
-        style: TextStyle(
-          color: Colors.red,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          '🔐 Verify Your Private Key',
+          style: TextStyle(
+            color: Colors.red,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'To delete your account, please enter your private key (nsec) to confirm your identity:',
+              style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nsecController,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Enter your nsec...',
+                hintStyle: const TextStyle(color: Colors.grey),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade700),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.red),
+                ),
+                errorText: errorMessage,
+                errorStyle: const TextStyle(color: Colors.red),
+              ),
+              onChanged: (_) {
+                if (errorMessage != null) {
+                  setState(() {
+                    errorMessage = null;
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final nsec = nsecController.text.trim();
+              if (nsec.isEmpty) {
+                setState(() {
+                  errorMessage = 'Please enter your nsec';
+                });
+                return;
+              }
+
+              // Verify nsec matches current user's public key
+              final isValid = _verifyNsec(nsec, currentPublicKeyHex);
+              if (!isValid) {
+                setState(() {
+                  errorMessage =
+                      'Invalid nsec. Please enter the correct private key.';
+                });
+                return;
+              }
+
+              // Nsec is valid, proceed to standard delete dialog
+              context.pop();
+              _showDeleteAllContentFinalConfirmation(
+                context: context,
+                onConfirm: onConfirm,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text(
+              'Verify',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
       ),
-      scrollable: true,
-      content: const Text(
-        'WARNING: This action is PERMANENT and CANNOT be undone!\n\n'
-        'This will:\n'
-        '• Request deletion of ALL your content from Nostr relays\n'
-        '• Delete all your videos, profile, likes, and activity\n'
-        '• Remove your keys from this device\n'
-        '• Sign you out immediately\n\n'
-        'Some relays may not honor deletion requests, and content may still exist in archives.\n\n'
-        'This is IRREVERSIBLE. Are you ABSOLUTELY CERTAIN?',
-        style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            context.pop();
-            // Show second confirmation dialog
-            _showDeleteAllContentFinalConfirmation(
-              context: context,
-              onConfirm: onConfirm,
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
     ),
   );
+}
+
+/// Verify that the provided nsec matches the current user's public key
+bool _verifyNsec(String nsec, String currentPublicKeyHex) {
+  try {
+    // Decode nsec to get private key hex
+    if (!nsec.startsWith('nsec1')) {
+      return false;
+    }
+
+    final privateKeyHex = Nip19.decode(nsec);
+    if (privateKeyHex.isEmpty || privateKeyHex.length != 64) {
+      return false;
+    }
+
+    // Derive public key from private key
+    final derivedPublicKey = getPublicKey(privateKeyHex);
+
+    // Compare with current user's public key
+    return derivedPublicKey.toLowerCase() == currentPublicKeyHex.toLowerCase();
+  } catch (_) {
+    return false;
+  }
 }
 
 /// Show SECOND confirmation dialog before deleting all content (requires typing)

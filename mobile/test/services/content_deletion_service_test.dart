@@ -106,15 +106,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: deleteEvent,
-          successCount: 3,
-          totalRelays: 3,
-          results: {'relay1': true, 'relay2': true, 'relay3': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       final result = await service.deleteContent(
@@ -160,15 +154,9 @@ void main() {
           ),
         ).thenAnswer((_) async => deleteEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: deleteEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'relay1': true},
-            errors: {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => deleteEvent);
 
         // Act
         await service.deleteContent(video: video, reason: 'Personal choice');
@@ -219,15 +207,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: deleteEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       await service.deleteContent(video: video, reason: 'Privacy concerns');
@@ -291,15 +273,8 @@ void main() {
           ),
         ).thenAnswer((_) async => deleteEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: deleteEvent,
-            successCount: 0, // Broadcast failed
-            totalRelays: 3,
-            results: {'relay1': false, 'relay2': false, 'relay3': false},
-            errors: {'relay1': 'error', 'relay2': 'error', 'relay3': 'error'},
-          ),
-        );
+        // Even when publishEvent returns null (failure), deletion is saved locally
+        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
         // Act
         final result = await service.deleteContent(
@@ -335,15 +310,9 @@ void main() {
         ),
       ).thenAnswer((_) async => deleteEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: deleteEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'relay1': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => deleteEvent);
 
       // Act
       final result = await service.quickDelete(
