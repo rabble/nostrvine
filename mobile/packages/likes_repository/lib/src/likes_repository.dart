@@ -252,6 +252,54 @@ class LikesRepository {
     return result.count;
   }
 
+  /// Get like counts for multiple events in a single batched query.
+  ///
+  /// Queries relays for the count of Kind 7 reactions on each event.
+  /// This is more efficient than calling [getLikeCount] multiple times
+  /// as it sends a single request with multiple event IDs in the filter.
+  ///
+  /// Returns a map of event ID to like count. Events with zero likes
+  /// are included with a count of 0.
+  ///
+  /// Note: This counts all likes, not just the current user's.
+  Future<Map<String, int>> getLikeCounts(List<String> eventIds) async {
+    if (eventIds.isEmpty) return {};
+
+    // Query relays for count of Kind 7 reactions on all events at once
+    // Using a single filter with multiple event IDs in the 'e' array
+    final filter = Filter(
+      kinds: const [_reactionKind],
+      e: eventIds,
+    );
+
+    // NIP-45 COUNT with multiple event IDs returns total count, not per-event
+    // So we need to fall back to querying events and counting client-side
+    final events = await _nostrClient.queryEvents([filter]);
+
+    // Count reactions per target event
+    final counts = <String, int>{};
+    for (final eventId in eventIds) {
+      counts[eventId] = 0;
+    }
+
+    for (final event in events) {
+      // Find the 'e' tag that references the target event
+      for (final tag in event.tags) {
+        if (tag is List &&
+            tag.isNotEmpty &&
+            tag[0] == 'e' &&
+            tag.length > 1) {
+          final targetId = tag[1] as String;
+          if (counts.containsKey(targetId)) {
+            counts[targetId] = counts[targetId]! + 1;
+          }
+        }
+      }
+    }
+
+    return counts;
+  }
+
   /// Get a like record by target event ID.
   ///
   /// Returns the full [LikeRecord] including the reaction event ID,
