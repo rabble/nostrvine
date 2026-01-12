@@ -271,10 +271,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ClipPreviewSheet(
+      builder: (sheetContext) => ClipPreviewSheet(
         clip: clip,
         onDelete: () {
-          context.pop();
+          Navigator.pop(sheetContext);
           _confirmDeleteClip(clip);
         },
       ),
@@ -284,7 +284,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   void _confirmDeleteClip(SavedClip clip) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text(
           'Delete Clip?',
@@ -295,10 +295,13 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(onPressed: context.pop, child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
-              context.pop();
+              Navigator.pop(dialogContext);
               _deleteClip(clip);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -355,7 +358,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   void _showClearAllConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text(
           'Clear All Clips?',
@@ -366,10 +369,13 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(onPressed: context.pop, child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
-              context.pop();
+              Navigator.pop(dialogContext);
               _clearAllClips();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
