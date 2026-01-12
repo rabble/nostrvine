@@ -268,7 +268,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(commentsState: state));
         await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
       });
 
       testWidgets('shows empty state when no comments', (tester) async {

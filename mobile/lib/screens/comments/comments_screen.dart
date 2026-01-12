@@ -43,10 +43,11 @@ class CommentsScreen extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
+        initialChildSize: 0.7,
+        minChildSize: 0.7,
         maxChildSize: 0.9,
         builder: (context, scrollController) => DecoratedBox(
           decoration: const BoxDecoration(

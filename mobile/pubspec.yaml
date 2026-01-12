@@ -99,6 +99,7 @@ dependencies:
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   flutter_svg: ^2.0.10+1 # For custom SVG icons
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
+  skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:

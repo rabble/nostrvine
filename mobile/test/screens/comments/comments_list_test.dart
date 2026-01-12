@@ -83,7 +83,7 @@ void main() {
       );
     }
 
-    testWidgets('shows loading indicator when loading', (tester) async {
+    testWidgets('shows skeleton loader when loading', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
@@ -93,7 +93,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('shows error message when state has error', (tester) async {
