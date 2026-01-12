@@ -1828,6 +1828,66 @@ final class FollowRepositoryProvider
 
 String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
 
+/// Provider for VideosRepository instance
+///
+/// Creates a VideosRepository for querying video counts.
+/// Uses NostrClient for direct relay queries.
+
+@ProviderFor(videosRepository)
+const videosRepositoryProvider = VideosRepositoryProvider._();
+
+/// Provider for VideosRepository instance
+///
+/// Creates a VideosRepository for querying video counts.
+/// Uses NostrClient for direct relay queries.
+
+final class VideosRepositoryProvider
+    extends
+        $FunctionalProvider<
+          VideosRepository,
+          VideosRepository,
+          VideosRepository
+        >
+    with $Provider<VideosRepository> {
+  /// Provider for VideosRepository instance
+  ///
+  /// Creates a VideosRepository for querying video counts.
+  /// Uses NostrClient for direct relay queries.
+  const VideosRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'videosRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$videosRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<VideosRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VideosRepository create(Ref ref) {
+    return videosRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VideosRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VideosRepository>(value),
+    );
+  }
+}
+
+String _$videosRepositoryHash() => r'29672bbdfd5e5552f3a8b264dfaf33f30ea0c51b';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)

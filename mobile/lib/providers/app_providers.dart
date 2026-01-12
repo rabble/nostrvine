@@ -15,6 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/reserved_username_request_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -554,6 +555,30 @@ FollowRepository followRepository(Ref ref) {
   repository.initialize().catchError((e) {
     Log.error(
       'Failed to initialize FollowRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
+}
+
+/// Provider for VideosRepository instance
+///
+/// Creates a VideosRepository for querying video counts.
+/// Uses NostrClient for direct relay queries.
+@Riverpod(keepAlive: true)
+VideosRepository videosRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  final repository = VideosRepository(nostrClient: nostrClient);
+
+  // Initialize asynchronously (fetches initial count and subscribes to updates)
+  repository.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize VideosRepository',
       name: 'AppProviders',
       error: e,
     );

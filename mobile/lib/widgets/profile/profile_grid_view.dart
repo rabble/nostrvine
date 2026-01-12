@@ -24,7 +24,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videos,
-    required this.profileStatsAsync,
     this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
@@ -42,9 +41,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
-
-  /// Async value containing profile stats.
-  final AsyncValue<ProfileStats> profileStatsAsync;
 
   /// Callback when "Set Up" button is tapped (own profile only).
   final VoidCallback? onSetupProfile;
@@ -130,22 +126,19 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 child: ProfileHeaderWidget(
                   userIdHex: widget.userIdHex,
                   isOwnProfile: widget.isOwnProfile,
-                  profileStatsAsync: widget.profileStatsAsync,
                   onSetupProfile: widget.onSetupProfile,
                 ),
               ),
             ),
           ),
 
-          // Stats Row
+          // Stats Row (loops/likes) - fetches its own data via provider
           SliverToBoxAdapter(
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileStatsRowWidget(
-                  profileStatsAsync: widget.profileStatsAsync,
-                ),
+                child: _ProfileStatsRowWithProvider(userIdHex: widget.userIdHex),
               ),
             ),
           ),
@@ -229,4 +222,17 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+}
+
+/// Wrapper widget that fetches profile stats via provider for the stats row.
+class _ProfileStatsRowWithProvider extends ConsumerWidget {
+  const _ProfileStatsRowWithProvider({required this.userIdHex});
+
+  final String userIdHex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
+    return ProfileStatsRowWidget(profileStatsAsync: profileStatsAsync);
+  }
 }

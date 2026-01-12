@@ -4,13 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
-import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/profile_videos_stat.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -19,7 +18,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
-    required this.profileStatsAsync,
     this.onSetupProfile,
     super.key,
   });
@@ -29,9 +27,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
-
-  /// Async value containing profile stats (video count, etc.).
-  final AsyncValue<ProfileStats> profileStatsAsync;
 
   /// Callback when "Set Up" button is tapped on the setup banner.
   /// Only shown for own profile with default name.
@@ -77,14 +72,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.videoCount
-                          : null,
-                      label: 'Videos',
-                      isLoading: profileStatsAsync.isLoading,
-                      onTap: null, // Videos aren't tappable
-                    ),
+                    ProfileVideosStat(pubkey: userIdHex),
                     ProfileFollowersStat(
                       pubkey: userIdHex,
                       displayName: displayName,

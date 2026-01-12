@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -474,9 +473,6 @@ class _ProfileDataView extends ConsumerWidget {
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
 
-    // Get profile stats
-    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
-
     return switch (videosAsync) {
       AsyncLoading() => const ProfileLoadingView(),
       AsyncError(:final error) => Center(child: Text('Error: $error')),
@@ -486,7 +482,6 @@ class _ProfileDataView extends ConsumerWidget {
         isOwnProfile: isOwnProfile,
         videos: value.videos,
         videoIndex: videoIndex,
-        profileStatsAsync: profileStatsAsync,
         scrollController: scrollController,
         onSetupProfile: onSetupProfile,
         onEditProfile: onEditProfile,
@@ -506,7 +501,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.isOwnProfile,
     required this.videos,
     required this.videoIndex,
-    required this.profileStatsAsync,
     required this.scrollController,
     required this.onSetupProfile,
     required this.onEditProfile,
@@ -520,7 +514,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final bool isOwnProfile;
   final List<VideoEvent> videos;
   final int? videoIndex;
-  final AsyncValue<ProfileStats> profileStatsAsync;
   final ScrollController scrollController;
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
@@ -549,7 +542,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
       userIdHex: userIdHex,
       isOwnProfile: isOwnProfile,
       videos: videos,
-      profileStatsAsync: profileStatsAsync,
       scrollController: scrollController,
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,

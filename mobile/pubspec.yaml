@@ -33,7 +33,8 @@ workspace:
   - packages/nostr_gateway
   - packages/nostr_key_manager
   - packages/permissions_service
-  
+  - packages/videos_repository
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,

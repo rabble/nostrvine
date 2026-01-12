@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -89,9 +88,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
 
-    // Get profile stats
-    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
-
     // Watch profile reactively to get display name for AppBar
     final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
     final displayName = profileAsync.value?.bestDisplayName ?? 'Profile';
@@ -126,7 +122,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           userIdHex: userIdHex,
           isOwnProfile: false,
           videos: value.videos,
-          profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
           onShareProfile: () => _shareProfile(userIdHex),
           onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),

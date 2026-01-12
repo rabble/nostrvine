@@ -9,9 +9,9 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +51,14 @@ class MockNostrClient extends Mock implements NostrClient {
   int get connectedRelayCount => 1;
 }
 
+class MockVideosRepository extends Mock implements VideosRepository {
+  @override
+  Stream<int> get myVideoCountStream => Stream.value(10);
+
+  @override
+  Future<int> getVideoCount(String pubkey) async => 10;
+}
+
 const testUserHex =
     '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
 
@@ -58,6 +66,7 @@ void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
     late MockNostrClient mockNostrClient;
+    late MockVideosRepository mockVideosRepository;
 
     UserProfile createTestProfile({
       String? displayName,
@@ -85,20 +94,10 @@ void main() {
       );
     }
 
-    ProfileStats createTestStats() {
-      return ProfileStats(
-        videoCount: 10,
-        totalViews: 1000,
-        totalLikes: 500,
-        followers: 100,
-        following: 50,
-        lastUpdated: DateTime.now(),
-      );
-    }
-
     setUp(() {
       mockFollowRepository = MockFollowRepository();
       mockNostrClient = MockNostrClient();
+      mockVideosRepository = MockVideosRepository();
     });
 
     setUpAll(() async {
@@ -108,7 +107,6 @@ void main() {
     Widget buildTestWidget({
       required String userIdHex,
       required bool isOwnProfile,
-      required AsyncValue<ProfileStats> profileStatsAsync,
       UserProfile? profile,
       VoidCallback? onSetupProfile,
     }) {
@@ -120,6 +118,7 @@ void main() {
           ).overrideWith((ref) async => profile),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -127,7 +126,6 @@ void main() {
               child: ProfileHeaderWidget(
                 userIdHex: userIdHex,
                 isOwnProfile: isOwnProfile,
-                profileStatsAsync: profileStatsAsync,
                 onSetupProfile: onSetupProfile,
               ),
             ),
@@ -149,7 +147,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: testProfile,
         ),
       );
@@ -165,7 +162,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: testProfile,
         ),
       );
@@ -186,7 +182,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: testProfile,
         ),
       );
@@ -205,7 +200,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: testProfile,
         ),
       );
@@ -224,7 +218,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: profileWithDefaultName,
           onSetupProfile: () => setupCalled = true,
         ),
@@ -249,7 +242,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: testProfile,
           onSetupProfile: () {},
         ),
@@ -266,7 +258,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: profileWithDefaultName,
           onSetupProfile: () {},
         ),
@@ -283,7 +274,6 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
           profile: null,
         ),
       );
