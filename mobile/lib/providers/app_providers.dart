@@ -566,16 +566,11 @@ FollowRepository followRepository(Ref ref) {
 }
 
 /// Provider for VideosRepository instance
-///
-/// Creates a VideosRepository for querying video counts.
-/// Uses NostrClient for direct relay queries.
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
 
   final repository = VideosRepository(nostrClient: nostrClient);
-
-  // Initialize asynchronously (fetches initial count and subscribes to updates)
   repository.initialize().catchError((e) {
     Log.error(
       'Failed to initialize VideosRepository',

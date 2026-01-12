@@ -12,7 +12,6 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
 /// Page widget that creates the appropriate videos count BLoC based on pubkey.
 ///
-/// Follows the same pattern as [ProfileFollowersStat].
 /// For current user: creates [MyVideosCountBloc] with real-time subscription.
 /// For other users: creates [OthersVideosCountBloc] with one-time fetch.
 class ProfileVideosStat extends ConsumerWidget {

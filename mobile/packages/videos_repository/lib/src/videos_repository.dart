@@ -32,9 +32,6 @@ class VideosRepository {
 
   /// Initialize the repository and subscribe to own videos for real-time
   /// updates.
-  ///
-  /// Call this once when the repository is created.
-  /// Updates the count automatically when new videos are posted.
   Future<void> initialize() async {
     if (_isSubscribed) return;
 
@@ -52,8 +49,6 @@ class VideosRepository {
       name: 'VideosRepository',
     );
 
-    // Subscribe for videos - the subscription will receive all existing videos
-    // plus any new ones posted
     _subscriptionId = 'my_videos_count_$myPubkey';
     final stream = _nostrClient.subscribe(
       [
@@ -65,12 +60,10 @@ class VideosRepository {
       subscriptionId: _subscriptionId,
     );
 
-    // Track unique video IDs to avoid counting duplicates
     final videoIds = <String>{};
 
     _myVideosSubscription = stream.listen(
       (event) {
-        // Only count if we haven't seen this video before
         if (videoIds.add(event.id)) {
           _myVideoCountSubject.add(videoIds.length);
           developer.log(

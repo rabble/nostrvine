@@ -51,7 +51,7 @@ class MockNostrClient extends Mock implements NostrClient {
   int get connectedRelayCount => 1;
 }
 
-class MockVideosRepository extends Mock implements VideosRepository {
+class _MockVideosRepository extends Mock implements VideosRepository {
   @override
   Stream<int> get myVideoCountStream => Stream.value(10);
 
@@ -66,7 +66,7 @@ void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
     late MockNostrClient mockNostrClient;
-    late MockVideosRepository mockVideosRepository;
+    late _MockVideosRepository mockVideosRepository;
 
     UserProfile createTestProfile({
       String? displayName,
@@ -97,7 +97,7 @@ void main() {
     setUp(() {
       mockFollowRepository = MockFollowRepository();
       mockNostrClient = MockNostrClient();
-      mockVideosRepository = MockVideosRepository();
+      mockVideosRepository = _MockVideosRepository();
     });
 
     setUpAll(() async {
