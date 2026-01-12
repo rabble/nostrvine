@@ -41,7 +41,7 @@ class _CommentSkeletonItem extends StatelessWidget {
   const _CommentSkeletonItem();
 
   // Surface container color from Figma (green tint)
-  static const _surfaceColor = Color(0xFF032017);
+  static const _surfaceColor = VineTheme.outlinedDisabled;
 
   @override
   Widget build(BuildContext context) {

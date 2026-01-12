@@ -2,7 +2,6 @@
 // ABOUTME: Displays title with optional trailing actions (badges, buttons)
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 /// Header component for [VineBottomSheet].
@@ -12,8 +11,8 @@ import 'package:openvine/theme/vine_theme.dart';
 class VineBottomSheetHeader extends StatelessWidget {
   const VineBottomSheetHeader({required this.title, this.trailing, super.key});
 
-  /// Title text displayed on the left
-  final String title;
+  /// Title widget displayed on the left
+  final Widget title;
 
   /// Optional trailing widget on the right (e.g., badge, button)
   final Widget? trailing;
@@ -26,68 +25,32 @@ class VineBottomSheetHeader extends StatelessWidget {
         children: [
           // Drag handle
           Container(
-            width: 48,
-            height: 5,
+            width: 64,
+            height: 4,
             decoration: BoxDecoration(
-              color: VineTheme.onSurfaceMuted,
-              borderRadius: BorderRadius.circular(100),
+              color: VineTheme.alphaLight25,
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
-          // Title + trailing actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Title (centered) + optional trailing actions
+          Stack(
+            alignment: Alignment.center,
             children: [
-              // Title
-              Text(
-                title,
-                style: GoogleFonts.bricolageGrotesque(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  height: 32 / 24,
-                  color: VineTheme.onSurface,
-                ),
-              ),
+              // Centered title
+              Center(child: title),
 
-              // Trailing widget (badges, buttons, etc.)
-              if (trailing != null) SizedBox(width: 62, child: trailing),
+              // Trailing widget positioned on the right
+              if (trailing != null)
+                Positioned(
+                  right: 0,
+                  child: SizedBox(width: 62, child: trailing),
+                ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Badge widget for showing count of new items (e.g., "3 new")
-class VineBottomSheetBadge extends StatelessWidget {
-  const VineBottomSheetBadge({required this.text, super.key});
-
-  /// Badge text (e.g., "3 new", "12 unread")
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: VineTheme.tabIndicatorGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: GoogleFonts.bricolageGrotesque(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            height: 20 / 14,
-            color: Colors.white,
-            letterSpacing: 0.1,
-          ),
-        ),
       ),
     );
   }

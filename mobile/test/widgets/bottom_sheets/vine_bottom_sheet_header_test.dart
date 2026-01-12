@@ -15,7 +15,9 @@ void main() {
     testWidgets('renders title', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: VineBottomSheetHeader(title: 'Test Title')),
+          home: Scaffold(
+            body: VineBottomSheetHeader(title: Text('Test Title')),
+          ),
         ),
       );
 
@@ -29,7 +31,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: VineBottomSheetHeader(
-              title: 'Test Title',
+              title: Text('Test Title'),
               trailing: trailingWidget,
             ),
           ),

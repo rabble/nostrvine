@@ -4,12 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Maps [CommentsError] to user-facing strings.
@@ -22,6 +24,40 @@ String _errorToString(CommentsError error) {
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
   };
+}
+
+/// Dynamic title widget that shows comment count
+/// Initially shows the count from video metadata, then updates to loaded count
+class _CommentsTitle extends StatelessWidget {
+  const _CommentsTitle({required this.initialCount});
+
+  final int initialCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      buildWhen: (prev, next) =>
+          prev.topLevelComments.length != next.topLevelComments.length ||
+          prev.status != next.status,
+      builder: (context, state) {
+        // Use loaded count if available, otherwise use initial count
+        final count = state.status == CommentsStatus.success
+            ? state.topLevelComments.length
+            : initialCount;
+
+        return Text(
+          '$count ${count == 1 ? 'Comment' : 'Comments'}',
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            height: 32 / 24,
+            letterSpacing: 0.15,
+            color: VineTheme.onSurface,
+          ),
+        );
+      },
+    );
+  }
 }
 
 class CommentsScreen extends ConsumerWidget {
@@ -82,7 +118,7 @@ class CommentsScreen extends ConsumerWidget {
         rootAuthorPubkey: videoEvent.pubkey,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(
-        title: 'Comments',
+        title: _CommentsTitle(initialCount: videoEvent.originalComments ?? 0),
         body: _CommentsScreenBody(
           videoEvent: videoEvent,
           sheetScrollController: sheetScrollController,
