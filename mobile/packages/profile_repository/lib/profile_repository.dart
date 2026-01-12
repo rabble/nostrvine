@@ -1,4 +1,4 @@
-/// Repository for publishing user profiles (Kind 0 metadata) to Nostr relays.
+/// Repository for fetching and publishing user profiles (Kind 0 metadata).
 library;
 
 export 'src/exceptions.dart';
