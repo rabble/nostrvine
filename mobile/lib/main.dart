@@ -9,16 +9,21 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:permissions_service/permissions_service.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/router/app_router.dart';
@@ -44,8 +49,6 @@ import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';
 
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
@@ -1051,8 +1054,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             ),
           );
 
-    // Wrap with geo-blocking check, then lifecycle handler
-    Widget wrapped = GeoBlockingGate(child: AppLifecycleHandler(child: app));
+    // Wrap with geo-blocking check first, then lifecycle handler
+    Widget wrapped = BlocProvider(
+      create: (_) => CameraPermissionBloc(
+        permissionsService: const PermissionHandlerPermissionsService(),
+      )..add(const CameraPermissionRefresh()),
+      child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+    );
 
     if (crashProbe) {
       // Invisible crash probe: tap top-left corner 7 times within 5s to crash

@@ -9,6 +9,7 @@ import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
+import 'package:openvine/providers/profile_reposts_provider.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:video_player/video_player.dart';
 
@@ -23,6 +24,20 @@ sealed class VideoFeedSource {
 class ProfileFeedSource extends VideoFeedSource {
   const ProfileFeedSource(this.userId);
   final String userId;
+}
+
+/// Profile reposts feed source - reposted videos from a specific user
+/// Watches profileRepostsProvider for reactive updates
+class ProfileRepostsFeedSource extends VideoFeedSource {
+  const ProfileRepostsFeedSource(this.userId);
+  final String userId;
+}
+
+/// Liked videos feed source - current user's liked videos
+/// Uses a static list since liked videos come from BLoC state
+class LikedVideosFeedSource extends VideoFeedSource {
+  const LikedVideosFeedSource(this.videos);
+  final List<VideoEvent> videos;
 }
 
 /// Static feed source - for cases where we just have a list of videos
@@ -108,6 +123,11 @@ class _FullscreenVideoFeedScreenState
       case ProfileFeedSource(:final userId):
         final feedState = ref.watch(profileFeedProvider(userId));
         return feedState.asData?.value.videos ?? [];
+      case ProfileRepostsFeedSource(:final userId):
+        final repostsState = ref.watch(profileRepostsProvider(userId));
+        return repostsState.asData?.value ?? [];
+      case LikedVideosFeedSource(:final videos):
+        return videos;
       case StaticFeedSource(:final videos):
         return videos;
     }
@@ -119,6 +139,12 @@ class _FullscreenVideoFeedScreenState
     switch (source) {
       case ProfileFeedSource(:final userId):
         ref.read(profileFeedProvider(userId).notifier).loadMore();
+      case ProfileRepostsFeedSource(:final userId):
+        // Reposts come from the same profile feed, so load more from there
+        ref.read(profileFeedProvider(userId).notifier).loadMore();
+      case LikedVideosFeedSource():
+        // Liked videos are static - no pagination support
+        break;
       case StaticFeedSource(:final onLoadMore):
         // Static source uses callback for loading more
         onLoadMore?.call();
