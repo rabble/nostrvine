@@ -11,12 +11,15 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 /// Widget that renders a single comment with all its nested replies.
 ///
-/// Supports thread nesting with visual indentation based on [depth].
+/// All comments render at the same indentation level (flattened).
+/// Reply relationships are shown via the "Re: npub..." indicator.
 /// Shows author avatar, name, timestamp, and content.
 /// Includes a reply button that toggles an inline reply input.
 ///
@@ -39,16 +42,14 @@ class CommentThread extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: EdgeInsets.only(left: depth * 24.0),
+            margin: EdgeInsets.zero,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: const Text(
               '[Comment not found]',
               style: TextStyle(color: Colors.white38),
             ),
           ),
-          ...node.replies.map(
-            (reply) => CommentThread(node: reply, depth: depth + 1),
-          ),
+          ...node.replies.map((reply) => CommentThread(node: reply, depth: 0)),
         ],
       );
     }
@@ -67,127 +68,195 @@ class CommentThread extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              margin: EdgeInsets.only(left: depth * 24.0),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Consumer(
-                        builder: (context, ref, _) {
-                          // Fetch profile for this comment author
-                          final userProfileService = ref.watch(
-                            userProfileServiceProvider,
-                          );
-                          final profile = userProfileService.getCachedProfile(
+                  Consumer(
+                    builder: (context, ref, _) {
+                      // Fetch profile for this comment author
+                      final userProfileService = ref.watch(
+                        userProfileServiceProvider,
+                      );
+                      final profile = userProfileService.getCachedProfile(
+                        comment.authorPubkey,
+                      );
+
+                      // If profile not cached and not known missing, fetch it
+                      if (profile == null &&
+                          !userProfileService.shouldSkipProfileFetch(
                             comment.authorPubkey,
-                          );
+                          )) {
+                        Future.microtask(() {
+                          ref
+                              .read(userProfileProvider.notifier)
+                              .fetchProfile(comment.authorPubkey);
+                        });
+                      }
 
-                          // If profile not cached and not known missing, fetch it
-                          if (profile == null &&
-                              !userProfileService.shouldSkipProfileFetch(
-                                comment.authorPubkey,
-                              )) {
-                            Future.microtask(() {
-                              ref
-                                  .read(userProfileProvider.notifier)
-                                  .fetchProfile(comment.authorPubkey);
-                            });
-                          }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Row 1: Avatar + Time + "You" indicator (all on same line)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              UserAvatar(size: 36, imageUrl: profile?.picture),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Consumer(
+                                  builder: (context, ref, _) {
+                                    final nostrService = ref.watch(
+                                      nostrServiceProvider,
+                                    );
+                                    final currentUserPubkey =
+                                        nostrService.publicKey;
+                                    final isCurrentUser =
+                                        currentUserPubkey.isNotEmpty &&
+                                        currentUserPubkey ==
+                                            comment.authorPubkey;
 
-                          return UserAvatar(size: 32);
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Consumer(
-                          builder: (context, ref, _) {
-                            // Fetch profile for display name
-                            final userProfileService = ref.watch(
-                              userProfileServiceProvider,
-                            );
-                            final profile = userProfileService.getCachedProfile(
-                              comment.authorPubkey,
-                            );
-
-                            const style = TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.white54,
-                            );
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    // Navigate to profile screen
-                                    context.goProfileGrid(comment.authorPubkey);
-                                  },
-                                  child: profile == null
-                                      ? const Text('Unknown', style: style)
-                                      : UserName.fromUserProfile(
-                                          profile,
-                                          style: style,
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              comment.relativeTime,
+                                              style: VineTheme.bodyFont(
+                                                color: Colors.white54,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (isCurrentUser) ...[
+                                              Text(
+                                                ' • ',
+                                                style: VineTheme.bodyFont(
+                                                  color: Colors.white54,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              Text(
+                                                'You',
+                                                style: VineTheme.bodyFont(
+                                                  color: Colors.white54,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
-                                ),
-                                Text(
-                                  comment.relativeTime,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      // 3-dot options menu (only visible for own comments)
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final nostrService = ref.watch(nostrServiceProvider);
-                          final currentUserPubkey = nostrService.publicKey;
-                          final isOwnComment =
-                              currentUserPubkey.isNotEmpty &&
-                              currentUserPubkey == comment.authorPubkey;
+                                        GestureDetector(
+                                          onTap: () {
+                                            context.goProfileGrid(
+                                              comment.authorPubkey,
+                                            );
+                                          },
+                                          child: profile == null
+                                              ? Text(
+                                                  NostrKeyUtils.encodePubKey(
+                                                    comment.authorPubkey,
+                                                  ),
+                                                  style: const TextStyle(
+                                                    color: Color(
+                                                      0xF2FFFFFF,
+                                                    ), // rgba(255,255,255,0.95)
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 0.1,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                )
+                                              : UserName.fromUserProfile(
+                                                  profile,
+                                                  style: const TextStyle(
+                                                    color: Color(0xF2FFFFFF),
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 0.1,
+                                                  ),
+                                                ),
+                                        ),
 
-                          if (!isOwnComment) {
-                            return const SizedBox.shrink();
-                          }
+                                        // // 3-dot options menu (only visible for own comments)
+                                        // Consumer(
+                                        //   builder: (context, ref, _) {
+                                        //     final nostrService = ref.watch(
+                                        //       nostrServiceProvider,
+                                        //     );
+                                        //     final currentUserPubkey =
+                                        //         nostrService.publicKey;
+                                        //     final isOwnComment =
+                                        //         currentUserPubkey.isNotEmpty &&
+                                        //         currentUserPubkey ==
+                                        //             comment.authorPubkey;
 
-                          return Semantics(
-                            identifier: 'comment_options_button',
-                            button: true,
-                            label: 'Comment options',
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: Colors.white54,
-                                size: 20,
+                                        //     if (!isOwnComment) {
+                                        //       return const SizedBox.shrink();
+                                        //     }
+
+                                        //     return Semantics(
+                                        //       identifier:
+                                        //           'comment_options_button',
+                                        //       button: true,
+                                        //       label: 'Comment options',
+                                        //       child: IconButton(
+                                        //         icon: const Icon(
+                                        //           Icons.more_vert,
+                                        //           color: Colors.white54,
+                                        //           size: 20,
+                                        //         ),
+                                        //         padding: EdgeInsets.zero,
+                                        //         constraints:
+                                        //             const BoxConstraints(),
+                                        //         onPressed: () async {
+                                        //           final shouldDelete =
+                                        //               await CommentOptionsModal.show(
+                                        //                 context,
+                                        //               );
+                                        //           if (shouldDelete == true &&
+                                        //               context.mounted) {
+                                        //             context
+                                        //                 .read<CommentsBloc>()
+                                        //                 .add(
+                                        //                   CommentDeleteRequested(
+                                        //                     comment.id,
+                                        //                   ),
+                                        //                 );
+                                        //           }
+                                        //         },
+                                        //       ),
+                                        //     );
+                                        //   },
+                                        // ),
+                                      ],
+                                    );
+                                  },
+                                ),
                               ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () async {
-                                final shouldDelete =
-                                    await CommentOptionsModal.show(context);
-                                if (shouldDelete == true && context.mounted) {
-                                  context.read<CommentsBloc>().add(
-                                    CommentDeleteRequested(comment.id),
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
+                  // Show reply indicator if this is a reply
+                  if (comment.replyToAuthorPubkey != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48, bottom: 4),
+                      child: _ReplyIndicator(
+                        parentAuthorPubkey: comment.replyToAuthorPubkey!,
+                      ),
+                    ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 44),
+                    padding: const EdgeInsets.only(left: 48),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -234,7 +303,7 @@ class CommentThread extends StatelessWidget {
             ),
             // Recursively render replies
             ...node.replies.map(
-              (reply) => CommentThread(node: reply, depth: depth + 1),
+              (reply) => CommentThread(node: reply, depth: 0),
             ),
           ],
         );
@@ -309,6 +378,55 @@ class _ReplyInputWrapperState extends State<_ReplyInputWrapper> {
           },
         );
       },
+    );
+  }
+}
+
+/// Shows "Re: npub..." indicator for replies
+/// Non-interactive, purely informational display
+class _ReplyIndicator extends ConsumerWidget {
+  const _ReplyIndicator({required this.parentAuthorPubkey});
+
+  final String parentAuthorPubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Encode to npub format
+    final npub = NostrKeyUtils.encodePubKey(parentAuthorPubkey);
+
+    // Truncate npub for display (first 15 chars + ellipsis)
+    // Example: "npub1m6cxcq0..."
+    final displayNpub = npub.length > 15 ? '${npub.substring(0, 15)}...' : npub;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Re: ',
+          style: const TextStyle(
+            color: Color(0xFF27C58B), // VineTheme.tabIndicatorGreen
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.4,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0e2b21), // Dark green background
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            displayNpub,
+            style: const TextStyle(
+              color: Color(0xFF27C58B), // Green text
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
