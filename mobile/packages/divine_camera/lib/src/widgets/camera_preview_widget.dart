@@ -149,7 +149,12 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
               },
               onScaleStart: widget.onScaleStart,
               onScaleUpdate: widget.onScaleUpdate,
-              child: _buildPreview(constraints, textureToShow),
+              child: _CameraPreview(
+                constraints: constraints,
+                textureId: textureToShow,
+                aspectRatio: aspectRatio,
+                fit: widget.fit,
+              ),
             ),
             ValueListenableBuilder<Offset?>(
               valueListenable: _focusPoint,
@@ -166,14 +171,29 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
       },
     );
   }
+}
 
-  Widget _buildPreview(BoxConstraints constraints, int textureId) {
-    final aspectRatio = _camera.cameraAspectRatio;
+/// Private widget that renders the camera preview texture with proper
+/// aspect ratio.
+class _CameraPreview extends StatelessWidget {
+  const _CameraPreview({
+    required this.constraints,
+    required this.textureId,
+    required this.aspectRatio,
+    required this.fit,
+  });
 
+  final BoxConstraints constraints;
+  final int textureId;
+  final double aspectRatio;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
     Widget preview = Texture(textureId: textureId);
 
     // Apply aspect ratio and fit
-    if (widget.fit == BoxFit.cover) {
+    if (fit == BoxFit.cover) {
       preview = SizedBox(
         width: constraints.maxWidth,
         height: constraints.maxHeight,
