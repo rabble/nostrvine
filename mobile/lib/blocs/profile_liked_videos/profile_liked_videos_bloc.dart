@@ -16,6 +16,9 @@ import 'package:openvine/utils/unified_logger.dart';
 part 'profile_liked_videos_event.dart';
 part 'profile_liked_videos_state.dart';
 
+/// Number of videos to load per page for pagination.
+const _pageSize = 18;
+
 /// BLoC for managing profile liked videos.
 ///
 /// Handles:
@@ -25,6 +28,7 @@ part 'profile_liked_videos_state.dart';
 /// - Fetching: fetches missing videos from Nostr relays
 /// - Filtering: excludes unsupported video formats
 /// - Listening for like changes to update the list
+/// - Pagination: loads videos in batches of [_pageSize]
 class ProfileLikedVideosBloc
     extends Bloc<ProfileLikedVideosEvent, ProfileLikedVideosState> {
   ProfileLikedVideosBloc({
@@ -39,6 +43,7 @@ class ProfileLikedVideosBloc
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(_onSyncRequested);
     on<ProfileLikedVideosSubscriptionRequested>(_onSubscriptionRequested);
+    on<ProfileLikedVideosLoadMoreRequested>(_onLoadMoreRequested);
   }
 
   final LikesRepository _likesRepository;
@@ -89,6 +94,7 @@ class ProfileLikedVideosBloc
             status: ProfileLikedVideosStatus.success,
             videos: [],
             likedEventIds: [],
+            hasMoreContent: false,
             clearError: true,
           ),
         );
@@ -102,11 +108,13 @@ class ProfileLikedVideosBloc
         ),
       );
 
-      // Fetch video data for the liked IDs
-      final videos = await _fetchVideos(likedEventIds);
+      // Fetch video data for the first page of liked IDs
+      final firstPageIds = likedEventIds.take(_pageSize).toList();
+      final videos = await _fetchVideos(firstPageIds);
 
       Log.info(
-        'ProfileLikedVideosBloc: Loaded ${videos.length} videos',
+        'ProfileLikedVideosBloc: Loaded ${videos.length} videos '
+        '(first page of ${likedEventIds.length} total)',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
       );
@@ -115,6 +123,7 @@ class ProfileLikedVideosBloc
         state.copyWith(
           status: ProfileLikedVideosStatus.success,
           videos: videos,
+          hasMoreContent: likedEventIds.length > _pageSize,
           clearError: true,
         ),
       );
@@ -228,6 +237,76 @@ class ProfileLikedVideosBloc
         return state;
       },
     );
+  }
+
+  /// Handle load more request - fetches the next page of videos.
+  ///
+  /// Uses [state.videos.length] to determine the offset and fetches
+  /// the next [_pageSize] videos from [state.likedEventIds].
+  Future<void> _onLoadMoreRequested(
+    ProfileLikedVideosLoadMoreRequested event,
+    Emitter<ProfileLikedVideosState> emit,
+  ) async {
+    // Skip if not in success state, already loading, or no more content
+    if (state.status != ProfileLikedVideosStatus.success ||
+        state.isLoadingMore ||
+        !state.hasMoreContent) {
+      return;
+    }
+
+    final currentCount = state.videos.length;
+    final totalCount = state.likedEventIds.length;
+
+    // No more to load
+    if (currentCount >= totalCount) {
+      emit(state.copyWith(hasMoreContent: false));
+      return;
+    }
+
+    Log.info(
+      'ProfileLikedVideosBloc: Loading more videos '
+      '(current: $currentCount, total: $totalCount)',
+      name: 'ProfileLikedVideosBloc',
+      category: LogCategory.video,
+    );
+
+    emit(state.copyWith(isLoadingMore: true));
+
+    try {
+      // Get the next page of IDs
+      final nextPageIds = state.likedEventIds
+          .skip(currentCount)
+          .take(_pageSize)
+          .toList();
+
+      // Fetch videos for the next page
+      final newVideos = await _fetchVideos(nextPageIds);
+
+      Log.info(
+        'ProfileLikedVideosBloc: Loaded ${newVideos.length} more videos',
+        name: 'ProfileLikedVideosBloc',
+        category: LogCategory.video,
+      );
+
+      // Append to existing videos
+      final allVideos = [...state.videos, ...newVideos];
+      final hasMore = allVideos.length < totalCount;
+
+      emit(
+        state.copyWith(
+          videos: allVideos,
+          isLoadingMore: false,
+          hasMoreContent: hasMore,
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'ProfileLikedVideosBloc: Failed to load more videos - $e',
+        name: 'ProfileLikedVideosBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(isLoadingMore: false));
+    }
   }
 
   // TODO(any): Make logic easier, export part of logic in repository

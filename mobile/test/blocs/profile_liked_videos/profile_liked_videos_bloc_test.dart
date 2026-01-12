@@ -157,6 +157,7 @@ void main() {
             status: ProfileLikedVideosStatus.success,
             videos: [],
             likedEventIds: [],
+            hasMoreContent: false,
           ),
         ],
       );
@@ -417,6 +418,7 @@ void main() {
             status: ProfileLikedVideosStatus.success,
             videos: [],
             likedEventIds: [],
+            hasMoreContent: false,
           ),
         ],
         verify: (_) {
@@ -464,6 +466,7 @@ void main() {
             status: ProfileLikedVideosStatus.success,
             videos: [],
             likedEventIds: [],
+            hasMoreContent: false,
           ),
         ],
         verify: (_) {

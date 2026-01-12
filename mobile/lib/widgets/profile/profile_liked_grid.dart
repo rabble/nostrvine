@@ -48,28 +48,58 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
           return const _LikedEmptyState();
         }
 
-        return CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(2),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 2,
-                  mainAxisSpacing: 2,
-                  childAspectRatio: 1,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  if (index >= likedVideos.length) {
-                    return const SizedBox.shrink();
-                  }
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Trigger load more when near the bottom
+            if (notification is ScrollUpdateNotification) {
+              final pixels = notification.metrics.pixels;
+              final maxExtent = notification.metrics.maxScrollExtent;
+              // Load more when within 200 pixels of the bottom
+              if (pixels >= maxExtent - 200 &&
+                  state.hasMoreContent &&
+                  !state.isLoadingMore) {
+                context.read<ProfileLikedVideosBloc>().add(
+                  const ProfileLikedVideosLoadMoreRequested(),
+                );
+              }
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(2),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 2,
+                    mainAxisSpacing: 2,
+                    childAspectRatio: 1,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index >= likedVideos.length) {
+                      return const SizedBox.shrink();
+                    }
 
-                  final videoEvent = likedVideos[index];
-                  return _LikedGridTile(videoEvent: videoEvent, index: index);
-                }, childCount: likedVideos.length),
+                    final videoEvent = likedVideos[index];
+                    return _LikedGridTile(videoEvent: videoEvent, index: index);
+                  }, childCount: likedVideos.length),
+                ),
               ),
-            ),
-          ],
+              // Loading indicator at the bottom
+              if (state.isLoadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
