@@ -82,13 +82,14 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
                       return const SizedBox.shrink();
                     }
 
-                  final videoEvent = likedVideos[index];
-                  return _LikedGridTile(
-                    videoEvent: videoEvent,
-                    index: index,
-                    allVideos: likedVideos,
-                  );
-                }, childCount: likedVideos.length),
+                    final videoEvent = likedVideos[index];
+                    return _LikedGridTile(
+                      videoEvent: videoEvent,
+                      index: index,
+                      allVideos: likedVideos,
+                    );
+                  }, childCount: likedVideos.length),
+                ),
               ),
               // Loading indicator at the bottom
               if (state.isLoadingMore)
