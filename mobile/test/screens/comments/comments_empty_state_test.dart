@@ -15,10 +15,8 @@ void main() {
           ),
         );
 
-        expect(
-          find.text('No comments yet.\nBe the first to comment!'),
-          findsOneWidget,
-        );
+        expect(find.text('No comments yet'), findsOneWidget);
+        expect(find.text('Get the party started!'), findsOneWidget);
       });
 
       testWidgets(
@@ -89,10 +87,8 @@ void main() {
 
         // Should show both the Classic Vine notice AND the empty state message
         expect(find.text('Classic Vine'), findsOneWidget);
-        expect(
-          find.text('No comments yet.\nBe the first to comment!'),
-          findsOneWidget,
-        );
+        expect(find.text('No comments yet'), findsOneWidget);
+        expect(find.text('Get the party started!'), findsOneWidget);
       });
 
       testWidgets('has styled container for Classic Vine notice', (
