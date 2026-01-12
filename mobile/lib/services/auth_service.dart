@@ -45,6 +45,7 @@ class AuthResult {
 
   factory AuthResult.failure(String errorMessage) =>
       AuthResult(success: false, errorMessage: errorMessage);
+
   final bool success;
   final String? errorMessage;
   final SecureKeyContainer? keyContainer;
@@ -70,6 +71,7 @@ class UserProfile {
         publicKeyHex: keyContainer.publicKeyHex,
         displayName: NostrKeyUtils.maskKey(keyContainer.npub),
       );
+
   final String npub;
   final String publicKeyHex;
   final DateTime? keyCreatedAt;
@@ -394,17 +396,32 @@ class AuthService {
   Future<void> acceptTermsOfService() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // If unauthenticated (e.g., after key deletion), re-initialize first.
+      // This creates new keys and may clear user-specific data (including TOS).
+      // We save TOS acceptance AFTER initialization to prevent it from being cleared.
+      if (_authState == AuthState.unauthenticated) {
+        await initialize();
+        // Now save TOS after initialization (and any data cleanup) has completed
+        await prefs.setString(
+          'terms_accepted_at',
+          DateTime.now().toIso8601String(),
+        );
+        await prefs.setBool('age_verified_16_plus', true);
+        _setAuthState(AuthState.authenticated);
+
+        return Log.info(
+          'Terms of Service accepted after re-initialization, user is now fully authenticated',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+
       await prefs.setString(
         'terms_accepted_at',
         DateTime.now().toIso8601String(),
       );
       await prefs.setBool('age_verified_16_plus', true);
-
-      // If unauthenticated (e.g., after logout), re-initialize to load existing keys
-      if (_authState == AuthState.unauthenticated) {
-        await initialize();
-        return;
-      }
 
       _setAuthState(AuthState.authenticated);
 

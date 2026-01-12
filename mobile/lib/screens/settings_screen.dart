@@ -541,10 +541,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // Sign out and delete keys (no relay broadcast)
           await authService.signOut(deleteKeys: true);
 
-          // Close loading indicator
-          if (!context.mounted) return;
-          context.pop();
-
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
           // User can import their keys from the welcome screen
         } catch (e) {
