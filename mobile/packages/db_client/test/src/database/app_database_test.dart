@@ -6,8 +6,8 @@ import 'dart:io';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:test/test.dart';
 
 void main() {
   late AppDatabase database;
@@ -69,8 +69,8 @@ void main() {
         final pastExpiry = nowUnix() - 100;
         final futureExpiry = nowUnix() + 3600;
 
-        await dao.upsertEventWithExpiry(expiredEvent, expireAt: pastExpiry);
-        await dao.upsertEventWithExpiry(validEvent, expireAt: futureExpiry);
+        await dao.upsertEvent(expiredEvent, expireAt: pastExpiry);
+        await dao.upsertEvent(validEvent, expireAt: futureExpiry);
 
         // Run cleanup
         final result = await database.runStartupCleanup();
@@ -193,7 +193,7 @@ void main() {
 
         // Insert valid (non-expired) data
         final validEvent = createEvent(content: 'valid');
-        await eventsDao.upsertEventWithExpiry(
+        await eventsDao.upsertEvent(
           validEvent,
           expireAt: nowUnix() + 3600,
         );

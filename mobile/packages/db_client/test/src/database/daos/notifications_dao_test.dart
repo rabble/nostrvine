@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late AppDatabase database;

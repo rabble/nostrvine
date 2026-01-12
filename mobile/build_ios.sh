@@ -38,6 +38,10 @@ if [ -f .env ]; then
     if [ -n "$ZENDESK_URL" ]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_URL=$ZENDESK_URL"
     fi
+
+    if [ -n "$ZENDESK_API_TOKEN" ]; then
+        DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_API_TOKEN=$ZENDESK_API_TOKEN"
+    fi
 fi
 
 # Ensure Flutter dependencies are up to date

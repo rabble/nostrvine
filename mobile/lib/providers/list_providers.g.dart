@@ -153,6 +153,69 @@ final class AllListsProvider
 
 String _$allListsHash() => r'8d7c4fb84d445151d5bb84764da34cedf4e7e8a6';
 
+/// Provider that caches discovered public lists across navigation
+/// This persists the lists so they're not lost when leaving/returning to screen
+
+@ProviderFor(DiscoveredLists)
+const discoveredListsProvider = DiscoveredListsProvider._();
+
+/// Provider that caches discovered public lists across navigation
+/// This persists the lists so they're not lost when leaving/returning to screen
+final class DiscoveredListsProvider
+    extends $NotifierProvider<DiscoveredLists, DiscoveredListsState> {
+  /// Provider that caches discovered public lists across navigation
+  /// This persists the lists so they're not lost when leaving/returning to screen
+  const DiscoveredListsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'discoveredListsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$discoveredListsHash();
+
+  @$internal
+  @override
+  DiscoveredLists create() => DiscoveredLists();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DiscoveredListsState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DiscoveredListsState>(value),
+    );
+  }
+}
+
+String _$discoveredListsHash() => r'9e2be25f90d5cab30d9183aba33e474201db0938';
+
+/// Provider that caches discovered public lists across navigation
+/// This persists the lists so they're not lost when leaving/returning to screen
+
+abstract class _$DiscoveredLists extends $Notifier<DiscoveredListsState> {
+  DiscoveredListsState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<DiscoveredListsState, DiscoveredListsState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<DiscoveredListsState, DiscoveredListsState>,
+              DiscoveredListsState,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 /// Provider for videos in a specific curated list
 
 @ProviderFor(curatedListVideos)
@@ -418,4 +481,184 @@ final class PublicListsContainingVideoFamily extends $Family
 
   @override
   String toString() => r'publicListsContainingVideoProvider';
+}
+
+/// Provider that fetches actual VideoEvent objects for a curated list
+/// Streams videos as they are fetched from cache or relays
+
+@ProviderFor(curatedListVideoEvents)
+const curatedListVideoEventsProvider = CuratedListVideoEventsFamily._();
+
+/// Provider that fetches actual VideoEvent objects for a curated list
+/// Streams videos as they are fetched from cache or relays
+
+final class CuratedListVideoEventsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<VideoEvent>>,
+          List<VideoEvent>,
+          Stream<List<VideoEvent>>
+        >
+    with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
+  /// Provider that fetches actual VideoEvent objects for a curated list
+  /// Streams videos as they are fetched from cache or relays
+  const CuratedListVideoEventsProvider._({
+    required CuratedListVideoEventsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'curatedListVideoEventsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$curatedListVideoEventsHash();
+
+  @override
+  String toString() {
+    return r'curatedListVideoEventsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<List<VideoEvent>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<VideoEvent>> create(Ref ref) {
+    final argument = this.argument as String;
+    return curatedListVideoEvents(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CuratedListVideoEventsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$curatedListVideoEventsHash() =>
+    r'ad1646f4833e31b7c0be36da69a8d583b117449a';
+
+/// Provider that fetches actual VideoEvent objects for a curated list
+/// Streams videos as they are fetched from cache or relays
+
+final class CuratedListVideoEventsFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, String> {
+  const CuratedListVideoEventsFamily._()
+    : super(
+        retry: null,
+        name: r'curatedListVideoEventsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider that fetches actual VideoEvent objects for a curated list
+  /// Streams videos as they are fetched from cache or relays
+
+  CuratedListVideoEventsProvider call(String listId) =>
+      CuratedListVideoEventsProvider._(argument: listId, from: this);
+
+  @override
+  String toString() => r'curatedListVideoEventsProvider';
+}
+
+/// Provider that fetches VideoEvent objects directly from a list of video IDs
+/// Use this for discovered lists that aren't in local storage
+
+@ProviderFor(videoEventsByIds)
+const videoEventsByIdsProvider = VideoEventsByIdsFamily._();
+
+/// Provider that fetches VideoEvent objects directly from a list of video IDs
+/// Use this for discovered lists that aren't in local storage
+
+final class VideoEventsByIdsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<VideoEvent>>,
+          List<VideoEvent>,
+          Stream<List<VideoEvent>>
+        >
+    with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
+  /// Provider that fetches VideoEvent objects directly from a list of video IDs
+  /// Use this for discovered lists that aren't in local storage
+  const VideoEventsByIdsProvider._({
+    required VideoEventsByIdsFamily super.from,
+    required List<String> super.argument,
+  }) : super(
+         retry: null,
+         name: r'videoEventsByIdsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$videoEventsByIdsHash();
+
+  @override
+  String toString() {
+    return r'videoEventsByIdsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<List<VideoEvent>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<VideoEvent>> create(Ref ref) {
+    final argument = this.argument as List<String>;
+    return videoEventsByIds(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is VideoEventsByIdsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$videoEventsByIdsHash() => r'149abcf76b2ae57e82cdb4fd3b440c5866cb582a';
+
+/// Provider that fetches VideoEvent objects directly from a list of video IDs
+/// Use this for discovered lists that aren't in local storage
+
+final class VideoEventsByIdsFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, List<String>> {
+  const VideoEventsByIdsFamily._()
+    : super(
+        retry: null,
+        name: r'videoEventsByIdsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider that fetches VideoEvent objects directly from a list of video IDs
+  /// Use this for discovered lists that aren't in local storage
+
+  VideoEventsByIdsProvider call(List<String> videoIds) =>
+      VideoEventsByIdsProvider._(argument: videoIds, from: this);
+
+  @override
+  String toString() => r'videoEventsByIdsProvider';
 }

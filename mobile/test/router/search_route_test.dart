@@ -47,7 +47,7 @@ void main() {
 
       // Verify search bar is visible (grid mode)
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search videos, users, hashtags...'), findsOneWidget);
+      expect(find.text('Find something cool...'), findsOneWidget);
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
 

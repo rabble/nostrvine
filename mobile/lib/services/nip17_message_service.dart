@@ -99,12 +99,12 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Broadcast the gift wrap event
-      final broadcastResult = await _nostrService.broadcast(giftWrapEvent);
+      // Publish the gift wrap event
+      final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
 
-      if (broadcastResult.successCount > 0) {
+      if (sentEvent != null) {
         Log.info(
-          'Successfully broadcast NIP-17 message',
+          'Successfully published NIP-17 message',
           category: LogCategory.system,
         );
         return NIP17SendResult.success(
@@ -112,8 +112,7 @@ class NIP17MessageService {
           recipientPubkey: recipientPubkey,
         );
       } else {
-        final errorMsg =
-            'Message broadcast failed: ${broadcastResult.errors.values.join(", ")}';
+        const errorMsg = 'Message publish failed to relays';
         Log.error(errorMsg, category: LogCategory.system);
         return NIP17SendResult.failure(errorMsg);
       }

@@ -6,6 +6,7 @@
 import 'dart:async' as _i6;
 import 'dart:ui' as _i10;
 
+import 'package:likes_repository/likes_repository.dart' as _i13;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:nostr_client/nostr_client.dart' as _i4;
@@ -15,10 +16,10 @@ import 'package:openvine/models/video_event.dart' as _i9;
 import 'package:openvine/services/age_verification_service.dart' as _i12;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/content_blocklist_service.dart' as _i11;
-import 'package:openvine/services/social_service.dart' as _i14;
-import 'package:openvine/services/user_profile_service.dart' as _i15;
+import 'package:openvine/services/social_service.dart' as _i15;
+import 'package:openvine/services/user_profile_service.dart' as _i16;
 import 'package:openvine/services/video_event_service.dart' as _i8;
-import 'package:openvine/services/video_filter_builder.dart' as _i13;
+import 'package:openvine/services/video_filter_builder.dart' as _i14;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -40,14 +41,8 @@ class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeNostrBroadcastResult_1 extends _i1.SmartFake
-    implements _i2.NostrBroadcastResult {
-  _FakeNostrBroadcastResult_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
-  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
+class _FakeAuthResult_1 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -485,30 +480,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Stream<_i7.Event>);
 
   @override
-  _i6.Future<_i2.NostrBroadcastResult> broadcast(
-    _i7.Event? event, {
-    List<String>? targetRelays,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #broadcast,
-              [event],
-              {#targetRelays: targetRelays},
-            ),
-            returnValue: _i6.Future<_i2.NostrBroadcastResult>.value(
-              _FakeNostrBroadcastResult_1(
-                this,
-                Invocation.method(
-                  #broadcast,
-                  [event],
-                  {#targetRelays: targetRelays},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.NostrBroadcastResult>);
-
-  @override
   _i6.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -638,6 +609,16 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
           as _i10.VoidCallback);
 
   @override
+  _i10.VoidCallback addNewVideoListener(
+    void Function(_i9.VideoEvent, String)? callback,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#addNewVideoListener, [callback]),
+            returnValue: () {},
+          )
+          as _i10.VoidCallback);
+
+  @override
   void removeVideoUpdateListener(void Function(_i9.VideoEvent)? callback) =>
       super.noSuchMethod(
         Invocation.method(#removeVideoUpdateListener, [callback]),
@@ -658,6 +639,13 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
     Invocation.method(#setAgeVerificationService, [ageVerificationService]),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void setLikesRepository(_i13.LikesRepository? likesRepository) =>
+      super.noSuchMethod(
+        Invocation.method(#setLikesRepository, [likesRepository]),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool shouldFilterEvent(_i7.Event? event) =>
@@ -784,8 +772,8 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
     int? limit = 200,
     bool? replace = true,
     bool? includeReposts = false,
-    _i13.VideoSortField? sortBy,
-    _i13.NIP50SortMode? nip50Sort,
+    _i14.VideoSortField? sortBy,
+    _i14.NIP50SortMode? nip50Sort,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -859,7 +847,7 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
   _i6.Future<void> subscribeToHomeFeed(
     List<String>? followingPubkeys, {
     int? limit = 100,
-    _i13.VideoSortField? sortBy,
+    _i14.VideoSortField? sortBy,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -876,8 +864,8 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
   @override
   _i6.Future<void> subscribeToDiscovery({
     int? limit = 100,
-    _i13.VideoSortField? sortBy,
-    _i13.NIP50SortMode? nip50Sort,
+    _i14.VideoSortField? sortBy,
+    _i14.NIP50SortMode? nip50Sort,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -1268,7 +1256,7 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
 /// A class which mocks [SocialService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSocialService extends _i1.Mock implements _i14.SocialService {
+class MockSocialService extends _i1.Mock implements _i15.SocialService {
   MockSocialService() {
     _i1.throwOnMissingStub(this);
   }
@@ -1290,12 +1278,12 @@ class MockSocialService extends _i1.Mock implements _i14.SocialService {
           as List<String>);
 
   @override
-  List<_i14.FollowSet> get followSets =>
+  List<_i15.FollowSet> get followSets =>
       (super.noSuchMethod(
             Invocation.getter(#followSets),
-            returnValue: <_i14.FollowSet>[],
+            returnValue: <_i15.FollowSet>[],
           )
-          as List<_i14.FollowSet>);
+          as List<_i15.FollowSet>);
 
   @override
   bool isLiked(String? eventId) =>
@@ -1336,9 +1324,9 @@ class MockSocialService extends _i1.Mock implements _i14.SocialService {
           as Map<String, int>?);
 
   @override
-  _i14.FollowSet? getFollowSetById(String? setId) =>
+  _i15.FollowSet? getFollowSetById(String? setId) =>
       (super.noSuchMethod(Invocation.method(#getFollowSetById, [setId]))
-          as _i14.FollowSet?);
+          as _i15.FollowSet?);
 
   @override
   bool isInFollowSet(String? setId, String? pubkey) =>
@@ -1393,7 +1381,7 @@ class MockSocialService extends _i1.Mock implements _i14.SocialService {
           as _i6.Future<Map<String, int>>);
 
   @override
-  _i6.Future<_i14.FollowSet?> createFollowSet({
+  _i6.Future<_i15.FollowSet?> createFollowSet({
     required String? name,
     String? description,
     String? imageUrl,
@@ -1406,9 +1394,9 @@ class MockSocialService extends _i1.Mock implements _i14.SocialService {
               #imageUrl: imageUrl,
               #initialPubkeys: initialPubkeys,
             }),
-            returnValue: _i6.Future<_i14.FollowSet?>.value(),
+            returnValue: _i6.Future<_i15.FollowSet?>.value(),
           )
-          as _i6.Future<_i14.FollowSet?>);
+          as _i6.Future<_i15.FollowSet?>);
 
   @override
   _i6.Future<bool> addToFollowSet(String? setId, String? pubkey) =>
@@ -1612,7 +1600,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -1634,7 +1622,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -1658,7 +1646,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
+              _FakeAuthResult_1(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -1672,7 +1660,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i6.Future<void> refreshCurrentProfile(
-    _i15.UserProfileService? userProfileService,
+    _i16.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),

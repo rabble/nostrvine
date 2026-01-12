@@ -5,9 +5,9 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
+import 'package:openvine/services/thumbnail_api_service.dart';
 
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 class VideoEvent {
@@ -46,13 +46,27 @@ class VideoEvent {
     this.originalComments,
     this.originalReposts,
     this.expirationTimestamp,
+    this.audioEventId,
+    this.audioEventRelay,
+    this.nostrLikeCount,
   });
 
   /// Create VideoEvent from Nostr event
-  factory VideoEvent.fromNostrEvent(Event event) {
-    if (!NIP71VideoKinds.isVideoKind(event.kind)) {
+  ///
+  /// [permissive] - When true, accepts all NIP-71 video kinds (21, 22, 34235, 34236, 34237)
+  /// instead of just kind 34236. Use this when parsing videos from external sources
+  /// like curated lists created by other clients.
+  factory VideoEvent.fromNostrEvent(Event event, {bool permissive = false}) {
+    final isValid = permissive
+        ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
+        : NIP71VideoKinds.isVideoKind(event.kind);
+
+    if (!isValid) {
+      final acceptedKinds = permissive
+          ? NIP71VideoKinds.getAllAcceptableVideoKinds()
+          : NIP71VideoKinds.getAllVideoKinds();
       throw ArgumentError(
-        'Event must be a NIP-71 video kind (${NIP71VideoKinds.getAllVideoKinds().join(', ')})',
+        'Event must be a NIP-71 video kind (${acceptedKinds.join(', ')})',
       );
     }
 
@@ -90,6 +104,8 @@ class VideoEvent {
     int? originalComments;
     int? originalReposts;
     int? expirationTimestamp;
+    String? audioEventId;
+    String? audioEventRelay;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic> from different nostr implementations
@@ -341,7 +357,25 @@ class VideoEvent {
             );
           }
         case 'e':
-          // Event reference - check if it's a media URL in disguise
+          // Event reference - check for audio reference marker
+          // Format: ["e", "<audio-event-id>", "<relay>", "audio"]
+          // The marker can be at index 2 (no relay) or index 3 (with relay)
+          // Only use the first audio reference found
+          if (tag.length >= 3 && audioEventId == null) {
+            final marker = tag.length >= 4 ? tag[3] : tag[2];
+            if (marker == 'audio' && tagValue.isNotEmpty) {
+              audioEventId = tagValue;
+              // Relay hint is at index 2 if marker is at index 3
+              if (tag.length >= 4 && tag[2].isNotEmpty) {
+                audioEventRelay = tag[2];
+              }
+              developer.log(
+                '🎵 Found audio reference: $audioEventId (relay: $audioEventRelay)',
+                name: 'VideoEvent',
+              );
+            }
+          }
+          // Also check if it's a media URL in disguise (legacy behavior)
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
             developer.log(
@@ -523,6 +557,8 @@ class VideoEvent {
       originalComments: originalComments,
       originalReposts: originalReposts,
       expirationTimestamp: expirationTimestamp,
+      audioEventId: audioEventId,
+      audioEventRelay: audioEventRelay,
     );
   }
   final String id;
@@ -573,6 +609,27 @@ class VideoEvent {
   final int? originalReposts; // Original repost count from classic Vine
   final int?
   expirationTimestamp; // NIP-40 expiration timestamp (Unix timestamp in seconds)
+
+  // Audio reuse fields (NIP-71 extension)
+  /// Event ID of the referenced audio event (Kind 1063).
+  /// Parsed from ["e", "<audio-event-id>", "<relay>", "audio"] tag.
+  final String? audioEventId;
+
+  /// Optional relay hint for fetching the audio event.
+  final String? audioEventRelay;
+
+  // Live Nostr reaction count (Kind 7 reactions from relays)
+  /// This is populated when videos are loaded and represents the current
+  /// like count from Nostr relays, separate from historical originalLikes.
+  final int? nostrLikeCount;
+
+  /// Combined total likes (original Vine likes + Nostr reactions).
+  /// Use this for display to show the complete like count.
+  int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
+
+  /// Check if this video uses audio from another source.
+  /// Returns true if audioEventId is set.
+  bool get hasAudioReference => audioEventId != null;
 
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
@@ -634,11 +691,21 @@ class VideoEvent {
     return !isRepost;
   }
 
-  /// Check if we should show the Original Content badge
-  /// Show for original content that is NOT a vintage recovered vine
+  /// Check if video is hosted on Divine servers
+  bool get isFromDivineServer {
+    final url = videoUrl?.toLowerCase() ?? '';
+    return url.contains('divine.video') ||
+        url.contains('cdn.divine.video') ||
+        url.contains('stream.divine.video') ||
+        url.contains('media.divine.video');
+  }
+
+  /// Check if we should show the "Not Divine" badge
+  /// Show for content that is NOT from Divine servers
   /// AND does NOT have ProofMode verification (those show ProofMode badge instead)
-  bool get shouldShowOriginalBadge {
-    return isOriginalContent && !isOriginalVine && !hasProofMode;
+  /// AND is NOT a vintage recovered vine (those show V Original badge)
+  bool get shouldShowNotDivineBadge {
+    return !isFromDivineServer && !hasProofMode && !isOriginalVine;
   }
 
   /// Comparator: items with no loop count first (new vines),
@@ -929,6 +996,9 @@ class VideoEvent {
     String? reposterPubkey,
     List<String>? reposterPubkeys,
     DateTime? repostedAt,
+    String? audioEventId,
+    String? audioEventRelay,
+    int? nostrLikeCount,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -955,6 +1025,9 @@ class VideoEvent {
     reposterPubkey: reposterPubkey ?? this.reposterPubkey,
     reposterPubkeys: reposterPubkeys ?? this.reposterPubkeys,
     repostedAt: repostedAt ?? this.repostedAt,
+    audioEventId: audioEventId ?? this.audioEventId,
+    audioEventRelay: audioEventRelay ?? this.audioEventRelay,
+    nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
   );
 
   @override

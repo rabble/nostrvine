@@ -14,7 +14,7 @@ class CleanupResult {
     required this.oldNotificationsDeleted,
   });
 
-  /// Number of expired Nostr events deleted.
+  /// Number of expired Nostr events deleted (includes events with NULL expiry).
   final int expiredEventsDeleted;
 
   /// Number of expired profile stats deleted.

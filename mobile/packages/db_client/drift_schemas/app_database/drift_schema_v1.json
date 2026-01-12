@@ -94,6 +94,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "expire_at",
+            "getter_name": "expireAt",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -387,7 +397,7 @@
       "references": [],
       "type": "table",
       "data": {
-        "name": "profile_stats",
+        "name": "profile_statistics",
         "was_declared_in_moor": false,
         "columns": [
           {
@@ -969,7 +979,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"event\" (\"id\" TEXT NOT NULL, \"pubkey\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"kind\" INTEGER NOT NULL, \"tags\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"sig\" TEXT NOT NULL, \"sources\" TEXT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"event\" (\"id\" TEXT NOT NULL, \"pubkey\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"kind\" INTEGER NOT NULL, \"tags\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"sig\" TEXT NOT NULL, \"sources\" TEXT NULL, \"expire_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },
@@ -992,11 +1002,11 @@
       ]
     },
     {
-      "name": "profile_stats",
+      "name": "profile_statistics",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"profile_stats\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"profile_statistics\" (\"pubkey\" TEXT NOT NULL, \"video_count\" INTEGER NULL, \"follower_count\" INTEGER NULL, \"following_count\" INTEGER NULL, \"total_views\" INTEGER NULL, \"total_likes\" INTEGER NULL, \"cached_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     },
