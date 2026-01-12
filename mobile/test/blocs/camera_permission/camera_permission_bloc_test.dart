@@ -26,18 +26,16 @@ void main() {
     group('CameraPermissionRequest', () {
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'does nothing when state is CameraPermissionInitial',
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => <CameraPermissionState>[],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'does nothing when state is CameraPermissionLoading',
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () => const CameraPermissionLoading(),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => <CameraPermissionState>[],
@@ -45,9 +43,8 @@ void main() {
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'does nothing when status is authorized',
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.authorized),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -59,9 +56,8 @@ void main() {
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'does nothing when status is requiresSettings',
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () => const CameraPermissionLoaded(
           CameraPermissionStatus.requiresSettings,
         ),
@@ -82,9 +78,8 @@ void main() {
             () => mockPermissionsService.requestMicrophonePermission(),
           ).thenAnswer((_) async => PermissionStatus.granted);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -100,9 +95,8 @@ void main() {
             () => mockPermissionsService.requestCameraPermission(),
           ).thenAnswer((_) async => PermissionStatus.canRequest);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -119,9 +113,8 @@ void main() {
             () => mockPermissionsService.requestMicrophonePermission(),
           ).thenAnswer((_) async => PermissionStatus.canRequest);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -135,9 +128,8 @@ void main() {
             () => mockPermissionsService.requestCameraPermission(),
           ).thenAnswer((_) async => PermissionStatus.requiresSettings);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -154,9 +146,8 @@ void main() {
             () => mockPermissionsService.requestMicrophonePermission(),
           ).thenAnswer((_) async => PermissionStatus.requiresSettings);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -170,9 +161,8 @@ void main() {
             () => mockPermissionsService.requestCameraPermission(),
           ).thenThrow(Exception('Platform error'));
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -189,9 +179,8 @@ void main() {
             () => mockPermissionsService.requestMicrophonePermission(),
           ).thenThrow(Exception('Platform error'));
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -210,9 +199,8 @@ void main() {
             () => mockPermissionsService.checkMicrophoneStatus(),
           ).thenAnswer((_) async => PermissionStatus.canRequest);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
           const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -229,9 +217,8 @@ void main() {
             () => mockPermissionsService.checkMicrophoneStatus(),
           ).thenAnswer((_) async => PermissionStatus.granted);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
           const CameraPermissionLoaded(CameraPermissionStatus.authorized),
@@ -248,9 +235,8 @@ void main() {
             () => mockPermissionsService.checkMicrophoneStatus(),
           ).thenAnswer((_) async => PermissionStatus.granted);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
           const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
@@ -267,9 +253,8 @@ void main() {
             () => mockPermissionsService.checkMicrophoneStatus(),
           ).thenAnswer((_) async => PermissionStatus.granted);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [const CameraPermissionError()],
       );
@@ -283,9 +268,8 @@ void main() {
             () => mockPermissionsService.openAppSettings(),
           ).thenAnswer((_) async => true);
         },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-        ),
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
         act: (bloc) => bloc.add(const CameraPermissionOpenSettings()),
         expect: () => <CameraPermissionState>[],
         verify: (_) {
@@ -314,24 +298,21 @@ void main() {
         },
       );
 
-      test(
-        'returns requiresSettings when camera requires settings',
-        () async {
-          when(
-            () => mockPermissionsService.checkCameraStatus(),
-          ).thenAnswer((_) async => PermissionStatus.requiresSettings);
-          when(
-            () => mockPermissionsService.checkMicrophoneStatus(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
+      test('returns requiresSettings when camera requires settings', () async {
+        when(
+          () => mockPermissionsService.checkCameraStatus(),
+        ).thenAnswer((_) async => PermissionStatus.requiresSettings);
+        when(
+          () => mockPermissionsService.checkMicrophoneStatus(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
 
-          final bloc = CameraPermissionBloc(
-            permissionsService: mockPermissionsService,
-          );
-          final result = await bloc.checkPermissions();
+        final bloc = CameraPermissionBloc(
+          permissionsService: mockPermissionsService,
+        );
+        final result = await bloc.checkPermissions();
 
-          expect(result, CameraPermissionStatus.requiresSettings);
-        },
-      );
+        expect(result, CameraPermissionStatus.requiresSettings);
+      });
 
       test(
         'returns requiresSettings when microphone requires settings',
@@ -352,24 +333,21 @@ void main() {
         },
       );
 
-      test(
-        'returns canRequest when permissions can be requested',
-        () async {
-          when(
-            () => mockPermissionsService.checkCameraStatus(),
-          ).thenAnswer((_) async => PermissionStatus.canRequest);
-          when(
-            () => mockPermissionsService.checkMicrophoneStatus(),
-          ).thenAnswer((_) async => PermissionStatus.canRequest);
+      test('returns canRequest when permissions can be requested', () async {
+        when(
+          () => mockPermissionsService.checkCameraStatus(),
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+        when(
+          () => mockPermissionsService.checkMicrophoneStatus(),
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
 
-          final bloc = CameraPermissionBloc(
-            permissionsService: mockPermissionsService,
-          );
-          final result = await bloc.checkPermissions();
+        final bloc = CameraPermissionBloc(
+          permissionsService: mockPermissionsService,
+        );
+        final result = await bloc.checkPermissions();
 
-          expect(result, CameraPermissionStatus.canRequest);
-        },
-      );
+        expect(result, CameraPermissionStatus.canRequest);
+      });
 
       test(
         'returns canRequest when one permission granted and other can request',
