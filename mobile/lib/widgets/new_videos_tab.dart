@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
+import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
@@ -19,17 +21,14 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 /// - Riverpod provider watching (popularNowFeedProvider)
 /// - Analytics tracking (optional, for testability)
 /// - Loading/error/data states
+/// - Full screen video navigation on tap
 class NewVideosTab extends ConsumerStatefulWidget {
   const NewVideosTab({
     super.key,
-    required this.onVideoTap,
     this.screenAnalytics,
     this.feedTracker,
     this.errorTracker,
   });
-
-  /// Callback when a video is tapped to enter feed mode
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   /// Optional analytics services (for testing, defaults to singletons)
   final ScreenAnalyticsService? screenAnalytics;
@@ -104,7 +103,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
         _feedTracker?.trackEmptyFeed('new_vines');
       }
 
-      return _NewVideosContent(videos: videos, onVideoTap: widget.onVideoTap);
+      return _NewVideosContent(videos: videos);
     }
 
     if (popularNowAsync.hasError) {
@@ -168,17 +167,32 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 
 /// Content widget displaying the video grid
 class _NewVideosContent extends ConsumerWidget {
-  const _NewVideosContent({required this.videos, required this.onVideoTap});
+  const _NewVideosContent({required this.videos});
 
   final List<VideoEvent> videos;
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ComposableVideoGrid(
       videos: videos,
       thumbnailAspectRatio: 9 / 16, // Portrait thumbnail (0.5625)
-      onVideoTap: onVideoTap,
+      onVideoTap: (videoList, index) {
+        Log.info(
+          '🎯 NewVideosTab TAP: gridIndex=$index, '
+          'videoId=${videoList[index].id}',
+          category: LogCategory.video,
+        );
+        // Navigate to fullscreen video feed
+        context.pushVideoFeed(
+          source: StaticFeedSource(
+            videoList,
+            onLoadMore: () =>
+                ref.read(popularNowFeedProvider.notifier).loadMore(),
+          ),
+          initialIndex: index,
+          contextTitle: 'New Videos',
+        );
+      },
       onRefresh: () async {
         Log.info(
           '🔄 NewVideosTab: Refreshing feed',

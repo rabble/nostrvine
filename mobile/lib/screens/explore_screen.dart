@@ -347,7 +347,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               controller: _tabController,
               children: [
                 NewVideosTab(
-                  onVideoTap: _enterFeedMode,
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
