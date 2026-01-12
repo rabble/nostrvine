@@ -285,10 +285,7 @@ class LikesRepository {
     for (final event in events) {
       // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
-        if (tag is List &&
-            tag.isNotEmpty &&
-            tag[0] == 'e' &&
-            tag.length > 1) {
+        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
           final targetId = tag[1] as String;
           if (counts.containsKey(targetId)) {
             counts[targetId] = counts[targetId]! + 1;

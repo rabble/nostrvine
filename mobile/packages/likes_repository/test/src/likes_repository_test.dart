@@ -536,48 +536,50 @@ void main() {
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
-      test('queries relay for multiple event counts in single request',
-          () async {
-        const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';
-        const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';
-        const eventId3 = 'event_id_3_1234567890abcdef01234567890abcdef';
+      test(
+        'queries relay for multiple event counts in single request',
+        () async {
+          const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';
+          const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';
+          const eventId3 = 'event_id_3_1234567890abcdef01234567890abcdef';
 
-        // Create mock reaction events with 'e' tags pointing to target events
-        final mockReaction1 = MockEvent();
-        when(() => mockReaction1.tags).thenReturn([
-          ['e', eventId1],
-        ]);
+          // Create mock reaction events with 'e' tags pointing to target events
+          final mockReaction1 = MockEvent();
+          when(() => mockReaction1.tags).thenReturn([
+            ['e', eventId1],
+          ]);
 
-        final mockReaction2 = MockEvent();
-        when(() => mockReaction2.tags).thenReturn([
-          ['e', eventId1],
-        ]);
+          final mockReaction2 = MockEvent();
+          when(() => mockReaction2.tags).thenReturn([
+            ['e', eventId1],
+          ]);
 
-        final mockReaction3 = MockEvent();
-        when(() => mockReaction3.tags).thenReturn([
-          ['e', eventId2],
-        ]);
+          final mockReaction3 = MockEvent();
+          when(() => mockReaction3.tags).thenReturn([
+            ['e', eventId2],
+          ]);
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [mockReaction1, mockReaction2, mockReaction3],
-        );
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [mockReaction1, mockReaction2, mockReaction3],
+          );
 
-        repository = LikesRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-        );
+          repository = LikesRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
 
-        final result = await repository.getLikeCounts([
-          eventId1,
-          eventId2,
-          eventId3,
-        ]);
+          final result = await repository.getLikeCounts([
+            eventId1,
+            eventId2,
+            eventId3,
+          ]);
 
-        expect(result[eventId1], equals(2));
-        expect(result[eventId2], equals(1));
-        expect(result[eventId3], equals(0));
-        verify(() => mockNostrClient.queryEvents(any())).called(1);
-      });
+          expect(result[eventId1], equals(2));
+          expect(result[eventId2], equals(1));
+          expect(result[eventId3], equals(0));
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        },
+      );
 
       test('initializes all event IDs to zero', () async {
         const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';

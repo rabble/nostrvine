@@ -4492,10 +4492,9 @@ class VideoEventService extends ChangeNotifier {
         }
       }
     } else if (subscriptionType == SubscriptionType.profile) {
-      final authorHex =
-          videoEvent.isRepost && videoEvent.reposterPubkey != null
-              ? videoEvent.reposterPubkey!
-              : videoEvent.pubkey;
+      final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
+          ? videoEvent.reposterPubkey!
+          : videoEvent.pubkey;
       final bucket = _authorBuckets[authorHex];
       if (bucket != null) {
         final bucketIndex = bucket.indexWhere((v) => v.id == videoId);
