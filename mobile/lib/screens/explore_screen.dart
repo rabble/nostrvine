@@ -8,9 +8,7 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -23,7 +21,7 @@ import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -50,7 +48,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   final _screenAnalytics = ScreenAnalyticsService();
   final _feedTracker = FeedPerformanceTracker();
   final _errorTracker = ErrorAnalyticsTracker();
-  DateTime? _feedLoadStartTime;
 
   @override
   void initState() {
@@ -349,7 +346,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             TabBarView(
               controller: _tabController,
               children: [
-                _buildNewVinesTab(),
+                NewVideosTab(
+                  onVideoTap: _enterFeedMode,
+                  screenAnalytics: _screenAnalytics,
+                  feedTracker: _feedTracker,
+                  errorTracker: _errorTracker,
+                ),
                 PopularVideosTab(
                   onVideoTap: _enterFeedMode,
                   screenAnalytics: _screenAnalytics,
@@ -794,235 +796,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         ),
         const SizedBox(height: 16),
       ],
-    );
-  }
-
-  // Keep Divine Team functionality for now - will migrate to a list
-  // ignore: unused_element
-  Widget _buildEditorsPickTab() {
-    // Watch editor's picks from curation provider
-    final editorsPicks = ref.watch(editorsPicksProvider);
-
-    Log.debug(
-      '🔍 EditorsPickTab: editorsPicks length: ${editorsPicks.length}',
-      name: 'ExploreScreen',
-      category: LogCategory.video,
-    );
-
-    if (editorsPicks.isEmpty) {
-      return Container(
-        key: const Key('editors-pick-content'),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.star, size: 64, color: VineTheme.secondaryText),
-              const SizedBox(height: 16),
-              Text(
-                'Divine Team',
-                style: TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Curated content coming soon',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return _buildVideoGrid(editorsPicks, 'Divine Team');
-  }
-
-  Widget _buildNewVinesTab() {
-    // Watch popular now feed from dedicated provider
-    final popularNowAsync = ref.watch(popularNowFeedProvider);
-
-    Log.debug(
-      '🔍 NewVinesTab: AsyncValue state - isLoading: ${popularNowAsync.isLoading}, '
-      'hasValue: ${popularNowAsync.hasValue}, hasError: ${popularNowAsync.hasError}',
-      name: 'ExploreScreen',
-      category: LogCategory.video,
-    );
-
-    // Track feed loading start
-    if (popularNowAsync.isLoading && _feedLoadStartTime == null) {
-      _feedLoadStartTime = DateTime.now();
-      _feedTracker.startFeedLoad('new_vines');
-    }
-
-    return popularNowAsync.when(
-      data: (feedState) {
-        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
-        final allVideos = feedState.videos;
-        final videos = allVideos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
-        Log.info(
-          '✅ NewVinesTab: Data state - ${videos.length} videos (filtered from ${allVideos.length} total)',
-          name: 'ExploreScreen',
-          category: LogCategory.video,
-        );
-
-        // Track feed loaded with videos
-        if (_feedLoadStartTime != null) {
-          _feedTracker.markFirstVideosReceived('new_vines', videos.length);
-          _feedTracker.markFeedDisplayed('new_vines', videos.length);
-          _screenAnalytics.markDataLoaded(
-            'explore_screen',
-            dataMetrics: {'tab': 'new_vines', 'video_count': videos.length},
-          );
-          _feedLoadStartTime = null;
-        }
-
-        // Track empty feed
-        if (videos.isEmpty) {
-          _feedTracker.trackEmptyFeed('new_vines');
-        }
-
-        // Videos are already sorted by PopularNowFeed provider (newest first)
-        // Use portrait aspect ratio (9:16) for New Videos to match vertical video format
-        return _buildVideoGrid(
-          videos,
-          'New Videos',
-          thumbnailAspectRatio: 9 / 16, // Portrait thumbnail (0.5625)
-        );
-      },
-      loading: () {
-        Log.info(
-          '⏳ NewVinesTab: Showing loading indicator',
-          name: 'ExploreScreen',
-          category: LogCategory.video,
-        );
-
-        // Track slow loading after 5 seconds
-        if (_feedLoadStartTime != null) {
-          final elapsed = DateTime.now()
-              .difference(_feedLoadStartTime!)
-              .inMilliseconds;
-          if (elapsed > 5000) {
-            _errorTracker.trackSlowOperation(
-              operation: 'new_vines_feed_load',
-              durationMs: elapsed,
-              thresholdMs: 5000,
-              location: 'explore_new_vines',
-            );
-          }
-        }
-
-        return const Center(child: BrandedLoadingIndicator(size: 80));
-      },
-      error: (error, stackTrace) {
-        Log.error(
-          '❌ NewVinesTab: Error state - $error',
-          name: 'ExploreScreen',
-          category: LogCategory.video,
-        );
-
-        // Track error
-        final loadTime = _feedLoadStartTime != null
-            ? DateTime.now().difference(_feedLoadStartTime!).inMilliseconds
-            : null;
-        _feedTracker.trackFeedError(
-          'new_vines',
-          errorType: 'load_failed',
-          errorMessage: error.toString(),
-        );
-        _errorTracker.trackFeedLoadError(
-          feedType: 'new_vines',
-          errorType: 'provider_error',
-          errorMessage: error.toString(),
-          loadTimeMs: loadTime,
-        );
-        _feedLoadStartTime = null;
-
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error, size: 64, color: VineTheme.likeRed),
-              const SizedBox(height: 16),
-              Text(
-                'Failed to load videos',
-                style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$error',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildVideoGrid(
-    List<VideoEvent> videos,
-    String tabName, {
-    double? thumbnailAspectRatio,
-  }) {
-    // Default aspect ratios - square thumbnails with standard grid height
-    final thumbAspectRatio = thumbnailAspectRatio ?? 1.0;
-
-    return ComposableVideoGrid(
-      videos: videos,
-      thumbnailAspectRatio: thumbAspectRatio,
-      onVideoTap: (videos, index) {
-        Log.info(
-          '🎯 ExploreScreen: Tapped video tile at index $index',
-          category: LogCategory.video,
-        );
-        _enterFeedMode(videos, index);
-      },
-      onRefresh: () async {
-        Log.info(
-          '🔄 ExploreScreen: Refreshing $tabName tab',
-          category: LogCategory.video,
-        );
-
-        // Refresh the appropriate provider based on tab
-        if (tabName == 'Lists') {
-          // Refresh list providers
-          ref.invalidate(userListsProvider);
-          ref.invalidate(curatedListsProvider);
-        } else if (tabName == "New Videos") {
-          // Refresh popular now feed - call refresh() to force new subscription
-          await ref.read(popularNowFeedProvider.notifier).refresh();
-        } else {
-          // For Trending tab, refresh video events
-          final _ = await ref.refresh(videoEventsProvider);
-        }
-      },
-      emptyBuilder: () => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.video_library, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
-            Text(
-              'No videos in $tabName',
-              style: TextStyle(
-                color: VineTheme.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back later for new content',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
