@@ -109,6 +109,8 @@ class VineBottomSheet extends StatelessWidget {
                   children: children!,
                 ),
           ),
+          if (bottomInput != null)
+            Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Optional bottom input
           if (bottomInput != null) bottomInput!,

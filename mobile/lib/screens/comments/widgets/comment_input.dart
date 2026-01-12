@@ -7,7 +7,12 @@ import 'package:openvine/theme/vine_theme.dart';
 /// Input widget for posting new top-level comments.
 ///
 /// Positioned at the bottom of the comments sheet with keyboard-aware padding.
-class CommentInput extends StatelessWidget {
+/// Features:
+/// - Background container with rounded corners
+/// - Conditional send button (hidden when empty)
+/// - Reply indicator positioned at bottom inside container
+/// - Multiline support with constraints
+class CommentInput extends StatefulWidget {
   const CommentInput({
     required this.controller,
     required this.isPosting,
@@ -41,148 +46,200 @@ class CommentInput extends StatelessWidget {
   final FocusNode? focusNode;
 
   @override
+  State<CommentInput> createState() => _CommentInputState();
+}
+
+class _CommentInputState extends State<CommentInput> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasText = widget.controller.text.trim().isNotEmpty;
+  }
+
+  void _handleTextChanged(String text) {
+    final hasText = text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
+    widget.onChanged?.call(text);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bottomPadding =
         MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom +
-        16;
+        8;
+
+    final isReplying = widget.replyToDisplayName != null;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceBackground,
-        border: Border(
-          top: BorderSide(color: VineTheme.outlineVariant, width: 1),
-        ),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: bottomPadding,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Reply indicator banner
-          if (replyToDisplayName != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                border: const Border(
-                  bottom: BorderSide(color: VineTheme.outlineVariant, width: 1),
-                ),
-              ),
-              child: Row(
+      child: Container(
+        decoration: BoxDecoration(
+          color: VineTheme.iconButtonBackground,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          isReplying ? 0 : 4,
+          4,
+          isReplying ? 0 : 4,
+        ),
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Text input
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: isReplying ? 10 : 4),
+              child: isReplying
+                  ? ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 100),
+                      child: _buildTextField(),
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: _buildTextField()),
+                        if (_hasText) ...[
+                          const SizedBox(width: 8),
+                          _buildSendButton(),
+                        ],
+                      ],
+                    ),
+            ),
+            // Reply indicator row (only when replying)
+            if (isReplying) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(
-                    Icons.subdirectory_arrow_left,
-                    size: 16,
-                    color: Color(0xFF27C58B),
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'Re: $replyToDisplayName',
-                      style: const TextStyle(
-                        color: Color(0xFF27C58B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.4,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: onCancelReply,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 18,
-                      color: Colors.white70,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-          // Input field
-          Padding(
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 16,
-              top: 16,
-              bottom: bottomPadding,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Semantics(
-                    identifier: 'comment_text_field',
-                    textField: true,
-                    label: 'Comment input',
-                    hint: 'Add a comment',
-                    child: TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      onChanged: onChanged,
-                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                      enableInteractiveSelection: true,
-                      style: VineTheme.bodyFont(
-                        fontSize: 16,
-                        color: VineTheme.onSurface,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Add comment...',
-                        hintStyle: VineTheme.bodyFont(
-                          fontSize: 16,
-                          color: VineTheme.onSurfaceMuted,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Re: ${widget.replyToDisplayName}',
+                            style: VineTheme.bodyFont(
+                              fontSize: 12,
+                              color: VineTheme.tabIndicatorGreen,
+                              height: 16 / 12,
+                            ).copyWith(letterSpacing: 0.4),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      maxLines: null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Semantics(
-                  identifier: 'send_comment_button',
-                  button: true,
-                  enabled: !isPosting,
-                  label: isPosting ? 'Posting comment' : 'Send comment',
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: VineTheme.tabIndicatorGreen,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 4,
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: widget.onCancelReply,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: VineTheme.tabIndicatorGreen,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    child: IconButton(
-                      onPressed: isPosting ? null : onSubmit,
-                      icon: isPosting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.arrow_upward,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                    ),
                   ),
-                ),
-              ],
-            ),
+                  if (_hasText) ...[
+                    const SizedBox(width: 16),
+                    _buildSendButton(),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField() {
+    final isReplying = widget.replyToDisplayName != null;
+    return Semantics(
+      identifier: 'comment_text_field',
+      textField: true,
+      label: isReplying ? 'Reply input' : 'Comment input',
+      hint: isReplying ? 'Add a reply' : 'Add a comment',
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        onChanged: _handleTextChanged,
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+        enableInteractiveSelection: true,
+        style: VineTheme.bodyFont(
+          fontSize: isReplying ? 14 : 16,
+          color: VineTheme.onSurface,
+          height: isReplying ? 20 / 14 : null,
+        ),
+        cursorColor: VineTheme.tabIndicatorGreen,
+        decoration: InputDecoration(
+          hintText: isReplying ? '' : 'Add comment...',
+          hintStyle: VineTheme.bodyFont(
+            fontSize: 16,
+            color: VineTheme.onSurfaceMuted,
           ),
-        ],
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          isDense: true,
+        ),
+        maxLines: isReplying ? 5 : null,
+        minLines: isReplying ? 1 : null,
+        textAlignVertical: isReplying ? null : TextAlignVertical.center,
+      ),
+    );
+  }
+
+  Widget _buildSendButton() {
+    return Semantics(
+      identifier: 'send_comment_button',
+      button: true,
+      enabled: !widget.isPosting,
+      label: widget.isPosting ? 'Posting comment' : 'Send comment',
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: VineTheme.tabIndicatorGreen,
+          borderRadius: BorderRadius.circular(17),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 2,
+              offset: const Offset(0.5, 0.5),
+            ),
+          ],
+        ),
+        child: IconButton(
+          onPressed: widget.isPosting ? null : widget.onSubmit,
+          padding: EdgeInsets.zero,
+          icon: widget.isPosting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+        ),
       ),
     );
   }
