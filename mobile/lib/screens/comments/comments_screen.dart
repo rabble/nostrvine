@@ -163,53 +163,109 @@ class _CommentsScreenBody extends StatelessWidget {
 }
 
 /// Main comment input widget that reads from CommentsBloc state
-class _MainCommentInput extends StatefulWidget {
+class _MainCommentInput extends ConsumerStatefulWidget {
   const _MainCommentInput();
 
   @override
-  State<_MainCommentInput> createState() => _MainCommentInputState();
+  ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
 }
 
-class _MainCommentInputState extends State<_MainCommentInput> {
+class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     final state = context.read<CommentsBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
+    return BlocConsumer<CommentsBloc, CommentsState>(
+      listenWhen: (prev, next) =>
+          prev.activeReplyCommentId != next.activeReplyCommentId,
+      listener: (context, state) {
+        // Focus input when reply is activated
+        if (state.activeReplyCommentId != null) {
+          _focusNode.requestFocus();
+        }
+      },
       buildWhen: (prev, next) =>
           prev.mainInputText != next.mainInputText ||
+          prev.replyInputText != next.replyInputText ||
+          prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.isPosting != next.isPosting,
       builder: (context, state) {
-        // Sync controller with state (for when state changes externally,
-        // e.g., after post clears the text)
-        if (_controller.text != state.mainInputText) {
-          _controller.text = state.mainInputText;
+        final isReplyMode = state.activeReplyCommentId != null;
+        final inputText = isReplyMode
+            ? state.replyInputText
+            : state.mainInputText;
+
+        // Sync controller with state
+        if (_controller.text != inputText) {
+          _controller.text = inputText;
           _controller.selection = TextSelection.collapsed(
-            offset: state.mainInputText.length,
+            offset: inputText.length,
           );
+        }
+
+        // Get display name of user being replied to
+        String? replyToDisplayName;
+        String? replyToAuthorPubkey;
+        if (isReplyMode) {
+          // Find the comment being replied to
+          final replyComment = state.comments.firstWhere(
+            (c) => c.id == state.activeReplyCommentId,
+            orElse: () => throw StateError('Reply comment not found'),
+          );
+          replyToAuthorPubkey = replyComment.authorPubkey;
+
+          // Fetch profile for display name
+          final userProfileService = ref.watch(userProfileServiceProvider);
+          final profile = userProfileService.getCachedProfile(
+            replyToAuthorPubkey,
+          );
+
+          // Get display name with fallback
+          replyToDisplayName = profile?.displayName ?? profile?.name ?? 'user';
         }
 
         return CommentInput(
           controller: _controller,
-          isPosting: state.isPosting && state.activeReplyCommentId == null,
+          focusNode: _focusNode,
+          isPosting: state.isPosting,
+          replyToDisplayName: replyToDisplayName,
           onChanged: (text) {
-            context.read<CommentsBloc>().add(CommentTextChanged(text));
+            context.read<CommentsBloc>().add(
+              CommentTextChanged(text, commentId: state.activeReplyCommentId),
+            );
           },
           onSubmit: () {
-            context.read<CommentsBloc>().add(const CommentSubmitted());
+            if (isReplyMode) {
+              context.read<CommentsBloc>().add(
+                CommentSubmitted(
+                  parentCommentId: state.activeReplyCommentId,
+                  parentAuthorPubkey: replyToAuthorPubkey,
+                ),
+              );
+            } else {
+              context.read<CommentsBloc>().add(const CommentSubmitted());
+            }
+          },
+          onCancelReply: () {
+            context.read<CommentsBloc>().add(
+              CommentReplyToggled(state.activeReplyCommentId!),
+            );
           },
         );
       },
