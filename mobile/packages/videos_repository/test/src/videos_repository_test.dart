@@ -28,14 +28,9 @@ void main() {
       repository = VideosRepository(nostrClient: mockNostrClient);
     });
 
-    tearDown(() async {
-      await repository.dispose();
-    });
-
     group('constructor', () {
       test('creates repository with nostrClient', () {
-        final repo = VideosRepository(nostrClient: mockNostrClient);
-        expect(repo, isNotNull);
+        expect(repository, isNotNull);
       });
 
       test('initial myVideoCountStream emits 0', () async {
@@ -46,6 +41,7 @@ void main() {
     group('getVideoCount', () {
       test('returns 0 for empty pubkey', () async {
         final count = await repository.getVideoCount('');
+
         expect(count, equals(0));
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
@@ -88,9 +84,13 @@ void main() {
 
     group('initialize', () {
       test('does nothing when pubkey is empty', () async {
+        // Create a new repository with empty pubkey for this test
         when(() => mockNostrClient.publicKey).thenReturn('');
+        final emptyPubkeyRepository = VideosRepository(
+          nostrClient: mockNostrClient,
+        );
 
-        await repository.initialize();
+        await emptyPubkeyRepository.initialize();
 
         verifyNever(() => mockNostrClient.subscribe(any()));
       });
@@ -103,7 +103,7 @@ void main() {
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
-        ).thenReturn(streamController.stream);
+        ).thenAnswer((_) => streamController.stream);
 
         await repository.initialize();
 
@@ -131,7 +131,7 @@ void main() {
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
-        ).thenReturn(streamController.stream);
+        ).thenAnswer((_) => streamController.stream);
 
         await repository.initialize();
 
@@ -164,7 +164,7 @@ void main() {
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
-        ).thenReturn(streamController.stream);
+        ).thenAnswer((_) => streamController.stream);
 
         await repository.initialize();
 
@@ -196,7 +196,7 @@ void main() {
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
-        ).thenReturn(streamController.stream);
+        ).thenAnswer((_) => streamController.stream);
 
         await repository.initialize();
         await repository.initialize(); // second call
@@ -221,7 +221,7 @@ void main() {
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
-        ).thenReturn(streamController.stream);
+        ).thenAnswer((_) => streamController.stream);
         when(() => mockNostrClient.unsubscribe(any()))
             .thenAnswer((_) async {});
 
@@ -236,9 +236,17 @@ void main() {
       test('closes the stream subject', () async {
         await repository.dispose();
 
-        expect(
-          () => repository.myVideoCountStream.listen((_) {}),
-          throwsA(isA<StateError>()),
+        // After dispose, the stream completes immediately (done event)
+        final completer = Completer<void>();
+        repository.myVideoCountStream.listen(
+          (_) {},
+          onDone: completer.complete,
+        );
+
+        // The stream should complete quickly since it's already closed
+        await expectLater(
+          completer.future.timeout(const Duration(milliseconds: 100)),
+          completes,
         );
       });
     });
@@ -256,7 +264,7 @@ Event _createVideoEvent({
     'pubkey': pubkey,
     'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
     'kind': kind,
-    'tags': [],
+    'tags': <List<String>>[],
     'content': '',
     'sig':
         '0000000000000000000000000000000000000000000000000000000000000000'
