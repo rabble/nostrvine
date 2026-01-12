@@ -2,12 +2,63 @@
 // ABOUTME: Matches the classic Vine app aesthetic with proper color scheme and typography
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VineTheme {
+  // Typography - Google Fonts
+  // Bricolage Grotesque for titles (bold 800, default 22px with 28px line height)
+  static TextStyle titleFont({
+    double fontSize = 22,
+    double? height,
+    Color color = whiteText,
+  }) => GoogleFonts.bricolageGrotesque(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w800,
+    height: height ?? 28 / 22,
+    color: color,
+  );
+
+  // Inter for body and small text
+  static TextStyle bodyFont({
+    double fontSize = 16,
+    FontWeight fontWeight = FontWeight.w400,
+    Color color = primaryText,
+  }) => GoogleFonts.inter(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+  );
+
   // Classic Vine green color palette
   static const Color vineGreen = Color(0xFF00B488);
   static const Color vineGreenDark = Color(0xFF009A72);
   static const Color vineGreenLight = Color(0xFF33C49F);
+
+  // Navigation colors
+  static const Color navGreen = Color(0xFF00150D);
+  static const Color iconButtonBackground = Color(0xFF032017);
+  static const Color tabIconInactive = Color(0xFF40504A);
+  static const Color tabIndicatorGreen = Color(0xFF27C58B);
+
+  // Surface colors (from Figma design system)
+  static const Color surfaceBackground = Color(0xFF00150D);
+  static const Color onSurface = Color(0xF2FFFFFF); // rgba(255,255,255,0.95)
+  static const Color onSurfaceMuted = Color(
+    0x80FFFFFF,
+  ); // rgba(255,255,255,0.5)
+  static const Color outlineVariant = Color(0xFF254136);
+  static const Color borderWhite25 = Color(
+    0x40FFFFFF,
+  ); // rgba(255,255,255,0.25)
+
+  // Tab text style - Bricolage bold (800), 18px, 24px line height
+  static TextStyle tabTextStyle({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        height: 24 / 18,
+        color: color,
+      );
 
   // Background colors
   static const Color backgroundColor = Color(0xFF000000);
@@ -36,7 +87,7 @@ class VineTheme {
     primaryColor: vineGreen,
     scaffoldBackgroundColor: backgroundColor,
     appBarTheme: const AppBarTheme(
-      backgroundColor: vineGreen,
+      backgroundColor: navGreen,
       foregroundColor: whiteText,
       elevation: 1,
       centerTitle: true,

@@ -1,6 +1,5 @@
 // ABOUTME: Riverpod providers for social service with reactive state management
 // ABOUTME: Pure @riverpod functions for social interactions like follows and reposts
-// ABOUTME: Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 
 import 'dart:async';
 import 'dart:convert';
@@ -13,6 +12,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/state/social_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -22,7 +22,6 @@ part 'social_providers.g.dart';
 
 /// Social state notifier with reactive state management
 /// keepAlive: true prevents disposal during async initialization and keeps following list cached
-/// Note: Likes are now managed by LikesProvider (see likes_providers.dart)
 @Riverpod(keepAlive: true)
 class SocialNotifier extends _$SocialNotifier {
   // Managed subscription IDs
@@ -53,9 +52,11 @@ class SocialNotifier extends _$SocialNotifier {
         category: LogCategory.system,
       );
 
-      // When auth becomes authenticated, fetch contacts if not already done
+      // When auth becomes authenticated, fetch contacts and set up Zendesk identity
       if (currentState == AuthState.authenticated) {
         _ensureContactsFetched();
+        // Set up Zendesk identity so bug reports have the user's name
+        _ensureZendeskIdentitySet();
       }
     }, fireImmediately: true);
 
@@ -210,6 +211,65 @@ class SocialNotifier extends _$SocialNotifier {
       _contactsFetchInFlight!.completeError(e);
     } finally {
       _contactsFetchInFlight = null;
+    }
+  }
+
+  /// Set up Zendesk user identity when authenticated
+  /// This ensures bug reports and support tickets show the user's actual name
+  Future<void> _ensureZendeskIdentitySet() async {
+    final authService = ref.read(authServiceProvider);
+
+    if (authService.authState != AuthState.authenticated) {
+      return;
+    }
+
+    final pubkeyHex = authService.currentPublicKeyHex;
+    final npub = authService.currentNpub;
+
+    if (pubkeyHex == null || npub == null) {
+      Log.warning(
+        '⚠️ SocialNotifier: Cannot set Zendesk identity - missing pubkey',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    try {
+      // Get user profile for display name and nip05
+      final userProfileService = ref.read(userProfileServiceProvider);
+      var profile = userProfileService.getCachedProfile(pubkeyHex);
+
+      // If profile not cached, try to fetch it (with short timeout)
+      if (profile == null) {
+        Log.info(
+          '🔍 SocialNotifier: Fetching user profile for Zendesk identity...',
+          name: 'SocialNotifier',
+          category: LogCategory.system,
+        );
+        profile = await userProfileService
+            .fetchProfile(pubkeyHex)
+            .timeout(const Duration(seconds: 3), onTimeout: () => null);
+      }
+
+      // Set Zendesk identity with available info
+      await ZendeskSupportService.setUserIdentity(
+        displayName: profile?.bestDisplayName,
+        nip05: profile?.nip05,
+        npub: npub,
+      );
+
+      Log.info(
+        '✅ SocialNotifier: Zendesk identity set - ${profile?.bestDisplayName ?? npub}',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        '⚠️ SocialNotifier: Failed to set Zendesk identity: $e',
+        name: 'SocialNotifier',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -893,12 +953,11 @@ class SocialNotifier extends _$SocialNotifier {
         throw Exception('Failed to create contact list event');
       }
 
-      // Broadcast the contact list event
-      final result = await nostrService.broadcast(event);
+      // Publish the contact list event
+      final sentEvent = await nostrService.publishEvent(event);
 
-      if (!result.isSuccessful) {
-        final errorMessages = result.errors.values.join(', ');
-        throw Exception('Failed to broadcast contact list: $errorMessages');
+      if (sentEvent == null) {
+        throw Exception('Failed to publish contact list to relays');
       }
 
       // Update current contact list event

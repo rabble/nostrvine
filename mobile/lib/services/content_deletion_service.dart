@@ -147,17 +147,17 @@ class ContentDeletionService {
       );
 
       if (deleteEvent != null) {
-        final broadcastResult = await _nostrService.broadcast(deleteEvent);
-        if (broadcastResult.successCount == 0) {
+        final sentEvent = await _nostrService.publishEvent(deleteEvent);
+        if (sentEvent == null) {
           Log.error(
-            'Failed to broadcast delete request to relays',
+            'Failed to publish delete request to relays',
             name: 'ContentDeletionService',
             category: LogCategory.system,
           );
-          // Still save locally even if broadcast fails
+          // Still save locally even if publish fails
         } else {
           Log.info(
-            'Delete request broadcast to ${broadcastResult.successCount} relays',
+            'Delete request published to relays',
             name: 'ContentDeletionService',
             category: LogCategory.system,
           );

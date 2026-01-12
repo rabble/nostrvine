@@ -135,15 +135,9 @@ void main() {
           ),
         ).thenAnswer((_) async => reportEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: reportEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'wss://test.relay.com': true},
-            errors: {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => reportEvent);
 
         // Act
         final result = await service.reportContent(
@@ -166,8 +160,8 @@ void main() {
           ),
         ).called(1);
 
-        // Verify Nostr event was broadcast
-        verify(mockNostrService.broadcast(any)).called(1);
+        // Verify Nostr event was published
+        verify(mockNostrService.publishEvent(any)).called(1);
       },
     );
 
@@ -190,15 +184,9 @@ void main() {
           ),
         ).thenAnswer((_) async => reportEvent);
 
-        when(mockNostrService.broadcast(any)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: reportEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: {'wss://test.relay.com': true},
-            errors: {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => reportEvent);
 
         final reasons = ContentFilterReason.values;
 
@@ -248,15 +236,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: reportEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://test.relay.com': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
@@ -288,16 +270,8 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      // Mock failed broadcast
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: reportEvent,
-          successCount: 0,
-          totalRelays: 1,
-          results: {'wss://test.relay.com': false},
-          errors: {'wss://test.relay.com': 'Failed to broadcast'},
-        ),
-      );
+      // Mock failed publish - returns null on failure
+      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
 
       // Act
       final result = await service.reportContent(
@@ -333,15 +307,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: reportEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://test.relay.com': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Act
       await service.reportContent(
@@ -409,8 +377,8 @@ void main() {
         expect(result.success, false);
         expect(result.error, contains('Failed to create report event'));
 
-        // Verify broadcast was NOT called
-        verifyNever(mockNostrService.broadcast(any));
+        // Verify publishEvent was NOT called
+        verifyNever(mockNostrService.publishEvent(any));
       },
     );
   });
@@ -460,15 +428,9 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      when(mockNostrService.broadcast(any)).thenAnswer(
-        (_) async => NostrBroadcastResult(
-          event: reportEvent,
-          successCount: 1,
-          totalRelays: 1,
-          results: {'wss://test.relay.com': true},
-          errors: {},
-        ),
-      );
+      when(
+        mockNostrService.publishEvent(any),
+      ).thenAnswer((_) async => reportEvent);
 
       // Now reportContent should work
       final result = await service.reportContent(

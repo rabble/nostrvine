@@ -8,9 +8,12 @@ import 'package:openvine/providers/app_providers.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -74,7 +77,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final isAuthenticated = authService.isAuthenticated;
+    final authStateAsync = ref.watch(authStateStreamProvider);
+    final isAuthenticated = authStateAsync.when(
+      data: (state) => state == AuthState.authenticated,
+      loading: () => false,
+      error: (_, __) => false,
+    );
 
     return Drawer(
       backgroundColor: VineTheme.backgroundColor,
@@ -186,6 +194,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       final bugReportService = ref.read(
                         bugReportServiceProvider,
                       );
+                      final userProfileService = ref.read(
+                        userProfileServiceProvider,
+                      );
                       final userPubkey = authService.currentPublicKeyHex;
 
                       // Get root context before closing drawer
@@ -205,6 +216,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       _showSupportOptionsDialog(
                         navigatorContext,
                         bugReportService,
+                        userProfileService,
                         userPubkey,
                         isZendeskAvailable,
                       );
@@ -311,11 +323,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   );
 
   /// Show support options dialog
-  /// NOTE: bugReportService and userPubkey must be captured BEFORE the drawer
+  /// NOTE: All services and values must be captured BEFORE the drawer
   /// is closed, because ref becomes invalid after widget unmounts.
   void _showSupportOptionsDialog(
     BuildContext context,
     dynamic bugReportService,
+    dynamic userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
   ) {
@@ -341,22 +354,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 _handleBugReportWithServices(
                   context,
                   bugReportService,
-                  userPubkey,
-                  isZendeskAvailable,
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildSupportOption(
-              context: dialogContext,
-              icon: Icons.flag,
-              title: 'Report Content',
-              subtitle: 'Inappropriate videos or users',
-              onTap: () {
-                dialogContext.pop();
-                _handleContentReportWithServices(
-                  context,
-                  bugReportService,
+                  userProfileService,
                   userPubkey,
                   isZendeskAvailable,
                 );
@@ -371,6 +369,11 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               onTap: () async {
                 dialogContext.pop();
                 if (isZendeskAvailable) {
+                  // Ensure identity is set before viewing tickets
+                  await _setZendeskIdentityWithService(
+                    userPubkey,
+                    userProfileService,
+                  );
                   print('💬 Opening Zendesk ticket list');
                   await ZendeskSupportService.showTicketList();
                 } else {
@@ -460,13 +463,54 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     );
   }
 
+  /// Set Zendesk user identity from user pubkey using pre-captured service
+  /// This version doesn't use ref, so it works after drawer is closed
+  Future<void> _setZendeskIdentityWithService(
+    String? userPubkey,
+    dynamic userProfileService,
+  ) async {
+    if (userPubkey == null) {
+      // Users always have pubkey in this app, but handle edge case gracefully
+      print('⚠️ Zendesk: No userPubkey, using baseline anonymous identity');
+      return;
+    }
+
+    try {
+      final npub = NostrKeyUtils.encodePubKey(userPubkey);
+      final profile = userProfileService.getCachedProfile(userPubkey);
+
+      print(
+        '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
+      );
+      print('🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}');
+
+      await ZendeskSupportService.setUserIdentity(
+        displayName: profile?.bestDisplayName,
+        nip05: profile?.nip05,
+        npub: npub,
+      );
+
+      print('✅ Zendesk: Identity set successfully');
+    } catch (e) {
+      print('❌ Zendesk: Failed to set identity: $e');
+      Log.warning(
+        'Failed to set Zendesk identity: $e',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Handle bug report submission
   Future<void> _handleBugReportWithServices(
     BuildContext context,
     dynamic bugReportService,
+    dynamic userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
   ) async {
+    // Set Zendesk identity for all paths (native SDK and REST API)
+    await _setZendeskIdentityWithService(userPubkey, userProfileService);
+
     if (isZendeskAvailable) {
       // Get device and app info
       final packageInfo = await PackageInfo.fromPlatform();
@@ -496,39 +540,8 @@ Platform: ${Theme.of(context).platform.name}
     }
   }
 
-  /// Handle content report submission
-  Future<void> _handleContentReportWithServices(
-    BuildContext context,
-    dynamic bugReportService,
-    String? userPubkey,
-    bool isZendeskAvailable,
-  ) async {
-    if (isZendeskAvailable) {
-      final description = '''
-Please describe the inappropriate content:
-
-Content Type (video/user/comment):
-Link or ID (if available):
-Reason for report:
-
-''';
-
-      print('🚩 Opening Zendesk for content report');
-      final success = await ZendeskSupportService.showNewTicketScreen(
-        subject: 'Content Report',
-        description: description,
-        tags: ['mobile', 'content-report', 'moderation'],
-      );
-
-      if (!success && context.mounted) {
-        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-      }
-    } else {
-      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-    }
-  }
-
   /// Show fallback support options when Zendesk is not available
+  /// Note: Zendesk identity is already set by the calling method
   void _showSupportFallbackWithServices(
     BuildContext context,
     dynamic bugReportService,

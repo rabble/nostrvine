@@ -2,8 +2,13 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/models/video_event.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
@@ -14,7 +19,7 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
-class ProfileGridView extends StatefulWidget {
+class ProfileGridView extends ConsumerStatefulWidget {
   const ProfileGridView({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -61,10 +66,10 @@ class ProfileGridView extends StatefulWidget {
   final ScrollController? scrollController;
 
   @override
-  State<ProfileGridView> createState() => _ProfileGridViewState();
+  ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
 }
 
-class _ProfileGridViewState extends State<ProfileGridView>
+class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
@@ -82,7 +87,34 @@ class _ProfileGridViewState extends State<ProfileGridView>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    // Get services for ProfileLikedVideosBloc
+    final videoEventService = ref.watch(videoEventServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+    final likesRepository = ref.watch(likesRepositoryProvider);
+
+    // Build the base widget with ProfileLikedVideosBloc
+    final tabContent = BlocProvider<ProfileLikedVideosBloc>(
+      create: (_) =>
+          ProfileLikedVideosBloc(
+              likesRepository: likesRepository,
+              videoEventService: videoEventService,
+              nostrClient: nostrClient,
+            )
+            ..add(const ProfileLikedVideosSubscriptionRequested())
+            ..add(const ProfileLikedVideosSyncRequested()),
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
+          const ProfileLikedGrid(),
+          ProfileRepostsGrid(userIdHex: widget.userIdHex),
+        ],
+      ),
+    );
+
+    // Build the main content
+    Widget content = DefaultTabController(
       length: 3,
       child: NestedScrollView(
         controller: widget.scrollController,
@@ -155,19 +187,22 @@ class _ProfileGridViewState extends State<ProfileGridView>
             ),
           ),
         ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            ProfileVideosGrid(
-              videos: widget.videos,
-              userIdHex: widget.userIdHex,
-            ),
-            const ProfileLikedGrid(),
-            ProfileRepostsGrid(userIdHex: widget.userIdHex),
-          ],
-        ),
+        body: tabContent,
       ),
     );
+
+    // Wrap with OthersFollowersBloc for other users' profiles
+    // This allows the follow button to update the followers count optimistically
+    if (!widget.isOwnProfile) {
+      return BlocProvider<OthersFollowersBloc>(
+        create: (_) =>
+            OthersFollowersBloc(followRepository: followRepository)
+              ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
 

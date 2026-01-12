@@ -146,15 +146,9 @@ void main() {
             ),
           ).thenAnswer((_) async => testEvent);
 
-          when(mockNostrService.broadcast(testEvent)).thenAnswer(
-            (_) async => NostrBroadcastResult(
-              event: testEvent,
-              successCount: 1,
-              totalRelays: 1,
-              results: const {'relay1': true},
-              errors: const {},
-            ),
-          );
+          when(
+            mockNostrService.publishEvent(testEvent),
+          ).thenAnswer((_) async => testEvent);
 
           // Act
           await socialService.postComment(
@@ -216,15 +210,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.broadcast(testEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: testEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(
@@ -250,7 +238,7 @@ void main() {
         ).called(1);
       });
 
-      test('should broadcast event to relays', () async {
+      test('should publish event to relays', () async {
         // Arrange
         when(mockAuthService.isAuthenticated).thenReturn(true);
 
@@ -277,15 +265,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.broadcast(testEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: testEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(
@@ -295,7 +277,7 @@ void main() {
         );
 
         // Assert
-        verify(mockNostrService.broadcast(testEvent)).called(1);
+        verify(mockNostrService.publishEvent(testEvent)).called(1);
       });
 
       test('should throw exception when event creation fails', () async {
@@ -326,7 +308,7 @@ void main() {
         );
       });
 
-      test('should throw exception when broadcast fails', () async {
+      test('should throw exception when publish fails', () async {
         // Arrange
         when(mockAuthService.isAuthenticated).thenReturn(true);
 
@@ -353,15 +335,10 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.broadcast(testEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: testEvent,
-            successCount: 0,
-            totalRelays: 1,
-            results: const {'relay1': false},
-            errors: const {'relay1': 'Connection failed'},
-          ),
-        );
+        // publishEvent returns null on failure
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => null);
 
         // Act & Assert
         expect(
@@ -374,7 +351,7 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('Failed to broadcast comment'),
+              contains('Failed to publish comment'),
             ),
           ),
         );
@@ -410,15 +387,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testEvent);
 
-        when(mockNostrService.broadcast(testEvent)).thenAnswer(
-          (_) async => NostrBroadcastResult(
-            event: testEvent,
-            successCount: 1,
-            totalRelays: 1,
-            results: const {'relay1': true},
-            errors: const {},
-          ),
-        );
+        when(
+          mockNostrService.publishEvent(testEvent),
+        ).thenAnswer((_) async => testEvent);
 
         // Act
         await socialService.postComment(

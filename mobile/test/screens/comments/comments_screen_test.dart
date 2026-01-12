@@ -172,11 +172,11 @@ void main() {
     });
 
     group('comment input', () {
-      testWidgets('has "Add a comment..." hint text', (tester) async {
+      testWidgets('has "Add comment..." hint text', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        expect(find.text('Add a comment...'), findsOneWidget);
+        expect(find.text('Add comment...'), findsOneWidget);
       });
 
       testWidgets('adds CommentTextChanged on text entry', (tester) async {

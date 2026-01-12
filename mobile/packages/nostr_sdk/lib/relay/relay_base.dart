@@ -189,6 +189,21 @@ class RelayBase extends Relay {
     await _connectionManager?.disconnect();
   }
 
+  /// Check if the connection is healthy (connected and not idle).
+  ///
+  /// Returns true if healthy, false if disconnected or idle.
+  /// If idle, forces disconnect to enable reconnection on next operation.
+  bool checkHealth() {
+    if (_connectionManager == null) return false;
+    return _connectionManager!.checkHealth();
+  }
+
+  /// Whether the connection appears idle (no recent activity).
+  bool get isIdle => _connectionManager?.isIdle ?? false;
+
+  /// When the last message was received from this relay.
+  DateTime? get lastActivityAt => _connectionManager?.lastActivityAt;
+
   @override
   void dispose() {
     _stateSubscription?.cancel();

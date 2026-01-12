@@ -341,6 +341,24 @@ class VineRecordingNotifier extends StateNotifier<VineRecordingUIState> {
     updateState();
   }
 
+  // Track microphone enabled state for sound selection
+  bool _microphoneEnabled = true;
+
+  /// Enable or disable microphone for recording
+  /// When a sound is selected and voice toggle is off, mic should be muted
+  /// to prevent feedback when not using headphones
+  void setMicrophoneEnabled(bool enabled) {
+    _microphoneEnabled = enabled;
+    Log.info(
+      '🎤 Microphone enabled: $enabled',
+      name: 'VineRecordingProvider',
+      category: LogCategory.video,
+    );
+  }
+
+  /// Check if microphone is enabled
+  bool get isMicrophoneEnabled => _microphoneEnabled;
+
   void reset() {
     _controller.reset();
     _wasPublished = false; // Reset publish flag for new recording

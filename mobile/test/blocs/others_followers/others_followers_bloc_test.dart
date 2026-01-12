@@ -145,38 +145,113 @@ void main() {
       );
     });
 
-    group('OthersFollowersToggleFollowRequested', () {
+    group('OthersFollowersIncrementRequested', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'calls toggleFollow on repository',
-        setUp: () {
-          when(
-            () => mockFollowRepository.toggleFollow(any()),
-          ).thenAnswer((_) async {});
-        },
+        'adds follower pubkey to list when not already present',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          OthersFollowersToggleFollowRequested(validPubkey('follower')),
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('existing')],
+          targetPubkey: validPubkey('target'),
         ),
-        verify: (_) {
-          verify(
-            () => mockFollowRepository.toggleFollow(validPubkey('follower')),
-          ).called(1);
-        },
+        act: (bloc) =>
+            bloc.add(OthersFollowersIncrementRequested(validPubkey('new'))),
+        expect: () => [
+          OthersFollowersState(
+            status: OthersFollowersStatus.success,
+            followersPubkeys: [validPubkey('existing'), validPubkey('new')],
+            targetPubkey: validPubkey('target'),
+          ),
+        ],
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'handles toggleFollow error gracefully',
-        setUp: () {
-          when(
-            () => mockFollowRepository.toggleFollow(any()),
-          ).thenThrow(Exception('Network error'));
-        },
+        'does not add duplicate follower pubkey',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          OthersFollowersToggleFollowRequested(validPubkey('follower')),
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('existing')],
+          targetPubkey: validPubkey('target'),
         ),
-        // Should not throw or emit error state - just logs
+        act: (bloc) => bloc.add(
+          OthersFollowersIncrementRequested(validPubkey('existing')),
+        ),
         expect: () => <OthersFollowersState>[],
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'works with empty initial list',
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) =>
+            bloc.add(OthersFollowersIncrementRequested(validPubkey('first'))),
+        expect: () => [
+          OthersFollowersState(
+            status: OthersFollowersStatus.success,
+            followersPubkeys: [validPubkey('first')],
+            targetPubkey: validPubkey('target'),
+          ),
+        ],
+      );
+    });
+
+    group('OthersFollowersDecrementRequested', () {
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'removes follower pubkey from list when present',
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [
+            validPubkey('follower1'),
+            validPubkey('follower2'),
+          ],
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) => bloc.add(
+          OthersFollowersDecrementRequested(validPubkey('follower1')),
+        ),
+        expect: () => [
+          OthersFollowersState(
+            status: OthersFollowersStatus.success,
+            followersPubkeys: [validPubkey('follower2')],
+            targetPubkey: validPubkey('target'),
+          ),
+        ],
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'does nothing when pubkey not in list',
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('existing')],
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) => bloc.add(
+          OthersFollowersDecrementRequested(validPubkey('notexist')),
+        ),
+        expect: () => <OthersFollowersState>[],
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'removes last follower leaving empty list',
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('only')],
+          targetPubkey: validPubkey('target'),
+        ),
+        act: (bloc) =>
+            bloc.add(OthersFollowersDecrementRequested(validPubkey('only'))),
+        expect: () => [
+          OthersFollowersState(
+            status: OthersFollowersStatus.success,
+            targetPubkey: validPubkey('target'),
+          ),
+        ],
       );
     });
   });

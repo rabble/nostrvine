@@ -8,8 +8,8 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's videos on their profile
@@ -156,15 +156,18 @@ class _VideoGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: () {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
       Log.info(
         '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
-        'npub=$npub, videoId=${videoEvent.id}',
+        'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      context.goProfile(npub, index);
+      // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
+      context.pushVideoFeed(
+        source: ProfileFeedSource(userIdHex),
+        initialIndex: index,
+      );
       Log.info(
-        '✅ ProfileVideosGrid: Called goProfile($npub, $index)',
+        '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',
         category: LogCategory.video,
       );
     },

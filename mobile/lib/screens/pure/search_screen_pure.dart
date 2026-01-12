@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -329,46 +330,81 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     }
 
     // Otherwise show search grid UI
-    final searchBar = TextField(
-      controller: _searchController,
-      focusNode: _searchFocusNode,
-      style: const TextStyle(color: VineTheme.whiteText),
-      decoration: InputDecoration(
-        hintText: 'Search videos, users, hashtags...',
-        hintStyle: TextStyle(color: VineTheme.whiteText.withValues(alpha: 0.6)),
-        border: InputBorder.none,
-        prefixIcon: _isSearching
-            ? const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
-                    strokeWidth: 2,
+    final searchBar = SizedBox(
+      height: 48,
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        style: const TextStyle(color: VineTheme.whiteText),
+        decoration: InputDecoration(
+          hintText: 'Find something cool...',
+          hintStyle: TextStyle(
+            color: VineTheme.whiteText.withValues(alpha: 0.6),
+          ),
+          filled: true,
+          fillColor: VineTheme.iconButtonBackground,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 8),
+            child: _isSearching
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Padding(
+                      padding: EdgeInsets.all(2),
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                : SvgPicture.asset(
+                    'assets/icon/search.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF818E8A),
+                      BlendMode.srcIn,
+                    ),
                   ),
-                ),
-              )
-            : const Icon(Icons.search, color: VineTheme.whiteText),
-        suffixIcon: _searchController.text.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear, color: VineTheme.whiteText),
-                onPressed: () {
-                  _searchController.clear();
-                  _performSearch('');
-                },
-              )
-            : null,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: VineTheme.whiteText),
+                  onPressed: () {
+                    _searchController.clear();
+                    _performSearch('');
+                  },
+                )
+              : null,
+        ),
       ),
     );
 
     final tabBar = TabBar(
       controller: _tabController,
-      indicatorColor: VineTheme.whiteText,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      padding: const EdgeInsets.only(left: 16),
+      indicatorColor: VineTheme.tabIndicatorGreen,
+      indicatorWeight: 4,
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: Colors.transparent,
       labelColor: VineTheme.whiteText,
-      unselectedLabelColor: VineTheme.whiteText.withValues(alpha: 0.7),
+      unselectedLabelColor: VineTheme.tabIconInactive,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+      labelStyle: VineTheme.tabTextStyle(),
+      unselectedLabelStyle: VineTheme.tabTextStyle(
+        color: VineTheme.tabIconInactive,
+      ),
       tabs: [
         Tab(text: 'Videos (${_videoResults.length})'),
         Tab(text: 'Users (${_userResults.length})'),
@@ -388,11 +424,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         child: Column(
           children: [
             Container(
-              color: VineTheme.cardBackground,
-              padding: const EdgeInsets.all(8),
+              color: VineTheme.navGreen,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: searchBar,
             ),
-            Container(color: VineTheme.cardBackground, child: tabBar),
+            Container(color: VineTheme.navGreen, child: tabBar),
             Expanded(child: tabContent),
           ],
         ),
@@ -404,9 +440,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: VineTheme.cardBackground,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: () => Navigator.of(context).pop(),
+        leading: Semantics(
+          identifier: 'search_back_button',
+          button: true,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
         title: searchBar,
         bottom: PreferredSize(
