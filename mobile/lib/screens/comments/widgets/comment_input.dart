@@ -75,8 +75,6 @@ class _CommentInputState extends State<CommentInput> {
         MediaQuery.of(context).padding.bottom +
         8;
 
-    final isReplying = widget.replyToDisplayName != null;
-
     return Container(
       padding: EdgeInsets.only(
         left: 16,

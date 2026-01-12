@@ -81,24 +81,31 @@ class CommentsScreen extends ConsumerWidget {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.7,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+      builder: (builderContext) {
+        final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;
+        final isKeyboardOpen = keyboardHeight > 0;
+
+        return DraggableScrollableSheet(
+          initialChildSize: isKeyboardOpen ? 0.93 : 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.93,
+          snap: true,
+          snapSizes: [0.7, 0.93],
+          builder: (context, scrollController) => DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: CommentsScreen(
+              videoEvent: video,
+              sheetScrollController: scrollController,
             ),
           ),
-          child: CommentsScreen(
-            videoEvent: video,
-            sheetScrollController: scrollController,
-          ),
-        ),
-      ),
+        );
+      },
     ).whenComplete(() {
       overlayNotifier.setModalOpen(false);
     });
