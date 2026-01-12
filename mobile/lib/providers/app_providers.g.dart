@@ -1886,7 +1886,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'29672bbdfd5e5552f3a8b264dfaf33f30ea0c51b';
+String _$videosRepositoryHash() => r'b21e7d9126bed5159d23d1da04655e484d7beb87';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
