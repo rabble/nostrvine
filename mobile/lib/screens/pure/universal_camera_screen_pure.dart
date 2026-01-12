@@ -2,7 +2,6 @@
 // ABOUTME: Cross-platform recording without VideoManager dependencies using pure providers
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:camera/camera.dart' show FlashMode;
 import 'package:flutter/foundation.dart';
@@ -46,7 +45,8 @@ class UniversalCameraScreenPure extends ConsumerStatefulWidget {
 }
 
 class _UniversalCameraScreenPureState
-    extends ConsumerState<UniversalCameraScreenPure> with WidgetsBindingObserver {
+    extends ConsumerState<UniversalCameraScreenPure>
+    with WidgetsBindingObserver {
   String? _errorMessage;
   bool _isProcessing = false;
   bool _isInitializing = false;
