@@ -53,8 +53,9 @@ void main() {
           _createVideoEvent(id: 'video3', pubkey: otherUserPubkey),
         ];
 
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => videoEvents);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => videoEvents);
 
         final count = await repository.getVideoCount(otherUserPubkey);
 
@@ -73,8 +74,9 @@ void main() {
       });
 
       test('returns 0 when no videos found', () async {
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
 
         final count = await repository.getVideoCount(otherUserPubkey);
 
@@ -222,8 +224,7 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => streamController.stream);
-        when(() => mockNostrClient.unsubscribe(any()))
-            .thenAnswer((_) async {});
+        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
         await repository.initialize();
         await repository.dispose();

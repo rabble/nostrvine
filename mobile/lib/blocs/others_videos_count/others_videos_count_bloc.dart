@@ -45,10 +45,7 @@ class OthersVideosCountBloc
       );
 
       emit(
-        state.copyWith(
-          status: OthersVideosCountStatus.success,
-          count: count,
-        ),
+        state.copyWith(status: OthersVideosCountStatus.success, count: count),
       );
     } catch (e) {
       Log.error(

@@ -138,7 +138,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: _ProfileStatsRowWithProvider(userIdHex: widget.userIdHex),
+                child: _ProfileStatsRowWithProvider(
+                  userIdHex: widget.userIdHex,
+                ),
               ),
             ),
           ),

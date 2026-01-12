@@ -32,10 +32,7 @@ final class MyVideosCountState extends Equatable {
   final int count;
 
   /// Create a copy with updated values
-  MyVideosCountState copyWith({
-    MyVideosCountStatus? status,
-    int? count,
-  }) {
+  MyVideosCountState copyWith({MyVideosCountStatus? status, int? count}) {
     return MyVideosCountState(
       status: status ?? this.status,
       count: count ?? this.count,
