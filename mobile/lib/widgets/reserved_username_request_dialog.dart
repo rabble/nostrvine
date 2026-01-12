@@ -157,9 +157,7 @@ class ReservedUsernameRequestDialog extends ConsumerWidget {
       actions: [
         if (!state.isSuccess)
           TextButton(
-            onPressed: state.isSubmitting
-                ? null
-                : () => Navigator.pop(context),
+            onPressed: state.isSubmitting ? null : () => Navigator.pop(context),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
 
