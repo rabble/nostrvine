@@ -5,6 +5,7 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -32,40 +33,43 @@ class CommentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Check if this is a reply (has replyToEventId)
-    final isReply = comment.replyToEventId != null;
-    final leftPadding = isReply ? 16.0 : 0.0;
 
-    return Container(
-      padding: EdgeInsets.only(
-        left: leftPadding,
-        top: 16,
-        right: 16,
-        bottom: 16,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CommentHeader(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.only(left: 16, right: 16),
+          child: _CommentHeader(
             authorPubkey: comment.authorPubkey,
             relativeTime: comment.relativeTime,
           ),
-          const SizedBox(height: 8),
-          if (comment.replyToAuthorPubkey != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 48, bottom: 4),
-              child: _ReplyIndicator(
-                parentAuthorPubkey: comment.replyToAuthorPubkey!,
-              ),
-            ),
+        ),
+        const SizedBox(height: 12),
+
+        if (comment.replyToAuthorPubkey != null)
           Padding(
-            padding: const EdgeInsets.only(left: 48),
-            child: _CommentContent(
-              commentId: comment.id,
-              content: comment.content,
+            padding: EdgeInsets.only(left: 16, right: 16),
+            child: _ReplyIndicator(
+              parentAuthorPubkey: comment.replyToAuthorPubkey!,
             ),
           ),
-        ],
-      ),
+        Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            top: comment.replyToAuthorPubkey != null ? 4 : 0,
+            right: 16,
+          ),
+          child: _CommentContent(
+            commentId: comment.id,
+            content: comment.content,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: EdgeInsets.only(left: 16, right: 16),
+          child: _ActionsRow(commentId: comment.id),
+        ),
+      ],
     );
   }
 }
@@ -190,38 +194,55 @@ class _CommentContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SelectableText(content, style: const TextStyle(color: Colors.white));
+  }
+}
+
+class _ActionsRow extends StatelessWidget {
+  const _ActionsRow({required this.commentId});
+
+  /// ID of the comment (for reply targeting)
+  final String commentId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        SelectableText(content, style: const TextStyle(color: Colors.white)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Semantics(
-              identifier: 'reply_button',
-              button: true,
-              label: 'Reply to comment',
-              child: TextButton(
-                onPressed: () {
-                  context.read<CommentsBloc>().add(
-                    CommentReplyToggled(commentId),
-                  );
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.subdirectory_arrow_left,
-                      size: 16,
-                      color: Colors.white70,
+        Semantics(
+          identifier: 'reply_button',
+          button: true,
+          label: 'Reply to comment',
+          child: InkWell(
+            onTap: () {
+              context.read<CommentsBloc>().add(CommentReplyToggled(commentId));
+            },
+            child: Container(
+              height: 16,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/icon/arrow_bend_down_right.svg',
+                    height: 11,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.onSurface,
+                      BlendMode.srcIn,
                     ),
-                    SizedBox(width: 4),
-                    Text('Reply', style: TextStyle(color: Colors.white70)),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Reply',
+                    style: VineTheme.bodyFont(
+                      fontSize: 14,
+                      color: VineTheme.onSurfaceMuted,
+                      fontWeight: FontWeight.w600,
+                      height: 14 / 20,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -255,16 +276,42 @@ class _ReplyIndicator extends ConsumerWidget {
         profile?.name ??
         NostrKeyUtils.encodePubKey(parentAuthorPubkey);
 
-    return Text(
-      'Re: $displayName',
-      style: const TextStyle(
-        color: Color(0xFF27C58B), // VineTheme.tabIndicatorGreen
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.4,
-      ),
-      overflow: TextOverflow.ellipsis,
-      maxLines: 1,
+    return Row(
+      children: [
+        Container(
+          height: 20,
+          padding: EdgeInsets.symmetric(vertical: 2),
+          alignment: Alignment.center,
+          child: Text(
+            'Re:',
+            style: VineTheme.bodyFont(
+              fontSize: 14,
+              color: VineTheme.tabIndicatorGreen,
+              height: 14 / 20,
+            ),
+          ),
+        ),
+        SizedBox(width: 8),
+        Container(
+          height: 20,
+          decoration: BoxDecoration(
+            color: VineTheme.containerLow,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+          alignment: Alignment.center,
+          child: Text(
+            '$displayName',
+            style: VineTheme.bodyFont(
+              fontSize: 14,
+              color: VineTheme.tabIndicatorGreen,
+              height: 14 / 20,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+      ],
     );
   }
 }

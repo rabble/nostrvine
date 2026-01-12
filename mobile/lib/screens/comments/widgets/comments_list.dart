@@ -34,10 +34,12 @@ class CommentsList extends StatelessWidget {
 
         return ListView.builder(
           controller: scrollController,
-          padding: const EdgeInsets.only(bottom: 80),
           itemCount: state.comments.length,
-          itemBuilder: (context, index) =>
-              CommentItem(comment: state.comments[index]),
+
+          itemBuilder: (context, index) => Padding(
+            padding: EdgeInsets.only(top: 16, bottom: 20),
+            child: CommentItem(comment: state.comments[index]),
+          ),
         );
       },
     );
