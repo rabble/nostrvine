@@ -54,14 +54,14 @@ class ShareVideoMenu extends ConsumerStatefulWidget {
 }
 
 class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
-  /// Safely pop the context, handling cases where there's nothing to pop
+  /// Close this bottom sheet.
+  ///
+  /// Uses Navigator.pop directly since this widget is shown via
+  /// showModalBottomSheet, not go_router. Using go_router's context.pop()
+  /// would incorrectly try to pop the navigation stack instead of the
+  /// modal overlay.
   void _safePop(BuildContext ctx) {
-    if (ctx.canPop()) {
-      ctx.pop();
-    } else {
-      // If we can't pop via go_router, try Navigator.maybePop as fallback
-      Navigator.of(ctx).maybePop();
-    }
+    Navigator.of(ctx).pop();
   }
 
   @override
