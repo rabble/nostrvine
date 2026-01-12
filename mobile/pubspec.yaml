@@ -32,6 +32,7 @@ workspace:
   - packages/nostr_client
   - packages/nostr_gateway
   - packages/nostr_key_manager
+  - packages/permissions_service
   
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
