@@ -206,6 +206,13 @@ class VideoEventService extends ChangeNotifier {
   LikesRepository? _likesRepository;
   final SubscriptionManager _subscriptionManager;
 
+  // Like count batching - accumulates video IDs and fetches counts in batches
+  // to prevent ANR issues from too many concurrent relay requests
+  final Map<String, SubscriptionType> _pendingLikeCountVideoIds = {};
+  Timer? _likeCountBatchTimer;
+  static const Duration _likeCountBatchDebounce = Duration(milliseconds: 150);
+  static const int _likeCountBatchMaxSize = 50;
+
   // AUTH retry mechanism
   StreamSubscription<Map<String, bool>>? _authStateSubscription;
 
@@ -4369,67 +4376,135 @@ class VideoEventService extends ChangeNotifier {
     _scheduleFrameUpdate();
   }
 
-  /// Fetch and update the Nostr like count for a video.
+  /// Queue a video for batched like count fetching.
   /// This is called fire-and-forget when a video is added to a subscription.
-  /// Updates the video in place and notifies listeners when the count arrives.
-  Future<void> _fetchAndUpdateLikeCount(
+  /// Batches multiple requests to prevent ANR from too many concurrent queries.
+  void _fetchAndUpdateLikeCount(
     VideoEvent videoEvent,
     SubscriptionType subscriptionType,
-  ) async {
+  ) {
     if (_likesRepository == null) return;
 
+    // Add to pending batch
+    _pendingLikeCountVideoIds[videoEvent.id] = subscriptionType;
+
+    // Cancel existing timer
+    _likeCountBatchTimer?.cancel();
+
+    // If batch is full, execute immediately
+    if (_pendingLikeCountVideoIds.length >= _likeCountBatchMaxSize) {
+      _executeLikeCountBatchFetch();
+      return;
+    }
+
+    // Otherwise, debounce to accumulate more requests
+    _likeCountBatchTimer = Timer(_likeCountBatchDebounce, () {
+      _executeLikeCountBatchFetch();
+    });
+  }
+
+  /// Execute the batched like count fetch for all pending videos.
+  Future<void> _executeLikeCountBatchFetch() async {
+    if (_pendingLikeCountVideoIds.isEmpty || _likesRepository == null) return;
+
+    // Move pending to current batch
+    final batch = Map<String, SubscriptionType>.from(_pendingLikeCountVideoIds);
+    _pendingLikeCountVideoIds.clear();
+    _likeCountBatchTimer?.cancel();
+
+    final videoIds = batch.keys.toList();
+
+    Log.verbose(
+      '📊 Fetching like counts for ${videoIds.length} videos in batch',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
     try {
-      final likeCount = await _likesRepository!.getLikeCount(videoEvent.id);
+      // Fetch all like counts in a single batched query
+      final likeCounts = await _likesRepository!.getLikeCounts(videoIds);
 
-      // Skip update if count is 0 (no change from default)
-      if (likeCount == 0) return;
+      // Apply counts to each video
+      var updatedCount = 0;
+      for (final entry in likeCounts.entries) {
+        final videoId = entry.key;
+        final likeCount = entry.value;
 
-      // Find and update the video in the event list
-      final eventList = _eventLists[subscriptionType];
-      if (eventList == null) return;
+        // Skip if count is 0 (no change from default)
+        if (likeCount == 0) continue;
 
-      final index = eventList.indexWhere((v) => v.id == videoEvent.id);
-      if (index == -1) return; // Video no longer in list
+        final subscriptionType = batch[videoId];
+        if (subscriptionType == null) continue;
 
-      // Update the video with the like count
-      final updatedVideo = eventList[index].copyWith(nostrLikeCount: likeCount);
-      eventList[index] = updatedVideo;
-
-      // Also update in keyed buckets if applicable
-      if (subscriptionType == SubscriptionType.hashtag) {
-        for (final tag in videoEvent.hashtags) {
-          final bucket = _hashtagBuckets[tag];
-          if (bucket != null) {
-            final bucketIndex = bucket.indexWhere((v) => v.id == videoEvent.id);
-            if (bucketIndex != -1) {
-              bucket[bucketIndex] = updatedVideo;
-            }
-          }
+        if (_applyLikeCountToVideo(videoId, likeCount, subscriptionType)) {
+          updatedCount++;
         }
-      } else if (subscriptionType == SubscriptionType.profile) {
-        final authorHex =
-            videoEvent.isRepost && videoEvent.reposterPubkey != null
-            ? videoEvent.reposterPubkey!
-            : videoEvent.pubkey;
-        final bucket = _authorBuckets[authorHex];
+      }
+
+      // Schedule a single frame update for all changes
+      if (updatedCount > 0) {
+        _scheduleFrameUpdate();
+        Log.verbose(
+          '📊 Updated like counts for $updatedCount videos',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e) {
+      // Silently ignore errors - like count is non-critical
+      Log.verbose(
+        'Failed to fetch batched like counts: $e',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Apply a like count to a video in all relevant lists.
+  /// Returns true if the video was found and updated.
+  bool _applyLikeCountToVideo(
+    String videoId,
+    int likeCount,
+    SubscriptionType subscriptionType,
+  ) {
+    // Find and update the video in the event list
+    final eventList = _eventLists[subscriptionType];
+    if (eventList == null) return false;
+
+    final index = eventList.indexWhere((v) => v.id == videoId);
+    if (index == -1) return false; // Video no longer in list
+
+    final videoEvent = eventList[index];
+
+    // Update the video with the like count
+    final updatedVideo = videoEvent.copyWith(nostrLikeCount: likeCount);
+    eventList[index] = updatedVideo;
+
+    // Also update in keyed buckets if applicable
+    if (subscriptionType == SubscriptionType.hashtag) {
+      for (final tag in videoEvent.hashtags) {
+        final bucket = _hashtagBuckets[tag];
         if (bucket != null) {
-          final bucketIndex = bucket.indexWhere((v) => v.id == videoEvent.id);
+          final bucketIndex = bucket.indexWhere((v) => v.id == videoId);
           if (bucketIndex != -1) {
             bucket[bucketIndex] = updatedVideo;
           }
         }
       }
-
-      // Schedule a frame update to notify listeners
-      _scheduleFrameUpdate();
-    } catch (e) {
-      // Silently ignore errors - like count is non-critical
-      Log.verbose(
-        'Failed to fetch like count for ${videoEvent.id}: $e',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
+    } else if (subscriptionType == SubscriptionType.profile) {
+      final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
+          ? videoEvent.reposterPubkey!
+          : videoEvent.pubkey;
+      final bucket = _authorBuckets[authorHex];
+      if (bucket != null) {
+        final bucketIndex = bucket.indexWhere((v) => v.id == videoId);
+        if (bucketIndex != -1) {
+          bucket[bucketIndex] = updatedVideo;
+        }
+      }
     }
+
+    return true;
   }
 
   /// Log duplicate video events in an aggregated manner to reduce noise
@@ -4874,6 +4949,7 @@ class VideoEventService extends ChangeNotifier {
     LogBatcher.flush();
 
     _retryTimer?.cancel();
+    _likeCountBatchTimer?.cancel();
     _authStateSubscription?.cancel();
     _connectionService.dispose();
     unsubscribeFromVideoFeed();

@@ -65,7 +65,7 @@ class CameraPermissionBloc
     Emitter<CameraPermissionState> emit,
   ) async {
     try {
-      final status = await _checkPermissions();
+      final status = await checkPermissions();
       emit(CameraPermissionLoaded(status));
     } catch (e) {
       emit(const CameraPermissionError());
@@ -80,7 +80,7 @@ class CameraPermissionBloc
   }
 
   /// Check the status of camera and microphone permissions.
-  Future<CameraPermissionStatus> _checkPermissions() async {
+  Future<CameraPermissionStatus> checkPermissions() async {
     final (cameraStatus, micStatus) = await (
       _permissionsService.checkCameraStatus(),
       _permissionsService.checkMicrophoneStatus(),

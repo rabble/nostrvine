@@ -85,3 +85,12 @@ class SyncFailedException extends LikesRepositoryException {
   @override
   String toString() => 'SyncFailedException: $message';
 }
+
+/// Exception thrown when fetching another user's likes from relays fails.
+class FetchLikesFailedException extends LikesRepositoryException {
+  /// Creates a new fetch likes failed exception.
+  const FetchLikesFailedException(super.message);
+
+  @override
+  String toString() => 'FetchLikesFailedException: $message';
+}

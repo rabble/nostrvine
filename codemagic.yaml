@@ -44,7 +44,9 @@ definitions:
     - &build_aab
       name: Build Android AAB
       script: |
-        flutter build appbundle --release --build-number=$PROJECT_BUILD_NUMBER \
+        # Offset to continue from existing Google Play builds (GP has up to 108, CM at 100)
+        BUILD_NUMBER=$((PROJECT_BUILD_NUMBER + 8))
+        flutter build appbundle --release --build-number=$BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL

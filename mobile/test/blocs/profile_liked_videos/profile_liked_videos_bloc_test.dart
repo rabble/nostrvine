@@ -381,5 +381,98 @@ void main() {
         expect(() => likedIdsController.add({'event1'}), returnsNormally);
       });
     });
+
+    group('Other user profile (targetUserPubkey)', () {
+      // 64-character hex pubkeys for testing
+      final currentUserPubkey = 'a' * 64;
+      final otherUserPubkey = 'b' * 64;
+
+      setUp(() {
+        // Set up current user pubkey
+        when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
+
+        // Set up fetchUserLikes for other user
+        when(
+          () => mockLikesRepository.fetchUserLikes(any()),
+        ).thenAnswer((_) async => <String>[]);
+      });
+
+      ProfileLikedVideosBloc createBlocForOtherUser() => ProfileLikedVideosBloc(
+        likesRepository: mockLikesRepository,
+        videoEventService: mockVideoEventService,
+        nostrClient: mockNostrClient,
+        targetUserPubkey: otherUserPubkey,
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'fetches likes via repository.fetchUserLikes for other user',
+        build: createBlocForOtherUser,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.syncing,
+          ),
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            videos: [],
+            likedEventIds: [],
+          ),
+        ],
+        verify: (_) {
+          // Should NOT use syncUserReactions for other users
+          verifyNever(() => mockLikesRepository.syncUserReactions());
+          // Should use fetchUserLikes with the target user's pubkey
+          verify(
+            () => mockLikesRepository.fetchUserLikes(otherUserPubkey),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'does not subscribe to repository stream for other user profile',
+        build: createBlocForOtherUser,
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Try to emit on the liked IDs stream
+          likedIdsController.add({'event1'});
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => <ProfileLikedVideosState>[],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'uses syncUserReactions when targetUserPubkey matches current user',
+        setUp: () {
+          when(
+            () => mockLikesRepository.syncUserReactions(),
+          ).thenAnswer((_) async => const LikesSyncResult.empty());
+        },
+        build: () => ProfileLikedVideosBloc(
+          likesRepository: mockLikesRepository,
+          videoEventService: mockVideoEventService,
+          nostrClient: mockNostrClient,
+          targetUserPubkey: currentUserPubkey,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        expect: () => [
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.syncing,
+          ),
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            videos: [],
+            likedEventIds: [],
+          ),
+        ],
+        verify: (_) {
+          // Should use syncUserReactions when pubkey matches current user
+          verify(() => mockLikesRepository.syncUserReactions()).called(1);
+          // Should NOT use fetchUserLikes for own profile
+          verifyNever(() => mockLikesRepository.fetchUserLikes(any()));
+        },
+      );
+    });
   });
 }
