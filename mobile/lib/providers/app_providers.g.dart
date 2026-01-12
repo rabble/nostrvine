@@ -1829,17 +1829,11 @@ final class FollowRepositoryProvider
 String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
 
 /// Provider for VideosRepository instance
-///
-/// Creates a VideosRepository for querying video counts.
-/// Uses NostrClient for direct relay queries.
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
 
 /// Provider for VideosRepository instance
-///
-/// Creates a VideosRepository for querying video counts.
-/// Uses NostrClient for direct relay queries.
 
 final class VideosRepositoryProvider
     extends
@@ -1850,9 +1844,6 @@ final class VideosRepositoryProvider
         >
     with $Provider<VideosRepository> {
   /// Provider for VideosRepository instance
-  ///
-  /// Creates a VideosRepository for querying video counts.
-  /// Uses NostrClient for direct relay queries.
   const VideosRepositoryProvider._()
     : super(
         from: null,
