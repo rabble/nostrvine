@@ -18,6 +18,8 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/async_utils.dart';
@@ -25,6 +27,18 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/reserved_username_request_dialog.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
+  /// Route name for editing existing profile.
+  static const editRouteName = 'edit-profile';
+
+  /// Path for editing existing profile.
+  static const editPath = '/edit-profile';
+
+  /// Route name for setting up new profile.
+  static const setupRouteName = 'setup-profile';
+
+  /// Path for setting up new profile.
+  static const setupPath = '/setup-profile';
+
   const ProfileSetupScreen({required this.isNewUser, super.key});
   final bool isNewUser;
 
@@ -214,9 +228,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               final currentPubkey = authService.currentPublicKeyHex;
               if (currentPubkey != null) {
                 final npub = authService.currentNpub;
-                context.go('/profile/$npub');
+                context.go(ProfileScreenRouter.pathForNpub(npub!));
               } else {
-                context.go('/home/0');
+                context.go(HomeScreenRouter.pathForIndex(0));
               }
             }
           },

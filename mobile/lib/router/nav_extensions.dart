@@ -7,8 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
+import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'app_router.dart';
 import 'route_utils.dart';
 
 extension NavX on BuildContext {
@@ -197,14 +202,14 @@ extension NavX on BuildContext {
   );
 
   // Optional pushes (non-tab routes)
-  Future<void> pushCamera() => push('/camera');
-  Future<void> pushSettings() => push('/settings');
+  Future<void> pushCamera() => push(UniversalCameraScreenPure.path);
+  Future<void> pushSettings() => push(SettingsScreen.path);
   Future<void> pushComments(VideoEvent video) =>
       CommentsScreen.show(this, video);
   Future<void> pushFollowing(String pubkey, {String? displayName}) =>
-      push('/following/$pubkey', extra: displayName);
+      push(FollowingRoutes.pathForPubkey(pubkey), extra: displayName);
   Future<void> pushFollowers(String pubkey, {String? displayName}) =>
-      push('/followers/$pubkey', extra: displayName);
+      push(FollowersRoutes.pathForPubkey(pubkey), extra: displayName);
 
   /// Push fullscreen video feed (no bottom nav)
   ///
@@ -216,7 +221,7 @@ extension NavX on BuildContext {
     required int initialIndex,
     String? contextTitle,
   }) => push(
-    '/video-feed',
+    FullscreenVideoFeedScreen.path,
     extra: FullscreenVideoFeedArgs(
       source: source,
       initialIndex: initialIndex,
@@ -249,7 +254,7 @@ extension NavX on BuildContext {
       return;
     }
 
-    await push('/profile-view/$npub');
+    await push(OtherProfileScreen.pathForNpub(npub));
   }
 
   /// Push curated list screen (NIP-51 kind 30005 video lists)
@@ -259,7 +264,7 @@ extension NavX on BuildContext {
     List<String>? videoIds,
     String? authorPubkey,
   }) => push(
-    '/list/${Uri.encodeComponent(listId)}',
+    CuratedListFeedScreen.pathForId(listId),
     extra: CuratedListRouteExtra(
       listName: listName,
       videoIds: videoIds,

@@ -17,6 +17,21 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'list';
+
+  /// Base path for list routes.
+  static const basePath = '/list';
+
+  /// Path for this route.
+  static const path = '/list/:listId';
+
+  /// Build path for a specific list.
+  static String pathForId(String listId) {
+    final encodedId = Uri.encodeComponent(listId);
+    return '$basePath/$encodedId';
+  }
+
   const CuratedListFeedScreen({
     required this.listId,
     required this.listName,

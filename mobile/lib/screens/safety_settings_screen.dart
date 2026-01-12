@@ -11,6 +11,12 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SafetySettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'safety-settings';
+
+  /// Path for this route.
+  static const path = '/safety-settings';
+
   const SafetySettingsScreen({super.key});
 
   @override

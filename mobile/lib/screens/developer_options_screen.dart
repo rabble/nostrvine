@@ -11,6 +11,12 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class DeveloperOptionsScreen extends ConsumerWidget {
+  /// Route name for this screen.
+  static const routeName = 'developer-options';
+
+  /// Path for this route.
+  static const path = '/developer-options';
+
   const DeveloperOptionsScreen({super.key});
 
   @override

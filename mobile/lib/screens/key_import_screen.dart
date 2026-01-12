@@ -11,6 +11,12 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'import-key';
+
+  /// Path for this route.
+  static const path = '/import-key';
+
   const KeyImportScreen({super.key});
 
   @override

@@ -24,6 +24,18 @@ import 'package:share_plus/share_plus.dart';
 /// the bottom navigation bar. It provides a fullscreen profile viewing
 /// experience with back navigation.
 class OtherProfileScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'profile-view';
+
+  /// Base path for profile view routes.
+  static const path = '/profile-view';
+
+  /// Path pattern for this route.
+  static const pathWithNpub = '/profile-view/:npub';
+
+  /// Build path for a specific npub.
+  static String pathForNpub(String npub) => '$path/$npub';
+
   const OtherProfileScreen({required this.npub, super.key});
 
   /// The npub of the user whose profile is being viewed.

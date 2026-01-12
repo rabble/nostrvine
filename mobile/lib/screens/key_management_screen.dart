@@ -12,6 +12,12 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'key-management';
+
+  /// Path for this route.
+  static const path = '/key-management';
+
   const KeyManagementScreen({super.key});
 
   @override

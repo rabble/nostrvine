@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -15,6 +16,12 @@ import 'package:openvine/widgets/login/keycast_login_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'welcome';
+
+  /// Path for this route.
+  static const path = '/welcome';
+
   const WelcomeScreen({super.key});
 
   @override
@@ -110,7 +117,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     // Import existing keys option
                     Center(
                       child: GestureDetector(
-                        onTap: () => context.push('/import-key'),
+                        onTap: () => context.push(KeyImportScreen.path),
                         child: const Text(
                           'Already have keys? Import them here →',
                           style: TextStyle(
