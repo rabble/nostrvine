@@ -653,6 +653,18 @@ VideoPlayerController individualVideoController(
     // Remove state change listener before disposal
     controller.removeListener(stateChangeListener);
 
+    // CRITICAL: Pause and mute audio IMMEDIATELY (synchronously) to prevent
+    // audio leaking during async disposal. This fixes the bug where audio
+    // continues playing after pressing the back button.
+    try {
+      if (controller.value.isInitialized) {
+        controller.pause();
+        controller.setVolume(0);
+      }
+    } catch (e) {
+      // Controller may already be disposed - ignore
+    }
+
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers
     Future.microtask(() {

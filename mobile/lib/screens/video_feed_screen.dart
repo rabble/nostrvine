@@ -151,6 +151,16 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
   }
 
   @override
+  void deactivate() {
+    // Pause video immediately when widget is deactivated (before dispose).
+    // This prevents audio from continuing to play during navigation transitions.
+    // deactivate() is called before the widget is removed from the tree,
+    // so ref is still safe to use here.
+    _pauseCurrentVideo();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     final lifetime = DateTime.now().difference(_initTime).inMilliseconds;
     Log.info(
@@ -168,7 +178,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       name: 'VideoFeedScreen',
       category: LogCategory.ui,
     );
-    _pauseAllVideos();
+    _pauseCurrentVideo();
 
     // NOTE: With Riverpod-native lifecycle, controllers autodispose via 30s timeout
 
@@ -197,7 +207,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           name: 'VideoFeedScreen',
           category: LogCategory.ui,
         );
-        _pauseAllVideos();
+        _pauseCurrentVideo();
 
       case AppLifecycleState.inactive:
         if (!isDesktop) {
@@ -207,7 +217,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
             name: 'VideoFeedScreen',
             category: LogCategory.ui,
           );
-          _pauseAllVideos();
+          _pauseCurrentVideo();
         } else {
           Log.debug(
             '🖥️ App inactive (desktop) - ignoring to prevent excessive pausing, state: $state',
@@ -230,7 +240,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           name: 'VideoFeedScreen',
           category: LogCategory.ui,
         );
-        _pauseAllVideos();
+        _pauseCurrentVideo();
 
       case AppLifecycleState.hidden:
         Log.debug(
@@ -238,7 +248,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           name: 'VideoFeedScreen',
           category: LogCategory.ui,
         );
-        _pauseAllVideos();
+        _pauseCurrentVideo();
     }
   }
 
@@ -296,18 +306,56 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
 
   // Legacy methods removed - active video is now derived from URL via activeVideoIdProvider
 
-  void _pauseAllVideos() {
-    Log.debug(
-      '📱 _pauseAllVideos called - derived provider handles pause automatically',
-      name: 'VideoFeedScreen',
-      category: LogCategory.ui,
-    );
-    // When app backgrounds, appForegroundProvider updates → activeVideoIdProvider returns null → VideoFeedItem pauses
+  /// Pause the currently playing video.
+  ///
+  /// Called on deactivate/dispose and app lifecycle changes to ensure
+  /// audio stops immediately rather than relying on async provider updates.
+  void _pauseCurrentVideo() {
+    // Get videos from home feed state
+    final feedState = ref.read(homeFeedProvider).asData?.value;
+    if (feedState == null) return;
+
+    final videos = feedState.videos;
+    if (_currentIndex < 0 || _currentIndex >= videos.length) {
+      return;
+    }
+
+    final video = videos[_currentIndex];
+    if (video.videoUrl == null) {
+      return;
+    }
+
+    try {
+      final controllerParams = VideoControllerParams(
+        videoId: video.id,
+        videoUrl: video.videoUrl!,
+        videoEvent: video,
+      );
+      final controller = ref.read(
+        individualVideoControllerProvider(controllerParams),
+      );
+
+      if (controller.value.isInitialized && controller.value.isPlaying) {
+        safePause(controller, video.id);
+        Log.debug(
+          '📱 VideoFeedScreen: Paused video ${video.id} on deactivate/dispose',
+          name: 'VideoFeedScreen',
+          category: LogCategory.ui,
+        );
+      }
+    } catch (e) {
+      // Controller may not exist or be disposed - ignore
+      Log.debug(
+        '📱 VideoFeedScreen: Could not pause video (expected during cleanup): $e',
+        name: 'VideoFeedScreen',
+        category: LogCategory.ui,
+      );
+    }
   }
 
   /// Public method to pause videos from external sources (like navigation)
   void pauseVideos() {
-    _pauseAllVideos();
+    _pauseCurrentVideo();
   }
 
   /// Public method to resume videos from external sources (like navigation)
