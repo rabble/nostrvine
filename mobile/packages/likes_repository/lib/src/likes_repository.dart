@@ -331,6 +331,54 @@ class LikesRepository {
     }
   }
 
+  /// Fetch liked event IDs for any user from relays.
+  ///
+  /// Unlike [syncUserReactions], this method:
+  /// - Does NOT cache results locally (since it's not the current user's data)
+  /// - Does NOT require authentication
+  /// - Is intended for viewing other users' liked content
+  ///
+  /// Returns a list of event IDs that the specified user has liked,
+  /// ordered by recency (most recent first).
+  ///
+  /// Parameters:
+  /// - [pubkey]: The public key (hex) of the user whose likes to fetch
+  ///
+  /// Throws [FetchLikesFailedException] if the fetch fails.
+  Future<List<String>> fetchUserLikes(String pubkey) async {
+    final filter = Filter(
+      kinds: const [_reactionKind],
+      authors: [pubkey],
+      limit: _defaultReactionFetchLimit,
+    );
+
+    try {
+      final events = await _nostrClient.queryEvents([filter]);
+      final likedEventIds = <String>[];
+      final seenIds = <String>{};
+
+      // Sort events by createdAt descending (most recent first)
+      events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      for (final event in events) {
+        // Only process '+' reactions (likes)
+        if (event.content != _likeContent) continue;
+
+        final targetId = _extractTargetEventId(event);
+        if (targetId != null && !seenIds.contains(targetId)) {
+          seenIds.add(targetId);
+          likedEventIds.add(targetId);
+        }
+      }
+
+      return likedEventIds;
+    } catch (e) {
+      throw FetchLikesFailedException(
+        'Failed to fetch likes for user $pubkey: $e',
+      );
+    }
+  }
+
   /// Builds a [LikesSyncResult] from the current in-memory cache.
   LikesSyncResult _buildSyncResult() {
     // Sort records by createdAt descending (most recent first)

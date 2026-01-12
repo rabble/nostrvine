@@ -31,9 +31,11 @@ class ProfileLikedVideosBloc
     required LikesRepository likesRepository,
     required VideoEventService videoEventService,
     required NostrClient nostrClient,
+    String? targetUserPubkey,
   }) : _likesRepository = likesRepository,
        _videoEventService = videoEventService,
        _nostrClient = nostrClient,
+       _targetUserPubkey = targetUserPubkey,
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(_onSyncRequested);
     on<ProfileLikedVideosSubscriptionRequested>(_onSubscriptionRequested);
@@ -42,6 +44,15 @@ class ProfileLikedVideosBloc
   final LikesRepository _likesRepository;
   final VideoEventService _videoEventService;
   final NostrClient _nostrClient;
+
+  /// The pubkey of the user whose likes to display.
+  /// If null or same as current user, uses LikesRepository.
+  /// If different, fetches likes directly from Nostr relays.
+  final String? _targetUserPubkey;
+
+  /// Whether we're viewing another user's profile (not our own).
+  bool get _isOtherUserProfile =>
+      _targetUserPubkey != null && _targetUserPubkey != _nostrClient.publicKey;
 
   /// Handle sync request - syncs liked IDs from repository then loads videos.
   Future<void> _onSyncRequested(
@@ -52,7 +63,8 @@ class ProfileLikedVideosBloc
     if (state.status == ProfileLikedVideosStatus.syncing) return;
 
     Log.info(
-      'ProfileLikedVideosBloc: Starting sync',
+      'ProfileLikedVideosBloc: Starting sync for '
+      '${_isOtherUserProfile ? "other user" : "own profile"}',
       name: 'ProfileLikedVideosBloc',
       category: LogCategory.video,
     );
@@ -60,9 +72,10 @@ class ProfileLikedVideosBloc
     emit(state.copyWith(status: ProfileLikedVideosStatus.syncing));
 
     try {
-      // Sync liked event IDs from relays/local storage
-      final syncResult = await _likesRepository.syncUserReactions();
-      final likedEventIds = syncResult.orderedEventIds;
+      // Get liked event IDs - either from repository (own) or relays (other)
+      final likedEventIds = _isOtherUserProfile
+          ? await _fetchOtherUserLikedEventIds()
+          : await _fetchOwnLikedEventIds();
 
       Log.info(
         'ProfileLikedVideosBloc: Synced ${likedEventIds.length} liked IDs',
@@ -117,6 +130,18 @@ class ProfileLikedVideosBloc
           error: ProfileLikedVideosError.syncFailed,
         ),
       );
+    } on FetchLikesFailedException catch (e) {
+      Log.error(
+        'ProfileLikedVideosBloc: Fetch likes failed - ${e.message}',
+        name: 'ProfileLikedVideosBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileLikedVideosStatus.failure,
+          error: ProfileLikedVideosError.syncFailed,
+        ),
+      );
     } catch (e) {
       Log.error(
         'ProfileLikedVideosBloc: Failed to load videos - $e',
@@ -132,14 +157,36 @@ class ProfileLikedVideosBloc
     }
   }
 
+  /// Fetch liked event IDs for the current user via LikesRepository.
+  Future<List<String>> _fetchOwnLikedEventIds() async {
+    final syncResult = await _likesRepository.syncUserReactions();
+    return syncResult.orderedEventIds;
+  }
+
+  /// Fetch liked event IDs for another user via LikesRepository.
+  ///
+  /// Delegates to [LikesRepository.fetchUserLikes] which queries relays
+  /// for Kind 7 reactions authored by the target user.
+  Future<List<String>> _fetchOtherUserLikedEventIds() async {
+    return _likesRepository.fetchUserLikes(_targetUserPubkey!);
+  }
+
   /// Subscribe to liked IDs changes and update the video list reactively.
   ///
   /// Uses emit.forEach to listen to the repository stream and emit state
   /// changes when liked IDs change (videos added or removed).
+  ///
+  /// Note: This only works for the current user's own profile, as the
+  /// LikesRepository only tracks the authenticated user's likes.
+  /// For other users' profiles, this subscription has no effect.
   Future<void> _onSubscriptionRequested(
     ProfileLikedVideosSubscriptionRequested event,
     Emitter<ProfileLikedVideosState> emit,
   ) async {
+    // Only subscribe for own profile - the repository only tracks current
+    // user's likes, so watching it for other users would show wrong data.
+    if (_isOtherUserProfile) return;
+
     await emit.forEach<Set<String>>(
       _likesRepository.watchLikedEventIds(),
       onData: (likedIdsSet) {
