@@ -37,12 +37,12 @@ class _CommentsTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<CommentsBloc, CommentsState>(
       buildWhen: (prev, next) =>
-          prev.topLevelComments.length != next.topLevelComments.length ||
+          prev.comments.length != next.comments.length ||
           prev.status != next.status,
       builder: (context, state) {
         // Use loaded count if available, otherwise use initial count
         final count = state.status == CommentsStatus.success
-            ? state.topLevelComments.length
+            ? state.comments.length
             : initialCount;
 
         return Text(

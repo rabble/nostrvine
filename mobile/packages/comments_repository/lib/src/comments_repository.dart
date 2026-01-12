@@ -1,6 +1,6 @@
 // ABOUTME: Repository for managing comments (Kind 1111 NIP-22) on Nostr.
 // ABOUTME: Provides loading, posting, and streaming of threaded comments.
-// ABOUTME: Uses NostrClient for relay operations and builds thread trees.
+// ABOUTME: Uses NostrClient for relay operations and organizes comments chronologically.
 
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
@@ -39,10 +39,11 @@ class CommentsRepository {
 
   final NostrClient _nostrClient;
 
-  /// Loads comments for a root event and returns a threaded structure.
+  /// Loads comments for a root event and returns them in a flat list.
   ///
-  /// This is a one-shot query that returns all comments organized into
-  /// a tree structure based on reply relationships.
+  /// This is a one-shot query that returns all comments organized
+  /// chronologically (newest first) with reply relationships maintained
+  /// through each Comment's replyToEventId field.
   ///
   /// Parameters:
   /// - [rootEventId]: The ID of the event to load comments for
@@ -50,8 +51,8 @@ class CommentsRepository {
   /// - [limit]: Maximum number of comments to fetch (default: 100)
   ///
   /// Returns a [CommentThread] containing:
-  /// - Top-level comments (direct replies to root)
-  /// - Nested replies organized under their parent comments
+  /// - All comments in chronological order
+  /// - Comment cache for quick lookup by ID
   /// - Total comment count
   ///
   /// Throws [LoadCommentsFailedException] if the query fails.
@@ -79,7 +80,7 @@ class CommentsRepository {
   ///
   /// Returns a stream that emits [CommentThread] whenever new comments
   /// arrive. The stream uses a scan operator to accumulate comments
-  /// and rebuild the thread structure as new events arrive.
+  /// and rebuild the flat list as new events arrive.
   ///
   /// Parameters:
   /// - [rootEventId]: The ID of the event to watch comments for
@@ -354,8 +355,8 @@ class CommentsRepository {
 
   /// Builds a CommentThread from a map of comments.
   ///
-  /// Creates placeholder nodes for missing parent comments to preserve
-  /// thread structure when replies are received but their parents are not.
+  /// Organizes comments into a flat list sorted chronologically (newest first).
+  /// Reply relationships are maintained through each Comment's replyToEventId field.
   CommentThread _buildThreadFromComments(
     Map<String, Comment> commentMap,
     String rootEventId,
@@ -364,136 +365,43 @@ class CommentsRepository {
       return CommentThread.empty(rootEventId);
     }
 
-    // Track missing parent IDs that need placeholder nodes
-    final missingParentIds = <String>{};
-
-    // Build a map of parent comment ID -> child comment IDs
-    final childrenMap = <String, List<String>>{};
-    final topLevelIds = <String>[];
-
-    for (final comment in commentMap.values) {
-      final replyTo = comment.replyToEventId;
-      if (replyTo == null || replyTo == rootEventId) {
-        // Top-level comment (direct reply to root)
-        topLevelIds.add(comment.id);
-      } else if (!commentMap.containsKey(replyTo)) {
-        // Parent not found - track it for placeholder creation
-        missingParentIds.add(replyTo);
-        (childrenMap[replyTo] ??= []).add(comment.id);
-      } else {
-        // Nested reply - add to parent's children list
-        (childrenMap[replyTo] ??= []).add(comment.id);
-      }
-    }
-
-    // Add missing parents to top-level (they'll be rendered as placeholders)
-    topLevelIds.addAll(missingParentIds);
-
-    // Cache for built nodes to avoid rebuilding
-    final nodeCache = <String, CommentNode>{};
-
-    // Recursively build a node and all its descendants
-    CommentNode buildNode(String commentId) {
-      // Return cached node if already built
-      if (nodeCache.containsKey(commentId)) {
-        return nodeCache[commentId]!;
-      }
-
-      final childIds = childrenMap[commentId] ?? <String>[];
-
-      // Check if this is a missing parent (placeholder)
-      final isMissing = missingParentIds.contains(commentId);
-      final comment = isMissing
-          ? _createPlaceholderComment(commentId, rootEventId)
-          : commentMap[commentId]!;
-
-      // Recursively build child nodes
-      final replies = childIds.map(buildNode).toList()
-        // Sort replies by time (oldest first for chronological reading)
-        ..sort((a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
-
-      final node = CommentNode(
-        comment: comment,
-        replies: replies,
-        isNotFound: isMissing,
-      );
-      nodeCache[commentId] = node;
-      return node;
-    }
-
-    // Build all top-level nodes (this recursively builds entire tree)
-    final topLevel = topLevelIds.map(buildNode).toList()
-      // Sort top-level by time (newest first)
-      ..sort((a, b) => b.comment.createdAt.compareTo(a.comment.createdAt));
+    // Simple chronological sort: newest first
+    final sortedComments = commentMap.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return CommentThread(
       rootEventId: rootEventId,
-      topLevelComments: topLevel,
+      comments: sortedComments,
       totalCount: commentMap.length,
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
     );
   }
 
-  /// Creates a placeholder comment for a missing parent.
-  Comment _createPlaceholderComment(String commentId, String rootEventId) {
-    return Comment(
-      id: commentId,
-      content: '',
-      authorPubkey: '',
-      createdAt: DateTime.now(),
-      rootEventId: rootEventId,
-      rootAuthorPubkey: '',
-    );
-  }
-
   // ---------------------------------------------------------------------------
-  // Tree manipulation helpers
+  // Comment manipulation helpers
   // ---------------------------------------------------------------------------
 
-  /// Handles a deleted comment in the tree.
+  /// Removes a comment from the thread.
   ///
-  /// If the comment has replies, marks it as not found to preserve threading.
-  /// If the comment has no replies, removes it completely.
-  /// Also cleans up placeholder branches that no longer have real comments.
-  List<CommentNode> markCommentAsNotFound(
-    List<CommentNode> nodes,
+  /// Filters out the deleted comment while keeping all other comments,
+  /// including any replies to the deleted comment (they become orphans
+  /// and will display with their reply indicator).
+  CommentThread removeComment(
+    CommentThread thread,
     String commentId,
   ) {
-    final result = <CommentNode>[];
+    final updatedComments = thread.comments
+        .where((c) => c.id != commentId)
+        .toList();
 
-    for (final node in nodes) {
-      if (node.comment.id == commentId) {
-        // Found the target comment
-        if (node.replies.isNotEmpty) {
-          // Has replies - keep as placeholder
-          result.add(node.copyWith(isNotFound: true));
-        }
-        // No replies - skip (remove from tree)
-      } else if (node.replies.isNotEmpty) {
-        // Not the target - recurse into replies
-        final updatedReplies = markCommentAsNotFound(node.replies, commentId);
+    final updatedCache = Map<String, Comment>.from(thread.commentCache)
+      ..remove(commentId);
 
-        // If this is a placeholder and has no real comments below, remove it
-        if (node.isNotFound && !_hasRealComments(updatedReplies)) {
-          continue;
-        }
-
-        result.add(node.copyWith(replies: updatedReplies));
-      } else {
-        // Not the target and no replies - keep as is
-        result.add(node);
-      }
-    }
-
-    return result;
-  }
-
-  /// Checks if any node in the list (or their descendants) is a real comment.
-  bool _hasRealComments(List<CommentNode> nodes) {
-    for (final node in nodes) {
-      if (!node.isNotFound) return true;
-      if (_hasRealComments(node.replies)) return true;
-    }
-    return false;
+    return CommentThread(
+      rootEventId: thread.rootEventId,
+      comments: updatedComments,
+      totalCount: updatedComments.length,
+      commentCache: updatedCache,
+    );
   }
 }

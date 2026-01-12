@@ -1,5 +1,5 @@
 // ABOUTME: Comments list widget with loading, error, and empty states
-// ABOUTME: Renders threaded comments using CommentThread widget
+// ABOUTME: Renders comments in a flat list using CommentItem widget
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,16 +28,16 @@ class CommentsList extends StatelessWidget {
           return const _ErrorState();
         }
 
-        if (state.topLevelComments.isEmpty) {
+        if (state.comments.isEmpty) {
           return CommentsEmptyState(isClassicVine: isOriginalVine);
         }
 
         return ListView.builder(
           controller: scrollController,
           padding: const EdgeInsets.only(bottom: 80),
-          itemCount: state.topLevelComments.length,
+          itemCount: state.comments.length,
           itemBuilder: (context, index) =>
-              CommentThread(node: state.topLevelComments[index]),
+              CommentItem(comment: state.comments[index]),
         );
       },
     );

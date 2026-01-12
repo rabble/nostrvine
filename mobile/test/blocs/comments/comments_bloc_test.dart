@@ -74,7 +74,7 @@ void main() {
           );
           final thread = CommentThread(
             rootEventId: validId('root'),
-            topLevelComments: [CommentNode(comment: comment)],
+            comments: [comment],
             totalCount: 1,
             commentCache: {comment.id: comment},
           );
@@ -173,12 +173,7 @@ void main() {
           );
           final thread = CommentThread(
             rootEventId: validId('root'),
-            topLevelComments: [
-              CommentNode(
-                comment: parentComment,
-                replies: [CommentNode(comment: replyComment)],
-              ),
-            ],
+            comments: [parentComment, replyComment],
             totalCount: 2,
             commentCache: {
               parentComment.id: parentComment,
@@ -197,7 +192,12 @@ void main() {
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         verify: (bloc) {
           expect(bloc.state.topLevelComments.length, 1);
-          expect(bloc.state.topLevelComments.first.replies.length, 1);
+          final replies = bloc.state.comments
+              .where(
+                (c) => c.replyToEventId == bloc.state.topLevelComments.first.id,
+              )
+              .toList();
+          expect(replies.length, 1);
         },
       );
     });
@@ -415,10 +415,8 @@ void main() {
             ),
           ).thenThrow(Exception('Network error'));
         },
-        seed: () => const CommentsState(
-          mainInputText: 'Test comment',
-          topLevelComments: [],
-        ),
+        seed: () =>
+            const CommentsState(mainInputText: 'Test comment', comments: []),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => [
@@ -463,7 +461,7 @@ void main() {
           return CommentsState(
             replyInputText: 'Reply text',
             activeReplyCommentId: validId('parent'),
-            topLevelComments: [CommentNode(comment: parentComment)],
+            comments: [parentComment],
           );
         },
         build: createBloc,
@@ -479,7 +477,7 @@ void main() {
           // Second: error emitted, no reply added
           isA<CommentsState>()
               .having(
-                (s) => s.topLevelComments.first.replies.length,
+                (s) => s.comments.where((c) => c.replyToEventId != null).length,
                 'replies',
                 0,
               )
@@ -496,13 +494,13 @@ void main() {
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
-        topLevelComments: const [],
+        comments: const [],
       );
       final state2 = CommentsState(
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
-        topLevelComments: const [],
+        comments: const [],
       );
 
       expect(state1, equals(state2));
@@ -583,73 +581,6 @@ void main() {
       );
 
       expect(state.isReplyPosting('comment1'), false);
-    });
-  });
-
-  group('CommentNode', () {
-    test('totalReplyCount returns correct count including nested replies', () {
-      final node = CommentNode(
-        comment: Comment(
-          id: 'comment1',
-          content: 'Parent',
-          authorPubkey: 'author1',
-          createdAt: DateTime.now(),
-          rootEventId: 'root',
-          rootAuthorPubkey: 'author',
-        ),
-        replies: [
-          CommentNode(
-            comment: Comment(
-              id: 'reply1',
-              content: 'Reply 1',
-              authorPubkey: 'author2',
-              createdAt: DateTime.now(),
-              rootEventId: 'root',
-              rootAuthorPubkey: 'author',
-            ),
-            replies: [
-              CommentNode(
-                comment: Comment(
-                  id: 'nested1',
-                  content: 'Nested reply',
-                  authorPubkey: 'author3',
-                  createdAt: DateTime.now(),
-                  rootEventId: 'root',
-                  rootAuthorPubkey: 'author',
-                ),
-              ),
-            ],
-          ),
-          CommentNode(
-            comment: Comment(
-              id: 'reply2',
-              content: 'Reply 2',
-              authorPubkey: 'author4',
-              createdAt: DateTime.now(),
-              rootEventId: 'root',
-              rootAuthorPubkey: 'author',
-            ),
-          ),
-        ],
-      );
-
-      expect(node.totalReplyCount, 3);
-    });
-
-    test('supports value equality', () {
-      final comment = Comment(
-        id: 'comment1',
-        content: 'Test',
-        authorPubkey: 'author1',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'author',
-      );
-
-      final node1 = CommentNode(comment: comment);
-      final node2 = CommentNode(comment: comment);
-
-      expect(node1, equals(node2));
     });
   });
 }
