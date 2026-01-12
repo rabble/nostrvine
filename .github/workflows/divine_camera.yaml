@@ -1,4 +1,4 @@
-# ABOUTME: CI workflow for the likes_repository package.
+# ABOUTME: CI workflow for the divine_camera package.
 # ABOUTME: Runs tests, formatting, and analysis only when divine_camera files change.
 
 name: Divine Camera CI
