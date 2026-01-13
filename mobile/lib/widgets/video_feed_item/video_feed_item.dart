@@ -104,6 +104,36 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   late final VideoInteractionsBloc
   _interactionsBloc; // Per-video interactions bloc
 
+  // State for fading pause button animation
+  bool _showFadingPauseButton = false;
+  double _pauseButtonOpacity = 1.0;
+
+  /// Triggers the fading pause button animation.
+  /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
+  void _triggerPauseButtonFade() {
+    setState(() {
+      _showFadingPauseButton = true;
+      _pauseButtonOpacity = 1.0;
+    });
+
+    // Animate opacity to 0 over 500ms using linear animation
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      setState(() {
+        _pauseButtonOpacity = 0.0;
+      });
+    });
+
+    // Hide the button completely after animation completes
+    Future.delayed(const Duration(milliseconds: 550), () {
+      if (!mounted) return;
+      setState(() {
+        _showFadingPauseButton = false;
+        _pauseButtonOpacity = 1.0; // Reset for next use
+      });
+    });
+  }
+
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
 
@@ -593,6 +623,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 );
                 // Use safePlay to handle disposed controller gracefully
                 safePlay(controller, video.id);
+
+                // Show fading pause button animation
+                _triggerPauseButtonFade();
               }
             } else {
               Log.debug(
@@ -787,6 +820,39 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                     child: Center(
                                       child: SvgPicture.asset(
                                         'assets/icon/content-controls/play.svg',
+                                        width: 32,
+                                        height: 32,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Fading pause button when resuming playback
+                            if (_showFadingPauseButton &&
+                                isActive &&
+                                value.isInitialized &&
+                                value.isPlaying)
+                              Center(
+                                child: AnimatedOpacity(
+                                  opacity: _pauseButtonOpacity,
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.linear,
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.65,
+                                      ),
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    child: Center(
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/pause.svg',
                                         width: 32,
                                         height: 32,
                                         colorFilter: const ColorFilter.mode(
