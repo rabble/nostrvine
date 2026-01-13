@@ -17,6 +17,7 @@ import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -115,6 +116,8 @@ int tabIndexFromLocation(String loc) {
       return -1; // Non-tab routes - no bottom nav
     case 'list':
       return 1; // List keeps explore tab active (like hashtag)
+    case 'discover-lists':
+      return 1; // Discover lists keeps explore tab active
     default:
       return 0; // fallback to home
   }
@@ -536,6 +539,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               );
             },
           ),
+
+          // DISCOVER LISTS route (browse public NIP-51 kind 30005 lists)
+          GoRoute(
+            path: DiscoverListsScreen.path,
+            name: DiscoverListsScreen.routeName,
+            builder: (ctx, st) => const DiscoverListsScreen(),
+          ),
+
         ],
       ),
 

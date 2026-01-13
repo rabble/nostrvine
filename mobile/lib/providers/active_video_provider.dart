@@ -113,6 +113,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.following:
     case RouteType.profileView:
     case RouteType.curatedList:
+    case RouteType.discoverLists:
     case RouteType.sound:
       // Non-video routes - return null
       Log.debug(

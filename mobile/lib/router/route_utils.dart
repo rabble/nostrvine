@@ -30,6 +30,7 @@ enum RouteType {
   videoFeed, // Fullscreen video feed (pushed from grids)
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
+  discoverLists, // Discover public lists screen
   sound, // Sound detail screen for audio reuse
 }
 
@@ -238,6 +239,9 @@ RouteContext parseRoute(String path) {
       final listId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.curatedList, listId: listId);
 
+    case 'discover-lists':
+      return const RouteContext(type: RouteType.discoverLists);
+
     case 'sound':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -391,6 +395,9 @@ String buildRoute(RouteContext context) {
     case RouteType.curatedList:
       final listId = Uri.encodeComponent(context.listId ?? '');
       return '/list/$listId';
+
+    case RouteType.discoverLists:
+      return '/discover-lists';
 
     case RouteType.sound:
       return '/sound/${context.soundId ?? ''}';
