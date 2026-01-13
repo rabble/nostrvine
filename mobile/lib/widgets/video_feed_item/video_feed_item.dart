@@ -1223,6 +1223,10 @@ class VideoOverlayActions extends ConsumerWidget {
               ignoring: false, // Action buttons SHOULD receive taps
               child: Column(
                 children: [
+                  // Edit button (only show for owned videos when feature is enabled)
+                  // Hide in fullscreen mode since it's shown in AppBar instead
+                  if (!isFullscreen) _VideoEditButton(video: video),
+
                   // Flag/Report button for content moderation
                   Semantics(
                     identifier: 'report_button',
@@ -1442,10 +1446,6 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   // Like button
                   _LikeActionButtonThemed(video: video),
-
-                  // Edit button (only show for owned videos when feature is enabled)
-                  // Hide in fullscreen mode since it's shown in AppBar instead
-                  if (!isFullscreen) _VideoEditButton(video: video),
                 ],
               ),
             ),
