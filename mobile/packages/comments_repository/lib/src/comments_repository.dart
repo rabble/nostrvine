@@ -1,6 +1,7 @@
 // ABOUTME: Repository for managing comments (Kind 1111 NIP-22) on Nostr.
 // ABOUTME: Provides loading, posting, and streaming of threaded comments.
-// ABOUTME: Uses NostrClient for relay operations and organizes comments chronologically.
+// ABOUTME: Uses NostrClient for relay operations and organizes comments
+// chronologically.
 
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
@@ -317,7 +318,8 @@ class CommentsRepository {
   /// Builds a CommentThread from a map of comments.
   ///
   /// Organizes comments into a flat list sorted chronologically (newest first).
-  /// Reply relationships are maintained through each Comment's replyToEventId field.
+  /// Reply relationships are maintained through each Comment's
+  /// replyToEventId field.
   CommentThread _buildThreadFromComments(
     Map<String, Comment> commentMap,
     String rootEventId,

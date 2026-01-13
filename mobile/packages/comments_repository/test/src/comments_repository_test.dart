@@ -95,7 +95,6 @@ void main() {
           rootEventId: testRootEventId,
           rootAuthorPubkey: testRootAuthorPubkey,
           rootEventKind: _testRootEventKind,
-          createdAt: 1000,
         );
 
         final replyComment = _createCommentEvent(
@@ -135,7 +134,6 @@ void main() {
           rootEventId: testRootEventId,
           rootAuthorPubkey: testRootAuthorPubkey,
           rootEventKind: _testRootEventKind,
-          createdAt: 1000,
         );
 
         final newComment = _createCommentEvent(
@@ -169,7 +167,6 @@ void main() {
           rootEventId: testRootEventId,
           rootAuthorPubkey: testRootAuthorPubkey,
           rootEventKind: _testRootEventKind,
-          createdAt: 1000,
         );
 
         final oldReply = _createCommentEvent(
@@ -215,7 +212,8 @@ void main() {
       test(
         'includes orphan replies in flat list with replyTo reference',
         () async {
-          // Orphan replies are just included in the flat list with their replyToEventId
+          // Orphan replies are just included in the flat list with
+          // their replyToEventId
           final orphanReply = _createCommentEvent(
             id: 'orphan',
             content: 'Orphan reply',

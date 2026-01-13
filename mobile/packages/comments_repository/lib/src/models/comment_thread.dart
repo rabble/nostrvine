@@ -7,8 +7,10 @@ import 'package:equatable/equatable.dart';
 
 /// A complete comment thread containing all comments for an event.
 ///
-/// Comments are organized in a flat list, chronologically ordered (newest first).
-/// Reply relationships are maintained through the Comment model's replyToEventId field.
+/// Comments are organized in a flat list, chronologically ordered
+/// (newest first).
+/// Reply relationships are maintained through the Comment model's
+/// replyToEventId field.
 class CommentThread extends Equatable {
   /// Creates a new comment thread.
   const CommentThread({
