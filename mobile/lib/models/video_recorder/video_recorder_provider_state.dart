@@ -6,9 +6,9 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:models/models.dart' as model show AspectRatio;
 
 /// State class capturing all UI state for video recording.
-class VideoRecorderUIState {
+class VideoRecorderProviderState {
   /// Creates a video recorder UI state.
-  const VideoRecorderUIState({
+  const VideoRecorderProviderState({
     this.recordingState = .idle,
     this.zoomLevel = 1.0,
     this.cameraSensorAspectRatio = 1.0,
@@ -81,7 +81,7 @@ class VideoRecorderUIState {
   String? get errorMessage => isError ? 'Recording error occurred' : null;
 
   /// Creates a copy of this state with updated values.
-  VideoRecorderUIState copyWith({
+  VideoRecorderProviderState copyWith({
     VideoRecorderState? recordingState,
     double? zoomLevel,
     double? cameraSensorAspectRatio,
@@ -97,7 +97,7 @@ class VideoRecorderUIState {
     DivineFlashMode? flashMode,
     TimerDuration? timerDuration,
   }) {
-    return VideoRecorderUIState(
+    return VideoRecorderProviderState(
       recordingState: recordingState ?? this.recordingState,
       zoomLevel: zoomLevel ?? this.zoomLevel,
       cameraSensorAspectRatio:

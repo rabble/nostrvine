@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
@@ -45,25 +44,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     _disposeVideoControllers();
 
     _notifier = ref.read(videoRecorderProvider.notifier);
-    final success = await _notifier!.initialize(context: context);
-
-    if (!success && mounted) {
-      _showPermissionError();
-      _notifier!.closeVideoRecorder(context);
-    }
-  }
-
-  /// Show error when camera/microphone permissions are denied
-  void _showPermissionError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Camera and microphone permissions are required to record videos.',
-        ),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    await _notifier!.initialize(context: context);
   }
 
   /// Dispose all video controllers to free resources before recording
@@ -112,24 +93,21 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
-        // TODO(macOS): CameraPermissionGate needs macOS-specific permission handling.
-        body: CameraPermissionGate(
-          child: Stack(
-            fit: .expand,
-            children: [
-              // Camera preview
-              VideoRecorderCameraPreview(previewWidgetRadius: _previewRadius),
+        body: Stack(
+          fit: .expand,
+          children: [
+            // Camera preview
+            VideoRecorderCameraPreview(previewWidgetRadius: _previewRadius),
 
-              // Top bar with close-button, clip-duration, and confirm-button
-              const VideoRecorderTopBar(),
+            // Top bar with close-button, clip-duration, and confirm-button
+            const VideoRecorderTopBar(),
 
-              // Bottom controls
-              VideoRecorderBottomBar(previewWidgetRadius: _previewRadius),
+            // Bottom controls
+            VideoRecorderBottomBar(previewWidgetRadius: _previewRadius),
 
-              // Countdown overlay
-              const VideoRecorderCountdownOverlay(),
-            ],
-          ),
+            // Countdown overlay
+            const VideoRecorderCountdownOverlay(),
+          ],
         ),
       ),
     );

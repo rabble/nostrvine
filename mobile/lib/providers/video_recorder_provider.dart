@@ -14,8 +14,15 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Notifier that wraps VideoRecorderNotifier and provides reactive updates
-class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
+/// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
+///
+/// Manages camera lifecycle, recording state, and UI interactions including:
+/// - Camera initialization
+/// - Recording start/stop with countdown timer
+/// - Focus, exposure, and zoom controls
+/// - Flash mode and aspect ratio toggles
+/// - Clip creation and thumbnail generation
+class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Creates a video recorder notifier.
   ///
   /// [cameraService] is an optional camera service override for testing.
@@ -30,7 +37,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
   bool _isDestroyed = false;
 
   @override
-  VideoRecorderUIState build() {
+  VideoRecorderProviderState build() {
     _cameraService =
         _cameraServiceOverride ??
         CameraService.create(
@@ -64,13 +71,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
       }
     });
 
-    return const VideoRecorderUIState();
+    return const VideoRecorderProviderState();
   }
 
-  /// Initialize camera and request permissions.
-  ///
-  /// Returns `true` if successful, `false` if permissions denied.
-  Future<bool> initialize({BuildContext? context}) async {
+  /// Initialize camera.
+  Future<void> initialize({BuildContext? context}) async {
     _isDestroyed = false;
 
     Log.info(
@@ -82,7 +87,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
     await _cameraService.initialize();
     updateState(aspectRatio: .vertical);
 
-    return true;
+    Log.info(
+      '✅ Video recorder initialized successfully',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
   }
 
   /// Handle app lifecycle changes (pause/resume).
@@ -434,7 +443,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
     // Check if ref is still mounted before updating state
     if (!ref.mounted) return;
 
-    state = VideoRecorderUIState(
+    state = VideoRecorderProviderState(
       cameraRebuildCount: cameraRebuildCount ?? state.cameraRebuildCount,
       countdownValue: 0,
       zoomLevel: 1,
@@ -462,12 +471,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
   }
 
   void reset() {
-    state = VideoRecorderUIState();
+    state = VideoRecorderProviderState();
   }
 }
 
 /// Provider for video recorder state and operations.
 final videoRecorderProvider =
-    NotifierProvider<VideoRecorderNotifier, VideoRecorderUIState>(
+    NotifierProvider<VideoRecorderNotifier, VideoRecorderProviderState>(
       VideoRecorderNotifier.new,
     );
