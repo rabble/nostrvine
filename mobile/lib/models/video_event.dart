@@ -4,12 +4,16 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:json_annotation/json_annotation.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 
+part 'video_event.g.dart';
+
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
+@JsonSerializable(createFactory: false)
 class VideoEvent {
   // approved, flagged, etc.
 
@@ -1048,6 +1052,9 @@ class VideoEvent {
       'duration: $formattedDuration, '
       'time: $relativeTime'
       ')';
+
+  /// Serialize VideoEvent to JSON map (auto-generated)
+  Map<String, dynamic> toJson() => _$VideoEventToJson(this);
 
   /// Create a VideoEvent instance representing a repost
   /// Used when displaying Kind 6 repost events in the feed

@@ -68,6 +68,32 @@ class SecureKeyContainer {
     }
   }
 
+  /// Create a secure container from a public key
+  SecureKeyContainer.fromPublicKey(String publicKeyHex) {
+    if (_isDisposed) {
+      throw const SecureKeyException('Container has been disposed');
+    }
+
+    try {
+      _publicKeyBytes = _hexToBytes(publicKeyHex);
+      _privateKeyBytes = Uint8List(0);
+
+      // Generate npub for public operations
+      _npub = Nip19.encodePubKey(publicKeyHex);
+
+      // Register for automatic cleanup
+      _finalizer.attach(this, _publicKeyBytes);
+
+      _log.info(
+        '📱 SecureKeyContainer created for ${_maskKey(_npub)}',
+      );
+    } on Exception catch (e) {
+      // Clean up any allocated memory on error
+      _secureWipeIfAllocated();
+      throw SecureKeyException('Failed to create secure container: $e');
+    }
+  }
+
   /// Create a secure container from an nsec (bech32 private key)
   SecureKeyContainer.fromNsec(String nsec)
     : this.fromPrivateKeyHex(Nip19.decode(nsec));

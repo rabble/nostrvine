@@ -276,12 +276,6 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
             category: LogCategory.auth,
           );
         }
-
-        // Accept TOS to transition auth state to authenticated
-        // This avoids desync between prefs and auth state
-        // Router will automatically redirect to /explore when state changes
-        // (same pattern as WelcomeScreen)
-        await authService.acceptTermsOfService();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

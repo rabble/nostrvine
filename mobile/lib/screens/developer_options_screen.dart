@@ -1,5 +1,5 @@
 // ABOUTME: Developer options screen for switching between environments
-// ABOUTME: Allows switching relay URLs (Production, Staging, Dev-Umbra, Dev-Shugur)
+// ABOUTME: Allows switching relay URLs (Production, Staging, Dev relays, Funnelcake Prod)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +28,10 @@ class DeveloperOptionsScreen extends ConsumerWidget {
       const EnvironmentConfig(
         environment: AppEnvironment.dev,
         devRelay: DevRelay.shugur,
+      ),
+      const EnvironmentConfig(
+        environment: AppEnvironment.dev,
+        devRelay: DevRelay.funnelcakeProd,
       ),
     ];
 

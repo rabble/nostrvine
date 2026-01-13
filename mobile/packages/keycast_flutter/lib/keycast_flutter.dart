@@ -7,6 +7,7 @@ export 'src/oauth/oauth_client.dart';
 export 'src/oauth/oauth_config.dart';
 export 'src/oauth/oauth_error.dart';
 export 'src/oauth/callback_result.dart';
+export 'src/oauth/headless_models.dart';
 export 'src/oauth/token_response.dart';
 export 'src/oauth/pkce.dart';
 
