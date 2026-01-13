@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/reserved_username_request_notifier.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
@@ -157,16 +158,16 @@ class ReservedUsernameRequestDialog extends ConsumerWidget {
       actions: [
         if (!state.isSuccess)
           TextButton(
-            onPressed: state.isSubmitting ? null : () => Navigator.pop(context),
+            onPressed: state.isSubmitting ? null : context.pop,
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
 
         ElevatedButton(
           onPressed: state.isSuccess
-              ? () => Navigator.pop(context)
-              : (notifier.canSubmit
-                    ? () => notifier.submitRequest(username: username.trim())
-                    : null),
+              ? context.pop
+              : notifier.canSubmit
+              ? () => notifier.submitRequest(username: username.trim())
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.vineGreen,
             foregroundColor: VineTheme.whiteText,

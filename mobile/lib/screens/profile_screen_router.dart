@@ -115,7 +115,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'Update your display name, bio, and avatar',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => Navigator.pop(modalContext, 'edit'),
+              onTap: () => modalContext.pop('edit'),
             ),
             const Divider(color: VineTheme.secondaryText, height: 1),
             ListTile(
@@ -128,7 +128,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'PERMANENTLY delete your account and all content',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => Navigator.pop(modalContext, 'delete'),
+              onTap: () => modalContext.pop('delete'),
             ),
           ],
         ),
