@@ -1444,7 +1444,8 @@ class VideoOverlayActions extends ConsumerWidget {
                   _LikeActionButtonThemed(video: video),
 
                   // Edit button (only show for owned videos when feature is enabled)
-                  _VideoEditButton(video: video),
+                  // Hide in fullscreen mode since it's shown in AppBar instead
+                  if (!isFullscreen) _VideoEditButton(video: video),
                 ],
               ),
             ),
