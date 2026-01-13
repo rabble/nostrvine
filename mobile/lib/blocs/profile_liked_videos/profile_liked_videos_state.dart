@@ -36,12 +36,16 @@ enum ProfileLikedVideosError {
 /// - [videos]: The list of liked video events (ordered by recency)
 /// - [status]: The current loading status
 /// - [error]: Any error that occurred
+/// - [isLoadingMore]: Whether more videos are being loaded (pagination)
+/// - [hasMoreContent]: Whether there are more videos to load
 final class ProfileLikedVideosState extends Equatable {
   const ProfileLikedVideosState({
     this.status = ProfileLikedVideosStatus.initial,
     this.videos = const [],
     this.likedEventIds = const [],
     this.error,
+    this.isLoadingMore = false,
+    this.hasMoreContent = true,
   });
 
   /// The current loading status
@@ -55,6 +59,12 @@ final class ProfileLikedVideosState extends Equatable {
 
   /// Error that occurred during loading, if any
   final ProfileLikedVideosError? error;
+
+  /// Whether more videos are being loaded (pagination)
+  final bool isLoadingMore;
+
+  /// Whether there are more videos to load
+  final bool hasMoreContent;
 
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileLikedVideosStatus.success;
@@ -71,15 +81,26 @@ final class ProfileLikedVideosState extends Equatable {
     List<String>? likedEventIds,
     ProfileLikedVideosError? error,
     bool clearError = false,
+    bool? isLoadingMore,
+    bool? hasMoreContent,
   }) {
     return ProfileLikedVideosState(
       status: status ?? this.status,
       videos: videos ?? this.videos,
       likedEventIds: likedEventIds ?? this.likedEventIds,
       error: clearError ? null : (error ?? this.error),
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMoreContent: hasMoreContent ?? this.hasMoreContent,
     );
   }
 
   @override
-  List<Object?> get props => [status, videos, likedEventIds, error];
+  List<Object?> get props => [
+    status,
+    videos,
+    likedEventIds,
+    error,
+    isLoadingMore,
+    hasMoreContent,
+  ];
 }

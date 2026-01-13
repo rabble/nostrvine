@@ -10,6 +10,9 @@ part of 'popular_now_feed_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
 ///
+/// Strategy: Try Funnelcake REST API first for better performance and engagement
+/// sorting, fall back to Nostr subscription if REST API is unavailable.
+///
 /// Rebuilds when:
 /// - Poll interval elapses (uses same auto-refresh as home feed)
 /// - User pulls to refresh
@@ -21,6 +24,9 @@ const popularNowFeedProvider = PopularNowFeedProvider._();
 
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
 ///
+/// Strategy: Try Funnelcake REST API first for better performance and engagement
+/// sorting, fall back to Nostr subscription if REST API is unavailable.
+///
 /// Rebuilds when:
 /// - Poll interval elapses (uses same auto-refresh as home feed)
 /// - User pulls to refresh
@@ -29,6 +35,9 @@ const popularNowFeedProvider = PopularNowFeedProvider._();
 final class PopularNowFeedProvider
     extends $AsyncNotifierProvider<PopularNowFeed, VideoFeedState> {
   /// PopularNow feed provider - shows newest videos (sorted by creation time)
+  ///
+  /// Strategy: Try Funnelcake REST API first for better performance and engagement
+  /// sorting, fall back to Nostr subscription if REST API is unavailable.
   ///
   /// Rebuilds when:
   /// - Poll interval elapses (uses same auto-refresh as home feed)
@@ -54,9 +63,12 @@ final class PopularNowFeedProvider
   PopularNowFeed create() => PopularNowFeed();
 }
 
-String _$popularNowFeedHash() => r'36a6a1f5dd5b16e3087a0cd35a1b0f5c9302d805';
+String _$popularNowFeedHash() => r'19638403fb0058b6080d3427b667f118ccb169f1';
 
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
+///
+/// Strategy: Try Funnelcake REST API first for better performance and engagement
+/// sorting, fall back to Nostr subscription if REST API is unavailable.
 ///
 /// Rebuilds when:
 /// - Poll interval elapses (uses same auto-refresh as home feed)

@@ -699,6 +699,237 @@ final class SecureKeyStorageProvider
 
 String _$secureKeyStorageHash() => r'853547d439994307884d2f47f3d9769daa0a1e96';
 
+/// OAuth configuration for our login.divine.video server
+
+@ProviderFor(oauthConfig)
+const oauthConfigProvider = OauthConfigProvider._();
+
+/// OAuth configuration for our login.divine.video server
+
+final class OauthConfigProvider
+    extends $FunctionalProvider<OAuthConfig, OAuthConfig, OAuthConfig>
+    with $Provider<OAuthConfig> {
+  /// OAuth configuration for our login.divine.video server
+  const OauthConfigProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'oauthConfigProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$oauthConfigHash();
+
+  @$internal
+  @override
+  $ProviderElement<OAuthConfig> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  OAuthConfig create(Ref ref) {
+    return oauthConfig(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OAuthConfig value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OAuthConfig>(value),
+    );
+  }
+}
+
+String _$oauthConfigHash() => r'2d26760b0a845d9e0c2dd0362a4c26363be1786f';
+
+@ProviderFor(flutterSecureStorage)
+const flutterSecureStorageProvider = FlutterSecureStorageProvider._();
+
+final class FlutterSecureStorageProvider
+    extends
+        $FunctionalProvider<
+          FlutterSecureStorage,
+          FlutterSecureStorage,
+          FlutterSecureStorage
+        >
+    with $Provider<FlutterSecureStorage> {
+  const FlutterSecureStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'flutterSecureStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$flutterSecureStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<FlutterSecureStorage> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FlutterSecureStorage create(Ref ref) {
+    return flutterSecureStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FlutterSecureStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FlutterSecureStorage>(value),
+    );
+  }
+}
+
+String _$flutterSecureStorageHash() =>
+    r'5be8817de87a006e56f25bca80abfc39a48777cd';
+
+@ProviderFor(secureKeycastStorage)
+const secureKeycastStorageProvider = SecureKeycastStorageProvider._();
+
+final class SecureKeycastStorageProvider
+    extends
+        $FunctionalProvider<
+          SecureKeycastStorage,
+          SecureKeycastStorage,
+          SecureKeycastStorage
+        >
+    with $Provider<SecureKeycastStorage> {
+  const SecureKeycastStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'secureKeycastStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$secureKeycastStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<SecureKeycastStorage> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SecureKeycastStorage create(Ref ref) {
+    return secureKeycastStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SecureKeycastStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SecureKeycastStorage>(value),
+    );
+  }
+}
+
+String _$secureKeycastStorageHash() =>
+    r'c57c0ec02e36cd1a0cc8b850c450af2eb4c496b3';
+
+@ProviderFor(oauthClient)
+const oauthClientProvider = OauthClientProvider._();
+
+final class OauthClientProvider
+    extends $FunctionalProvider<KeycastOAuth, KeycastOAuth, KeycastOAuth>
+    with $Provider<KeycastOAuth> {
+  const OauthClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'oauthClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$oauthClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<KeycastOAuth> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  KeycastOAuth create(Ref ref) {
+    return oauthClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(KeycastOAuth value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<KeycastOAuth>(value),
+    );
+  }
+}
+
+String _$oauthClientHash() => r'd7a61dbb44cb15f2ad9520e1251048469da85b20';
+
+@ProviderFor(passwordResetListener)
+const passwordResetListenerProvider = PasswordResetListenerProvider._();
+
+final class PasswordResetListenerProvider
+    extends
+        $FunctionalProvider<
+          PasswordResetListener,
+          PasswordResetListener,
+          PasswordResetListener
+        >
+    with $Provider<PasswordResetListener> {
+  const PasswordResetListenerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'passwordResetListenerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$passwordResetListenerHash();
+
+  @$internal
+  @override
+  $ProviderElement<PasswordResetListener> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PasswordResetListener create(Ref ref) {
+    return passwordResetListener(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PasswordResetListener value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PasswordResetListener>(value),
+    );
+  }
+}
+
+String _$passwordResetListenerHash() =>
+    r'e9469a2977559d922c965f6441a71b6cc3626ec2';
+
 /// Web authentication service (for web platform only)
 
 @ProviderFor(webAuthService)
@@ -1312,17 +1543,17 @@ final class ClipLibraryServiceProvider
 String _$clipLibraryServiceHash() =>
     r'b979f5ba3eb3437f096e14abbe5492905a3cd82d';
 
-/// Authentication service depends on secure key storage and user data cleanup
+/// Authentication service
 
 @ProviderFor(authService)
 const authServiceProvider = AuthServiceProvider._();
 
-/// Authentication service depends on secure key storage and user data cleanup
+/// Authentication service
 
 final class AuthServiceProvider
     extends $FunctionalProvider<AuthService, AuthService, AuthService>
     with $Provider<AuthService> {
-  /// Authentication service depends on secure key storage and user data cleanup
+  /// Authentication service
   const AuthServiceProvider._()
     : super(
         from: null,
@@ -1356,7 +1587,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'79d0e4b6411299b6a291f193d48cf7db53615f5d';
+String _$authServiceHash() => r'94a2bd6d38b6063777d3442f2383752fe6a885d8';
 
 /// Stream provider for reactive auth state changes
 /// Widgets should watch this instead of authService.authState to get rebuilds

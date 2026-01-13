@@ -7,8 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/profile_reposts_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
@@ -116,13 +116,22 @@ class _RepostGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: () {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
       Log.info(
         '🎯 ProfileRepostsGrid TAP: gridIndex=$index, '
-        'npub=$npub, videoId=${videoEvent.id}',
+        'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      context.goProfile(npub, index);
+      // Use ProfileRepostsFeedSource for reactive updates when loadMore fetches
+      // new reposts
+      context.pushVideoFeed(
+        source: ProfileRepostsFeedSource(userIdHex),
+        initialIndex: index,
+      );
+      Log.info(
+        '✅ ProfileRepostsGrid: Called pushVideoFeed with '
+        'ProfileRepostsFeedSource($userIdHex) at index $index',
+        category: LogCategory.video,
+      );
     },
     child: DecoratedBox(
       decoration: BoxDecoration(

@@ -5,7 +5,9 @@ import 'dart:async';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
@@ -36,6 +38,8 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
+import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
@@ -53,7 +57,6 @@ import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -236,6 +239,52 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
   return SecureKeyStorage();
 }
 
+// =============================================================================
+// OAUTH SERVICES
+// =============================================================================
+
+/// OAuth configuration for our login.divine.video server
+@Riverpod(keepAlive: true)
+OAuthConfig oauthConfig(Ref ref) {
+  return const OAuthConfig(
+    serverUrl: 'https://login.divine.video',
+    clientId: 'divine-mobile',
+    redirectUri: 'https://divine.video/app/callback',
+  );
+}
+
+@Riverpod(keepAlive: true)
+FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
+  aOptions: const AndroidOptions(
+    encryptedSharedPreferences: true,
+    resetOnError: true,
+  ),
+  mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+);
+
+@Riverpod(keepAlive: true)
+SecureKeycastStorage secureKeycastStorage(Ref ref) =>
+    SecureKeycastStorage(ref.watch(flutterSecureStorageProvider));
+
+@Riverpod(keepAlive: true)
+KeycastOAuth oauthClient(Ref ref) {
+  final config = ref.watch(oauthConfigProvider);
+  final storage = ref.watch(secureKeycastStorageProvider);
+
+  final oauth = KeycastOAuth(config: config, storage: storage);
+
+  ref.onDispose(() => oauth.close());
+
+  return oauth;
+}
+
+@Riverpod(keepAlive: true)
+PasswordResetListener passwordResetListener(Ref ref) {
+  final listener = PasswordResetListener(ref);
+  ref.onDispose(() => listener.dispose());
+  return listener;
+}
+
 /// Web authentication service (for web platform only)
 @riverpod
 WebAuthService webAuthService(Ref ref) {
@@ -349,14 +398,20 @@ ClipLibraryService clipLibraryService(Ref ref) {
 // DEPENDENT SERVICES (With dependencies)
 // =============================================================================
 
-/// Authentication service depends on secure key storage and user data cleanup
+/// Authentication service
 @Riverpod(keepAlive: true)
 AuthService authService(Ref ref) {
   final keyStorage = ref.watch(secureKeyStorageProvider);
   final userDataCleanupService = ref.watch(userDataCleanupServiceProvider);
+  final oauthClient = ref.watch(oauthClientProvider);
+  final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
+  final oauthConfig = ref.watch(oauthConfigProvider);
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
+    oauthClient: oauthClient,
+    flutterSecureStorage: flutterSecureStorage,
+    oauthConfig: oauthConfig,
   );
 }
 

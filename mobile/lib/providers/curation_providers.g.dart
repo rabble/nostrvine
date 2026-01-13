@@ -59,7 +59,7 @@ final class AnalyticsApiServiceProvider
 }
 
 String _$analyticsApiServiceHash() =>
-    r'bffbe1efb4b6d2a6172d4397e70d82b0312410e7';
+    r'b47808c5318ce0b2f956bcd4b6f290e4dcf48846';
 
 /// Main curation provider that manages curated content sets
 /// keepAlive ensures provider persists across tab navigation
@@ -257,7 +257,7 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'ed584f47ce26a44ff368d0f7d32e27faa80697a7';
+String _$analyticsTrendingHash() => r'6bf4dd9f6cd1c64c157f7c5733909211e6729a41';
 
 /// Provider for analytics-based trending videos
 
@@ -316,7 +316,7 @@ final class AnalyticsPopularProvider
   }
 }
 
-String _$analyticsPopularHash() => r'fe3a80d2e416f3d7b0bf7be35d30cbcfe5512543';
+String _$analyticsPopularHash() => r'3d9025ad3973f20185d45e07fe90f89143edbab6';
 
 /// Provider for analytics-based popular videos
 
@@ -346,7 +346,7 @@ const trendingHashtagsProvider = TrendingHashtagsProvider._();
 
 /// Provider for trending hashtags
 final class TrendingHashtagsProvider
-    extends $AsyncNotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
+    extends $NotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
   /// Provider for trending hashtags
   const TrendingHashtagsProvider._()
     : super(
@@ -365,82 +365,32 @@ final class TrendingHashtagsProvider
   @$internal
   @override
   TrendingHashtags create() => TrendingHashtags();
-}
 
-String _$trendingHashtagsHash() => r'6798c272e87bb8733a4f1729132ba7e5a54c656a';
-
-/// Provider for trending hashtags
-
-abstract class _$TrendingHashtags
-    extends $AsyncNotifier<List<TrendingHashtag>> {
-  FutureOr<List<TrendingHashtag>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref =
-        this.ref
-            as $Ref<AsyncValue<List<TrendingHashtag>>, List<TrendingHashtag>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<
-                AsyncValue<List<TrendingHashtag>>,
-                List<TrendingHashtag>
-              >,
-              AsyncValue<List<TrendingHashtag>>,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<TrendingHashtag> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<TrendingHashtag>>(value),
+    );
   }
 }
 
-/// Provider for top creators
+String _$trendingHashtagsHash() => r'f0f850462be2912bc79cc132077c1a026272d1ba';
 
-@ProviderFor(TopCreators)
-const topCreatorsProvider = TopCreatorsProvider._();
+/// Provider for trending hashtags
 
-/// Provider for top creators
-final class TopCreatorsProvider
-    extends $AsyncNotifierProvider<TopCreators, List<TopCreator>> {
-  /// Provider for top creators
-  const TopCreatorsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'topCreatorsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$topCreatorsHash();
-
-  @$internal
-  @override
-  TopCreators create() => TopCreators();
-}
-
-String _$topCreatorsHash() => r'5e191a9d9edb8c77a2c36ccc5046e801c64e56e8';
-
-/// Provider for top creators
-
-abstract class _$TopCreators extends $AsyncNotifier<List<TopCreator>> {
-  FutureOr<List<TopCreator>> build();
+abstract class _$TrendingHashtags extends $Notifier<List<TrendingHashtag>> {
+  List<TrendingHashtag> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref =
-        this.ref as $Ref<AsyncValue<List<TopCreator>>, List<TopCreator>>;
+    final ref = this.ref as $Ref<List<TrendingHashtag>, List<TrendingHashtag>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<TopCreator>>, List<TopCreator>>,
-              AsyncValue<List<TopCreator>>,
+              AnyNotifier<List<TrendingHashtag>, List<TrendingHashtag>>,
+              List<TrendingHashtag>,
               Object?,
               Object?
             >;
