@@ -57,11 +57,24 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
 
     try {
       final service = ref.read(analyticsApiServiceProvider);
-      final videos = await service.getRelatedVideos(
-        videoId: widget.currentVideo.id,
-        algorithm: widget.algorithm,
-        limit: 20,
-      );
+
+      // Use hashtags from current video to find related content
+      final hashtags = widget.currentVideo.hashtags;
+      List<VideoEvent> videos = [];
+
+      if (hashtags.isNotEmpty && service.isAvailable) {
+        // Search by the first hashtag for related content
+        videos = await service.getVideosByHashtag(
+          hashtag: hashtags.first,
+          limit: 20,
+        );
+
+        // Filter out the current video
+        videos = videos
+            .where((v) => v.id != widget.currentVideo.id)
+            .take(20)
+            .toList();
+      }
 
       if (mounted) {
         setState(() {

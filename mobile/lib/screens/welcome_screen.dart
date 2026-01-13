@@ -1,8 +1,6 @@
 // ABOUTME: Welcome screen for new users showing TOS acceptance and age verification
 // ABOUTME: App auto-creates nsec on first launch - this screen only handles TOS and shows error if auto-creation fails
 
-import 'dart:io';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/login/keycast_login_button.dart';
+import 'package:openvine/widgets/error_message.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
@@ -51,91 +49,114 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Column(
-                  children: [
-                    // No top margin on phones, keep margin on tablets
-                    SizedBox(
-                      height: MediaQuery.of(context).size.width < 600 ? 0 : 40,
-                    ),
-                    // App branding - Divine icon (responsive sizing)
-                    Image.asset(
-                      'assets/icon/divine_icon_transparent.png',
-                      height: MediaQuery.of(context).size.width < 600
-                          ? 224
-                          : 320,
-                      fit: BoxFit.contain,
-                    ),
-                    // Wordmark logo - positioned close to icon above
-                    Image.asset(
-                      'assets/icon/divine_wordmark.png',
-                      width: MediaQuery.of(context).size.width < 600
-                          ? 130
-                          : 182,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Create and share short videos\non the decentralized web',
-                      style: TextStyle(fontSize: 18, color: Color(0xFFF5F6EA)),
-                      textAlign: TextAlign.center,
-                    ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmallScreen = constraints.maxHeight < 700;
+              final iconSize = isSmallScreen ? 160.0 : 224.0;
+              final wordmarkWidth = isSmallScreen ? 100.0 : 130.0;
 
-                    // Spacer pushes content below to the bottom
-                    const Spacer(),
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Top section with branding
+                            Column(
+                              children: [
+                                // No top margin on phones, keep margin on tablets
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.width < 600
+                                      ? 0
+                                      : 40,
+                                ),
+                                // App branding - Divine icon (responsive sizing)
+                                Image.asset(
+                                  'assets/icon/divine_icon_transparent.png',
+                                  height: iconSize,
+                                  fit: BoxFit.contain,
+                                ),
+                                // Wordmark logo - positioned close to icon above
+                                Image.asset(
+                                  'assets/icon/divine_wordmark.png',
+                                  width: wordmarkWidth,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Create and share short videos\non the decentralized web',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Color(0xFFF5F6EA),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
 
-                    // Age verification and TOS acceptance
-                    _TermsCheckboxSection(
-                      isOver16: _isOver16,
-                      agreedToTerms: _agreedToTerms,
-                      onOver16Changed: (value) =>
-                          setState(() => _isOver16 = value),
-                      onAgreedToTermsChanged: (value) =>
-                          setState(() => _agreedToTerms = value),
-                    ),
+                            // Bottom section with TOS and buttons
+                            Column(
+                              children: [
+                                // Age verification and TOS acceptance
+                                _TermsCheckboxSection(
+                                  isOver16: _isOver16,
+                                  agreedToTerms: _agreedToTerms,
+                                  onOver16Changed: (value) =>
+                                      setState(() => _isOver16 = value),
+                                  onAgreedToTermsChanged: (value) =>
+                                      setState(() => _agreedToTerms = value),
+                                ),
 
-                    const SizedBox(height: 16),
+                                const SizedBox(height: 32),
 
-                    /// TODO(any): At the moment, the Keycast website do not include an AASA file with the app ids.
-                    /// Once that is fixed, we can remove this check.
-                    if (!Platform.isIOS)
-                      KeycastLoginButton(enabled: _canProceed),
+                                // Main action buttons - show based on auth state
+                                _WelcomeActionSection(
+                                  authState: authState,
+                                  lastError: authService.lastError,
+                                  canProceed: _canProceed,
+                                  isAccepting: _isAccepting,
+                                  onContinue: () => _handleContinue(context),
+                                ),
 
-                    const SizedBox(height: 16),
+                                const SizedBox(height: 24),
 
-                    // Import existing keys option
-                    Center(
-                      child: GestureDetector(
-                        onTap: () => context.push('/import-key'),
-                        child: const Text(
-                          'Already have keys? Import them here →',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            decoration: TextDecoration.underline,
-                          ),
+                                // Login option for existing users
+                                TextButton(
+                                  onPressed: _canProceed
+                                      ? () => context.push(
+                                          '/welcome/login-options',
+                                        )
+                                      : null,
+                                  child: Text(
+                                    'Have an account? Log In',
+                                    style: TextStyle(
+                                      color: _canProceed
+                                          ? Colors.white
+                                          : Colors.white.withValues(alpha: 0.5),
+                                      fontSize: 16,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: _canProceed
+                                          ? Colors.white
+                                          : Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // Main action buttons - show based on auth state
-                    _WelcomeActionSection(
-                      authState: authState,
-                      lastError: authService.lastError,
-                      canProceed: _canProceed,
-                      isAccepting: _isAccepting,
-                      onContinue: () => _handleContinue(context),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -151,7 +172,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       final authService = ref.read(authServiceProvider);
       // Accept TOS - this transitions auth state from awaitingTosAcceptance to authenticated
       // Router will automatically redirect to /explore when state changes
-      await authService.acceptTermsOfService();
+      await authService.signInAutomatically();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,7 +213,7 @@ class _WelcomeActionSection extends StatelessWidget {
     }
 
     if (lastError != null) {
-      return _ErrorMessage(error: lastError!);
+      return ErrorMessage(message: lastError!);
     }
 
     return _ActionButton(
@@ -209,50 +230,6 @@ class _LoadingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: BrandedLoadingIndicator(size: 120));
-  }
-}
-
-class _ErrorMessage extends StatelessWidget {
-  const _ErrorMessage({required this.error});
-
-  final String error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-          const SizedBox(height: 16),
-          const Text(
-            'Setup Error',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: const TextStyle(color: Colors.red, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Please restart the app. If the problem persists, contact support.',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }
 

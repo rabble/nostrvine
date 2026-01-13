@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -62,6 +63,12 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         if (!_tickersEnabled) {
           setState(() => _tickersEnabled = true);
         }
+
+        // Force reconnect relays - WebSocket connections are often silently
+        // dropped by iOS/Android when app is backgrounded. Without this,
+        // subscriptions sent to stale sockets will timeout (30s) with no response.
+        _reconnectRelays();
+
         // Don't force resume playback - let visibility detectors naturally trigger
         // This prevents playing videos that are covered by modals/camera screen
         Log.info(
@@ -105,6 +112,30 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       case AppLifecycleState.detached:
         // App is being terminated
         break;
+    }
+  }
+
+  /// Reconnects relay WebSocket connections after app resume.
+  ///
+  /// iOS/Android often silently drop WebSocket connections when apps are
+  /// backgrounded. The connection status may still show "connected" but
+  /// the socket is actually dead. This causes subscriptions to timeout
+  /// because messages are sent to a dead socket and never reach the relay.
+  Future<void> _reconnectRelays() async {
+    try {
+      final nostrClient = ref.read(nostrServiceProvider);
+      await nostrClient.forceReconnectAll();
+      Log.info(
+        '📱 Relay connections restored after app resume',
+        name: 'AppLifecycleHandler',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        '📱 Failed to reconnect relays on resume: $e',
+        name: 'AppLifecycleHandler',
+        category: LogCategory.system,
+      );
     }
   }
 

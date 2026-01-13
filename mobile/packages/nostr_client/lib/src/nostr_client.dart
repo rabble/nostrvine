@@ -827,7 +827,7 @@ class NostrClient {
     int? limit,
   }) {
     final filter = Filter(
-      kinds: const [34236, 16], // Video events + generic repost
+      kinds: const [34236], // Video events only (no reposts for search)
       authors: authors,
       since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
       until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
