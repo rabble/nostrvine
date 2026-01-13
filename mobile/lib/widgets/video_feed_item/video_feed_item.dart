@@ -773,21 +773,27 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 !value.isPlaying)
                               Center(
                                 child: Container(
-                                  width: 80,
-                                  height: 80,
+                                  width: 64,
+                                  height: 64,
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                    shape: BoxShape.circle,
+                                    color: Colors.black.withValues(alpha: 0.65),
+                                    borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: Semantics(
                                     identifier: 'play_button',
                                     container: true,
                                     explicitChildNodes: true,
                                     label: 'Play video',
-                                    child: const Icon(
-                                      Icons.play_arrow,
-                                      size: 56,
-                                      color: Colors.white,
+                                    child: Center(
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/play.svg',
+                                        width: 32,
+                                        height: 32,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
