@@ -3143,7 +3143,26 @@ class _ViewSourceDialog extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // Explainer note
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: const Text(
+                'Parsed event data, not raw Nostr source',
+                style: TextStyle(
+                  color: Colors.amber,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // JSON content
             Flexible(
