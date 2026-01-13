@@ -61,29 +61,14 @@ final class ProfileRepositoryProvider
 String _$profileRepositoryHash() => r'7fda36d4a1658f0b742c4b176e1af9aee88fb8eb';
 
 /// Notifier for orchestrating profile publishing and username claiming.
-///
-/// Handles the complete profile save flow:
-/// 1. Publishes profile metadata (Kind 0) to Nostr relays
-/// 2. Claims username via NIP-05 if provided
-/// 3. Rolls back profile if username claim fails
 
 @ProviderFor(ProfileEditorNotifier)
 const profileEditorProvider = ProfileEditorNotifierProvider._();
 
 /// Notifier for orchestrating profile publishing and username claiming.
-///
-/// Handles the complete profile save flow:
-/// 1. Publishes profile metadata (Kind 0) to Nostr relays
-/// 2. Claims username via NIP-05 if provided
-/// 3. Rolls back profile if username claim fails
 final class ProfileEditorNotifierProvider
     extends $AsyncNotifierProvider<ProfileEditorNotifier, ProfileSaveResult?> {
   /// Notifier for orchestrating profile publishing and username claiming.
-  ///
-  /// Handles the complete profile save flow:
-  /// 1. Publishes profile metadata (Kind 0) to Nostr relays
-  /// 2. Claims username via NIP-05 if provided
-  /// 3. Rolls back profile if username claim fails
   const ProfileEditorNotifierProvider._()
     : super(
         from: null,
@@ -104,14 +89,9 @@ final class ProfileEditorNotifierProvider
 }
 
 String _$profileEditorNotifierHash() =>
-    r'2ca0ab25c41abaf55817b214a459222531f2357b';
+    r'115c260f0442d3d9ebe01081543b5b308c241342';
 
 /// Notifier for orchestrating profile publishing and username claiming.
-///
-/// Handles the complete profile save flow:
-/// 1. Publishes profile metadata (Kind 0) to Nostr relays
-/// 2. Claims username via NIP-05 if provided
-/// 3. Rolls back profile if username claim fails
 
 abstract class _$ProfileEditorNotifier
     extends $AsyncNotifier<ProfileSaveResult?> {

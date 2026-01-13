@@ -36,11 +36,6 @@ ProfileRepository profileRepository(Ref ref) {
 }
 
 /// Notifier for orchestrating profile publishing and username claiming.
-///
-/// Handles the complete profile save flow:
-/// 1. Publishes profile metadata (Kind 0) to Nostr relays
-/// 2. Claims username via NIP-05 if provided
-/// 3. Rolls back profile if username claim fails
 @riverpod
 class ProfileEditorNotifier extends _$ProfileEditorNotifier {
   @override
@@ -79,6 +74,7 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
         about: about,
         nip05: nip05,
         picture: picture,
+        currentProfile: currentProfile,
       );
     } catch (error, stackTrace) {
       Log.error(
@@ -109,33 +105,18 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
     };
 
     if (result is! UsernameClaimSuccess) {
-      await _rollbackProfile(
-        displayName,
-        about,
-        currentProfile?.nip05,
-        picture,
-      );
-    }
-  }
-
-  /// Restores the user's previous nip05 after a failed username claim.
-  Future<void> _rollbackProfile(
-    String displayName,
-    String? about,
-    String? currentNip05,
-    String? picture,
-  ) async {
-    final profileRepository = ref.read(profileRepositoryProvider);
-
-    try {
-      await profileRepository.saveProfileEvent(
-        displayName: displayName,
-        about: about,
-        nip05: currentNip05,
-        picture: picture,
-      );
-    } catch (error) {
-      Log.error('Rollback failed: $error', name: 'ProfileEditorNotifier');
+      // Restores the user's previous nip05 after a failed username claim.
+      try {
+        await profileRepository.saveProfileEvent(
+          displayName: displayName,
+          about: about,
+          nip05: currentProfile?.nip05,
+          picture: picture,
+          currentProfile: currentProfile,
+        );
+      } catch (error) {
+        Log.error('Rollback failed: $error', name: 'ProfileEditorNotifier');
+      }
     }
   }
 }

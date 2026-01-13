@@ -31,12 +31,18 @@ class ProfileRepository {
     String? about,
     String? nip05,
     String? picture,
+    UserProfile? currentProfile,
   }) async {
+    final profileContent = {
+      if (currentProfile != null) ...currentProfile.rawData,
+      'display_name': displayName,
+      'about': ?about,
+      'nip05': ?nip05,
+      'picture': ?picture,
+    };
+
     final profileEvent = await _nostrClient.sendProfile(
-      displayName: displayName,
-      about: about,
-      nip05: nip05,
-      picture: picture,
+      profileContent: profileContent,
     );
 
     if (profileEvent == null) {

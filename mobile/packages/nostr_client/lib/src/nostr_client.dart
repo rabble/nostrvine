@@ -733,19 +733,11 @@ class NostrClient {
   ///
   /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendProfile({
-    required String displayName,
-    String? about,
-    String? nip05,
-    String? picture,
+    required Map<String, dynamic> profileContent,
   }) async {
-    final content = jsonEncode({
-      'display_name': displayName,
-      'about': ?about,
-      'nip05': ?nip05,
-      'picture': ?picture,
-    });
-
-    final profileEvent = await _nostr.sendProfile(content: content);
+    final profileEvent = await _nostr.sendProfile(
+      content: jsonEncode(profileContent),
+    );
 
     if (profileEvent != null) {
       _cacheEvent(profileEvent);
