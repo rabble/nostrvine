@@ -34,7 +34,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 2. Update [_analyticsEndpoint] if the path differs
 /// 3. Verify request/response format matches backend expectations
 class AnalyticsService implements BackgroundAwareService {
-  AnalyticsService({http.Client? client}) : _client = client ?? http.Client();
+  AnalyticsService({
+    http.Client? client,
+    @visibleForTesting bool? backendReadyOverride,
+  }) : _client = client ?? http.Client(),
+       _backendReadyOverride = backendReadyOverride;
 
   /// Base URL for the DiVine FunnelCake relay analytics API
   static const String _analyticsBaseUrl = 'https://relay.staging.dvines.org';
@@ -52,6 +56,10 @@ class AnalyticsService implements BackgroundAwareService {
   static const Duration _requestTimeout = Duration(seconds: 10);
 
   final http.Client _client;
+
+  /// Testing override for backend readiness - allows tests to simulate
+  /// a ready backend without changing the static const flag
+  final bool? _backendReadyOverride;
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
 
@@ -116,12 +124,16 @@ class AnalyticsService implements BackgroundAwareService {
   /// Returns false while the funnelcake POST endpoint is not yet implemented
   static bool get isBackendReady => _analyticsBackendReady;
 
+  /// Instance-level check for backend readiness
+  /// Uses testing override if provided, otherwise falls back to static const
+  bool get _isBackendReady => _backendReadyOverride ?? _analyticsBackendReady;
+
   /// Get current analytics enabled state (user preference)
   bool get analyticsEnabled => _analyticsEnabled;
 
   /// Whether analytics tracking is currently operational
   /// Requires both backend to be ready AND user to have analytics enabled
-  bool get isOperational => _analyticsBackendReady && _analyticsEnabled;
+  bool get isOperational => _isBackendReady && _analyticsEnabled;
 
   /// Set analytics enabled state
   Future<void> setAnalyticsEnabled(bool enabled) async {
@@ -201,7 +213,7 @@ class AnalyticsService implements BackgroundAwareService {
     bool? completedVideo,
   }) async {
     // Check if backend is ready (feature flag)
-    if (!_analyticsBackendReady) {
+    if (!_isBackendReady) {
       // TODO: Remove this check when funnelcake backend POST endpoint is ready
       // See: https://relay.staging.dvines.org/swagger-ui/
       Log.debug(
@@ -386,7 +398,7 @@ class AnalyticsService implements BackgroundAwareService {
     String source = 'mobile',
   }) async {
     // Skip if backend not ready or analytics disabled
-    if (!_analyticsBackendReady || !_analyticsEnabled || videos.isEmpty) return;
+    if (!_isBackendReady || !_analyticsEnabled || videos.isEmpty) return;
 
     // Create operations for rate-limited execution
     final operations = videos

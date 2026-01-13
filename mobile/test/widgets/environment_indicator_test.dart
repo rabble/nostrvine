@@ -166,7 +166,7 @@ void main() {
       );
 
       expect(
-        find.text('Environment: Staging - Tap for options'),
+        find.text('Environment: Staging (Funnelcake) - Tap for options'),
         findsOneWidget,
       );
       expect(find.byType(GestureDetector), findsOneWidget);
