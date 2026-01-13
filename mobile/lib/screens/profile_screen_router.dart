@@ -11,8 +11,6 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -94,13 +92,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   // Action methods
 
   Future<void> _setupProfile() async {
-    // Navigate using root navigator to escape shell route
-    // This prevents redirect issues when navigating from inside shell
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) => const ProfileSetupScreen(isNewUser: true),
-      ),
-    );
+    // Navigate to setup-profile route (defined outside ShellRoute)
+    await context.push('/setup-profile');
   }
 
   Future<void> _editProfile() async {
@@ -108,7 +101,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: VineTheme.cardBackground,
-      builder: (context) => SafeArea(
+      builder: (modalContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -122,7 +115,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'Update your display name, bio, and avatar',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => context.pop('edit'),
+              onTap: () => Navigator.pop(modalContext, 'edit'),
             ),
             const Divider(color: VineTheme.secondaryText, height: 1),
             ListTile(
@@ -135,7 +128,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'PERMANENTLY delete your account and all content',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => context.pop('delete'),
+              onTap: () => Navigator.pop(modalContext, 'delete'),
             ),
           ],
         ),
@@ -143,13 +136,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     );
 
     if (result == 'edit') {
-      // Navigate using root navigator to escape shell route
-      // This prevents redirect issues when navigating from inside shell
-      await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (context) => const ProfileSetupScreen(isNewUser: false),
-        ),
-      );
+      // Navigate to edit-profile route (defined outside ShellRoute)
+      await context.push('/edit-profile');
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -268,12 +256,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   void _openClips() {
-    // Navigate using root navigator to escape shell route
-    // This prevents redirect issues when navigating from inside shell
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).push(MaterialPageRoute(builder: (context) => const ClipLibraryScreen()));
+    // Navigate to clips route (defined outside ShellRoute)
+    context.push('/clips');
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {

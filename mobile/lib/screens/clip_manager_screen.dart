@@ -15,8 +15,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
+import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -238,10 +238,6 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
     final state = ref.read(clipManagerProvider);
     if (!state.hasClips) return;
 
-    // Capture ROOT navigator BEFORE async work - context may become stale
-    // Use rootNavigator: true to bypass GoRouter's nested navigators
-    final navigator = Navigator.of(context, rootNavigator: true);
-
     setState(() {
       _isProcessing = true;
     });
@@ -299,41 +295,35 @@ class _ClipManagerScreenState extends ConsumerState<ClipManagerScreen> {
           category: LogCategory.video,
         );
 
-        // Navigate directly without scheduling - FFmpeg is done and the navigator
-        // was captured before async work. Scheduling with Future.delayed or
-        // addPostFrameCallback hangs on macOS after FFmpeg operations.
+        // Navigate using GoRouter to edit-video route (defined outside ShellRoute)
         Log.info(
-          '📹 Calling navigator.push directly',
+          '📹 Navigating to /edit-video via GoRouter',
           category: LogCategory.video,
         );
 
-        navigator
-            .push<void>(
-              MaterialPageRoute(
-                builder: (ctx) => VideoEditorScreen(
-                  videoPath: videoPath,
-                  externalAudioEventId: externalAudioEventId,
-                  externalAudioUrl: externalAudioUrl,
-                  externalAudioIsBundled: externalAudioIsBundled,
-                  externalAudioAssetPath: externalAudioAssetPath,
-                ),
-              ),
-            )
-            .then((_) async {
-              // Clear navigation flag now that we've returned
-              _isNavigatingAway = false;
-              _isProcessing = false;
+        final routeExtra = VideoEditorRouteExtra(
+          videoPath: videoPath,
+          externalAudioEventId: externalAudioEventId,
+          externalAudioUrl: externalAudioUrl,
+          externalAudioIsBundled: externalAudioIsBundled,
+          externalAudioAssetPath: externalAudioAssetPath,
+        );
 
-              // Re-initialize audio and preview when returning from video editor
-              if (mounted) {
-                _externalAudioLoaded = false;
-                await _initExternalAudio();
-                final currentState = ref.read(clipManagerProvider);
-                if (currentState.sortedClips.isNotEmpty) {
-                  _loadPreview(currentState.sortedClips.first);
-                }
-              }
-            });
+        await context.push<void>('/edit-video', extra: routeExtra);
+
+        // Clear navigation flag now that we've returned
+        _isNavigatingAway = false;
+        _isProcessing = false;
+
+        // Re-initialize audio and preview when returning from video editor
+        if (mounted) {
+          _externalAudioLoaded = false;
+          await _initExternalAudio();
+          final currentState = ref.read(clipManagerProvider);
+          if (currentState.sortedClips.isNotEmpty) {
+            _loadPreview(currentState.sortedClips.first);
+          }
+        }
       }
     } catch (e) {
       Log.error('📹 Failed to process clips: $e', category: LogCategory.video);
