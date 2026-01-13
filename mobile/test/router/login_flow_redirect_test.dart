@@ -2,8 +2,14 @@
 // ABOUTME: Tests redirect function behavior without full router instantiation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/auth/divine_auth_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 
 /// Isolated test of the redirect logic that mirrors app_router.dart redirect function
 /// This helps us understand what SHOULD happen without Firebase dependencies
@@ -20,30 +26,30 @@ String? testRedirectLogic({
 }) {
   // Auth routes that should be accessible without authentication
   final isAuthRoute =
-      location.startsWith('/welcome') ||
-      location.startsWith('/import-key') ||
-      location.startsWith('/login-options') ||
-      location.startsWith('/auth-native');
+      location.startsWith(WelcomeScreen.path) ||
+      location.startsWith(KeyImportScreen.path) ||
+      location.startsWith(WelcomeScreen.loginOptionsPath) ||
+      location.startsWith(WelcomeScreen.authNativePath);
 
   // Rule 1: Authenticated users on auth routes go to home
   if (authState == AuthState.authenticated && isAuthRoute) {
-    return '/home/0';
+    return HomeScreenRouter.pathForIndex(0);
   }
 
   // Rule 2: Non-auth routes require TOS AND authentication
   if (!isAuthRoute) {
     if (!tosAccepted) {
-      return '/welcome';
+      return WelcomeScreen.path;
     }
     if (authState == AuthState.unauthenticated) {
-      return '/welcome';
+      return WelcomeScreen.path;
     }
   }
 
   // Rule 3: Welcome with TOS+auth -> explore
-  if (location.startsWith('/welcome')) {
+  if (location.startsWith(WelcomeScreen.path)) {
     if (tosAccepted && authState == AuthState.authenticated) {
-      return '/explore';
+      return ExploreScreen.path;
     }
   }
 
@@ -60,181 +66,221 @@ void main() {
         'unauthenticated user on /welcome stays there (TOS not accepted)',
         () {
           final redirect = testRedirectLogic(
-            location: '/welcome',
+            location: WelcomeScreen.path,
             authState: AuthState.unauthenticated,
             tosAccepted: false,
           );
-          expect(redirect, isNull, reason: '/welcome should not redirect');
+          expect(
+            redirect,
+            isNull,
+            reason: '${WelcomeScreen.path} should not redirect',
+          );
         },
       );
 
-      test('unauthenticated user can access /login-options', () {
-        final redirect = testRedirectLogic(
-          location: '/login-options',
-          authState: AuthState.unauthenticated,
-          tosAccepted: false, // TOS not yet accepted
-        );
-        expect(
-          redirect,
-          isNull,
-          reason: '/login-options is an auth route, should not redirect',
-        );
-      });
+      test(
+        'unauthenticated user can access ${WelcomeScreen.loginOptionsPath}',
+        () {
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.loginOptionsPath,
+            authState: AuthState.unauthenticated,
+            tosAccepted: false, // TOS not yet accepted
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                '${WelcomeScreen.loginOptionsPath} is an auth route, should not redirect',
+          );
+        },
+      );
 
-      test('unauthenticated user can access /login-options (TOS accepted)', () {
+      test(
+        'unauthenticated user can access ${WelcomeScreen.loginOptionsPath} (TOS accepted)',
+        () {
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.loginOptionsPath,
+            authState: AuthState.unauthenticated,
+            tosAccepted: true, // User accepted TOS but logged out
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                '${WelcomeScreen.loginOptionsPath} is an auth route, TOS status should not matter',
+          );
+        },
+      );
+
+      test('unauthenticated user can access ${WelcomeScreen.authNativePath}', () {
         final redirect = testRedirectLogic(
-          location: '/login-options',
+          location: WelcomeScreen.authNativePath,
           authState: AuthState.unauthenticated,
-          tosAccepted: true, // User accepted TOS but logged out
+          tosAccepted: false,
         );
         expect(
           redirect,
           isNull,
           reason:
-              '/login-options is an auth route, TOS status should not matter',
+              '${WelcomeScreen.authNativePath} is an auth route, should not redirect',
         );
       });
 
-      test('unauthenticated user can access /auth-native', () {
+      test('unauthenticated user can access ${KeyImportScreen.path}', () {
         final redirect = testRedirectLogic(
-          location: '/auth-native',
+          location: KeyImportScreen.path,
           authState: AuthState.unauthenticated,
           tosAccepted: false,
         );
         expect(
           redirect,
           isNull,
-          reason: '/auth-native is an auth route, should not redirect',
+          reason:
+              '${KeyImportScreen.path} is an auth route, should not redirect',
         );
       });
 
-      test('unauthenticated user can access /import-key', () {
-        final redirect = testRedirectLogic(
-          location: '/import-key',
-          authState: AuthState.unauthenticated,
-          tosAccepted: false,
-        );
-        expect(
-          redirect,
-          isNull,
-          reason: '/import-key is an auth route, should not redirect',
-        );
-      });
+      test(
+        'unauthenticated user on ${HomeScreenRouter.pathForIndex(0)} redirects to /welcome',
+        () {
+          final redirect = testRedirectLogic(
+            location: HomeScreenRouter.pathForIndex(0),
+            authState: AuthState.unauthenticated,
+            tosAccepted: true, // Even with TOS, need auth for /home
+          );
+          expect(
+            redirect,
+            equals(WelcomeScreen.path),
+            reason: 'Protected route should redirect unauthenticated user',
+          );
+        },
+      );
 
-      test('unauthenticated user on /home/0 redirects to /welcome', () {
-        final redirect = testRedirectLogic(
-          location: '/home/0',
-          authState: AuthState.unauthenticated,
-          tosAccepted: true, // Even with TOS, need auth for /home
-        );
-        expect(
-          redirect,
-          equals('/welcome'),
-          reason: 'Protected route should redirect unauthenticated user',
-        );
-      });
-
-      test('unauthenticated user on /explore redirects to /welcome', () {
-        final redirect = testRedirectLogic(
-          location: '/explore',
-          authState: AuthState.unauthenticated,
-          tosAccepted: true,
-        );
-        expect(
-          redirect,
-          equals('/welcome'),
-          reason: 'Protected route should redirect unauthenticated user',
-        );
-      });
+      test(
+        'unauthenticated user on ${ExploreScreen.path} redirects to ${WelcomeScreen.path}',
+        () {
+          final redirect = testRedirectLogic(
+            location: ExploreScreen.path,
+            authState: AuthState.unauthenticated,
+            tosAccepted: true,
+          );
+          expect(
+            redirect,
+            equals(WelcomeScreen.path),
+            reason: 'Protected route should redirect unauthenticated user',
+          );
+        },
+      );
     });
 
     group('Authenticated user scenarios', () {
-      test('authenticated user on /welcome redirects to /home/0', () {
-        // Note: The actual router redirects to /home/0 first (Rule 1),
-        // not /explore. This is because /welcome is treated as an auth route.
+      test(
+        'authenticated user on ${WelcomeScreen.path} redirects to ${HomeScreenRouter.pathForIndex(0)}',
+        () {
+          // Note: The actual router redirects to /home/0 first (Rule 1),
+          // not /explore. This is because /welcome is treated as an auth route.
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.path,
+            authState: AuthState.authenticated,
+            tosAccepted: true,
+          );
+          expect(
+            redirect,
+            equals(HomeScreenRouter.pathForIndex(0)),
+            reason:
+                'Authenticated user on auth route goes to ${HomeScreenRouter.pathForIndex(0)}',
+          );
+        },
+      );
+
+      test(
+        'authenticated user on ${WelcomeScreen.loginOptionsPath} redirects to ${HomeScreenRouter.pathForIndex(0)}',
+        () {
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.loginOptionsPath,
+            authState: AuthState.authenticated,
+            tosAccepted: true,
+          );
+          expect(
+            redirect,
+            equals(HomeScreenRouter.pathForIndex(0)),
+            reason: 'Authenticated user on auth route should go to home',
+          );
+        },
+      );
+
+      test(
+        'authenticated user on ${HomeScreenRouter.pathForIndex(0)} stays there',
+        () {
+          final redirect = testRedirectLogic(
+            location: HomeScreenRouter.pathForIndex(0),
+            authState: AuthState.authenticated,
+            tosAccepted: true,
+          );
+          expect(
+            redirect,
+            isNull,
+            reason: '${HomeScreenRouter.pathForIndex(0)} should not redirect',
+          );
+        },
+      );
+
+      test('authenticated user on ${ExploreScreen.path} stays there', () {
         final redirect = testRedirectLogic(
-          location: '/welcome',
+          location: ExploreScreen.path,
           authState: AuthState.authenticated,
           tosAccepted: true,
         );
         expect(
           redirect,
-          equals('/home/0'),
-          reason: 'Authenticated user on auth route goes to /home/0',
+          isNull,
+          reason: '${ExploreScreen.path} should not redirect',
         );
-      });
-
-      test('authenticated user on /login-options redirects to /home/0', () {
-        final redirect = testRedirectLogic(
-          location: '/login-options',
-          authState: AuthState.authenticated,
-          tosAccepted: true,
-        );
-        expect(
-          redirect,
-          equals('/home/0'),
-          reason: 'Authenticated user on auth route should go to home',
-        );
-      });
-
-      test('authenticated user on /home/0 stays there', () {
-        final redirect = testRedirectLogic(
-          location: '/home/0',
-          authState: AuthState.authenticated,
-          tosAccepted: true,
-        );
-        expect(redirect, isNull, reason: '/home/0 should not redirect');
-      });
-
-      test('authenticated user on /explore stays there', () {
-        final redirect = testRedirectLogic(
-          location: '/explore',
-          authState: AuthState.authenticated,
-          tosAccepted: true,
-        );
-        expect(redirect, isNull, reason: '/explore should not redirect');
       });
     });
 
     group('TOS not accepted scenarios', () {
-      test('user without TOS on /home/0 redirects to /welcome', () {
-        final redirect = testRedirectLogic(
-          location: '/home/0',
-          authState: AuthState.authenticated,
-          tosAccepted: false,
-        );
-        expect(
-          redirect,
-          equals('/welcome'),
-          reason: 'User must accept TOS to access protected routes',
-        );
-      });
+      test(
+        'user without TOS on ${HomeScreenRouter.pathForIndex(0)} redirects to /welcome',
+        () {
+          final redirect = testRedirectLogic(
+            location: HomeScreenRouter.pathForIndex(0),
+            authState: AuthState.authenticated,
+            tosAccepted: false,
+          );
+          expect(
+            redirect,
+            equals(WelcomeScreen.path),
+            reason: 'User must accept TOS to access protected routes',
+          );
+        },
+      );
     });
 
     group('Edge cases for the bug', () {
       test(
-        '/login-options should NEVER redirect to /welcome for unauthenticated users',
+        '${WelcomeScreen.loginOptionsPath} should NEVER redirect to ${WelcomeScreen.path} for unauthenticated users',
         () {
           // This is the core bug scenario
           final redirect = testRedirectLogic(
-            location: '/login-options',
+            location: WelcomeScreen.loginOptionsPath,
             authState: AuthState.unauthenticated,
             tosAccepted: false,
           );
 
           expect(
             redirect,
-            isNot(equals('/welcome')),
+            isNot(equals(WelcomeScreen.path)),
             reason:
-                'BUG: /login-options is an auth route and should be accessible '
+                'BUG: ${LoginOptionsScreen.path} is an auth route and should be accessible '
                 'to unauthenticated users trying to log in!',
           );
         },
       );
 
-      test('/auth-native?mode=register should be accessible', () {
+      test('${DivineAuthScreen.path}?mode=register should be accessible', () {
         final redirect = testRedirectLogic(
-          location: '/auth-native',
+          location: WelcomeScreen.authNativePath,
           authState: AuthState.unauthenticated,
           tosAccepted: false,
         );
@@ -242,7 +288,8 @@ void main() {
         expect(
           redirect,
           isNull,
-          reason: '/auth-native should be accessible for registration',
+          reason:
+              '${DivineAuthScreen.path} should be accessible for registration',
         );
       });
     });
@@ -250,57 +297,67 @@ void main() {
 
   group('Route normalization bug - THE ROOT CAUSE', () {
     test(
-      '/login-options should parse and rebuild to /login-options (not /home/0)',
+      '${LoginOptionsScreen.path} should parse and rebuild to ${LoginOptionsScreen.path} (not /home/0)',
       () {
-        final parsed = parseRoute('/login-options');
+        final parsed = parseRoute(LoginOptionsScreen.path);
         final rebuilt = buildRoute(parsed);
 
         expect(
           parsed.type,
           equals(RouteType.loginOptions),
-          reason: '/login-options should parse to loginOptions type, not home',
+          reason:
+              '${LoginOptionsScreen.path} should parse to loginOptions type, not home',
         );
         expect(
           rebuilt,
-          equals('/login-options'),
-          reason: 'Rebuilding /login-options should NOT become /home/0',
+          equals(LoginOptionsScreen.path),
+          reason:
+              'Rebuilding ${LoginOptionsScreen.path} should NOT become /home/0',
         );
       },
     );
 
     test(
-      '/auth-native should parse and rebuild to /auth-native (not /home/0)',
+      '${DivineAuthScreen.path} should parse and rebuild to ${DivineAuthScreen.path} (not /home/0)',
       () {
-        final parsed = parseRoute('/auth-native');
+        final parsed = parseRoute(DivineAuthScreen.path);
         final rebuilt = buildRoute(parsed);
 
         expect(
           parsed.type,
           equals(RouteType.authNative),
-          reason: '/auth-native should parse to authNative type, not home',
+          reason:
+              '${DivineAuthScreen.path} should parse to authNative type, not home',
         );
         expect(
           rebuilt,
-          equals('/auth-native'),
-          reason: 'Rebuilding /auth-native should NOT become /home/0',
+          equals(DivineAuthScreen.path),
+          reason:
+              'Rebuilding ${DivineAuthScreen.path} should NOT become /home/0',
         );
       },
     );
 
-    test('/welcome should parse and rebuild to /welcome', () {
-      final parsed = parseRoute('/welcome');
-      final rebuilt = buildRoute(parsed);
+    test(
+      '${WelcomeScreen.path} should parse and rebuild to ${WelcomeScreen.path}',
+      () {
+        final parsed = parseRoute(WelcomeScreen.path);
+        final rebuilt = buildRoute(parsed);
 
-      expect(parsed.type, equals(RouteType.welcome));
-      expect(rebuilt, equals('/welcome'));
-    });
+        expect(parsed.type, equals(RouteType.welcome));
+        expect(rebuilt, equals(WelcomeScreen.path));
+      },
+    );
 
-    test('/import-key should parse and rebuild to /import-key', () {
-      final parsed = parseRoute('/import-key');
-      final rebuilt = buildRoute(parsed);
+    test(
+      '${KeyImportScreen.path} should parse and rebuild to ${KeyImportScreen.path}',
+      () {
+        final parsed = parseRoute(KeyImportScreen.path);
+        final rebuilt = buildRoute(parsed);
 
-      expect(parsed.type, equals(RouteType.importKey));
-      expect(rebuilt, equals('/import-key'));
-    });
+        expect(parsed.type, equals(RouteType.importKey));
+        expect(rebuilt, equals(KeyImportScreen.path));
+      },
+    );
   });
 }

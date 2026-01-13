@@ -17,6 +17,12 @@ import 'package:openvine/widgets/error_message.dart';
 enum AuthMode { login, register }
 
 class DivineAuthScreen extends ConsumerStatefulWidget {
+  /// Route name for the auth screen
+  static const String routeName = 'auth-native';
+
+  /// Path for the auth screen
+  static const String path = '/auth-native';
+
   /// Initial mode - can be overridden by tab selection
   final AuthMode initialMode;
 

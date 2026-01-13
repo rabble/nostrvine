@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -271,7 +272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Secure Your Account',
                     subtitle:
                         'Add email & password to recover your account on any device',
-                    onTap: () => context.push('/secure-account'),
+                    onTap: () => context.push(SecureAccountScreen.path),
                     iconColor: VineTheme.vineGreen,
                   ),
                 _buildSettingsTile(

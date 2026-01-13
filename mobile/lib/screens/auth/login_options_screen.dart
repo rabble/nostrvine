@@ -3,9 +3,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class LoginOptionsScreen extends StatelessWidget {
+  /// Route name for this screen.
+  static const String routeName = 'login-options';
+
+  /// Route path for this screen.
+  static const String path = '/login-options';
+
   const LoginOptionsScreen({super.key});
 
   @override
@@ -57,9 +64,8 @@ class LoginOptionsScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () => context.push(
-                            '/welcome/login-options/auth-native',
-                          ),
+                          onPressed: () =>
+                              context.push(WelcomeScreen.authNativePath),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: VineTheme.vineGreen,

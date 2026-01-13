@@ -8,11 +8,13 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+
 import 'app_router.dart';
 import 'route_utils.dart';
 
@@ -273,5 +275,5 @@ extension NavX on BuildContext {
   );
 
   /// Push discover lists screen (browse public NIP-51 kind 30005 lists)
-  Future<void> pushDiscoverLists() => push('/discover-lists');
+  Future<void> pushDiscoverLists() => push(DiscoverListsScreen.path);
 }

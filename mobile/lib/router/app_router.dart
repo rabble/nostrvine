@@ -284,18 +284,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
-              // TODO(SofiaRey): update this to constants in Welcome Screen
-              location == '/welcome/login-options' ||
-              location == '/welcome/login-options/auth-native')) {
+              location == WelcomeScreen.loginOptionsPath ||
+              location == WelcomeScreen.resetPasswordPath)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
         return '/home/0';
       }
 
       // Auth routes are allowed without TOS - user is in the process of logging in
       final isAuthRoute =
-          location.startsWith('/welcome') ||
-          location.startsWith('/import-key') ||
-          location.startsWith('/reset-password');
+          location.startsWith(WelcomeScreen.path) ||
+          location.startsWith(KeyImportScreen.path) ||
+          location.startsWith(WelcomeScreen.resetPasswordPath);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -326,11 +325,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // This handles cases like expired sessions
         if (authState == AuthState.unauthenticated) {
           Log.debug(
-            'Not authenticated, redirecting to /welcome',
+            'Not authenticated, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return '/welcome';
+          return WelcomeScreen.path;
         }
       }
 
@@ -637,13 +636,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const WelcomeScreen(),
         routes: [
           GoRoute(
-            path: 'login-options',
-            name: 'login-options',
+            path: LoginOptionsScreen.path,
+            name: LoginOptionsScreen.routeName,
             builder: (_, __) => const LoginOptionsScreen(),
             routes: [
               GoRoute(
-                path: 'auth-native',
-                name: 'auth-native',
+                path: DivineAuthScreen.path,
+                name: DivineAuthScreen.routeName,
                 builder: (ctx, st) {
                   // Check for initialMode passed via extra or query param
                   AuthMode? mode = st.extra as AuthMode?;
@@ -658,8 +657,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   // route for deep link when resetting password from emailed link
                   GoRoute(
-                    path: 'reset-password',
-                    name: 'reset-password',
+                    path: ResetPasswordScreen.path,
+                    name: ResetPasswordScreen.routeName,
                     builder: (ctx, st) {
                       final token = st.uri.queryParameters['token'];
                       return ResetPasswordScreen(token: token ?? '');
@@ -677,17 +676,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const KeyImportScreen(),
       ),
       GoRoute(
-        // TODO(SofiaRey): add this route as a constant in SecureAccountScreen
-        path: '/secure-account',
-        name: 'secure-account',
+        path: SecureAccountScreen.path,
+        name: SecureAccountScreen.routeName,
         builder: (_, __) => const SecureAccountScreen(),
       ),
       // redirect deep link route to full reset password path
       GoRoute(
-        path: '/reset-password',
+        path: ResetPasswordScreen.path,
         redirect: (context, state) {
           final token = state.uri.queryParameters['token'];
-          return '/welcome/login-options/auth-native/reset-password?token=$token';
+          return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
 
