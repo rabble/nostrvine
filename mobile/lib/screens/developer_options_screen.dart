@@ -7,25 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class DeveloperOptionsScreen extends ConsumerWidget {
-  /// Route name for this screen.
-  static const routeName = 'developer-options';
-
-  /// Path for this route.
-  static const path = '/developer-options';
-
-  /// Page builder for GoRouter (uses slide-in transition).
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return SlideInPage(
-      key: state.pageKey,
-      child: const DeveloperOptionsScreen(),
-    );
-  }
-
   const DeveloperOptionsScreen({super.key});
 
   @override

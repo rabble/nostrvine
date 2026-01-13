@@ -3,27 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/route_transitions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'notification-settings';
-
-  /// Path for this route.
-  static const path = '/notification-settings';
-
-  /// Page builder for GoRouter.
-  static Page<void> pageBuilder(BuildContext context, GoRouterState state) {
-    return StandardPage(
-      key: state.pageKey,
-      child: const NotificationSettingsScreen(),
-    );
-  }
-
   const NotificationSettingsScreen({super.key});
 
   @override

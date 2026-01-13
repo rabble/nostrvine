@@ -15,22 +15,6 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Router-aware hashtag screen that shows grid or feed based on route
 class HashtagScreenRouter extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'hashtag';
-
-  /// Path for this route (grid mode).
-  static const path = '/hashtag/:tag';
-
-  /// Path for this route with index (feed mode).
-  static const pathWithIndex = '/hashtag/:tag/:index';
-
-  /// Build path for hashtag grid mode.
-  static String pathForTag(String tag) => '/hashtag/$tag';
-
-  /// Build path for hashtag feed mode with specific index.
-  static String pathForTagWithIndex(String tag, int index) =>
-      '/hashtag/$tag/$index';
-
   const HashtagScreenRouter({super.key});
 
   @override

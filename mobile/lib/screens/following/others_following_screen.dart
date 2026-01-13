@@ -17,12 +17,6 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 /// Creates both [OthersFollowingBloc] (for the list) and [MyFollowingBloc]
 /// (for follow button state) and provides them to the view.
 class OthersFollowingScreen extends ConsumerWidget {
-  /// Route name for following screen (shared with MyFollowingScreen).
-  static const routeName = 'following';
-
-  /// Path for this route with pubkey (shared with MyFollowingScreen).
-  static const path = '/following/:pubkey';
-
   const OthersFollowingScreen({
     super.key,
     required this.pubkey,

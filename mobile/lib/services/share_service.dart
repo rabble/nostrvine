@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:share_plus/share_plus.dart';
@@ -168,7 +167,7 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
           title: 'Share to Apps',
           subtitle: 'Share via messaging, social apps',
           onTap: () {
-            context.pop();
+            Navigator.pop(context);
             shareService.shareViaSheet(video, context);
           },
         ),
@@ -179,7 +178,7 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
           title: 'Copy Web Link',
           subtitle: 'Copy shareable web link',
           onTap: () {
-            context.pop();
+            Navigator.pop(context);
             final webLink = shareService.generateWebLink(video);
             shareService.copyToClipboard(webLink, context);
           },
@@ -191,7 +190,7 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
           title: 'Copy Nostr Link',
           subtitle: 'Copy nevent link for Nostr clients',
           onTap: () {
-            context.pop();
+            Navigator.pop(context);
             final nostrLink = shareService.generateNostrEventLink(video);
             shareService.copyToClipboard(nostrLink, context);
           },

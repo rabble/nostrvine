@@ -1,20 +1,20 @@
-// ABOUTME: Tests for page context provider
-// ABOUTME: Verifies location stream emits when router navigates
+// ABOUTME: Tests for derived page context provider
+// ABOUTME: Verifies route location is parsed into structured context
 
-import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/route_utils.dart';
 
 void main() {
   group('Page Context Provider', () {
-    testWidgets('emits initial location immediately', (tester) async {
+    testWidgets('parses home route from router location', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Build minimal widget tree with GoRouter
+      // Build widget tree with router
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -24,20 +24,22 @@ void main() {
         ),
       );
 
-      final stream = container.read(routerLocationStreamProvider);
-      final queue = StreamQueue(stream);
-      addTearDown(() async => queue.cancel());
+      // Wait for initial render
+      await tester.pumpAndSettle();
 
-      // Get initial location
-      final initial = await queue.next;
-      expect(initial, '/home/0');
+      // Access the context via AsyncValue
+      final contextAsync = container.read(pageContextProvider);
+      final context = contextAsync.value!;
+
+      expect(context.type, RouteType.home);
+      expect(context.videoIndex, 0);
     });
 
-    testWidgets('emits new location when router navigates', (tester) async {
+    testWidgets('updates context when router navigates', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Build minimal widget tree with GoRouter
+      // Build widget tree
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -47,34 +49,37 @@ void main() {
         ),
       );
 
-      // Listen to the raw stream for deterministic events
-      final stream = container.read(routerLocationStreamProvider);
-      final queue = StreamQueue(stream);
-      addTearDown(() async => queue.cancel());
+      // Initial state - home
+      await tester.pumpAndSettle();
+      var contextAsync = container.read(pageContextProvider);
+      expect(contextAsync.hasValue, true);
+      expect(contextAsync.value!.type, RouteType.home);
+      expect(contextAsync.value!.videoIndex, 0);
 
-      // 1) Initial location
-      final initial = await queue.next;
-      expect(initial, '/home/0');
+      // Navigate to explore
+      container.read(goRouterProvider).go('/explore/3');
+      await tester.pumpAndSettle();
 
-      // 2) Navigate to explore
-      container.read(goRouterProvider).go('/explore/0');
-      await tester.pump(); // Flush delegate change notification
+      // Context should update
+      contextAsync = container.read(pageContextProvider);
+      expect(contextAsync.value!.type, RouteType.explore);
+      expect(contextAsync.value!.videoIndex, 3);
 
-      final next1 = await queue.next;
-      expect(next1, '/explore/0');
+      // Navigate to profile
+      container.read(goRouterProvider).go('/profile/npub1test/7');
+      await tester.pumpAndSettle();
 
-      // 3) Navigate to explore page 5
-      container.read(goRouterProvider).go('/explore/5');
-      await tester.pump();
-
-      final next2 = await queue.next;
-      expect(next2, '/explore/5');
+      // Context should update again
+      contextAsync = container.read(pageContextProvider);
+      expect(contextAsync.value!.type, RouteType.profile);
+      expect(contextAsync.value!.npub, 'npub1test');
+      expect(contextAsync.value!.videoIndex, 7);
     });
 
-    testWidgets('cleans up listener on dispose', (tester) async {
+    testWidgets('parses hashtag route correctly', (tester) async {
       final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-      // Build minimal widget tree
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -84,19 +89,61 @@ void main() {
         ),
       );
 
-      final stream = container.read(routerLocationStreamProvider);
-      final queue = StreamQueue(stream);
+      // Navigate to hashtag
+      container.read(goRouterProvider).go('/hashtag/bitcoin/2');
+      await tester.pumpAndSettle();
 
-      // Get initial value to confirm stream is working
-      final initial = await queue.next;
-      expect(initial, isNotEmpty);
+      final contextAsync = container.read(pageContextProvider);
+      final context = contextAsync.value!;
+      expect(context.type, RouteType.hashtag);
+      expect(context.hashtag, 'bitcoin');
+      expect(context.videoIndex, 2);
+    });
 
-      // Cancel and dispose
-      await queue.cancel();
-      container.dispose();
+    testWidgets('parses camera route correctly', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-      // If this completes without error, cleanup worked
-      expect(true, isTrue);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      // Navigate to camera
+      container.read(goRouterProvider).go('/camera');
+      await tester.pumpAndSettle();
+
+      final contextAsync = container.read(pageContextProvider);
+      final context = contextAsync.value!;
+      expect(context.type, RouteType.camera);
+      expect(context.videoIndex, isNull);
+    });
+
+    testWidgets('parses settings route correctly', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      // Navigate to settings
+      container.read(goRouterProvider).go('/settings');
+      await tester.pumpAndSettle();
+
+      final contextAsync = container.read(pageContextProvider);
+      final context = contextAsync.value!;
+      expect(context.type, RouteType.settings);
+      expect(context.videoIndex, isNull);
     });
     // TODO(Any): Fix and re-enable these tests
   }, skip: true);

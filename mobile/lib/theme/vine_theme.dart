@@ -40,6 +40,17 @@ class VineTheme {
   static const Color tabIconInactive = Color(0xFF40504A);
   static const Color tabIndicatorGreen = Color(0xFF27C58B);
 
+  // Surface colors (from Figma design system)
+  static const Color surfaceBackground = Color(0xFF00150D);
+  static const Color onSurface = Color(0xF2FFFFFF); // rgba(255,255,255,0.95)
+  static const Color onSurfaceMuted = Color(
+    0x80FFFFFF,
+  ); // rgba(255,255,255,0.5)
+  static const Color outlineVariant = Color(0xFF254136);
+  static const Color borderWhite25 = Color(
+    0x40FFFFFF,
+  ); // rgba(255,255,255,0.25)
+
   // Tab text style - Bricolage bold (800), 18px, 24px line height
   static TextStyle tabTextStyle({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(

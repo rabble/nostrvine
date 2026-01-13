@@ -2,13 +2,13 @@
 // ABOUTME: Verifies settings navigation and UI structure
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/providers/app_providers.dart';
 
 @GenerateMocks([AuthService])
 import 'settings_screen_test.mocks.dart';
@@ -20,6 +20,11 @@ void main() {
     setUp(() {
       mockAuthService = MockAuthService();
       when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        mockAuthService.authStateStream,
+      ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 
     testWidgets('Settings screen displays all sections', (tester) async {

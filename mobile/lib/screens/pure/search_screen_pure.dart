@@ -19,29 +19,10 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
 class SearchScreenPure extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'search';
-
-  /// Path for this route (empty search).
-  static const path = '/search';
-
-  /// Path for this route with search term.
-  static const pathWithTerm = '/search/:searchTerm';
-
-  /// Path for this route with search term and index (feed mode).
-  static const pathWithTermAndIndex = '/search/:searchTerm/:index';
-
-  /// Build path for search with a term.
-  static String pathForTerm(String term) => '/search/$term';
-
-  /// Build path for search with a term and video index.
-  static String pathForTermWithIndex(String term, int index) =>
-      '/search/$term/$index';
-
   const SearchScreenPure({super.key, this.embedded = false});
 
-  /// When true, renders without Scaffold/AppBar (for embedding in ExploreScreen)
-  final bool embedded;
+  final bool
+  embedded; // When true, renders without Scaffold/AppBar (for embedding in ExploreScreen)
 
   @override
   ConsumerState<SearchScreenPure> createState() => _SearchScreenPureState();
@@ -459,9 +440,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: VineTheme.cardBackground,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: () => Navigator.of(context).pop(),
+        leading: Semantics(
+          identifier: 'search_back_button',
+          button: true,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
         title: searchBar,
         bottom: PreferredSize(

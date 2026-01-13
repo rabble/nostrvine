@@ -1609,7 +1609,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'731670bc432ff3ade2e1457649368db85fe77dad';
+String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
 
 /// Hashtag service depends on Video event service and cache service
 

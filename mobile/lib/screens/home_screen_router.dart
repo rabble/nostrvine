@@ -11,7 +11,6 @@ import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -20,15 +19,6 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
 class HomeScreenRouter extends ConsumerStatefulWidget {
-  /// Route name for this screen.
-  static const routeName = 'home';
-
-  /// Path for this route with index parameter.
-  static const path = '/home/:index';
-
-  /// Build path for a specific index.
-  static String pathForIndex(int index) => '/home/$index';
-
   const HomeScreenRouter({super.key});
 
   @override
@@ -51,10 +41,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
     // Pre-initialize controllers on next frame (don't redirect - respect URL)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.goHome();
-      }
-
       // Initial build pre initialization
       videosAsync.whenData((state) {
         preInitializeControllers(
@@ -151,7 +137,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                       ),
                       const SizedBox(height: 32),
                       ElevatedButton.icon(
-                        onPressed: () => context.goExplore(),
+                        onPressed: () => context.go('/explore'),
                         icon: const Icon(Icons.explore),
                         label: const Text('Explore Videos'),
                         style: ElevatedButton.styleFrom(
