@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:comments_repository/comments_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -214,33 +212,36 @@ void main() {
         expect(result.comments[2].content, 'Parent');
       });
 
-      test('includes orphan replies in flat list with replyTo reference', () async {
-        // Orphan replies are just included in the flat list with their replyToEventId
-        final orphanReply = _createCommentEvent(
-          id: 'orphan',
-          content: 'Orphan reply',
-          pubkey: testUserPubkey,
-          rootEventId: testRootEventId,
-          rootAuthorPubkey: testRootAuthorPubkey,
-          rootEventKind: _testRootEventKind,
-          replyToEventId: 'nonexistent_parent',
-          replyToAuthorPubkey: testUserPubkey,
-        );
+      test(
+        'includes orphan replies in flat list with replyTo reference',
+        () async {
+          // Orphan replies are just included in the flat list with their replyToEventId
+          final orphanReply = _createCommentEvent(
+            id: 'orphan',
+            content: 'Orphan reply',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            replyToEventId: 'nonexistent_parent',
+            replyToAuthorPubkey: testUserPubkey,
+          );
 
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [orphanReply]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [orphanReply]);
 
-        final result = await repository.loadComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
 
-        // Orphan is in the flat list
-        expect(result.comments.length, equals(1));
-        expect(result.comments.first.content, 'Orphan reply');
-        expect(result.comments.first.replyToEventId, 'nonexistent_parent');
-      });
+          // Orphan is in the flat list
+          expect(result.comments.length, equals(1));
+          expect(result.comments.first.content, 'Orphan reply');
+          expect(result.comments.first.replyToEventId, 'nonexistent_parent');
+        },
+      );
 
       test('throws LoadCommentsFailedException on error', () async {
         when(
@@ -273,106 +274,6 @@ void main() {
 
         final filters = captured.first as List<Filter>;
         expect(filters.first.limit, equals(50));
-      });
-    });
-
-    group('watchComments', () {
-      test('returns stream that emits empty thread first', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final stream = repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
-        final results = <CommentThread>[];
-        final subscription = stream.listen(results.add);
-
-        // Wait for initial empty state (startWith)
-        await Future<void>.delayed(Duration.zero);
-        expect(results.first.isEmpty, isTrue);
-        expect(results.first.rootEventId, equals(testRootEventId));
-
-        await subscription.cancel();
-        await controller.close();
-      });
-
-      test('accumulates comments and rebuilds thread', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final stream = repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
-        final results = <CommentThread>[];
-        final subscription = stream.listen(results.add);
-
-        // Wait for initial empty state
-        await Future<void>.delayed(Duration.zero);
-
-        // Add first comment
-        controller.add(
-          _createCommentEvent(
-            id: 'comment1',
-            content: 'First comment',
-            pubkey: testUserPubkey,
-            rootEventId: testRootEventId,
-            rootAuthorPubkey: testRootAuthorPubkey,
-            rootEventKind: _testRootEventKind,
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-        expect(results.last.totalCount, equals(1));
-
-        // Add second comment
-        controller.add(
-          _createCommentEvent(
-            id: 'comment2',
-            content: 'Second comment',
-            pubkey: testUserPubkey,
-            rootEventId: testRootEventId,
-            rootAuthorPubkey: testRootAuthorPubkey,
-            rootEventKind: _testRootEventKind,
-            createdAt: 2000,
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-        expect(results.last.totalCount, equals(2));
-
-        await subscription.cancel();
-        await controller.close();
-      });
-
-      test('delegates to NostrClient.subscribe with correct filter', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-          limit: 50,
-        );
-
-        final captured = verify(
-          () => mockNostrClient.subscribe(captureAny()),
-        ).captured;
-
-        final filters = captured.first as List<Filter>;
-        expect(filters.first.kinds, contains(_commentKind));
-        expect(filters.first.uppercaseE, contains(testRootEventId));
-        expect(filters.first.limit, equals(50));
-
-        await controller.close();
       });
     });
 

@@ -97,59 +97,53 @@ class _CommentInputState extends State<CommentInput> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(child: _buildTextField()),
+                  Flexible(
+                    child: _CommentTextField(
+                      controller: widget.controller,
+                      focusNode: widget.focusNode,
+                      isReplying: isReplying,
+                      onChanged: _handleTextChanged,
+                    ),
+                  ),
                   if (isReplying)
-                    GestureDetector(
-                      onTap: widget.onCancelReply,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          bottom: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Re: ${widget.replyToDisplayName}',
-                                style: VineTheme.bodyFont(
-                                  fontSize: 12,
-                                  color: VineTheme.tabIndicatorGreen,
-                                  height: 16 / 12,
-                                  fontWeight: FontWeight.w400,
-                                ).copyWith(letterSpacing: 0.4),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 20,
-                              height: 20,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.close,
-                                size: 16,
-                                color: VineTheme.tabIndicatorGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _ReplyIndicator(
+                      displayName: widget.replyToDisplayName!,
+                      onCancel: widget.onCancelReply!,
                     ),
                 ],
               ),
             ),
 
-            if (_hasText) ...[const SizedBox(width: 8), _buildSendButton()],
+            if (_hasText) ...[
+              const SizedBox(width: 8),
+              _SendButton(
+                isPosting: widget.isPosting,
+                onSubmit: widget.onSubmit,
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildTextField() {
-    final isReplying = widget.replyToDisplayName != null;
+/// Text field for entering comment text.
+class _CommentTextField extends StatelessWidget {
+  const _CommentTextField({
+    required this.controller,
+    required this.isReplying,
+    required this.onChanged,
+    this.focusNode,
+  });
+
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final bool isReplying;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(left: 16, bottom: 14, top: 14),
       child: Semantics(
@@ -158,9 +152,9 @@ class _CommentInputState extends State<CommentInput> {
         label: isReplying ? 'Reply input' : 'Comment input',
         hint: isReplying ? 'Add a reply' : 'Add a comment',
         child: TextField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          onChanged: _handleTextChanged,
+          controller: controller,
+          focusNode: focusNode,
+          onChanged: onChanged,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           enableInteractiveSelection: true,
           style: VineTheme.bodyFont(
@@ -186,13 +180,22 @@ class _CommentInputState extends State<CommentInput> {
       ),
     );
   }
+}
 
-  Widget _buildSendButton() {
+/// Send button that appears when text is entered.
+class _SendButton extends StatelessWidget {
+  const _SendButton({required this.isPosting, required this.onSubmit});
+
+  final bool isPosting;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
     return Semantics(
       identifier: 'send_comment_button',
       button: true,
-      enabled: !widget.isPosting,
-      label: widget.isPosting ? 'Posting comment' : 'Send comment',
+      enabled: !isPosting,
+      label: isPosting ? 'Posting comment' : 'Send comment',
       child: Container(
         width: 40,
         height: 40,
@@ -209,9 +212,9 @@ class _CommentInputState extends State<CommentInput> {
           ],
         ),
         child: IconButton(
-          onPressed: widget.isPosting ? null : widget.onSubmit,
+          onPressed: isPosting ? null : onSubmit,
           padding: EdgeInsets.zero,
-          icon: widget.isPosting
+          icon: isPosting
               ? const SizedBox(
                   width: 16,
                   height: 16,
@@ -221,6 +224,52 @@ class _CommentInputState extends State<CommentInput> {
                   ),
                 )
               : const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+/// Reply indicator showing who is being replied to.
+class _ReplyIndicator extends StatelessWidget {
+  const _ReplyIndicator({required this.displayName, required this.onCancel});
+
+  final String displayName;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onCancel,
+      child: Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(
+                'Re: $displayName',
+                style: VineTheme.bodyFont(
+                  fontSize: 12,
+                  color: VineTheme.tabIndicatorGreen,
+                  height: 16 / 12,
+                  fontWeight: FontWeight.w400,
+                ).copyWith(letterSpacing: 0.4),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.close,
+                size: 16,
+                color: VineTheme.tabIndicatorGreen,
+              ),
+            ),
+          ],
         ),
       ),
     );

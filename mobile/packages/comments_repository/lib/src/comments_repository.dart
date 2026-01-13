@@ -6,7 +6,6 @@ import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Kind 1111 is the NIP-22 comment kind for replying to non-Kind-1 events.
 const int _commentKind = EventKind.comment;
@@ -74,44 +73,6 @@ class CommentsRepository {
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
     }
-  }
-
-  /// Watches comments for a root event with real-time updates.
-  ///
-  /// Returns a stream that emits [CommentThread] whenever new comments
-  /// arrive. The stream uses a scan operator to accumulate comments
-  /// and rebuild the flat list as new events arrive.
-  ///
-  /// Parameters:
-  /// - [rootEventId]: The ID of the event to watch comments for
-  /// - [rootEventKind]: The kind of the root event (e.g., 34236 for videos)
-  /// - [limit]: Maximum number of comments to fetch (default: 100)
-  ///
-  /// Note: Stream management (deduplication, cleanup) is handled by
-  /// NostrClient. Use [NostrClient.unsubscribe] to stop watching.
-  Stream<CommentThread> watchComments({
-    required String rootEventId,
-    required int rootEventKind,
-    int limit = _defaultLimit,
-  }) {
-    // NIP-22: Filter by Kind 1111 and uppercase E tag for root scope
-    final filter = Filter(
-      kinds: const [_commentKind],
-      uppercaseE: [rootEventId],
-      limit: limit,
-    );
-
-    // NostrClient handles subscription deduplication internally
-    return _nostrClient
-        .subscribe([filter])
-        .map((event) => _eventToComment(event, rootEventId, rootEventKind))
-        .whereNotNull()
-        .scan<Map<String, Comment>>(
-          (accumulated, comment, _) => {...accumulated, comment.id: comment},
-          <String, Comment>{},
-        )
-        .map((commentMap) => _buildThreadFromComments(commentMap, rootEventId))
-        .startWith(CommentThread.empty(rootEventId));
   }
 
   /// Posts a new comment using NIP-22 format.
@@ -374,34 +335,6 @@ class CommentsRepository {
       comments: sortedComments,
       totalCount: commentMap.length,
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Comment manipulation helpers
-  // ---------------------------------------------------------------------------
-
-  /// Removes a comment from the thread.
-  ///
-  /// Filters out the deleted comment while keeping all other comments,
-  /// including any replies to the deleted comment (they become orphans
-  /// and will display with their reply indicator).
-  CommentThread removeComment(
-    CommentThread thread,
-    String commentId,
-  ) {
-    final updatedComments = thread.comments
-        .where((c) => c.id != commentId)
-        .toList();
-
-    final updatedCache = Map<String, Comment>.from(thread.commentCache)
-      ..remove(commentId);
-
-    return CommentThread(
-      rootEventId: thread.rootEventId,
-      comments: updatedComments,
-      totalCount: updatedComments.length,
-      commentCache: updatedCache,
     );
   }
 }

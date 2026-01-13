@@ -42,16 +42,4 @@ void main() {
       expect(find.byKey(const Key('trailing')), findsOneWidget);
     });
   });
-
-  group('VineBottomSheetBadge', () {
-    testWidgets('renders text', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: VineBottomSheetBadge(text: '3 new')),
-        ),
-      );
-
-      expect(find.text('3 new'), findsOneWidget);
-    });
-  });
 }

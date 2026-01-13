@@ -96,7 +96,7 @@ void main() {
           ),
           isA<CommentsState>()
               .having((s) => s.status, 'status', CommentsStatus.success)
-              .having((s) => s.topLevelComments.length, 'comments count', 1),
+              .having((s) => s.comments.length, 'comments count', 1),
         ],
       );
 
@@ -121,7 +121,7 @@ void main() {
           ),
           isA<CommentsState>()
               .having((s) => s.status, 'status', CommentsStatus.success)
-              .having((s) => s.topLevelComments, 'comments', isEmpty),
+              .having((s) => s.comments, 'comments', isEmpty),
         ],
       );
 
@@ -191,11 +191,16 @@ void main() {
         build: () => createBloc(),
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         verify: (bloc) {
-          expect(bloc.state.topLevelComments.length, 1);
+          // Should have 2 total comments (1 parent + 1 reply)
+          expect(bloc.state.comments.length, 2);
+          // Find the parent comment (no replyToEventId)
+          final parentComments = bloc.state.comments
+              .where((c) => c.replyToEventId == null)
+              .toList();
+          expect(parentComments.length, 1);
+          // Find replies to the parent comment
           final replies = bloc.state.comments
-              .where(
-                (c) => c.replyToEventId == bloc.state.topLevelComments.first.id,
-              )
+              .where((c) => c.replyToEventId == parentComments.first.id)
               .toList();
           expect(replies.length, 1);
         },
@@ -424,7 +429,7 @@ void main() {
           isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
           // Second: error emitted, no comments added
           isA<CommentsState>()
-              .having((s) => s.topLevelComments.length, 'comments', 0)
+              .having((s) => s.comments.length, 'comments', 0)
               .having((s) => s.isPosting, 'isPosting', false)
               .having((s) => s.error, 'error', CommentsError.postCommentFailed),
         ],
