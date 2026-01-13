@@ -2,13 +2,23 @@
 // ABOUTME: Tests both grid and feed modes for explore, search, hashtag, and profile routes
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
+import 'package:openvine/screens/settings_screen.dart';
 
 void main() {
   group('App Router - All Routes', () {
-    testWidgets('/home/:index route works', (tester) async {
+    testWidgets('${HomeScreenRouter.pathWithIndex} route works', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -22,64 +32,24 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/home/0');
-      await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/0');
-
-      router.go('/home/5');
-      await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/5');
-    });
-
-    testWidgets('/explore route works (grid mode)', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go('/explore');
-      await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/explore');
-    });
-
-    testWidgets('/explore/:index route works (feed mode)', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go('/explore/0');
+      router.go(HomeScreenRouter.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore/0',
+        HomeScreenRouter.pathForIndex(0),
       );
 
-      router.go('/explore/3');
+      router.go(HomeScreenRouter.pathForIndex(5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore/3',
+        HomeScreenRouter.pathForIndex(5),
       );
     });
 
-    testWidgets('/notifications/:index route works', (tester) async {
+    testWidgets('${ExploreScreen.path} route works (grid mode)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -93,22 +63,17 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/notifications/0');
+      router.go(ExploreScreen.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/notifications/0',
-      );
-
-      router.go('/notifications/2');
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        '/notifications/2',
+        ExploreScreen.path,
       );
     });
 
-    testWidgets('/profile/:npub/:index route works', (tester) async {
+    testWidgets('${ExploreScreen.pathWithIndex} route works (feed mode)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -122,22 +87,24 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/0');
+      router.go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/profile/me/0',
+        ExploreScreen.pathForIndex(0),
       );
 
-      router.go('/profile/npub1abc/5');
+      router.go(ExploreScreen.pathForIndex(3));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/profile/npub1abc/5',
+        ExploreScreen.pathForIndex(3),
       );
     });
 
-    testWidgets('/search route works (empty search)', (tester) async {
+    testWidgets('${NotificationsScreen.pathWithIndex} route works', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -151,34 +118,24 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/search');
-      await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/search');
-    });
-
-    testWidgets('/search/:term route works (grid mode)', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go('/search/bitcoin');
+      router.go(NotificationsScreen.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin',
+        NotificationsScreen.pathForIndex(0),
+      );
+
+      router.go(NotificationsScreen.pathForIndex(2));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        NotificationsScreen.pathForIndex(2),
       );
     });
 
-    testWidgets('/search/:term/:index route works (feed mode)', (tester) async {
+    testWidgets('${ProfileScreenRouter.pathWithIndex} route works', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -192,22 +149,24 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/search/bitcoin/0');
+      router.go(ProfileScreenRouter.pathForIndex('me', 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin/0',
+        ProfileScreenRouter.pathForIndex('me', 0),
       );
 
-      router.go('/search/nostr/3');
+      router.go(ProfileScreenRouter.pathForIndex('npub1abc', 5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/nostr/3',
+        ProfileScreenRouter.pathForIndex('npub1abc', 5),
       );
     });
 
-    testWidgets('/hashtag/:tag route works (grid mode)', (tester) async {
+    testWidgets('${SearchScreenPure.path} route works (empty search)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -221,15 +180,17 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/hashtag/bitcoin');
+      router.go(SearchScreenPure.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin',
+        SearchScreenPure.path,
       );
     });
 
-    testWidgets('/hashtag/:tag/:index route works (feed mode)', (tester) async {
+    testWidgets('${SearchScreenPure.pathWithTerm} route works (grid mode)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -243,22 +204,49 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/hashtag/bitcoin/0');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin/0',
-      );
-
-      router.go('/hashtag/nostr/5');
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/nostr/5',
+        SearchScreenPure.pathForTerm(term: 'bitcoin'),
       );
     });
 
-    testWidgets('/camera route works', (tester) async {
+    testWidgets(
+      '${SearchScreenPure.pathWithTermAndIndex} route works (feed mode)',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+
+        final router = container.read(goRouterProvider);
+        router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0));
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0),
+        );
+
+        router.go(SearchScreenPure.pathForTerm(term: 'nostr', index: 3));
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          SearchScreenPure.pathForTerm(term: 'nostr', index: 3),
+        );
+      },
+    );
+
+    testWidgets('${HashtagScreenRouter.path} route works (grid mode)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -272,12 +260,49 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/camera');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin'));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/camera');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HashtagScreenRouter.pathForTag('bitcoin'),
+      );
     });
 
-    testWidgets('/settings route works', (tester) async {
+    testWidgets(
+      '${HashtagScreenRouter.pathWithIndex} route works (feed mode)',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+
+        final router = container.read(goRouterProvider);
+        router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          HashtagScreenRouter.pathForTag('bitcoin', index: 0),
+        );
+
+        router.go(HashtagScreenRouter.pathForTag('nostr', index: 5));
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          HashtagScreenRouter.pathForTag('nostr', index: 5),
+        );
+      },
+    );
+
+    testWidgets('${UniversalCameraScreenPure.path} route works', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -291,9 +316,34 @@ void main() {
       );
 
       final router = container.read(goRouterProvider);
-      router.go('/settings');
+      router.go(UniversalCameraScreenPure.path);
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/settings');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        UniversalCameraScreenPure.path,
+      );
+    });
+
+    testWidgets('${SettingsScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(SettingsScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        SettingsScreen.path,
+      );
     });
     // TOOD(any): Fix and re-enable these tests
   }, skip: true);

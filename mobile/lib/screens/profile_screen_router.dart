@@ -43,6 +43,9 @@ class ProfileScreenRouter extends ConsumerStatefulWidget {
   /// Build path for grid mode or specific npub.
   static String pathForNpub(String npub) => '$path/$npub';
 
+  /// Build path for feed mode with specific npub and index.
+  static String pathForIndex(String npub, int index) => '$path/$npub/$index';
+
   const ProfileScreenRouter({super.key});
 
   @override

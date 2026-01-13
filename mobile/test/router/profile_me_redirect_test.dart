@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 void main() {
   group('Profile /me/ Redirect', () {
@@ -42,14 +44,14 @@ void main() {
 
       // ACT: Navigate to /profile/me/0
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/0');
+      router.go(ProfileScreenRouter.pathForIndex('me', 0));
       await tester.pumpAndSettle();
 
       // ASSERT: The route should have redirected to the actual user's npub
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
         location,
-        '/profile/$testUserNpub/0',
+        ProfileScreenRouter.pathForIndex(testUserNpub, 0),
         reason: 'Should redirect /profile/me/0 to actual user npub',
       );
     });
@@ -80,14 +82,14 @@ void main() {
 
       // ACT: Navigate to /profile/me/1 (grid view)
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/1');
+      router.go(ProfileScreenRouter.pathForIndex('me', 1));
       await tester.pumpAndSettle();
 
       // ASSERT: Should redirect to grid view with actual npub
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
         location,
-        '/profile/$testUserNpub/1',
+        ProfileScreenRouter.pathForIndex(testUserNpub, 1),
         reason: 'Should redirect /profile/me/1 to actual user npub',
       );
     });
@@ -118,14 +120,14 @@ void main() {
 
       // ACT: Navigate to another user's profile (not "me")
       final router = container.read(goRouterProvider);
-      router.go('/profile/$otherUserNpub/0');
+      router.go(ProfileScreenRouter.pathForIndex(otherUserNpub, 0));
       await tester.pumpAndSettle();
 
       // ASSERT: Should NOT redirect - should stay on other user's profile
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
         location,
-        '/profile/$otherUserNpub/0',
+        ProfileScreenRouter.pathForIndex(otherUserNpub, 0),
         reason: 'Should NOT redirect when viewing other user profiles',
       );
     });
@@ -150,13 +152,13 @@ void main() {
 
       // ACT: Try to navigate to /profile/me/0 when not logged in
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/0');
+      router.go(ProfileScreenRouter.pathForIndex('me', 0));
       await tester.pumpAndSettle();
 
       // ASSERT: Should redirect to home (or login screen)
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
-        location.contains('/home'),
+        location.contains(HomeScreenRouter.path),
         isTrue,
         reason: 'Should redirect to home when not authenticated',
       );

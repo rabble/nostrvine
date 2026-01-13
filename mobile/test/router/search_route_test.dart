@@ -2,8 +2,8 @@
 // ABOUTME: Verifies /search and /search/:index routes work with GoRouter
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -11,9 +11,9 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 void main() {
   group('parseRoute() - Search with terms', () {
     test(
-      'parseRoute("/search/nostr") returns RouteContext with searchTerm',
+      'parseRoute("${SearchScreenPure.pathForTerm(term: "nostr")}") returns RouteContext with searchTerm',
       () {
-        final result = parseRoute('/search/nostr');
+        final result = parseRoute(SearchScreenPure.pathForTerm(term: 'nostr'));
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, 'nostr');
@@ -39,7 +39,7 @@ void main() {
       );
 
       // Navigate to /search
-      container.read(goRouterProvider).go('/search');
+      container.read(goRouterProvider).go(SearchScreenPure.path);
       await tester.pumpAndSettle();
 
       // Verify SearchScreenPure is rendered
@@ -67,7 +67,9 @@ void main() {
       );
 
       // Navigate to /search/0 (feed mode)
-      container.read(goRouterProvider).go('/search/0');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(index: 0));
       await tester.pumpAndSettle();
 
       // Verify SearchScreenPure is rendered
@@ -94,7 +96,7 @@ void main() {
       );
 
       // Navigate to /search
-      container.read(goRouterProvider).go('/search');
+      container.read(goRouterProvider).go(SearchScreenPure.path);
       await tester.pumpAndSettle();
 
       // Verify bottom nav is present (search is in shell)

@@ -315,7 +315,7 @@ String buildRoute(RouteContext context) {
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return '${ProfileScreenRouter.pathForNpub(npub)}/$index';
+        return ProfileScreenRouter.pathForIndex(npub, index);
       }
       return ProfileScreenRouter.pathForNpub(npub);
 

@@ -2,9 +2,15 @@
 // ABOUTME: Verifies header shows correct title and camera button for each route
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
@@ -18,7 +24,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go('/home/0');
+    c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
     await tester.pump();
     expect(find.text('Divine'), findsOneWidget);
     expect(find.byIcon(Icons.photo_camera_outlined), findsOneWidget);
@@ -29,7 +35,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go('/explore/0');
+    c.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
     await tester.pump();
     await tester.pump(); // Extra pump for provider updates
     // Find specifically in AppBar (not bottom nav)
@@ -44,7 +50,9 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go('/hashtag/rust%20lang/0');
+    c
+        .read(goRouterProvider)
+        .go(HashtagScreenRouter.pathForTag('rust%20lang', index: 0));
     await tester.pump();
     expect(find.text('#rust lang'), findsOneWidget);
     // TODO(any): Fix and re-enable these tests
@@ -54,7 +62,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/0');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pump();
     // Find specifically in AppBar (not bottom nav)
     expect(
@@ -69,7 +77,9 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/hashtag/comedy/0');
+      c
+          .read(goRouterProvider)
+          .go(HashtagScreenRouter.pathForTag('comedy', index: 0));
       await tester.pumpAndSettle();
 
       // Should find back button in AppBar
@@ -84,7 +94,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/search');
+      c.read(goRouterProvider).go(SearchScreenPure.path);
       await tester.pumpAndSettle();
 
       // Should find back button in AppBar
@@ -99,7 +109,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/home/0');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Should NOT find back button in AppBar
@@ -114,7 +124,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/explore/0');
+      c.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Should NOT find back button in AppBar
@@ -129,7 +139,9 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/profile/npubXYZ/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
       await tester.pumpAndSettle();
 
       // Should NOT find back button in AppBar
@@ -144,7 +156,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go('/notifications/0');
+      c.read(goRouterProvider).go(NotificationsScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Should NOT find back button in AppBar

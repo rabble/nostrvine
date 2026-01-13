@@ -38,7 +38,10 @@ class SearchScreenPure extends ConsumerStatefulWidget {
 
   /// Build path for grid mode or specific index.
   static String pathForTerm({String? term, int? index}) {
-    if (term == null) return path;
+    if (term == null) {
+      if (index == null) return path;
+      return '$path/$index';
+    }
     final encodedTerm = Uri.encodeComponent(term);
     if (index == null) return '$path/$encodedTerm';
     return '$path/$encodedTerm/$index';

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 import 'search_navigation_integration_test.mocks.dart';
 
@@ -57,7 +57,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Step 1: Navigate to /search
-      container.read(goRouterProvider).go('/search');
+      container.read(goRouterProvider).go(SearchScreenPure.path);
       await tester.pumpAndSettle();
 
       // Assert: Should be on search screen in grid mode
@@ -76,7 +76,7 @@ void main() {
       final router = container.read(goRouterProvider);
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        contains('/search/bitcoin'),
+        contains(SearchScreenPure.pathForTerm(term: 'bitcoin')),
       );
 
       // Assert: Search should be triggered
@@ -88,13 +88,15 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       // Step 3: Simulate user tapping video (by navigating to feed mode)
-      container.read(goRouterProvider).go('/search/bitcoin/1');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 1));
       await tester.pumpAndSettle();
 
       // Assert: URL should update to /search/bitcoin/1
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        equals('/search/bitcoin/1'),
+        equals(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 1)),
       );
 
       // Assert: PageContext should reflect feed mode
@@ -126,7 +128,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      container.read(goRouterProvider).go('/search/bitcoin');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -163,7 +167,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      container.read(goRouterProvider).go('/search/bitcoin/2');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 2));
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       final pageContext = container.read(pageContextProvider);
@@ -194,14 +200,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        container.read(goRouterProvider).go('/search/bitcoin/1');
+        container
+            .read(goRouterProvider)
+            .go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 1));
         await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
         final pageContext1 = container.read(pageContextProvider);
         expect(pageContext1.value?.videoIndex, 1);
 
         final router = container.read(goRouterProvider);
-        router.go('/search/bitcoin');
+        router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
         await tester.pumpAndSettle();
 
         final pageContext2 = container.read(pageContextProvider);
@@ -234,7 +242,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      container.read(goRouterProvider).go('/search/bitcoin');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       verify(
@@ -255,7 +265,7 @@ void main() {
       final router = container.read(goRouterProvider);
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        contains('/search/nostr'),
+        contains(SearchScreenPure.pathForTerm(term: 'nostr')),
       );
 
       verify(
