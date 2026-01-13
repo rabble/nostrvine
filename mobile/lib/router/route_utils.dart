@@ -25,7 +25,6 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 
@@ -53,12 +52,16 @@ enum RouteType {
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
+  loginOptions, // Login options screen (choose login method)
+  authNative, // Native email/password auth screen
   following, // Following list screen
   followers, // Followers list screen
   videoFeed, // Fullscreen video feed (pushed from grids)
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
+  discoverLists, // Discover public lists screen
   sound, // Sound detail screen for audio reuse
+  secureAccount,
 }
 
 /// Structured representation of a route
@@ -249,6 +252,11 @@ RouteContext parseRoute(String path) {
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
 
+    case 'login-options':
+      return const RouteContext(type: RouteType.loginOptions);
+
+    case 'auth-native':
+      return const RouteContext(type: RouteType.authNative);
     case 'following':
       final followingPubkey = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
@@ -266,6 +274,9 @@ RouteContext parseRoute(String path) {
       final listId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.curatedList, listId: listId);
 
+    case 'discover-lists':
+      return const RouteContext(type: RouteType.discoverLists);
+
     case 'sound':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -279,6 +290,9 @@ RouteContext parseRoute(String path) {
       }
       final profileViewNpub = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
+
+    case 'secure-account':
+      return const RouteContext(type: RouteType.secureAccount);
 
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
@@ -400,6 +414,11 @@ String buildRoute(RouteContext context) {
     case RouteType.developerOptions:
       return DeveloperOptionsScreen.path;
 
+    case RouteType.loginOptions:
+      return '/login-options';
+
+    case RouteType.authNative:
+      return '/auth-native';
     case RouteType.following:
       return FollowingRoutes.pathForPubkey(context.npub ?? '');
 
@@ -415,7 +434,12 @@ String buildRoute(RouteContext context) {
     case RouteType.curatedList:
       return CuratedListFeedScreen.pathForId(context.listId ?? '');
 
+    case RouteType.discoverLists:
+      return '/discover-lists';
+
     case RouteType.sound:
-      return SoundDetailScreen.pathForId(context.soundId ?? '');
+      return '/sound/${context.soundId ?? ''}';
+    case RouteType.secureAccount:
+      return '/secure-account';
   }
 }

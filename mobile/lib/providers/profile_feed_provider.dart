@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -84,10 +83,11 @@ class ProfileFeed extends _$ProfileFeed {
       );
     }
 
-    // Get videos for this author
-    final authorVideos = List<VideoEvent>.from(
-      videoEventService.authorVideos(userId),
-    );
+    // Get videos for this author, filtering out reposts (originals only)
+    final authorVideos = videoEventService
+        .authorVideos(userId)
+        .where((v) => !v.isRepost)
+        .toList();
 
     // Register for video update callbacks to auto-refresh when this user's video is updated
     final unregisterUpdate = videoEventService.addVideoUpdateListener((
@@ -132,9 +132,11 @@ class ProfileFeed extends _$ProfileFeed {
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
     final videoEventService = ref.read(videoEventServiceProvider);
-    final updatedVideos = List<VideoEvent>.from(
-      videoEventService.authorVideos(userId),
-    );
+    // Filter out reposts (originals only)
+    final updatedVideos = videoEventService
+        .authorVideos(userId)
+        .where((v) => !v.isRepost)
+        .toList();
 
     state = AsyncData(
       VideoFeedState(
@@ -218,10 +220,11 @@ class ProfileFeed extends _$ProfileFeed {
         category: LogCategory.video,
       );
 
-      // Get updated videos
-      final updatedVideos = List<VideoEvent>.from(
-        videoEventService.authorVideos(userId),
-      );
+      // Get updated videos, filtering out reposts (originals only)
+      final updatedVideos = videoEventService
+          .authorVideos(userId)
+          .where((v) => !v.isRepost)
+          .toList();
 
       // Update state with new videos
       if (!ref.mounted) return;

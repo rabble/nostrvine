@@ -18,6 +18,10 @@ import 'package:openvine/widgets/user_name.dart';
 class DiscoverListsScreen extends ConsumerStatefulWidget {
   const DiscoverListsScreen({super.key});
 
+  static const String path = '/discover-lists';
+
+  static const String routeName = 'discover-lists';
+
   @override
   ConsumerState<DiscoverListsScreen> createState() =>
       _DiscoverListsScreenState();

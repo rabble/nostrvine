@@ -63,6 +63,9 @@ dependencies:
   connectivity_plus: ^7.0.0
   device_info_plus: ^10.1.2
   url_launcher: ^6.3.2
+  # OAuth: Uses ASWebAuthenticationSession on iOS (Apple's recommended auth flow)
+  # https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession
+  flutter_web_auth_2: ^4.1.0
   dio: ^5.8.0
 
   permission_handler: ^12.0.1 # Handle runtime permissions
@@ -108,7 +111,10 @@ dependencies:
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
     path: packages/nostr_key_manager
-  
+
+  keycast_flutter:
+    path: packages/keycast_flutter
+
   # Logging
   logging: ^1.2.0
 
@@ -143,6 +149,7 @@ dependencies:
   pro_video_editor: ^0.4.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
+  sensors_plus: ^7.0.0
 
 dependency_overrides:
   device_info_plus: ^10.1.2

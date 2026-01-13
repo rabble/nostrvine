@@ -122,7 +122,5 @@ class KeycastRpc implements NostrSigner {
   }
 
   @override
-  void close() {
-    _client.close();
-  }
+  void close() {}
 }

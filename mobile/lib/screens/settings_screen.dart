@@ -262,6 +262,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Account and key management actions at the bottom
               if (isAuthenticated) ...[
                 _buildSectionHeader('Account'),
+                // Show register tile for anonymous users
+                // Only shown when headless auth feature is enabled
+                if (authService.isAnonymous)
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.security,
+                    title: 'Secure Your Account',
+                    subtitle:
+                        'Add email & password to recover your account on any device',
+                    onTap: () => context.push('/secure-account'),
+                    iconColor: VineTheme.vineGreen,
+                  ),
                 _buildSettingsTile(
                   context,
                   icon: Icons.logout,
@@ -516,7 +528,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () => context.pop(true),
+            onPressed: () {
+              final authService = ref.read(authServiceProvider);
+              authService.signOut();
+              context.pop(true);
+            },
             child: const Text(
               'Log Out',
               style: TextStyle(color: VineTheme.vineGreen),
@@ -554,10 +570,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         try {
           // Sign out and delete keys (no relay broadcast)
           await authService.signOut(deleteKeys: true);
-
-          // Close loading indicator
-          if (!context.mounted) return;
-          context.pop();
 
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
           // User can import their keys from the welcome screen

@@ -1,24 +1,26 @@
 // ABOUTME: Provider for fetching videos that a user has reposted
-// ABOUTME: Filters profile feed events to show only reposts by the specified user
+// ABOUTME: Gets reposts directly from videoEventService for a specific user
 
 import 'package:openvine/models/video_event.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_reposts_provider.g.dart';
 
 /// Provider that returns only the videos a user has reposted
 ///
-/// Watches the profile feed provider and filters for videos where:
+/// Gets videos directly from videoEventService and filters for:
 /// - isRepost == true
 /// - reposterPubkey == userIdHex
+///
+/// This is independent from profileFeedProvider which only returns originals.
 @riverpod
 Future<List<VideoEvent>> profileReposts(Ref ref, String userIdHex) async {
-  // Watch the full profile feed (which includes reposts since we enabled includeReposts)
-  final profileFeed = await ref.watch(profileFeedProvider(userIdHex).future);
+  final videoEventService = ref.watch(videoEventServiceProvider);
 
-  // Filter for only reposts by this specific user
-  final reposts = profileFeed.videos
+  // Get all videos by this author and filter for reposts only
+  final reposts = videoEventService
+      .authorVideos(userIdHex)
       .where((video) => video.isRepost && video.reposterPubkey == userIdHex)
       .toList();
 

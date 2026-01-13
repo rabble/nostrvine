@@ -1,10 +1,11 @@
 // ABOUTME: Route-aware hashtag feed provider with pagination support
-// ABOUTME: Returns videos filtered by hashtag from route context
+// ABOUTME: Uses Funnelcake REST API for popular sorting, WebSocket for fallback
 
 import 'dart:async';
 
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -24,6 +25,9 @@ part 'hashtag_feed_providers.g.dart';
 class HashtagFeed extends _$HashtagFeed {
   static int _buildCounter = 0;
   Timer? _rebuildDebounceTimer;
+
+  /// Cached popular videos from REST API for ordering
+  List<VideoEvent>? _popularVideos;
 
   @override
   Future<VideoFeedState> build() async {
@@ -56,7 +60,38 @@ class HashtagFeed extends _$HashtagFeed {
       category: LogCategory.video,
     );
 
-    // Get video event service and subscribe to hashtag
+    // Try to get popular video ordering from Funnelcake REST API
+    // This provides engagement-based sorting when available
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    if (analyticsService.isAvailable) {
+      try {
+        _popularVideos = await analyticsService.getVideosByHashtag(
+          hashtag: tag,
+          limit: 100,
+        );
+        Log.info(
+          'HashtagFeed: Got ${_popularVideos?.length ?? 0} popular videos from REST API',
+          name: 'HashtagFeedProvider',
+          category: LogCategory.video,
+        );
+      } catch (e) {
+        Log.warning(
+          'HashtagFeed: REST API failed, falling back to WebSocket: $e',
+          name: 'HashtagFeedProvider',
+          category: LogCategory.video,
+        );
+        _popularVideos = null;
+      }
+    } else {
+      Log.debug(
+        'HashtagFeed: No Funnelcake API available, using WebSocket only',
+        name: 'HashtagFeedProvider',
+        category: LogCategory.video,
+      );
+    }
+
+    // Get video event service and subscribe to hashtag via WebSocket
+    // This fetches actual video events (REST API only provides IDs)
     final videoEventService = ref.watch(videoEventServiceProvider);
     await videoEventService.subscribeToHashtagVideos([tag], limit: 100);
 
@@ -74,9 +109,9 @@ class HashtagFeed extends _$HashtagFeed {
         _rebuildDebounceTimer = Timer(const Duration(milliseconds: 500), () {
           if (ref.mounted) {
             // Update state directly instead of invalidating to prevent rebuild loop
-            final videos = List<VideoEvent>.from(
-              videoEventService.hashtagVideos(tag),
-            )..sort(VideoEvent.compareByLoopsThenTime);
+            final videos = _sortVideosByPopularity(
+              List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+            );
 
             state = AsyncData(
               VideoFeedState(
@@ -148,12 +183,15 @@ class HashtagFeed extends _$HashtagFeed {
       );
     }
 
-    // Get videos for this hashtag and sort by popularity (same order as grid)
-    final videos = List<VideoEvent>.from(videoEventService.hashtagVideos(tag))
-      ..sort(VideoEvent.compareByLoopsThenTime);
+    // Get videos for this hashtag and sort by popularity
+    // Uses REST API order if available, otherwise falls back to local sorting
+    final videos = _sortVideosByPopularity(
+      List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+    );
 
     Log.info(
-      'HashtagFeed: Loaded ${videos.length} videos for #$tag',
+      'HashtagFeed: Loaded ${videos.length} videos for #$tag '
+      '(REST order: ${_popularVideos != null})',
       name: 'HashtagFeedProvider',
       category: LogCategory.video,
     );
@@ -165,6 +203,51 @@ class HashtagFeed extends _$HashtagFeed {
       error: null,
       lastUpdated: DateTime.now(),
     );
+  }
+
+  /// Sort videos by popularity, using REST API order if available
+  /// Falls back to local loop count + timestamp sorting
+  List<VideoEvent> _sortVideosByPopularity(List<VideoEvent> videos) {
+    if (_popularVideos == null || _popularVideos!.isEmpty) {
+      // No REST API data - use local sorting by loops then time
+      videos.sort(VideoEvent.compareByLoopsThenTime);
+      return videos;
+    }
+
+    // Create a map of video ID to position in REST API results
+    final orderMap = <String, int>{};
+    for (var i = 0; i < _popularVideos!.length; i++) {
+      final v = _popularVideos![i];
+      if (v.id.isNotEmpty) orderMap[v.id] = i;
+      if (v.vineId != null && v.vineId!.isNotEmpty) orderMap[v.vineId!] = i;
+    }
+
+    // Separate videos into those in REST results and those only from WebSocket
+    final inRestApi = <VideoEvent>[];
+    final notInRestApi = <VideoEvent>[];
+
+    for (final video in videos) {
+      // Check both vineId and id for matching
+      if (orderMap.containsKey(video.vineId) ||
+          orderMap.containsKey(video.id)) {
+        inRestApi.add(video);
+      } else {
+        notInRestApi.add(video);
+      }
+    }
+
+    // Sort videos in REST API by their API order
+    inRestApi.sort((a, b) {
+      final aOrder = orderMap[a.vineId] ?? orderMap[a.id] ?? 999999;
+      final bOrder = orderMap[b.vineId] ?? orderMap[b.id] ?? 999999;
+      return aOrder.compareTo(bOrder);
+    });
+
+    // Sort videos not in REST API by local popularity
+    notInRestApi.sort(VideoEvent.compareByLoopsThenTime);
+
+    // Return REST API videos first (in order), then others
+    return [...inRestApi, ...notInRestApi];
   }
 
   /// Load more historical videos with this hashtag

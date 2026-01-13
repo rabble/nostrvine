@@ -19,8 +19,8 @@ sealed class VideoFeedSource {
   const VideoFeedSource();
 }
 
-/// Profile feed source - videos from a specific user
-/// Watches profileFeedProvider for reactive updates when loadMore is called
+/// Profile feed source - original videos only (excludes reposts)
+/// Watches profileFeedProvider and filters to only non-repost videos
 class ProfileFeedSource extends VideoFeedSource {
   const ProfileFeedSource(this.userId);
   final String userId;
