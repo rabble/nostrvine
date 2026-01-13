@@ -317,6 +317,7 @@ class _ReplyIndicator extends ConsumerWidget {
         NostrKeyUtils.encodePubKey(parentAuthorPubkey);
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           height: 20,
@@ -339,8 +340,7 @@ class _ReplyIndicator extends ConsumerWidget {
               color: VineTheme.containerLow,
               borderRadius: BorderRadius.circular(8),
             ),
-            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-            alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Text(
               '$displayName',
               style: VineTheme.bodyFont(
