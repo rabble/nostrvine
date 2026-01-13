@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -64,16 +65,38 @@ class _OthersFollowingView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.whiteText,
-        title: Text(
-          appBarTitle,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
+        leading: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
         ),
+        title: Text(appBarTitle, style: VineTheme.titleFont()),
       ),
       body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
         builder: (context, state) {
