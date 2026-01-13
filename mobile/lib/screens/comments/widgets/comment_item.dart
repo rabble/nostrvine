@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -21,55 +22,94 @@ import 'package:openvine/widgets/user_name.dart';
 /// Replies are distinguished by a 16px left padding and "Re: npub..." indicator.
 /// Shows author avatar, name, timestamp, and content.
 /// Includes a reply button that focuses the main bottom input for replies.
+/// Long press opens options menu (delete) if comment is from current user.
 ///
 /// Uses [Comment] from the comments_repository package,
 /// following clean architecture separation of UI and repository layers.
-class CommentItem extends StatelessWidget {
+class CommentItem extends ConsumerStatefulWidget {
   const CommentItem({required this.comment, super.key});
 
   /// The comment to display.
   final Comment comment;
 
   @override
+  ConsumerState<CommentItem> createState() => _CommentItemState();
+}
+
+class _CommentItemState extends ConsumerState<CommentItem> {
+  bool _isHeld = false;
+
+  @override
   Widget build(BuildContext context) {
-    // Check if this is a reply (has replyToEventId)
+    // Check if this comment is from the current user
+    final nostrService = ref.watch(nostrServiceProvider);
+    final currentUserPubkey = nostrService.publicKey;
+    final isCurrentUser =
+        currentUserPubkey.isNotEmpty &&
+        currentUserPubkey == widget.comment.authorPubkey;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: EdgeInsets.only(left: 16, right: 16),
-          child: _CommentHeader(
-            authorPubkey: comment.authorPubkey,
-            relativeTime: comment.relativeTime,
-          ),
+    return GestureDetector(
+      onLongPressStart: isCurrentUser
+          ? (_) {
+              setState(() {
+                _isHeld = true;
+              });
+            }
+          : null,
+      onLongPressEnd: isCurrentUser
+          ? (_) async {
+              setState(() {
+                _isHeld = false;
+              });
+              final result = await CommentOptionsModal.show(context);
+              if (result == true && mounted) {
+                context.read<CommentsBloc>().add(
+                  CommentDeleteRequested(widget.comment.id),
+                );
+              }
+            }
+          : null,
+      onLongPressCancel: isCurrentUser
+          ? () {
+              setState(() {
+                _isHeld = false;
+              });
+            }
+          : null,
+      child: Container(
+        color: _isHeld ? VineTheme.containerLow : Colors.transparent,
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 20,
         ),
-        const SizedBox(height: 12),
-
-        if (comment.replyToAuthorPubkey != null)
-          Padding(
-            padding: EdgeInsets.only(left: 16, right: 16),
-            child: _ReplyIndicator(
-              parentAuthorPubkey: comment.replyToAuthorPubkey!,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CommentHeader(
+              authorPubkey: widget.comment.authorPubkey,
+              relativeTime: widget.comment.relativeTime,
             ),
-          ),
-        Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            top: comment.replyToAuthorPubkey != null ? 4 : 0,
-            right: 16,
-          ),
-          child: _CommentContent(
-            commentId: comment.id,
-            content: comment.content,
-          ),
+            const SizedBox(height: 12),
+            if (widget.comment.replyToAuthorPubkey != null)
+              _ReplyIndicator(
+                parentAuthorPubkey: widget.comment.replyToAuthorPubkey!,
+              ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: widget.comment.replyToAuthorPubkey != null ? 4 : 0,
+              ),
+              child: _CommentContent(
+                commentId: widget.comment.id,
+                content: widget.comment.content,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _ActionsRow(commentId: widget.comment.id),
+          ],
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: EdgeInsets.only(left: 16, right: 16),
-          child: _ActionsRow(commentId: comment.id),
-        ),
-      ],
+      ),
     );
   }
 }
