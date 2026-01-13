@@ -3079,15 +3079,12 @@ class _ReportConfirmationDialog extends StatelessWidget {
 }
 
 /// Dialog for viewing raw Nostr event JSON
-class _ViewSourceDialog extends ConsumerWidget {
+class _ViewSourceDialog extends StatelessWidget {
   const _ViewSourceDialog({required this.video});
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Get the raw Nostr event from the video
-    final nostrService = ref.read(nostrServiceProvider);
-
+  Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
       title: Row(
@@ -3146,7 +3143,26 @@ class _ViewSourceDialog extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // Explainer note
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: const Text(
+                'Parsed event data, not raw Nostr source',
+                style: TextStyle(
+                  color: Colors.amber,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // JSON content
             Flexible(
@@ -3157,35 +3173,15 @@ class _ViewSourceDialog extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade700),
                 ),
-                child: FutureBuilder<String>(
-                  future: _getEventJson(nostrService),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return Text(
-                        'Error loading event: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
-                      );
-                    }
-
-                    return SingleChildScrollView(
-                      child: SelectableText(
-                        snapshot.data ?? 'No data',
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    );
-                  },
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    _getEventJson(),
+                    style: const TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -3195,7 +3191,7 @@ class _ViewSourceDialog extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () async {
-            final json = await _getEventJson(nostrService);
+            final json = _getEventJson();
             await Clipboard.setData(ClipboardData(text: json));
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -3213,19 +3209,9 @@ class _ViewSourceDialog extends ConsumerWidget {
     );
   }
 
-  Future<String> _getEventJson(dynamic nostrService) async {
-    try {
-      // Fetch the raw event from Nostr
-      final event = await nostrService.fetchEventById(video.id);
-      if (event == null) {
-        return 'Event not found';
-      }
-
-      // Format as pretty-printed JSON
-      return const JsonEncoder.withIndent('  ').convert(event.toJson());
-    } catch (e) {
-      return 'Error: $e';
-    }
+  String _getEventJson() {
+    // Serialize the video event we already have - no network fetch needed
+    return const JsonEncoder.withIndent('  ').convert(video.toJson());
   }
 }
 

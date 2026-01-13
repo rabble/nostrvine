@@ -1771,14 +1771,17 @@ class MockAnalyticsApiService extends _i1.Mock
   }
 
   @override
+  bool get isAvailable =>
+      (super.noSuchMethod(Invocation.getter(#isAvailable), returnValue: false)
+          as bool);
+
+  @override
   _i6.Future<List<_i9.VideoEvent>> getTrendingVideos({
-    String? timeWindow = '7d',
-    int? limit = 100,
+    int? limit = 50,
     bool? forceRefresh = false,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#getTrendingVideos, [], {
-              #timeWindow: timeWindow,
               #limit: limit,
               #forceRefresh: forceRefresh,
             }),
@@ -1789,14 +1792,86 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i6.Future<List<_i9.VideoEvent>>);
 
   @override
-  _i6.Future<List<_i18.TrendingHashtag>> getTrendingHashtags({
-    String? timeWindow = '24h',
+  _i6.Future<List<_i9.VideoEvent>> getRecentVideos({
     int? limit = 50,
     bool? forceRefresh = false,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#getTrendingHashtags, [], {
-              #timeWindow: timeWindow,
+            Invocation.method(#getRecentVideos, [], {
+              #limit: limit,
+              #forceRefresh: forceRefresh,
+            }),
+            returnValue: _i6.Future<List<_i9.VideoEvent>>.value(
+              <_i9.VideoEvent>[],
+            ),
+          )
+          as _i6.Future<List<_i9.VideoEvent>>);
+
+  @override
+  _i6.Future<List<_i9.VideoEvent>> getVideosByHashtag({
+    required String? hashtag,
+    int? limit = 50,
+    bool? forceRefresh = false,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideosByHashtag, [], {
+              #hashtag: hashtag,
+              #limit: limit,
+              #forceRefresh: forceRefresh,
+            }),
+            returnValue: _i6.Future<List<_i9.VideoEvent>>.value(
+              <_i9.VideoEvent>[],
+            ),
+          )
+          as _i6.Future<List<_i9.VideoEvent>>);
+
+  @override
+  _i6.Future<List<_i9.VideoEvent>> searchVideos({
+    required String? query,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#searchVideos, [], {
+              #query: query,
+              #limit: limit,
+            }),
+            returnValue: _i6.Future<List<_i9.VideoEvent>>.value(
+              <_i9.VideoEvent>[],
+            ),
+          )
+          as _i6.Future<List<_i9.VideoEvent>>);
+
+  @override
+  _i6.Future<_i18.VideoStats?> getVideoStats(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideoStats, [eventId]),
+            returnValue: _i6.Future<_i18.VideoStats?>.value(),
+          )
+          as _i6.Future<_i18.VideoStats?>);
+
+  @override
+  _i6.Future<List<_i9.VideoEvent>> getVideosByAuthor({
+    required String? pubkey,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideosByAuthor, [], {
+              #pubkey: pubkey,
+              #limit: limit,
+            }),
+            returnValue: _i6.Future<List<_i9.VideoEvent>>.value(
+              <_i9.VideoEvent>[],
+            ),
+          )
+          as _i6.Future<List<_i9.VideoEvent>>);
+
+  @override
+  _i6.Future<List<_i18.TrendingHashtag>> fetchTrendingHashtags({
+    int? limit = 20,
+    bool? forceRefresh = false,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchTrendingHashtags, [], {
               #limit: limit,
               #forceRefresh: forceRefresh,
             }),
@@ -1807,44 +1882,22 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i6.Future<List<_i18.TrendingHashtag>>);
 
   @override
-  _i6.Future<List<_i18.TopCreator>> getTopCreators({
-    String? timeWindow = '7d',
-    int? limit = 50,
-    bool? forceRefresh = false,
-  }) =>
+  List<_i18.TrendingHashtag> getTrendingHashtags({int? limit = 25}) =>
       (super.noSuchMethod(
-            Invocation.method(#getTopCreators, [], {
-              #timeWindow: timeWindow,
-              #limit: limit,
-              #forceRefresh: forceRefresh,
-            }),
-            returnValue: _i6.Future<List<_i18.TopCreator>>.value(
-              <_i18.TopCreator>[],
-            ),
+            Invocation.method(#getTrendingHashtags, [], {#limit: limit}),
+            returnValue: <_i18.TrendingHashtag>[],
           )
-          as _i6.Future<List<_i18.TopCreator>>);
-
-  @override
-  _i6.Future<List<_i9.VideoEvent>> getRelatedVideos({
-    required String? videoId,
-    String? algorithm = 'hashtag',
-    int? limit = 20,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#getRelatedVideos, [], {
-              #videoId: videoId,
-              #algorithm: algorithm,
-              #limit: limit,
-            }),
-            returnValue: _i6.Future<List<_i9.VideoEvent>>.value(
-              <_i9.VideoEvent>[],
-            ),
-          )
-          as _i6.Future<List<_i9.VideoEvent>>);
+          as List<_i18.TrendingHashtag>);
 
   @override
   void clearCache() => super.noSuchMethod(
     Invocation.method(#clearCache, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
 }
