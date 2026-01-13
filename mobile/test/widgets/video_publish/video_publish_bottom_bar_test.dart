@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_publish_state.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_publish/video_publish_bottom_bar.dart';
 

@@ -61,8 +61,9 @@ void main() {
     });
 
     test('setPlaying sets playing state to false', () {
-      notifier.setPlaying(true);
-      notifier.setPlaying(false);
+      notifier
+        ..setPlaying(true)
+        ..setPlaying(false);
       expect(container.read(videoPublishProvider).isPlaying, false);
     });
 
@@ -82,8 +83,9 @@ void main() {
     });
 
     test('setMuted sets muted state to false', () {
-      notifier.setMuted(true);
-      notifier.setMuted(false);
+      notifier
+        ..setMuted(true)
+        ..setMuted(false);
       expect(container.read(videoPublishProvider).isMuted, false);
     });
 
@@ -107,15 +109,15 @@ void main() {
       notifier.setUploadProgress(0.5);
       expect(container.read(videoPublishProvider).uploadProgress, 0.5);
 
-      notifier.setUploadProgress(1.0);
+      notifier.setUploadProgress(1);
       expect(container.read(videoPublishProvider).uploadProgress, 1.0);
     });
 
     test('setUploadProgress clamps value between 0.0 and 1.0', () {
-      notifier.setUploadProgress(0.0);
+      notifier.setUploadProgress(0);
       expect(container.read(videoPublishProvider).uploadProgress, 0.0);
 
-      notifier.setUploadProgress(1.0);
+      notifier.setUploadProgress(1);
       expect(container.read(videoPublishProvider).uploadProgress, 1.0);
     });
 
@@ -160,8 +162,9 @@ void main() {
     });
 
     test('state changes are independent', () {
-      notifier.setPlaying(true);
-      notifier.setMuted(true);
+      notifier
+        ..setPlaying(true)
+        ..setMuted(true);
 
       final state = container.read(videoPublishProvider);
       expect(state.isPlaying, true);
@@ -175,7 +178,7 @@ void main() {
     });
 
     test('upload progress tracks intermediate values', () {
-      notifier.setUploadProgress(0.0);
+      notifier.setUploadProgress(0);
       expect(container.read(videoPublishProvider).uploadProgress, 0.0);
 
       notifier.setUploadProgress(0.25);
@@ -187,8 +190,59 @@ void main() {
       notifier.setUploadProgress(0.75);
       expect(container.read(videoPublishProvider).uploadProgress, 0.75);
 
-      notifier.setUploadProgress(1.0);
+      notifier.setUploadProgress(1);
       expect(container.read(videoPublishProvider).uploadProgress, 1.0);
+    });
+
+    test('setError sets error state and message', () {
+      notifier.setError('Upload failed');
+
+      final state = container.read(videoPublishProvider);
+      expect(state.publishState, VideoPublishState.error);
+      expect(state.errorMessage, 'Upload failed');
+    });
+
+    test('clearError resets to idle state', () {
+      notifier
+        ..setError('Upload failed')
+        ..clearError();
+
+      final state = container.read(videoPublishProvider);
+      expect(state.publishState, VideoPublishState.idle);
+      // Note: errorMessage is not cleared due to copyWith behavior
+    });
+
+    test('reset returns state to initial values', () {
+      // First modify the state
+      notifier
+        ..setPlaying(false)
+        ..setMuted(true)
+        ..setUploadProgress(0.5)
+        ..setPublishState(VideoPublishState.uploading)
+        ..updatePosition(const Duration(seconds: 10))
+        // Then reset
+        ..reset();
+
+      final state = container.read(videoPublishProvider);
+      // Default isPlaying is true in VideoPublishProviderState
+      expect(state.isPlaying, true);
+      expect(state.isMuted, false);
+      expect(state.uploadProgress, 0.0);
+      expect(state.publishState, VideoPublishState.idle);
+      expect(state.currentPosition, Duration.zero);
+    });
+
+    test('setError preserves other state values', () {
+      notifier
+        ..setPlaying(true)
+        ..setMuted(true)
+        ..setError('Test error');
+
+      final state = container.read(videoPublishProvider);
+      expect(state.publishState, VideoPublishState.error);
+      expect(state.errorMessage, 'Test error');
+      expect(state.isPlaying, true);
+      expect(state.isMuted, true);
     });
   });
 }

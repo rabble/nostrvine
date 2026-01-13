@@ -15,6 +15,7 @@ class VideoPublishProviderState {
     this.totalDuration = Duration.zero,
     this.publishState = .idle,
     this.uploadProgress = 0,
+    this.errorMessage,
   });
 
   /// The edited video to publish.
@@ -35,7 +36,11 @@ class VideoPublishProviderState {
   /// Current publish state.
   final VideoPublishState publishState;
 
+  /// Upload progress as a value between 0.0 and 1.0.
   final double uploadProgress;
+
+  /// User-friendly error message to display.
+  final String? errorMessage;
 
   /// Creates a copy with updated fields.
   VideoPublishProviderState copyWith({
@@ -46,6 +51,7 @@ class VideoPublishProviderState {
     Duration? totalDuration,
     VideoPublishState? publishState,
     double? uploadProgress,
+    String? errorMessage,
   }) {
     return VideoPublishProviderState(
       clip: clip ?? this.clip,
@@ -55,6 +61,7 @@ class VideoPublishProviderState {
       totalDuration: totalDuration ?? this.totalDuration,
       publishState: publishState ?? this.publishState,
       uploadProgress: uploadProgress ?? this.uploadProgress,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }

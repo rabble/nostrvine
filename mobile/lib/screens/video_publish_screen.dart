@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/widgets/video_publish/status/video_publish_upload_status.dart';
 import 'package:openvine/widgets/video_publish/video_publish_bottom_bar.dart';
 import 'package:openvine/widgets/video_publish/video_publish_top_bar.dart';
 
@@ -34,6 +35,9 @@ class VideoPublishScreen extends ConsumerWidget {
 
             // Bottom controls
             Align(alignment: .bottomCenter, child: VideoPublishBottomBar()),
+
+            // Upload status overlay
+            VideoPublishUploadStatus(),
           ],
         ),
       ),

@@ -1,518 +1,360 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+// ABOUTME: Service for publishing videos to Nostr with upload management
+// ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
+
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/upload_progress_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+/// Result of a publish operation.
+sealed class PublishResult {
+  const PublishResult();
+}
+
+class PublishSuccess extends PublishResult {
+  const PublishSuccess();
+}
+
+class PublishError extends PublishResult {
+  const PublishError(this.userMessage);
+  final String userMessage;
+}
+
+/// Callbacks for VideoPublishService to communicate state changes.
+/// This abstraction makes the service testable without Riverpod dependencies.
+typedef OnStateChanged = void Function(VideoPublishState state);
+typedef OnProgressChanged = void Function(double progress);
 
 class VideoPublishService {
-  VideoPublishService();
+  VideoPublishService({
+    required this.uploadManager,
+    required this.authService,
+    required this.videoEventPublisher,
+    required this.blossomService,
+    required this.draftService,
+    required this.onStateChanged,
+    required this.onProgressChanged,
+    this.isMounted,
+  });
 
-  Ref? ref;
-  BuildContext? context;
+  /// Manages background video uploads.
+  final UploadManager uploadManager;
 
-  String? _backgroundUploadId = '';
+  /// Handles user authentication.
+  final AuthService authService;
 
-  Future<void> publishVideo({
-    required Ref ref,
-    required BuildContext context,
-    required VineDraft draft,
-  }) async {
-    this.ref = ref;
-    this.context = context;
+  /// Publishes video events to Nostr.
+  final VideoEventPublisher videoEventPublisher;
 
-    //  TODO(@hm21): Temporary "commented out" create PR with only new files
-    // final uploadManager = ref.read(uploadManagerProvider);
+  /// Handles Blossom server interactions.
+  final BlossomUploadService blossomService;
 
+  /// Manages video draft storage.
+  final DraftStorageService draftService;
+
+  /// Callback when publish state changes.
+  final OnStateChanged onStateChanged;
+
+  /// Callback when upload progress changes.
+  final OnProgressChanged onProgressChanged;
+
+  /// Optional function to check if the caller is still mounted.
+  /// Used to stop polling when the caller is disposed.
+  final bool Function()? isMounted;
+
+  bool get _shouldContinue => isMounted?.call() ?? true;
+
+  /// Tracks the current background upload ID.
+  String? _backgroundUploadId;
+
+  /// Publishes a video draft.
+  /// Returns [PublishSuccess] on success, [PublishError] on failure.
+  Future<PublishResult> publishVideo({required VineDraft draft}) async {
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
-      await _handleActiveUpload(ref: ref, context: context, draft: draft);
+      final error = await _handleActiveUpload();
+      if (error != null) return error;
     }
 
-    // Original publishing logic continues here...
-    _setPublishState(.preparing);
-
     try {
-      // Update draft status to "publishing"
-      /* TODO(@hm21): Temporary "commented out" create PR with only new files  
-     final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
-      final videoPath = await draft.clips.first.video.safeFilePath();
+      // TODO(@hm21): Temporary "commented out" create PR with only new files
+      /* final videoPath = await draft.clips.first.video.safeFilePath();
+      Log.info('📝 Publishing video: $videoPath', category: .video); */
 
-      Log.info(
-        '📝 VideoPublishService: Publishing video: ${videoPath}',
-        category: LogCategory.video,
-      );
-
-      // Verify user is fully authenticated (not just has keys)
-      final authService = ref.read(authServiceProvider);
+      // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
-        _setPublishState(.error);
-        throw Exception(
-          'Not authenticated (state: ${authService.authState.name}) - cannot publish video',
-        );
+        onStateChanged(.error);
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        return const PublishError('Please sign in to publish videos.');
       }
       final pubkey = authService.currentPublicKeyHex!;
 
-      // Get video event publisher
-      final videoEventPublisher = ref.read(videoEventPublisherProvider);
-
       // Use existing upload if available, otherwise start new upload
-      PendingUpload pendingUpload;
-      if (_backgroundUploadId != null) {
-        final existingUpload = uploadManager.getUpload(_backgroundUploadId!);
-        if (existingUpload != null &&
-            existingUpload.status == UploadStatus.readyToPublish) {
-          pendingUpload = existingUpload;
-          Log.info(
-            '📝 Using existing background upload: ${pendingUpload.id}',
-            category: LogCategory.video,
-          );
-        } else {
-          // Background upload not ready, start new upload
-          pendingUpload = await _startNewUpload(uploadManager, pubkey, draft);
-        }
-      } else {
-        // No background upload, start new upload
-        pendingUpload = await _startNewUpload(uploadManager, pubkey, draft);
+      final pendingUpload = await _getOrCreateUpload(pubkey, draft);
+      if (pendingUpload == null) {
+        onStateChanged(.error);
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        return const PublishError('Failed to upload video. Please try again.');
+      }
+
+      // Check if upload failed
+      if (pendingUpload.status == .failed) {
+        return await _handleUploadError(
+          Exception(pendingUpload.errorMessage ?? 'Upload failed'),
+          StackTrace.current,
+          draft,
+        );
       }
 
       // Publish Nostr event
-      Log.info('📝 Publishing Nostr event...', category: LogCategory.video);
-
-      _setPublishState(.publishToNostr);
+      Log.info('📝 Publishing Nostr event...', category: .video);
+      onStateChanged(.publishToNostr);
 
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
         description: draft.description,
         hashtags: draft.hashtags,
-        expirationTimestamp: draft.expireTime != null
+        // TODO(@hm21): Temporary "commented out" create PR with only new files
+        /*  expirationTimestamp: draft.expireTime != null
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
                   draft.expireTime!.inSeconds
             : null,
-        allowAudioReuse: draft.allowAudioReuse,
+        allowAudioReuse: draft.allowAudioReuse, */
       );
 
       if (!published) {
-        throw Exception('Failed to publish Nostr event');
+        return await _handleUploadError(
+          Exception('Failed to publish Nostr event'),
+          StackTrace.current,
+          draft,
+        );
       }
-
-      Log.info(
-        '📝 Video publishing complete, deleting draft and returning to main screen',
-        category: LogCategory.video,
-      );
 
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
+      onStateChanged(.completed);
 
-      // Clean up temporary provider data
-      ref.read(videoRecorderProvider.notifier).reset();
-      ref.read(videoEditorProvider.notifier).reset();
-      ref.read(clipManagerProvider.notifier).clearAll();
-      ref.read(selectedSoundProvider.notifier).clear();
-
-      Log.info(
-        '📝 Published successfully, returned to main screen',
-        category: LogCategory.video,
-      ); */
+      Log.info('📝 Published successfully', category: .video);
+      return const PublishSuccess();
     } catch (e, stackTrace) {
-      _setPublishState(.error);
-      await _handleUploadError(e, stackTrace, draft);
+      return await _handleUploadError(e, stackTrace, draft);
     }
   }
 
-  void _setPublishState(VideoPublishState state) {
-    ref?.read(videoPublishProvider.notifier).setPublishState(state);
-  }
-
-  Future<void> _handleActiveUpload({
-    required Ref ref,
-    required BuildContext context,
-    required VineDraft draft,
-  }) async {
-    final uploadManager = ref.read(uploadManagerProvider);
-    final upload = uploadManager.getUpload(_backgroundUploadId!);
-
-    if (upload != null) {
-      // Handle different upload states
-      if (upload.status == .uploading || upload.status == .processing) {
-        // Show blocking progress dialog and wait for upload to complete
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => UploadProgressDialog(
-            uploadId: _backgroundUploadId!,
-            uploadManager: uploadManager,
-          ),
-        );
-
-        // After dialog closes, check if upload succeeded
-        final completedUpload = uploadManager.getUpload(_backgroundUploadId!);
-        if (completedUpload == null || completedUpload.status == .failed) {
-          // Upload failed during progress dialog
-          await _showUploadErrorDialog();
-          return;
-        }
-      } else if (upload.status == UploadStatus.failed) {
-        // Show error dialog with retry
-        final shouldRetry = await _showUploadErrorDialog();
-        if (shouldRetry && ref.mounted) {
-          await _retryUpload();
-          // Recursively call _publishVideo after retry to check status again
-          return publishVideo(draft: draft, ref: ref, context: context);
-        } else {
-          return; // User cancelled
-        }
-      }
-      // If status is readyToPublish, proceed with Nostr event
-    }
-  }
-
-  /// Start a new upload and poll for progress
-  /* TODO(@hm21): Temporary "commented out" create PR with only new files
-  Future<PendingUpload> _startNewUpload(
-    UploadManager uploadManager,
+  /// Gets existing upload from background ID or creates a new one.
+  /// Returns null if upload creation fails.
+  Future<PendingUpload?> _getOrCreateUpload(
     String pubkey,
     VineDraft draft,
   ) async {
+    if (_backgroundUploadId != null) {
+      final existingUpload = uploadManager.getUpload(_backgroundUploadId!);
+      if (existingUpload != null && existingUpload.status == .readyToPublish) {
+        Log.info(
+          '📝 Using existing upload: ${existingUpload.id}',
+          category: .video,
+        );
+        return existingUpload;
+      }
+    }
+
+    return _startNewUpload(pubkey, draft);
+  }
+
+  /// Handles an active background upload.
+  /// Returns [PublishError] if there was an error, null to continue.
+  Future<PublishError?> _handleActiveUpload() async {
+    final upload = uploadManager.getUpload(_backgroundUploadId!);
+    if (upload == null) return null;
+
+    // If already ready, continue
+    if (upload.status == .readyToPublish) return null;
+
+    // If failed, return error
+    if (upload.status == .failed) {
+      /// TODO(l10n): Replace with context.l10n when localization is added.
+      return PublishError(
+        'Upload failed: ${upload.errorMessage ?? "Unknown error"}',
+      );
+    }
+
+    // Wait for upload to complete
+    if (upload.status == .uploading || upload.status == .processing) {
+      final result = await _pollUploadProgress(_backgroundUploadId!);
+      if (!result) {
+        final failedUpload = uploadManager.getUpload(_backgroundUploadId!);
+
+        /// TODO(l10n): Replace with context.l10n when localization is added.
+        return PublishError(
+          'Upload failed: ${failedUpload?.errorMessage ?? "Unknown error"}',
+        );
+      }
+    }
+
+    return null;
+  }
+
+  /// Polls upload progress until complete or failed.
+  /// Returns true if upload succeeded, false if failed.
+  Future<bool> _pollUploadProgress(String uploadId) async {
+    while (_shouldContinue) {
+      final upload = uploadManager.getUpload(uploadId);
+      if (upload == null) return false;
+
+      onProgressChanged(upload.uploadProgress ?? 0.0);
+
+      switch (upload.status) {
+        case .readyToPublish:
+        case .published:
+          return true;
+        case .failed:
+          return false;
+        case .uploading:
+        case .processing:
+        case .pending:
+        case .retrying:
+        case .paused:
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
+    return false;
+  }
+
+  /// Starts a new upload and polls for progress until completion.
+  /// Returns the upload if successful, null if failed.
+  Future<PendingUpload?> _startNewUpload(String pubkey, VineDraft draft) async {
     // Ensure upload manager is initialized
     if (!uploadManager.isInitialized) {
-      Log.info(
-        '📝 Initializing upload manager...',
-        category: LogCategory.video,
-      );
-      _setPublishState(.initialize);
-
+      Log.info('📝 Initializing upload manager...', category: .video);
+      onStateChanged(.initialize);
       await uploadManager.initialize();
     }
 
-    // Start upload to Blossom
-    Log.info(
-      '📝 Starting upload to Blossom server...',
-      category: LogCategory.video,
-    );
+    Log.info('📝 Starting upload to Blossom...', category: .video);
+    _logProofModeStatus(draft);
 
-    // Debug: Check if draft has ProofMode data
-    final hasProofMode = draft.hasProofMode;
-    final nativeProof = draft.nativeProof;
-    Log.info(
-      '📜 Draft hasProofMode: $hasProofMode, nativeProof: ${nativeProof != null ? "present" : "null"}',
-      category: LogCategory.video,
-    );
-    if (hasProofMode && nativeProof == null) {
-      Log.error(
-        '📜 WARNING: Draft has proofManifestJson but nativeProof getter returned null - deserialization failed!',
-        category: LogCategory.video,
-      );
-    }
-    if (nativeProof != null) {
-      Log.info(
-        '📜 NativeProof videoHash: ${nativeProof.videoHash}, deviceAttestation: ${nativeProof.deviceAttestation != null}, pgpSignature: ${nativeProof.pgpSignature != null}',
-        category: LogCategory.video,
-      );
-    }
+    onStateChanged(VideoPublishState.uploading);
 
-    _setPublishState(.uploading);
-
-    // Get video duration with fallback
     final pendingUpload = await uploadManager.startUploadFromDraft(
       draft: draft,
       nostrPubkey: pubkey,
     );
     _backgroundUploadId = pendingUpload.id;
 
-    // Poll for upload progress
-    while (ref != null && ref!.mounted) {
-      final upload = uploadManager.getUpload(pendingUpload.id);
-      if (upload == null) break;
+    // Poll for progress
+    final success = await _pollUploadProgress(pendingUpload.id);
+    if (!success) return null;
 
-      final progress = upload.uploadProgress ?? 0.0;
-      if (ref != null && ref!.mounted) {
-        ref?.read(videoPublishProvider.notifier).setUploadProgress(progress);
-      }
+    return uploadManager.getUpload(pendingUpload.id);
+  }
 
-      // If upload is complete or failed, stop polling
-      if (upload.status == .readyToPublish ||
-          upload.status == .failed ||
-          upload.status == .processing) {
-        break;
-      }
+  /// Logs ProofMode attestation status for debugging.
+  void _logProofModeStatus(VineDraft draft) {
+    final hasProofMode = draft.hasProofMode;
+    final nativeProof = draft.nativeProof;
 
-      await Future.delayed(const Duration(milliseconds: 100));
+    Log.info(
+      '📜 ProofMode: $hasProofMode, '
+      'nativeProof: ${nativeProof != null ? "present" : "null"}',
+      category: .video,
+    );
+
+    if (hasProofMode && nativeProof == null) {
+      Log.error('📜 ProofMode deserialization failed!', category: .video);
+    }
+  }
+
+  /// Retry a failed upload and continue publishing.
+  Future<PublishResult> retryUpload(VineDraft draft) async {
+    if (_backgroundUploadId == null) {
+      /// TODO(l10n): Replace with context.l10n when localization is added.
+      return const PublishError('No upload to retry.');
     }
 
-    return pendingUpload;
-  }
- */
-
-  /// Retry a failed upload
-  Future<void> _retryUpload() async {
-    if (_backgroundUploadId == null || ref == null) return;
-
-    final uploadManager = ref!.read(uploadManagerProvider);
-
-    _setPublishState(.retryUpload);
+    onStateChanged(.retryUpload);
 
     try {
       await uploadManager.retryUpload(_backgroundUploadId!);
+      final success = await _pollUploadProgress(_backgroundUploadId!);
 
-      // Show progress dialog while retrying
-      if (context != null && context!.mounted) {
-        await showDialog(
-          context: context!,
-          barrierDismissible: false,
-          builder: (_) => UploadProgressDialog(
-            uploadId: _backgroundUploadId!,
-            uploadManager: uploadManager,
-          ),
+      if (!success) {
+        final upload = uploadManager.getUpload(_backgroundUploadId!);
+
+        /// TODO(l10n): Replace with context.l10n when localization is added.
+        return PublishError(
+          'Retry failed: ${upload?.errorMessage ?? "Unknown error"}',
         );
       }
-    } catch (e) {
-      Log.error('📝 Failed to retry upload: $e', category: LogCategory.video);
 
-      rethrow;
-    } finally {
-      _setPublishState(.idle);
+      // Continue with publishing
+      return await publishVideo(draft: draft);
+    } catch (e, stackTrace) {
+      Log.error('📝 Failed to retry: $e', category: LogCategory.video);
+      return _handleUploadError(e, stackTrace, draft);
     }
   }
 
-  /// Show error dialog when upload has failed
-  /// Returns true if user wants to retry, false if cancelled
-  Future<bool> _showUploadErrorDialog() async {
-    if (ref == null) return false;
-    final uploadManager = ref!.read(uploadManagerProvider);
-    final upload = _backgroundUploadId != null
-        ? uploadManager.getUpload(_backgroundUploadId!)
-        : null;
-
-    final errorMessage = upload?.errorMessage ?? 'Unknown error';
-    if (context == null || !context!.mounted) return false;
-
-    final result = await showDialog<bool>(
-      context: context!,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Upload Failed',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Upload failed: $errorMessage\n\nWould you like to retry?',
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(backgroundColor: VineTheme.vineGreen),
-            child: const Text('Retry', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-
-  Future<void> _handleUploadError(
+  /// Handles upload errors by logging, updating draft status, and returning
+  /// a user-friendly message.
+  Future<PublishError> _handleUploadError(
     Object? e,
     StackTrace stackTrace,
     VineDraft draft,
   ) async {
-    Log.error(
-      '📝 VideoPublishService: Failed to publish video: $e',
-      category: LogCategory.video,
-    );
+    Log.error('📝 Publish failed: $e\n$stackTrace', category: .video);
 
-    // Failed: update draft with error
+    onStateChanged(.error);
+
+    // Save failed state to draft
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
-      final failed = draft.copyWith(
-        publishStatus: PublishStatus.failed,
+      final failedDraft = draft.copyWith(
+        publishStatus: .failed,
         publishError: e.toString(),
         publishAttempts: draft.publishAttempts + 1,
       );
-      await draftService.saveDraft(failed);
+      await draftService.saveDraft(failedDraft);
     } catch (saveError) {
-      Log.error(
-        '📝 Failed to save error state: $saveError',
-        category: LogCategory.video,
-      );
+      Log.error('📝 Failed to save error state: $saveError', category: .video);
     }
 
-    if (context == null || ref == null || !context!.mounted) return;
-    // Get the current Blossom server for error message
-    final blossomService = ref!.read(blossomUploadServiceProvider);
-    String serverName = 'Unknown server';
+    final userMessage = await _getUserFriendlyErrorMessage(e);
+    return PublishError(userMessage);
+  }
+
+  /// Converts technical error messages into user-friendly descriptions.
+  Future<String> _getUserFriendlyErrorMessage(Object? e) async {
+    final errorString = e.toString();
+    var serverName = 'Unknown server';
+
     try {
       final serverUrl = await blossomService.getBlossomServer();
       if (serverUrl != null && serverUrl.isNotEmpty) {
-        // Extract domain from URL for display
-        final uri = Uri.tryParse(serverUrl);
-        serverName = uri?.host ?? serverUrl;
+        serverName = Uri.tryParse(serverUrl)?.host ?? serverUrl;
       }
-    } catch (_) {
-      // If we can't get the server name, just use the generic message
+    } catch (_) {}
+
+    /// TODO(l10n): Replace with context.l10n when localization is added.
+    if (errorString.contains('404') || errorString.contains('not_found')) {
+      return 'The Blossom media server ($serverName) is not working. '
+          'You can choose another in your settings.';
+    } else if (errorString.contains('500')) {
+      return 'The Blossom media server ($serverName) encountered an error. '
+          'You can choose another in your settings.';
+    } else if (errorString.contains('network') ||
+        errorString.contains('connection')) {
+      return 'Network error. Please check your connection and try again.';
+    } else if (errorString.contains('Not authenticated')) {
+      return 'Please sign in to publish videos.';
     }
-
-    // Convert technical error to user-friendly message
-    String userMessage;
-    if (e.toString().contains('404') || e.toString().contains('not_found')) {
-      userMessage =
-          'The Blossom media server ($serverName) is not working. You can choose another in your settings.';
-    } else if (e.toString().contains('500')) {
-      userMessage =
-          'The Blossom media server ($serverName) encountered an error. You can choose another in your settings.';
-    } else if (e.toString().contains('network') ||
-        e.toString().contains('connection')) {
-      userMessage =
-          'Network error. Please check your connection and try again.';
-    } else if (e.toString().contains('Not authenticated')) {
-      userMessage = 'Please sign in to publish videos.';
-    } else {
-      userMessage = 'Failed to publish video. Please try again.';
-    }
-    if (context == null || !context!.mounted) return;
-
-    ScaffoldMessenger.of(context!).showSnackBar(
-      SnackBar(
-        content: Text(userMessage),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'Details',
-          textColor: Colors.white,
-          onPressed: () => _showErrorDetails(e, stackTrace, draft),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showErrorDetails(
-    Object? e,
-    StackTrace stackTrace,
-    VineDraft draft,
-  ) async {
-    // Show technical details in a dialog
-    /* TODO(@hm21): Temporary "commented out" create PR with only new files
-    final videoPath = await draft.clips.first.video.safeFilePath();
-
-    final errorDetails =
-        '''
-Error: ${e.toString()}
-
-Stack Trace:
-${stackTrace.toString()}
-
-Operation: Video Upload
-Time: ${DateTime.now().toIso8601String()}
-Video: ${videoPath}
-''';
-    if (context == null || !context!.mounted) return;
-
-    await showDialog(
-      context: context!,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-            const Icon(Icons.bug_report, color: Colors.red),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text(
-                'Error Details',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Please share these details with support:',
-                style: TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[700]!),
-                ),
-                child: SelectableText(
-                  errorDetails,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: errorDetails));
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Error details copied to clipboard'),
-                    backgroundColor: VineTheme.vineGreen,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.copy, color: VineTheme.vineGreen),
-            label: const Text(
-              'Copy',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Colors.white70)),
-          ),
-        ],
-      ),
-    );
-   */
+    return 'Failed to publish video. Please try again.';
   }
 }
