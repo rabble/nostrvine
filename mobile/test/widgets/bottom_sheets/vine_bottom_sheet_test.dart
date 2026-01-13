@@ -20,7 +20,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: 'Test Sheet',
+              title: const Text('Test Sheet'),
               scrollController: scrollController,
               children: const [Text('Content 1'), Text('Content 2')],
             ),
@@ -45,7 +45,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: 'Test Sheet',
+              title: const Text('Test Sheet'),
               scrollController: scrollController,
               trailing: trailingWidget,
               children: const [Text('Content')],
@@ -68,7 +68,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: 'Test Sheet',
+              title: const Text('Test Sheet'),
               scrollController: scrollController,
               bottomInput: inputWidget,
               children: const [Text('Content')],
@@ -87,7 +87,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: 'Test Sheet',
+              title: const Text('Test Sheet'),
               scrollController: scrollController,
               children: List.generate(
                 50,
@@ -125,7 +125,7 @@ void main() {
                   onPressed: () {
                     VineBottomSheet.show(
                       context: context,
-                      title: 'Modal Sheet',
+                      title: const Text('Modal Sheet'),
                       children: const [Text('Modal Content')],
                     );
                   },
