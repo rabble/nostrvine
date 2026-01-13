@@ -30,12 +30,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     final authStateAsync = ref.watch(authStateStreamProvider);
     final authService = ref.watch(authServiceProvider);
 
-    // // Check if headless auth feature is enabled (can be enabled by shaking)
-
-    // final isHeadlessAuthEnabled = ref.watch(
-    //   isFeatureEnabledProvider(FeatureFlag.headlessAuth),
-    // );
-
     // Handle stream loading/error states
     final authState = authStateAsync.when(
       data: (state) => state,
