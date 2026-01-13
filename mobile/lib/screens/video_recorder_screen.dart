@@ -112,6 +112,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
+        // TODO(macOS): CameraPermissionGate needs macOS-specific permission handling.
         body: CameraPermissionGate(
           child: Stack(
             fit: .expand,
