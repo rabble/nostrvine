@@ -75,6 +75,8 @@ class _CommentInputState extends State<CommentInput> {
         MediaQuery.of(context).padding.bottom +
         8;
 
+    final isReplying = widget.replyToDisplayName != null;
+
     return Container(
       padding: EdgeInsets.only(
         left: 16,
@@ -88,50 +90,58 @@ class _CommentInputState extends State<CommentInput> {
           borderRadius: BorderRadius.circular(20),
         ),
         constraints: BoxConstraints(minHeight: 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Text input
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(child: _buildTextField()),
-                if (_hasText) ...[const SizedBox(width: 8), _buildSendButton()],
-              ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: _buildTextField()),
+                  if (isReplying)
+                    GestureDetector(
+                      onTap: widget.onCancelReply,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          bottom: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Re: ${widget.replyToDisplayName}',
+                                style: VineTheme.bodyFont(
+                                  fontSize: 12,
+                                  color: VineTheme.tabIndicatorGreen,
+                                  height: 16 / 12,
+                                  fontWeight: FontWeight.w400,
+                                ).copyWith(letterSpacing: 0.4),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 20,
+                              height: 20,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: VineTheme.tabIndicatorGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
 
-            // if (isReplying)
-            //   Row(
-            //     children: [
-            //       Flexible(
-            //         child: Text(
-            //           'Re: ${widget.replyToDisplayName}',
-            //           style: VineTheme.bodyFont(
-            //             fontSize: 12,
-            //             color: VineTheme.tabIndicatorGreen,
-            //             height: 16 / 12,
-            //           ).copyWith(letterSpacing: 0.4),
-            //           overflow: TextOverflow.ellipsis,
-            //           maxLines: 1,
-            //         ),
-            //       ),
-            //       const SizedBox(width: 8),
-            //       GestureDetector(
-            //         onTap: widget.onCancelReply,
-            //         child: Container(
-            //           width: 20,
-            //           height: 20,
-            //           alignment: Alignment.center,
-            //           child: const Icon(
-            //             Icons.close,
-            //             size: 16,
-            //             color: VineTheme.tabIndicatorGreen,
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
+            if (_hasText) ...[const SizedBox(width: 8), _buildSendButton()],
           ],
         ),
       ),
@@ -140,13 +150,13 @@ class _CommentInputState extends State<CommentInput> {
 
   Widget _buildTextField() {
     final isReplying = widget.replyToDisplayName != null;
-    return Semantics(
-      identifier: 'comment_text_field',
-      textField: true,
-      label: isReplying ? 'Reply input' : 'Comment input',
-      hint: isReplying ? 'Add a reply' : 'Add a comment',
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, bottom: 8, top: 8),
+    return Padding(
+      padding: EdgeInsets.only(left: 16, bottom: 14, top: 14),
+      child: Semantics(
+        identifier: 'comment_text_field',
+        textField: true,
+        label: isReplying ? 'Reply input' : 'Comment input',
+        hint: isReplying ? 'Add a reply' : 'Add a comment',
         child: TextField(
           controller: widget.controller,
           focusNode: widget.focusNode,
@@ -154,16 +164,16 @@ class _CommentInputState extends State<CommentInput> {
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           enableInteractiveSelection: true,
           style: VineTheme.bodyFont(
-            fontSize: isReplying ? 14 : 16,
+            fontSize: 16,
             color: VineTheme.onSurface,
-            height: isReplying ? 20 / 14 : null,
+            height: 20 / 16,
           ),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(
-            hintText: isReplying ? '' : 'Add comment...',
+            hintText: 'Add comment...',
             hintStyle: VineTheme.bodyFont(
               fontSize: 16,
-              color: VineTheme.onSurfaceMuted,
+              color: const Color.fromARGB(128, 228, 219, 219),
             ),
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,

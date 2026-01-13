@@ -292,23 +292,25 @@ class _ReplyIndicator extends ConsumerWidget {
           ),
         ),
         SizedBox(width: 8),
-        Container(
-          height: 20,
-          decoration: BoxDecoration(
-            color: VineTheme.containerLow,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-          alignment: Alignment.center,
-          child: Text(
-            '$displayName',
-            style: VineTheme.bodyFont(
-              fontSize: 14,
-              color: VineTheme.tabIndicatorGreen,
-              height: 14 / 20,
+        Flexible(
+          child: Container(
+            height: 20,
+            decoration: BoxDecoration(
+              color: VineTheme.containerLow,
+              borderRadius: BorderRadius.circular(8),
             ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+            alignment: Alignment.center,
+            child: Text(
+              '$displayName',
+              style: VineTheme.bodyFont(
+                fontSize: 14,
+                color: VineTheme.tabIndicatorGreen,
+                height: 14 / 20,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
         ),
       ],
