@@ -448,7 +448,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 );
                 // Stop any playing videos before navigating
                 disposeAllVideoControllers(ref);
-                Navigator.of(context).push(
+                // Use rootNavigator to push outside shell (no Explore app bar)
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(
                     builder: (context) => const DiscoverListsScreen(),
                   ),

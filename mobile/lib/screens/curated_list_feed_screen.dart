@@ -91,40 +91,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(widget.listName, style: VineTheme.titleFont()),
-                  if (widget.authorPubkey != null) ...[
-                    const SizedBox(height: 2),
-                    GestureDetector(
-                      onTap: () =>
-                          context.pushProfileGrid(widget.authorPubkey!),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'by ',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12,
-                            ),
-                          ),
-                          Flexible(
-                            child: UserName.fromPubKey(
-                              widget.authorPubkey!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 2),
+                  _buildSubheading(),
                 ],
               ),
-              actions: [_buildSubscribeButton(), const SizedBox(width: 16)],
+              actions: [_buildSubscribeButton()],
             )
           : null,
       body: videosAsync.when(
@@ -297,6 +268,59 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     );
   }
 
+  /// Build the subheading showing "By [username] • # videos"
+  Widget _buildSubheading() {
+    final videoCount = widget.videoIds?.length ?? 0;
+    final videoText = '$videoCount ${videoCount == 1 ? 'video' : 'videos'}';
+
+    if (widget.authorPubkey != null) {
+      return GestureDetector(
+        onTap: () => context.pushProfileGrid(widget.authorPubkey!),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'By ',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+            Flexible(
+              flex: 0,
+              child: UserName.fromPubKey(
+                widget.authorPubkey!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              ' • $videoText',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // No author - just show video count
+    return Text(
+      videoText,
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.7),
+        fontSize: 12,
+      ),
+    );
+  }
+
   Widget _buildSubscribeButton() {
     // Watch the service state for subscription status
     final serviceAsync = ref.watch(curatedListsStateProvider);
@@ -308,39 +332,47 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         false;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ElevatedButton.icon(
+      padding: const EdgeInsets.only(right: 16),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
         onPressed: _isTogglingSubscription ? null : _toggleSubscription,
-        icon: _isTogglingSubscription
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: isSubscribed
-                      ? VineTheme.vineGreen
-                      : VineTheme.backgroundColor,
+        icon: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSubscribed
+                ? VineTheme.iconButtonBackground
+                : VineTheme.vineGreen,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: _isTogglingSubscription
+              ? Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: isSubscribed
+                          ? VineTheme.vineGreen
+                          : VineTheme.backgroundColor,
+                    ),
+                  ),
+                )
+              : SvgPicture.asset(
+                  isSubscribed
+                      ? 'assets/icon/Check.svg'
+                      : 'assets/icon/plus.svg',
+                  width: 32,
+                  height: 32,
+                  colorFilter: ColorFilter.mode(
+                    isSubscribed ? VineTheme.vineGreen : Colors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
-              )
-            : Icon(isSubscribed ? Icons.check : Icons.add, size: 18),
-        label: Text(
-          isSubscribed ? 'Subscribed' : 'Subscribe',
-          style: const TextStyle(fontSize: 12),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSubscribed
-              ? VineTheme.cardBackground
-              : VineTheme.vineGreen,
-          foregroundColor: isSubscribed
-              ? VineTheme.vineGreen
-              : VineTheme.backgroundColor,
-          side: isSubscribed
-              ? BorderSide(color: VineTheme.vineGreen, width: 1)
-              : null,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+        tooltip: isSubscribed ? 'Subscribed' : 'Subscribe',
       ),
     );
   }
