@@ -95,9 +95,7 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           videoEventsProvider.overrideWith(videoEventsBuilder),
         ],
-        child: MaterialApp(
-          home: Scaffold(body: PopularVideosTab(onVideoTap: (_, __) {})),
-        ),
+        child: MaterialApp(home: Scaffold(body: PopularVideosTab())),
       );
     }
 

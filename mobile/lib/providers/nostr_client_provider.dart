@@ -33,13 +33,14 @@ class NostrService extends _$NostrService {
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
 
-    // Create initial NostrClient
+    // Create initial NostrClient (prefer RPC signer when available)
     final client = NostrServiceFactory.create(
       keyContainer: authService.currentKeyContainer,
       statisticsService: statisticsService,
       gatewaySettings: gatewaySettings,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
+      rpcSigner: authService.rpcSigner,
     );
 
     // Schedule initialization after build completes
@@ -95,6 +96,7 @@ class NostrService extends _$NostrService {
         gatewaySettings: gatewaySettings,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
+        rpcSigner: authService.rpcSigner,
       );
 
       _lastKeyContainerPubkey = currentPubkey;

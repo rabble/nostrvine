@@ -15,7 +15,6 @@ import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 import '../../builders/comment_builder.dart';
-import '../../builders/comment_node_builder.dart';
 
 class MockUserProfileService extends Mock implements UserProfileService {}
 
@@ -83,7 +82,7 @@ void main() {
       );
     }
 
-    testWidgets('shows loading indicator when loading', (tester) async {
+    testWidgets('shows skeleton loader when loading', (tester) async {
       final state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
@@ -93,7 +92,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('shows error message when state has error', (tester) async {
@@ -115,7 +115,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        topLevelComments: [],
+        comments: [],
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -131,7 +131,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        topLevelComments: [],
+        comments: [],
       );
 
       await tester.pumpWidget(
@@ -143,72 +143,39 @@ void main() {
     });
 
     testWidgets('renders CommentThread for each comment', (tester) async {
-      final comment1 = CommentNodeBuilder()
-          .withComment(
-            CommentBuilder()
-                .withId(TestCommentIds.comment1Id)
-                .withContent('First comment')
-                .build(),
-          )
+      final comment1 = CommentBuilder()
+          .withId(TestCommentIds.comment1Id)
+          .withContent('First comment')
           .build();
 
-      final comment2 = CommentNodeBuilder()
-          .withComment(
-            CommentBuilder()
-                .withId(TestCommentIds.comment2Id)
-                .withContent('Second comment')
-                .build(),
-          )
+      final comment2 = CommentBuilder()
+          .withId(TestCommentIds.comment2Id)
+          .withContent('Second comment')
           .build();
 
       final state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        topLevelComments: [comment1, comment2],
+        comments: [comment1, comment2],
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
       await tester.pump();
 
-      expect(find.byType(CommentThread), findsNWidgets(2));
+      expect(find.byType(CommentItem), findsNWidgets(2));
       expect(find.text('First comment'), findsOneWidget);
       expect(find.text('Second comment'), findsOneWidget);
     });
 
-    testWidgets('shows Cancel when replying to comment', (tester) async {
-      final state = CommentsState(
-        rootEventId: testVideoEventId,
-        rootAuthorPubkey: testVideoAuthorPubkey,
-        status: CommentsStatus.success,
-        topLevelComments: [
-          CommentNodeBuilder()
-              .withComment(
-                CommentBuilder()
-                    .withId(TestCommentIds.comment1Id)
-                    .withContent('Test')
-                    .build(),
-              )
-              .build(),
-        ],
-        activeReplyCommentId: TestCommentIds.comment1Id,
-        replyInputText: '',
-      );
-
-      await tester.pumpWidget(buildTestWidget(commentsState: state));
-      await tester.pump();
-
-      expect(find.text('Cancel'), findsOneWidget);
-    });
-
     testWidgets('uses provided scroll controller', (tester) async {
       final scrollController = ScrollController();
-      final comments = CommentTreeBuilder.singleComment();
+      final comments = [CommentBuilder().build()];
       final state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        topLevelComments: comments,
+        comments: comments,
       );
 
       await tester.pumpWidget(

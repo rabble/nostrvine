@@ -2,17 +2,40 @@
 // ABOUTME: Handles Nostr identity creation, import, and session management with secure storage
 
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
-import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Key for persisted authentication source
+const _kAuthSourceKey = 'authentication_source';
+
+/// Source of authentication used to restore session at startup
+enum AuthenticationSource {
+  none('none'),
+  divineOAuth('divineOAuth'),
+  importedKeys('imported_keys'),
+  automatic('automatic');
+
+  const AuthenticationSource(this.code);
+
+  final String code;
+
+  static AuthenticationSource fromCode(String? code) {
+    return AuthenticationSource.values
+            .where((s) => s.code == code)
+            .firstOrNull ??
+        AuthenticationSource.none;
+  }
+}
 
 /// Authentication state for the user
 enum AuthState {
@@ -86,15 +109,29 @@ class AuthService {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
+    KeycastOAuth? oauthClient,
+    FlutterSecureStorage? flutterSecureStorage,
+    OAuthConfig? oauthConfig,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
-       _userDataCleanupService = userDataCleanupService;
+       _userDataCleanupService = userDataCleanupService,
+       _oauthClient = oauthClient,
+       _flutterSecureStorage = flutterSecureStorage,
+       _oauthConfig =
+           oauthConfig ??
+           OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
   final SecureKeyStorage _keyStorage;
   final UserDataCleanupService _userDataCleanupService;
+  final KeycastOAuth? _oauthClient;
+  final FlutterSecureStorage? _flutterSecureStorage;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
   UserProfile? _currentProfile;
   String? _lastError;
+  KeycastRpc? _rpcSigner;
+
+  NostrSigner? get rpcSigner => _rpcSigner;
+  OAuthConfig _oauthConfig;
 
   // Streaming controllers for reactive auth state
   final StreamController<AuthState> _authStateController =
@@ -129,6 +166,19 @@ class AuthService {
   /// Check if user is authenticated
   bool get isAuthenticated => _authState == AuthState.authenticated;
 
+  /// Authentication source used for current session
+  AuthenticationSource _authSource = AuthenticationSource.none;
+
+  /// Get the current authentication source
+  AuthenticationSource get authenticationSource => _authSource;
+
+  /// Check if user has registered with divine (email/password)
+  /// Returns true if authenticated via divine OAuth, false for anonymous/imported keys
+  bool get isRegistered => _authSource == AuthenticationSource.divineOAuth;
+
+  /// Check if user is using an anonymous auto-generated identity
+  bool get isAnonymous => _authSource == AuthenticationSource.automatic;
+
   /// Last authentication error
   String? get lastError => _lastError;
 
@@ -147,8 +197,46 @@ class AuthService {
       // Initialize secure key storage
       await _keyStorage.initialize();
 
-      // Check for existing keys
-      await _checkExistingAuth();
+      // Decide restore path based on persisted authentication source
+      final authSource = await _loadAuthSource();
+      switch (authSource) {
+        case AuthenticationSource.none:
+          // Explicit logout or fresh install — show welcome
+          _setAuthState(AuthState.unauthenticated);
+          return;
+
+        case AuthenticationSource.divineOAuth:
+          // Try to load authorized session from secure storage
+          final session = await KeycastSession.load(_flutterSecureStorage);
+          if (session != null && session.hasRpcAccess) {
+            await signInWithDivineOAuth(session);
+            return;
+          }
+          // session not restored — fall back to unauthenticated
+          _setAuthState(AuthState.unauthenticated);
+          return;
+
+        case AuthenticationSource.importedKeys:
+          // Only restore if secure keys exist
+          final hasKeys = await _keyStorage.hasKeys();
+          if (hasKeys) {
+            final keyContainer = await _keyStorage.getKeyContainer();
+            if (keyContainer != null) {
+              await _setupUserSession(
+                keyContainer,
+                AuthenticationSource.importedKeys,
+              );
+              return;
+            }
+          }
+          _setAuthState(AuthState.unauthenticated);
+          return;
+
+        case AuthenticationSource.automatic:
+          // Default behavior: check for keys and auto-create if needed
+          await _checkExistingAuth();
+          break;
+      }
 
       Log.info(
         'SecureAuthService initialized',
@@ -186,7 +274,7 @@ class AuthService {
       );
 
       // Set up user session
-      await _setupUserSession(keyContainer);
+      await _setupUserSession(keyContainer, AuthenticationSource.automatic);
 
       Log.info(
         'New secure identity created successfully',
@@ -210,6 +298,22 @@ class AuthService {
       _setAuthState(AuthState.unauthenticated);
 
       return AuthResult.failure(_lastError!);
+    }
+  }
+
+  Future<AuthenticationSource> _loadAuthSource() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_kAuthSourceKey);
+      final authSource = await AuthenticationSource.fromCode(raw);
+      Log.info(
+        'Loaded $_kAuthSourceKey as $authSource',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return authSource;
+    } catch (e) {
+      return AuthenticationSource.automatic;
     }
   }
 
@@ -240,7 +344,7 @@ class AuthService {
       );
 
       // Set up user session
-      await _setupUserSession(keyContainer);
+      await _setupUserSession(keyContainer, AuthenticationSource.importedKeys);
 
       Log.info(
         'Identity imported to secure storage successfully',
@@ -294,7 +398,7 @@ class AuthService {
       );
 
       // Set up user session
-      await _setupUserSession(keyContainer);
+      await _setupUserSession(keyContainer, AuthenticationSource.importedKeys);
 
       Log.info(
         'Identity imported from hex to secure storage successfully',
@@ -390,23 +494,13 @@ class AuthService {
     }
   }
 
-  /// Accept Terms of Service - transitions to authenticated state
-  Future<void> acceptTermsOfService() async {
+  /// transitions to authenticated state w/o first creating or importing keys
+  Future<void> signInAutomatically() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'terms_accepted_at',
-        DateTime.now().toIso8601String(),
-      );
-      await prefs.setBool('age_verified_16_plus', true);
-
-      // If unauthenticated (e.g., after logout), re-initialize to load existing keys
-      if (_authState == AuthState.unauthenticated) {
-        await initialize();
-        return;
+      // If not authenticated (e.g., after logout), re-initialize to load existing keys
+      if (_authState != AuthState.authenticated) {
+        await _checkExistingAuth();
       }
-
-      _setAuthState(AuthState.authenticated);
 
       Log.info(
         'Terms of Service accepted, user is now fully authenticated',
@@ -423,6 +517,60 @@ class AuthService {
     }
   }
 
+  /// Sign in using OAuth 2.0 flow
+  Future<void> signInWithDivineOAuth(KeycastSession session) async {
+    Log.debug(
+      'Integrating OAuth session into AuthService',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+    _lastError = null;
+
+    try {
+      _rpcSigner = KeycastRpc.fromSession(_oauthConfig, session);
+
+      final publicKeyHex = await _rpcSigner?.getPublicKey();
+      if (publicKeyHex == null) {
+        throw Exception('Could not retrieve public key from server');
+      }
+
+      _currentProfile = UserProfile(
+        npub: NostrKeyUtils.encodePubKey(publicKeyHex),
+        publicKeyHex: publicKeyHex,
+        displayName: 'diVine User',
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_user_pubkey_hex', publicKeyHex);
+
+      Log.info(
+        '✅ Divine oauth listener setting auth state to authenticated.',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _profileController.add(_currentProfile);
+
+      final keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
+      await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
+
+      Log.info(
+        '✅ Divine oauth session successfully integrated for $publicKeyHex',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to integrate oauth session: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _lastError = 'oauth integration failed: $e';
+      _setAuthState(AuthState.unauthenticated);
+    }
+  }
+
   /// Sign out the current user
   Future<void> signOut({bool deleteKeys = false}) async {
     Log.debug(
@@ -434,6 +582,7 @@ class AuthService {
     try {
       // Clear TOS acceptance on any logout - user must re-accept when logging back in
       final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kAuthSourceKey);
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
 
@@ -462,6 +611,14 @@ class AuthService {
       _currentProfile = null;
       _lastError = null;
 
+      try {
+        if (_oauthClient != null) {
+          await _oauthClient.logout();
+        } else {
+          await KeycastSession.clear(_flutterSecureStorage);
+        }
+      } catch (_) {}
+
       _setAuthState(AuthState.unauthenticated);
 
       Log.info(
@@ -469,16 +626,6 @@ class AuthService {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-
-      if (!deleteKeys) {
-        await _checkExistingAuth();
-      } else {
-        Log.info(
-          'Keys deleted - user must import keys to log back in',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
     } catch (e) {
       Log.error(
         'Error during sign out: $e',
@@ -530,6 +677,7 @@ class AuthService {
   }
 
   /// Create and sign a Nostr event
+  /// Handles both local SecureKeyStorage and remote KeycastRpc signing
   Future<Event?> createAndSignEvent({
     required int kind,
     required String content,
@@ -546,175 +694,90 @@ class AuthService {
     }
 
     try {
-      return await _keyStorage.withPrivateKey<Event?>((privateKey) {
-        // Create event with current user's public key
-        // Use appropriate timestamp backdating based on event kind
-        final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
+      // 1. Prepare event metadata and tags
+      // CRITICAL: divine relays require specific tags for storage
+      final eventTags = List<List<String>>.from(tags ?? []);
 
-        // CRITICAL: divine relays require specific tags for storage
-        final eventTags = List<List<String>>.from(tags ?? []);
+      // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python script order)
+      if (kind == 0) {
+        final expirationTimestamp =
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
+            (72 * 60 * 60); // 72 hours
+        eventTags.add(['expiration', expirationTimestamp.toString()]);
+      }
 
-        final event = Event(
-          _currentKeyContainer!.publicKeyHex,
-          kind,
-          eventTags,
-          content,
-          createdAt: NostrTimestamp.now(driftTolerance: driftTolerance),
-        );
+      // Create the unsigned event object
+      final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
+      final event = Event(
+        _currentKeyContainer!.publicKeyHex,
+        kind,
+        eventTags,
+        content,
+        createdAt: NostrTimestamp.now(driftTolerance: driftTolerance),
+      );
 
-        // DEBUG: Log event details before signing
-        Log.info(
-          '🔍 Event BEFORE signing:',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - ID: ${event.id}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Pubkey: ${event.pubkey}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Kind: ${event.kind}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Created at: ${event.createdAt}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Tags: ${event.tags}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Content: ${event.content}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Signature (before): ${event.sig}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Is valid (before): ${event.isValid}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Is signed (before): ${event.isSigned}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
+      // 2. Branch Signing Logic (Local vs RPC)
+      Event? signedEvent;
 
-        // CRITICAL DEBUG: Log the exact JSON array used for ID calculation
-        final idCalculationArray = [
-          0,
-          event.pubkey,
-          event.createdAt,
-          event.kind,
-          event.tags,
-          event.content,
-        ];
-        final idCalculationJson = jsonEncode(idCalculationArray);
-        Log.info(
-          '📊 CRITICAL: ID calculation JSON array:',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '   Raw Array: $idCalculationArray',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '   JSON: $idCalculationJson',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '   JSON Length: ${idCalculationJson.length} chars',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
+      if (_rpcSigner != null) {
+        Log.info('🚀 Signing via Remote RPC', name: 'AuthService');
+        signedEvent = await _rpcSigner!.signEvent(event);
+      } else {
+        Log.info('🔐 Signing via Local Secure Storage', name: 'AuthService');
+        signedEvent = await _keyStorage.withPrivateKey<Event?>((privateKey) {
+          event.sign(privateKey);
+          return event;
+        }, biometricPrompt: biometricPrompt);
+      }
 
-        // Sign the event
-        event.sign(privateKey);
+      // 3. Post-Signing Validation and Debugging
+      if (signedEvent == null) {
+        Log.error(
+          '❌ Signing failed: Signer returned null',
+          name: 'AuthService',
+        );
+        return null;
+      }
 
-        // DEBUG: Log event details after signing
-        Log.info(
-          '🔍 Event AFTER signing:',
+      // CRITICAL: Verify signature is actually valid
+      if (!signedEvent.isSigned) {
+        Log.error(
+          '❌ Event signature validation FAILED!',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        Log.info(
-          '  - ID (should be same): ${event.id}',
+        Log.error(
+          '   This would cause relay to accept but not store the event',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        Log.info(
-          '  - Signature (after): ${event.sig}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Is valid (after): ${event.isValid}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.info(
-          '  - Is signed (after): ${event.isSigned}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
+        return null;
+      }
 
-        // CRITICAL: Verify signature is actually valid
-        if (!event.isSigned) {
-          Log.error(
-            '❌ Event signature validation FAILED!',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          Log.error(
-            '   This would cause relay to accept but not store the event',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          return null;
-        }
-
-        if (!event.isValid) {
-          Log.error(
-            '❌ Event structure validation FAILED!',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          Log.error(
-            '   Event ID does not match computed hash',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          return null;
-        }
-
-        Log.info(
-          '✅ Event signature and structure validation PASSED',
+      if (!signedEvent.isValid) {
+        Log.error(
+          '❌ Event structure validation FAILED!',
           name: 'AuthService',
           category: LogCategory.auth,
         );
+        Log.error(
+          '   Event ID does not match computed hash',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
 
-        return event;
-      }, biometricPrompt: biometricPrompt);
+      Log.info(
+        '✅ Event signed and validated: ${signedEvent.id}',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      return signedEvent;
     } catch (e) {
       Log.error(
-        'Failed to create event: $e',
+        'Failed to create or sign event: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -741,7 +804,7 @@ class AuthService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          await _setupUserSession(keyContainer);
+          await _setupUserSession(keyContainer, AuthenticationSource.automatic);
           return;
         } else {
           Log.warning(
@@ -793,8 +856,12 @@ class AuthService {
   }
 
   /// Set up user session after successful authentication
-  Future<void> _setupUserSession(SecureKeyContainer keyContainer) async {
+  Future<void> _setupUserSession(
+    SecureKeyContainer keyContainer,
+    AuthenticationSource source,
+  ) async {
     _currentKeyContainer = keyContainer;
+    _authSource = source;
 
     // Create user profile from secure container
     _currentProfile = UserProfile(
@@ -823,13 +890,14 @@ class AuthService {
         'current_user_pubkey_hex',
         keyContainer.publicKeyHex,
       );
+      await prefs.setString(
+        'terms_accepted_at',
+        DateTime.now().toIso8601String(),
+      );
+      await prefs.setBool('age_verified_16_plus', true);
 
-      final hasAcceptedTos = prefs.getBool('age_verified_16_plus') ?? false;
-      if (hasAcceptedTos) {
-        _setAuthState(AuthState.authenticated);
-      } else {
-        _setAuthState(AuthState.awaitingTosAcceptance);
-      }
+      await prefs.setString(_kAuthSourceKey, source.code);
+      _setAuthState(AuthState.authenticated);
     } catch (e) {
       Log.warning(
         'Failed to check TOS status: $e',

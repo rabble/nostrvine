@@ -45,6 +45,7 @@ class EnvironmentBadge extends ConsumerWidget {
       case AppEnvironment.dev:
         return 'DEV';
       case AppEnvironment.production:
+      case AppEnvironment.productionNew:
         return '';
     }
   }

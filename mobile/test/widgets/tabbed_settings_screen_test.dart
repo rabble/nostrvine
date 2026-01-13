@@ -6,14 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'tabbed_settings_screen_test.mocks.dart';
 
@@ -30,8 +32,11 @@ void main() {
   late MockBlossomUploadService mockBlossomService;
   late MockNotificationServiceEnhanced mockNotificationService;
   late MockBugReportService mockBugReportService;
+  late SharedPreferences sharedPreferences;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    sharedPreferences = await SharedPreferences.getInstance();
     mockAuthService = MockAuthService();
     mockNostrService = MockNostrClient();
     mockBlossomService = MockBlossomUploadService();
@@ -40,7 +45,12 @@ void main() {
 
     // Default mock behaviors
     when(mockAuthService.isAuthenticated).thenReturn(true);
+    when(mockAuthService.isAnonymous).thenReturn(true);
     when(mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+    when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+    when(
+      mockAuthService.authStateStream,
+    ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     when(mockNostrService.configuredRelays).thenReturn([]);
     when(mockBlossomService.isBlossomEnabled()).thenAnswer((_) async => false);
     when(mockBlossomService.getBlossomServer()).thenAnswer((_) async => null);
@@ -49,6 +59,7 @@ void main() {
   Widget createTestWidget() {
     return ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         authServiceProvider.overrideWithValue(mockAuthService),
         nostrServiceProvider.overrideWithValue(mockNostrService),
         blossomUploadServiceProvider.overrideWithValue(mockBlossomService),

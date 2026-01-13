@@ -2,10 +2,11 @@ name: keycast_flutter
 description: "Flutter library for Keycast OAuth authentication with PKCE and BYOK support for Nostr"
 version: 0.1.0
 publish_to: 'none'
-resolution: workspace
 
 environment:
   sdk: ^3.10.0
+
+resolution: workspace
 
 dependencies:
   flutter:

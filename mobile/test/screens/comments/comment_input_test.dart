@@ -17,7 +17,9 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('renders with hint text and send button', (tester) async {
+    testWidgets('renders with hint text and no send button when empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -30,11 +32,32 @@ void main() {
         ),
       );
 
-      expect(find.text('Add a comment...'), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      expect(find.text('Add comment...'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward), findsNothing);
+    });
+
+    testWidgets('shows send button when text is entered', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              isPosting: false,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'Test comment');
+      await tester.pump();
+
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
     testWidgets('shows loading spinner when isPosting', (tester) async {
+      controller.text = 'Test comment';
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -48,7 +71,7 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsNothing);
+      expect(find.byIcon(Icons.arrow_upward), findsNothing);
     });
 
     testWidgets('calls onSubmit when send tapped', (tester) async {
@@ -66,7 +89,10 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.send));
+      await tester.enterText(find.byType(TextField), 'Test comment');
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.arrow_upward));
       await tester.pump();
 
       expect(submitted, isTrue);
@@ -74,6 +100,7 @@ void main() {
 
     testWidgets('does not submit when isPosting', (tester) async {
       var submitted = false;
+      controller.text = 'Test comment';
 
       await tester.pumpWidget(
         MaterialApp(

@@ -103,6 +103,7 @@ class KeycastSession {
     }
   }
 
+  /// Clear session from storage (keeps authorization_handle)
   static Future<void> clear([FlutterSecureStorage? storage]) async {
     final secureStorage = storage ?? const FlutterSecureStorage();
     await secureStorage.delete(key: _storageKey);

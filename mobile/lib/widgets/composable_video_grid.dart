@@ -522,9 +522,9 @@ class _VideoStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Show original likes from video metadata
-    // Live like counts are fetched when video is opened in feed
-    final totalLikes = video.originalLikes ?? 0;
+    // Show combined likes (original Vine likes + Nostr reactions)
+    // nostrLikeCount is populated by VideoEventService when videos are loaded
+    final totalLikes = video.totalLikes;
     final originalLoops = video.originalLoops;
 
     return Row(
