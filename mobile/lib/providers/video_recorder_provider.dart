@@ -12,7 +12,6 @@ import 'package:openvine/models/video_recorder/video_recorder_provider_state.dar
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/services/video_recorder/camera/camera_permission_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates
@@ -74,13 +73,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderUIState> {
   Future<bool> initialize({BuildContext? context}) async {
     _isDestroyed = false;
 
-    // Check permissions using the dedicated service
-    final hasPermissions = context != null && context.mounted
-        ? await CameraPermissionService.ensurePermissionsWithDialog(context)
-        : await CameraPermissionService.ensurePermissions();
-    if (!hasPermissions) {
-      return false;
-    }
+    Log.info(
+      '📹 Initializing video recorder',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
 
     await _cameraService.initialize();
     updateState(aspectRatio: .vertical);

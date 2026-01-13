@@ -2,16 +2,56 @@
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../mocks/mock_camera_service.dart';
+
+/// Mock for CameraPermissionBloc
+class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
+  @override
+  CameraPermissionState get state =>
+      const CameraPermissionLoaded(CameraPermissionStatus.authorized);
+
+  @override
+  Stream<CameraPermissionState> get stream => Stream.value(state);
+
+  @override
+  Future<void> close() async {
+    // No-op for mock
+  }
+}
+
+/// Helper to build VideoRecorderScreen with required providers
+Widget buildTestWidget() {
+  return ProviderScope(
+    child: BlocProvider<CameraPermissionBloc>(
+      create: (_) => MockCameraPermissionBloc(),
+      child: const MaterialApp(home: VideoRecorderScreen()),
+    ),
+  );
+}
+
+/// Helper to build VideoRecorderScreen with provider overrides
+Widget buildTestWidgetWithOverrides(List<Override> overrides) {
+  return ProviderScope(
+    overrides: overrides,
+    child: BlocProvider<CameraPermissionBloc>(
+      create: (_) => MockCameraPermissionBloc(),
+      child: const MaterialApp(home: VideoRecorderScreen()),
+    ),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,9 +69,7 @@ void main() {
 
     group('UI Components', () {
       testWidgets('renders camera preview widget', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -39,9 +77,7 @@ void main() {
       });
 
       testWidgets('renders top bar widget', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -49,9 +85,7 @@ void main() {
       });
 
       testWidgets('renders bottom bar widget', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -59,9 +93,7 @@ void main() {
       });
 
       testWidgets('renders countdown overlay widget', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -71,9 +103,7 @@ void main() {
       testWidgets('all widgets are rendered in correct order (z-index)', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -94,9 +124,7 @@ void main() {
 
     group('Initialization', () {
       testWidgets('initializes recording provider on mount', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
         await tester.pump(); // Post-frame callback
@@ -106,9 +134,7 @@ void main() {
       });
 
       testWidgets('registers as WidgetsBindingObserver', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -117,9 +143,7 @@ void main() {
       });
 
       testWidgets('camera preview receives correct radius', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -130,9 +154,7 @@ void main() {
       });
 
       testWidgets('bottom bar receives correct radius', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -151,14 +173,11 @@ void main() {
         await mockCamera.initialize();
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              videoRecorderProvider.overrideWith(
-                () => VideoRecorderNotifier(mockCamera),
-              ),
-            ],
-            child: const MaterialApp(home: VideoRecorderScreen()),
-          ),
+          buildTestWidgetWithOverrides([
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ]),
         );
 
         await tester.pump();
@@ -178,17 +197,13 @@ void main() {
       });
 
       testWidgets('unregister observer on dispose', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
         // Remove the widget
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(home: Scaffold(body: Text('Other screen'))),
-          ),
+          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
         );
 
         await tester.pump();
@@ -198,18 +213,14 @@ void main() {
       });
 
       testWidgets('destroys notifier on dispose', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
         await tester.pump(); // Post-frame callback
 
         // Navigate away
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(home: Scaffold(body: Text('Other screen'))),
-          ),
+          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
         );
 
         await tester.pumpAndSettle();
@@ -223,9 +234,7 @@ void main() {
       testWidgets('uses StackFit.expand for full screen coverage', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -239,9 +248,7 @@ void main() {
       });
 
       testWidgets('screen takes full available space', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -257,12 +264,9 @@ void main() {
     group('State Management', () {
       testWidgets('screen reacts to recording state changes', (tester) async {
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              videoRecorderProvider.overrideWith(() => VideoRecorderNotifier()),
-            ],
-            child: const MaterialApp(home: VideoRecorderScreen()),
-          ),
+          buildTestWidgetWithOverrides([
+            videoRecorderProvider.overrideWith(() => VideoRecorderNotifier()),
+          ]),
         );
 
         await tester.pump();
@@ -273,9 +277,7 @@ void main() {
       });
 
       testWidgets('maintains state during rebuilds', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -292,9 +294,7 @@ void main() {
 
     group('Widget Tree Structure', () {
       testWidgets('camera preview is the bottom-most layer', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -308,9 +308,7 @@ void main() {
       });
 
       testWidgets('countdown overlay is the top-most layer', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -328,19 +326,25 @@ void main() {
       testWidgets('can be pushed onto navigation stack', (tester) async {
         await tester.pumpWidget(
           ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const VideoRecorderScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text('Open Camera'),
+            child: BlocProvider<CameraPermissionBloc>(
+              create: (_) => MockCameraPermissionBloc(),
+              child: MaterialApp(
+                home: Scaffold(
+                  body: Builder(
+                    builder: (context) => ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider<CameraPermissionBloc>(
+                              create: (_) => MockCameraPermissionBloc(),
+                              child: const VideoRecorderScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Open Camera'),
+                    ),
                   ),
                 ),
               ),
@@ -355,17 +359,13 @@ void main() {
       });
 
       testWidgets('can be popped from navigation stack', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
         // Simulate back navigation
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(home: Scaffold(body: Text('Home'))),
-          ),
+          const MaterialApp(home: Scaffold(body: Text('Home'))),
         );
 
         await tester.pumpAndSettle();
@@ -378,9 +378,7 @@ void main() {
     group('Error Handling', () {
       testWidgets('handles missing provider gracefully', (tester) async {
         // This tests that the screen doesn't crash without proper setup
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
@@ -395,14 +393,11 @@ void main() {
         await mockCamera.initialize();
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              videoRecorderProvider.overrideWith(
-                () => VideoRecorderNotifier(mockCamera),
-              ),
-            ],
-            child: const MaterialApp(home: VideoRecorderScreen()),
-          ),
+          buildTestWidgetWithOverrides([
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ]),
         );
 
         await tester.pump();
@@ -426,9 +421,7 @@ void main() {
 
     group('Constants and Configuration', () {
       testWidgets('uses correct preview radius value', (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 

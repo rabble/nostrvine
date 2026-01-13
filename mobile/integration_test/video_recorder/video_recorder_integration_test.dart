@@ -6,13 +6,27 @@
 // Or the first test run will show permission dialogs that must be accepted.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/services/video_recorder/camera/camera_permission_service.dart';
+import 'package:permissions_service/permissions_service.dart';
+
+/// Helper widget that wraps VideoRecorderScreen with required providers
+Widget _buildTestWidget() {
+  return ProviderScope(
+    child: BlocProvider(
+      create: (_) => CameraPermissionBloc(
+        permissionsService: const PermissionHandlerPermissionsService(),
+      )..add(const CameraPermissionRefresh()),
+      child: const MaterialApp(home: VideoRecorderScreen()),
+    ),
+  );
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +35,9 @@ void main() {
     late CameraService cameraService;
 
     setUpAll(() async {
-      await CameraPermissionService.ensurePermissions();
+      final service = PermissionHandlerPermissionsService();
+      await service.requestCameraPermission();
+      await service.requestMicrophonePermission();
     });
 
     setUp(() async {
@@ -32,8 +48,16 @@ void main() {
     });
 
     tearDown(() async {
-      await cameraService.stopRecording();
-      await cameraService.dispose();
+      try {
+        await cameraService.stopRecording();
+      } catch (_) {
+        // Ignore errors if not recording
+      }
+      try {
+        await cameraService.dispose();
+      } catch (_) {
+        // Ignore errors if already disposed
+      }
     });
 
     testWidgets('can start recording', (tester) async {
@@ -83,13 +107,13 @@ void main() {
 
   group('Video Recorder Widget Tests', () {
     setUpAll(() async {
-      await CameraPermissionService.ensurePermissions();
+      final service = PermissionHandlerPermissionsService();
+      await service.requestCameraPermission();
+      await service.requestMicrophonePermission();
     });
 
     testWidgets('pinch to zoom changes zoom level', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-      );
+      await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize
       await tester.pumpAndSettle(Duration(seconds: 2));
@@ -130,9 +154,7 @@ void main() {
     });
 
     testWidgets('long press on record button starts recording', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-      );
+      await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize and zoom limits to load
       await tester.pumpAndSettle(Duration(seconds: 3));
@@ -187,9 +209,7 @@ void main() {
     });
 
     testWidgets('long press move zooms during recording', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: VideoRecorderScreen())),
-      );
+      await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize
       await tester.pumpAndSettle(Duration(seconds: 2));

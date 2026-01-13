@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
@@ -111,21 +112,23 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Stack(
-          fit: .expand,
-          children: [
-            // Camera preview
-            VideoRecorderCameraPreview(previewWidgetRadius: _previewRadius),
+        body: CameraPermissionGate(
+          child: Stack(
+            fit: .expand,
+            children: [
+              // Camera preview
+              VideoRecorderCameraPreview(previewWidgetRadius: _previewRadius),
 
-            // Top bar with close-button, clip-duration, and confirm-button
-            const VideoRecorderTopBar(),
+              // Top bar with close-button, clip-duration, and confirm-button
+              const VideoRecorderTopBar(),
 
-            // Bottom controls
-            VideoRecorderBottomBar(previewWidgetRadius: _previewRadius),
+              // Bottom controls
+              VideoRecorderBottomBar(previewWidgetRadius: _previewRadius),
 
-            // Countdown overlay
-            const VideoRecorderCountdownOverlay(),
-          ],
+              // Countdown overlay
+              const VideoRecorderCountdownOverlay(),
+            ],
+          ),
         ),
       ),
     );

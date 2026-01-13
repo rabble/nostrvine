@@ -11,8 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/services/video_recorder/camera/camera_permission_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:permissions_service/permissions_service.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +22,9 @@ void main() {
 
     setUpAll(() async {
       // Request permissions once at the start
-      await CameraPermissionService.ensurePermissions();
+      final service = PermissionHandlerPermissionsService();
+      await service.requestCameraPermission();
+      await service.requestMicrophonePermission();
 
       Log.info(
         '📷 Running Camera Controls Integration Tests',

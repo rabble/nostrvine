@@ -8,7 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/services/video_recorder/camera/camera_permission_service.dart';
+import 'package:permissions_service/permissions_service.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,9 @@ void main() {
       // Request permissions once at the start of all tests
       // On Android, this will show the permission dialog once
       // After granting, all subsequent tests will run without dialogs
-      await CameraPermissionService.ensurePermissions();
+      final service = PermissionHandlerPermissionsService();
+      await service.requestCameraPermission();
+      await service.requestMicrophonePermission();
     });
 
     setUp(() {

@@ -10,7 +10,7 @@ import 'package:openvine/widgets/video_recorder/video_recorder_more_sheet.dart';
 /// Bottom bar with record button and camera controls.
 class VideoRecorderBottomBar extends ConsumerWidget {
   /// Creates a video recorder bottom bar widget.
-  const VideoRecorderBottomBar({required this.previewWidgetRadius, super.key});
+  const VideoRecorderBottomBar({this.previewWidgetRadius = 0, super.key});
 
   /// Radius for the preview widget's inverted corners.
   final double previewWidgetRadius;
