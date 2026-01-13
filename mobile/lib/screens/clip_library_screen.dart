@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -126,9 +127,38 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,
     appBar: AppBar(
-      backgroundColor: VineTheme.vineGreen,
-      foregroundColor: VineTheme.whiteText,
-      title: Text(_buildAppBarTitle()),
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      toolbarHeight: 72,
+      leadingWidth: 80,
+      centerTitle: false,
+      titleSpacing: 0,
+      backgroundColor: VineTheme.navGreen,
+      leading: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: VineTheme.iconButtonBackground,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: SvgPicture.asset(
+            'assets/icon/CaretLeft.svg',
+            width: 32,
+            height: 32,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+        tooltip: 'Back',
+      ),
+      title: Text(_buildAppBarTitle(), style: VineTheme.titleFont()),
       actions: [
         // Clear selection button when clips are selected
         if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
