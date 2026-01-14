@@ -12,7 +12,7 @@ class UserAvatar extends StatelessWidget {
     super.key,
     this.imageUrl,
     this.name,
-    this.size = 40,
+    this.size = 44,
     this.onTap,
   });
   final String? imageUrl;
@@ -21,73 +21,46 @@ class UserAvatar extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        // Green border circle
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: VineTheme.vineGreen,
-          ),
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: BoxBorder.all(color: VineTheme.onSurfaceMuted, width: 1),
         ),
-        // Inner circle with image
-        Container(
-          width: size - 4,
-          height: size - 4,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.black,
-          ),
-          child: ClipOval(
-            child: imageUrl != null && imageUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: imageUrl!,
-                    width: size - 4,
-                    height: size - 4,
-                    fit: BoxFit.cover,
-                    cacheManager: openVineImageCache,
-                    placeholder: (context, url) => _buildFallback(),
-                    errorWidget: (context, url, error) {
-                      // Log the failed URL for debugging
-                      if (error.toString().contains('Invalid image data') ||
-                          error.toString().contains('Image codec failed')) {
-                        UnifiedLogger.warning(
-                          '🖼️ Invalid image data for avatar URL: $url - Error: $error',
-                          name: 'UserAvatar',
-                        );
-                      } else {
-                        UnifiedLogger.debug(
-                          'Avatar image failed to load URL: $url - Error: $error',
-                          name: 'UserAvatar',
-                        );
-                      }
-                      return _buildFallback();
-                    },
-                  )
-                : _buildFallback(),
-          ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: imageUrl != null && imageUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl!,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  cacheManager: openVineImageCache,
+                  placeholder: (context, url) => _buildIconFallback(),
+                  errorWidget: (context, url, error) {
+                    // Log the failed URL for debugging
+                    if (error.toString().contains('Invalid image data') ||
+                        error.toString().contains('Image codec failed')) {
+                      UnifiedLogger.warning(
+                        '🖼️ Invalid image data for avatar URL: $url - Error: $error',
+                        name: 'UserAvatar',
+                      );
+                    } else {
+                      UnifiedLogger.debug(
+                        'Avatar image failed to load URL: $url - Error: $error',
+                        name: 'UserAvatar',
+                      );
+                    }
+                    return _buildIconFallback();
+                  },
+                )
+              : _buildIconFallback(),
         ),
-      ],
-    ),
-  );
-
-  Widget _buildFallback() {
-    return Image.asset(
-      'assets/icon/user-avatar.png',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        // If asset fails to load, show icon-based fallback
-        UnifiedLogger.debug(
-          'Avatar asset failed to load: $error',
-          name: 'UserAvatar',
-        );
-        return _buildIconFallback();
-      },
+      ),
     );
   }
 

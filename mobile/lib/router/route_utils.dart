@@ -25,12 +25,15 @@ enum RouteType {
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
+  loginOptions, // Login options screen (choose login method)
+  authNative, // Native email/password auth screen
   following, // Following list screen
   followers, // Followers list screen
   videoFeed, // Fullscreen video feed (pushed from grids)
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
   sound, // Sound detail screen for audio reuse
+  secureAccount,
 }
 
 /// Structured representation of a route
@@ -221,6 +224,11 @@ RouteContext parseRoute(String path) {
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
 
+    case 'login-options':
+      return const RouteContext(type: RouteType.loginOptions);
+
+    case 'auth-native':
+      return const RouteContext(type: RouteType.authNative);
     case 'following':
       final followingPubkey = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
@@ -251,6 +259,9 @@ RouteContext parseRoute(String path) {
       }
       final profileViewNpub = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
+
+    case 'secure-account':
+      return const RouteContext(type: RouteType.secureAccount);
 
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
@@ -376,6 +387,11 @@ String buildRoute(RouteContext context) {
     case RouteType.developerOptions:
       return '/developer-options';
 
+    case RouteType.loginOptions:
+      return '/login-options';
+
+    case RouteType.authNative:
+      return '/auth-native';
     case RouteType.following:
       return '/following/${context.npub ?? ''}';
 
@@ -394,5 +410,7 @@ String buildRoute(RouteContext context) {
 
     case RouteType.sound:
       return '/sound/${context.soundId ?? ''}';
+    case RouteType.secureAccount:
+      return '/secure-account';
   }
 }

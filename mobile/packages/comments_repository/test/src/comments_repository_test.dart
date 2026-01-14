@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:comments_repository/comments_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -59,7 +57,7 @@ void main() {
 
         expect(result.isEmpty, isTrue);
         expect(result.totalCount, equals(0));
-        expect(result.topLevelComments, isEmpty);
+        expect(result.comments, isEmpty);
         expect(result.rootEventId, equals(testRootEventId));
       });
 
@@ -84,15 +82,12 @@ void main() {
 
         expect(result.isNotEmpty, isTrue);
         expect(result.totalCount, equals(1));
-        expect(result.topLevelComments.length, equals(1));
-        expect(
-          result.topLevelComments.first.comment.content,
-          equals('Great video!'),
-        );
-        expect(result.topLevelComments.first.replies, isEmpty);
+        expect(result.comments.length, equals(1));
+        expect(result.comments.first.content, equals('Great video!'));
+        expect(result.comments.first.replyToEventId, isNull);
       });
 
-      test('returns threaded structure with replies', () async {
+      test('returns flat list with replies in chronological order', () async {
         final rootComment = _createCommentEvent(
           id: 'comment1',
           content: 'Parent comment',
@@ -124,15 +119,14 @@ void main() {
         );
 
         expect(result.totalCount, equals(2));
-        expect(result.topLevelComments.length, equals(1));
-        expect(result.topLevelComments.first.replies.length, equals(1));
-        expect(
-          result.topLevelComments.first.replies.first.comment.content,
-          equals('Reply to parent'),
-        );
+        expect(result.comments.length, equals(2));
+        // Newest first (reply is newer)
+        expect(result.comments.first.content, equals('Reply to parent'));
+        expect(result.comments.first.replyToEventId, equals('comment1'));
+        expect(result.comments.last.content, equals('Parent comment'));
       });
 
-      test('sorts top-level comments by newest first', () async {
+      test('sorts all comments chronologically (newest first)', () async {
         final oldComment = _createCommentEvent(
           id: 'comment1',
           content: 'Old comment',
@@ -161,11 +155,11 @@ void main() {
           rootEventKind: _testRootEventKind,
         );
 
-        expect(result.topLevelComments.first.comment.content, 'New comment');
-        expect(result.topLevelComments.last.comment.content, 'Old comment');
+        expect(result.comments.first.content, 'New comment');
+        expect(result.comments.last.content, 'Old comment');
       });
 
-      test('sorts replies by oldest first', () async {
+      test('includes replies in chronological order with parent', () async {
         final parentComment = _createCommentEvent(
           id: 'parent',
           content: 'Parent',
@@ -208,44 +202,44 @@ void main() {
           rootEventKind: _testRootEventKind,
         );
 
-        final replies = result.topLevelComments.first.replies;
-        expect(replies.first.comment.content, 'Old reply');
-        expect(replies.last.comment.content, 'New reply');
+        expect(result.comments.length, equals(3));
+        // Chronological: newest first
+        expect(result.comments[0].content, 'New reply');
+        expect(result.comments[1].content, 'Old reply');
+        expect(result.comments[2].content, 'Parent');
       });
 
-      test('handles orphan replies with placeholder parent', () async {
-        // A reply to a non-existent comment creates a placeholder parent
-        final orphanReply = _createCommentEvent(
-          id: 'orphan',
-          content: 'Orphan reply',
-          pubkey: testUserPubkey,
-          rootEventId: testRootEventId,
-          rootAuthorPubkey: testRootAuthorPubkey,
-          rootEventKind: _testRootEventKind,
-          replyToEventId: 'nonexistent_parent',
-          replyToAuthorPubkey: testUserPubkey,
-        );
+      test(
+        'includes orphan replies in flat list with replyTo reference',
+        () async {
+          // Orphan replies are just included in the flat list with
+          // their replyToEventId
+          final orphanReply = _createCommentEvent(
+            id: 'orphan',
+            content: 'Orphan reply',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            replyToEventId: 'nonexistent_parent',
+            replyToAuthorPubkey: testUserPubkey,
+          );
 
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [orphanReply]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [orphanReply]);
 
-        final result = await repository.loadComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
 
-        // Placeholder parent is created at top level
-        expect(result.topLevelComments.length, equals(1));
-        expect(result.topLevelComments.first.isNotFound, isTrue);
-        expect(result.topLevelComments.first.comment.id, 'nonexistent_parent');
-        // Orphan reply is nested under placeholder
-        expect(result.topLevelComments.first.replies.length, equals(1));
-        expect(
-          result.topLevelComments.first.replies.first.comment.content,
-          'Orphan reply',
-        );
-      });
+          // Orphan is in the flat list
+          expect(result.comments.length, equals(1));
+          expect(result.comments.first.content, 'Orphan reply');
+          expect(result.comments.first.replyToEventId, 'nonexistent_parent');
+        },
+      );
 
       test('throws LoadCommentsFailedException on error', () async {
         when(
@@ -278,106 +272,6 @@ void main() {
 
         final filters = captured.first as List<Filter>;
         expect(filters.first.limit, equals(50));
-      });
-    });
-
-    group('watchComments', () {
-      test('returns stream that emits empty thread first', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final stream = repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
-        final results = <CommentThread>[];
-        final subscription = stream.listen(results.add);
-
-        // Wait for initial empty state (startWith)
-        await Future<void>.delayed(Duration.zero);
-        expect(results.first.isEmpty, isTrue);
-        expect(results.first.rootEventId, equals(testRootEventId));
-
-        await subscription.cancel();
-        await controller.close();
-      });
-
-      test('accumulates comments and rebuilds thread', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final stream = repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-        );
-        final results = <CommentThread>[];
-        final subscription = stream.listen(results.add);
-
-        // Wait for initial empty state
-        await Future<void>.delayed(Duration.zero);
-
-        // Add first comment
-        controller.add(
-          _createCommentEvent(
-            id: 'comment1',
-            content: 'First comment',
-            pubkey: testUserPubkey,
-            rootEventId: testRootEventId,
-            rootAuthorPubkey: testRootAuthorPubkey,
-            rootEventKind: _testRootEventKind,
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-        expect(results.last.totalCount, equals(1));
-
-        // Add second comment
-        controller.add(
-          _createCommentEvent(
-            id: 'comment2',
-            content: 'Second comment',
-            pubkey: testUserPubkey,
-            rootEventId: testRootEventId,
-            rootAuthorPubkey: testRootAuthorPubkey,
-            rootEventKind: _testRootEventKind,
-            createdAt: 2000,
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-        expect(results.last.totalCount, equals(2));
-
-        await subscription.cancel();
-        await controller.close();
-      });
-
-      test('delegates to NostrClient.subscribe with correct filter', () async {
-        final controller = StreamController<Event>.broadcast();
-
-        when(
-          () => mockNostrClient.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        repository.watchComments(
-          rootEventId: testRootEventId,
-          rootEventKind: _testRootEventKind,
-          limit: 50,
-        );
-
-        final captured = verify(
-          () => mockNostrClient.subscribe(captureAny()),
-        ).captured;
-
-        final filters = captured.first as List<Filter>;
-        expect(filters.first.kinds, contains(_commentKind));
-        expect(filters.first.uppercaseE, contains(testRootEventId));
-        expect(filters.first.limit, equals(50));
-
-        await controller.close();
       });
     });
 
@@ -743,51 +637,6 @@ void main() {
     });
   });
 
-  group('CommentNode', () {
-    test('totalReplyCount returns correct count', () {
-      final testTime = DateTime(2024);
-
-      final leaf = CommentNode(
-        comment: Comment(
-          id: 'leaf',
-          content: 'leaf',
-          authorPubkey: 'author',
-          createdAt: testTime,
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ),
-      );
-
-      final parent = CommentNode(
-        comment: Comment(
-          id: 'parent',
-          content: 'parent',
-          authorPubkey: 'author',
-          createdAt: testTime,
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ),
-        replies: [leaf],
-      );
-
-      final grandparent = CommentNode(
-        comment: Comment(
-          id: 'grandparent',
-          content: 'grandparent',
-          authorPubkey: 'author',
-          createdAt: testTime,
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ),
-        replies: [parent],
-      );
-
-      expect(leaf.totalReplyCount, equals(0));
-      expect(parent.totalReplyCount, equals(1));
-      expect(grandparent.totalReplyCount, equals(2));
-    });
-  });
-
   group('CommentThread', () {
     test('empty constructor creates empty thread', () {
       const thread = CommentThread.empty('rootId');
@@ -795,7 +644,7 @@ void main() {
       expect(thread.isEmpty, isTrue);
       expect(thread.isNotEmpty, isFalse);
       expect(thread.totalCount, equals(0));
-      expect(thread.topLevelComments, isEmpty);
+      expect(thread.comments, isEmpty);
       expect(thread.rootEventId, equals('rootId'));
     });
 

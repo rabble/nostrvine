@@ -40,8 +40,8 @@ enum CommentsError {
 
 /// State class for the CommentsBloc
 ///
-/// Uses [repo.CommentNode] from the comments_repository package
-/// to represent threaded comments. This follows clean architecture
+/// Uses [repo.Comment] from the comments_repository package
+/// to represent comments. This follows clean architecture
 /// by keeping models in the repository layer.
 final class CommentsState extends Equatable {
   const CommentsState({
@@ -49,7 +49,7 @@ final class CommentsState extends Equatable {
     this.rootEventId = '',
     this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
-    this.topLevelComments = const [],
+    this.comments = const [],
     this.error,
     this.mainInputText = '',
     this.replyInputText = '',
@@ -69,9 +69,9 @@ final class CommentsState extends Equatable {
   /// The author pubkey of the root event (video)
   final String rootAuthorPubkey;
 
-  /// Top-level comments organized as a tree.
-  /// Uses [CommentNode] from the repository layer.
-  final List<CommentNode> topLevelComments;
+  /// All comments in chronological order (newest first).
+  /// Uses [Comment] from the repository layer.
+  final List<Comment> comments;
 
   /// Error type for l10n-friendly error handling.
   /// UI layer maps this to localized string via BlocListener.
@@ -99,7 +99,7 @@ final class CommentsState extends Equatable {
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
-    List<CommentNode>? topLevelComments,
+    List<Comment>? comments,
     CommentsError? error,
     String? mainInputText,
     String? replyInputText,
@@ -111,7 +111,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId ?? this.rootEventId,
       rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
-      topLevelComments: topLevelComments ?? this.topLevelComments,
+      comments: comments ?? this.comments,
       error: error,
       mainInputText: mainInputText ?? this.mainInputText,
       replyInputText: replyInputText ?? this.replyInputText,
@@ -123,7 +123,7 @@ final class CommentsState extends Equatable {
   /// Creates a copy with the active reply cleared.
   CommentsState clearActiveReply({
     CommentsStatus? status,
-    List<CommentNode>? topLevelComments,
+    List<Comment>? comments,
     bool? isPosting,
   }) {
     return CommentsState(
@@ -131,7 +131,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId,
       rootEventKind: rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey,
-      topLevelComments: topLevelComments ?? this.topLevelComments,
+      comments: comments ?? this.comments,
       mainInputText: mainInputText,
       replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
@@ -144,7 +144,7 @@ final class CommentsState extends Equatable {
     rootEventId,
     rootEventKind,
     rootAuthorPubkey,
-    topLevelComments,
+    comments,
     error,
     mainInputText,
     replyInputText,

@@ -23,10 +23,12 @@ class VineTheme {
     double fontSize = 16,
     FontWeight fontWeight = FontWeight.w400,
     Color color = primaryText,
+    double? height,
   }) => GoogleFonts.inter(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
+    height: height,
   );
 
   // Classic Vine green color palette
@@ -46,10 +48,13 @@ class VineTheme {
   static const Color onSurfaceMuted = Color(
     0x80FFFFFF,
   ); // rgba(255,255,255,0.5)
+  static const Color alphaLight25 = Color(0x40FFFFFF);
   static const Color outlineVariant = Color(0xFF254136);
   static const Color borderWhite25 = Color(
     0x40FFFFFF,
   ); // rgba(255,255,255,0.25)
+  static const Color outlinedDisabled = Color(0xFF032017);
+  static const Color containerLow = Color(0xFF0E2B21);
 
   // Tab text style - Bricolage bold (800), 18px, 24px line height
   static TextStyle tabTextStyle({Color color = whiteText}) =>
@@ -145,6 +150,34 @@ class VineTheme {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(8)),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      labelStyle: const TextStyle(color: Colors.white70),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.1),
+      hintStyle: bodyFont(fontSize: 14, color: lightText),
+      errorStyle: TextStyle(color: Colors.yellow[300]),
+      prefixIconColor: Colors.white70,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
       ),
     ),
   );

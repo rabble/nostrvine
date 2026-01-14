@@ -22,7 +22,7 @@ import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/reserved_username_request_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({required this.isNewUser, super.key});
@@ -919,14 +919,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           } else if (registrationResult.isReserved) {
             // Show reserved error - user needs to contact support
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Username is reserved. Contact support to claim it.',
-                  ),
-                  backgroundColor: Colors.orange[700],
-                  duration: const Duration(seconds: 4),
-                ),
+              final username = usernameState.username;
+              await showDialog(
+                context: context,
+                builder: (context) => UsernameReservedDialog(username),
               );
             }
             // Continue with profile creation without NIP-05
@@ -1636,7 +1632,7 @@ class UsernameStatusIndicator extends StatelessWidget {
     }
 
     if (state.isReserved) {
-      return _UsernameReservedIndicator(username: state.username);
+      return _UsernameReservedIndicator();
     }
 
     if (state.hasError) {
@@ -1717,49 +1713,19 @@ class _UsernameTakenIndicator extends StatelessWidget {
 }
 
 class _UsernameReservedIndicator extends StatelessWidget {
-  const _UsernameReservedIndicator({required this.username});
-
-  final String username;
+  const _UsernameReservedIndicator();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.lock, color: Colors.orange[400], size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Username is reserved',
-                style: TextStyle(color: Colors.orange[400], fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
+          Icon(Icons.lock, color: Colors.orange[400], size: 16),
+          const SizedBox(width: 8),
           Text(
-            'If you are the original owner, you can request to claim it.',
-            style: TextStyle(color: Colors.grey[500], fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () {
-              showDialog<void>(
-                context: context,
-                builder: (context) =>
-                    ReservedUsernameRequestDialog(username: username),
-              );
-            },
-            icon: const Icon(Icons.send, size: 16),
-            label: const Text('Request Username'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.orange[400],
-              side: BorderSide(color: Colors.orange[400]!),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              textStyle: const TextStyle(fontSize: 12),
-            ),
+            'Username is reserved',
+            style: TextStyle(color: Colors.orange[400], fontSize: 12),
           ),
         ],
       ),
@@ -1786,6 +1752,69 @@ class _UsernameErrorIndicator extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+@visibleForTesting
+class UsernameReservedDialog extends StatelessWidget {
+  const UsernameReservedDialog(this.username);
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: VineTheme.cardBackground,
+      title: const Text(
+        'Username reserved',
+        style: TextStyle(color: VineTheme.whiteText),
+      ),
+      content: RichText(
+        text: TextSpan(
+          style: TextStyle(color: VineTheme.secondaryText),
+          children: [
+            TextSpan(text: 'The name $username is reserved. Please email '),
+            WidgetSpan(
+              child: GestureDetector(
+                onTap: () async {
+                  final launched = await launchUrl(
+                    Uri.parse(
+                      'mailto:names@divine.video?subject=Reserved username request: $username',
+                    ),
+                  );
+                  if (!launched && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Couldn't open email. Send to: names@divine.video",
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  'names@divine.video',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+            ),
+            const TextSpan(
+              text: ' explaining and proving why you should own it.',
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Close', style: TextStyle(color: VineTheme.lightText)),
+        ),
+      ],
     );
   }
 }

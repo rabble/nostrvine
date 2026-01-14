@@ -248,6 +248,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Account and key management actions at the bottom
               if (isAuthenticated) ...[
                 _buildSectionHeader('Account'),
+                // Show register tile for anonymous users
+                // Only shown when headless auth feature is enabled
+                if (authService.isAnonymous)
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.security,
+                    title: 'Secure Your Account',
+                    subtitle:
+                        'Add email & password to recover your account on any device',
+                    onTap: () => context.push('/secure-account'),
+                    iconColor: VineTheme.vineGreen,
+                  ),
                 _buildSettingsTile(
                   context,
                   icon: Icons.logout,
@@ -502,7 +514,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              final authService = ref.read(authServiceProvider);
+              authService.signOut();
+              Navigator.of(context).pop(true);
+            },
             child: const Text(
               'Log Out',
               style: TextStyle(color: VineTheme.vineGreen),
