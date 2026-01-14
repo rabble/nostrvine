@@ -1,0 +1,83 @@
+group = "co.openvine.divine_camera"
+version = "1.0-SNAPSHOT"
+
+buildscript {
+    ext.kotlin_version = "2.2.20"
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.11.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "co.openvine.divine_camera"
+
+    compileSdk = 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    defaultConfig {
+        minSdk = 24
+    }
+
+    dependencies {
+        // CameraX dependencies
+        implementation("androidx.camera:camera-core:1.4.0")
+        implementation("androidx.camera:camera-camera2:1.4.0")
+        implementation("androidx.camera:camera-lifecycle:1.4.0")
+        implementation("androidx.camera:camera-video:1.4.0")
+        implementation("androidx.camera:camera-view:1.4.0")
+        implementation("androidx.camera:camera-extensions:1.4.0")
+        
+        // Kotlin coroutines
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+        
+        // AndroidX dependencies
+        implementation("androidx.core:core-ktx:1.13.1")
+        implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+        implementation("androidx.appcompat:appcompat:1.7.0")
+        
+        // Test dependencies
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.0.0")
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+
+            testLogging {
+               events "passed", "skipped", "failed", "standardOut", "standardError"
+               outputs.upToDateWhen {false}
+               showStandardStreams = true
+            }
+        }
+    }
+}

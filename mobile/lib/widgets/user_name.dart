@@ -75,7 +75,8 @@ class UserName extends ConsumerWidget {
           value.betterDisplayName(anonymousName),
           _isReserved(value),
         ),
-        AsyncLoading() || AsyncData() => ('Loading...', false),
+        AsyncLoading() ||
+        AsyncData() => (UserProfile.makeTruncatedNpub(pubkey!), false),
         AsyncError() => ('Unknown', false),
       };
     }

@@ -10,18 +10,22 @@ part of 'profile_reposts_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Provider that returns only the videos a user has reposted
 ///
-/// Watches the profile feed provider and filters for videos where:
+/// Gets videos directly from videoEventService and filters for:
 /// - isRepost == true
 /// - reposterPubkey == userIdHex
+///
+/// This is independent from profileFeedProvider which only returns originals.
 
 @ProviderFor(profileReposts)
 const profileRepostsProvider = ProfileRepostsFamily._();
 
 /// Provider that returns only the videos a user has reposted
 ///
-/// Watches the profile feed provider and filters for videos where:
+/// Gets videos directly from videoEventService and filters for:
 /// - isRepost == true
 /// - reposterPubkey == userIdHex
+///
+/// This is independent from profileFeedProvider which only returns originals.
 
 final class ProfileRepostsProvider
     extends
@@ -33,9 +37,11 @@ final class ProfileRepostsProvider
     with $FutureModifier<List<VideoEvent>>, $FutureProvider<List<VideoEvent>> {
   /// Provider that returns only the videos a user has reposted
   ///
-  /// Watches the profile feed provider and filters for videos where:
+  /// Gets videos directly from videoEventService and filters for:
   /// - isRepost == true
   /// - reposterPubkey == userIdHex
+  ///
+  /// This is independent from profileFeedProvider which only returns originals.
   const ProfileRepostsProvider._({
     required ProfileRepostsFamily super.from,
     required String super.argument,
@@ -80,13 +86,15 @@ final class ProfileRepostsProvider
   }
 }
 
-String _$profileRepostsHash() => r'96b8492dfca33eab83570a9e7c19e87c49b731fa';
+String _$profileRepostsHash() => r'6cd7fc7f3b63b4066befc65f6692b2ec1428d130';
 
 /// Provider that returns only the videos a user has reposted
 ///
-/// Watches the profile feed provider and filters for videos where:
+/// Gets videos directly from videoEventService and filters for:
 /// - isRepost == true
 /// - reposterPubkey == userIdHex
+///
+/// This is independent from profileFeedProvider which only returns originals.
 
 final class ProfileRepostsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<VideoEvent>>, String> {
@@ -101,9 +109,11 @@ final class ProfileRepostsFamily extends $Family
 
   /// Provider that returns only the videos a user has reposted
   ///
-  /// Watches the profile feed provider and filters for videos where:
+  /// Gets videos directly from videoEventService and filters for:
   /// - isRepost == true
   /// - reposterPubkey == userIdHex
+  ///
+  /// This is independent from profileFeedProvider which only returns originals.
 
   ProfileRepostsProvider call(String userIdHex) =>
       ProfileRepostsProvider._(argument: userIdHex, from: this);

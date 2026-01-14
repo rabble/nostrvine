@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -148,7 +149,7 @@ class NotificationServiceEnhanced {
   /// Subscribe to comments on user's videos
   void _subscribeToComments(String userPubkey) {
     final filter = Filter(
-      kinds: [1], // Kind 1 = Text notes (comments)
+      kinds: [EventKind.comment], // Kind 1111 = NIP-22 comments
       // NO h filter - we query all relays
     );
 

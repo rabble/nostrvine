@@ -25,6 +25,7 @@ environment:
 workspace:
   - packages/comments_repository
   - packages/db_client
+  - packages/divine_camera
   - packages/keycast_flutter
   - packages/likes_repository
   - packages/models
@@ -32,7 +33,9 @@ workspace:
   - packages/nostr_client
   - packages/nostr_gateway
   - packages/nostr_key_manager
+  - packages/permissions_service
   - packages/profile_repository
+  - packages/videos_repository
   
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -63,12 +66,17 @@ dependencies:
   connectivity_plus: ^7.0.0
   device_info_plus: ^10.1.2
   url_launcher: ^6.3.2
+  # OAuth: Uses ASWebAuthenticationSession on iOS (Apple's recommended auth flow)
+  # https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession
+  flutter_web_auth_2: ^4.1.0
   dio: ^5.8.0
 
   permission_handler: ^12.0.1 # Handle runtime permissions
 
   # Camera and media
   camera: ^0.11.2
+  divine_camera:
+    path: packages/divine_camera
   camera_macos: ^0.0.9 # macOS camera support
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
@@ -100,6 +108,7 @@ dependencies:
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   flutter_svg: ^2.0.10+1 # For custom SVG icons
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
+  skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
@@ -108,7 +117,14 @@ dependencies:
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
     path: packages/nostr_key_manager
-  
+
+  keycast_flutter:
+    path: packages/keycast_flutter
+
+  # Videos Repository - Video feed data layer
+  videos_repository:
+    path: packages/videos_repository
+
   # Logging
   logging: ^1.2.0
 
@@ -143,6 +159,7 @@ dependencies:
   pro_video_editor: ^0.4.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
+  sensors_plus: ^7.0.0
 
 dependency_overrides:
   device_info_plus: ^10.1.2
@@ -218,10 +235,12 @@ flutter:
     - assets/icon/search.svg
     - assets/icon/camera.svg
     - assets/icon/CaretLeft.svg
+    - assets/icon/delete.svg
     - assets/icon/house.svg
     - assets/icon/compass.svg
     - assets/icon/bell.svg
     - assets/icon/userCircle.svg
+    - assets/icon/arrow_bend_down_right.svg
     - assets/loading-brand.gif
     - assets/seed_data/seed_events.sql
     - assets/seed_media/manifest.json
@@ -246,6 +265,8 @@ flutter:
         - asset: assets/fonts/Pacifico-Regular.ttf
     - family: BricolageGrotesque
       fonts:
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
         - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
           weight: 800
     - family: Inter

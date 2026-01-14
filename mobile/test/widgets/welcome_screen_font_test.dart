@@ -4,11 +4,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([AuthService])
 import 'welcome_screen_font_test.mocks.dart';
@@ -16,8 +18,12 @@ import 'welcome_screen_font_test.mocks.dart';
 void main() {
   group('WelcomeScreen Font Tests', () {
     late MockAuthService mockAuthService;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
+
       mockAuthService = MockAuthService();
       // Mock the authState property that welcome screen now uses
       when(mockAuthService.authState).thenReturn(AuthState.authenticated);
@@ -31,7 +37,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            authServiceProvider.overrideWithValue(mockAuthService),
+          ],
           child: const MaterialApp(home: WelcomeScreen()),
         ),
       );
@@ -44,10 +53,7 @@ void main() {
         find.text('Create and share short videos\non the decentralized web'),
         findsOneWidget,
       );
-      expect(
-        find.text('Already have keys? Import them here →'),
-        findsOneWidget,
-      );
+      expect(find.text('Have an account? Log In'), findsOneWidget);
     });
   });
 }

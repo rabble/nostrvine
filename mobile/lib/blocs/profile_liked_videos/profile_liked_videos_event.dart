@@ -25,3 +25,12 @@ final class ProfileLikedVideosSubscriptionRequested
     extends ProfileLikedVideosEvent {
   const ProfileLikedVideosSubscriptionRequested();
 }
+
+/// Request to load more liked videos (pagination).
+///
+/// Fetches the next batch of videos from the existing [likedEventIds] list.
+/// Only effective after initial sync has completed.
+final class ProfileLikedVideosLoadMoreRequested
+    extends ProfileLikedVideosEvent {
+  const ProfileLikedVideosLoadMoreRequested();
+}

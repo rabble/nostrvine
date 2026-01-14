@@ -13,14 +13,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for tracking video analytics with privacy controls
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+///
+/// ## Analytics Backend Integration (TODO)
+///
+/// This service is designed to integrate with the DiVine FunnelCake relay's
+/// analytics API at https://relay.staging.dvines.org/
+///
+/// **Current Status**: STUBBED - Analytics sending is disabled until the
+/// backend POST endpoint is implemented.
+///
+/// **Planned Endpoints**:
+/// - POST /api/analytics/view - Record video view events
+/// - GET /api/videos/{id}/views - Retrieve view stats (already available)
+/// - GET /api/videos/{id}/stats - Retrieve engagement stats (already available)
+///
+/// **Swagger Documentation**: https://relay.staging.dvines.org/swagger-ui/
+///
+/// When the backend is ready:
+/// 1. Set [_analyticsBackendReady] to true
+/// 2. Update [_analyticsEndpoint] if the path differs
+/// 3. Verify request/response format matches backend expectations
 class AnalyticsService implements BackgroundAwareService {
-  AnalyticsService({http.Client? client}) : _client = client ?? http.Client();
+  AnalyticsService({
+    http.Client? client,
+    @visibleForTesting bool? backendReadyOverride,
+  }) : _client = client ?? http.Client(),
+       _backendReadyOverride = backendReadyOverride;
+
+  /// Base URL for the DiVine FunnelCake relay analytics API
+  static const String _analyticsBaseUrl = 'https://relay.staging.dvines.org';
+
+  /// Full endpoint for posting view analytics
+  /// TODO: Confirm exact path when backend implements POST endpoint
   static const String _analyticsEndpoint =
-      'https://api.openvine.co/analytics/view';
+      '$_analyticsBaseUrl/api/analytics/view';
+
+  /// Feature flag: Set to true when backend POST endpoint is implemented
+  /// Currently stubbed out - no requests are sent
+  static const bool _analyticsBackendReady = false;
+
   static const String _analyticsEnabledKey = 'analytics_enabled';
   static const Duration _requestTimeout = Duration(seconds: 10);
 
   final http.Client _client;
+
+  /// Testing override for backend readiness - allows tests to simulate
+  /// a ready backend without changing the static const flag
+  final bool? _backendReadyOverride;
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
 
@@ -81,8 +120,20 @@ class AnalyticsService implements BackgroundAwareService {
     }
   }
 
-  /// Get current analytics enabled state
+  /// Whether the analytics backend is ready to receive requests
+  /// Returns false while the funnelcake POST endpoint is not yet implemented
+  static bool get isBackendReady => _analyticsBackendReady;
+
+  /// Instance-level check for backend readiness
+  /// Uses testing override if provided, otherwise falls back to static const
+  bool get _isBackendReady => _backendReadyOverride ?? _analyticsBackendReady;
+
+  /// Get current analytics enabled state (user preference)
   bool get analyticsEnabled => _analyticsEnabled;
+
+  /// Whether analytics tracking is currently operational
+  /// Requires both backend to be ready AND user to have analytics enabled
+  bool get isOperational => _isBackendReady && _analyticsEnabled;
 
   /// Set analytics enabled state
   Future<void> setAnalyticsEnabled(bool enabled) async {
@@ -161,10 +212,22 @@ class AnalyticsService implements BackgroundAwareService {
     int? loopCount,
     bool? completedVideo,
   }) async {
-    // Check if analytics is enabled
+    // Check if backend is ready (feature flag)
+    if (!_isBackendReady) {
+      // TODO: Remove this check when funnelcake backend POST endpoint is ready
+      // See: https://relay.staging.dvines.org/swagger-ui/
+      Log.debug(
+        'Analytics backend not ready - skipping $eventType tracking',
+        name: 'AnalyticsService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Check if analytics is enabled by user preference
     if (!_analyticsEnabled) {
       Log.debug(
-        'Analytics disabled - not tracking view',
+        'Analytics disabled by user - not tracking view',
         name: 'AnalyticsService',
         category: LogCategory.system,
       );
@@ -334,7 +397,8 @@ class AnalyticsService implements BackgroundAwareService {
     List<VideoEvent> videos, {
     String source = 'mobile',
   }) async {
-    if (!_analyticsEnabled || videos.isEmpty) return;
+    // Skip if backend not ready or analytics disabled
+    if (!_isBackendReady || !_analyticsEnabled || videos.isEmpty) return;
 
     // Create operations for rate-limited execution
     final operations = videos

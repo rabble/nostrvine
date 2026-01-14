@@ -4,9 +4,18 @@
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/user_profile.dart';
 
-/// Extracts the video event ID from the first 'e' tag in a Nostr event
-/// Returns null if no 'e' tag exists or if the tag has no value
+/// Extracts the video event ID from a Nostr event's tags
+/// For NIP-22 comments (kind 1111), looks for uppercase 'E' tag (root scope)
+/// Falls back to lowercase 'e' tag for other event types (reactions, reposts)
+/// Returns null if no matching tag exists or if the tag has no value
 String? extractVideoEventId(Event event) {
+  // First try uppercase 'E' tag (NIP-22 root scope for comments)
+  for (final tag in event.tags) {
+    if (tag.isNotEmpty && tag[0] == 'E' && tag.length > 1) {
+      return tag[1];
+    }
+  }
+  // Fall back to lowercase 'e' tag (for reactions, reposts, etc.)
   for (final tag in event.tags) {
     if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
       return tag[1];
