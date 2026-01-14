@@ -1,9 +1,6 @@
 // ABOUTME: Unit tests for DbVideoLocalStorage implementation.
 // ABOUTME: Tests the db_client-backed local storage for video events.
 
-// Null safety ignore for test files
-// ignore_for_file: prefer_const_constructors
-
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide Filter;
@@ -38,20 +35,22 @@ void main() {
       String? pubkey,
       int? createdAt,
     }) {
-      final event = Event(
-        pubkey ?? testPubkey1,
-        videoKind,
-        [
-          ['d', 'test-vine-id'],
-          ['url', 'https://example.com/video.mp4'],
-          ['t', 'test'],
-        ],
-        'Test video',
-        createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
-      // Set id manually for testing
-      event.id = id ?? testEventId1;
-      event.sig = 'test-signature';
+      final event =
+          Event(
+              pubkey ?? testPubkey1,
+              videoKind,
+              [
+                ['d', 'test-vine-id'],
+                ['url', 'https://example.com/video.mp4'],
+                ['t', 'test'],
+              ],
+              'Test video',
+              createdAt:
+                  createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            // Set id manually for testing
+            ..id = id ?? testEventId1
+            ..sig = 'test-signature';
       return event;
     }
 
@@ -366,7 +365,7 @@ void main() {
           () => mockDao.watchEventsByFilter(any(), sortBy: 'likes'),
         ).called(1);
 
-        controller.close();
+        unawaited(controller.close());
       });
     });
 
