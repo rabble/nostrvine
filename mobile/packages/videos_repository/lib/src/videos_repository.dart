@@ -33,6 +33,39 @@ class VideosRepository {
 
   final NostrClient _nostrClient;
 
+  /// Fetches videos from followed users for the home feed.
+  ///
+  /// This is the "Home" feed mode - shows videos only from users the
+  /// current user follows.
+  ///
+  /// Parameters:
+  /// - [authors]: List of pubkeys to filter by (followed users)
+  /// - [limit]: Maximum number of videos to return (default 5)
+  /// - [until]: Only return videos created before this Unix timestamp
+  ///   (for pagination - pass `previousVideo.createdAt`)
+  ///
+  /// Returns a list of [VideoEvent] sorted by creation time (newest first).
+  /// Returns an empty list if [authors] is empty, no videos are found,
+  /// or on error.
+  Future<List<VideoEvent>> getHomeFeedVideos({
+    required List<String> authors,
+    int limit = _defaultLimit,
+    int? until,
+  }) async {
+    if (authors.isEmpty) return [];
+
+    final filter = Filter(
+      kinds: [_videoKind],
+      authors: authors,
+      limit: limit,
+      until: until,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    return _transformAndFilter(events);
+  }
+
   /// Fetches the latest videos in chronological order (newest first).
   ///
   /// This is the "New" feed mode - shows all public videos sorted by

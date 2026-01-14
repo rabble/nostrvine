@@ -138,6 +138,114 @@ void main() {
       });
     });
 
+    group('getHomeFeedVideos', () {
+      test('returns empty list when authors is empty', () async {
+        final result = await repository.getHomeFeedVideos(authors: []);
+
+        expect(result, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('returns empty list when no events found', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['pubkey1', 'pubkey2'],
+        );
+
+        expect(result, isEmpty);
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+      });
+
+      test('queries with correct filter including authors', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        final authors = ['pubkey1', 'pubkey2'];
+        await repository.getHomeFeedVideos(authors: authors, limit: 10);
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+
+        expect(filters, hasLength(1));
+        expect(filters.first.kinds, contains(EventKind.videoVertical));
+        expect(filters.first.authors, equals(authors));
+        expect(filters.first.limit, equals(10));
+      });
+
+      test('passes until parameter for pagination', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        const until = 1704067200;
+        await repository.getHomeFeedVideos(
+          authors: ['pubkey1'],
+          until: until,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+
+        expect(filters.first.until, equals(until));
+      });
+
+      test('transforms and filters events correctly', () async {
+        final event = _createVideoEvent(
+          id: 'home-video-123',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('home-video-123'));
+        expect(result.first.pubkey, equals('followed-user'));
+      });
+
+      test('sorts videos by creation time (newest first)', () async {
+        final olderEvent = _createVideoEvent(
+          id: 'older',
+          pubkey: 'user1',
+          videoUrl: 'https://example.com/old.mp4',
+          createdAt: 1704067200,
+        );
+        final newerEvent = _createVideoEvent(
+          id: 'newer',
+          pubkey: 'user2',
+          videoUrl: 'https://example.com/new.mp4',
+          createdAt: 1704153600,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [olderEvent, newerEvent],
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['user1', 'user2'],
+        );
+
+        expect(result, hasLength(2));
+        expect(result.first.id, equals('newer'));
+        expect(result.last.id, equals('older'));
+      });
+    });
+
     group('getPopularVideos', () {
       test('fetches more events than limit for sorting', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
