@@ -107,11 +107,11 @@ final class VideoFeedState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        videos,
-        mode,
-        hasMore,
-        isLoadingMore,
-        error,
-      ];
+    status,
+    videos,
+    mode,
+    hasMore,
+    isLoadingMore,
+    error,
+  ];
 }
