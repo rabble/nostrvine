@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
@@ -120,7 +121,7 @@ class LoginOptionsScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () => context.push('/import-key'),
+                          onPressed: () => context.push(KeyImportScreen.path),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white54),

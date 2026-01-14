@@ -287,7 +287,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
-        return '/home/0';
+        return HomeScreenRouter.pathForIndex(0);
       }
 
       // Auth routes are allowed without TOS - user is in the process of logging in

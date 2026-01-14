@@ -11,6 +11,7 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -161,7 +162,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'edit') {
       // Navigate to edit-profile route (defined outside ShellRoute)
-      await context.push('/edit-profile');
+      await context.push(ProfileSetupScreen.editPath);
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -281,7 +282,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openClips() {
     // Navigate to clips route (defined outside ShellRoute)
-    context.push('/clips');
+    context.push(ClipLibraryScreen.clipsPath);
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {

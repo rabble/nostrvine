@@ -29,6 +29,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 
@@ -459,7 +460,7 @@ String buildRoute(RouteContext context) {
       return DiscoverListsScreen.path;
 
     case RouteType.sound:
-      return '/sound/${context.soundId ?? ''}';
+      return SoundDetailScreen.pathForId(context.soundId ?? '');
     case RouteType.secureAccount:
       return SecureAccountScreen.path;
   }

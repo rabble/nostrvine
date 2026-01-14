@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:nostr_gateway/src/exceptions/exceptions.dart';
 import 'package:nostr_gateway/src/models/models.dart';
