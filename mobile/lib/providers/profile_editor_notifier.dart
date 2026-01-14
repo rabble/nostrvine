@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -63,19 +65,27 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
     state = const AsyncLoading();
     final usernameRepository = ref.read(usernameRepositoryProvider);
     final profileRepository = ref.read(profileRepositoryProvider);
+    final userProfileService = ref.read(userProfileServiceProvider);
     final currentProfile = await profileRepository.getProfile(pubkey: pubkey);
     final nip05 = (username != null && username.isNotEmpty)
         ? '$username@divine.video'
         : null;
 
     try {
-      await profileRepository.saveProfileEvent(
+      final savedProfile = await profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
         nip05: nip05,
         picture: picture,
         currentProfile: currentProfile,
       );
+
+      // TODO(Josh-Sanford): refactor to use model from packages
+      // once userProfileService has been refactored
+      final appProfile = app_models.UserProfile.fromJson(savedProfile.toJson());
+      await userProfileService.updateCachedProfile(appProfile);
+      ref.invalidate(fetchUserProfileProvider(pubkey));
+      ref.invalidate(userProfileReactiveProvider(pubkey));
     } catch (error, stackTrace) {
       Log.error(
         'Failed to publish profile: $error',
@@ -107,13 +117,22 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
     if (result is! UsernameClaimSuccess) {
       // Restores the user's previous nip05 after a failed username claim.
       try {
-        await profileRepository.saveProfileEvent(
+        final savedProfile = await profileRepository.saveProfileEvent(
           displayName: displayName,
           about: about,
           nip05: currentProfile?.nip05,
           picture: picture,
           currentProfile: currentProfile,
         );
+
+        // TODO(Josh-Sanford): refactor to use model from packages
+        // once userProfileService has been refactored
+        final appProfile = app_models.UserProfile.fromJson(
+          savedProfile.toJson(),
+        );
+        await userProfileService.updateCachedProfile(appProfile);
+        ref.invalidate(fetchUserProfileProvider(pubkey));
+        ref.invalidate(userProfileReactiveProvider(pubkey));
       } catch (error) {
         Log.error('Rollback failed: $error', name: 'ProfileEditorNotifier');
       }

@@ -206,29 +206,32 @@ void main() {
           ).called(1);
         });
 
-        test('preserves rawData fields when optional params are null', () async {
-          // Arrange
-          final currentProfile = await createCurrentProfile({
-            'display_name': 'Old Name',
-            'about': 'Preserved bio',
-          });
+        test(
+          'preserves rawData fields when optional params are null',
+          () async {
+            // Arrange
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'about': 'Preserved bio',
+            });
 
-          // Act
-          await repository.saveProfileEvent(
-            displayName: 'New Name',
-            currentProfile: currentProfile,
-          );
+            // Act
+            await repository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: currentProfile,
+            );
 
-          // Verify
-          verify(
-            () => mockNostrClient.sendProfile(
-              profileContent: {
-                'display_name': 'New Name',
-                'about': 'Preserved bio',
-              },
-            ),
-          ).called(1);
-        });
+            // Verify
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': 'Preserved bio',
+                },
+              ),
+            ).called(1);
+          },
+        );
       });
     });
 

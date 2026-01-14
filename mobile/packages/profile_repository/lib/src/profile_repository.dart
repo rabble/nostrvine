@@ -26,7 +26,7 @@ class ProfileRepository {
   /// Publishes profile metadata to Nostr relays
   ///
   /// Throws `ProfilePublishFailedException` if the operation fails.
-  Future<void> saveProfileEvent({
+  Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,
     String? nip05,
@@ -50,5 +50,7 @@ class ProfileRepository {
         'Failed to publish profile. Please try again.',
       );
     }
+
+    return UserProfile.fromNostrEvent(profileEvent);
   }
 }

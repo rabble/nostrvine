@@ -5,18 +5,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_editor_notifier.dart';
 import 'package:openvine/repositories/username_repository.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class MockUsernameRepository extends Mock implements UsernameRepository {}
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
+class MockUserProfileService extends Mock implements UserProfileService {}
+
 void main() {
   late MockUsernameRepository mockUsernameRepository;
   late MockProfileRepository mockProfileRepository;
+  late MockUserProfileService mockUserProfileService;
 
   // Test data constants - using full 64-character hex pubkey as required
   const testPubkey =
@@ -28,9 +33,29 @@ void main() {
   const testNip05 = '$testUsername@divine.video';
   const testOriginalNip05 = 'original@example.com';
 
+  setUpAll(() {
+    // Register fallback value for app_models.UserProfile (used by UserProfileService)
+    registerFallbackValue(
+      app_models.UserProfile(
+        pubkey: testPubkey,
+        displayName: testDisplayName,
+        rawData: const {},
+        createdAt: DateTime.now(),
+        eventId:
+            'fallback12345678901234567890123456789012345678901234567890123456',
+      ),
+    );
+  });
+
   setUp(() {
     mockUsernameRepository = MockUsernameRepository();
     mockProfileRepository = MockProfileRepository();
+    mockUserProfileService = MockUserProfileService();
+
+    // Default stub for updateCachedProfile - tests can override if needed
+    when(
+      () => mockUserProfileService.updateCachedProfile(any()),
+    ).thenAnswer((_) async {});
   });
 
   /// Helper to create a test UserProfile
@@ -54,6 +79,7 @@ void main() {
       overrides: [
         usernameRepositoryProvider.overrideWithValue(mockUsernameRepository),
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+        userProfileServiceProvider.overrideWithValue(mockUserProfileService),
       ],
     );
     addTearDown(container.dispose);
@@ -90,7 +116,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: null,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
 
             // Act
             await container
@@ -139,7 +165,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -181,7 +207,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: null,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
             // Note: Current implementation still calls register with empty
             // string when username is '' (not null). This mocks that behavior.
             when(
@@ -236,7 +262,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: null,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockUsernameRepository.register(
                 username: testUsername,
@@ -294,7 +320,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: existingProfile,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockUsernameRepository.register(
                 username: testUsername,
@@ -419,7 +445,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -435,7 +461,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -471,7 +497,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: existingProfile,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockUsernameRepository.register(
                 username: testUsername,
@@ -486,7 +512,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: existingProfile,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
 
             // Act
             await container
@@ -534,7 +560,7 @@ void main() {
               picture: testPicture,
               currentProfile: null,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -549,7 +575,7 @@ void main() {
               picture: testPicture,
               currentProfile: null,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -598,7 +624,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -613,7 +639,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -649,7 +675,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: existingProfile,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
             when(
               () => mockUsernameRepository.register(
                 username: testUsername,
@@ -664,7 +690,7 @@ void main() {
                 picture: testPicture,
                 currentProfile: existingProfile,
               ),
-            ).thenAnswer((_) async {});
+            ).thenAnswer((_) async => createTestProfile());
 
             // Act
             await container
@@ -714,7 +740,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -731,7 +757,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -765,7 +791,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -782,7 +808,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
 
           // Act
           await container
@@ -831,7 +857,7 @@ void main() {
               picture: testPicture,
               currentProfile: existingProfile,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => createTestProfile());
           when(
             () => mockUsernameRepository.register(
               username: testUsername,
@@ -886,6 +912,7 @@ void main() {
           ).thenAnswer((_) async {
             // Simulate some delay
             await Future<void>.delayed(const Duration(milliseconds: 10));
+            return createTestProfile();
           });
 
           // Listen to state changes

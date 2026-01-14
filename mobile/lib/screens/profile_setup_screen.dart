@@ -91,7 +91,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           if (profile != null && mounted) {
             setState(() {
               // Use bestDisplayName which handles name/displayName fallback properly
-              _nameController.text = profile.name ?? profile.displayName ?? '';
+              _nameController.text = profile.displayName ?? profile.name ?? '';
               _bioController.text = profile.about ?? '';
               _pictureController.text = profile.picture ?? '';
 
