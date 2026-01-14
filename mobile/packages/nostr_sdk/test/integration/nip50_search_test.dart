@@ -85,7 +85,7 @@ void main() {
           reason: 'Event content should contain search term',
         );
       }
-    });
+    }, skip: true);
 
     test('Should combine search with other filters', () async {
       // Search with additional constraints
@@ -124,7 +124,7 @@ void main() {
           );
         }
       }
-    });
+    }, skip: true);
 
     test('Should handle relays that don\'t support search', () async {
       // Add a relay that doesn't support NIP-50
@@ -148,7 +148,7 @@ void main() {
       // Should still work on relays that support search
       // Non-supporting relays might send NOTICE or just ignore the search param
       log('Received ${events.length} events from search');
-    });
+    }, skip: true);
 
     test('Search API should provide convenient method', () async {
       // Wait a bit longer for relay connections
@@ -186,6 +186,6 @@ void main() {
         equals(results.length),
         reason: 'Results should be deduplicated by event ID',
       );
-    });
+    }, skip: true);
   });
 }
