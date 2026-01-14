@@ -2551,16 +2551,10 @@ class VideoEventService extends ChangeNotifier {
     );
 
     // Add videos to home feed list
-    for (final video in videosToSeed) {
-      homeFeedList.add(video);
-    }
+    homeFeedList.addAll(videosToSeed);
 
     // Sort by creation time (newest first)
-    homeFeedList.sort((a, b) {
-      final timeCompare = b.createdAt.compareTo(a.createdAt);
-      if (timeCompare != 0) return timeCompare;
-      return a.id.compareTo(b.id);
-    });
+    homeFeedList.sortByCreationTime();
 
     // Notify listeners so UI updates
     notifyListeners();
@@ -2670,16 +2664,10 @@ class VideoEventService extends ChangeNotifier {
       );
 
       // Add videos to home feed list
-      for (final video in videosToSeed) {
-        homeFeedList.add(video);
-      }
+      homeFeedList.addAll(videosToSeed);
 
       // Sort by creation time (newest first)
-      homeFeedList.sort((a, b) {
-        final timeCompare = b.createdAt.compareTo(a.createdAt);
-        if (timeCompare != 0) return timeCompare;
-        return a.id.compareTo(b.id);
-      });
+      homeFeedList.sortByCreationTime();
 
       // Notify listeners so UI updates
       notifyListeners();
@@ -5261,4 +5249,14 @@ class VideoEventServiceException implements Exception {
 
   @override
   String toString() => 'VideoEventServiceException: $message';
+}
+
+extension _VideoEventSortingExtension on List<VideoEvent> {
+  /// Sort the list by creation time
+  void sortByCreationTime([bool descending = true]) {
+    sort((a, b) {
+      final result = a.createdAt.compareTo(b.createdAt);
+      return descending ? result : -result;
+    });
+  }
 }
