@@ -252,7 +252,7 @@ void main() {
           (_) async => <Event>[],
         );
 
-        await repository.getPopularVideos(limit: 5);
+        await repository.getPopularVideos();
 
         final captured = verify(
           () => mockNostrClient.queryEvents(captureAny()),
@@ -268,7 +268,7 @@ void main() {
           (_) async => <Event>[],
         );
 
-        await repository.getPopularVideos(limit: 5, fetchMultiplier: 2);
+        await repository.getPopularVideos(fetchMultiplier: 2);
 
         final captured = verify(
           () => mockNostrClient.queryEvents(captureAny()),
