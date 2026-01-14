@@ -15,7 +15,9 @@ void main() {
     testWidgets('renders title', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: VineBottomSheetHeader(title: 'Test Title')),
+          home: Scaffold(
+            body: VineBottomSheetHeader(title: Text('Test Title')),
+          ),
         ),
       );
 
@@ -29,7 +31,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: VineBottomSheetHeader(
-              title: 'Test Title',
+              title: Text('Test Title'),
               trailing: trailingWidget,
             ),
           ),
@@ -38,18 +40,6 @@ void main() {
 
       expect(find.text('Test Title'), findsOneWidget);
       expect(find.byKey(const Key('trailing')), findsOneWidget);
-    });
-  });
-
-  group('VineBottomSheetBadge', () {
-    testWidgets('renders text', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: VineBottomSheetBadge(text: '3 new')),
-        ),
-      );
-
-      expect(find.text('3 new'), findsOneWidget);
     });
   });
 }

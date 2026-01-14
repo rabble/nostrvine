@@ -287,7 +287,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       builder: (sheetContext) => ClipPreviewSheet(
         clip: clip,
         onDelete: () {
-          Navigator.pop(sheetContext);
+          sheetContext.pop();
           _confirmDeleteClip(clip);
         },
       ),
@@ -308,13 +308,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: dialogContext.pop, child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogContext);
+              dialogContext.pop();
               _deleteClip(clip);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -382,13 +379,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: dialogContext.pop, child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogContext);
+              dialogContext.pop();
               _clearAllClips();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

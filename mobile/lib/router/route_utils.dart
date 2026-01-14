@@ -102,6 +102,23 @@ class CuratedListRouteExtra {
   final String? authorPubkey;
 }
 
+/// Extra data for video editor route (passed via GoRouter extra)
+class VideoEditorRouteExtra {
+  const VideoEditorRouteExtra({
+    required this.videoPath,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+  });
+
+  final String videoPath;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
+}
+
 /// Parse a URL path into a structured RouteContext
 /// Normalizes negative indices to 0 and decodes URL-encoded parameters
 RouteContext parseRoute(String path) {

@@ -896,7 +896,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
         builder: (ctx, st) {
-          final videoPath = st.extra as String?;
+          // Support both simple String (videoPath only) and VideoEditorRouteExtra
+          final extra = st.extra;
+          if (extra is VideoEditorRouteExtra) {
+            return VideoEditorScreen(
+              videoPath: extra.videoPath,
+              externalAudioEventId: extra.externalAudioEventId,
+              externalAudioUrl: extra.externalAudioUrl,
+              externalAudioIsBundled: extra.externalAudioIsBundled,
+              externalAudioAssetPath: extra.externalAudioAssetPath,
+            );
+          }
+          // Legacy support: simple String path
+          final videoPath = extra as String?;
           if (videoPath == null) {
             // If no video provided, show error screen
             return Scaffold(
