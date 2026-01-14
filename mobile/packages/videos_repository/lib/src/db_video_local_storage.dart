@@ -6,7 +6,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
 
 /// NIP-71 video event kind for addressable short videos.
-const int _videoKind = 34236;
+const int _videoKind = EventKind.videoVertical;
 
 /// Implementation of `VideoLocalStorage` using db_client's `NostrEventsDao`.
 ///
