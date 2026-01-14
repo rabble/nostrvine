@@ -66,6 +66,7 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
@@ -844,6 +845,21 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     videoEventService: videoEventService,
     blossomUploadService: blossomUploadService,
     userProfileService: userProfileService,
+  );
+}
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+@riverpod
+ViewEventPublisher viewEventPublisher(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  return ViewEventPublisher(
+    nostrService: nostrService,
+    authService: authService,
   );
 }
 

@@ -221,15 +221,15 @@ final class EditorsPicksProvider
 
 String _$editorsPicksHash() => r'47f6f4c73a8e2f6f8aafa718986c063feb530d08';
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 
 @ProviderFor(AnalyticsTrending)
 const analyticsTrendingProvider = AnalyticsTrendingProvider._();
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 final class AnalyticsTrendingProvider
     extends $NotifierProvider<AnalyticsTrending, List<VideoEvent>> {
-  /// Provider for analytics-based trending videos
+  /// Provider for analytics-based trending videos with cursor pagination
   const AnalyticsTrendingProvider._()
     : super(
         from: null,
@@ -257,9 +257,9 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'6bf4dd9f6cd1c64c157f7c5733909211e6729a41';
+String _$analyticsTrendingHash() => r'82960b26d866e7c9f9ea3431939ca8e1cf3a6da0';
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 
 abstract class _$AnalyticsTrending extends $Notifier<List<VideoEvent>> {
   List<VideoEvent> build();

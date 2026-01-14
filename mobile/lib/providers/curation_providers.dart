@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart'
     hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -161,17 +162,27 @@ bool curationLoading(Ref ref) => ref.watch(curationProvider).isLoading;
 List<VideoEvent> editorsPicks(Ref ref) =>
     ref.watch(curationProvider.select((state) => state.editorsPicks));
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 @riverpod
 class AnalyticsTrending extends _$AnalyticsTrending {
+  int? _nextCursor;
+  bool _hasMore = true;
+  bool _isLoading = false;
+
   @override
   List<VideoEvent> build() {
     // Initialize empty list, will be populated on refresh
+    _nextCursor = null;
+    _hasMore = true;
+    _isLoading = false;
     return [];
   }
 
   /// Refresh trending videos from analytics API
   Future<void> refresh() async {
+    if (_isLoading) return;
+    _isLoading = true;
+
     Log.info(
       'AnalyticsTrending: Refreshing trending videos from analytics API',
       name: 'AnalyticsTrendingProvider',
@@ -182,11 +193,18 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       final service = ref.read(analyticsApiServiceProvider);
       final videos = await service.getTrendingVideos(forceRefresh: true);
 
+      // Check if provider is still mounted after async gap
+      if (!ref.mounted) return;
+
+      // Reset pagination state
+      _nextCursor = _getOldestTimestamp(videos);
+      _hasMore = videos.length >= AppConstants.paginationBatchSize;
+
       // Update state with new trending videos
       state = videos;
 
       Log.info(
-        'AnalyticsTrending: Loaded ${state.length} trending videos',
+        'AnalyticsTrending: Loaded ${state.length} trending videos, hasMore: $_hasMore',
         name: 'AnalyticsTrendingProvider',
         category: LogCategory.system,
       );
@@ -197,15 +215,27 @@ class AnalyticsTrending extends _$AnalyticsTrending {
         category: LogCategory.system,
       );
       // Keep existing state on error
+    } finally {
+      _isLoading = false;
     }
   }
 
-  /// Load more trending videos for pagination
+  /// Load more trending videos using cursor-based pagination
   Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) {
+      Log.debug(
+        'AnalyticsTrending: Skipping loadMore (isLoading: $_isLoading, hasMore: $_hasMore)',
+        name: 'AnalyticsTrendingProvider',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _isLoading = true;
     final currentCount = state.length;
 
     Log.info(
-      'AnalyticsTrending: Loading more trending videos (current: $currentCount)',
+      'AnalyticsTrending: Loading more trending videos (current: $currentCount, cursor: $_nextCursor)',
       name: 'AnalyticsTrendingProvider',
       category: LogCategory.system,
     );
@@ -213,24 +243,44 @@ class AnalyticsTrending extends _$AnalyticsTrending {
     try {
       final service = ref.read(analyticsApiServiceProvider);
 
-      // IMPORTANT: The analytics API currently returns a fixed set of trending videos
-      // If we already have videos and the API returns the same or fewer videos,
-      // don't update state to avoid infinite loops
+      // Use cursor-based pagination with 'before' parameter
       final videos = await service.getTrendingVideos(
-        limit: currentCount + 50,
-        forceRefresh: true,
+        limit: 50,
+        before: _nextCursor,
       );
 
-      if (videos.length > currentCount) {
-        state = videos;
-        Log.info(
-          'AnalyticsTrending: Loaded ${videos.length - currentCount} more videos (total: ${videos.length})',
-          name: 'AnalyticsTrendingProvider',
-          category: LogCategory.system,
-        );
+      // Check if provider is still mounted after async gap
+      if (!ref.mounted) return;
+
+      if (videos.isNotEmpty) {
+        // Deduplicate and merge
+        final existingIds = state.map((v) => v.id).toSet();
+        final newVideos = videos
+            .where((v) => !existingIds.contains(v.id))
+            .toList();
+
+        if (newVideos.isNotEmpty) {
+          state = [...state, ...newVideos];
+          _nextCursor = _getOldestTimestamp(videos);
+          _hasMore = videos.length >= AppConstants.paginationBatchSize;
+
+          Log.info(
+            'AnalyticsTrending: Loaded ${newVideos.length} more videos (total: ${state.length})',
+            name: 'AnalyticsTrendingProvider',
+            category: LogCategory.system,
+          );
+        } else {
+          _hasMore = false;
+          Log.info(
+            'AnalyticsTrending: All returned videos already in state, stopping pagination',
+            name: 'AnalyticsTrendingProvider',
+            category: LogCategory.system,
+          );
+        }
       } else {
-        Log.warning(
-          'AnalyticsTrending: No new videos available from API (requested: ${currentCount + 50}, received: ${videos.length})',
+        _hasMore = false;
+        Log.info(
+          'AnalyticsTrending: No more videos available',
           name: 'AnalyticsTrendingProvider',
           category: LogCategory.system,
         );
@@ -241,7 +291,15 @@ class AnalyticsTrending extends _$AnalyticsTrending {
         name: 'AnalyticsTrendingProvider',
         category: LogCategory.system,
       );
+    } finally {
+      _isLoading = false;
     }
+  }
+
+  /// Get oldest timestamp from videos for cursor pagination
+  int? _getOldestTimestamp(List<VideoEvent> videos) {
+    if (videos.isEmpty) return null;
+    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
   }
 }
 

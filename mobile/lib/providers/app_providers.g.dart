@@ -2600,6 +2600,68 @@ final class VideoEventPublisherProvider
 String _$videoEventPublisherHash() =>
     r'b14b2c63806aa23370d43e14d9a047b36dcde180';
 
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+@ProviderFor(viewEventPublisher)
+const viewEventPublisherProvider = ViewEventPublisherProvider._();
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+final class ViewEventPublisherProvider
+    extends
+        $FunctionalProvider<
+          ViewEventPublisher,
+          ViewEventPublisher,
+          ViewEventPublisher
+        >
+    with $Provider<ViewEventPublisher> {
+  /// View event publisher for kind 22236 ephemeral analytics events
+  ///
+  /// Publishes video view events to track watch time, traffic sources,
+  /// and enable creator analytics and recommendation systems.
+  const ViewEventPublisherProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewEventPublisherProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewEventPublisherHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewEventPublisher> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewEventPublisher create(Ref ref) {
+    return viewEventPublisher(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewEventPublisher value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewEventPublisher>(value),
+    );
+  }
+}
+
+String _$viewEventPublisherHash() =>
+    r'33477998370aad03ce25bb4beff38a28da291d64';
+
 /// Curation Service - manages NIP-51 video curation sets
 
 @ProviderFor(curationService)
