@@ -498,10 +498,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                             if (value.length > kMaxUsernameLength) {
                               return 'Username must be $kMaxUsernameLength characters or less';
                             }
-                            // Show error from controller state if taken
-                            if (usernameState.isTaken) {
-                              return 'Username already taken';
-                            }
                             return null;
                           },
                         ),
