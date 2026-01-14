@@ -24,6 +24,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
@@ -68,7 +69,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     // Restore tab index from provider to survive widget recreation
     final savedTabIndex = ref.read(exploreTabIndexProvider);
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: savedTabIndex,
     );
@@ -171,6 +172,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Check current page context to see if we need to reset
     final pageContext = ref.read(pageContextProvider);
+    final wasInFeedMode =
+        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
     final shouldReset =
         pageContext.whenOrNull(
           data: (ctx) => ctx.videoIndex != null || _hashtagMode != null,
@@ -178,6 +181,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         false;
 
     if (shouldReset) {
+      // CRITICAL: Stop all video playback BEFORE navigating back to grid mode
+      // This prevents videos from playing in the background when switching tabs
+      // videoControllerAutoCleanupProvider only triggers on route TYPE changes,
+      // not when staying on the same route type (explore), so we must cleanup here
+      if (wasInFeedMode) {
+        Log.info(
+          '🛑 ExploreScreen: Stopping video playback before exiting feed mode',
+          name: 'ExploreScreen',
+          category: LogCategory.video,
+        );
+        disposeAllVideoControllers(ref);
+      }
+
       // Clear hashtag mode
       _hashtagMode = null;
       setCustomTitle(null); // Clear custom title
@@ -299,6 +315,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             tabs: const [
               Tab(text: 'New Videos'),
               Tab(text: 'Popular Videos'),
+              Tab(text: 'Classics'),
               Tab(text: 'Lists'),
             ],
           ),
@@ -367,6 +384,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
+                ),
+                ClassicVinesTab(
+                  onVideoTap: (videos, index) => _enterFeedMode(videos, index),
                 ),
                 _buildListsTab(),
               ],

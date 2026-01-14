@@ -973,7 +973,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid profile ID')),
             );
           }
-          return OtherProfileScreen(npub: npub);
+          // Extract profile hints from extra (for users without Kind 0 profiles)
+          final extra = st.extra as Map<String, String?>?;
+          final displayNameHint = extra?['displayName'];
+          final avatarUrlHint = extra?['avatarUrl'];
+          return OtherProfileScreen(
+            npub: npub,
+            displayNameHint: displayNameHint,
+            avatarUrlHint: avatarUrlHint,
+          );
         },
       ),
     ],
