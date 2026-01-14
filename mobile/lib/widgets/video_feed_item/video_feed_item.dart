@@ -700,7 +700,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   valueListenable: controller,
                   builder: (context, value, _) {
                     // Check for video error state
-                    if (value.hasError) {
+                    // IMPORTANT: Only show error if video is NOT playing
+                    // hasError can be stale after transient errors; if video recovered
+                    // and is playing (audio/video working), don't show error overlay
+                    final isActuallyBroken = value.hasError && !value.isPlaying;
+                    if (isActuallyBroken) {
                       return VideoErrorOverlay(
                         video: video,
                         controllerParams: _controllerParams,
@@ -1484,26 +1488,37 @@ class VideoOverlayActions extends ConsumerWidget {
                                     ),
                             ),
                           ),
-                          // Show original repost count if available
-                          if (video.originalReposts != null &&
-                              video.originalReposts! > 0) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                StringUtils.formatCompactNumber(
-                                  video.originalReposts!,
-                                ),
-                                style: const TextStyle(
-                                  fontFamily: 'Bricolage Grotesque',
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ],
+                          // Show repost count: Nostr reposts + original reposts (if any)
+                          Builder(
+                            builder: (context) {
+                              final nostrReposts =
+                                  video.reposterPubkeys?.length ?? 0;
+                              final originalReposts =
+                                  video.originalReposts ?? 0;
+                              final totalReposts =
+                                  nostrReposts + originalReposts;
+
+                              if (totalReposts > 0) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    StringUtils.formatCompactNumber(
+                                      totalReposts,
+                                    ),
+                                    style: const TextStyle(
+                                      fontFamily: 'Bricolage Grotesque',
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                         ],
                       );
                     },

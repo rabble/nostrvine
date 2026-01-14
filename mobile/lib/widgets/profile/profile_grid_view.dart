@@ -94,12 +94,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final likesRepository = ref.watch(likesRepositoryProvider);
 
     // Build the base widget with ProfileLikedVideosBloc
+    // Pass userIdHex as targetUserPubkey so the BLoC knows whose likes to fetch
     final tabContent = BlocProvider<ProfileLikedVideosBloc>(
       create: (_) =>
           ProfileLikedVideosBloc(
               likesRepository: likesRepository,
               videoEventService: videoEventService,
               nostrClient: nostrClient,
+              targetUserPubkey: widget.userIdHex,
             )
             ..add(const ProfileLikedVideosSubscriptionRequested())
             ..add(const ProfileLikedVideosSyncRequested()),

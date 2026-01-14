@@ -31,8 +31,8 @@ class VineBottomSheet extends StatelessWidget {
          'Provide either children or body, not both',
        );
 
-  /// Title displayed in the header
-  final String title;
+  /// Title widget displayed in the header
+  final Widget title;
 
   /// Scroll controller from DraggableScrollableSheet (required if using children)
   final ScrollController? scrollController;
@@ -54,7 +54,7 @@ class VineBottomSheet extends StatelessWidget {
   /// Shows the bottom sheet as a modal with proper configuration
   static Future<T?> show<T>({
     required BuildContext context,
-    required String title,
+    required Widget title,
     List<Widget>? children,
     Widget? body,
     Widget? trailing,
@@ -97,6 +97,7 @@ class VineBottomSheet extends StatelessWidget {
         children: [
           // Header with drag handle, title, and trailing actions
           VineBottomSheetHeader(title: title, trailing: trailing),
+          Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Content area (either managed ListView or custom body)
           Expanded(
@@ -108,6 +109,8 @@ class VineBottomSheet extends StatelessWidget {
                   children: children!,
                 ),
           ),
+          if (bottomInput != null)
+            Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Optional bottom input
           if (bottomInput != null) bottomInput!,

@@ -7,10 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([AuthService, AudioSharingPreferenceService])
 import 'settings_screen_audio_sharing_test.mocks.dart';
@@ -19,18 +21,23 @@ void main() {
   group('SettingsScreen Audio Sharing Toggle', () {
     late MockAuthService mockAuthService;
     late MockAudioSharingPreferenceService mockAudioSharingService;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = MockAuthService();
       mockAudioSharingService = MockAudioSharingPreferenceService();
 
       when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockAuthService.isAnonymous).thenReturn(true);
       when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
     });
 
     Widget createTestWidget() {
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
           audioSharingPreferenceServiceProvider.overrideWithValue(
             mockAudioSharingService,

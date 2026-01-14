@@ -2,7 +2,6 @@
 // ABOUTME: Cross-platform recording without VideoManager dependencies using pure providers
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:camera/camera.dart' show FlashMode;
 import 'package:flutter/foundation.dart';
@@ -10,18 +9,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
+import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/vine_recording_controller.dart'
     show ExtractedSegment;
-import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
-import 'package:openvine/services/camera/native_macos_camera.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -30,12 +31,11 @@ import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/dynamic_zoom_selector.dart';
 import 'package:openvine/widgets/macos_camera_preview.dart'
     show CameraPreviewPlaceholder;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 
 /// Pure universal camera screen using revolutionary single-controller Riverpod architecture
+///
+/// Note: This screen assumes camera/microphone permissions are already granted.
+/// Wrap with [CameraPermissionGate] to handle permission flow.
 class UniversalCameraScreenPure extends ConsumerStatefulWidget {
   const UniversalCameraScreenPure({super.key});
 
@@ -49,7 +49,6 @@ class _UniversalCameraScreenPureState
     with WidgetsBindingObserver {
   String? _errorMessage;
   bool _isProcessing = false;
-  bool _permissionDenied = false;
   bool _isInitializing = false;
 
   // Camera control states
@@ -71,9 +70,6 @@ class _UniversalCameraScreenPureState
   @override
   void initState() {
     super.initState();
-
-    // Add app lifecycle observer to detect when user returns from Settings
-    WidgetsBinding.instance.addObserver(this);
 
     // Log initial orientation
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -110,6 +106,9 @@ class _UniversalCameraScreenPureState
       }
     });
 
+    // Initialize camera services (permissions already granted via CameraPermissionGate)
+    _initializeServices();
+
     Log.info(
       '📹 UniversalCameraScreenPure: Initialized',
       category: LogCategory.video,
@@ -137,92 +136,6 @@ class _UniversalCameraScreenPureState
     );
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    // When app resumes, re-check permissions in case user granted them in Settings
-    if (state == AppLifecycleState.resumed && _permissionDenied) {
-      Log.info(
-        '📹 App resumed, re-checking permissions',
-        category: LogCategory.video,
-      );
-      _recheckPermissions();
-    }
-  }
-
-  /// Re-check permissions after returning from Settings
-  Future<void> _recheckPermissions() async {
-    try {
-      if (Platform.isMacOS) {
-        final hasPermission = await NativeMacOSCamera.hasPermission();
-        if (hasPermission && mounted) {
-          Log.info(
-            '📹 macOS permission now granted, initializing camera',
-            category: LogCategory.video,
-          );
-          setState(() {
-            _permissionDenied = false;
-          });
-          await _initializeServices();
-        }
-      } else if (Platform.isIOS || Platform.isAndroid) {
-        // iOS permission_handler has a known caching bug - status doesn't update after granting in Settings
-        // Even calling .request() again returns the stale cached status
-        // SOLUTION: Attempt camera initialization directly, bypassing permission_handler
-        // The actual AVCaptureDevice will fail if permissions aren't granted
-        Log.info(
-          '📹 Bypassing permission_handler cache, attempting camera initialization',
-          category: LogCategory.video,
-        );
-
-        setState(() {
-          _permissionDenied = false;
-        });
-
-        // Try to initialize - if permissions really aren't granted, this will fail
-        // and error handling will show permission screen again
-        try {
-          await ref.read(vineRecordingProvider.notifier).initialize();
-          Log.info(
-            '📹 Camera initialized successfully - permissions were granted',
-            category: LogCategory.video,
-          );
-        } catch (e) {
-          Log.error(
-            '📹 Camera initialization failed: $e',
-            category: LogCategory.video,
-          );
-          if (mounted) {
-            // Check if it's a permission error
-            final errorStr = e.toString().toLowerCase();
-            if (errorStr.contains('permission') ||
-                errorStr.contains('denied') ||
-                errorStr.contains('authorized')) {
-              Log.warning(
-                '📹 Still no camera permissions - showing permission screen',
-                category: LogCategory.video,
-              );
-              setState(() {
-                _permissionDenied = true;
-              });
-            } else {
-              // Some other error
-              setState(() {
-                _errorMessage = 'Failed to initialize camera: $e';
-              });
-            }
-          }
-        }
-      }
-    } catch (e) {
-      Log.error(
-        '📹 Failed to recheck permissions: $e',
-        category: LogCategory.video,
-      );
-    }
-  }
-
   Future<void> _initializeServices() async {
     // Mark as initializing to prevent double-initialization from build method
     _isInitializing = true;
@@ -232,6 +145,7 @@ class _UniversalCameraScreenPureState
   }
 
   /// Perform async initialization after the first frame
+  /// Called when permissions are already authorized
   Future<void> _performAsyncInitialization() async {
     try {
       // Check if we're coming back to record more (ClipManager has existing clips)
@@ -252,148 +166,7 @@ class _UniversalCameraScreenPureState
         ref.read(vineRecordingProvider.notifier).cleanupAndReset();
       }
 
-      // Check platform and request permissions if needed
-      if (Platform.isMacOS) {
-        // macOS uses native platform channel
-        Log.info(
-          '📹 Checking macOS camera permission status',
-          category: LogCategory.video,
-        );
-
-        final hasPermission = await NativeMacOSCamera.hasPermission();
-        Log.info(
-          '📹 macOS camera permission status: $hasPermission',
-          category: LogCategory.video,
-        );
-
-        if (!hasPermission) {
-          Log.info(
-            '📹 Requesting macOS camera permission from user',
-            category: LogCategory.video,
-          );
-          final granted = await NativeMacOSCamera.requestPermission();
-          Log.info(
-            '📹 macOS camera permission request result: $granted',
-            category: LogCategory.video,
-          );
-
-          if (!granted) {
-            Log.warning(
-              '📹 macOS camera permission denied by user',
-              category: LogCategory.video,
-            );
-            if (mounted) {
-              setState(() {
-                _permissionDenied = true;
-              });
-            }
-            return;
-          }
-
-          Log.info(
-            '📹 macOS camera permission granted, proceeding with initialization',
-            category: LogCategory.video,
-          );
-        } else {
-          Log.info(
-            '📹 macOS camera permission already granted, proceeding with initialization',
-            category: LogCategory.video,
-          );
-        }
-      } else if (Platform.isIOS || Platform.isAndroid) {
-        // iOS: permission_handler has caching issues - bypass it entirely
-        // Try to initialize camera directly, let native AVFoundation check permissions
-        Log.info(
-          '📹 Bypassing permission_handler, attempting camera initialization directly',
-          category: LogCategory.video,
-        );
-
-        try {
-          // Initialize the recording service - will fail if permissions not granted
-          await ref.read(vineRecordingProvider.notifier).initialize();
-          Log.info(
-            '📹 Recording service initialized successfully',
-            category: LogCategory.video,
-          );
-          return; // Success - exit early
-        } catch (e) {
-          final errorStr = e.toString().toLowerCase();
-
-          // Check if it's a permission error
-          if (errorStr.contains('permission') ||
-              errorStr.contains('denied') ||
-              errorStr.contains('authorized')) {
-            Log.info(
-              '📹 Camera initialization failed due to permissions, requesting permissions',
-              category: LogCategory.video,
-            );
-
-            // Request permissions
-            final Map<Permission, PermissionStatus> statuses = await [
-              Permission.camera,
-              Permission.microphone,
-            ].request();
-
-            final cameraGranted =
-                statuses[Permission.camera]?.isGranted ?? false;
-            final microphoneGranted =
-                statuses[Permission.microphone]?.isGranted ?? false;
-
-            Log.info(
-              '📹 Permission request results - Camera: $cameraGranted, Microphone: $microphoneGranted',
-              category: LogCategory.video,
-            );
-
-            if (!cameraGranted || !microphoneGranted) {
-              Log.warning(
-                '📹 Permissions denied by user',
-                category: LogCategory.video,
-              );
-              if (mounted) {
-                setState(() {
-                  _permissionDenied = true;
-                });
-              }
-              return;
-            }
-
-            // Try initializing again after granting permissions
-            try {
-              await ref.read(vineRecordingProvider.notifier).initialize();
-              Log.info(
-                '📹 Recording service initialized after permission grant',
-                category: LogCategory.video,
-              );
-              return;
-            } catch (retryError) {
-              Log.error(
-                '📹 Failed to initialize even after granting permissions: $retryError',
-                category: LogCategory.video,
-              );
-              if (mounted) {
-                setState(() {
-                  _errorMessage = 'Failed to initialize camera: $retryError';
-                });
-              }
-              return;
-            }
-          } else {
-            // Some other error
-            Log.error(
-              '📹 Camera initialization failed: $e',
-              category: LogCategory.video,
-            );
-            if (mounted) {
-              setState(() {
-                _errorMessage = 'Failed to initialize camera: $e';
-              });
-            }
-            return;
-          }
-        }
-      }
-
-      // macOS path continues here
+      // Initialize camera - permissions should already be granted via CameraPermissionGate
       Log.info(
         '📹 Initializing recording service',
         category: LogCategory.video,
@@ -410,18 +183,9 @@ class _UniversalCameraScreenPureState
       );
 
       if (mounted) {
-        // Check if it's a permission error
-        final errorStr = e.toString();
-        if (errorStr.contains('PERMISSION_DENIED') ||
-            errorStr.contains('permission')) {
-          setState(() {
-            _permissionDenied = true;
-          });
-        } else {
-          setState(() {
-            _errorMessage = 'Failed to initialize camera: $e';
-          });
-        }
+        setState(() {
+          _errorMessage = 'Failed to initialize camera: $e';
+        });
       }
     } finally {
       // Always reset the initializing flag
@@ -453,10 +217,6 @@ class _UniversalCameraScreenPureState
         '📱 [ORIENTATION] MediaQuery size: ${MediaQuery.of(context).size}',
         category: LogCategory.video,
       );
-    }
-
-    if (_permissionDenied) {
-      return _buildPermissionScreen();
     }
 
     if (_errorMessage != null) {
@@ -539,9 +299,7 @@ class _UniversalCameraScreenPureState
           }
 
           // Auto-reinitialize camera if it was released (e.g., after back navigation)
-          if (!recordingState.isInitialized &&
-              !_isInitializing &&
-              !_permissionDenied) {
+          if (!recordingState.isInitialized && !_isInitializing) {
             // Trigger re-initialization in next microtask to avoid build phase issues
             _isInitializing = true;
             Future.microtask(() async {
@@ -742,78 +500,6 @@ class _UniversalCameraScreenPureState
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildPermissionScreen() {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: VineTheme.vineGreen,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Camera Permission',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.videocam_off, size: 64, color: Colors.orange),
-              const SizedBox(height: 16),
-              const Text(
-                'Camera Permission Required',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Divine needs access to your camera to record videos. Please grant camera permission in System Settings.',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: _openSystemSettings,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: VineTheme.vineGreen,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-                icon: const Icon(Icons.settings),
-                label: const Text('Open System Settings'),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: _tryRequestPermission,
-                child: const Text(
-                  'Try Again',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1721,7 +1407,7 @@ class _UniversalCameraScreenPureState
     }
   }
 
-  void _stopRecording() async {
+  Future<void> _stopRecording() async {
     // Just stop the current segment - don't finish the recording
     // This allows the user to record multiple segments before finalizing
     try {
@@ -1756,7 +1442,7 @@ class _UniversalCameraScreenPureState
     }
   }
 
-  void _finishRecording() async {
+  Future<void> _finishRecording() async {
     // Set processing state immediately so UI shows "Processing video..."
     // during the entire FFmpeg processing time
     if (_isProcessing) {
@@ -1816,7 +1502,7 @@ class _UniversalCameraScreenPureState
     }
   }
 
-  void _switchCamera() async {
+  Future<void> _switchCamera() async {
     Log.info(
       '🔄 _switchCamera() UI button pressed',
       name: 'UniversalCameraScreenPure',
@@ -1896,7 +1582,7 @@ class _UniversalCameraScreenPureState
     }
   }
 
-  void _handleRecordingAutoStop() async {
+  Future<void> _handleRecordingAutoStop() async {
     try {
       // Auto-stop just pauses the current segment
       // User must press publish button to finish and concatenate
@@ -2018,129 +1704,11 @@ class _UniversalCameraScreenPureState
   void _retryInitialization() async {
     setState(() {
       _errorMessage = null;
-      _permissionDenied = false;
+      _isInitializing = false;
     });
 
-    await _initializeServices();
-  }
-
-  void _tryRequestPermission() async {
-    try {
-      Log.info('📹 Requesting camera permission', category: LogCategory.video);
-
-      bool granted = false;
-
-      // Platform-specific permission request
-      if (Platform.isMacOS) {
-        granted = await NativeMacOSCamera.requestPermission();
-      } else if (Platform.isIOS || Platform.isAndroid) {
-        // Check current status first
-        final cameraStatus = await Permission.camera.status;
-        final microphoneStatus = await Permission.microphone.status;
-
-        // On iOS, if permission was previously denied, .request() won't show a dialog
-        // We need to check for permanentlyDenied and direct user to Settings
-        if (cameraStatus.isPermanentlyDenied ||
-            microphoneStatus.isPermanentlyDenied) {
-          Log.warning(
-            '📹 Permissions permanently denied, opening Settings',
-            category: LogCategory.video,
-          );
-          _openSystemSettings();
-          return;
-        }
-
-        // Try to request permissions
-        final Map<Permission, PermissionStatus> statuses = await [
-          Permission.camera,
-          Permission.microphone,
-        ].request();
-
-        final cameraGranted = statuses[Permission.camera]?.isGranted ?? false;
-        final microphoneGranted =
-            statuses[Permission.microphone]?.isGranted ?? false;
-
-        granted = cameraGranted && microphoneGranted;
-
-        Log.info(
-          '📹 Permission request results - Camera: $cameraGranted, Microphone: $microphoneGranted',
-          category: LogCategory.video,
-        );
-
-        // If still denied, it might be permanently denied now - guide to Settings
-        if (!granted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Please grant camera and microphone permissions in Settings to record videos.',
-                ),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-          return;
-        }
-      }
-
-      if (granted) {
-        Log.info(
-          '📹 Permission granted, initializing camera',
-          category: LogCategory.video,
-        );
-        setState(() {
-          _permissionDenied = false;
-        });
-        await _initializeServices();
-      }
-    } catch (e) {
-      Log.error(
-        '📹 Failed to request permission: $e',
-        category: LogCategory.video,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to request permission: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _openSystemSettings() async {
-    try {
-      // Use permission_handler's built-in method to open app settings
-      // This works across all platforms (iOS, Android, macOS)
-      final opened = await openAppSettings();
-
-      if (!opened) {
-        Log.warning('Failed to open app settings', category: LogCategory.video);
-      } else {
-        Log.info(
-          'Opened app settings successfully',
-          category: LogCategory.video,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        '📹 Failed to open system settings: $e',
-        category: LogCategory.video,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please open System Settings manually and grant camera permission to Divine.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-    }
+    // Re-trigger initialization
+    _initializeServices();
   }
 
   String _formatDuration(Duration duration) {

@@ -68,30 +68,41 @@ class RepostActionButton extends ConsumerWidget {
                   ),
           ),
         ),
-        // Show original repost count if available
-        if (video.originalReposts != null && video.originalReposts! > 0) ...[
-          const SizedBox(height: 0),
-          Text(
-            StringUtils.formatCompactNumber(video.originalReposts!),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  offset: Offset(0, 0),
-                  blurRadius: 6,
-                  color: Colors.black,
+        // Show repost count: Nostr reposts + original reposts (if any)
+        Builder(
+          builder: (context) {
+            final nostrReposts = video.reposterPubkeys?.length ?? 0;
+            final originalReposts = video.originalReposts ?? 0;
+            final totalReposts = nostrReposts + originalReposts;
+
+            if (totalReposts > 0) {
+              return Padding(
+                padding: EdgeInsets.zero,
+                child: Text(
+                  StringUtils.formatCompactNumber(totalReposts),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 0),
+                        blurRadius: 6,
+                        color: Colors.black,
+                      ),
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
                 ),
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 3,
-                  color: Colors.black,
-                ),
-              ],
-            ),
-          ),
-        ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ],
     );
   }

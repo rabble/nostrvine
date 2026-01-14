@@ -3,6 +3,7 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -29,14 +30,19 @@ class NostrServiceFactory {
     RelayGatewaySettings? gatewaySettings,
     EnvironmentConfig? environmentConfig,
     AppDbClient? dbClient,
+
+    /// Optional remote RPC signer (e.g. `KeycastRpc`). If provided, this
+    /// signer will be used instead of the local `AuthServiceSigner`.
+    NostrSigner? rpcSigner,
   }) {
     UnifiedLogger.info(
       'Creating NostrClient via factory',
       name: 'NostrServiceFactory',
     );
 
-    // Create signer with the current key container
-    final signer = AuthServiceSigner(keyContainer);
+    // Prefer RPC signer when available (KeycastRpc implements NostrSigner),
+    // otherwise fall back to local signer that uses the secure key container.
+    final signer = rpcSigner ?? AuthServiceSigner(keyContainer);
 
     // Create NostrClient config
     final config = NostrClientConfig(

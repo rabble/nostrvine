@@ -5,9 +5,10 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
+import 'package:keycast_flutter/keycast_flutter.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:nostr_sdk/event.dart' as _i5;
-import 'package:openvine/services/audio_sharing_preference_service.dart' as _i6;
+import 'package:nostr_sdk/nostr_sdk.dart' as _i6;
+import 'package:openvine/services/audio_sharing_preference_service.dart' as _i7;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/user_profile_service.dart' as _i4;
 
@@ -69,6 +70,24 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
             Invocation.getter(#isAuthenticated),
             returnValue: false,
           )
+          as bool);
+
+  @override
+  _i2.AuthenticationSource get authenticationSource =>
+      (super.noSuchMethod(
+            Invocation.getter(#authenticationSource),
+            returnValue: _i2.AuthenticationSource.none,
+          )
+          as _i2.AuthenticationSource);
+
+  @override
+  bool get isRegistered =>
+      (super.noSuchMethod(Invocation.getter(#isRegistered), returnValue: false)
+          as bool);
+
+  @override
+  bool get isAnonymous =>
+      (super.noSuchMethod(Invocation.getter(#isAnonymous), returnValue: false)
           as bool);
 
   @override
@@ -165,9 +184,18 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<void>);
 
   @override
-  _i3.Future<void> acceptTermsOfService() =>
+  _i3.Future<void> signInAutomatically() =>
       (super.noSuchMethod(
-            Invocation.method(#acceptTermsOfService, []),
+            Invocation.method(#signInAutomatically, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> signInWithDivineOAuth(_i5.KeycastSession? session) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
@@ -203,7 +231,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<String?>);
 
   @override
-  _i3.Future<_i5.Event?> createAndSignEvent({
+  _i3.Future<_i6.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -216,9 +244,9 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               #tags: tags,
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i3.Future<_i5.Event?>.value(),
+            returnValue: _i3.Future<_i6.Event?>.value(),
           )
-          as _i3.Future<_i5.Event?>);
+          as _i3.Future<_i6.Event?>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -231,7 +259,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAudioSharingPreferenceService extends _i1.Mock
-    implements _i6.AudioSharingPreferenceService {
+    implements _i7.AudioSharingPreferenceService {
   MockAudioSharingPreferenceService() {
     _i1.throwOnMissingStub(this);
   }

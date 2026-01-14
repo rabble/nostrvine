@@ -14,7 +14,7 @@ part 'comments_state.dart';
 ///
 /// Handles:
 /// - Loading comments from Nostr relays
-/// - Building hierarchical comment trees
+/// - Organizing comments chronologically
 /// - Managing input state for main comment and replies
 /// - Posting new comments
 class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
@@ -61,7 +61,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.copyWith(
           status: CommentsStatus.success,
-          topLevelComments: thread.topLevelComments,
+          comments: thread.comments,
         ),
       );
     } catch (e) {
@@ -128,23 +128,16 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         replyToAuthorPubkey: event.parentAuthorPubkey,
       );
 
-      final updatedComments = _addCommentToTree(
-        state.topLevelComments,
-        postedComment,
-        event.parentCommentId,
-      );
+      final updatedComments = _addCommentToList(state.comments, postedComment);
 
       if (isReply) {
         emit(
-          state.clearActiveReply(
-            topLevelComments: updatedComments,
-            isPosting: false,
-          ),
+          state.clearActiveReply(comments: updatedComments, isPosting: false),
         );
       } else {
         emit(
           state.copyWith(
-            topLevelComments: updatedComments,
+            comments: updatedComments,
             mainInputText: '',
             isPosting: false,
           ),
@@ -172,31 +165,12 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     emit(state.copyWith());
   }
 
-  /// Adds comment to tree. Top-level comments go first (newest first order).
-  List<CommentNode> _addCommentToTree(
-    List<CommentNode> nodes,
-    Comment comment,
-    String? replyToEventId,
-  ) {
-    if (replyToEventId == null) {
-      return [CommentNode(comment: comment), ...nodes];
-    }
-
-    return nodes.map((node) {
-      if (node.comment.id == replyToEventId) {
-        return node.copyWith(
-          replies: [
-            ...node.replies,
-            CommentNode(comment: comment),
-          ],
-        );
-      } else if (node.replies.isNotEmpty) {
-        return node.copyWith(
-          replies: _addCommentToTree(node.replies, comment, replyToEventId),
-        );
-      }
-      return node;
-    }).toList();
+  /// Adds a new comment to the flat list.
+  ///
+  /// Comments are prepended to maintain chronological order (newest first).
+  List<Comment> _addCommentToList(List<Comment> comments, Comment newComment) {
+    // Add to beginning (newest first)
+    return [newComment, ...comments];
   }
 
   Future<void> _onDeleteRequested(
@@ -211,12 +185,12 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     try {
       await _commentsRepository.deleteComment(commentId: event.commentId);
 
-      final updatedComments = _commentsRepository.markCommentAsNotFound(
-        state.topLevelComments,
-        event.commentId,
-      );
+      // Remove the comment from the flat list
+      final updatedComments = state.comments
+          .where((c) => c.id != event.commentId)
+          .toList();
 
-      emit(state.copyWith(topLevelComments: updatedComments));
+      emit(state.copyWith(comments: updatedComments));
     } catch (e) {
       Log.error(
         'Error deleting comment: $e',
