@@ -9,6 +9,8 @@ environment:
 dependencies:
   db_client:
     path: ../db_client
+  models:
+    path: ../models
   nostr_client:
     path: ../nostr_client
   nostr_sdk:

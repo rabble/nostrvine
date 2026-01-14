@@ -23,7 +23,11 @@ void main() {
         return http.Response('{"success": true}', 200);
       });
 
-      analyticsService = AnalyticsService(client: mockClient);
+      // Use backendReadyOverride: true to simulate a ready backend in tests
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
       await analyticsService.initialize();
     });
 
