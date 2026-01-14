@@ -122,7 +122,7 @@ void main() {
 
           final testEvent = Event(
             testCurrentUserPubkey,
-            1,
+            EventKind.comment,
             [
               ['e', testVideoEventId, '', 'root'],
               ['p', testVideoAuthorPubkey],
@@ -137,7 +137,7 @@ void main() {
 
           when(
             mockAuthService.createAndSignEvent(
-              kind: 1,
+              kind: EventKind.comment,
               tags: [
                 ['e', testVideoEventId, '', 'root'],
                 ['p', testVideoAuthorPubkey],
@@ -160,7 +160,7 @@ void main() {
           // Assert
           verify(
             mockAuthService.createAndSignEvent(
-              kind: 1,
+              kind: EventKind.comment,
               tags: [
                 ['e', testVideoEventId, '', 'root'],
                 ['p', testVideoAuthorPubkey],
@@ -182,7 +182,7 @@ void main() {
 
         final testEvent = Event(
           testCurrentUserPubkey,
-          1,
+          EventKind.comment,
           [
             ['e', testVideoEventId, '', 'root'],
             ['p', testVideoAuthorPubkey],
@@ -199,7 +199,7 @@ void main() {
 
         when(
           mockAuthService.createAndSignEvent(
-            kind: 1,
+            kind: EventKind.comment,
             tags: [
               ['e', testVideoEventId, '', 'root'],
               ['p', testVideoAuthorPubkey],
@@ -226,7 +226,7 @@ void main() {
         // Assert
         verify(
           mockAuthService.createAndSignEvent(
-            kind: 1,
+            kind: EventKind.comment,
             tags: [
               ['e', testVideoEventId, '', 'root'],
               ['p', testVideoAuthorPubkey],
@@ -244,7 +244,7 @@ void main() {
 
         final testEvent = Event(
           testCurrentUserPubkey,
-          1,
+          EventKind.comment,
           [
             ['e', testVideoEventId, '', 'root'],
             ['p', testVideoAuthorPubkey],
@@ -314,7 +314,7 @@ void main() {
 
         final testEvent = Event(
           testCurrentUserPubkey,
-          1,
+          EventKind.comment,
           [
             ['e', testVideoEventId, '', 'root'],
             ['p', testVideoAuthorPubkey],
@@ -366,7 +366,7 @@ void main() {
 
         final testEvent = Event(
           testCurrentUserPubkey,
-          1,
+          EventKind.comment,
           [
             ['e', testVideoEventId, '', 'root'],
             ['p', testVideoAuthorPubkey],
@@ -381,7 +381,7 @@ void main() {
 
         when(
           mockAuthService.createAndSignEvent(
-            kind: 1,
+            kind: EventKind.comment,
             tags: anyNamed('tags'),
             content: trimmedContent,
           ),
@@ -401,7 +401,7 @@ void main() {
         // Assert
         verify(
           mockAuthService.createAndSignEvent(
-            kind: 1,
+            kind: EventKind.comment,
             tags: anyNamed('tags'),
             content: trimmedContent,
           ),
@@ -414,7 +414,7 @@ void main() {
         // Arrange
         final testCommentEvent = Event(
           testCurrentUserPubkey,
-          1,
+          EventKind.comment,
           [
             ['e', testVideoEventId, '', 'root'],
             ['p', testVideoAuthorPubkey],
@@ -487,8 +487,14 @@ void main() {
         expect(filters.length, equals(1));
 
         final filter = filters.first;
-        expect(filter.kinds, contains(1)); // Kind 1 for text notes
-        expect(filter.e, contains(testVideoEventId)); // Filter by root event
+        expect(
+          filter.kinds,
+          contains(EventKind.comment),
+        ); // Kind 1111 NIP-22 comments
+        expect(
+          filter.uppercaseE,
+          contains(testVideoEventId),
+        ); // NIP-22 uppercase E tag
       });
     });
   });

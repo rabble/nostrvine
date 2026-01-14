@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1472,9 +1473,13 @@ class SocialService {
   }
 
   // === COMMENT SYSTEM ===
+  // NOTE: These methods are deprecated. Use CommentsRepository instead,
+  // which implements proper NIP-22 threading with uppercase/lowercase tags.
   final Map<String, ReplaySubject<Event>> _commentSubjects = {};
 
   /// Posts a comment in reply to a root event (video)
+  ///
+  /// @deprecated Use [CommentsRepository.postComment] instead for proper NIP-22 support.
   Future<void> postComment({
     required String content,
     required String rootEventId,
@@ -1527,9 +1532,9 @@ class SocialService {
         }
       }
 
-      // Create the comment event (Kind 1 text note)
+      // Create the comment event (Kind 1111 NIP-22 comment)
       final event = await _authService.createAndSignEvent(
-        kind: 1, // Text note
+        kind: EventKind.comment, // NIP-22 comment (kind 1111)
         tags: tags,
         content: content.trim(),
       );
@@ -1561,6 +1566,8 @@ class SocialService {
   }
 
   /// Fetches all comments for a given root event ID
+  ///
+  /// @deprecated Use [CommentsRepository.loadComments] instead for proper NIP-22 support.
   Stream<Event> fetchCommentsForEvent(String rootEventId) {
     Log.debug(
       '📱 Fetching comments for event: $rootEventId',
@@ -1569,10 +1576,10 @@ class SocialService {
     );
 
     // Create filter for comments
-    // Comments are Kind 1 events that have an 'e' tag pointing to the root event
+    // Comments are Kind 1111 NIP-22 events that have an 'E' tag pointing to the root event
     final filter = Filter(
-      kinds: [1], // Text notes
-      e: [rootEventId], // Comments that reference this event
+      kinds: [EventKind.comment], // NIP-22 comments (kind 1111)
+      uppercaseE: [rootEventId], // NIP-22: uppercase E tag for root scope
     );
 
     // Create a StreamController to emit events
@@ -1590,7 +1597,7 @@ class SocialService {
           filters: [
             Filter(
               kinds: filter.kinds,
-              e: filter.e,
+              uppercaseE: filter.uppercaseE, // NIP-22: uppercase E tag
               h: filter.h,
               limit: 50, // Limit comment fetching
             ),
@@ -1628,6 +1635,8 @@ class SocialService {
   }
 
   /// Fetches comment count for an event
+  ///
+  /// @deprecated Use [CommentsRepository.getCommentsCount] instead for proper NIP-22 support.
   Future<int> getCommentCount(String rootEventId) async {
     Log.debug(
       'Fetching comment count for event: $rootEventId',
@@ -1644,8 +1653,8 @@ class SocialService {
         name: 'comment_count_$rootEventId',
         filters: [
           Filter(
-            kinds: [1], // Text notes
-            e: [rootEventId], // Comments that reference this event
+            kinds: [EventKind.comment], // NIP-22 comments (kind 1111)
+            uppercaseE: [rootEventId], // NIP-22: uppercase E tag for root scope
             limit: 100, // Reasonable limit for counting
           ),
         ],
