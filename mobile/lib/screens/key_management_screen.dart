@@ -475,7 +475,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     NostrKeyManager keyManager,
   ) async {
     try {
-      final nsec = keyManager.exportAsNsec();
+      final nsec = await ref.read(authServiceProvider).exportNsec();
+
+      if (nsec == null) {
+        throw Exception('No private key available to export.');
+      }
 
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: nsec));
