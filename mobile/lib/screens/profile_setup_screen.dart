@@ -2,7 +2,6 @@
 // ABOUTME: Publishes initial profile metadata to Nostr after setup is complete
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -12,15 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:openvine/models/user_profile.dart' as profile_model;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/profile_editor_notifier.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -40,9 +36,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  bool _isPublishing = false;
   bool _isUploadingImage = false;
-  bool _isWaitingForRelay = false; // Track relay confirmation phase
   File? _selectedImage;
   String? _uploadedImageUrl;
   // Store notifier reference to safely call in deactivate
@@ -171,6 +165,92 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     // Watch username controller state for reactive updates
     final usernameState = ref.watch(usernameProvider);
+    final profileEditorState = ref.watch(profileEditorProvider);
+
+    ref.listen(profileEditorProvider, (prev, next) {
+      next.when(
+        data: (result) {
+          switch (result) {
+            case ProfileSaveResult.success:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: VineTheme.vineGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Profile published successfully!',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+              );
+              if (widget.isNewUser) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              } else {
+                if (context.canPop()) {
+                  context.pop(true);
+                } else {
+                  context.go('/');
+                }
+              }
+            case ProfileSaveResult.usernameTaken:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Username was just taken. Please choose another.',
+                  ),
+                  backgroundColor: Colors.red[700],
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            case ProfileSaveResult.usernameReserved:
+              final username = usernameState.username;
+              showDialog(
+                context: context,
+                builder: (context) => UsernameReservedDialog(username),
+              );
+            case ProfileSaveResult.profilePublishFailed:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to publish profile. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            default:
+              // Initial state, do nothing
+              break;
+          }
+        },
+        loading: () {},
+        error: (error, stackTrace) {
+          Log.error(
+            'Profile save error: $error',
+            name: 'ProfileSetupScreen',
+            stackTrace: stackTrace,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Something went wrong. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
+      );
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -643,7 +723,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: _isPublishing
+                                onPressed: profileEditorState.isLoading
                                     ? null
                                     : () {
                                         // Wait for any ongoing transitions before popping
@@ -671,7 +751,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: _isPublishing
+                                onPressed: profileEditorState.isLoading
                                     ? null
                                     : _publishProfile,
                                 style: ElevatedButton.styleFrom(
@@ -684,7 +764,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: _isPublishing
+                                child: profileEditorState.isLoading
                                     ? Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -698,11 +778,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Text(
-                                            _isWaitingForRelay
-                                                ? 'Confirming with relay...'
-                                                : 'Saving...',
-                                          ),
+                                          Text('Saving...'),
                                         ],
                                       )
                                     : const Text(
@@ -729,544 +805,24 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Future<void> _publishProfile() async {
-    Log.info(
-      '🚀 Starting profile publish...',
-      name: 'ProfileSetupScreen',
-      category: LogCategory.ui,
-    );
+    if (!_formKey.currentState!.validate()) return;
 
-    if (!_formKey.currentState!.validate()) {
-      Log.warning(
-        'Form validation failed',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      return;
-    }
+    final pubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (pubkey == null) return;
 
-    setState(() {
-      _isPublishing = true;
-    });
+    final about = _bioController.text.trim();
+    final username = _nip05Controller.text.trim();
+    final picture = _pictureController.text.trim();
 
-    try {
-      final authService = ref.read(authServiceProvider);
-      final nostrService = ref.read(nostrServiceProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
-
-      Log.info(
-        'Auth status: isAuthenticated=${authService.isAuthenticated}, publicKey=${authService.currentPublicKeyHex != null}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        'NostrService status: isInitialized=${nostrService.isInitialized}, connectedRelays=${nostrService.connectedRelays.length}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Log existing profile before update
-      final currentPubkey = authService.currentPublicKeyHex!;
-      final existingProfile = userProfileService.getCachedProfile(
-        currentPubkey,
-      );
-      if (existingProfile != null) {
-        Log.info(
-          '📋 Existing profile before update:',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
+    await ref
+        .read(profileEditorProvider.notifier)
+        .saveProfile(
+          pubkey: pubkey,
+          displayName: _nameController.text.trim(),
+          about: about.isEmpty ? null : about,
+          username: username.isEmpty ? null : username,
+          picture: picture.isEmpty ? null : picture,
         );
-        Log.info(
-          '  - name: ${existingProfile.name}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - displayName: ${existingProfile.displayName}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - about: ${existingProfile.about}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - picture: ${existingProfile.picture}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - eventId: ${existingProfile.eventId}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      } else {
-        Log.info(
-          '📋 No existing profile found for ${currentPubkey}...',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
-
-      // Create profile metadata - start with existing profile data to preserve all fields
-      final profileData = <String, dynamic>{};
-
-      // Preserve all existing fields from current profile
-      if (existingProfile != null) {
-        // Start with the raw data to preserve unknown fields
-        profileData.addAll(existingProfile.rawData);
-
-        // Also explicitly preserve known fields
-        if (existingProfile.name != null) {
-          profileData['name'] = existingProfile.name;
-        }
-        if (existingProfile.displayName != null) {
-          profileData['display_name'] = existingProfile.displayName;
-        }
-        if (existingProfile.about != null) {
-          profileData['about'] = existingProfile.about;
-        }
-        if (existingProfile.picture != null) {
-          profileData['picture'] = existingProfile.picture;
-        }
-        if (existingProfile.banner != null) {
-          profileData['banner'] = existingProfile.banner;
-        }
-        if (existingProfile.website != null) {
-          profileData['website'] = existingProfile.website;
-        }
-        if (existingProfile.nip05 != null) {
-          profileData['nip05'] = existingProfile.nip05;
-        }
-        if (existingProfile.lud16 != null) {
-          profileData['lud16'] = existingProfile.lud16;
-        }
-        if (existingProfile.lud06 != null) {
-          profileData['lud06'] = existingProfile.lud06;
-        }
-
-        Log.info(
-          '📋 Preserved existing profile fields:',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - Preserved fields: ${profileData.keys.toList()}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
-
-      // Override with form data (only the fields we can edit)
-      profileData['name'] = _nameController.text.trim();
-
-      if (_bioController.text.trim().isNotEmpty) {
-        profileData['about'] = _bioController.text.trim();
-      } else {
-        // Remove about field if empty (user cleared it)
-        profileData.remove('about');
-      }
-
-      if (_pictureController.text.trim().isNotEmpty) {
-        profileData['picture'] = _pictureController.text.trim();
-      } else {
-        // Remove picture field if empty (user cleared it)
-        profileData.remove('picture');
-      }
-
-      Log.info(
-        '📝 Profile data to publish:',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - name: ${profileData['name']}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - about: ${profileData['about'] ?? 'not set'}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - picture: ${profileData['picture'] ?? 'not set'}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Handle NIP-05 registration if username is available
-      final usernameState = ref.read(usernameProvider);
-      if (usernameState.canRegister) {
-        try {
-          final registrationResult = await ref
-              .read(usernameProvider.notifier)
-              .registerUsername(pubkey: authService.currentPublicKeyHex!);
-
-          if (registrationResult.isSuccess) {
-            final nip05Identifier = '${usernameState.username}@divine.video';
-            profileData['nip05'] = nip05Identifier;
-            Log.info(
-              '✅ Registered NIP-05: $nip05Identifier',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-          } else if (registrationResult.isReserved) {
-            // Show reserved error - user needs to contact support
-            if (mounted) {
-              final username = usernameState.username;
-              await showDialog(
-                context: context,
-                builder: (context) => UsernameReservedDialog(username),
-              );
-            }
-            // Continue with profile creation without NIP-05
-          } else if (registrationResult.isTaken) {
-            // Username was taken between check and registration
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Username was just taken. Please choose another.',
-                  ),
-                  backgroundColor: Colors.red[700],
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-            // Don't continue - let user choose new username
-            setState(() {
-              _isPublishing = false;
-            });
-            return;
-          }
-        } catch (e) {
-          Log.error(
-            'Failed to register NIP-05: $e',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-          // Continue with profile creation even if NIP-05 fails
-        }
-      }
-
-      // Create NIP-01 kind 0 profile event
-      Log.info(
-        '🔨 Creating kind 0 event...',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      final event = await authService.createAndSignEvent(
-        kind: 0,
-        content: jsonEncode(profileData),
-      );
-
-      if (event == null) {
-        Log.error(
-          '❌ Failed to create profile event - createAndSignEvent returned null',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        throw Exception('Failed to create profile event');
-      }
-
-      // Log the created event
-      Log.info(
-        '✅ Created kind 0 event:',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Event ID: ${event.id}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Pubkey: ${event.pubkey}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Kind: ${event.kind}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Content: ${event.content}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Created at: ${event.createdAt}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Signature: ${event.sig}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Tags: ${event.tags}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Check if event is valid
-      final isValid = event.isSigned;
-      Log.info(
-        '🔍 Event signature valid: $isValid',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Publish to Nostr relays
-      Log.info(
-        '📡 Publishing profile event to Nostr relays...',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      final sentEvent = await nostrService.publishEvent(event);
-      final success = sentEvent != null;
-
-      Log.info(
-        'Publish result: success=$success',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      if (success) {
-        // CRITICAL: Wait for relay to confirm it has the updated profile before navigating
-        // This prevents race condition where user navigates back but relay hasn't processed update yet
-        Log.info(
-          '⏳ Waiting for relay to confirm profile update...',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-
-        // Show relay confirmation UI
-        if (mounted) {
-          setState(() {
-            _isWaitingForRelay = true;
-          });
-        }
-
-        final userProfileService = ref.read(userProfileServiceProvider);
-
-        try {
-          // Retry with exponential backoff until relay returns updated profile
-          final confirmedProfile = await AsyncUtils.retryWithBackoff<profile_model.UserProfile?>(
-            operation: () async {
-              // Clear cache to force fresh fetch from relay
-              userProfileService.removeProfile(currentPubkey);
-
-              // Fetch profile from relay
-              final fetchedProfile = await userProfileService.fetchProfile(
-                currentPubkey,
-                forceRefresh: true,
-              );
-
-              Log.debug(
-                'Profile fetch attempt: eventId=${fetchedProfile?.eventId}, '
-                'timestamp=${fetchedProfile?.createdAt.millisecondsSinceEpoch}, '
-                'expected eventId=${event.id}, '
-                'expected timestamp>=${event.createdAt * 1000 - 1000}',
-                name: 'ProfileSetupScreen',
-                category: LogCategory.ui,
-              );
-
-              // Validate we got the updated profile (match by event ID or timestamp)
-              final eventIdMatches = fetchedProfile?.eventId == event.id;
-              final timestampMatches =
-                  fetchedProfile?.createdAt != null &&
-                  fetchedProfile!.createdAt.millisecondsSinceEpoch >=
-                      (event.createdAt * 1000 - 1000); // Allow 1s tolerance
-
-              if (eventIdMatches || timestampMatches) {
-                Log.info(
-                  '✅ Relay confirmed profile update (eventId match=$eventIdMatches, timestamp match=$timestampMatches)',
-                  name: 'ProfileSetupScreen',
-                  category: LogCategory.ui,
-                );
-                return fetchedProfile;
-              }
-
-              // Profile not yet updated on relay - retry
-              throw Exception(
-                'Relay returned stale profile - retrying... (eventId=${fetchedProfile?.eventId} vs ${event.id})',
-              );
-            },
-            maxRetries: 5, // Allow up to 5 retries
-            baseDelay: const Duration(milliseconds: 500), // Start with 500ms
-            maxDelay: const Duration(seconds: 8), // Cap at 8s
-            debugName: 'profile-publish-confirmation',
-          );
-
-          if (confirmedProfile == null) {
-            throw Exception('Failed to confirm profile update after retries');
-          }
-
-          // Update cache with confirmed profile
-          await userProfileService.updateCachedProfile(confirmedProfile);
-          Log.info(
-            '✅ Updated local cache with relay-confirmed profile',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Update AuthService profile cache
-          await authService.refreshCurrentProfile(userProfileService);
-          Log.info(
-            '✅ Updated AuthService profile cache',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Invalidate Riverpod provider to trigger UI refresh
-          ref.invalidate(fetchUserProfileProvider(currentPubkey));
-          Log.info(
-            '✅ Invalidated fetchUserProfileProvider for UI refresh',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Clear waiting state
-          if (mounted) {
-            setState(() {
-              _isWaitingForRelay = false;
-            });
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: VineTheme.vineGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 17,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Profile published successfully!',
-                      style: TextStyle(color: VineTheme.vineGreen),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.white,
-              ),
-            );
-          }
-
-          // Navigate back or to main app - NOW SAFE because relay has confirmed update
-          if (widget.isNewUser) {
-            // For new users, wait a moment to show success message, then navigate to main app
-            await Future.delayed(const Duration(seconds: 1));
-            if (mounted) {
-              // Navigate to main app by popping back to the auth flow
-              // The auth service should already be in authenticated state
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            }
-          } else {
-            // Wait for SnackBar animation to complete before navigating
-            // This prevents navigation timing race condition that causes black screens
-            await Future.delayed(const Duration(milliseconds: 300));
-            if (mounted) {
-              // Use GoRouter navigation for consistency with the rest of the app
-              // Check if we can pop (have somewhere to go back to)
-              if (context.canPop()) {
-                context.pop(true); // Return true to indicate success
-              } else {
-                // If we can't pop (edit-profile became root somehow), go home
-                context.go('/');
-              }
-            }
-          }
-        } catch (e, stackTrace) {
-          // Clear waiting state
-          if (mounted) {
-            setState(() {
-              _isWaitingForRelay = false;
-            });
-          }
-
-          // Retry failed - show error to user
-          Log.error(
-            'Failed to confirm profile update from relay: $e',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-            stackTrace: stackTrace,
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Profile may not have updated correctly. Please check your profile and try again if needed.',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                backgroundColor: Colors.red.shade700,
-                duration: const Duration(seconds: 5),
-              ),
-            );
-
-            // Wait for SnackBar animation before navigating to prevent black screen
-            await Future.delayed(const Duration(milliseconds: 300));
-
-            // Still navigate back even on error, but warn user
-            if (widget.isNewUser) {
-              if (mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            } else {
-              if (mounted) {
-                // Use GoRouter navigation for consistency with the rest of the app
-                if (context.canPop()) {
-                  context.pop(
-                    false,
-                  ); // Return false to indicate partial success
-                } else {
-                  // If we can't pop, go home
-                  context.go('/');
-                }
-              }
-            }
-          }
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to publish profile. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error publishing profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isPublishing = false;
-        });
-      }
-    }
   }
 
   // Skip button removed from UI - no longer needed
