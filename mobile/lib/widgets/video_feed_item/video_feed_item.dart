@@ -720,31 +720,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       _loadingStartTime = null;
                     }
 
-                    // Only show loading indicator after 2 seconds
+                    // Show loading indicator immediately when not initialized
                     final shouldShowIndicator =
-                        !value.isInitialized &&
-                        isActive &&
-                        _loadingStartTime != null &&
-                        DateTime.now()
-                                .difference(_loadingStartTime!)
-                                .inMilliseconds >
-                            2000;
-
-                    // Schedule rebuild after 2s if still loading
-                    if (!value.isInitialized &&
-                        isActive &&
-                        !shouldShowIndicator &&
-                        _loadingStartTime != null) {
-                      final elapsed = DateTime.now()
-                          .difference(_loadingStartTime!)
-                          .inMilliseconds;
-                      Future.delayed(
-                        Duration(milliseconds: 2100 - elapsed),
-                        () {
-                          if (mounted) setState(() {});
-                        },
-                      );
-                    }
+                        !value.isInitialized && isActive;
 
                     // Use video dimensions if available, otherwise placeholder
                     final videoWidth = value.size.width > 0
