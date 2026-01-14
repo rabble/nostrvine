@@ -98,6 +98,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   Future<void> _editProfile() async {
     // Show menu with Edit Profile and Delete Account options
+    // Note: Using showModalBottomSheet with Navigator.pop because GoRouter
+    // has known issues with ModalBottomSheetRoute (see flutter/flutter#100933)
     final result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: VineTheme.cardBackground,
@@ -115,7 +117,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'Update your display name, bio, and avatar',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => modalContext.pop('edit'),
+              onTap: () => Navigator.of(modalContext).pop('edit'),
             ),
             const Divider(color: VineTheme.secondaryText, height: 1),
             ListTile(
@@ -128,12 +130,14 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'PERMANENTLY delete your account and all content',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => modalContext.pop('delete'),
+              onTap: () => Navigator.of(modalContext).pop('delete'),
             ),
           ],
         ),
       ),
     );
+
+    if (!mounted) return;
 
     if (result == 'edit') {
       // Navigate to edit-profile route (defined outside ShellRoute)

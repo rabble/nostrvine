@@ -592,6 +592,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: DiscoverListsScreen.routeName,
             builder: (ctx, st) => const DiscoverListsScreen(),
           ),
+
         ],
       ),
 
