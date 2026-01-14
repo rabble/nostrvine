@@ -125,28 +125,12 @@ class VideoInteractionsBloc
     // Prevent double-taps
     if (state.isLikeInProgress) return;
 
-    Log.info(
-      'VideoInteractionsBloc: Like toggle START for $_eventId (currently liked: ${state.isLiked})',
-      name: 'VideoInteractionsBloc',
-      category: LogCategory.system,
-    );
-
     emit(state.copyWith(isLikeInProgress: true, clearError: true));
 
     try {
-      Log.info(
-        'VideoInteractionsBloc: Calling toggleLike...',
-        name: 'VideoInteractionsBloc',
-        category: LogCategory.system,
-      );
       final isNowLiked = await _likesRepository.toggleLike(
         eventId: _eventId,
         authorPubkey: _authorPubkey,
-      );
-      Log.info(
-        'VideoInteractionsBloc: toggleLike returned isNowLiked=$isNowLiked',
-        name: 'VideoInteractionsBloc',
-        category: LogCategory.system,
       );
 
       // Update local state with new like status and adjusted count
@@ -160,30 +144,15 @@ class VideoInteractionsBloc
           isLikeInProgress: false,
         ),
       );
-      Log.info(
-        'VideoInteractionsBloc: Like toggle SUCCESS',
-        name: 'VideoInteractionsBloc',
-        category: LogCategory.system,
-      );
     } on AlreadyLikedException {
       // Already liked - just update state to reflect reality
-      Log.warning(
-        'VideoInteractionsBloc: AlreadyLikedException for $_eventId',
-        name: 'VideoInteractionsBloc',
-        category: LogCategory.system,
-      );
       emit(state.copyWith(isLiked: true, isLikeInProgress: false));
     } on NotLikedException {
       // Not liked - just update state to reflect reality
-      Log.warning(
-        'VideoInteractionsBloc: NotLikedException for $_eventId',
-        name: 'VideoInteractionsBloc',
-        category: LogCategory.system,
-      );
       emit(state.copyWith(isLiked: false, isLikeInProgress: false));
     } catch (e) {
       Log.error(
-        'VideoInteractionsBloc: Like toggle FAILED for $_eventId - $e',
+        'VideoInteractionsBloc: Like toggle failed for $_eventId - $e',
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
