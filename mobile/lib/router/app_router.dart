@@ -21,7 +21,6 @@ import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';

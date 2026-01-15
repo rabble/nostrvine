@@ -459,9 +459,6 @@ String buildRoute(RouteContext context) {
     case RouteType.discoverLists:
       return DiscoverListsScreen.path;
 
-    case RouteType.discoverLists:
-      return '/discover-lists';
-
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
     case RouteType.secureAccount:
