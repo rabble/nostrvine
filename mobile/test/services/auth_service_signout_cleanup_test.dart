@@ -28,9 +28,9 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({
-        StorageKeys.currentUserPubkeyHex: 'existing_pubkey_hex_123',
-        StorageKeys.ageVerified16Plus: true,
-        StorageKeys.termsAcceptedAt: '2024-01-01T00:00:00Z',
+        'current_user_pubkey_hex': 'existing_pubkey_hex_123',
+        'age_verified_16_plus': true,
+        'terms_accepted_at': '2024-01-01T00:00:00Z',
       });
       prefs = await SharedPreferences.getInstance();
       mockKeyStorage = MockSecureKeyStorage();
@@ -51,7 +51,7 @@ void main() {
 
     test('signOut should clear current_user_pubkey_hex', () async {
       // Arrange: Verify pubkey is initially stored
-      expect(prefs.getString(StorageKeys.currentUserPubkeyHex), isNotNull);
+      expect(prefs.getString('current_user_pubkey_hex'), isNotNull);
 
       // Setup mock to not delete keys (just clearing cache)
       when(mockKeyStorage.clearCache()).thenReturn(null);
@@ -60,13 +60,13 @@ void main() {
       await authService.signOut(deleteKeys: false);
 
       // Assert: Pubkey should be cleared
-      expect(prefs.getString(StorageKeys.currentUserPubkeyHex), isNull);
+      expect(prefs.getString('current_user_pubkey_hex'), isNull);
     });
 
     test('signOut should clear TOS acceptance flags', () async {
       // Arrange: Verify TOS flags are initially set
-      expect(prefs.getBool(StorageKeys.ageVerified16Plus), isTrue);
-      expect(prefs.getString(StorageKeys.termsAcceptedAt), isNotNull);
+      expect(prefs.getBool('age_verified_16_plus'), isTrue);
+      expect(prefs.getString('terms_accepted_at'), isNotNull);
 
       // Setup mock
       when(mockKeyStorage.clearCache()).thenReturn(null);
@@ -75,8 +75,8 @@ void main() {
       await authService.signOut(deleteKeys: false);
 
       // Assert: TOS flags should be cleared
-      expect(prefs.getBool(StorageKeys.ageVerified16Plus), isNull);
-      expect(prefs.getString(StorageKeys.termsAcceptedAt), isNull);
+      expect(prefs.getBool('age_verified_16_plus'), isNull);
+      expect(prefs.getString('terms_accepted_at'), isNull);
     });
 
     test(
