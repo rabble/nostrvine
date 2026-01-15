@@ -89,7 +89,7 @@ final class ProfileEditorNotifierProvider
 }
 
 String _$profileEditorNotifierHash() =>
-    r'2c0de6f4dda4ae6c0172e34299ae38ef0eb571d7';
+    r'9ccda058cfa6cd77b1c24dd383d875b5d6a40e1a';
 
 /// Notifier for orchestrating profile publishing and username claiming.
 
