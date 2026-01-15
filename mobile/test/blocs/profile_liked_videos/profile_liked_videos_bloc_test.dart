@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockLikesRepository extends Mock implements LikesRepository {}

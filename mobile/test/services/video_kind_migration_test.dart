@@ -2,9 +2,9 @@
 // ABOUTME: This test ensures we're using the correct Nostr video event kind as per NIP-71 specification
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/models/video_event.dart';
 
 void main() {
   group('Video Kind Migration - NIP-71 Compliance', () {

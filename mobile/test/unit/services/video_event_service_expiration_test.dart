@@ -7,7 +7,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 
 class _MockNostrService extends Mock implements NostrClient {}
 

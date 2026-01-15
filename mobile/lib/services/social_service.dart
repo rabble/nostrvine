@@ -16,7 +16,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {

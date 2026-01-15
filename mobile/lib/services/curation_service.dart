@@ -5,15 +5,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:models/models.dart'
+    hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:models/models.dart'
-    show CurationPublishResult, CurationPublishStatus;
 import 'package:openvine/models/curation_set.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';

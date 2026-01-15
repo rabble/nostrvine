@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/models/user_profile.dart' as models;
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';

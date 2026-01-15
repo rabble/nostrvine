@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/utils/unified_logger.dart';
 
 /// References extracted from repost event tags ('e' and 'a' tags)
