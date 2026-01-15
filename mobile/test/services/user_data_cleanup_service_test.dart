@@ -2,7 +2,6 @@
 // ABOUTME: Validates that user-specific data is cleared when switching accounts
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/constants/storage_keys.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
