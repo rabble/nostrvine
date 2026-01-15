@@ -91,7 +91,7 @@ void main() {
       test('loads following list from local storage', () async {
         // Pre-populate SharedPreferences with cached data
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
+          'following_list_$testCurrentUserPubkey':
               '["$testTargetPubkey", "$testTargetPubkey2"]',
         });
 
@@ -141,8 +141,7 @@ void main() {
 
       test('returns true for followed user', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         await repository.initialize();
@@ -171,8 +170,7 @@ void main() {
 
       test('does nothing when already following', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         await repository.initialize();
@@ -264,8 +262,7 @@ void main() {
 
       test('successfully unfollows a user', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         final mockEvent = _MockEvent();
@@ -298,8 +295,7 @@ void main() {
       test('rolls back on broadcast failure', () async {
         // Pre-populate with followed user
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         when(
@@ -361,8 +357,7 @@ void main() {
 
       test('unfollows when currently following', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         final mockEvent = _MockEvent();
@@ -421,8 +416,7 @@ void main() {
 
       test('propagates errors from unfollow', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         when(
@@ -495,8 +489,7 @@ void main() {
 
       test('emits updated list when unfollow succeeds', () async {
         SharedPreferences.setMockInitialValues({
-          StorageKeys.followingListKey(testCurrentUserPubkey):
-              '["$testTargetPubkey"]',
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
         final mockEvent = _MockEvent();
