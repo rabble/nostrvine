@@ -1,9 +1,13 @@
 // ABOUTME: Camera preview widget with animated aspect ratio transitions and grid overlay
 // ABOUTME: Handles tap-to-focus and displays rule-of-thirds grid during non-recording state
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/preview/video_recorder_macos_preview.dart';
+import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
 
@@ -30,96 +34,105 @@ class _VideoRecorderCameraPreviewState
     extends ConsumerState<VideoRecorderCameraPreview> {
   @override
   Widget build(BuildContext context) {
+    final aspectRatio = ref.watch(
+      videoRecorderProvider.select((s) => s.aspectRatio.value),
+    );
+
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const .symmetric(horizontal: 4),
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            tween: Tween(begin: aspectRatio, end: aspectRatio),
+            builder: (context, aspectRatio, _) {
+              return AspectRatio(
+                aspectRatio: aspectRatio,
+                child: ClipRRect(
+                  clipBehavior: .hardEdge,
+                  borderRadius: .circular(widget.previewWidgetRadius),
+                  child: _StackItems(),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StackItems extends ConsumerWidget {
+  const _StackItems();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
       videoRecorderProvider.select(
         (s) => (
-          aspectRatio: s.aspectRatio.value,
-          sensorAspectRatio: s.cameraSensorAspectRatio,
-          showGrid: !s.isRecording,
           isCameraInitialized: s.isCameraInitialized,
           cameraRebuildCount: s.cameraRebuildCount,
         ),
       ),
     );
-
-    return Center(
-      child: Padding(
-        padding: const .symmetric(horizontal: 4),
-        child: TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOut,
-          tween: Tween(begin: state.aspectRatio, end: state.aspectRatio),
-          builder: (context, aspectRatio, _) {
-            return AspectRatio(
-              aspectRatio: aspectRatio,
-              child: ClipRRect(
-                clipBehavior: .hardEdge,
-                borderRadius: .circular(widget.previewWidgetRadius),
-                child: Stack(
-                  fit: .expand,
-                  key: ValueKey('Camera-Count-${state.cameraRebuildCount}'),
-                  children: _buildStackItems(
-                    showGrid: state.showGrid,
-                    isCameraInitialized: state.isCameraInitialized,
-                    sensorAspectRatio: state.sensorAspectRatio,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+    return Stack(
+      fit: .expand,
+      key: ValueKey('Camera-Count-${state.cameraRebuildCount}'),
+      children: [
+        if (state.isCameraInitialized)
+          const _CameraPreview()
+        else
+          const VideoRecorderCameraPlaceholder(),
+        const _OverlayGrid(),
+        const VideoRecorderFocusPoint(),
+      ],
     );
   }
+}
 
-  List<Widget> _buildStackItems({
-    required bool isCameraInitialized,
-    required bool showGrid,
-    required double sensorAspectRatio,
-  }) {
-    final previewWidget = ref
-        .read(videoRecorderProvider.notifier)
-        .previewWidget;
+class _CameraPreview extends ConsumerWidget {
+  const _CameraPreview();
 
-    return [
-      if (isCameraInitialized && previewWidget != null)
-        _buildCameraPreview(
-          previewWidget: previewWidget,
-          sensorAspectRatio: sensorAspectRatio,
-        )
-      else
-        const VideoRecorderCameraPlaceholder(),
-      _buildOverlayGrid(showGrid),
-      const VideoRecorderFocusPoint(),
-    ];
-  }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sensorAspectRatio = ref.watch(
+      videoRecorderProvider.select((s) => s.cameraSensorAspectRatio),
+    );
 
-  Widget _buildCameraPreview({
-    required Widget previewWidget,
-    required double sensorAspectRatio,
-  }) {
     return FittedBox(
       fit: .cover,
       child: SizedBox(
-        width: 100 / sensorAspectRatio,
-        height: 100,
+        width: 1000 / sensorAspectRatio,
+        height: 1000,
         child: Stack(
           children: [
-            /// Skeleton when switching camera
             Container(color: const Color(0xFF141414)),
 
             /// Preview widget
-            previewWidget,
+            if (!kIsWeb && Platform.isMacOS)
+              VideoRecorderMacosPreview()
+            else
+              VideoRecorderMobilePreview(),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildOverlayGrid(bool showGrid) {
+class _OverlayGrid extends ConsumerWidget {
+  const _OverlayGrid();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isRecording = ref.watch(
+      videoRecorderProvider.select((s) => s.isRecording),
+    );
+
     return IgnorePointer(
       child: AnimatedOpacity(
-        opacity: showGrid ? 1.0 : 0.0,
+        opacity: isRecording ? 0.0 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeInOut,
         child: CustomPaint(painter: _GridPainter()),

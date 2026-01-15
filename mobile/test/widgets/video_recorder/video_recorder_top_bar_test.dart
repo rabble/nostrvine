@@ -20,6 +20,7 @@ void main() {
     setUp(() async {
       mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       await mockCamera.initialize();
     });

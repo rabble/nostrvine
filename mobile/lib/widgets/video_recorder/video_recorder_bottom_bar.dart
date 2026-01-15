@@ -7,6 +7,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_more_sheet.dart';
 
+const double _bottomBarHeight = 64;
+
 /// Bottom bar with record button and camera controls.
 class VideoRecorderBottomBar extends ConsumerWidget {
   /// Creates a video recorder bottom bar widget.
@@ -14,20 +16,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
   /// Radius for the preview widget's inverted corners.
   final double previewWidgetRadius;
-  static const double _bottomBarHeight = 64;
-
-  /// Show more options menu
-  Future<void> _showMoreOptions(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF101111),
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: .vertical(top: .circular(32)),
-      ),
-      builder: (context) => const VideoRecorderMoreSheet(),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,7 +32,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           alignment: .bottomCenter,
           children: [
             /// Record button
-            _buildRecordButton(ref, isRecording),
+            const _RecordButton(),
 
             /// BottomBar
             Stack(
@@ -63,7 +51,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   ),
                   child: isRecording
                       ? const SizedBox.shrink()
-                      : _buildActionButtons(context, ref),
+                      : const _ActionButtonRow(),
                 ),
 
                 /// Helper widget which create a inner radius for the camera
@@ -86,9 +74,17 @@ class VideoRecorderBottomBar extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// Build record button
-  Widget _buildRecordButton(WidgetRef ref, bool isRecording) {
+class _RecordButton extends ConsumerWidget {
+  const _RecordButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isRecording = ref.watch(
+      videoRecorderProvider.select((p) => p.isRecording),
+    );
+
     final notifier = ref.read(videoRecorderProvider.notifier);
     final timerDuration = ref.watch(
       videoRecorderProvider.select((p) => p.timerDuration),
@@ -96,10 +92,11 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     final isLongPressSupported = timerDuration == .off;
 
     return Semantics(
+      identifier: 'divine-camera-record-button',
       button: true,
-      label: isRecording ? 'Stop recording' : 'Start recording',
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      tooltip: isRecording ? 'Stop recording' : 'Start recording',
       child: GestureDetector(
-        key: const ValueKey('divine-camera-record-button'),
         onTap: notifier.toggleRecording,
         onLongPressStart: isLongPressSupported
             ? (_) => notifier.startRecording()
@@ -143,9 +140,23 @@ class VideoRecorderBottomBar extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// Build the action buttons
-  Widget _buildActionButtons(BuildContext context, WidgetRef ref) {
+class _ActionButtonRow extends ConsumerWidget {
+  const _ActionButtonRow();
+
+  /// Show more options menu
+  Future<void> _showMoreOptions(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF101111),
+      builder: (_) => const VideoRecorderMoreSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(videoRecorderProvider.notifier);
 
     final state = ref.watch(
@@ -167,61 +178,78 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         mainAxisAlignment: .spaceAround,
         children: [
           // Flash toggle
-          _buildControlButton(
+          _ActionButton(
             iconPath: state.flashMode.iconPath,
-            label: 'Toggle flash',
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            tooltip: 'Toggle flash',
             onPressed: state.hasFlash ? notifier.toggleFlash : null,
           ),
 
           // Timer toggle
-          _buildControlButton(
+          _ActionButton(
             iconPath: state.timer.iconPath,
-            label: 'Cycle timer',
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            tooltip: 'Cycle timer',
             onPressed: notifier.cycleTimer,
           ),
 
           // Aspect-Ratio
-          _buildControlButton(
+          _ActionButton(
             iconPath: state.aspectRatio == .square
                 ? 'assets/icon/crop_square.svg'
                 : 'assets/icon/crop_portrait.svg',
-            label: 'Toggle aspect ratio',
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            tooltip: 'Toggle aspect ratio',
             onPressed: notifier.toggleAspectRatio,
           ),
 
           // Flip camera
-          _buildControlButton(
+          _ActionButton(
             iconPath: 'assets/icon/refresh.svg',
-            label: 'Switch camera',
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            tooltip: 'Switch camera',
             onPressed: state.canSwitchCamera ? notifier.switchCamera : null,
           ),
 
           // More options
-          _buildControlButton(
+          _ActionButton(
             iconPath: 'assets/icon/more_horiz.svg',
-            label: 'More options',
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            tooltip: 'More options',
             onPressed: () => _showMoreOptions(context),
           ),
         ],
       ),
     );
   }
+}
 
-  /// Build control button with optional label
-  Widget _buildControlButton({
-    required String iconPath,
-    required VoidCallback? onPressed,
-    String? label,
-  }) {
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.onPressed,
+    required this.tooltip,
+    required this.iconPath,
+  });
+  final VoidCallback? onPressed;
+  final String tooltip;
+  final String iconPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+
     return IconButton(
       onPressed: onPressed,
-      tooltip: label,
+      tooltip: tooltip,
       icon: SizedBox(
         height: 32,
         width: 32,
         child: SvgPicture.asset(
           iconPath,
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(
+            Color.fromRGBO(255, 255, 255, isEnabled ? 1.0 : 0.3),
+            .srcIn,
+          ),
         ),
       ),
     );

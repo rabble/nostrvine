@@ -18,6 +18,7 @@ void main() {
     setUp(() async {
       mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       await mockCamera.initialize();
     });
@@ -43,7 +44,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
 
       expect(
-        find.byKey(ValueKey('divine-camera-record-button')),
+        find.bySemanticsIdentifier('divine-camera-record-button'),
         findsOneWidget,
       );
     });

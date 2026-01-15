@@ -14,21 +14,30 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 /// Provides a unified API for camera control, recording, and preview.
 abstract class CameraService {
   /// Protected constructor for subclasses
-  CameraService({required this.onUpdateState});
+  CameraService({required this.onUpdateState, required this.onAutoStopped});
 
   /// Factory constructor that returns the appropriate camera service
   /// implementation based on the current platform.
   factory CameraService.create({
     required void Function({bool? forceCameraRebuild}) onUpdateState,
+    required void Function(EditorVideo video) onAutoStopped,
   }) {
     if (!kIsWeb && Platform.isMacOS) {
-      return CameraMacOSService(onUpdateState: onUpdateState);
+      return CameraMacOSService(
+        onUpdateState: onUpdateState,
+        onAutoStopped: onAutoStopped,
+      );
     }
-    return CameraMobileService(onUpdateState: onUpdateState);
+    return CameraMobileService(
+      onUpdateState: onUpdateState,
+      onAutoStopped: onAutoStopped,
+    );
   }
 
   /// Callback to trigger UI updates when camera state changes.
   final void Function({bool? forceCameraRebuild}) onUpdateState;
+
+  final void Function(EditorVideo video) onAutoStopped;
 
   /// Initializes the camera and prepares it for use.
   Future<void> initialize();
@@ -52,7 +61,7 @@ abstract class CameraService {
   Future<bool> switchCamera();
 
   /// Starts video recording.
-  Future<void> startRecording();
+  Future<void> startRecording({Duration? maxDuration});
 
   /// Stops video recording.
   Future<EditorVideo?> stopRecording();
@@ -83,12 +92,4 @@ abstract class CameraService {
 
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
-
-  /// Builds the camera preview widget with gesture handlers.
-  Widget buildPreviewWidget({
-    required void Function(ScaleStartDetails details) onScaleStart,
-    required void Function(ScaleUpdateDetails details) onScaleUpdate,
-    required void Function(TapDownDetails details, BoxConstraints constraints)
-    onTapDown,
-  });
 }

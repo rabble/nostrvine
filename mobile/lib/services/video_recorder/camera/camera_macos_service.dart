@@ -1,6 +1,8 @@
 // ABOUTME: macOS platform implementation of camera service using the camera_macos package
 // ABOUTME: Handles camera and audio device management, recording, and torch control on macOS
 
+import 'dart:async';
+
 import 'package:camera_macos_plus/camera_macos.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -13,7 +15,10 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 /// Manages video and audio devices, recording, and camera switching on macOS.
 class CameraMacOSService extends CameraService {
   /// Creates a macOS camera service instance.
-  CameraMacOSService({required super.onUpdateState});
+  CameraMacOSService({
+    required super.onUpdateState,
+    required super.onAutoStopped,
+  });
 
   List<CameraMacOSDevice>? _videoDevices;
   List<CameraMacOSDevice>? _audioDevices;
@@ -23,14 +28,12 @@ class CameraMacOSService extends CameraService {
   final double _minZoomLevel = 1;
   final double _maxZoomLevel = 10;
   Size _cameraSensorSize = const Size(500, 500);
-  int _textureId = 0;
-  TapDownDetails? _tapDownDetails;
 
   bool _hasFlash = false;
   bool _isRecording = false;
   bool _isInitialized = false;
-  bool _isInBackground = false;
   bool _isInitialSetupCompleted = false;
+  Timer? _autoStopTimer;
 
   @override
   Future<void> initialize() async {
@@ -69,6 +72,8 @@ class CameraMacOSService extends CameraService {
       name: 'CameraMacOSService',
       category: .video,
     );
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
     _isInitialized = false;
 
     await CameraMacOS.instance.destroy();
@@ -88,7 +93,6 @@ class CameraMacOSService extends CameraService {
     );
     _isInitialized = true;
 
-    _textureId = result?.textureId ?? 0;
     _cameraSensorSize = result?.size ?? const Size(500, 500);
 
     final hasFlash = await CameraMacOS.instance.hasFlash(deviceId: deviceId);
@@ -214,7 +218,7 @@ class CameraMacOSService extends CameraService {
   }
 
   @override
-  Future<void> startRecording() async {
+  Future<void> startRecording({Duration? maxDuration}) async {
     try {
       Log.info(
         '📷 Starting macOS video recording',
@@ -228,6 +232,23 @@ class CameraMacOSService extends CameraService {
 
       await CameraMacOS.instance.startVideoRecording(url: outputPath);
       _isRecording = true;
+
+      // Set up auto-stop timer if maxDuration is specified
+      if (maxDuration != null) {
+        Log.info(
+          '📷 Auto-stop timer set for ${maxDuration.inSeconds}s',
+          name: 'CameraMacOSService',
+          category: .video,
+        );
+        _autoStopTimer = Timer(maxDuration, () async {
+          Log.info(
+            '📷 Max duration reached, auto-stopping recording',
+            name: 'CameraMacOSService',
+            category: .video,
+          );
+          await stopRecording();
+        });
+      }
 
       Log.info(
         '📷 Recording to: $outputPath',
@@ -251,6 +272,9 @@ class CameraMacOSService extends CameraService {
         name: 'CameraMacOSService',
         category: .video,
       );
+
+      _autoStopTimer?.cancel();
+      _autoStopTimer = null;
 
       final result = await CameraMacOS.instance.stopVideoRecording();
       _isRecording = false;
@@ -294,13 +318,11 @@ class CameraMacOSService extends CameraService {
       case .detached:
       case .paused:
       case .inactive:
-        _isInBackground = true;
         if (isInitialized) {
           await dispose();
           onUpdateState(forceCameraRebuild: true);
         }
       case .resumed:
-        _isInBackground = false;
         // Only reinitialize if we had a successful initialization before
         // (prevents reinitialization attempts when coming back from permission
         // dialog)
@@ -314,36 +336,6 @@ class CameraMacOSService extends CameraService {
           );
         }
     }
-  }
-
-  @override
-  Widget buildPreviewWidget({
-    required void Function(ScaleStartDetails details) onScaleStart,
-    required void Function(ScaleUpdateDetails details) onScaleUpdate,
-    required void Function(TapDownDetails details, BoxConstraints constraints)
-    onTapDown,
-  }) {
-    if (_isInBackground || !_isInitialized) return const SizedBox.shrink();
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return GestureDetector(
-          behavior: .opaque,
-          onScaleStart: onScaleStart,
-          onScaleUpdate: onScaleUpdate,
-          onTapDown: (details) => _tapDownDetails = details,
-          onTap: () {
-            if (_tapDownDetails != null) {
-              onTapDown(_tapDownDetails!, constraints);
-            }
-          },
-          child: CameraMacOSRawView(
-            cameraSize: _cameraSensorSize,
-            textureId: _textureId,
-          ),
-        );
-      },
-    );
   }
 
   /// Converts [DivineFlashMode] to macOS [Torch] mode.

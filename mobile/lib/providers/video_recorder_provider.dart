@@ -13,6 +13,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -51,6 +52,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
                   : null,
             );
           },
+          onAutoStopped: stopRecording,
         );
 
     // Setup cleanup when provider is disposed
@@ -242,6 +244,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   /// Start video recording with optional timer countdown.
   Future<void> startRecording() async {
+    // TODO(@hm21): Temporary "commented out" create PR with only new files
+    /* final clipProvider = ref.read(clipManagerProvider.notifier);
+    final remainingDuration = clipProvider.remainingDuration;
+
+    // We block the recording if the video is already recording or if the
+    // remaining duration is less than one frame.
+    if (state.isRecording || remainingDuration < Duration(milliseconds: 30)) {
+      return;
+    }
+
     _baseZoomLevel = state.zoomLevel;
     state = state.copyWith(recordingState: .recording);
 
@@ -254,8 +266,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
 
-      for (var i = seconds; i > 0; i--) {
-        if (_isDestroyed) return; // Stop countdown if disposed
+      for (var i = seconds; i > 0 && !_isDestroyed; i--) {
         state = state.copyWith(countdownValue: i);
         await Future<void>.delayed(const Duration(seconds: 1));
       }
@@ -269,13 +280,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
-    await _cameraService.startRecording();
-    // TODO(@hm21): Temporary "commented out" create PR with only new files
-    // ref.read(clipManagerProvider.notifier).startRecording();
+    await _cameraService.startRecording(maxDuration: remainingDuration);
+    clipProvider.startRecording(); */
   }
 
   /// Stop recording and process clip (metadata, thumbnail).
-  Future<void> stopRecording() async {
+  Future<void> stopRecording([EditorVideo? result]) async {
+    if (!state.isRecording && result != null) return;
     /* TODO(@hm21): Temporary "commented out" create PR with only new files
     if (!state.isRecording) return;
 
@@ -284,10 +295,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+    final videoResult = result ?? await _cameraService.stopRecording();
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
       ..stopRecording();
-    final videoResult = await _cameraService.stopRecording();
+    final remainingMs = clipProvider.remainingDuration.inMilliseconds;
 
     if (videoResult == null) {
       Log.warning(
@@ -326,8 +338,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
 
     // Generate and attach thumbnail
-    final thumbnailPath = await VideoThumbnailService.extractThumbnail(
+       final thumbnailPath = await VideoThumbnailService.extractThumbnail(
       videoPath: await videoResult.safeFilePath(),
+      timestamp: Duration(
+        // Use the middle of remaining duration if video is
+        // shorter than remaining time (clip was trimmed), otherwise use default
+        // 210ms which is typically the first keyframe in most MP4 videos
+        milliseconds: remainingMs <= metadata.duration.inMilliseconds
+            ? remainingMs ~/ 2
+            : 210,
+      ),
     );
     if (thumbnailPath != null) {
       clipProvider.updateThumbnail(clip.id, thumbnailPath);
@@ -359,11 +379,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     await setZoomLevel(zoomLevel);
   }
 
-  void _handleScaleStart(ScaleStartDetails details) {
+  /// Handle pinch-to-zoom gesture start.
+  ///
+  /// Captures base zoom level for relative zoom calculations.
+  void handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = state.zoomLevel;
   }
 
-  Future<void> _handleScaleUpdate(ScaleUpdateDetails details) async {
+  /// Handle pinch-to-zoom gesture update.
+  ///
+  /// Calculates zoom level based on pinch scale relative to base level.
+  Future<void> handleScaleUpdate(ScaleUpdateDetails details) async {
     // Linear zoom: map scale gesture to zoom range
     // scale < 1.0 = zoom out, scale > 1.0 = zoom in
     final scaleChange = details.scale - 1.0; // -1.0 to +2.0 range
@@ -388,26 +414,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
   }
 
-  Future<void> _handleTapDown(
-    TapDownDetails details,
-    BoxConstraints constraints,
-  ) async {
-    final offset = Offset(
-      details.localPosition.dx / constraints.maxWidth,
-      details.localPosition.dy / constraints.maxHeight,
-    );
-    await Future.wait([setFocusPoint(offset), setExposurePoint(offset)]);
-  }
-
-  /// Get the camera preview widget from the controller
-  Widget? get previewWidget => _cameraService.isInitialized
-      ? _cameraService.buildPreviewWidget(
-          onTapDown: _handleTapDown,
-          onScaleStart: _handleScaleStart,
-          onScaleUpdate: _handleScaleUpdate,
-        )
-      : null;
-
   /// Close video recorder and navigate away.
   void closeVideoRecorder(BuildContext context) {
     Log.info(
@@ -429,13 +435,19 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Pauses camera lifecycle, navigates to editor, and resumes camera on
   /// return.
   Future<void> openVideoEditor(BuildContext context) async {
-    await handleAppLifecycleState(.paused);
-    if (!context.mounted) return;
-    // TODO(@hm21): Temporary "commented out" create PR with only new files
-    // await context.pushVideoEditor();
+    await Future.wait([
+      // TODO(@hm21): Temporary "commented out" create PR with only new files
+      // context.pushVideoEditor();
+      // We delay camera dispose so that the screen animation can finish
+      // before the editor open. Without that it will look weird to the user
+      // because the initialization screen will show up quickly.
+      Future.delayed(Duration(milliseconds: 300), () {
+        return _cameraService.dispose();
+      }),
+    ]);
     if (!context.mounted) return;
 
-    await handleAppLifecycleState(.resumed);
+    await _cameraService.initialize();
   }
 
   /// Update the state based on the current camera state.

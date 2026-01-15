@@ -14,7 +14,10 @@ class MockCameraService extends CameraService {
   DivineFlashMode flashMode = DivineFlashMode.auto;
   Offset focusPoint = Offset.zero;
 
-  MockCameraService.create({required super.onUpdateState});
+  MockCameraService.create({
+    required super.onUpdateState,
+    required super.onAutoStopped,
+  });
 
   @override
   Future<void> initialize() async {
@@ -55,7 +58,7 @@ class MockCameraService extends CameraService {
   }
 
   @override
-  Future<void> startRecording() async {
+  Future<void> startRecording({Duration? maxDuration}) async {
     _isRecording = true;
   }
 
@@ -94,22 +97,4 @@ class MockCameraService extends CameraService {
 
   @override
   bool get hasFlash => true;
-
-  @override
-  Widget buildPreviewWidget({
-    required Function(ScaleStartDetails details) onScaleStart,
-    required Function(ScaleUpdateDetails details) onScaleUpdate,
-    required Function(TapDownDetails details, BoxConstraints constraints)
-    onTapDown,
-  }) {
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Text(
-          'Mock Camera Preview',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-  }
 }

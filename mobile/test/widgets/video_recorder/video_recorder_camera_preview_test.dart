@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_camera_preview.dart';
+import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 
 import '../../mocks/mock_camera_service.dart';
 
@@ -17,6 +17,7 @@ void main() {
     testWidgets('renders camera preview widget', (tester) async {
       final mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       await mockCamera.initialize();
 
@@ -43,6 +44,7 @@ void main() {
     ) async {
       final mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       // Don't initialize - should show placeholder
 
@@ -70,6 +72,7 @@ void main() {
     ) async {
       final mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       await mockCamera.initialize();
 

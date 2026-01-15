@@ -26,6 +26,7 @@ void main() {
     setUp(() async {
       cameraService = CameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
       );
       await cameraService.initialize();
     });
