@@ -306,9 +306,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isProcessing
-                      ? null
-                      : () => _exportKey(context, keyManager),
+                  onPressed: _isProcessing ? null : () => _exportKey(context),
                   icon: const Icon(Icons.copy, size: 20),
                   label: const Text(
                     'Copy My Private Key (nsec)',
@@ -470,10 +468,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     }
   }
 
-  Future<void> _exportKey(
-    BuildContext context,
-    NostrKeyManager keyManager,
-  ) async {
+  Future<void> _exportKey(BuildContext context) async {
     try {
       final nsec = await ref.read(authServiceProvider).exportNsec();
 
