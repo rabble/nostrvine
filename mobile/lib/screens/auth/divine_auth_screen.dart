@@ -1,16 +1,17 @@
 // ABOUTME: Native email/password authentication screen for diVine
 // ABOUTME: Handles both login and registration with email verification flow
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/mixins/email_verification_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
+import 'package:openvine/widgets/auth/auth_gradient_background.dart';
+import 'package:openvine/widgets/auth/auth_submit_button.dart';
+import 'package:openvine/widgets/auth/auth_text_field.dart';
 import 'package:openvine/widgets/error_message.dart';
 
 /// Mode for the auth screen
@@ -27,7 +28,7 @@ class DivineAuthScreen extends ConsumerStatefulWidget {
 }
 
 class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, EmailVerificationMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -39,11 +40,12 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
-  // For email verification polling
-  String? _pendingDeviceCode;
-  String? _pendingVerifier;
-  String? _pendingEmail;
-  Timer? _pollTimer;
+  @override
+  void setErrorMessage(String? message) {
+    if (mounted) {
+      setState(() => _errorMessage = message);
+    }
+  }
 
   @override
   void initState() {
@@ -61,7 +63,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _pollTimer?.cancel();
+    disposeVerification();
     super.dispose();
   }
 
@@ -92,9 +94,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
         name: 'DivineAuthScreen',
         category: LogCategory.auth,
       );
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -103,7 +103,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   }
 
   Future<void> _handleLogin(
-    KeycastOAuth oauth,
+    dynamic oauth,
     String email,
     String password,
   ) async {
@@ -114,19 +114,18 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success || result.code == null) {
-      setState(() {
-        _errorMessage =
-            result.errorDescription ?? result.error ?? 'Login failed';
-      });
+      setErrorMessage(
+        result.errorDescription ?? result.error ?? 'Login failed',
+      );
       return;
     }
 
     // Exchange code for tokens
-    await _exchangeCodeAndLogin(oauth, result.code!, verifier);
+    await exchangeCodeAndLogin(oauth, result.code!, verifier);
   }
 
   Future<void> _handleRegister(
-    KeycastOAuth oauth,
+    dynamic oauth,
     String email,
     String password,
   ) async {
@@ -137,177 +136,25 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success) {
-      setState(() {
-        _errorMessage = result.error ?? 'Registration failed';
-      });
+      setErrorMessage(result.error ?? 'Registration failed');
       return;
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
       // Store for polling and show verification UI
-      setState(() {
-        _pendingDeviceCode = result.deviceCode;
-        _pendingVerifier = verifier;
-        _pendingEmail = email;
-      });
-
-      // Start background polling
-      _startPolling(oauth);
-
-      // Show verification dialog but let user continue
-      if (mounted) {
-        _showVerificationDialog();
-      }
-    } else {
-      // No verification needed (unlikely but handle it)
-      // This shouldn't happen with the current backend
-      setState(() {
-        _errorMessage = 'Registration complete. Please check your email.';
-      });
-    }
-  }
-
-  void _startPolling(KeycastOAuth oauth) {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      if (_pendingDeviceCode == null || !mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final result = await oauth.pollForCode(_pendingDeviceCode!);
-
-      switch (result.status) {
-        case PollStatus.complete:
-          timer.cancel();
-          if (result.code != null && _pendingVerifier != null) {
-            await _exchangeCodeAndLogin(oauth, result.code!, _pendingVerifier!);
-          }
-          break;
-        case PollStatus.pending:
-          // Keep polling
-          break;
-        case PollStatus.error:
-          timer.cancel();
-          if (mounted) {
-            setState(() {
-              _errorMessage = result.error ?? 'Verification failed';
-            });
-          }
-          break;
-      }
-    });
-  }
-
-  void _showVerificationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Row(
-          children: [
-            Icon(Icons.email_outlined, color: VineTheme.vineGreen),
-            SizedBox(width: 12),
-            Text('Verify Your Email', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'We sent a verification link to:',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _pendingEmail ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Click the link in your email to complete registration. '
-              'You can continue using the app in the meantime.',
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.vineGreen,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Waiting for verification...',
-                  style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Let user continue to the app
-              _continueToApp();
-            },
-            child: const Text(
-              'Continue to App',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _continueToApp() {
-    // User can use the app while waiting for verification
-    // The polling continues in the background
-    // Navigate to home
-    if (mounted) {
-      context.go('/home/0');
-    }
-  }
-
-  Future<void> _exchangeCodeAndLogin(
-    KeycastOAuth oauth,
-    String code,
-    String verifier,
-  ) async {
-    try {
-      final tokenResponse = await oauth.exchangeCode(
-        code: code,
+      setPendingVerification(
+        deviceCode: result.deviceCode!,
         verifier: verifier,
+        email: email,
       );
 
-      // Get the session and sign in
-      final session = KeycastSession.fromTokenResponse(tokenResponse);
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithDivineOAuth(session);
+      startVerificationPolling(oauth);
 
-      // Clear pending state
-      setState(() {
-        _pendingDeviceCode = null;
-        _pendingVerifier = null;
-        _pendingEmail = null;
-      });
-
-      // Navigation will be handled by auth state listener
-    } on OAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        showVerificationDialog();
+      }
+    } else {
+      setErrorMessage('Registration complete. Please check your email.');
     }
   }
 
@@ -320,191 +167,134 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header with back button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-              ),
-
-              // Tab bar
-              TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.white,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                tabs: const [
-                  Tab(text: 'Log In'),
-                  Tab(text: 'Create Account'),
+  Widget build(BuildContext context) => Scaffold(
+    body: AuthGradientBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header with back button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => context.pop(),
+                  ),
+                  const Spacer(),
                 ],
-                onTap: (_) {
-                  // Clear error when switching tabs
-                  setState(() => _errorMessage = null);
-                },
               ),
+            ),
 
-              // Form
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 32),
+            // Tab bar
+            TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white60,
+              tabs: const [
+                Tab(text: 'Log In'),
+                Tab(text: 'Create Account'),
+              ],
+              onTap: (_) {
+                // Clear error when switching tabs
+                setState(() => _errorMessage = null);
+              },
+            ),
 
-                        // Email field
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          decoration: _buildInputDecoration(
-                            label: 'Email',
-                            icon: Icons.email_outlined,
-                          ),
-                          validator: Validators.validateEmail,
+            // Form
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 32),
+
+                      // Email field
+                      AuthTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        validator: Validators.validateEmail,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Password field
+                      AuthTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        icon: Icons.lock_outlined,
+                        obscureText: _obscurePassword,
+                        onToggleObscure: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
-                        const SizedBox(height: 16),
+                        validator: Validators.validatePassword,
+                      ),
+                      const SizedBox(height: 16),
 
-                        // Password field
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: _buildInputDecoration(
-                            label: 'Password',
-                            icon: Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white60,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
-                            ),
-                          ),
-                          validator: Validators.validatePassword,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Confirm password (register only)
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          child: _tabController.index == 1
-                              ? Column(
-                                  children: [
-                                    TextFormField(
-                                      controller: _confirmPasswordController,
-                                      obscureText: _obscureConfirmPassword,
-                                      decoration: _buildInputDecoration(
-                                        label: 'Confirm Password',
-                                        icon: Icons.lock_outlined,
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscureConfirmPassword
-                                                ? Icons.visibility_off
-                                                : Icons.visibility,
-                                            color: Colors.white60,
-                                          ),
-                                          onPressed: () => setState(
-                                            () => _obscureConfirmPassword =
-                                                !_obscureConfirmPassword,
-                                          ),
-                                        ),
-                                      ),
-                                      validator: _validateConfirmPassword,
+                      // Confirm password (register only)
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        child: _tabController.index == 1
+                            ? Column(
+                                children: [
+                                  AuthTextField(
+                                    controller: _confirmPasswordController,
+                                    label: 'Confirm Password',
+                                    icon: Icons.lock_outlined,
+                                    obscureText: _obscureConfirmPassword,
+                                    onToggleObscure: () => setState(
+                                      () => _obscureConfirmPassword =
+                                          !_obscureConfirmPassword,
                                     ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-
-                        // Error message
-                        if (_errorMessage != null) ...[
-                          ErrorMessage(message: _errorMessage),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Submit button
-                        SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: VineTheme.vineGreen,
-                              disabledBackgroundColor: Colors.white60,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: VineTheme.vineGreen,
-                                    ),
-                                  )
-                                : Text(
-                                    _tabController.index == 0
-                                        ? 'Log In'
-                                        : 'Create Account',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    validator: _validateConfirmPassword,
                                   ),
+                                  const SizedBox(height: 16),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+
+                      // Error message
+                      if (_errorMessage != null) ...[
+                        ErrorMessage(message: _errorMessage),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Submit button
+                      AuthSubmitButton(
+                        isLoading: _isLoading,
+                        label:
+                            _tabController.index == 0 ? 'Log In' : 'Create Account',
+                        onPressed: _handleSubmit,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Forgot password (login only)
+                      if (_tabController.index == 0)
+                        TextButton(
+                          onPressed: _showForgotPasswordDialog,
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // Forgot password (login only)
-                        if (_tabController.index == 0)
-                          TextButton(
-                            onPressed: _showForgotPasswordDialog,
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 
   void _showForgotPasswordDialog() {
     // Pre-fill from the main email controller
@@ -532,14 +322,12 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                   style: TextStyle(color: Colors.grey[400], fontSize: 14),
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
+                AuthTextField(
                   controller: resetEmailController,
+                  label: 'Email Address',
+                  icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: _buildInputDecoration(
-                    label: 'Email Address',
-                    icon: Icons.email_outlined,
-                  ),
                   validator: Validators.validateEmail,
                 ),
               ],
@@ -596,29 +384,15 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             ),
           );
         } else {
-          setState(() {
-            _errorMessage = result.error ?? 'Failed to send reset email.';
-          });
+          setErrorMessage(result.error ?? 'Failed to send reset email.');
         }
       }
     } catch (e) {
-      setState(() => _errorMessage = 'An unexpected error occurred.');
+      setErrorMessage('An unexpected error occurred.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffixIcon,
-    );
   }
 }
