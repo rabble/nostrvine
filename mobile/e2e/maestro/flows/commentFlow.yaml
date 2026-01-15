@@ -1,0 +1,8 @@
+appId: co.openvine.app
+---
+- runFlow: ../tests/loginFreshInstall.yaml
+- runFlow: ../tests/commentVideo.yaml
+- runFlow: ../tests/deleteComment.yaml
+
+#Tear down
+- killApp

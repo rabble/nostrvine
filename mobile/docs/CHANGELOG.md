@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - NIP-22 Comment Compliance (2026-01-14)
+
+#### Critical Bug Fix
+- **Comments now use Kind 1111 (NIP-22) instead of Kind 1** - Per Nostr protocol, comments on non-Kind-1 content must use Kind 1111
+  - SocialService: `postComment()`, `fetchCommentsForEvent()`, `getCommentCount()` now use Kind 1111
+  - NotificationService: Comment subscription now filters for Kind 1111
+  - CommentsRepository (package) was already correct - uses Kind 1111 with proper NIP-22 threading
+
+#### Technical Details
+- Modified `lib/services/social_service.dart`:
+  - Changed `postComment()` to use `EventKind.comment` (1111) instead of kind 1
+  - Changed `fetchCommentsForEvent()` to filter for `EventKind.comment` with `uppercaseE` tag (NIP-22)
+  - Changed `getCommentCount()` to filter for `EventKind.comment` with `uppercaseE` tag
+  - Added deprecation notices pointing to CommentsRepository for proper NIP-22 support
+- Modified `lib/services/notification_service_enhanced.dart`:
+  - Changed `_subscribeToComments()` to filter for `EventKind.comment` (1111)
+- Modified `lib/services/notification_helpers.dart`:
+  - Changed `extractVideoEventId()` to look for uppercase 'E' tag first (NIP-22 root scope)
+  - Falls back to lowercase 'e' tag for reactions, reposts, and legacy events
+- Modified `test/unit/services/social_service_comment_test.dart`:
+  - Updated all test expectations to use Kind 1111
+- Modified `test/services/notification_helpers_test.dart`:
+  - Added tests for NIP-22 uppercase 'E' tag extraction
+
 ### Fixed - Nostr Publish Reliability (2025-12-21)
 
 #### Bug Fixes

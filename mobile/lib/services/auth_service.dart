@@ -661,6 +661,16 @@ class AuthService {
   Future<String?> exportNsec({String? biometricPrompt}) async {
     if (!isAuthenticated) return null;
 
+    if (authenticationSource != AuthenticationSource.automatic &&
+        authenticationSource != AuthenticationSource.importedKeys) {
+      Log.warning(
+        'Exporting nsec for $authenticationSource not supported',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+
     try {
       Log.warning(
         'Exporting nsec - ensure secure handling',

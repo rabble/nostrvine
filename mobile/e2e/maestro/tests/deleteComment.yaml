@@ -1,0 +1,55 @@
+appId: co.openvine.app
+env:
+  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
+  VIDEO_USER: "FunnyVines"
+  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
+  COMMENT: "Boring automated comment"
+  FULL_COMMENT: ""
+---
+#TC to comment a video and delete the comment just posted,
+# given the user is logged in in the app,,
+# Comment the video with description VIDEO_TITLE and delete it afterwards
+#Steps:
+# 1. Open specific video VIDEO_TITLE
+# 2. Tap on Comment: Validate Comments section is displayed
+# 3. Input comment COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
+# 4. Tap on the 3 dots menu next to the comment: Validate delete modal displayed
+# 5. Tap on "Delete Comment": Validate Confirmation modal is displayed
+# 6. Tap on Delete: The comments section is displayed without the deleted comment
+# 7. Close the comments section: Validate playback screen is displayed
+
+# 1. Open specific video VIDEO_TITLE
+- runFlow: ../utils/openSpecificVideo.yaml
+
+# 2. Tap on Comment: Validate Comments section is displayed
+- tapOn:
+    id: comments_button
+- runFlow: "../asserts/assertCommentsModal.yaml"
+
+# 3. Input comment COMMENT with current timestamp: Validate comment is displayed with "now" as timestamp
+- tapOn: Add a comment...
+- evalScript: ${output.runId = new Date().toISOString().replace('T',' ').split('.')[0]}
+- inputText: ${COMMENT} on ${output.runId}
+#Send comment
+- runFlow: ../utils/hideKeyboard.yaml #if displayed, hide the keyboard
+- tapOn:
+    id: send_comment_button
+- assertVisible: ${COMMENT} on ${output.runId}
+
+# 4. Tap on the 3 dots menu next to the comment: Validate delete modal displayed
+- tapOn:
+    id: comment_options_button
+- runFlow: ../asserts/assertCommentsOptions.yaml
+
+# 5. Tap on "Delete Comment": Validate Confirmation modal is displayed
+- tapOn: Delete Comment
+- runFlow: ../asserts/assertDeleteCommentModal.yaml
+
+# 6. Tap on Delete: The comments section is displayed without the deleted comment
+- tapOn: Delete
+- assertNotVisible: ${COMMENT} on ${output.runId}
+
+# 7. Close the comments section: Validate playback screen is displayed
+- tapOn:
+    id: close_comments_button
+- runFlow: ../asserts/assertVideoPlayback.yaml

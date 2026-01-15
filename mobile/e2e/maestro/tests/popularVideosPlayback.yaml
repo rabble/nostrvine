@@ -1,0 +1,41 @@
+appId: co.openvine.app
+---
+#TC browse on the popular videos screen,
+# given an already logged in user.
+#Steps:
+# 1. Tap on Popular Videos: Validate the screen
+# 2. Tap on the 1st video: Validate playback
+# 3. Tap on the Popular Videos tab: Validate the screen again
+# 4. Scroll downwards till "coffee" video is displayed: Validate screen
+# 5. Scroll to the very bottom:
+
+# 1. Tap on Popular Videos: Validate the screen
+- tapOn: |-
+    Explore
+    Tab 2 of 4
+- tapOn: |-
+    Popular Videos
+    Tab 2 of 3
+- runFlow: ../asserts/assertExplore.yaml
+# 2. Tap on the 1st video: Validate playback
+- tapOn:
+    id: play_button
+- runFlow: ../asserts/assertVideoPlayback.yaml
+
+# 3. Retrieve video description to validate next video has a different one
+- copyTextFrom:
+    id: "video_description"
+
+# 3. Scroll to the next video
+- repeat:
+    times: 5
+    commands:
+      - copyTextFrom:
+          id: "video_description"
+      - scroll
+      - assertVisible:
+          id: like_button
+      - assertNotVisible:
+          text: maestro.copiedText
+      - assertNotVisible: Loading...
+      - assertNotVisible: Unknown
