@@ -28,7 +28,6 @@ class NostrService extends _$NostrService {
     final environmentConfig = ref.watch(currentEnvironmentProvider);
     final dbClient = ref.watch(appDbClientProvider);
 
-    // Use currentPublicKeyHex which works for both local keys and bunker auth
     _lastPubkey = authService.currentPublicKeyHex;
 
     _authSubscription?.cancel();
@@ -74,12 +73,12 @@ class NostrService extends _$NostrService {
 
   Future<void> _onAuthStateChanged(AuthState newState) async {
     final authService = ref.read(authServiceProvider);
-    // Use currentPublicKeyHex which works for both local keys and bunker auth
     final currentPubkey = authService.currentPublicKeyHex;
 
     if (currentPubkey != _lastPubkey) {
       Log.info(
-        '[NostrService] Public key changed from $_lastPubkey to $currentPubkey, recreating NostrClient',
+        '[NostrService] Public key changed from $_lastPubkey to $currentPubkey, '
+        'recreating NostrClient',
         name: 'NostrService',
         category: LogCategory.system,
       );
