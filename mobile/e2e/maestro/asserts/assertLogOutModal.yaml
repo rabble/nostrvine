@@ -1,0 +1,6 @@
+appId: co.openvine.app
+---
+- assertVisible: Log Out?
+- assertVisible: Are you sure you want to log out? Your keys will be saved and you can log back in later.
+- assertVisible: Cancel
+- assertVisible: Log Out

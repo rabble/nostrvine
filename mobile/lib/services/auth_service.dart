@@ -75,6 +75,7 @@ class AuthResult {
 
   factory AuthResult.failure(String errorMessage) =>
       AuthResult(success: false, errorMessage: errorMessage);
+
   final bool success;
   final String? errorMessage;
   final SecureKeyContainer? keyContainer;
@@ -100,6 +101,7 @@ class UserProfile {
         publicKeyHex: keyContainer.publicKeyHex,
         displayName: NostrKeyUtils.maskKey(keyContainer.npub),
       );
+
   final String npub;
   final String publicKeyHex;
   final DateTime? keyCreatedAt;
@@ -993,6 +995,16 @@ class AuthService {
   /// Export nsec for backup purposes
   Future<String?> exportNsec({String? biometricPrompt}) async {
     if (!isAuthenticated) return null;
+
+    if (authenticationSource != AuthenticationSource.automatic &&
+        authenticationSource != AuthenticationSource.importedKeys) {
+      Log.warning(
+        'Exporting nsec for $authenticationSource not supported',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
 
     try {
       Log.warning(

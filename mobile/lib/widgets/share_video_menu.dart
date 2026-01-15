@@ -1006,7 +1006,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
           actions: [
             TextButton(
-              onPressed: () => context.pop(),
+              onPressed: context.pop,
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
@@ -1155,7 +1155,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: context.pop,
             child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
           ),
         ],
@@ -1282,7 +1282,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             widget.onDismiss!();
           } else if (mounted) {
             // Fallback: close the bottom sheet via Navigator
-            Navigator.of(context).pop();
+            context.pop();
           }
 
           // Navigate back to previous screen (profile or feed)
@@ -1446,9 +1446,7 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
         ],
       ),
     ),
-    actions: [
-      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
-    ],
+    actions: [TextButton(onPressed: context.pop, child: const Text('Cancel'))],
   );
 
   /// Load user's contacts from their follow list (NIP-02)
@@ -1734,7 +1732,7 @@ class _CreateListDialogState extends ConsumerState<_CreateListDialog> {
       ],
     ),
     actions: [
-      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+      TextButton(onPressed: context.pop, child: const Text('Cancel')),
       TextButton(onPressed: _createList, child: const Text('Create')),
     ],
   );
@@ -1847,10 +1845,7 @@ class _SelectListDialog extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => context.pop(),
-                child: const Text('Done'),
-              ),
+              TextButton(onPressed: context.pop, child: const Text('Done')),
             ],
           );
         },
@@ -1986,7 +1981,7 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       ),
     ),
     actions: [
-      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+      TextButton(onPressed: context.pop, child: const Text('Cancel')),
       TextButton(onPressed: _handleSubmitReport, child: const Text('Report')),
     ],
   );
@@ -2172,7 +2167,7 @@ class _CreateFollowSetDialogState
       ],
     ),
     actions: [
-      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+      TextButton(onPressed: context.pop, child: const Text('Cancel')),
       TextButton(onPressed: _createFollowSet, child: const Text('Create')),
     ],
   );
@@ -2269,7 +2264,7 @@ class _SelectFollowSetDialog extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => context.pop(), child: const Text('Done')),
+          TextButton(onPressed: context.pop, child: const Text('Done')),
         ],
       );
     },
@@ -2416,7 +2411,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
     ),
     actions: [
       TextButton(
-        onPressed: (_isUpdating || _isDeleting) ? null : () => context.pop(),
+        onPressed: (_isUpdating || _isDeleting) ? null : context.pop,
         child: const Text('Cancel'),
       ),
       TextButton(
@@ -2595,11 +2590,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -2796,10 +2791,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => context.pop(),
-                child: const Text('Done'),
-              ),
+              TextButton(onPressed: context.pop, child: const Text('Done')),
             ],
           );
         },
@@ -2929,7 +2921,7 @@ class _CreateBookmarkSetDialogState
       ],
     ),
     actions: [
-      TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+      TextButton(onPressed: context.pop, child: const Text('Cancel')),
       TextButton(onPressed: _createBookmarkSet, child: const Text('Create')),
     ],
   );
@@ -3071,7 +3063,7 @@ class _ReportConfirmationDialog extends StatelessWidget {
     ),
     actions: [
       TextButton(
-        onPressed: () => context.pop(),
+        onPressed: context.pop,
         child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
       ),
     ],
@@ -3204,7 +3196,7 @@ class _ViewSourceDialog extends StatelessWidget {
           },
           child: const Text('Copy JSON'),
         ),
-        TextButton(onPressed: () => context.pop(), child: const Text('Close')),
+        TextButton(onPressed: context.pop, child: const Text('Close')),
       ],
     );
   }
@@ -3461,7 +3453,7 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
 
   void _navigateToList(CuratedList list) {
     // Close the share menu bottom sheet first
-    Navigator.of(context).pop();
+    context.pop();
 
     // Navigate to the curated list feed screen
     context.pushCuratedList(

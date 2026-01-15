@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
-import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -142,16 +140,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       icon: Icons.person,
                       title: 'Edit Profile',
                       onTap: () {
-                        // Close drawer first
+                        // Close drawer first, then navigate to edit-profile route
                         context.pop();
-                        // Navigate using root navigator to escape shell route
-                        // This prevents redirect issues when navigating from inside shell
-                        Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ProfileSetupScreen(isNewUser: false),
-                          ),
-                        );
+                        context.push('/edit-profile');
                       },
                     ),
                     const Divider(color: Colors.grey, height: 1),
@@ -163,13 +154,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      // Close drawer first, then navigate
-                      Navigator.of(context).pop(); // Close drawer
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      );
+                      // Close drawer first, then navigate to settings route
+                      context.pop();
+                      context.push('/settings');
                     },
                   ),
 

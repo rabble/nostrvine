@@ -1,0 +1,9 @@
+appId: co.openvine.app
+---
+#TC to check that an already logged user is presented on his Explore screen
+#Steps:
+# 1. Open the app: Validate Home is loaded correctly
+
+# 1. Open the app
+- launchApp
+- runFlow: "../asserts/assertHome.yaml"

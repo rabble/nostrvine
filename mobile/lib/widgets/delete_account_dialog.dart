@@ -36,7 +36,7 @@ Future<void> showRemoveKeysWarningDialog({
       ),
       actions: [
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           child: const Text(
             'Cancel',
             style: TextStyle(color: Colors.grey, fontSize: 16),
@@ -122,7 +122,7 @@ Future<void> showDeleteAllContentWarningDialog({
         ),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: context.pop,
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontSize: 16),
@@ -253,7 +253,7 @@ Future<void> _showDeleteAllContentFinalConfirmation({
         ),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: context.pop,
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontSize: 16),
@@ -308,7 +308,7 @@ Future<void> showDeleteAccountCompletionDialog({
       ),
       actions: [
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           child: const Text(
             'Close',
             style: TextStyle(color: Colors.grey, fontSize: 16),

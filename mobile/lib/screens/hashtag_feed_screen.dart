@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -20,10 +21,10 @@ class HashtagFeedScreen extends ConsumerStatefulWidget {
     super.key,
   });
   final String hashtag;
-  final bool
-  embedded; // If true, don't show Scaffold/AppBar (for embedding in explore)
-  final void Function(List<VideoEvent> videos, int index)?
-  onVideoTap; // Callback for video navigation when embedded
+  // If true, don't show Scaffold/AppBar (for embedding in explore)
+  final bool embedded;
+  // Callback for video navigation when embedded
+  final void Function(List<VideoEvent> videos, int index)? onVideoTap;
 
   @override
   ConsumerState<HashtagFeedScreen> createState() => _HashtagFeedScreenState();
@@ -264,7 +265,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: context.pop,
         ),
       ),
       body: body,

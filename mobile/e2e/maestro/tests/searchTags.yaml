@@ -1,0 +1,52 @@
+appId: co.openvine.app
+env:
+  SEARCH_TAG: "comedy"
+---
+#TC to search with tags,
+# given the user is logged in in the app,
+# based on the tag name and validate its playback
+#Steps:
+# 1. Tap on Search: Validate search screen
+# 2. Input text SEARCH_TAG: Validate videos, users and a tag is found
+# 3. Tap on the Hashtags tab: Validate tag is listed
+# 4. Tap on the hastag: validate videos are listed
+# 5. Tap on the 1st video listed: Valiate playback
+
+# 1. Tap on Search: Validate search screen
+- tapOn: Search
+- runFlow: ../asserts/assertSearch.yaml
+
+# 2. Input text SEARCH_TAG: Validate videos, users and a tag is found
+- tapOn: Find something cool...
+- inputText: ${SEARCH_TAG}
+#Assert Videos and Users result
+- assertVisible: |-
+    Videos \((?!0)\d+\)
+    Tab 1 of 3
+- assertVisible: |-
+    Users \((?!0)\d+\)
+    Tab 2 of 3
+- assertVisible: |-
+    Hashtags \((?!0)\d+\)
+    Tab 3 of 3
+
+# 3. Tap on the Hashtags tab: Validate tag is listed
+- tapOn: |-
+    Hashtags \((?!0)\d+\)
+    Tab 3 of 3
+- assertVisible: |-
+    #${SEARCH_TAG}
+    Tap to view videos with this hashtag
+
+# 4. Tap on the hastag: validate videos are listed
+- tapOn: |-
+    #${SEARCH_TAG}
+    Tap to view videos with this hashtag
+- assertVisible: "#${SEARCH_TAG}"
+- assertVisible:
+    id: play_button
+
+# 5. Tap on the 1st video listed: Valiate playback
+- tapOn:
+    id: play_button
+- assertVisible: "#${SEARCH_TAG}" #Search tag is still visible

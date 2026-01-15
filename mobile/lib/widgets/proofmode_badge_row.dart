@@ -2,6 +2,7 @@
 // ABOUTME: Automatically shows appropriate badges based on VideoEvent metadata
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
@@ -151,7 +152,7 @@ class ProofModeBadgeRow extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
             child: const Text(
               'Got it',
               style: TextStyle(color: VineTheme.vineGreen),

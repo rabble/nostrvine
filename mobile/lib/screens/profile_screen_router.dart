@@ -11,8 +11,6 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -94,21 +92,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   // Action methods
 
   Future<void> _setupProfile() async {
-    // Navigate using root navigator to escape shell route
-    // This prevents redirect issues when navigating from inside shell
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) => const ProfileSetupScreen(isNewUser: true),
-      ),
-    );
+    // Navigate to setup-profile route (defined outside ShellRoute)
+    await context.push('/setup-profile');
   }
 
   Future<void> _editProfile() async {
     // Show menu with Edit Profile and Delete Account options
+    // Note: Using showModalBottomSheet with Navigator.pop because GoRouter
+    // has known issues with ModalBottomSheetRoute (see flutter/flutter#100933)
     final result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: VineTheme.cardBackground,
-      builder: (context) => SafeArea(
+      builder: (modalContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -122,7 +117,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'Update your display name, bio, and avatar',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => Navigator.pop(context, 'edit'),
+              onTap: () => Navigator.of(modalContext).pop('edit'),
             ),
             const Divider(color: VineTheme.secondaryText, height: 1),
             ListTile(
@@ -135,21 +130,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 'PERMANENTLY delete your account and all content',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
-              onTap: () => Navigator.pop(context, 'delete'),
+              onTap: () => Navigator.of(modalContext).pop('delete'),
             ),
           ],
         ),
       ),
     );
 
+    if (!mounted) return;
+
     if (result == 'edit') {
-      // Navigate using root navigator to escape shell route
-      // This prevents redirect issues when navigating from inside shell
-      await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (context) => const ProfileSetupScreen(isNewUser: false),
-        ),
-      );
+      // Navigate to edit-profile route (defined outside ShellRoute)
+      await context.push('/edit-profile');
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -193,7 +185,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
         // Close loading indicator
         if (!context.mounted) return;
-        Navigator.of(context).pop();
+        context.pop();
 
         if (result.success) {
           // Sign out and delete keys
@@ -268,12 +260,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   void _openClips() {
-    // Navigate using root navigator to escape shell route
-    // This prevents redirect issues when navigating from inside shell
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).push(MaterialPageRoute(builder: (context) => const ClipLibraryScreen()));
+    // Navigate to clips route (defined outside ShellRoute)
+    context.push('/clips');
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
@@ -301,11 +289,11 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Block'),
           ),
@@ -381,7 +369,7 @@ class _ProfileContentView extends ConsumerWidget {
     // Check if this user has muted us (mutual mute blocking)
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-      return BlockedUserScreen(onBack: () => Navigator.of(context).pop());
+      return BlockedUserScreen(onBack: context.pop);
     }
 
     // Fetch profile data if needed (post-frame to avoid build mutations)

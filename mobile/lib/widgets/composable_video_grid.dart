@@ -160,7 +160,7 @@ class ComposableVideoGrid extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () => context.pop(),
+                    onPressed: context.pop,
                     icon: Icon(Icons.close, color: VineTheme.secondaryText),
                   ),
                 ],

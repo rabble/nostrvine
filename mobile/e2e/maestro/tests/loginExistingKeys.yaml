@@ -1,0 +1,49 @@
+appId: co.openvine.app
+---
+#TC to check that the user can login
+# given that the app is closed
+# and user has existing keys.
+#Steps:
+# 1. Open the app in clear state
+# 2. Open the import identity flow: the menu is displayed
+# 3. Insert an invalid key for the user: Message invalid key is displayed
+# 4. Insert a valid key for the user, (optional) dismiss OS message, tap on Import identity:  User is redirected to the Explore screen
+# 5. Tap on profile: Validate user name and bio are displayed.
+
+# 1. Open the app in clear state
+- launchApp:
+    clearState: true
+- runFlow: "../asserts/assertSplash.yaml"
+
+# 2. Open the import identity flow: the menu is displayed
+- tapOn: Already have keys? Import them here →
+- runFlow: "../asserts/assertImportIdentity.yaml"
+
+# 3. Insert an invalid key for the user: Message invalid key is displayed
+- tapOn: Private Key
+- inputText: "sec16fvy70pyfw7cjegt4wry24z4nwaleqanrkwputmy5na0wrdyak4sdkn8l2"
+- tapOn:
+    text: Import Identity
+    index: 1
+- assertVisible: Invalid key format. Use nsec... or 64-character hex
+- eraseText: 64
+
+# 4. Insert a valid key for the user, (optional) dismiss OS message, tap on Import identity: User is redirected to the home screen
+- inputText: "${USER_KEYS}"
+#Dissmiss OS message Continue and Done on the displayed keypad
+- tapOn:
+    text: "Continue"
+    optional: true
+- runFlow: ../utils/hideKeyboard.yaml
+#Import keys
+- tapOn:
+    text: Import Identity
+    index: 1
+#User is taken to the Explore screen, validate it:
+- runFlow: "../asserts/assertHome.yaml"
+
+# 5. Tap on profile: Validate user name and bio are displayed.
+- doubleTapOn:
+    id: profile_tab
+    delay: 100
+- runFlow: "../asserts/assertSpecificUserProfile.yaml"

@@ -26,7 +26,7 @@ class BadgeExplanationModal extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           child: const Text('Close', style: TextStyle(color: Colors.blue)),
         ),
       ],

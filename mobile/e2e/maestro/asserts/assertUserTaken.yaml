@@ -1,0 +1,5 @@
+appId: co.openvine.app
+---
+- assertVisible:
+    text: Username already taken
+    index: 1

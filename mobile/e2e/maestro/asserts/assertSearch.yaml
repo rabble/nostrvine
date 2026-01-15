@@ -1,0 +1,16 @@
+appId: co.openvine.app
+---
+- assertVisible: Search
+- assertVisible: Find something cool...
+- assertVisible: |-
+    Videos (0)
+    Tab 1 of 3
+- assertVisible: |-
+    Users (0)
+    Tab 2 of 3
+- assertVisible: |-
+    Hashtags (0)
+    Tab 3 of 3
+- assertVisible: |-
+    Search for videos
+    Enter keywords, hashtags, or user names

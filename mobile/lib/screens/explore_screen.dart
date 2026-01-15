@@ -26,7 +26,6 @@ import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
-import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
@@ -419,11 +418,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 );
                 // Stop any playing videos before navigating
                 disposeAllVideoControllers(ref);
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const DiscoverListsScreen(),
-                  ),
-                );
+                context.pushDiscoverLists();
               },
               icon: Icon(Icons.search, color: VineTheme.backgroundColor),
               label: Text(

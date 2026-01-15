@@ -1,0 +1,9 @@
+appId: co.openvine.app
+---
+#Utility TC, given the user is logged in, open the Menu
+#Steps:
+# 1. Tap on Menu: validate menu is displayed
+
+# 1. Tap on Menu: validate menu is displayed
+- tapOn: "Menu"
+- runFlow: "../asserts/assertMenu.yaml"

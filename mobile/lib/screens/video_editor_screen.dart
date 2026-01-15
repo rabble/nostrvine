@@ -273,9 +273,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           ref
               .read(videoEditorProvider(widget.videoPath).notifier)
               .addTextOverlay(overlay);
-          Navigator.of(context).pop();
+          context.pop();
         },
-        onCancel: () => Navigator.of(context).pop(),
+        onCancel: context.pop,
       ),
     );
 
@@ -313,7 +313,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 .selectSound(soundId);
             // Store selected sound ID to load after navigation completes
             selectedSoundId = soundId;
-            Navigator.of(context).pop();
+            context.pop();
           },
         ),
       ),

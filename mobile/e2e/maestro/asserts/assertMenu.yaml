@@ -1,0 +1,43 @@
+appId: co.openvine.app
+---
+#Configuration section
+- assertVisible: "Configuration"
+- assertVisible: "Settings"
+#- assertVisible: "Relays
+
+#   Manage Nostr relay connections"
+#- assertVisible: "Media Servers
+
+#    Configure Blossom upload servers"
+#- assertVisible: "Notifications
+#
+#    Manage notification preferences"
+
+#Support section
+- assertVisible: "Support"
+- assertVisible: |-
+    Contact Support
+    Get help or report an issue
+#- assertVisible: "Save Logs
+#    Export logs to file for manual sending"
+
+#Legal & Safety section
+- assertVisible: "LEGAL & SAFETY"
+- assertVisible: "Privacy Policy
+
+    How we handle your data"
+- assertVisible: "Safety Center
+
+    Community safety guidelines"
+- assertVisible: "FAQ
+
+    Frequently asked questions"
+
+#Footer
+- assertVisible: "Decentralized video sharing powered by Nostr"
+
+#Scroll back to make Settings visible
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: UP
