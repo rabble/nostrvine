@@ -83,9 +83,6 @@ void main() {
       when(
         () => mockUserProfileService.shouldSkipProfileFetch(any()),
       ).thenReturn(true);
-      when(
-        () => mockSocialService.fetchCommentsForEvent(any()),
-      ).thenAnswer((_) => const Stream.empty());
       // Return empty string to indicate user is not the comment author (no 3-dot menu)
       when(() => mockNostrClient.publicKey).thenReturn('');
 

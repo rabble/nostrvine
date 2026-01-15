@@ -2,6 +2,7 @@
 // ABOUTME: Verifies trending data is only fetched when requested, not constantly polled
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:likes_repository/likes_repository.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
@@ -10,24 +11,23 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import 'curation_service_test.mocks.dart';
 
-@GenerateMocks([NostrClient, VideoEventService, SocialService, AuthService])
+@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
 void main() {
   group('CurationService', () {
     late CurationService curationService;
     late MockNostrClient mockNostrService;
     late MockVideoEventService mockVideoEventService;
-    late MockSocialService mockSocialService;
+    late MockLikesRepository mockLikesRepository;
     late MockAuthService mockAuthService;
 
     setUp(() {
       mockNostrService = MockNostrClient();
       mockVideoEventService = MockVideoEventService();
-      mockSocialService = MockSocialService();
+      mockLikesRepository = MockLikesRepository();
       mockAuthService = MockAuthService();
 
       // Mock video events for testing
@@ -46,11 +46,13 @@ void main() {
       when(
         mockNostrService.subscribe(argThat(anything)),
       ).thenAnswer((_) => Stream<Event>.empty());
+      // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
+      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
 
       curationService = CurationService(
         nostrService: mockNostrService,
         videoEventService: mockVideoEventService,
-        socialService: mockSocialService,
+        likesRepository: mockLikesRepository,
         authService: mockAuthService,
       );
     });
@@ -105,7 +107,7 @@ void main() {
       final service = CurationService(
         nostrService: mockNostrService,
         videoEventService: mockVideoEventService,
-        socialService: mockSocialService,
+        likesRepository: mockLikesRepository,
         authService: mockAuthService,
       );
 

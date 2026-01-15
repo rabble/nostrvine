@@ -10,35 +10,37 @@ import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:likes_repository/likes_repository.dart';
 
-@GenerateMocks([NostrClient, VideoEventService, SocialService, AuthService])
+@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
 import 'curation_service_analytics_test.mocks.dart';
 
 void main() {
   late CurationService curationService;
   late MockNostrClient mockNostrService;
   late MockVideoEventService mockVideoEventService;
-  late MockSocialService mockSocialService;
+  late MockLikesRepository mockLikesRepository;
   late MockAuthService mockAuthService;
   setUp(() {
     mockNostrService = MockNostrClient();
     mockVideoEventService = MockVideoEventService();
-    mockSocialService = MockSocialService();
+    mockLikesRepository = MockLikesRepository();
     mockAuthService = MockAuthService();
 
     // Setup default mocks
     when(mockVideoEventService.videoEvents).thenReturn([]);
     when(mockVideoEventService.discoveryVideos).thenReturn([]);
-    when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
     // Note: addListener removed after ChangeNotifier refactor
     when(mockVideoEventService.addVideoEvent(any)).thenReturn(null);
+
+    // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
+    when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
 
     curationService = CurationService(
       nostrService: mockNostrService,
       videoEventService: mockVideoEventService,
-      socialService: mockSocialService,
+      likesRepository: mockLikesRepository,
       authService: mockAuthService,
     );
   });

@@ -8,9 +8,9 @@ import 'dart:ui' as _i11;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
-import 'package:nostr_sdk/event.dart' as _i5;
+import 'package:nostr_sdk/event.dart' as _i6;
 import 'package:openvine/models/user_profile.dart' as _i8;
-import 'package:openvine/models/video_event.dart' as _i6;
+import 'package:openvine/models/video_event.dart' as _i5;
 import 'package:openvine/services/profile_cache_service.dart' as _i9;
 import 'package:openvine/services/social_service.dart' as _i3;
 import 'package:openvine/services/user_profile_service.dart' as _i7;
@@ -45,14 +45,6 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
   }
 
   @override
-  Set<String> get likedEventIds =>
-      (super.noSuchMethod(
-            Invocation.getter(#likedEventIds),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
   List<String> get followingPubkeys =>
       (super.noSuchMethod(
             Invocation.getter(#followingPubkeys),
@@ -69,14 +61,6 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
           as List<_i3.FollowSet>);
 
   @override
-  bool isLiked(String? eventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#isLiked, [eventId]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -87,11 +71,6 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  int? getCachedLikeCount(String? eventId) =>
-      (super.noSuchMethod(Invocation.method(#getCachedLikeCount, [eventId]))
-          as int?);
 
   @override
   bool isFollowing(String? pubkey) =>
@@ -118,33 +97,6 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  _i4.Future<void> toggleLike(String? eventId, String? authorPubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleLike, [eventId, authorPubkey]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<Map<String, dynamic>> getLikeStatus(String? eventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getLikeStatus, [eventId]),
-            returnValue: _i4.Future<Map<String, dynamic>>.value(
-              <String, dynamic>{},
-            ),
-          )
-          as _i4.Future<Map<String, dynamic>>);
-
-  @override
-  _i4.Future<List<_i5.Event>> fetchLikedEvents(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchLikedEvents, [pubkey]),
-            returnValue: _i4.Future<List<_i5.Event>>.value(<_i5.Event>[]),
-          )
-          as _i4.Future<List<_i5.Event>>);
 
   @override
   _i4.Future<void> fetchCurrentUserFollowList() =>
@@ -232,61 +184,7 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
           as _i4.Future<int>);
 
   @override
-  _i4.Future<int> getUserTotalLikes(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getUserTotalLikes, [pubkey]),
-            returnValue: _i4.Future<int>.value(0),
-          )
-          as _i4.Future<int>);
-
-  @override
-  _i4.Future<void> postComment({
-    required String? content,
-    required String? rootEventId,
-    required String? rootEventAuthorPubkey,
-    String? replyToEventId,
-    String? replyToAuthorPubkey,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#postComment, [], {
-              #content: content,
-              #rootEventId: rootEventId,
-              #rootEventAuthorPubkey: rootEventAuthorPubkey,
-              #replyToEventId: replyToEventId,
-              #replyToAuthorPubkey: replyToAuthorPubkey,
-            }),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Stream<_i5.Event> fetchCommentsForEvent(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCommentsForEvent, [rootEventId]),
-            returnValue: _i4.Stream<_i5.Event>.empty(),
-          )
-          as _i4.Stream<_i5.Event>);
-
-  @override
-  _i4.Future<int> getCommentCount(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getCommentCount, [rootEventId]),
-            returnValue: _i4.Future<int>.value(0),
-          )
-          as _i4.Future<int>);
-
-  @override
-  _i4.Future<void> cancelCommentSubscriptions(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#cancelCommentSubscriptions, [rootEventId]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> toggleRepost(_i6.VideoEvent? videoToRepost) =>
+  _i4.Future<void> toggleRepost(_i5.VideoEvent? videoToRepost) =>
       (super.noSuchMethod(
             Invocation.method(#toggleRepost, [videoToRepost]),
             returnValue: _i4.Future<void>.value(),
@@ -295,7 +193,7 @@ class MockSocialService extends _i1.Mock implements _i3.SocialService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> repostEvent(_i5.Event? eventToRepost) =>
+  _i4.Future<void> repostEvent(_i6.Event? eventToRepost) =>
       (super.noSuchMethod(
             Invocation.method(#repostEvent, [eventToRepost]),
             returnValue: _i4.Future<void>.value(),
@@ -461,7 +359,7 @@ class MockUserProfileService extends _i1.Mock
           as _i4.Future<List<_i8.UserProfile>>);
 
   @override
-  void handleProfileEventForTesting(_i5.Event? event) => super.noSuchMethod(
+  void handleProfileEventForTesting(_i6.Event? event) => super.noSuchMethod(
     Invocation.method(#handleProfileEventForTesting, [event]),
     returnValueForMissingStub: null,
   );
@@ -510,7 +408,7 @@ class MockVideoSharingService extends _i1.Mock
 
   @override
   _i4.Future<_i2.ShareResult> shareVideoWithUser({
-    required _i6.VideoEvent? video,
+    required _i5.VideoEvent? video,
     required String? recipientPubkey,
     String? personalMessage,
   }) =>
@@ -535,7 +433,7 @@ class MockVideoSharingService extends _i1.Mock
 
   @override
   _i4.Future<Map<String, _i2.ShareResult>> shareVideoWithMultipleUsers({
-    required _i6.VideoEvent? video,
+    required _i5.VideoEvent? video,
     required List<String>? recipientPubkeys,
     String? personalMessage,
   }) =>
@@ -572,7 +470,7 @@ class MockVideoSharingService extends _i1.Mock
           as _i4.Future<List<_i2.ShareableUser>>);
 
   @override
-  String generateShareUrl(_i6.VideoEvent? video) =>
+  String generateShareUrl(_i5.VideoEvent? video) =>
       (super.noSuchMethod(
             Invocation.method(#generateShareUrl, [video]),
             returnValue: _i10.dummyValue<String>(
@@ -583,7 +481,7 @@ class MockVideoSharingService extends _i1.Mock
           as String);
 
   @override
-  String generateShareText(_i6.VideoEvent? video) =>
+  String generateShareText(_i5.VideoEvent? video) =>
       (super.noSuchMethod(
             Invocation.method(#generateShareText, [video]),
             returnValue: _i10.dummyValue<String>(

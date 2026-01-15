@@ -10,24 +10,24 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:likes_repository/likes_repository.dart';
 
 import 'curation_publish_test.mocks.dart';
 
-@GenerateMocks([NostrClient, VideoEventService, SocialService, AuthService])
+@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
 void main() {
   group('CurationService Publishing', () {
     late CurationService curationService;
     late MockNostrClient mockNostrService;
     late MockVideoEventService mockVideoEventService;
-    late MockSocialService mockSocialService;
+    late MockLikesRepository mockLikesRepository;
     late MockAuthService mockAuthService;
 
     setUp(() {
       mockNostrService = MockNostrClient();
       mockVideoEventService = MockVideoEventService();
-      mockSocialService = MockSocialService();
+      mockLikesRepository = MockLikesRepository();
       mockAuthService = MockAuthService();
 
       // Mock authenticated user with a valid 64-char hex pubkey
@@ -38,6 +38,9 @@ void main() {
 
       // Mock empty video events initially
       when(mockVideoEventService.discoveryVideos).thenReturn([]);
+
+      // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
+      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
 
       // Mock createAndSignEvent to return a properly signed event with captured tags
       when(
@@ -62,7 +65,7 @@ void main() {
       curationService = CurationService(
         nostrService: mockNostrService,
         videoEventService: mockVideoEventService,
-        socialService: mockSocialService,
+        likesRepository: mockLikesRepository,
         authService: mockAuthService,
       );
     });
@@ -309,7 +312,7 @@ void main() {
         final newService = CurationService(
           nostrService: mockNostrService,
           videoEventService: mockVideoEventService,
-          socialService: mockSocialService,
+          likesRepository: mockLikesRepository,
           authService: mockAuthService,
         );
 

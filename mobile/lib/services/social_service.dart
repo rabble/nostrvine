@@ -5,9 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
@@ -100,15 +98,6 @@ class SocialService {
   final SubscriptionManager _subscriptionManager;
   final PersonalEventCacheService? _personalEventCache;
 
-  // Cache for UI state - liked events by current user
-  final Set<String> _likedEventIds = <String>{};
-
-  // Cache for like counts to avoid redundant network requests
-  final Map<String, int> _likeCounts = <String, int>{};
-
-  // Cache mapping liked event IDs to their reaction event IDs (needed for deletion)
-  final Map<String, String> _likeEventIdToReactionId = <String, String>{};
-
   // Cache for UI state - reposted events by current user
   final Set<String> _repostedEventIds = <String>{};
 
@@ -129,10 +118,8 @@ class SocialService {
   Event? _currentUserContactListEvent;
 
   // Managed subscription IDs
-  String? _likeSubscriptionId;
   String? _followSubscriptionId;
   String? _repostSubscriptionId;
-  String? _userLikesSubscriptionId;
   String? _userRepostsSubscriptionId;
 
   /// Initialize the service
@@ -152,7 +139,6 @@ class SocialService {
         // Load cached personal events for instant access
         await _loadCachedPersonalEvents();
 
-        await _loadUserLikedEvents();
         await _loadUserRepostedEvents();
         await fetchCurrentUserFollowList();
       }
@@ -183,23 +169,8 @@ class SocialService {
     }
 
     try {
-      // Load cached likes (Kind 7 events) to populate _likedEventIds
-      final cachedLikes = _personalEventCache!.getEventsByKind(7);
-      for (final likeEvent in cachedLikes) {
-        final eTags = likeEvent.tags.where(
-          (tag) => tag.isNotEmpty && tag[0] == 'e',
-        );
-        for (final eTag in eTags) {
-          if (eTag.length > 1) {
-            final likedEventId = eTag[1];
-            _likedEventIds.add(likedEventId);
-            _likeEventIdToReactionId[likedEventId] = likeEvent.id;
-          }
-        }
-      }
-
       // Load cached reposts (Kind 6 events) to populate _repostedEventIds
-      final cachedReposts = _personalEventCache.getEventsByKind(6);
+      final cachedReposts = _personalEventCache!.getEventsByKind(6);
       for (final repostEvent in cachedReposts) {
         _processRepostEvent(repostEvent);
       }
@@ -240,11 +211,6 @@ class SocialService {
         category: LogCategory.system,
       );
       Log.info(
-        '  - Likes loaded: ${cachedLikes.length}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      Log.info(
         '  - Reposts loaded: ${cachedReposts.length}',
         name: 'SocialService',
         category: LogCategory.system,
@@ -268,12 +234,6 @@ class SocialService {
     }
   }
 
-  /// Get current user's liked event IDs
-  Set<String> get likedEventIds => Set.from(_likedEventIds);
-
-  /// Check if current user has liked an event
-  bool isLiked(String eventId) => _likedEventIds.contains(eventId);
-
   /// Check if current user has reposted an event
   /// Checks using the addressable ID format for Kind 34236 events
   bool hasReposted(String eventId, {String? pubkey, String? dTag}) {
@@ -287,9 +247,6 @@ class SocialService {
     // Fallback to event ID for backward compatibility
     return _repostedEventIds.contains(eventId);
   }
-
-  /// Get cached like count for an event
-  int? getCachedLikeCount(String eventId) => _likeCounts[eventId];
 
   // === FOLLOW SYSTEM GETTERS ===
 
@@ -321,325 +278,6 @@ class SocialService {
   bool isInFollowSet(String setId, String pubkey) {
     final set = getFollowSetById(setId);
     return set?.pubkeys.contains(pubkey) ?? false;
-  }
-
-  /// Likes or unlikes a Nostr event using proper NIP-09 deletion
-  Future<void> toggleLike(String eventId, String authorPubkey) async {
-    if (!_authService.isAuthenticated) {
-      Log.error(
-        'Cannot like - user not authenticated',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    Log.debug(
-      '❤️ Toggling like for event: $eventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      final wasLiked = _likedEventIds.contains(eventId);
-
-      if (!wasLiked) {
-        // Add like
-        final reactionEventId = await _publishLike(eventId, authorPubkey);
-
-        if (reactionEventId != null) {
-          // Update local state immediately for UI responsiveness
-          _likedEventIds.add(eventId);
-          _likeEventIdToReactionId[eventId] = reactionEventId;
-
-          // Increment like count in cache
-          final currentCount = _likeCounts[eventId] ?? 0;
-          _likeCounts[eventId] = currentCount + 1;
-
-          Log.info(
-            'Like published for event: $eventId',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-        }
-      } else {
-        // Unlike by publishing NIP-09 deletion event
-        final reactionEventId = _likeEventIdToReactionId[eventId];
-        if (reactionEventId != null) {
-          await _publishUnlike(reactionEventId);
-
-          // Update local state
-          _likedEventIds.remove(eventId);
-          _likeEventIdToReactionId.remove(eventId);
-
-          // Decrement like count in cache
-          final currentCount = _likeCounts[eventId] ?? 0;
-          if (currentCount > 0) {
-            _likeCounts[eventId] = currentCount - 1;
-          }
-
-          Log.info(
-            'Unlike (deletion) published for event: $eventId',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-        } else {
-          Log.warning(
-            'Cannot unlike - reaction event ID not found',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-
-          // Fallback: remove from local state only
-          _likedEventIds.remove(eventId);
-          final currentCount = _likeCounts[eventId] ?? 0;
-          if (currentCount > 0) {
-            _likeCounts[eventId] = currentCount - 1;
-          }
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Error toggling like: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Publishes a NIP-25 reaction event (like) and returns the reaction event ID
-  Future<String?> _publishLike(String eventId, String authorPubkey) async {
-    try {
-      // Create NIP-25 reaction event (Kind 7)
-      final event = await _authService.createAndSignEvent(
-        kind: 7,
-        content: '+', // Standard like reaction
-        tags: [
-          ['e', eventId], // Reference to liked event
-          ['p', authorPubkey], // Reference to liked event author
-        ],
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create like event');
-      }
-
-      // Cache the event immediately after creation
-      _personalEventCache?.cacheUserEvent(event);
-
-      // Publish the like event
-      final sentEvent = await _nostrService.publishEvent(event);
-
-      if (sentEvent == null) {
-        throw Exception('Failed to publish like event to relays');
-      }
-
-      Log.debug(
-        'Like event published: ${event.id}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return event.id;
-    } catch (e) {
-      Log.error(
-        'Error publishing like: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Publishes a NIP-09 deletion event for unlike functionality
-  Future<void> _publishUnlike(String reactionEventId) async {
-    try {
-      // Create NIP-09 deletion event (Kind 5)
-      final event = await _authService.createAndSignEvent(
-        kind: 5,
-        content: 'Unliked', // Optional deletion reason
-        tags: [
-          ['e', reactionEventId], // Reference to the reaction event to delete
-        ],
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create deletion event');
-      }
-
-      // Cache the deletion event immediately after creation
-      _personalEventCache?.cacheUserEvent(event);
-
-      // Publish the deletion event
-      final sentEvent = await _nostrService.publishEvent(event);
-
-      if (sentEvent == null) {
-        throw Exception('Failed to publish deletion event to relays');
-      }
-
-      Log.debug(
-        'Deletion event published: ${event.id}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error publishing deletion: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Fetches like count and determines if current user has liked an event
-  /// Returns {'count': int, 'user_liked': bool}
-  Future<Map<String, dynamic>> getLikeStatus(String eventId) async {
-    Log.debug(
-      'Fetching like status for event: $eventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      // Check cache first
-      final cachedCount = _likeCounts[eventId];
-      final userLiked = _likedEventIds.contains(eventId);
-
-      if (cachedCount != null) {
-        Log.debug(
-          '📱 Using cached like count: $cachedCount',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-        return {'count': cachedCount, 'user_liked': userLiked};
-      }
-
-      // Fetch from network
-      final likeCount = await _fetchLikeCount(eventId);
-
-      // Cache the result
-      _likeCounts[eventId] = likeCount;
-
-      Log.debug(
-        'Like count fetched: $likeCount',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      return {'count': likeCount, 'user_liked': userLiked};
-    } catch (e) {
-      Log.error(
-        'Error fetching like status: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return {'count': 0, 'user_liked': false};
-    }
-  }
-
-  /// Fetches like count for a specific event
-  Future<int> _fetchLikeCount(String eventId) async {
-    try {
-      final completer = Completer<int>();
-      var likeCount = 0;
-
-      // Subscribe to Kind 7 reactions for this event using SubscriptionManager
-      await _subscriptionManager.createSubscription(
-        name: 'like_count_$eventId',
-        filters: [
-          Filter(kinds: [7], e: [eventId]),
-        ],
-        onEvent: (event) {
-          // Only count '+' reactions as likes
-          if (event.content.trim() == '+') {
-            likeCount++;
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error in like count subscription: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!completer.isCompleted) {
-            completer.complete(0);
-          }
-        },
-        onComplete: () {
-          if (!completer.isCompleted) {
-            completer.complete(likeCount);
-          }
-        },
-        timeout: const Duration(seconds: 5),
-        priority: 4, // Lower priority for count queries
-      );
-
-      return await completer.future;
-    } catch (e) {
-      Log.error(
-        'Error fetching like count: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return 0;
-    }
-  }
-
-  /// Loads current user's liked events from their reaction history
-  Future<void> _loadUserLikedEvents() async {
-    if (!_authService.isAuthenticated) return;
-
-    try {
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey == null) return;
-
-      Log.debug(
-        'Loading user liked events for: $currentUserPubkey',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      // Subscribe to current user's reactions (Kind 7) using SubscriptionManager
-      _userLikesSubscriptionId = await _subscriptionManager.createSubscription(
-        name: 'user_likes_$currentUserPubkey',
-        filters: [
-          Filter(authors: [currentUserPubkey], kinds: [7]),
-        ],
-        onEvent: (event) {
-          // Only process '+' reactions as likes
-          if (event.content.trim() == '+') {
-            // Extract the liked event ID from 'e' tags
-            for (final tag in event.tags) {
-              if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-                final likedEventId = tag[1];
-                _likedEventIds.add(likedEventId);
-                // Store the reaction event ID for future deletion
-                _likeEventIdToReactionId[likedEventId] = event.id;
-                Log.debug(
-                  '📱 Cached user like: $likedEventId (reaction: ${event.id})',
-                  name: 'SocialService',
-                  category: LogCategory.system,
-                );
-                break;
-              }
-            }
-          }
-        },
-        onError: (error) => Log.error(
-          'Error loading user likes: $error',
-          name: 'SocialService',
-          category: LogCategory.system,
-        ),
-        priority: 3, // Lower priority for historical data
-      );
-    } catch (e) {
-      Log.error(
-        'Error loading user liked events: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
   }
 
   /// Loads current user's reposted events from their repost history
@@ -682,112 +320,6 @@ class SocialService {
         name: 'SocialService',
         category: LogCategory.system,
       );
-    }
-  }
-
-  /// Fetches all events liked by a specific user
-  Future<List<Event>> fetchLikedEvents(String pubkey) async {
-    Log.debug(
-      'Fetching liked events for user: $pubkey',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      final likedEvents = <Event>[];
-      final likedEventIds = <String>{};
-
-      // First, get all reactions by this user
-      final reactionSubscription = _nostrService.subscribe([
-        Filter(
-          authors: [pubkey],
-          kinds: [7], // NIP-25 reactions
-        ),
-      ]);
-
-      final completer = Completer<List<Event>>();
-
-      // Collect liked event IDs
-      reactionSubscription.listen(
-        (reactionEvent) {
-          if (reactionEvent.content.trim() == '+') {
-            // Extract liked event ID from 'e' tag
-            for (final tag in reactionEvent.tags) {
-              if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-                likedEventIds.add(tag[1]);
-                break;
-              }
-            }
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching liked events: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!completer.isCompleted) {
-            completer.complete([]);
-          }
-        },
-        onDone: () async {
-          // Now fetch the actual liked events
-          if (likedEventIds.isNotEmpty) {
-            try {
-              final eventSubscription = _nostrService.subscribe([
-                Filter(ids: likedEventIds.toList()),
-              ]);
-
-              eventSubscription.listen(
-                likedEvents.add,
-                onError: (error) {
-                  Log.error(
-                    'Error fetching liked event details: $error',
-                    name: 'SocialService',
-                    category: LogCategory.system,
-                  );
-                  if (!completer.isCompleted) {
-                    completer.complete(likedEvents);
-                  }
-                },
-                onDone: () {
-                  if (!completer.isCompleted) {
-                    completer.complete(likedEvents);
-                  }
-                },
-              );
-            } catch (e) {
-              Log.error(
-                'Error fetching liked event details: $e',
-                name: 'SocialService',
-                category: LogCategory.system,
-              );
-              if (!completer.isCompleted) {
-                completer.complete([]);
-              }
-            }
-          } else {
-            if (!completer.isCompleted) {
-              completer.complete([]);
-            }
-          }
-        },
-      );
-
-      final result = await completer.future;
-      Log.info(
-        'Fetched ${result.length} liked events',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return result;
-    } catch (e) {
-      Log.error(
-        'Error fetching liked events: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return [];
     }
   }
 
@@ -1361,357 +893,6 @@ class SocialService {
     }
   }
 
-  /// Get total likes across all videos for a specific user
-  Future<int> getUserTotalLikes(String pubkey) async {
-    Log.debug(
-      '❤️ Fetching total likes for: $pubkey',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      // First, get all video events by this user
-      final userVideos = <String>[];
-      final videoCompleter = Completer<List<String>>();
-
-      final videoSubscription = _nostrService.subscribe([
-        Filter(
-          authors: [pubkey],
-          kinds:
-              NIP71VideoKinds.getAllVideoKinds(), // NIP-71 video kinds: 22, 21, 34236, 34235
-        ),
-      ]);
-
-      videoSubscription.listen(
-        (event) {
-          userVideos.add(event.id);
-        },
-        onDone: () {
-          if (!videoCompleter.isCompleted) {
-            videoCompleter.complete(userVideos);
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching user videos: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!videoCompleter.isCompleted) {
-            videoCompleter.complete([]);
-          }
-        },
-      );
-
-      final videoIds = await videoCompleter.future;
-
-      if (videoIds.isEmpty) {
-        Log.info(
-          '❤️ No videos found, total likes: 0',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-        return 0;
-      }
-
-      Log.info(
-        '📱 Found ${videoIds.length} videos, fetching likes...',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      // Now get likes for all these videos
-      final likesCompleter = Completer<int>();
-      var totalLikes = 0;
-
-      final likesSubscription = _nostrService.subscribe([
-        Filter(
-          kinds: [7], // Like events
-          e: videoIds, // Events that reference our videos
-        ),
-      ]);
-
-      likesSubscription.listen(
-        (event) {
-          // Only count '+' reactions as likes
-          if (event.content.trim() == '+') {
-            totalLikes++;
-          }
-        },
-        onDone: () {
-          if (!likesCompleter.isCompleted) {
-            likesCompleter.complete(totalLikes);
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching likes: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!likesCompleter.isCompleted) {
-            likesCompleter.complete(totalLikes);
-          }
-        },
-      );
-
-      final result = await likesCompleter.future;
-      Log.debug(
-        '❤️ Total likes fetched: $result',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return result;
-    } catch (e) {
-      Log.error(
-        'Error fetching total likes: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return 0;
-    }
-  }
-
-  // === COMMENT SYSTEM ===
-  // NOTE: These methods are deprecated. Use CommentsRepository instead,
-  // which implements proper NIP-22 threading with uppercase/lowercase tags.
-  final Map<String, ReplaySubject<Event>> _commentSubjects = {};
-
-  /// Posts a comment in reply to a root event (video)
-  ///
-  /// @deprecated Use [CommentsRepository.postComment] instead for proper NIP-22 support.
-  Future<void> postComment({
-    required String content,
-    required String rootEventId,
-    required String rootEventAuthorPubkey,
-    String? replyToEventId,
-    String? replyToAuthorPubkey,
-  }) async {
-    if (!_authService.isAuthenticated) {
-      Log.error(
-        'Cannot post comment - user not authenticated',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      throw Exception('User not authenticated');
-    }
-
-    if (content.trim().isEmpty) {
-      Log.error(
-        'Cannot post empty comment',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      throw Exception('Comment content cannot be empty');
-    }
-
-    Log.debug(
-      '📱 Posting comment to event: $rootEventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      // We don't need the keyPair directly since createAndSignEvent handles signing
-
-      // Create tags for the comment
-      final tags = <List<String>>[];
-
-      // Always include root event tag (the video being commented on)
-      tags.add(['e', rootEventId, '', 'root']);
-
-      // Tag the root event author
-      tags.add(['p', rootEventAuthorPubkey]);
-
-      // If this is a reply to another comment, add reply tags
-      if (replyToEventId != null) {
-        tags.add(['e', replyToEventId, '', 'reply']);
-
-        if (replyToAuthorPubkey != null) {
-          tags.add(['p', replyToAuthorPubkey]);
-        }
-      }
-
-      // Create the comment event (Kind 1111 NIP-22 comment)
-      final event = await _authService.createAndSignEvent(
-        kind: EventKind.comment, // NIP-22 comment (kind 1111)
-        tags: tags,
-        content: content.trim(),
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create comment event');
-      }
-
-      // Publish the comment
-      final sentEvent = await _nostrService.publishEvent(event);
-
-      if (sentEvent == null) {
-        throw Exception('Failed to publish comment to relays');
-      }
-
-      Log.info(
-        'Comment posted successfully: ${event.id}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error posting comment: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Fetches all comments for a given root event ID
-  ///
-  /// @deprecated Use [CommentsRepository.loadComments] instead for proper NIP-22 support.
-  Stream<Event> fetchCommentsForEvent(String rootEventId) {
-    Log.debug(
-      '📱 Fetching comments for event: $rootEventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    // Create filter for comments
-    // Comments are Kind 1111 NIP-22 events that have an 'E' tag pointing to the root event
-    final filter = Filter(
-      kinds: [EventKind.comment], // NIP-22 comments (kind 1111)
-      uppercaseE: [rootEventId], // NIP-22: uppercase E tag for root scope
-    );
-
-    // Create a StreamController to emit events
-    final controller = _commentSubjects.putIfAbsent(
-      rootEventId,
-      () => ReplaySubject<Event>(),
-    );
-
-    // Create managed subscription for comments
-    // NOTE: No onComplete callback - keep subscription open for real-time comments
-    // Comments should stay live to receive new comments after EOSE
-    _subscriptionManager
-        .createSubscription(
-          name: 'comments_$rootEventId',
-          filters: [
-            Filter(
-              kinds: filter.kinds,
-              uppercaseE: filter.uppercaseE, // NIP-22: uppercase E tag
-              h: filter.h,
-              limit: 50, // Limit comment fetching
-            ),
-          ],
-          onEvent: (event) {
-            if (!controller.isClosed) {
-              controller.add(event);
-            }
-          },
-          onError: (error) {
-            if (!controller.isClosed) {
-              controller.addError(error);
-            }
-          },
-          // Removed onComplete callback to keep subscription open for real-time comments
-          // Only timeout or explicit cancellation will close this stream
-          timeout: const Duration(
-            minutes: 5,
-          ), // Longer timeout for live comment subscriptions
-          priority: 6, // Lower priority for comments
-        )
-        .catchError((error) {
-          Log.error(
-            'Failed to create comment subscription: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!controller.isClosed) {
-            controller.addError(error);
-          }
-          return 'error_subscription'; // Return a placeholder subscription ID
-        });
-
-    return controller.stream;
-  }
-
-  /// Fetches comment count for an event
-  ///
-  /// @deprecated Use [CommentsRepository.getCommentsCount] instead for proper NIP-22 support.
-  Future<int> getCommentCount(String rootEventId) async {
-    Log.debug(
-      'Fetching comment count for event: $rootEventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      final completer = Completer<int>();
-      var commentCount = 0;
-
-      // Create a dedicated comment count subscription with higher priority and shorter timeout
-      await _subscriptionManager.createSubscription(
-        name: 'comment_count_$rootEventId',
-        filters: [
-          Filter(
-            kinds: [EventKind.comment], // NIP-22 comments (kind 1111)
-            uppercaseE: [rootEventId], // NIP-22: uppercase E tag for root scope
-            limit: 100, // Reasonable limit for counting
-          ),
-        ],
-        onEvent: (event) {
-          commentCount++;
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching comment count: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!completer.isCompleted) {
-            completer.complete(commentCount);
-          }
-        },
-        onComplete: () {
-          if (!completer.isCompleted) {
-            completer.complete(commentCount);
-          }
-        },
-        timeout: const Duration(seconds: 5), // Short timeout for count
-        priority: 5, // Higher priority for counts
-      );
-
-      final result = await completer.future;
-      Log.debug(
-        '📱 Comment count fetched: $result',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return result;
-    } catch (e) {
-      Log.error(
-        'Error fetching comment count: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return 0;
-    }
-  }
-
-  /// Cancel comment subscriptions for a specific video (call when video scrolls out of view)
-  Future<void> cancelCommentSubscriptions(String rootEventId) async {
-    await _subscriptionManager.cancelSubscriptionsByName(
-      'comments_$rootEventId',
-    );
-    await _subscriptionManager.cancelSubscriptionsByName(
-      'comment_count_$rootEventId',
-    );
-    Log.debug(
-      '🗑️ Cancelled comment subscriptions for: $rootEventId',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-  }
-
   // === REPOST SYSTEM (NIP-18) ===
 
   /// Toggles repost state for a video event (repost/unrepost)
@@ -2074,10 +1255,6 @@ class SocialService {
     );
 
     // Cancel all managed subscriptions
-    if (_likeSubscriptionId != null) {
-      _subscriptionManager.cancelSubscription(_likeSubscriptionId!);
-      _likeSubscriptionId = null;
-    }
     if (_followSubscriptionId != null) {
       _subscriptionManager.cancelSubscription(_followSubscriptionId!);
       _followSubscriptionId = null;
@@ -2085,10 +1262,6 @@ class SocialService {
     if (_repostSubscriptionId != null) {
       _subscriptionManager.cancelSubscription(_repostSubscriptionId!);
       _repostSubscriptionId = null;
-    }
-    if (_userLikesSubscriptionId != null) {
-      _subscriptionManager.cancelSubscription(_userLikesSubscriptionId!);
-      _userLikesSubscriptionId = null;
     }
     if (_userRepostsSubscriptionId != null) {
       _subscriptionManager.cancelSubscription(_userRepostsSubscriptionId!);

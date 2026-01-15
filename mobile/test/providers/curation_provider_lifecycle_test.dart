@@ -16,6 +16,7 @@ import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:likes_repository/likes_repository.dart';
 import 'package:riverpod/riverpod.dart';
 
 import 'curation_provider_lifecycle_test.mocks.dart';
@@ -24,6 +25,7 @@ import 'curation_provider_lifecycle_test.mocks.dart';
   NostrClient,
   VideoEventService,
   SocialService,
+  LikesRepository,
   AuthService,
   AnalyticsApiService,
 ])
@@ -36,6 +38,7 @@ void main() {
     late MockNostrClient mockNostrService;
     late MockVideoEventService mockVideoEventService;
     late MockSocialService mockSocialService;
+    late MockLikesRepository mockLikesRepository;
     late MockAuthService mockAuthService;
     late MockAnalyticsApiService mockAnalyticsApiService;
     late List<VideoEvent> sampleVideos;
@@ -44,6 +47,7 @@ void main() {
       mockNostrService = MockNostrClient();
       mockVideoEventService = MockVideoEventService();
       mockSocialService = MockSocialService();
+      mockLikesRepository = MockLikesRepository();
       mockAuthService = MockAuthService();
       mockAnalyticsApiService = MockAnalyticsApiService();
 
@@ -71,8 +75,8 @@ void main() {
         ),
       ).thenAnswer((_) => const Stream.empty());
 
-      // Stub social service methods
-      when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
+      // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
+      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
     });
 
     test('curation provider uses keepAlive to persist state', () async {
@@ -157,7 +161,7 @@ void main() {
       final service = CurationService(
         nostrService: mockNostrService,
         videoEventService: mockVideoEventService,
-        socialService: mockSocialService,
+        likesRepository: mockLikesRepository,
         authService: mockAuthService,
       );
 
