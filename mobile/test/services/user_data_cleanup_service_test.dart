@@ -19,7 +19,7 @@ void main() {
     group('shouldClearDataForUser', () {
       test('returns false when same user is logging in', () async {
         const pubkey = 'abc123def456';
-        await prefs.setString(StorageKeys.currentUserPubkeyHex, pubkey);
+        await prefs.setString('current_user_pubkey_hex', pubkey);
 
         expect(service.shouldClearDataForUser(pubkey), isFalse);
       });
@@ -27,7 +27,7 @@ void main() {
       test('returns true when different user was stored', () async {
         const oldPubkey = 'old_user_pubkey';
         const newPubkey = 'new_user_pubkey';
-        await prefs.setString(StorageKeys.currentUserPubkeyHex, oldPubkey);
+        await prefs.setString('current_user_pubkey_hex', oldPubkey);
 
         expect(service.shouldClearDataForUser(newPubkey), isTrue);
       });
@@ -65,7 +65,7 @@ void main() {
         await prefs.setStringList('curated_lists', ['list1']);
         await prefs.setStringList('subscribed_list_ids', ['sub1']);
         await prefs.setString('seen_video_ids', 'video1');
-        await prefs.setBool(StorageKeys.ageVerified16Plus, true);
+        await prefs.setBool('age_verified_16_plus', true);
 
         // Also set some device/app settings that should NOT be cleared
         await prefs.setString('relay_url', 'wss://relay.example.com');
@@ -77,7 +77,7 @@ void main() {
         expect(prefs.containsKey('curated_lists'), isFalse);
         expect(prefs.containsKey('subscribed_list_ids'), isFalse);
         expect(prefs.containsKey('seen_video_ids'), isFalse);
-        expect(prefs.containsKey(StorageKeys.ageVerified16Plus), isFalse);
+        expect(prefs.containsKey('age_verified_16_plus'), isFalse);
 
         // Device/app settings should remain
         expect(prefs.getString('relay_url'), 'wss://relay.example.com');
@@ -124,7 +124,7 @@ void main() {
         // Set up some user-specific data
         await prefs.setStringList('curated_lists', ['list1']);
         await prefs.setString('seen_video_ids', 'video1');
-        await prefs.setBool(StorageKeys.ageVerified16Plus, true);
+        await prefs.setBool('age_verified_16_plus', true);
 
         final clearedCount = await service.clearUserSpecificData();
 
@@ -180,8 +180,8 @@ void main() {
         expect(keys, contains('vine_drafts'));
 
         // TOS
-        expect(keys, contains(StorageKeys.ageVerified16Plus));
-        expect(keys, contains(StorageKeys.termsAcceptedAt));
+        expect(keys, contains('age_verified_16_plus'));
+        expect(keys, contains('terms_accepted_at'));
       });
 
       test('does NOT contain device/app settings', () {
@@ -190,7 +190,7 @@ void main() {
         // These should NOT be in the cleanup list
         expect(keys, isNot(contains('relay_url')));
         expect(keys, isNot(contains('analytics_enabled')));
-        expect(keys, isNot(contains(StorageKeys.currentUserPubkeyHex)));
+        expect(keys, isNot(contains('current_user_pubkey_hex')));
       });
     });
   });
