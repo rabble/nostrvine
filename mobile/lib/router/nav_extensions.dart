@@ -266,4 +266,7 @@ extension NavX on BuildContext {
       authorPubkey: authorPubkey,
     ),
   );
+
+  /// Push discover lists screen (browse public NIP-51 kind 30005 lists)
+  Future<void> pushDiscoverLists() => push('/discover-lists');
 }

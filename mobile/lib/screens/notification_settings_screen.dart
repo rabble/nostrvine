@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
@@ -56,7 +57,7 @@ class _NotificationSettingsScreenState
             colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: context.pop,
         tooltip: 'Back',
       ),
       title: Text('Notifications', style: VineTheme.titleFont()),

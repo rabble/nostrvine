@@ -4,6 +4,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -153,7 +154,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     ref.read(selectedSoundProvider.notifier).select(widget.sound);
 
     // Pop with result indicating success
-    Navigator.of(context).pop(true);
+    context.pop(true);
   }
 
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
@@ -202,7 +203,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
               backgroundColor: VineTheme.cardBackground,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: context.pop,
               ),
               title: const Text(
                 'Sound',

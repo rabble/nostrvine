@@ -1,0 +1,4 @@
+appId: co.openvine.app
+---
+- assertVisible: ${USER_NAME}
+- assertVisible: ${USER_BIO}

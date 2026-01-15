@@ -1,0 +1,11 @@
+appId: co.openvine.app
+---
+- assertVisible: Clips
+# Check if "No Clips Yet" is visible
+- runFlow:
+    when:
+      visible: "No Clips Yet" # Check for the visibility of "No Clips Yet"
+    commands:
+      # Assert other texts on the screen
+      - assertVisible: "Record a Video"
+      - assertVisible: "Your recorded video clips will appear here"

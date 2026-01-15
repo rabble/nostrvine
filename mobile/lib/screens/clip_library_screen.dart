@@ -286,7 +286,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     if (widget.selectionMode) {
       // Single selection mode from ClipManager - select and close
       widget.onClipSelected?.call(clip);
-      Navigator.of(context).pop();
+      context.pop();
     } else {
       // Default behavior: toggle selection for multi-select
       _toggleClipSelection(clip.id);
@@ -298,10 +298,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ClipPreviewSheet(
+      builder: (sheetContext) => ClipPreviewSheet(
         clip: clip,
         onDelete: () {
-          Navigator.of(context).pop();
+          sheetContext.pop();
           _confirmDeleteClip(clip);
         },
       ),
@@ -311,7 +311,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   void _confirmDeleteClip(SavedClip clip) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text(
           'Delete Clip?',
@@ -322,13 +322,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: dialogContext.pop, child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              dialogContext.pop();
               _deleteClip(clip);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -385,7 +382,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   void _showClearAllConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text(
           'Clear All Clips?',
@@ -396,13 +393,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: dialogContext.pop, child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              dialogContext.pop();
               _clearAllClips();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

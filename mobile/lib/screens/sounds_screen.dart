@@ -99,7 +99,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     } else {
       // Use the provider and navigate back
       ref.read(selectedSoundProvider.notifier).select(sound);
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 
@@ -229,7 +229,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           backgroundColor: VineTheme.cardBackground,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
           ),
           title: const Text(
             'Sounds',

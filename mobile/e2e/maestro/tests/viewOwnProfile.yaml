@@ -1,0 +1,14 @@
+appId: co.openvine.app
+---
+#TC to view the own user profile,
+# given the user is logged in in the app,
+# by openning the profile thru the bottom right icon
+#Steps:
+# 1. Tap on the profile icon: Validate profile screen is displayed and validate user data
+
+# 1. Tap on the profile icon: Validate profile screen is displayed and validate user data
+- tapOn: |-
+    Profile
+    Tab 4 of 4
+- runFlow: "../asserts/assertProfile.yaml"
+- runFlow: "../asserts/assertUserProfile.yaml"

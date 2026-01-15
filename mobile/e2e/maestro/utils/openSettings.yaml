@@ -1,0 +1,17 @@
+appId: co.openvine.app
+---
+#Utility TC, given the user is logged in, open the settings modal
+#Steps:
+# 1. Tap on Home and Menu: validate
+# 2. Tap on Settings: validate
+
+# 1. Tap on Home and  Menu: validate menu is displayed
+- doubleTapOn:
+    id: home_tab
+    delay: 100
+- tapOn: "Menu"
+- runFlow: "../asserts/assertMenu.yaml"
+
+# 2. Tap on Settings: validate
+- tapOn: "Settings"
+- runFlow: "../asserts/assertSettings.yaml"

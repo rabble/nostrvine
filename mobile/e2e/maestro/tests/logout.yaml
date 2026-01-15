@@ -1,0 +1,34 @@
+appId: co.openvine.app
+---
+#TC to log out,
+# given the user is logged in in the app,
+# and validate is redirected to the login screen
+#Steps:
+# 1. Tap on explore, given the user is logged in in the app: Explore screen is presented
+# 2. Open the hamb menu: The menu is displayed
+# 3. Tap on settings: Settings modal is displayed
+# 4. Tap on Logout and log out again. Expected: The logout modal is displayed and finally, user is taken to the login screen.
+
+# 1. Tap on explore: Explore screen is presented
+- doubleTapOn:
+    id: explore_tab
+    delay: 100
+- runFlow: ../asserts/assertExplore.yaml
+
+# 2. Open the hamb menu: The menu is displayed
+- tapOn: Menu
+- runFlow: ../asserts/assertMenu.yaml
+
+# 3. Tap on settings: Settings modal is displayed
+- tapOn: Settings
+- runFlow: ../asserts/assertSettings.yaml
+- scroll
+
+# 4. Tap on Logout and log out again. Expected: The logout modal is displayed and finally, user is taken to the login screen.
+- tapOn: |-
+    Log Out
+    Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.
+
+- runFlow: ../asserts/assertLogOutModal.yaml
+- tapOn: Log Out
+- runFlow: "../asserts/assertLogin.yaml"

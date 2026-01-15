@@ -327,7 +327,7 @@ class _FullscreenVideoFeedScreenState
                 ),
               ),
             ),
-            onPressed: () => context.pop(),
+            onPressed: context.pop,
           ),
         ),
         body: const Center(
@@ -372,7 +372,7 @@ class _FullscreenVideoFeedScreenState
               ),
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
         ),
         actions: editButton != null ? [editButton] : null,
       ),

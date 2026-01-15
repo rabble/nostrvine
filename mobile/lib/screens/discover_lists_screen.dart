@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -17,6 +18,10 @@ import 'package:openvine/widgets/user_name.dart';
 
 class DiscoverListsScreen extends ConsumerStatefulWidget {
   const DiscoverListsScreen({super.key});
+
+  static const String path = '/discover-lists';
+
+  static const String routeName = 'discover-lists';
 
   @override
   ConsumerState<DiscoverListsScreen> createState() =>
@@ -370,7 +375,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
               ),
             ),
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Discover Lists', style: VineTheme.titleFont()),

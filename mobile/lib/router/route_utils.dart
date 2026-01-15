@@ -32,6 +32,7 @@ enum RouteType {
   videoFeed, // Fullscreen video feed (pushed from grids)
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
+  discoverLists, // Discover public lists screen
   sound, // Sound detail screen for audio reuse
   secureAccount,
 }
@@ -68,6 +69,23 @@ class CuratedListRouteExtra {
   final String listName;
   final List<String>? videoIds;
   final String? authorPubkey;
+}
+
+/// Extra data for video editor route (passed via GoRouter extra)
+class VideoEditorRouteExtra {
+  const VideoEditorRouteExtra({
+    required this.videoPath,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+  });
+
+  final String videoPath;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -246,6 +264,9 @@ RouteContext parseRoute(String path) {
       final listId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.curatedList, listId: listId);
 
+    case 'discover-lists':
+      return const RouteContext(type: RouteType.discoverLists);
+
     case 'sound':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -407,6 +428,9 @@ String buildRoute(RouteContext context) {
     case RouteType.curatedList:
       final listId = Uri.encodeComponent(context.listId ?? '');
       return '/list/$listId';
+
+    case RouteType.discoverLists:
+      return '/discover-lists';
 
     case RouteType.sound:
       return '/sound/${context.soundId ?? ''}';

@@ -1,0 +1,7 @@
+appId: co.openvine.app
+---
+- runFlow: ../tests/loginFreshInstall.yaml
+- runFlow: ../tests/searchVideos.yaml
+
+#Tear down
+- killApp

@@ -1,0 +1,31 @@
+appId: co.openvine.app
+env:
+  VIDEO_USER: "rTjohns"
+  VIDEO_DESCRIPTION: ":)"
+---
+#TC to play pause a video
+# given the user is logged in in the app,
+# navigate to the 1st video on the explore screen, tap on the video and pause it, validate all the video info plus play button
+#Steps:
+# 1. Navigate to explore: At least one video = one play button is displayed
+# 2. Tap on the 1st video: User is taken to the playback screen
+# 3. Tap on the middle of the screen: Play button is displayed, the video is paused
+
+# 1. Navigate to explore. Expected: At least one video = one play button is displayed
+- tapOn:
+    id: explore_tab
+- assertVisible:
+    id: play_button
+
+# 2. Tap on the 1st video: User is taken to the playback screen
+- tapOn:
+    id: play_button
+- runFlow: ../asserts/assertVideoPlayback.yaml
+
+# 3. Tap on the middle of the screen. Expected: Play button is displayed, the video is paused
+- waitForAnimationToEnd
+- tapOn:
+    point: 50%,35%
+#Assert play button is visible after pausing it
+- assertVisible:
+    id: play_button

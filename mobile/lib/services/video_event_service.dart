@@ -2485,14 +2485,200 @@ class VideoEventService extends ChangeNotifier {
     int limit = 100,
     VideoSortField? sortBy,
     bool force = false,
-  }) async => subscribeToVideoFeed(
-    subscriptionType: SubscriptionType.homeFeed,
-    authors: followingPubkeys,
-    limit: limit,
-    includeReposts: true,
-    sortBy: sortBy,
-    force: force,
-  );
+  }) async {
+    // Seed home feed with cached discovery videos for the followed authors
+    // This ensures immediate availability of videos when following a new user
+    seedHomeFeedFromDiscoveryCache(followingPubkeys);
+
+    await subscribeToVideoFeed(
+      subscriptionType: SubscriptionType.homeFeed,
+      authors: followingPubkeys,
+      limit: limit,
+      includeReposts: true,
+      sortBy: sortBy,
+      force: force,
+    );
+
+    // After subscription, seed from relay to ensure we have ALL videos from
+    // followed users, not just the most recent ones returned by the subscription.
+    // This is especially important when following new users whose older videos
+    // might not be in the subscription's initial result set.
+    await seedHomeFeedFromFollowedUsers(followingPubkeys, limit: limit);
+  }
+
+  /// Seeds the home feed with videos from the discovery cache for specified authors.
+  ///
+  /// This is called when:
+  /// 1. A user follows a new account - their videos from discovery should
+  ///    immediately appear in home feed
+  /// 2. Home feed is refreshed with an updated following list
+  ///
+  /// Videos are deduplicated by ID to prevent duplicates when the relay
+  /// subscription also returns the same videos.
+  void seedHomeFeedFromDiscoveryCache(List<String> followingPubkeys) {
+    if (followingPubkeys.isEmpty) return;
+
+    final followingSet = followingPubkeys.toSet();
+    final homeFeedList = _eventLists[SubscriptionType.homeFeed] ?? [];
+    final existingIds = homeFeedList.map((v) => v.id).toSet();
+    final discoveryVideos = _eventLists[SubscriptionType.discovery] ?? [];
+
+    // Find videos in discovery that belong to followed users but aren't in home feed
+    final videosToSeed = discoveryVideos
+        .where(
+          (video) =>
+              followingSet.contains(video.pubkey) &&
+              !existingIds.contains(video.id),
+        )
+        .toList();
+
+    if (videosToSeed.isEmpty) {
+      Log.debug(
+        '🏠 seedHomeFeedFromDiscoveryCache: No new videos to seed '
+        '(discovery has ${discoveryVideos.length} videos, '
+        'following ${followingPubkeys.length} users)',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    Log.info(
+      '🏠 seedHomeFeedFromDiscoveryCache: Seeding ${videosToSeed.length} videos '
+      'from discovery cache into home feed',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    // Add videos to home feed list
+    homeFeedList.addAll(videosToSeed);
+
+    // Sort by creation time (newest first)
+    homeFeedList.sortByCreationTime();
+
+    // Notify listeners so UI updates
+    notifyListeners();
+  }
+
+  /// Seeds the home feed by fetching videos from the relay for followed users.
+  ///
+  /// Unlike [seedHomeFeedFromDiscoveryCache] which only uses locally cached videos,
+  /// this method actively queries the relay for videos from followed users.
+  /// This ensures that when following new users, their complete video history
+  /// is fetched and added to the home feed.
+  ///
+  /// [followingPubkeys] - List of pubkeys the user is following
+  /// [limit] - Maximum number of videos to fetch per author (default 50)
+  ///
+  /// Videos are deduplicated by ID to prevent duplicates.
+  Future<void> seedHomeFeedFromFollowedUsers(
+    List<String> followingPubkeys, {
+    int limit = 50,
+  }) async {
+    if (followingPubkeys.isEmpty) return;
+
+    if (!_nostrService.isInitialized) {
+      Log.warning(
+        '🏠 seedHomeFeedFromFollowedUsers: NostrService not initialized',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    Log.info(
+      '🏠 seedHomeFeedFromFollowedUsers: Fetching videos for ${followingPubkeys.length} followed users',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    try {
+      // Query videos for all followed users in a single request
+      final filter = Filter(
+        kinds: NIP71VideoKinds.getAllVideoKinds(),
+        authors: followingPubkeys,
+        limit: limit,
+      );
+
+      final events = await _nostrService.queryEvents([filter]);
+
+      if (events.isEmpty) {
+        Log.debug(
+          '🏠 seedHomeFeedFromFollowedUsers: No videos found for followed users',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
+      // Get existing video IDs in home feed for deduplication
+      final homeFeedList = _eventLists[SubscriptionType.homeFeed] ?? [];
+      final existingIds = homeFeedList.map((v) => v.id).toSet();
+
+      final videosToSeed = <VideoEvent>[];
+
+      for (final event in events) {
+        // Skip if already in home feed
+        if (existingIds.contains(event.id)) continue;
+
+        // Check if video exists in other subscription lists
+        VideoEvent? existingVideo;
+        for (final list in _eventLists.values) {
+          existingVideo = list.cast<VideoEvent?>().firstWhere(
+            (v) => v?.id == event.id,
+            orElse: () => null,
+          );
+          if (existingVideo != null) break;
+        }
+
+        if (existingVideo != null) {
+          // Reuse existing parsed video
+          videosToSeed.add(existingVideo);
+        } else {
+          // Parse new video event
+          final videoEvent = VideoEvent.fromNostrEvent(event);
+          final url = videoEvent.videoUrl;
+          if (url != null && url.isNotEmpty) {
+            videosToSeed.add(videoEvent);
+            // Mark as seen in pagination state
+            _paginationStates[SubscriptionType.homeFeed]?.markEventSeen(
+              event.id,
+            );
+          }
+        }
+      }
+
+      if (videosToSeed.isEmpty) {
+        Log.debug(
+          '🏠 seedHomeFeedFromFollowedUsers: All ${events.length} videos already in feed',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
+      Log.info(
+        '🏠 seedHomeFeedFromFollowedUsers: Seeding ${videosToSeed.length} videos into home feed',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+
+      // Add videos to home feed list
+      homeFeedList.addAll(videosToSeed);
+
+      // Sort by creation time (newest first)
+      homeFeedList.sortByCreationTime();
+
+      // Notify listeners so UI updates
+      notifyListeners();
+    } catch (e) {
+      Log.error(
+        '🏠 seedHomeFeedFromFollowedUsers: Error fetching videos: $e',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
+  }
 
   /// Subscribe to discovery videos (all videos for exploration)
   Future<void> subscribeToDiscovery({
@@ -5063,4 +5249,14 @@ class VideoEventServiceException implements Exception {
 
   @override
   String toString() => 'VideoEventServiceException: $message';
+}
+
+extension _VideoEventSortingExtension on List<VideoEvent> {
+  /// Sort the list by creation time
+  void sortByCreationTime([bool descending = true]) {
+    sort((a, b) {
+      final result = a.createdAt.compareTo(b.createdAt);
+      return descending ? result : -result;
+    });
+  }
 }

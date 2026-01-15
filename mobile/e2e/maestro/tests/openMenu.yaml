@@ -1,0 +1,13 @@
+appId: co.openvine.app
+---
+#TC open the menu
+#Steps:
+# 1. Open the app with an already existing session
+# 2. Tap on Menu: validate menu is displayed
+
+# 1. Open the app with an already existing session
+- runFlow: openApp.yaml
+
+# 2. Tap on Menu: validate menu is displayed
+- tapOn: "Menu"
+- runFlow: "../asserts/assertMenu.yaml"

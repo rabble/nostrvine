@@ -1,0 +1,29 @@
+appId: co.openvine.app
+---
+#Util TC to open a specific video based on its description,
+# given the user is logged in in the app,,
+# validate the like is on for the video "when you jammin to JB"
+#Steps:
+# 1. Tap on Explore and then on Search: Validate search screen
+# 2. Input text "when you jammin to JB": Validate video is found
+# 3. Tap on the 1st video returned: Validate playback
+
+# 1. Tap on Explore and then on Search: Validate search screen
+- doubleTapOn:
+    id: explore_tab
+    delay: 100
+- tapOn: Search
+- runFlow: ../asserts/assertSearch.yaml
+
+# 2. Input text ${VIDEO_TITLE}: Validate video is found
+- tapOn: Find something cool...
+- inputText: ${VIDEO_TITLE}
+#Assert Videos and Users result
+- assertVisible: |-
+    Videos \((?!0)\d+\)
+    Tab 1 of 3
+
+# 3. Tap on the 1st video returned: Validate playback screen
+- tapOn:
+    id: play_button
+- runFlow: ../asserts/assertVideoPlayback.yaml

@@ -1,0 +1,20 @@
+appId: co.openvine.app
+---
+- assertVisible: Complete Your Profile
+- assertVisible: Add your name, bio, and picture to get started
+- assertVisible: Set Up
+- assertVisible: #Known loops
+    text: "0"
+    index: 1
+- assertVisible: #Known Likes
+    text: "0"
+    index: 2
+- assertVisible: No Videos Yet
+- assertVisible: Share your first video to see it here
+
+#assert other profile items:
+- runFlow: assertProfile.yaml
+
+- assertNotVisible:
+    text: Loading...
+    optional: true

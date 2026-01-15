@@ -651,7 +651,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                         WidgetsBinding.instance
                                             .addPostFrameCallback((_) {
                                               if (mounted) {
-                                                Navigator.of(context).pop();
+                                                context.pop();
                                               }
                                             });
                                       },
@@ -1178,9 +1178,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             // For new users, wait a moment to show success message, then navigate to main app
             await Future.delayed(const Duration(seconds: 1));
             if (mounted) {
-              // Navigate to main app by popping back to the auth flow
+              // Navigate to main app using GoRouter
               // The auth service should already be in authenticated state
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              context.go('/');
             }
           } else {
             // Wait for SnackBar animation to complete before navigating
@@ -1231,7 +1231,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             // Still navigate back even on error, but warn user
             if (widget.isNewUser) {
               if (mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                context.go('/');
               }
             } else {
               if (mounted) {

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -83,7 +84,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                     ),
                   ),
                 ),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: context.pop,
                 tooltip: 'Back',
               ),
               title: Column(

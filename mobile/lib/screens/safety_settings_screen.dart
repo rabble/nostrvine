@@ -115,7 +115,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
               ),
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Safety & Privacy', style: VineTheme.titleFont()),

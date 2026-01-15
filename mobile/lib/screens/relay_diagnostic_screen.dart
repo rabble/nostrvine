@@ -300,7 +300,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               ),
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Relay Diagnostics', style: VineTheme.titleFont()),

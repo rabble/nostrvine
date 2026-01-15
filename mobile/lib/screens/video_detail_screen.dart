@@ -167,7 +167,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.pop(),
+            onPressed: context.pop,
           ),
         ),
         body: const Center(

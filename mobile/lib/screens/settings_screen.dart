@@ -99,7 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Settings', style: VineTheme.titleFont()),
@@ -476,11 +476,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => context.pop(false),
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => context.pop(true),
               child: const Text(
                 'Log Out Anyway',
                 style: TextStyle(color: Colors.red),
@@ -510,14 +510,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               final authService = ref.read(authServiceProvider);
               authService.signOut();
-              Navigator.of(context).pop(true);
+              context.pop(true);
             },
             child: const Text(
               'Log Out',
@@ -557,16 +557,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // Sign out and delete keys (no relay broadcast)
           await authService.signOut(deleteKeys: true);
 
-          // Close loading indicator
-          if (!context.mounted) return;
-          Navigator.of(context).pop();
-
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
           // User can import their keys from the welcome screen
         } catch (e) {
           // Close loading indicator
           if (!context.mounted) return;
-          Navigator.of(context).pop();
+          context.pop();
 
           // Show error
           if (!context.mounted) return;
@@ -626,7 +622,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         // Close loading indicator
         if (!context.mounted) return;
-        Navigator.of(context).pop();
+        context.pop();
 
         if (result.success) {
           // Sign out and delete keys
@@ -637,7 +633,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (!context.mounted) return;
           await showDeleteAccountCompletionDialog(
             context: context,
-            onCreateNewAccount: () => Navigator.of(context).pop(),
+            onCreateNewAccount: context.pop,
           );
         } else {
           // Show error

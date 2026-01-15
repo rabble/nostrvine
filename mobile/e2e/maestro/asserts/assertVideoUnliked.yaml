@@ -1,0 +1,3 @@
+appId: co.openvine.app
+---
+- assertVisible: Like video
