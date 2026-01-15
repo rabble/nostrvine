@@ -71,7 +71,20 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
         ? '$username@divine.video'
         : null;
 
+    Log.info(
+      '📝 saveProfile START: displayName=$displayName, username=$username, nip05=$nip05',
+      name: 'ProfileEditorNotifier',
+    );
+    Log.info(
+      '📝 currentProfile from relay: nip05=${currentProfile?.nip05}',
+      name: 'ProfileEditorNotifier',
+    );
+
     try {
+      Log.info(
+        '📝 Publishing profile with nip05=$nip05',
+        name: 'ProfileEditorNotifier',
+      );
       final savedProfile = await profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
@@ -79,11 +92,19 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
         picture: picture,
         currentProfile: currentProfile,
       );
+      Log.info(
+        '📝 Profile published successfully, nip05=${savedProfile.nip05}',
+        name: 'ProfileEditorNotifier',
+      );
 
       // TODO(Josh-Sanford): refactor to use model from packages
       // once userProfileService has been refactored
       final appProfile = app_models.UserProfile.fromJson(savedProfile.toJson());
       await userProfileService.updateCachedProfile(appProfile);
+      Log.info(
+        '📝 Cache updated with nip05=${appProfile.nip05}',
+        name: 'ProfileEditorNotifier',
+      );
       ref.invalidate(fetchUserProfileProvider(pubkey));
       ref.invalidate(userProfileReactiveProvider(pubkey));
     } catch (error, stackTrace) {
@@ -97,13 +118,25 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
     }
 
     if (username == null) {
+      Log.info(
+        '📝 No username to claim, SUCCESS',
+        name: 'ProfileEditorNotifier',
+      );
       state = const AsyncData(ProfileSaveResult.success);
       return;
     }
 
+    Log.info(
+      '📝 Attempting to claim username: $username',
+      name: 'ProfileEditorNotifier',
+    );
     final result = await usernameRepository.register(
       username: username,
       pubkey: pubkey,
+    );
+    Log.info(
+      '📝 Username claim result: ${result.runtimeType}',
+      name: 'ProfileEditorNotifier',
     );
     state = switch (result) {
       UsernameClaimSuccess() => const AsyncData(ProfileSaveResult.success),
@@ -115,6 +148,10 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
     };
 
     if (result is! UsernameClaimSuccess) {
+      Log.info(
+        '📝 Username claim FAILED, starting ROLLBACK to nip05=${currentProfile?.nip05}',
+        name: 'ProfileEditorNotifier',
+      );
       // Restores the user's previous nip05 after a failed username claim.
       try {
         final savedProfile = await profileRepository.saveProfileEvent(
@@ -124,6 +161,10 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
           picture: picture,
           currentProfile: currentProfile,
         );
+        Log.info(
+          '📝 Rollback profile published with nip05=${savedProfile.nip05}',
+          name: 'ProfileEditorNotifier',
+        );
 
         // TODO(Josh-Sanford): refactor to use model from packages
         // once userProfileService has been refactored
@@ -131,11 +172,20 @@ class ProfileEditorNotifier extends _$ProfileEditorNotifier {
           savedProfile.toJson(),
         );
         await userProfileService.updateCachedProfile(appProfile);
+        Log.info(
+          '📝 Rollback cache updated with nip05=${appProfile.nip05}',
+          name: 'ProfileEditorNotifier',
+        );
         ref.invalidate(fetchUserProfileProvider(pubkey));
         ref.invalidate(userProfileReactiveProvider(pubkey));
       } catch (error) {
         Log.error('Rollback failed: $error', name: 'ProfileEditorNotifier');
       }
+    } else {
+      Log.info(
+        '📝 Username claim SUCCESS, done',
+        name: 'ProfileEditorNotifier',
+      );
     }
   }
 }
