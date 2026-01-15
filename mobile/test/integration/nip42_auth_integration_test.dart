@@ -24,10 +24,9 @@ void main() {
 
       // Create test NostrClient with generated keys
       final privateKey = keys.generatePrivateKey();
-      final publicKey = keys.getPublicKey(privateKey);
       final signer = LocalNostrSigner(privateKey);
 
-      final config = NostrClientConfig(signer: signer, publicKey: publicKey);
+      final config = NostrClientConfig(signer: signer);
 
       // Use in-memory storage with the test relay
       final storage = InMemoryRelayStorage(['wss://relay3.openvine.co']);
