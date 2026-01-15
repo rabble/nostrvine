@@ -78,8 +78,6 @@ class NostrRemoteSigner extends NostrSigner {
     }
 
     if (sendConnectRequest) {
-      // Small delay to ensure subscription is fully established
-      await Future.delayed(const Duration(milliseconds: 200));
       log(
         '[NIP46] connect: relays status after delay: ${relays.map((r) => "${r.relayStatus.addr}=${r.relayStatus.connected}").join(", ")}',
       );
@@ -212,9 +210,6 @@ class NostrRemoteSigner extends NostrSigner {
     }
 
     try {
-      // Small delay before reconnecting to avoid rapid reconnection loops
-      await Future.delayed(const Duration(milliseconds: 200));
-
       // Check if still disconnected (might have reconnected via another path)
       if (relay.relayStatus.connected == ClientConnected.connected) {
         log(
