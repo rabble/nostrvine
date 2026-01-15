@@ -84,7 +84,7 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
   void showVerificationDialog() {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Row(
