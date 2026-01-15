@@ -12,7 +12,6 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/constants/storage_keys.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
@@ -295,7 +294,7 @@ class FollowRepository {
       final currentUserPubkey = _nostrClient.publicKey;
 
       if (currentUserPubkey.isNotEmpty) {
-        final key = StorageKeys.followingListKey(currentUserPubkey);
+        final key = 'following_list_$currentUserPubkey';
         final cached = prefs.getString(key);
 
         if (cached != null) {
@@ -368,7 +367,7 @@ class FollowRepository {
       final currentUserPubkey = _nostrClient.publicKey;
 
       if (currentUserPubkey.isNotEmpty) {
-        final key = StorageKeys.followingListKey(currentUserPubkey);
+        final key = 'following_list_$currentUserPubkey';
         await prefs.setString(key, jsonEncode(_followingPubkeys));
 
         Log.debug(

@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/constants/storage_keys.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
@@ -74,7 +73,7 @@ class SocialNotifier extends _$SocialNotifier {
       final currentUserPubkey = authService.currentPublicKeyHex;
 
       if (currentUserPubkey != null) {
-        final key = StorageKeys.followingListKey(currentUserPubkey);
+        final key = 'following_list_$currentUserPubkey';
         final cached = prefs.getString(key);
         if (cached != null) {
           final List<dynamic> decoded = jsonDecode(cached);
@@ -107,7 +106,7 @@ class SocialNotifier extends _$SocialNotifier {
       final currentUserPubkey = authService.currentPublicKeyHex;
 
       if (currentUserPubkey != null) {
-        final key = StorageKeys.followingListKey(currentUserPubkey);
+        final key = 'following_list_$currentUserPubkey';
         await prefs.setString(key, jsonEncode(state.followingPubkeys));
         Log.debug(
           '💾 Saved following list to cache: ${state.followingPubkeys.length} users',
