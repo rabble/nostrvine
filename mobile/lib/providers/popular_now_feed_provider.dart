@@ -1,9 +1,10 @@
-// ABOUTME: PopularNow feed provider showing newest videos using VideoFeedBuilder helper
-// ABOUTME: Subscribes to SubscriptionType.popularNow and sorts by timestamp (newest first)
+// ABOUTME: PopularNow feed provider showing newest videos with REST API + Nostr fallback
+// ABOUTME: Tries Funnelcake REST API first, falls back to Nostr subscription if unavailable
 
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
@@ -15,6 +16,9 @@ part 'popular_now_feed_provider.g.dart';
 
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
 ///
+/// Strategy: Try Funnelcake REST API first for better performance and engagement
+/// sorting, fall back to Nostr subscription if REST API is unavailable.
+///
 /// Rebuilds when:
 /// - Poll interval elapses (uses same auto-refresh as home feed)
 /// - User pulls to refresh
@@ -23,6 +27,7 @@ part 'popular_now_feed_provider.g.dart';
 @Riverpod(keepAlive: true) // Keep alive to prevent state loss on tab switches
 class PopularNowFeed extends _$PopularNowFeed {
   VideoFeedBuilder? _builder;
+  bool _usingRestApi = false;
 
   @override
   Future<VideoFeedState> build() async {
@@ -51,6 +56,53 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
+    // Try REST API first if available
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    if (analyticsService.isAvailable) {
+      Log.info(
+        '🆕 PopularNowFeed: Trying Funnelcake REST API first',
+        name: 'PopularNowFeedProvider',
+        category: LogCategory.video,
+      );
+
+      try {
+        final apiVideos = await analyticsService.getRecentVideos(limit: 100);
+        if (apiVideos.isNotEmpty) {
+          _usingRestApi = true;
+          Log.info(
+            '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API',
+            name: 'PopularNowFeedProvider',
+            category: LogCategory.video,
+          );
+
+          // Filter for platform compatibility
+          final filteredVideos = apiVideos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .toList();
+
+          return VideoFeedState(
+            videos: filteredVideos,
+            hasMoreContent: filteredVideos.length >= 50,
+            isLoadingMore: false,
+            lastUpdated: DateTime.now(),
+          );
+        }
+        Log.warning(
+          '🆕 PopularNowFeed: REST API returned empty, falling back to Nostr',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+      } catch (e) {
+        Log.warning(
+          '🆕 PopularNowFeed: REST API failed ($e), falling back to Nostr',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Fall back to Nostr subscription
+    _usingRestApi = false;
     _builder = VideoFeedBuilder(videoEventService);
 
     // Configure feed for popularNow subscription type
@@ -124,7 +176,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     });
 
     Log.info(
-      '✅ PopularNowFeed: Feed built with ${state.videos.length} videos',
+      '✅ PopularNowFeed: Feed built with ${state.videos.length} videos (Nostr fallback)',
       name: 'PopularNowFeedProvider',
       category: LogCategory.video,
     );
@@ -144,6 +196,42 @@ class PopularNowFeed extends _$PopularNowFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
+      // If using REST API, load more from there
+      if (_usingRestApi) {
+        final analyticsService = ref.read(analyticsApiServiceProvider);
+        final currentCount = currentState.videos.length;
+        final newLimit = currentCount + 50;
+
+        final apiVideos = await analyticsService.getRecentVideos(
+          limit: newLimit,
+          forceRefresh: true,
+        );
+
+        if (!ref.mounted) return;
+
+        final filteredVideos = apiVideos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .toList();
+        final newEventsLoaded = filteredVideos.length - currentCount;
+
+        Log.info(
+          '🆕 PopularNowFeed: Loaded $newEventsLoaded new videos from REST API (total: ${filteredVideos.length})',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+
+        state = AsyncData(
+          VideoFeedState(
+            videos: filteredVideos,
+            hasMoreContent: newEventsLoaded > 0,
+            isLoadingMore: false,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+        return;
+      }
+
+      // Nostr mode - load more from relay
       final videoEventService = ref.read(videoEventServiceProvider);
       final eventCountBefore = videoEventService.getEventCount(
         SubscriptionType.popularNow,
@@ -163,7 +251,7 @@ class PopularNowFeed extends _$PopularNowFeed {
       final newEventsLoaded = eventCountAfter - eventCountBefore;
 
       Log.info(
-        '🆕 PopularNowFeed: Loaded $newEventsLoaded new events (total: $eventCountAfter)',
+        '🆕 PopularNowFeed: Loaded $newEventsLoaded new events from Nostr (total: $eventCountAfter)',
         name: 'PopularNowFeedProvider',
         category: LogCategory.video,
       );
@@ -195,7 +283,11 @@ class PopularNowFeed extends _$PopularNowFeed {
 
   /// Refresh state from VideoEventService without re-subscribing to relay
   /// Call this after a video is updated to sync the provider's state
+  /// Only applies to Nostr mode - REST API mode re-fetches on refresh()
   void refreshFromService() {
+    // Skip if using REST API - refreshFromService is only for Nostr mode
+    if (_usingRestApi) return;
+
     final videoEventService = ref.read(videoEventServiceProvider);
     var updatedVideos = videoEventService.popularNowVideos.toList();
 
@@ -221,25 +313,54 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
   }
 
-  /// Refresh the feed
+  /// Refresh the feed - invalidates self to re-run build() with REST API fallback logic
   Future<void> refresh() async {
     Log.info(
-      '🆕 PopularNowFeed: Refreshing feed',
+      '🆕 PopularNowFeed: Refreshing feed (will try REST API first)',
       name: 'PopularNowFeedProvider',
       category: LogCategory.video,
     );
 
-    final videoEventService = ref.read(videoEventServiceProvider);
+    // If using REST API, try to refresh from there first
+    if (_usingRestApi) {
+      try {
+        final analyticsService = ref.read(analyticsApiServiceProvider);
+        final apiVideos = await analyticsService.getRecentVideos(
+          limit: 100,
+          forceRefresh: true,
+        );
 
-    // Force new subscription to get fresh data from relay
-    await videoEventService.subscribeToVideoFeed(
-      subscriptionType: SubscriptionType.popularNow,
-      limit: 100,
-      sortBy: VideoSortField.createdAt,
-      force: true, // Force refresh bypasses duplicate detection
-    );
+        if (apiVideos.isNotEmpty) {
+          final filteredVideos = apiVideos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .toList();
 
-    // Invalidate self to rebuild with fresh data
+          state = AsyncData(
+            VideoFeedState(
+              videos: filteredVideos,
+              hasMoreContent: filteredVideos.length >= 50,
+              isLoadingMore: false,
+              lastUpdated: DateTime.now(),
+            ),
+          );
+
+          Log.info(
+            '✅ PopularNowFeed: Refreshed ${filteredVideos.length} videos from REST API',
+            name: 'PopularNowFeedProvider',
+            category: LogCategory.video,
+          );
+          return;
+        }
+      } catch (e) {
+        Log.warning(
+          '🆕 PopularNowFeed: REST API refresh failed, falling back to Nostr',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Invalidate to re-run build() which will try REST API then Nostr
     ref.invalidateSelf();
   }
 }

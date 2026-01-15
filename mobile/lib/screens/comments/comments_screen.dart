@@ -4,12 +4,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Maps [CommentsError] to user-facing strings.
@@ -22,6 +25,40 @@ String _errorToString(CommentsError error) {
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
   };
+}
+
+/// Dynamic title widget that shows comment count
+/// Initially shows the count from video metadata, then updates to loaded count
+class _CommentsTitle extends StatelessWidget {
+  const _CommentsTitle({required this.initialCount});
+
+  final int initialCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      buildWhen: (prev, next) =>
+          prev.comments.length != next.comments.length ||
+          prev.status != next.status,
+      builder: (context, state) {
+        // Use loaded count if available, otherwise use initial count
+        final count = state.status == CommentsStatus.success
+            ? state.comments.length
+            : initialCount;
+
+        return Text(
+          '$count ${count == 1 ? 'Comment' : 'Comments'}',
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            height: 32 / 24,
+            letterSpacing: 0.15,
+            color: VineTheme.onSurface,
+          ),
+        );
+      },
+    );
+  }
 }
 
 class CommentsScreen extends ConsumerWidget {
@@ -43,25 +80,33 @@ class CommentsScreen extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+      builder: (builderContext) {
+        final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;
+        final isKeyboardOpen = keyboardHeight > 0;
+
+        return DraggableScrollableSheet(
+          initialChildSize: isKeyboardOpen ? 0.93 : 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.93,
+          snap: true,
+          snapSizes: [0.7, 0.93],
+          builder: (context, scrollController) => DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: CommentsScreen(
+              videoEvent: video,
+              sheetScrollController: scrollController,
             ),
           ),
-          child: CommentsScreen(
-            videoEvent: video,
-            sheetScrollController: scrollController,
-          ),
-        ),
-      ),
+        );
+      },
     ).whenComplete(() {
       overlayNotifier.setModalOpen(false);
     });
@@ -81,7 +126,7 @@ class CommentsScreen extends ConsumerWidget {
         rootAuthorPubkey: videoEvent.pubkey,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(
-        title: 'Comments',
+        title: _CommentsTitle(initialCount: videoEvent.originalComments ?? 0),
         body: _CommentsScreenBody(
           videoEvent: videoEvent,
           sheetScrollController: sheetScrollController,
@@ -126,53 +171,112 @@ class _CommentsScreenBody extends StatelessWidget {
 }
 
 /// Main comment input widget that reads from CommentsBloc state
-class _MainCommentInput extends StatefulWidget {
+class _MainCommentInput extends ConsumerStatefulWidget {
   const _MainCommentInput();
 
   @override
-  State<_MainCommentInput> createState() => _MainCommentInputState();
+  ConsumerState<_MainCommentInput> createState() => _MainCommentInputState();
 }
 
-class _MainCommentInputState extends State<_MainCommentInput> {
+class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     final state = context.read<CommentsBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
+    return BlocConsumer<CommentsBloc, CommentsState>(
+      listenWhen: (prev, next) =>
+          prev.activeReplyCommentId != next.activeReplyCommentId,
+      listener: (context, state) {
+        // Focus input when reply is activated
+        if (state.activeReplyCommentId != null) {
+          _focusNode.requestFocus();
+        }
+      },
       buildWhen: (prev, next) =>
           prev.mainInputText != next.mainInputText ||
+          prev.replyInputText != next.replyInputText ||
+          prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.isPosting != next.isPosting,
       builder: (context, state) {
-        // Sync controller with state (for when state changes externally,
-        // e.g., after post clears the text)
-        if (_controller.text != state.mainInputText) {
-          _controller.text = state.mainInputText;
+        final isReplyMode = state.activeReplyCommentId != null;
+        final inputText = isReplyMode
+            ? state.replyInputText
+            : state.mainInputText;
+
+        // Sync controller with state
+        if (_controller.text != inputText) {
+          _controller.text = inputText;
           _controller.selection = TextSelection.collapsed(
-            offset: state.mainInputText.length,
+            offset: inputText.length,
           );
+        }
+
+        // Get display name of user being replied to
+        String? replyToDisplayName;
+        String? replyToAuthorPubkey;
+        if (isReplyMode) {
+          // Find the comment being replied to
+          final replyComment = state.comments.firstWhere(
+            (c) => c.id == state.activeReplyCommentId,
+            orElse: () => throw StateError('Reply comment not found'),
+          );
+          replyToAuthorPubkey = replyComment.authorPubkey;
+
+          // Fetch profile for display name
+          final userProfileService = ref.watch(userProfileServiceProvider);
+          final profile = userProfileService.getCachedProfile(
+            replyToAuthorPubkey,
+          );
+
+          // Get display name with fallback
+          replyToDisplayName =
+              profile?.displayName ??
+              profile?.name ??
+              NostrKeyUtils.encodePubKey(replyToAuthorPubkey);
         }
 
         return CommentInput(
           controller: _controller,
-          isPosting: state.isPosting && state.activeReplyCommentId == null,
+          focusNode: _focusNode,
+          isPosting: state.isPosting,
+          replyToDisplayName: replyToDisplayName,
           onChanged: (text) {
-            context.read<CommentsBloc>().add(CommentTextChanged(text));
+            context.read<CommentsBloc>().add(
+              CommentTextChanged(text, commentId: state.activeReplyCommentId),
+            );
           },
           onSubmit: () {
-            context.read<CommentsBloc>().add(const CommentSubmitted());
+            if (isReplyMode) {
+              context.read<CommentsBloc>().add(
+                CommentSubmitted(
+                  parentCommentId: state.activeReplyCommentId,
+                  parentAuthorPubkey: replyToAuthorPubkey,
+                ),
+              );
+            } else {
+              context.read<CommentsBloc>().add(const CommentSubmitted());
+            }
+          },
+          onCancelReply: () {
+            context.read<CommentsBloc>().add(
+              CommentReplyToggled(state.activeReplyCommentId!),
+            );
           },
         );
       },

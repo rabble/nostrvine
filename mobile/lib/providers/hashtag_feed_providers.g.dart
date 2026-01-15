@@ -51,7 +51,7 @@ final class HashtagFeedProvider
   HashtagFeed create() => HashtagFeed();
 }
 
-String _$hashtagFeedHash() => r'68355c9db8d96a162327530c3755b9c261779de9';
+String _$hashtagFeedHash() => r'9663c0244ecb4b526e7b54a86b73e71a6ed546de';
 
 /// Hashtag feed provider - shows videos with a specific hashtag
 ///

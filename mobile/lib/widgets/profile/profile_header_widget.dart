@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -54,6 +56,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
         profile?.displayName?.isNotEmpty == true;
     final nip05 = profile?.nip05;
     final about = profile?.about;
+    final authService = ref.watch(authServiceProvider);
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -63,6 +66,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
           // (only on own profile)
           if (isOwnProfile && !hasCustomName && onSetupProfile != null)
             _SetupProfileBanner(onSetup: onSetupProfile!),
+
+          // Secure account banner for anonymous users (only on own profile)
+          // Only shown when headless auth feature is enabled
+          if (isOwnProfile && authService.isAnonymous)
+            _IdentityNotRecoverableBanner(),
 
           // Profile picture and stats row
           Row(
@@ -164,6 +172,67 @@ class _SetupProfileBanner extends StatelessWidget {
             ),
             child: const Text(
               'Set Up',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IdentityNotRecoverableBanner extends StatelessWidget {
+  const _IdentityNotRecoverableBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.security, color: Colors.white, size: 24),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Secure Your Account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Add email & password to recover your account on any device',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/secure-account'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: VineTheme.vineGreen,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Register',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),

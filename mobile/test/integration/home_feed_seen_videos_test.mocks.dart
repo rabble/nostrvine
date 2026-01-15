@@ -413,6 +413,29 @@ class MockVideoEventService extends _i1.Mock implements _i3.VideoEventService {
           as _i11.Future<void>);
 
   @override
+  void seedHomeFeedFromDiscoveryCache(List<String>? followingPubkeys) =>
+      super.noSuchMethod(
+        Invocation.method(#seedHomeFeedFromDiscoveryCache, [followingPubkeys]),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i11.Future<void> seedHomeFeedFromFollowedUsers(
+    List<String>? followingPubkeys, {
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #seedHomeFeedFromFollowedUsers,
+              [followingPubkeys],
+              {#limit: limit},
+            ),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
   _i11.Future<void> subscribeToDiscovery({
     int? limit = 100,
     _i12.VideoSortField? sortBy,

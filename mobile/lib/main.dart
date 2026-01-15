@@ -573,6 +573,7 @@ class DivineApp extends ConsumerStatefulWidget {
 
 class _DivineAppState extends ConsumerState<DivineApp> {
   bool _backgroundInitDone = false;
+  StreamSubscription<void>? _shakeSubscription;
 
   @override
   void initState() {
@@ -582,24 +583,33 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       if (!mounted) return;
       if (!_backgroundInitDone) {
         _backgroundInitDone = true;
-        _initializeDeepLinkService();
+        _initializeDeepLinkServices();
         _initializeBackgroundServices();
       }
     });
   }
 
-  void _initializeDeepLinkService() {
+  @override
+  void dispose() {
+    _shakeSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _initializeDeepLinkServices() {
     Log.info(
-      '🔗 Initializing deep link service...',
+      '🔗 Initializing deep link services...',
       name: 'DeepLinkHandler',
       category: LogCategory.ui,
     );
 
-    final service = ref.read(deepLinkServiceProvider);
-    service.initialize();
+    // Initialize the deep link service for video content
+    ref.read(deepLinkServiceProvider).initialize();
+
+    // Initialize the deep link service for password reset
+    ref.read(passwordResetListenerProvider).initialize();
 
     Log.info(
-      '✅ Deep link service initialized',
+      '✅ Deep Link services initialized',
       name: 'DeepLinkHandler',
       category: LogCategory.ui,
     );

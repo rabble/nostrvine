@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/video_events_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -22,17 +24,14 @@ import 'package:openvine/widgets/trending_hashtags_section.dart';
 /// - Analytics tracking (optional, for testability)
 /// - Video sorting cache
 /// - Loading/error/data states
+/// - Full screen video navigation on tap
 class PopularVideosTab extends ConsumerStatefulWidget {
   const PopularVideosTab({
     super.key,
-    required this.onVideoTap,
     this.screenAnalytics,
     this.feedTracker,
     this.errorTracker,
   });
-
-  /// Callback when a video is tapped to enter feed mode
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   /// Optional analytics services (for testing, defaults to singletons)
   final ScreenAnalyticsService? screenAnalytics;
@@ -154,10 +153,7 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
       );
     }
 
-    return _PopularVideosTrendingContent(
-      videos: sortedVideos,
-      onVideoTap: widget.onVideoTap,
-    );
+    return _PopularVideosTrendingContent(videos: sortedVideos);
   }
 
   void _trackErrorState(Object? error) {
@@ -209,13 +205,9 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
 /// Content widget displaying trending hashtags and video grid
 class _PopularVideosTrendingContent extends ConsumerWidget {
-  const _PopularVideosTrendingContent({
-    required this.videos,
-    required this.onVideoTap,
-  });
+  const _PopularVideosTrendingContent({required this.videos});
 
   final List<VideoEvent> videos;
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -231,7 +223,19 @@ class _PopularVideosTrendingContent extends ConsumerWidget {
           child: ComposableVideoGrid(
             videos: videos,
             thumbnailAspectRatio: 0.8,
-            onVideoTap: onVideoTap,
+            onVideoTap: (videoList, index) {
+              Log.info(
+                '🎯 PopularVideosTab TAP: gridIndex=$index, '
+                'videoId=${videoList[index].id}',
+                category: LogCategory.video,
+              );
+              // Navigate to fullscreen video feed
+              context.pushVideoFeed(
+                source: StaticFeedSource(videoList),
+                initialIndex: index,
+                contextTitle: 'Popular Videos',
+              );
+            },
             onRefresh: () async {
               Log.info(
                 '🔄 ExploreScreen: Refreshing trending tab',

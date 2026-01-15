@@ -16,12 +16,16 @@ void main() {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       mockClient = MockClient((request) async {
-        if (request.url.path == '/analytics/view') {
+        if (request.url.path == '/api/analytics/view') {
           return http.Response('{"success": true, "views": 1}', 200);
         }
         return http.Response('Not Found', 404);
       });
-      analyticsService = AnalyticsService(client: mockClient);
+      // Use backendReadyOverride: true to simulate a ready backend in tests
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
     });
 
     tearDown(() {
@@ -47,7 +51,7 @@ void main() {
 
       var requestCount = 0;
       mockClient = MockClient((request) async {
-        if (request.url.path == '/analytics/view') {
+        if (request.url.path == '/api/analytics/view') {
           requestCount++;
           return http.Response(
             '{"success": true, "views": $requestCount}',
@@ -56,7 +60,10 @@ void main() {
         }
         return http.Response('Not Found', 404);
       });
-      analyticsService = AnalyticsService(client: mockClient);
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
       await analyticsService.initialize();
 
       // Act - Track the same video 3 times
@@ -90,7 +97,10 @@ void main() {
         requestCount++;
         return http.Response('{"success": true, "views": 1}', 200);
       });
-      analyticsService = AnalyticsService(client: mockClient);
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
       await analyticsService.initialize();
       await analyticsService.setAnalyticsEnabled(false);
 
@@ -117,7 +127,10 @@ void main() {
         (request) async =>
             http.Response('{"error": "Rate limit exceeded"}', 429),
       );
-      analyticsService = AnalyticsService(client: mockClient);
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
       await analyticsService.initialize();
 
       // Act & Assert - Should not throw
@@ -141,7 +154,10 @@ void main() {
         requestCount++;
         return http.Response('{"success": true, "views": $requestCount}', 200);
       });
-      analyticsService = AnalyticsService(client: mockClient);
+      analyticsService = AnalyticsService(
+        client: mockClient,
+        backendReadyOverride: true,
+      );
       await analyticsService.initialize();
 
       // Act - Track rapidly without delays

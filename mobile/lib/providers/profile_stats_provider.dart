@@ -116,7 +116,10 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     final followerStats = results[1] as Map<String, int>;
 
     // Get videos from VideoEventService (now populated via subscription)
-    final videos = videoEventService.authorVideos(pubkey);
+    // Filter out reposts - only count original videos authored by the user
+    final videos = videoEventService
+        .authorVideos(pubkey)
+        .where((v) => !v.isRepost);
     final videoCount = videos.length;
 
     // Sum up loops and likes from all user's videos

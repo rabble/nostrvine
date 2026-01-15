@@ -6,6 +6,7 @@
 import 'dart:async' as _i6;
 import 'dart:ui' as _i10;
 
+import 'package:keycast_flutter/keycast_flutter.dart' as _i17;
 import 'package:likes_repository/likes_repository.dart' as _i13;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
@@ -862,6 +863,29 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
           as _i6.Future<void>);
 
   @override
+  void seedHomeFeedFromDiscoveryCache(List<String>? followingPubkeys) =>
+      super.noSuchMethod(
+        Invocation.method(#seedHomeFeedFromDiscoveryCache, [followingPubkeys]),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i6.Future<void> seedHomeFeedFromFollowedUsers(
+    List<String>? followingPubkeys, {
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #seedHomeFeedFromFollowedUsers,
+              [followingPubkeys],
+              {#limit: limit},
+            ),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
   _i6.Future<void> subscribeToDiscovery({
     int? limit = 100,
     _i14.VideoSortField? sortBy,
@@ -1577,6 +1601,24 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as bool);
 
   @override
+  _i3.AuthenticationSource get authenticationSource =>
+      (super.noSuchMethod(
+            Invocation.getter(#authenticationSource),
+            returnValue: _i3.AuthenticationSource.none,
+          )
+          as _i3.AuthenticationSource);
+
+  @override
+  bool get isRegistered =>
+      (super.noSuchMethod(Invocation.getter(#isRegistered), returnValue: false)
+          as bool);
+
+  @override
+  bool get isAnonymous =>
+      (super.noSuchMethod(Invocation.getter(#isAnonymous), returnValue: false)
+          as bool);
+
+  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -1670,9 +1712,18 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<void>);
 
   @override
-  _i6.Future<void> acceptTermsOfService() =>
+  _i6.Future<void> signInAutomatically() =>
       (super.noSuchMethod(
-            Invocation.method(#acceptTermsOfService, []),
+            Invocation.method(#signInAutomatically, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> signInWithDivineOAuth(_i17.KeycastSession? session) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )

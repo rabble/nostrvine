@@ -4,7 +4,7 @@
 import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
@@ -17,13 +17,9 @@ part 'curation_providers.g.dart';
 /// Provider for analytics API service
 @riverpod
 AnalyticsApiService analyticsApiService(Ref ref) {
-  final nostrService = ref.watch(nostrServiceProvider);
-  final videoEventService = ref.watch(videoEventServiceProvider);
+  final environmentConfig = ref.watch(currentEnvironmentProvider);
 
-  return AnalyticsApiService(
-    nostrService: nostrService,
-    videoEventService: videoEventService,
-  );
+  return AnalyticsApiService(baseUrl: environmentConfig.apiBaseUrl);
 }
 
 /// Main curation provider that manages curated content sets
@@ -174,19 +170,16 @@ class AnalyticsTrending extends _$AnalyticsTrending {
   }
 
   /// Refresh trending videos from analytics API
-  Future<void> refresh({String timeWindow = '7d'}) async {
+  Future<void> refresh() async {
     Log.info(
-      'AnalyticsTrending: Refreshing trending videos from analytics API (window: $timeWindow)',
+      'AnalyticsTrending: Refreshing trending videos from analytics API',
       name: 'AnalyticsTrendingProvider',
       category: LogCategory.system,
     );
 
     try {
       final service = ref.read(analyticsApiServiceProvider);
-      final videos = await service.getTrendingVideos(
-        timeWindow: timeWindow,
-        forceRefresh: true,
-      );
+      final videos = await service.getTrendingVideos(forceRefresh: true);
 
       // Update state with new trending videos
       state = videos;
@@ -270,11 +263,8 @@ class AnalyticsPopular extends _$AnalyticsPopular {
 
     try {
       final service = ref.read(analyticsApiServiceProvider);
-      // Popular uses 7 day window to get recent popular content
-      final videos = await service.getTrendingVideos(
-        timeWindow: '7d',
-        forceRefresh: true,
-      );
+      // Popular uses the trending videos API
+      final videos = await service.getTrendingVideos(forceRefresh: true);
 
       // Update state with new popular videos
       state = videos;
@@ -299,34 +289,16 @@ class AnalyticsPopular extends _$AnalyticsPopular {
 @riverpod
 class TrendingHashtags extends _$TrendingHashtags {
   @override
-  Future<List<TrendingHashtag>> build() async {
-    // Get initial trending hashtags
+  List<TrendingHashtag> build() {
+    // Get initial trending hashtags (synchronous, uses defaults when API unavailable)
     final service = ref.watch(analyticsApiServiceProvider);
-    return await service.getTrendingHashtags();
+    return service.getTrendingHashtags();
   }
 
   /// Refresh trending hashtags
-  Future<void> refresh() async {
+  void refresh() {
     final service = ref.read(analyticsApiServiceProvider);
-    final hashtags = await service.getTrendingHashtags(forceRefresh: true);
-    state = AsyncValue.data(hashtags);
-  }
-}
-
-/// Provider for top creators
-@riverpod
-class TopCreators extends _$TopCreators {
-  @override
-  Future<List<TopCreator>> build() async {
-    // Get initial top creators
-    final service = ref.watch(analyticsApiServiceProvider);
-    return await service.getTopCreators();
-  }
-
-  /// Refresh top creators
-  Future<void> refresh() async {
-    final service = ref.read(analyticsApiServiceProvider);
-    final creators = await service.getTopCreators(forceRefresh: true);
-    state = AsyncValue.data(creators);
+    final hashtags = service.getTrendingHashtags();
+    state = hashtags;
   }
 }

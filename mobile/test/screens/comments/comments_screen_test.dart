@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/models/user_profile.dart' as models;
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 import '../../builders/comment_builder.dart';
-import '../../builders/comment_node_builder.dart';
 import '../../helpers/test_helpers.dart';
 
 /// Maps [CommentsError] to user-facing strings for tests.
@@ -95,7 +95,7 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          topLevelComments: [],
+          comments: [],
         ),
       );
     });
@@ -196,13 +196,9 @@ void main() {
     group('reply toggling', () {
       testWidgets('tapping Reply adds CommentReplyToggled', (tester) async {
         final comments = [
-          CommentNodeBuilder()
-              .withComment(
-                CommentBuilder()
-                    .withId(TestCommentIds.comment1Id)
-                    .withContent('Test comment')
-                    .build(),
-              )
+          CommentBuilder()
+              .withId(TestCommentIds.comment1Id)
+              .withContent('Test comment')
               .build(),
         ];
 
@@ -210,7 +206,7 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          topLevelComments: comments,
+          comments: comments,
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -226,15 +222,25 @@ void main() {
         expect(captured.commentId, TestCommentIds.comment1Id);
       });
 
-      testWidgets('shows Cancel when replying', (tester) async {
+      testWidgets('shows reply indicator when replying', (tester) async {
+        final testProfile = models.UserProfile(
+          pubkey: TestCommentIds.author1Pubkey,
+          displayName: 'TestUser',
+          rawData: {},
+          createdAt: DateTime.now(),
+          eventId: 'test_event_id',
+        );
+        when(
+          () => mockUserProfileService.getCachedProfile(
+            TestCommentIds.author1Pubkey,
+          ),
+        ).thenReturn(testProfile);
+
         final comments = [
-          CommentNodeBuilder()
-              .withComment(
-                CommentBuilder()
-                    .withId(TestCommentIds.comment1Id)
-                    .withContent('Test comment')
-                    .build(),
-              )
+          CommentBuilder()
+              .withId(TestCommentIds.comment1Id)
+              .withAuthorPubkey(TestCommentIds.author1Pubkey)
+              .withContent('Test comment')
               .build(),
         ];
 
@@ -242,16 +248,17 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          topLevelComments: comments,
+          comments: comments,
           activeReplyCommentId: TestCommentIds.comment1Id,
           replyInputText: '',
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Write a reply...'), findsOneWidget);
+        expect(find.text('Re: TestUser'), findsOneWidget);
+        // Verify close icon exists (there may be multiple close icons on the screen)
+        expect(find.byIcon(Icons.close), findsWidgets);
       });
     });
 
@@ -268,7 +275,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(commentsState: state));
         await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
       });
 
       testWidgets('shows empty state when no comments', (tester) async {
@@ -276,16 +283,14 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          topLevelComments: [],
+          comments: [],
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));
         await tester.pump();
 
-        expect(
-          find.text('No comments yet.\nBe the first to comment!'),
-          findsOneWidget,
-        );
+        expect(find.text('No comments yet'), findsOneWidget);
+        expect(find.text('Get the party started!'), findsOneWidget);
       });
     });
 
@@ -354,42 +359,91 @@ class _MainCommentInputTest extends StatefulWidget {
 
 class _MainCommentInputTestState extends State<_MainCommentInputTest> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     final state = context.read<CommentsBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
+    return BlocConsumer<CommentsBloc, CommentsState>(
+      listenWhen: (prev, next) =>
+          prev.activeReplyCommentId != next.activeReplyCommentId,
+      listener: (context, state) {
+        if (state.activeReplyCommentId != null) {
+          _focusNode.requestFocus();
+        }
+      },
       buildWhen: (prev, next) =>
           prev.mainInputText != next.mainInputText ||
+          prev.replyInputText != next.replyInputText ||
+          prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.isPosting != next.isPosting,
       builder: (context, state) {
-        if (_controller.text != state.mainInputText) {
-          _controller.text = state.mainInputText;
+        final isReplyMode = state.activeReplyCommentId != null;
+        final inputText = isReplyMode
+            ? state.replyInputText
+            : state.mainInputText;
+
+        if (_controller.text != inputText) {
+          _controller.text = inputText;
           _controller.selection = TextSelection.collapsed(
-            offset: state.mainInputText.length,
+            offset: inputText.length,
           );
+        }
+
+        // Get display name of user being replied to
+        String? replyToDisplayName;
+        String? replyToAuthorPubkey;
+        if (isReplyMode) {
+          final replyComment = state.comments.firstWhere(
+            (c) => c.id == state.activeReplyCommentId,
+            orElse: () => throw StateError('Reply comment not found'),
+          );
+          replyToAuthorPubkey = replyComment.authorPubkey;
+
+          // For tests, use a simple "User" fallback since we mock the profile service
+          replyToDisplayName = 'TestUser';
         }
 
         return CommentInput(
           controller: _controller,
-          isPosting: state.isPosting && state.activeReplyCommentId == null,
+          focusNode: _focusNode,
+          isPosting: state.isPosting,
+          replyToDisplayName: replyToDisplayName,
           onChanged: (text) {
-            context.read<CommentsBloc>().add(CommentTextChanged(text));
+            context.read<CommentsBloc>().add(
+              CommentTextChanged(text, commentId: state.activeReplyCommentId),
+            );
           },
           onSubmit: () {
-            context.read<CommentsBloc>().add(const CommentSubmitted());
+            if (isReplyMode) {
+              context.read<CommentsBloc>().add(
+                CommentSubmitted(
+                  parentCommentId: state.activeReplyCommentId,
+                  parentAuthorPubkey: replyToAuthorPubkey,
+                ),
+              );
+            } else {
+              context.read<CommentsBloc>().add(const CommentSubmitted());
+            }
+          },
+          onCancelReply: () {
+            context.read<CommentsBloc>().add(
+              CommentReplyToggled(state.activeReplyCommentId!),
+            );
           },
         );
       },

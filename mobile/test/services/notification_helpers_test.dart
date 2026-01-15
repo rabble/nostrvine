@@ -8,6 +8,46 @@ import 'package:openvine/services/notification_helpers.dart';
 
 void main() {
   group('extractVideoEventId', () {
+    test('returns uppercase "E" tag value for NIP-22 comments', () {
+      // Arrange - NIP-22 comment with uppercase E tag (root scope)
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111, // NIP-22 comment kind
+        [
+          ['E', 'root_video_id', '', 'author_pubkey'],
+          ['K', '34236'],
+          ['e', 'parent_comment_id', '', 'parent_author'],
+          ['k', '1111'],
+        ],
+        'Great video!',
+      );
+
+      // Act
+      final result = extractVideoEventId(event);
+
+      // Assert - should return uppercase E tag (root scope / video ID)
+      expect(result, 'root_video_id');
+    });
+
+    test('prefers uppercase "E" over lowercase "e" tag', () {
+      // Arrange
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111,
+        [
+          ['e', 'lowercase_id'],
+          ['E', 'uppercase_id'],
+        ],
+        'Comment',
+      );
+
+      // Act
+      final result = extractVideoEventId(event);
+
+      // Assert - uppercase E should take priority
+      expect(result, 'uppercase_id');
+    });
+
     test('returns first "e" tag value from event tags', () {
       // Arrange
       final event = Event(
