@@ -35,7 +35,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
             spacing: 16,
             children: [
               // Close button
-              _buildActionButton(
+              _ActionButton(
                 iconPath: 'assets/icon/close.svg',
                 semanticLabel: 'Close video recorder',
                 hidden: isRecording,
@@ -47,7 +47,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
               const VideoRecorderSegmentBar(),
 
               // Confirm button
-              _buildActionButton(
+              _ActionButton(
                 iconPath: 'assets/icon/arrow_forward.svg',
                 semanticLabel: 'Continue to video editor',
                 hidden: isRecording,
@@ -65,16 +65,27 @@ class VideoRecorderTopBar extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// Build action button for top bar
-  Widget _buildActionButton({
-    required String iconPath,
-    required Color backgroundColor,
-    Color iconColor = Colors.white,
-    bool hidden = false,
-    VoidCallback? onTap,
-    String? semanticLabel,
-  }) {
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.iconPath,
+    required this.backgroundColor,
+    this.iconColor = Colors.white,
+    this.hidden = false,
+    this.onTap,
+    this.semanticLabel,
+  });
+
+  final String iconPath;
+  final Color backgroundColor;
+  final Color iconColor;
+  final bool hidden;
+  final VoidCallback? onTap;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: hidden ? 0 : 1,

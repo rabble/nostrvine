@@ -16,12 +16,6 @@ class VideoRecorderSegmentBar extends ConsumerWidget {
   /// Creates a segment bar widget.
   const VideoRecorderSegmentBar({super.key});
 
-  /// Maximum allowed recording duration.
-  static const Duration _maxDuration = ClipManagerState.maxDuration;
-
-  /// Width of dividers between segments.
-  static const _dividerWidth = 2.0;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Expanded(
@@ -32,16 +26,25 @@ class VideoRecorderSegmentBar extends ConsumerWidget {
           child: ColoredBox(
             color: const Color(0xBEFFFFFF),
             child: LayoutBuilder(
-              builder: (context, constraints) =>
-                  _buildSegments(ref, constraints),
+              builder: (_, constraints) => _Segments(constraints: constraints),
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSegments(WidgetRef ref, BoxConstraints constraints) {
+class _Segments extends ConsumerWidget {
+  const _Segments({required this.constraints});
+
+  /// Maximum allowed recording duration.
+  static const Duration _maxDuration = ClipManagerState.maxDuration;
+
+  final BoxConstraints constraints;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
       clipManagerProvider.select(
         (s) => (
@@ -82,12 +85,7 @@ class VideoRecorderSegmentBar extends ConsumerWidget {
       // Add divider between segments
       if (i < recordSegments.length - 1 || activeRecordingDuration > .zero) {
         if (used < _maxDuration) {
-          segments.add(
-            SizedBox(
-              width: _dividerWidth,
-              child: Container(color: Colors.white),
-            ),
-          );
+          segments.add(Container(width: 2, color: Colors.white));
         }
       }
     }

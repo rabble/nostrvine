@@ -107,7 +107,7 @@ class _VideoRecorderFocusPointState
                     builder: (context, scale, child) {
                       return Transform.scale(scale: scale, child: child);
                     },
-                    child: _buildFocusPoint(),
+                    child: const _FocusPoint(),
                   ),
                 ),
               ),
@@ -117,8 +117,13 @@ class _VideoRecorderFocusPointState
       },
     );
   }
+}
 
-  Widget _buildFocusPoint() {
+class _FocusPoint extends StatelessWidget {
+  const _FocusPoint();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: VideoRecorderFocusPoint.indicatorSize,
       height: VideoRecorderFocusPoint.indicatorSize,
