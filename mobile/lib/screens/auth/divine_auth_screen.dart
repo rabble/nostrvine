@@ -269,8 +269,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                       // Submit button
                       AuthSubmitButton(
                         isLoading: _isLoading,
-                        label:
-                            _tabController.index == 0 ? 'Log In' : 'Create Account',
+                        label: _tabController.index == 0
+                            ? 'Log In'
+                            : 'Create Account',
                         onPressed: _handleSubmit,
                       ),
 
@@ -305,7 +306,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'Reset Password',
@@ -336,7 +337,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: dialogContext.pop,
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.white60),
@@ -350,7 +351,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             onPressed: () async {
               if (dialogFormKey.currentState!.validate()) {
                 final email = resetEmailController.text.trim();
-                Navigator.pop(context); // Close dialog
+                dialogContext.pop();
                 await _performPasswordReset(email);
               }
             },

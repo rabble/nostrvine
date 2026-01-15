@@ -139,7 +139,7 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              context.pop();
               continueToApp();
             },
             child: const Text(
