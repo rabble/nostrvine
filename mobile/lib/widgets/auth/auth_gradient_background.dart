@@ -12,10 +12,7 @@ class AuthGradientBackground extends StatelessWidget {
   /// The child widget to display on top of the gradient.
   final Widget child;
 
-  const AuthGradientBackground({
-    required this.child,
-    super.key,
-  });
+  const AuthGradientBackground({required this.child, super.key});
 
   @override
   Widget build(BuildContext context) => Container(

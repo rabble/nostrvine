@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/mixins/email_verification_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -103,7 +104,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   }
 
   Future<void> _handleLogin(
-    dynamic oauth,
+    KeycastOAuth oauth,
     String email,
     String password,
   ) async {
@@ -125,7 +126,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   }
 
   Future<void> _handleRegister(
-    dynamic oauth,
+    KeycastOAuth oauth,
     String email,
     String password,
   ) async {

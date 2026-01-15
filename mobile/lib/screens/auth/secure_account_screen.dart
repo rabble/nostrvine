@@ -175,8 +175,8 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
                         icon: Icons.lock_outlined,
                         obscureText: _obscureConfirmPassword,
                         onToggleObscure: () => setState(
-                          () =>
-                              _obscureConfirmPassword = !_obscureConfirmPassword,
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
                         ),
                         validator: _validateConfirmPassword,
                       ),

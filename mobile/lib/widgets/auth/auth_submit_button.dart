@@ -34,9 +34,7 @@ class AuthSubmitButton extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: VineTheme.vineGreen,
         disabledBackgroundColor: Colors.white60,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: isLoading
           ? const SizedBox(
@@ -49,10 +47,7 @@ class AuthSubmitButton extends StatelessWidget {
             )
           : Text(
               label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
     ),
   );
