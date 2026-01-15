@@ -71,7 +71,10 @@ class _MyFollowingStatView extends StatelessWidget {
           count: isLoading ? null : state.followingPubkeys.length,
           label: 'Following',
           isLoading: isLoading,
-          onTap: () => context.push(FollowingRoutes.pathForPubkey(pubkey), extra: displayName),
+          onTap: () => context.push(
+            FollowingRoutes.pathForPubkey(pubkey),
+            extra: displayName,
+          ),
         );
       },
     );
@@ -100,7 +103,10 @@ class _OthersFollowingStatView extends StatelessWidget {
           count: isLoading ? null : state.followingPubkeys.length,
           label: 'Following',
           isLoading: isLoading,
-          onTap: () => context.push(FollowingRoutes.pathForPubkey(pubkey), extra: displayName),
+          onTap: () => context.push(
+            FollowingRoutes.pathForPubkey(pubkey),
+            extra: displayName,
+          ),
         );
       },
     );

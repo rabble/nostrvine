@@ -742,7 +742,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           switch (deepLink.type) {
             case DeepLinkType.video:
               if (deepLink.videoId != null) {
-                final targetPath = VideoDetailScreen.pathForId(deepLink.videoId!);
+                final targetPath = VideoDetailScreen.pathForId(
+                  deepLink.videoId!,
+                );
                 Log.info(
                   '📱 Navigating to video: $targetPath',
                   name: 'DeepLinkHandler',
