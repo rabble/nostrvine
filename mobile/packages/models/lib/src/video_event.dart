@@ -5,12 +5,16 @@
 
 import 'dart:developer' as developer;
 
+import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
+part 'video_event.g.dart';
+
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 @immutable
+@JsonSerializable(createFactory: false)
 class VideoEvent {
   // approved, flagged, etc.
 
@@ -47,13 +51,27 @@ class VideoEvent {
     this.originalComments,
     this.originalReposts,
     this.expirationTimestamp,
+    this.audioEventId,
+    this.audioEventRelay,
+    this.nostrLikeCount,
   });
 
   /// Create VideoEvent from Nostr event
-  factory VideoEvent.fromNostrEvent(Event event) {
-    if (!NIP71VideoKinds.isVideoKind(event.kind)) {
+  ///
+  /// [permissive] - When true, accepts all NIP-71 video kinds (21, 22, 34235,
+  /// 34236) instead of just kind 34236. Use this when parsing videos from
+  /// external sources like curated lists created by other clients.
+  factory VideoEvent.fromNostrEvent(Event event, {bool permissive = false}) {
+    final isValid = permissive
+        ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
+        : NIP71VideoKinds.isVideoKind(event.kind);
+
+    if (!isValid) {
+      final acceptedKinds = permissive
+          ? NIP71VideoKinds.getAllAcceptableVideoKinds()
+          : NIP71VideoKinds.getAllVideoKinds();
       throw ArgumentError(
-        '''Event must be a NIP-71 video kind (${NIP71VideoKinds.getAllVideoKinds().join(', ')})''',
+        'Event must be a NIP-71 video kind (${acceptedKinds.join(', ')})',
       );
     }
 
@@ -91,6 +109,8 @@ class VideoEvent {
     int? originalComments;
     int? originalReposts;
     int? expirationTimestamp;
+    String? audioEventId;
+    String? audioEventRelay;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic>
@@ -345,7 +365,26 @@ class VideoEvent {
             );
           }
         case 'e':
-          // Event reference - check if it's a media URL in disguise
+          // Event reference - check for audio reference marker
+          // Format: ["e", "<audio-event-id>", "<relay>", "audio"]
+          // The marker can be at index 2 (no relay) or index 3 (with relay)
+          // Only use the first audio reference found
+          if (tag.length >= 3 && audioEventId == null) {
+            final marker = tag.length >= 4 ? tag[3] : tag[2];
+            if (marker == 'audio' && tagValue.isNotEmpty) {
+              audioEventId = tagValue;
+              // Relay hint is at index 2 if marker is at index 3
+              if (tag.length >= 4 && tag[2].isNotEmpty) {
+                audioEventRelay = tag[2];
+              }
+              developer.log(
+                '🎵 Found audio reference: $audioEventId '
+                '(relay: $audioEventRelay)',
+                name: 'VideoEvent',
+              );
+            }
+          }
+          // Also check if it's a media URL in disguise (legacy behavior)
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
             developer.log(
@@ -519,6 +558,8 @@ class VideoEvent {
       originalComments: originalComments,
       originalReposts: originalReposts,
       expirationTimestamp: expirationTimestamp,
+      audioEventId: audioEventId,
+      audioEventRelay: audioEventRelay,
     );
   }
   final String id;
@@ -564,6 +605,17 @@ class VideoEvent {
   // NIP-40 expiration timestamp (Unix timestamp in seconds)
   final int? expirationTimestamp;
 
+  // Audio reference fields (Kind 1063 audio events)
+  /// Event ID of referenced audio track (Kind 1063)
+  final String? audioEventId;
+
+  /// Optional relay hint for fetching the audio event
+  final String? audioEventRelay;
+
+  // Live engagement metrics from Nostr
+  /// Live like/reaction count from Nostr (updated in real-time)
+  final int? nostrLikeCount;
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {
@@ -571,6 +623,17 @@ class VideoEvent {
     final nowTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return nowTimestamp >= expirationTimestamp!;
   }
+
+  /// Stable identifier for this video event.
+  /// For addressable events (Kind 34236), returns the vineId (d tag).
+  /// Falls back to event id for non-addressable events.
+  String get stableId => vineId ?? id;
+
+  /// Total likes combining original Vine likes and live Nostr reactions.
+  int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
+
+  /// Returns true if this video has an audio reference (Kind 1063).
+  bool get hasAudioReference => audioEventId != null;
 
   /// ProofMode: Get verification level from tags (NIP-145)
   String? get proofModeVerificationLevel {
@@ -866,6 +929,16 @@ class VideoEvent {
     String? reposterPubkey,
     List<String>? reposterPubkeys,
     DateTime? repostedAt,
+    bool? isFlaggedContent,
+    String? moderationStatus,
+    int? originalLoops,
+    int? originalLikes,
+    int? originalComments,
+    int? originalReposts,
+    int? expirationTimestamp,
+    String? audioEventId,
+    String? audioEventRelay,
+    int? nostrLikeCount,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -892,6 +965,16 @@ class VideoEvent {
     reposterPubkey: reposterPubkey ?? this.reposterPubkey,
     reposterPubkeys: reposterPubkeys ?? this.reposterPubkeys,
     repostedAt: repostedAt ?? this.repostedAt,
+    isFlaggedContent: isFlaggedContent ?? this.isFlaggedContent,
+    moderationStatus: moderationStatus ?? this.moderationStatus,
+    originalLoops: originalLoops ?? this.originalLoops,
+    originalLikes: originalLikes ?? this.originalLikes,
+    originalComments: originalComments ?? this.originalComments,
+    originalReposts: originalReposts ?? this.originalReposts,
+    expirationTimestamp: expirationTimestamp ?? this.expirationTimestamp,
+    audioEventId: audioEventId ?? this.audioEventId,
+    audioEventRelay: audioEventRelay ?? this.audioEventRelay,
+    nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
   );
 
   @override
@@ -912,6 +995,9 @@ class VideoEvent {
       'duration: $formattedDuration, '
       'time: $relativeTime'
       ')';
+
+  /// Serialize VideoEvent to JSON map (auto-generated)
+  Map<String, dynamic> toJson() => _$VideoEventToJson(this);
 
   /// Create a VideoEvent instance representing a repost
   /// Used when displaying Kind 6 repost events in the feed
