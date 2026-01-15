@@ -9,9 +9,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: VideoPublishStatusIcon(
-              publishState: VideoPublishState.error,
-            ),
+            body: VideoPublishStatusIcon(publishState: VideoPublishState.error),
           ),
         ),
       );
@@ -42,8 +40,9 @@ void main() {
       expect(iconFinder, findsOneWidget);
     });
 
-    testWidgets('shows CircularProgressIndicator for uploading state',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator for uploading state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -57,8 +56,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows CircularProgressIndicator for retryUpload state',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator for retryUpload state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -72,8 +72,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows cloud upload icon for publishToNostr state',
-        (tester) async {
+    testWidgets('shows cloud upload icon for publishToNostr state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -90,14 +91,13 @@ void main() {
       expect(iconFinder, findsOneWidget);
     });
 
-    testWidgets('shows CircularProgressIndicator for idle state',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator for idle state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: VideoPublishStatusIcon(
-              publishState: VideoPublishState.idle,
-            ),
+            body: VideoPublishStatusIcon(publishState: VideoPublishState.idle),
           ),
         ),
       );
@@ -105,8 +105,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows CircularProgressIndicator for initialize state',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator for initialize state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -120,8 +121,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows CircularProgressIndicator for preparing state',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator for preparing state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

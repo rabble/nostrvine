@@ -67,10 +67,7 @@ class VideoPublishUploadStatus extends ConsumerWidget {
                     gradient: const LinearGradient(
                       begin: .topLeft,
                       end: .bottomRight,
-                      colors: [
-                        Color(0xFF2A2A2A),
-                        Color(0xFF1A1A1A),
-                      ],
+                      colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
                     ),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: const [

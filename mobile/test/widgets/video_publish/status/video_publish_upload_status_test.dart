@@ -27,9 +27,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(
-            body: VideoPublishUploadStatus(),
-          ),
+          home: Scaffold(body: VideoPublishUploadStatus()),
         ),
       );
     }
@@ -44,8 +42,9 @@ void main() {
       expect(find.text('Preparing video...'), findsNothing);
     });
 
-    testWidgets('shows initializing message for initialize state',
-        (tester) async {
+    testWidgets('shows initializing message for initialize state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(publishState: VideoPublishState.initialize),
       );
@@ -62,18 +61,19 @@ void main() {
     });
 
     testWidgets(
-        'shows uploading message and progress bar for uploading state',
-        (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          publishState: VideoPublishState.uploading,
-          uploadProgress: 0.5,
-        ),
-      );
+      'shows uploading message and progress bar for uploading state',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            publishState: VideoPublishState.uploading,
+            uploadProgress: 0.5,
+          ),
+        );
 
-      expect(find.text('Uploading...'), findsOneWidget);
-      expect(find.byType(VideoPublishProgressBar), findsOneWidget);
-    });
+        expect(find.text('Uploading...'), findsOneWidget);
+        expect(find.byType(VideoPublishProgressBar), findsOneWidget);
+      },
+    );
 
     testWidgets('shows retry message for retryUpload state', (tester) async {
       await tester.pumpWidget(
@@ -83,8 +83,9 @@ void main() {
       expect(find.text('Retrying upload...'), findsOneWidget);
     });
 
-    testWidgets('shows publishing message for publishToNostr state',
-        (tester) async {
+    testWidgets('shows publishing message for publishToNostr state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(publishState: VideoPublishState.publishToNostr),
       );
@@ -100,8 +101,9 @@ void main() {
       expect(find.text('Published!'), findsOneWidget);
     });
 
-    testWidgets('shows error message and dismiss button for error state',
-        (tester) async {
+    testWidgets('shows error message and dismiss button for error state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           publishState: VideoPublishState.error,
@@ -113,8 +115,9 @@ void main() {
       expect(find.text('Dismiss'), findsOneWidget);
     });
 
-    testWidgets('shows default error message when errorMessage is null',
-        (tester) async {
+    testWidgets('shows default error message when errorMessage is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           publishState: VideoPublishState.error,
@@ -125,8 +128,9 @@ void main() {
       expect(find.text('Upload failed'), findsOneWidget);
     });
 
-    testWidgets('does not show progress bar for non-uploading states',
-        (tester) async {
+    testWidgets('does not show progress bar for non-uploading states', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(publishState: VideoPublishState.preparing),
       );
@@ -134,8 +138,9 @@ void main() {
       expect(find.byType(VideoPublishProgressBar), findsNothing);
     });
 
-    testWidgets('does not show dismiss button for non-error states',
-        (tester) async {
+    testWidgets('does not show dismiss button for non-error states', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(publishState: VideoPublishState.uploading),
       );

@@ -17,9 +17,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(
-            body: VideoPublishProgressBar(),
-          ),
+          home: Scaffold(body: VideoPublishProgressBar()),
         ),
       );
     }
