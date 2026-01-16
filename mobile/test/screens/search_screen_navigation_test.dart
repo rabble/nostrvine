@@ -2,11 +2,14 @@
 // ABOUTME: Ensures users can tap search results to navigate to profiles and hashtag feeds
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 // Mock VideoEvents stream provider
@@ -78,7 +81,7 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Navigate to explore (where search is accessible)
-      c.read(goRouterProvider).push('/explore/0');
+      c.read(goRouterProvider).push(ExploreScreen.pathForIndex(0));
       await tester.pump();
       await tester.pump();
 
@@ -109,7 +112,10 @@ void main() {
       await tester.pump();
 
       // Assert: Verify router navigated to profile
-      expect(currentLocation(c), contains('/profile/$user123Npub'));
+      expect(
+        currentLocation(c),
+        contains(ProfileScreenRouter.pathForNpub(user123Npub)),
+      );
     });
 
     testWidgets('tapping hashtag in search results navigates to hashtag feed', (
@@ -126,7 +132,7 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Navigate to explore (where search is accessible)
-      c.read(goRouterProvider).push('/explore/0');
+      c.read(goRouterProvider).push(ExploreScreen.pathForIndex(0));
       await tester.pump();
       await tester.pump();
 
@@ -157,7 +163,10 @@ void main() {
       await tester.pump();
 
       // Assert: Verify router navigated to hashtag feed
-      expect(currentLocation(c), contains('/hashtag/flutter'));
+      expect(
+        currentLocation(c),
+        contains(HashtagScreenRouter.pathForTag('flutter')),
+      );
     });
     // TODO(any): Fix and re-enable these tests
   }, skip: true);

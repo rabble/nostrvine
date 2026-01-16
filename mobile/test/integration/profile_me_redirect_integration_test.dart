@@ -1,22 +1,24 @@
 // ABOUTME: Integration test for /profile/me/ redirect with full app context
 // ABOUTME: Tests redirect logic + profile screen rendering in realistic scenario
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
-import 'package:openvine/ui/overlay_policy.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/services/video_prewarmer.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_prewarmer.dart';
+import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -79,7 +81,7 @@ void main() {
 
         // ACT: Navigate to /profile/me/0 (mimics post-publish navigation)
         final router = container.read(goRouterProvider);
-        router.go('/profile/me/0');
+        router.go(ProfileScreenRouter.pathForIndex('me', 0));
         await tester.pump(); // Trigger redirect
         await tester.pump(); // Build new route
         await tester.pump(const Duration(milliseconds: 1)); // Post-frames
@@ -88,7 +90,7 @@ void main() {
         final location = router.routeInformationProvider.value.uri.toString();
         expect(
           location,
-          '/profile/$testUserNpub/0',
+          ProfileScreenRouter.pathForIndex(testUserNpub, 0),
           reason:
               'Should redirect /profile/me/0 to actual user npub: $testUserNpub',
         );
@@ -149,7 +151,7 @@ void main() {
 
       // ACT: Navigate to grid view (index=1)
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/1');
+      router.go(ProfileScreenRouter.pathForIndex('me', 1));
       await tester.pump();
       await tester.pump();
 
@@ -157,7 +159,7 @@ void main() {
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
         location,
-        '/profile/$testUserNpub/1',
+        ProfileScreenRouter.pathForIndex(testUserNpub, 1),
         reason: 'Should redirect /profile/me/1 to actual user npub grid view',
       );
 
@@ -200,14 +202,14 @@ void main() {
 
       // ACT: Try to navigate to /profile/me/0 when not logged in
       final router = container.read(goRouterProvider);
-      router.go('/profile/me/0');
+      router.go(ProfileScreenRouter.pathForIndex('me', 0));
       await tester.pump();
       await tester.pump();
 
       // ASSERT: Should redirect to home
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
-        location.contains('/home'),
+        location.contains(HomeScreenRouter.path),
         isTrue,
         reason: 'Should redirect to home when not authenticated',
       );

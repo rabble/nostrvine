@@ -25,6 +25,18 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
+  /// Route name for editing existing profile.
+  static const editRouteName = 'edit-profile';
+
+  /// Path for editing existing profile.
+  static const editPath = '/edit-profile';
+
+  /// Route name for setting up new profile.
+  static const setupRouteName = 'setup-profile';
+
+  /// Path for setting up new profile.
+  static const setupPath = '/setup-profile';
+
   const ProfileSetupScreen({required this.isNewUser, super.key});
   final bool isNewUser;
 

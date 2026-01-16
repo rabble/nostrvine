@@ -12,36 +12,35 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
+import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/auth/divine_auth_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
-import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/screens/followers/my_followers_screen.dart';
 import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/screens/following/my_following_screen.dart';
 import 'package:openvine/screens/following/others_following_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
-import 'package:openvine/screens/auth/login_options_screen.dart';
-import 'package:openvine/screens/auth/divine_auth_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
@@ -54,7 +53,42 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Route constants for followers screen.
+class FollowersRoutes {
+  FollowersRoutes._();
+
+  /// Route name for followers screen.
+  static const routeName = 'followers';
+
+  /// Base path for followers routes.
+  static const basePath = '/followers';
+
+  /// Path pattern for followers route.
+  static const path = '/followers/:pubkey';
+
+  /// Build path for a specific user's followers.
+  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+}
+
+/// Route constants for following screen.
+class FollowingRoutes {
+  FollowingRoutes._();
+
+  /// Route name for following screen.
+  static const routeName = 'following';
+
+  /// Base path for following routes.
+  static const basePath = '/following';
+
+  /// Path pattern for following route.
+  static const path = '/following/:pubkey';
+
+  /// Build path for a specific user's following list.
+  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+}
 
 // Navigator keys for per-tab state preservation
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -220,7 +254,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
     // Start at /welcome - redirect logic will navigate to appropriate route
-    initialLocation: '/welcome',
+    initialLocation: WelcomeScreen.path,
     observers: [
       VideoStopNavigatorObserver(),
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
@@ -248,19 +282,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       final authState = ref.read(authServiceProvider).authState;
       if (authState == AuthState.authenticated &&
-          (location == '/welcome' ||
-              location == '/import-key' ||
-              location == '/welcome/login-options' ||
-              location == '/welcome/login-options/auth-native')) {
+          (location == WelcomeScreen.path ||
+              location == KeyImportScreen.path ||
+              location == WelcomeScreen.loginOptionsPath ||
+              location == WelcomeScreen.resetPasswordPath)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
-        return '/home/0';
+        return HomeScreenRouter.pathForIndex(0);
       }
 
       // Auth routes are allowed without TOS - user is in the process of logging in
       final isAuthRoute =
-          location.startsWith('/welcome') ||
-          location.startsWith('/import-key') ||
-          location.startsWith('/reset-password');
+          location.startsWith(WelcomeScreen.path) ||
+          location.startsWith(KeyImportScreen.path) ||
+          location.startsWith(WelcomeScreen.resetPasswordPath);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -280,27 +314,27 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // Auth state check is separate - users may be unauthenticated during login flow
         if (!hasAcceptedTerms) {
           Log.debug(
-            'TOS not accepted, redirecting to /welcome',
+            'TOS not accepted, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return '/welcome';
+          return WelcomeScreen.path;
         }
 
         // If TOS is accepted but user is not authenticated, redirect to welcome
         // This handles cases like expired sessions
         if (authState == AuthState.unauthenticated) {
           Log.debug(
-            'Not authenticated, redirecting to /welcome',
+            'Not authenticated, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return '/welcome';
+          return WelcomeScreen.path;
         }
       }
 
       // Redirect FROM /welcome TO /explore when TOS is accepted AND user is authenticated
-      if (location.startsWith('/welcome')) {
+      if (location.startsWith(WelcomeScreen.path)) {
         final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
         if (hasAcceptedTerms && authState == AuthState.authenticated) {
           Log.debug(
@@ -308,13 +342,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return '/explore';
+          return ExploreScreen.path;
         }
       }
 
       // Only redirect to explore on very first navigation if user follows nobody
       // After that, let users navigate to home freely (they'll see a message to follow people)
-      if (!_hasNavigated && location.startsWith('/home')) {
+      if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
         _hasNavigated = true;
 
         // Check SharedPreferences cache directly for following list
@@ -332,9 +366,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return '/explore';
+          return ExploreScreen.path;
         }
-      } else if (location.startsWith('/home')) {
+      } else if (location.startsWith(HomeScreenRouter.path)) {
         Log.debug(
           'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
           name: 'AppRouter',
@@ -363,8 +397,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           // HOME tab subtree
           GoRoute(
-            path: '/home/:index',
-            name: 'home',
+            path: HomeScreenRouter.pathWithIndex,
+            name: HomeScreenRouter.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -379,8 +413,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // EXPLORE tab - grid mode (no index)
           GoRoute(
-            path: '/explore',
-            name: 'explore',
+            path: ExploreScreen.path,
+            name: ExploreScreen.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -395,7 +429,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // EXPLORE tab - feed mode (with video index)
           GoRoute(
-            path: '/explore/:index',
+            path: ExploreScreen.pathWithIndex,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -410,8 +444,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // NOTIFICATIONS tab subtree
           GoRoute(
-            path: '/notifications/:index',
-            name: 'notifications',
+            path: NotificationsScreen.pathWithIndex,
+            name: NotificationsScreen.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -426,8 +460,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // PROFILE tab subtree - grid mode (no index)
           GoRoute(
-            path: '/profile/:npub',
-            name: 'profile',
+            path: ProfileScreenRouter.path,
+            name: ProfileScreenRouter.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -440,9 +474,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // PROFILE tab subtree - grid mode (with npub)
+          GoRoute(
+            path: ProfileScreenRouter.pathWithNpub,
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _profileGridKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const ProfileScreenRouter(),
+                  settings: const RouteSettings(name: 'ProfileScreen'),
+                ),
+              ),
+            ),
+          ),
           // PROFILE tab subtree - feed mode (with video index)
           GoRoute(
-            path: '/profile/:npub/:index',
+            path: ProfileScreenRouter.pathWithIndex,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -457,8 +505,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // LIKED VIDEOS route - grid mode (no index)
           GoRoute(
-            path: '/liked-videos',
-            name: 'liked-videos',
+            path: LikedVideosScreenRouter.path,
+            name: LikedVideosScreenRouter.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -473,7 +521,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // LIKED VIDEOS route - feed mode (with video index)
           GoRoute(
-            path: '/liked-videos/:index',
+            path: LikedVideosScreenRouter.pathWithIndex,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -488,8 +536,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // SEARCH route - empty search
           GoRoute(
-            path: '/search',
-            name: 'search',
+            path: SearchScreenPure.path,
+            name: SearchScreenPure.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -504,7 +552,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // SEARCH route - with term, grid mode
           GoRoute(
-            path: '/search/:searchTerm',
+            path: SearchScreenPure.pathWithTerm,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -519,7 +567,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // SEARCH route - with term and index, feed mode
           GoRoute(
-            path: '/search/:searchTerm/:index',
+            path: SearchScreenPure.pathWithTermAndIndex,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -534,8 +582,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // HASHTAG route - grid mode (no index)
           GoRoute(
-            path: '/hashtag/:tag',
-            name: 'hashtag',
+            path: HashtagScreenRouter.path,
+            name: HashtagScreenRouter.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -550,7 +598,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // HASHTAG route - feed mode (with video index)
           GoRoute(
-            path: '/hashtag/:tag/:index',
+            path: HashtagScreenRouter.pathWithIndex,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
@@ -565,8 +613,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // CURATED LIST route (NIP-51 kind 30005 video lists)
           GoRoute(
-            path: '/list/:listId',
-            name: 'list',
+            path: CuratedListFeedScreen.path,
+            name: CuratedListFeedScreen.routeName,
             builder: (ctx, st) {
               final listId = st.pathParameters['listId'];
               if (listId == null || listId.isEmpty) {
@@ -597,18 +645,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
       GoRoute(
-        path: '/welcome',
-        name: 'welcome',
+        path: WelcomeScreen.path,
+        name: WelcomeScreen.routeName,
         builder: (_, __) => const WelcomeScreen(),
         routes: [
           GoRoute(
-            path: 'login-options',
-            name: 'login-options',
+            path: LoginOptionsScreen.path,
+            name: LoginOptionsScreen.routeName,
             builder: (_, __) => const LoginOptionsScreen(),
             routes: [
               GoRoute(
-                path: 'auth-native',
-                name: 'auth-native',
+                path: DivineAuthScreen.path,
+                name: DivineAuthScreen.routeName,
                 builder: (ctx, st) {
                   // Check for initialMode passed via extra or query param
                   AuthMode? mode = st.extra as AuthMode?;
@@ -623,8 +671,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   // route for deep link when resetting password from emailed link
                   GoRoute(
-                    path: 'reset-password',
-                    name: 'reset-password',
+                    path: ResetPasswordScreen.path,
+                    name: ResetPasswordScreen.routeName,
                     builder: (ctx, st) {
                       final token = st.uri.queryParameters['token'];
                       return ResetPasswordScreen(token: token ?? '');
@@ -637,73 +685,73 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/import-key',
-        name: 'import-key',
+        path: KeyImportScreen.path,
+        name: KeyImportScreen.routeName,
         builder: (_, __) => const KeyImportScreen(),
       ),
       GoRoute(
-        path: '/secure-account',
-        name: 'secure-account',
+        path: SecureAccountScreen.path,
+        name: SecureAccountScreen.routeName,
         builder: (_, __) => const SecureAccountScreen(),
       ),
       // redirect deep link route to full reset password path
       GoRoute(
-        path: '/reset-password',
+        path: ResetPasswordScreen.path,
         redirect: (context, state) {
           final token = state.uri.queryParameters['token'];
-          return '/welcome/login-options/auth-native/reset-password?token=$token';
+          return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
 
       GoRoute(
-        path: '/camera',
-        name: 'camera',
+        path: UniversalCameraScreenPure.path,
+        name: UniversalCameraScreenPure.routeName,
         builder: (_, __) =>
             const CameraPermissionGate(child: UniversalCameraScreenPure()),
       ),
       GoRoute(
-        path: '/clip-manager',
-        name: 'clip-manager',
+        path: ClipManagerScreen.path,
+        name: ClipManagerScreen.routeName,
         builder: (_, __) => const ClipManagerScreen(),
       ),
       GoRoute(
-        path: '/settings',
-        name: 'settings',
+        path: SettingsScreen.path,
+        name: SettingsScreen.routeName,
         builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
-        path: '/relay-settings',
-        name: 'relay-settings',
+        path: RelaySettingsScreen.path,
+        name: RelaySettingsScreen.routeName,
         builder: (_, __) => const RelaySettingsScreen(),
       ),
       GoRoute(
-        path: '/blossom-settings',
-        name: 'blossom-settings',
+        path: BlossomSettingsScreen.path,
+        name: BlossomSettingsScreen.routeName,
         builder: (_, __) => const BlossomSettingsScreen(),
       ),
       GoRoute(
-        path: '/notification-settings',
-        name: 'notification-settings',
+        path: NotificationSettingsScreen.path,
+        name: NotificationSettingsScreen.routeName,
         builder: (_, __) => const NotificationSettingsScreen(),
       ),
       GoRoute(
-        path: '/key-management',
-        name: 'key-management',
+        path: KeyManagementScreen.path,
+        name: KeyManagementScreen.routeName,
         builder: (_, __) => const KeyManagementScreen(),
       ),
       GoRoute(
-        path: '/relay-diagnostic',
-        name: 'relay-diagnostic',
+        path: RelayDiagnosticScreen.path,
+        name: RelayDiagnosticScreen.routeName,
         builder: (_, __) => const RelayDiagnosticScreen(),
       ),
       GoRoute(
-        path: '/safety-settings',
-        name: 'safety-settings',
+        path: SafetySettingsScreen.path,
+        name: SafetySettingsScreen.routeName,
         builder: (_, __) => const SafetySettingsScreen(),
       ),
       GoRoute(
-        path: '/developer-options',
-        name: 'developer-options',
+        path: DeveloperOptionsScreen.path,
+        name: DeveloperOptionsScreen.routeName,
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const DeveloperOptionsScreen(),
@@ -719,26 +767,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: '/edit-profile',
-        name: 'edit-profile',
+        path: ProfileSetupScreen.editPath,
+        name: ProfileSetupScreen.editRouteName,
         builder: (context, state) {
           Log.debug(
-            '/edit-profile route builder called',
+            '${ProfileSetupScreen.editPath} route builder called',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/edit-profile state.uri = ${state.uri}',
+            '${ProfileSetupScreen.editPath} state.uri = ${state.uri}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/edit-profile state.matchedLocation = ${state.matchedLocation}',
+            '${ProfileSetupScreen.editPath} state.matchedLocation = ${state.matchedLocation}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/edit-profile state.fullPath = ${state.fullPath}',
+            '${ProfileSetupScreen.editPath} state.fullPath = ${state.fullPath}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
@@ -746,26 +794,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/setup-profile',
-        name: 'setup-profile',
+        path: ProfileSetupScreen.setupPath,
+        name: ProfileSetupScreen.setupRouteName,
         builder: (context, state) {
           Log.debug(
-            '/setup-profile route builder called',
+            '${ProfileSetupScreen.setupPath} route builder called',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/setup-profile state.uri = ${state.uri}',
+            '${ProfileSetupScreen.setupPath} state.uri = ${state.uri}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/setup-profile state.matchedLocation = ${state.matchedLocation}',
+            '${ProfileSetupScreen.setupPath} state.matchedLocation = ${state.matchedLocation}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
           Log.debug(
-            '/setup-profile state.fullPath = ${state.fullPath}',
+            '${ProfileSetupScreen.setupPath} state.fullPath = ${state.fullPath}',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
@@ -773,19 +821,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/drafts',
-        name: 'drafts',
+        path: ClipLibraryScreen.draftsPath,
+        name: ClipLibraryScreen.draftsRouteName,
         builder: (_, __) => const ClipLibraryScreen(),
       ),
       GoRoute(
-        path: '/clips',
-        name: 'clips',
+        path: ClipLibraryScreen.clipsPath,
+        name: ClipLibraryScreen.clipsRouteName,
         builder: (_, __) => const ClipLibraryScreen(),
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
-        path: '/followers/:pubkey',
-        name: 'followers',
+        path: FollowersRoutes.path,
+        name: FollowersRoutes.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
@@ -803,8 +851,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Following screen - routes to My or Others based on pubkey
       GoRoute(
-        path: '/following/:pubkey',
-        name: 'following',
+        path: FollowingRoutes.path,
+        name: FollowingRoutes.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
@@ -822,8 +870,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Video detail route (for deep links)
       GoRoute(
-        path: '/video/:id',
-        name: 'video',
+        path: VideoDetailScreen.path,
+        name: VideoDetailScreen.routeName,
         builder: (ctx, st) {
           final videoId = st.pathParameters['id'];
           if (videoId == null || videoId.isEmpty) {
@@ -837,8 +885,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Sound detail route (for audio reuse feature)
       GoRoute(
-        path: '/sound/:id',
-        name: 'sound',
+        path: SoundDetailScreen.path,
+        name: SoundDetailScreen.routeName,
         builder: (ctx, st) {
           final soundId = st.pathParameters['id'];
           final sound = st.extra as AudioEvent?;
@@ -859,8 +907,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Video editor route (requires video passed via extra)
       GoRoute(
-        path: '/edit-video',
-        name: 'edit-video',
+        path: VideoEditorScreen.path,
+        name: VideoEditorScreen.routeName,
         builder: (ctx, st) {
           // Support both simple String (videoPath only) and VideoEditorRouteExtra
           final extra = st.extra;
@@ -887,8 +935,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
-        path: '/video-feed',
-        name: 'video-feed',
+        path: FullscreenVideoFeedScreen.path,
+        name: FullscreenVideoFeedScreen.routeName,
         builder: (ctx, st) {
           final args = st.extra as FullscreenVideoFeedArgs?;
           if (args == null) {
@@ -906,8 +954,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Other user's profile screen (no bottom nav, pushed from feeds/search)
       GoRoute(
-        path: '/profile-view/:npub',
-        name: 'profile-view',
+        path: OtherProfileScreen.pathWithNpub,
+        name: OtherProfileScreen.routeName,
         builder: (ctx, st) {
           final npub = st.pathParameters['npub'];
           if (npub == null || npub.isEmpty) {

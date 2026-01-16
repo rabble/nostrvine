@@ -4,12 +4,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -44,23 +46,23 @@ void main() {
       Object? capturedExtra;
 
       final testRouter = GoRouter(
-        initialLocation: '/profile/npubTEST/0',
+        initialLocation: ProfileScreenRouter.pathForIndex('npubTEST', 0),
         routes: [
           GoRoute(
-            path: '/profile/:npub/:index',
+            path: ProfileScreenRouter.pathWithIndex,
             builder: (context, state) => Scaffold(
               body: IconButton(
                 key: const Key('edit-button'),
                 icon: const Icon(Icons.edit),
                 onPressed: () {
                   // Simulate the navigation call we expect to see
-                  context.push('/edit-video', extra: testVideo);
+                  context.push(VideoEditorScreen.path, extra: testVideo);
                 },
               ),
             ),
           ),
           GoRoute(
-            path: '/edit-video',
+            path: VideoEditorScreen.path,
             builder: (context, state) {
               capturedRoute = state.uri.toString();
               capturedExtra = state.extra;
@@ -98,7 +100,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify navigation to /edit-video
-      expect(capturedRoute, '/edit-video');
+      expect(capturedRoute, VideoEditorScreen.path);
       expect(capturedExtra, testVideo);
       expect(find.text('Video Editor Screen'), findsOneWidget);
     },
@@ -110,22 +112,22 @@ void main() {
     VideoEvent? passedVideo;
 
     final testRouter = GoRouter(
-      initialLocation: '/profile/npubTEST/0',
+      initialLocation: ProfileScreenRouter.pathForIndex('npubTEST', 0),
       routes: [
         GoRoute(
-          path: '/profile/:npub/:index',
+          path: ProfileScreenRouter.pathWithIndex,
           builder: (context, state) => Scaffold(
             body: IconButton(
               key: const Key('edit-button'),
               icon: const Icon(Icons.edit),
               onPressed: () {
-                context.push('/edit-video', extra: testVideo);
+                context.push(VideoEditorScreen.path, extra: testVideo);
               },
             ),
           ),
         ),
         GoRoute(
-          path: '/edit-video',
+          path: VideoEditorScreen.path,
           builder: (context, state) {
             passedVideo = state.extra as VideoEvent?;
             return Scaffold(

@@ -24,6 +24,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoEditorScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'edit-video';
+
+  /// Path for this route.
+  static const path = '/edit-video';
+
   const VideoEditorScreen({
     super.key,
     required this.videoPath,

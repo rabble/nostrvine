@@ -11,6 +11,7 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/router_location_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 
 @GenerateNiceMocks([MockSpec<GoRouter>()])
 void main() {
@@ -24,10 +25,13 @@ void main() {
             // Simulate URL changes: explore grid → explore feed → home → explore grid
             routerLocationStreamProvider.overrideWith((ref) {
               return Stream.fromIterable([
-                '/explore', // 1. Initially on Explore grid
-                '/explore/0', // 2. User taps video, enters feed mode
-                '/home/0', // 3. User taps Home tab
-                '/explore', // 4. User taps Explore tab - should reset to grid!
+                ExploreScreen.path, // 1. Initially on Explore grid
+                ExploreScreen.pathForIndex(
+                  0,
+                ), // 2. User taps video, enters feed mode
+                HomeScreenRouter.pathForIndex(0), // 3. User taps Home tab
+                ExploreScreen.path,
+                // 4. User taps Explore tab - should reset to grid!
               ]);
             }),
             // Mock the exploreTabVideosProvider to return null (no videos stored)
@@ -85,7 +89,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             routerLocationStreamProvider.overrideWith(
-              (ref) => Stream.value('/explore'),
+              (ref) => Stream.value(ExploreScreen.path),
             ),
             exploreTabVideosProvider.overrideWith((ref) => null),
           ],
