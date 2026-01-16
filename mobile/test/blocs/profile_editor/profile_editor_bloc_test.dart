@@ -72,10 +72,10 @@ void main() {
     });
 
     ProfileEditorBloc createBloc() => ProfileEditorBloc(
-          profileRepository: mockProfileRepository,
-          usernameRepository: mockUsernameRepository,
-          userProfileService: mockUserProfileService,
-        );
+      profileRepository: mockProfileRepository,
+      usernameRepository: mockUsernameRepository,
+      userProfileService: mockUserProfileService,
+    );
 
     test('initial state is ProfileEditorStatus.initial', () {
       final bloc = createBloc();

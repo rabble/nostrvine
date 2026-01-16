@@ -478,7 +478,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                 ),
                                 const SizedBox(height: 16),
 
-// NIP-05 Username (optional)
+                                // NIP-05 Username (optional)
                                 TextFormField(
                                   controller: _nip05Controller,
                                   style: const TextStyle(color: Colors.white),

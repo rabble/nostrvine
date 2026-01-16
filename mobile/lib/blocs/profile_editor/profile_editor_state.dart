@@ -50,10 +50,7 @@ final class ProfileEditorState extends Equatable {
     ProfileEditorStatus? status,
     ProfileEditorError? error,
   }) {
-    return ProfileEditorState(
-      status: status ?? this.status,
-      error: error,
-    );
+    return ProfileEditorState(status: status ?? this.status, error: error);
   }
 
   @override
