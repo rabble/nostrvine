@@ -474,6 +474,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // PROFILE tab subtree - grid mode (with npub)
+          GoRoute(
+            path: ProfileScreenRouter.pathWithNpub,
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: _profileGridKey,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const ProfileScreenRouter(),
+                  settings: const RouteSettings(name: 'ProfileScreen'),
+                ),
+              ),
+            ),
+          ),
           // PROFILE tab subtree - feed mode (with video index)
           GoRoute(
             path: ProfileScreenRouter.pathWithIndex,
