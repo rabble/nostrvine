@@ -2,6 +2,7 @@
 // ABOUTME: Handles camera and audio device management, recording, and torch control on macOS
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera_macos_plus/camera_macos.dart';
 import 'package:flutter/widgets.dart';
@@ -85,19 +86,27 @@ class CameraMacOSService extends CameraService {
   Future<void> _initializeCameraController() async {
     if (_videoDevices == null) return;
 
-    final deviceId = _videoDevices![_currentCameraIndex].deviceId;
-    final result = await CameraMacOS.instance.initialize(
-      cameraMacOSMode: CameraMacOSMode.video,
-      deviceId: deviceId,
-      audioDeviceId: _audioDevices?.first.deviceId,
-    );
-    _isInitialized = true;
+    try {
+      final deviceId = _videoDevices![_currentCameraIndex].deviceId;
+      final result = await CameraMacOS.instance.initialize(
+        cameraMacOSMode: CameraMacOSMode.video,
+        deviceId: deviceId,
+        audioDeviceId: _audioDevices?.first.deviceId,
+      );
+      _isInitialized = true;
 
-    _cameraSensorSize = result?.size ?? const Size(500, 500);
+      _cameraSensorSize = result?.size ?? const Size(500, 500);
 
-    final hasFlash = await CameraMacOS.instance.hasFlash(deviceId: deviceId);
-    _hasFlash = hasFlash;
-    onUpdateState(forceCameraRebuild: true);
+      final hasFlash = await CameraMacOS.instance.hasFlash(deviceId: deviceId);
+      _hasFlash = hasFlash;
+      onUpdateState(forceCameraRebuild: true);
+    } catch (e) {
+      Log.error(
+        '📷 Failed to initialize camera controller: $e',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+    }
   }
 
   @override
@@ -226,9 +235,11 @@ class CameraMacOSService extends CameraService {
         category: .video,
       );
 
-      // Use /tmp/ directory which we have permission to write to
+      // Use system temp directory which we have permission to write to
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '/tmp/openvine_recording_$timestamp.mp4';
+      final outputPath =
+          '${Directory.systemTemp.path}/'
+          'openvine_recording_$timestamp.mp4';
 
       await CameraMacOS.instance.startVideoRecording(url: outputPath);
       _isRecording = true;

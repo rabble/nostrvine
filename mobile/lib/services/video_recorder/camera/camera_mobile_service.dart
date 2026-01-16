@@ -34,7 +34,11 @@ class CameraMobileService extends CameraService {
         onAutoStopped(EditorVideo.file(result.filePath));
       };
     } catch (e) {
-      debugPrint(e.toString());
+      Log.error(
+        '📷 Failed to initialize camera: $e',
+        name: 'CameraMobileService',
+        category: .video,
+      );
     }
 
     _isInitialized = true;
