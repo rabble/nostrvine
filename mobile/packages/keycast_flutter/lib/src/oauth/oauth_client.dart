@@ -482,6 +482,66 @@ class KeycastOAuth {
     }
   }
 
+  /// Delete the user's account permanently from Keycast
+  ///
+  /// Requires an active bearer token from headless login/register flow.
+  /// This is a destructive action that cannot be undone.
+  ///
+  /// Returns [DeleteAccountResult] with success status.
+  Future<DeleteAccountResult> deleteAccount(String token) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('${config.serverUrl}/api/user/account'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        // Clear local session after successful deletion
+        await _storage.delete(_storageKeySession);
+        await _storage.delete(_storageKeyHandle);
+        return DeleteAccountResult.fromJson(json);
+      }
+
+      if (response.statusCode == 401) {
+        return DeleteAccountResult.error(
+          'Unauthorized: invalid or expired token',
+        );
+      }
+
+      if (response.statusCode == 404) {
+        return DeleteAccountResult.error('Account not found');
+      }
+
+      if (response.statusCode >= 500) {
+        return DeleteAccountResult.error(
+          'Server error (${response.statusCode}). Please try again later.',
+        );
+      }
+
+      // Try to parse error response
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final error = json['error'] as String? ?? 'deletion_failed';
+        final message = json['message'] as String? ?? 'Account deletion failed';
+        return DeleteAccountResult.error('$error: $message');
+      } catch (_) {
+        return DeleteAccountResult.error('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        return DeleteAccountResult.error(
+          'Cannot connect to server. Check your internet connection.',
+        );
+      }
+      return DeleteAccountResult.error('Network error: $e');
+    }
+  }
+
   void close() {
     _client.close();
   }

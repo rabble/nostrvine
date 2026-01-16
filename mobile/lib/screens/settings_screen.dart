@@ -617,7 +617,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         );
 
-        // Execute NIP-62 deletion request
+        // Step 1: Execute NIP-62 deletion request (requires working signer)
         final result = await deletionService.deleteAccount();
 
         // Close loading indicator
@@ -625,7 +625,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         context.pop();
 
         if (result.success) {
-          // Sign out and delete keys
+          // Step 2: Delete Keycast account if one exists (invalidates signer)
+          // We log but don't block on failure since NIP-62 already succeeded
+          final (keycastSuccess, keycastError) =
+              await authService.deleteKeycastAccount();
+          if (!keycastSuccess) {
+            Log.warning(
+              'Keycast account deletion failed (continuing anyway): '
+              '$keycastError',
+              name: 'SettingsScreen',
+              category: LogCategory.auth,
+            );
+          }
+
+          // Step 3: Sign out and delete local keys
           // Router will automatically redirect to /welcome when auth state becomes unauthenticated
           await authService.signOut(deleteKeys: true);
 
