@@ -85,8 +85,9 @@ void main() {
         accessToken: null,
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
-      when(mockOAuthClient.getSession())
-          .thenAnswer((_) async => sessionWithoutToken);
+      when(
+        mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => sessionWithoutToken);
 
       // Act
       final (success, error) = await authService.deleteKeycastAccount();
@@ -152,9 +153,9 @@ void main() {
 
       // Mock: failed deletion
       const errorMessage = 'Unauthorized: invalid or expired token';
-      when(mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
-        (_) async => DeleteAccountResult.error(errorMessage),
-      );
+      when(
+        mockOAuthClient.deleteAccount(testAccessToken),
+      ).thenAnswer((_) async => DeleteAccountResult.error(errorMessage));
 
       // Act
       final (success, error) = await authService.deleteKeycastAccount();
@@ -184,8 +185,9 @@ void main() {
       when(mockOAuthClient.getSession()).thenAnswer((_) async => validSession);
 
       // Mock: exception during deletion
-      when(mockOAuthClient.deleteAccount(testAccessToken))
-          .thenThrow(Exception('Network error'));
+      when(
+        mockOAuthClient.deleteAccount(testAccessToken),
+      ).thenThrow(Exception('Network error'));
 
       // Act
       final (success, error) = await authService.deleteKeycastAccount();
