@@ -19,6 +19,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Screen for managing Nostr relay settings
 class RelaySettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'relay-settings';
+
+  /// Path for this route.
+  static const path = '/relay-settings';
+
   const RelaySettingsScreen({super.key});
 
   @override

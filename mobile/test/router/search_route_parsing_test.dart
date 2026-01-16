@@ -3,11 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   group('Search route parsing', () {
-    test('parseRoute recognizes /search path', () {
-      final result = parseRoute('/search');
+    test('parseRoute recognizes ${SearchScreenPure.path} path', () {
+      final result = parseRoute(SearchScreenPure.path);
 
       expect(result.type, RouteType.search);
       expect(result.videoIndex, isNull);
@@ -15,17 +16,20 @@ void main() {
       expect(result.hashtag, isNull);
     });
 
-    test('buildRoute creates /search path for RouteType.search', () {
-      const context = RouteContext(type: RouteType.search);
+    test(
+      'buildRoute creates ${SearchScreenPure.path} path for RouteType.search',
+      () {
+        const context = RouteContext(type: RouteType.search);
 
-      final result = buildRoute(context);
+        final result = buildRoute(context);
 
-      expect(result, '/search');
-    });
+        expect(result, SearchScreenPure.path);
+      },
+    );
 
     test('parseRoute handles root search path', () {
       // Verify search at root level without any path segments after
-      final result = parseRoute('/search/');
+      final result = parseRoute(SearchScreenPure.path);
 
       expect(result.type, RouteType.search);
     });

@@ -12,6 +12,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -19,6 +20,18 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
 class HomeScreenRouter extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'home';
+
+  /// Path for this route.
+  static const path = '/home';
+
+  /// Path for this route with index.
+  static const pathWithIndex = '/home/:index';
+
+  /// Build path for a specific index.
+  static String pathForIndex(int index) => '/home/$index';
+
   const HomeScreenRouter({super.key});
 
   @override
@@ -137,7 +150,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                       ),
                       const SizedBox(height: 32),
                       ElevatedButton.icon(
-                        onPressed: () => context.go('/explore'),
+                        onPressed: () => context.go(ExploreScreen.path),
                         icon: const Icon(Icons.explore),
                         label: const Text('Explore Videos'),
                         style: ElevatedButton.styleFrom(

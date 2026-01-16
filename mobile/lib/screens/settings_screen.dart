@@ -9,6 +9,15 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/relay_diagnostic_screen.dart';
+import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -22,6 +31,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'settings';
+
+  /// Path for this route.
+  static const path = '/settings';
+
   const SettingsScreen({super.key});
 
   @override
@@ -119,7 +134,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.person,
                   title: 'Edit Profile',
                   subtitle: 'Update your display name, bio, and avatar',
-                  onTap: () => context.push('/edit-profile'),
+                  onTap: () => context.push(ProfileSetupScreen.editPath),
                 ),
               ],
 
@@ -130,14 +145,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icons.notifications,
                 title: 'Notifications',
                 subtitle: 'Manage notification preferences',
-                onTap: () => context.push('/notification-settings'),
+                onTap: () => context.push(NotificationSettingsScreen.path),
               ),
               _buildSettingsTile(
                 context,
                 icon: Icons.shield,
                 title: 'Safety & Privacy',
                 subtitle: 'Blocked users, muted content, and report history',
-                onTap: () => context.push('/safety-settings'),
+                onTap: () => context.push(SafetySettingsScreen.path),
               ),
               _buildAudioSharingToggle(),
 
@@ -148,28 +163,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icons.hub,
                 title: 'Relays',
                 subtitle: 'Manage Nostr relay connections',
-                onTap: () => context.push('/relay-settings'),
+                onTap: () => context.push(RelaySettingsScreen.path),
               ),
               _buildSettingsTile(
                 context,
                 icon: Icons.troubleshoot,
                 title: 'Relay Diagnostics',
                 subtitle: 'Debug relay connectivity and network issues',
-                onTap: () => context.push('/relay-diagnostic'),
+                onTap: () => context.push(RelayDiagnosticScreen.path),
               ),
               _buildSettingsTile(
                 context,
                 icon: Icons.cloud_upload,
                 title: 'Media Servers',
                 subtitle: 'Configure Blossom upload servers',
-                onTap: () => context.push('/blossom-settings'),
+                onTap: () => context.push(BlossomSettingsScreen.path),
               ),
               _buildSettingsTile(
                 context,
                 icon: Icons.developer_mode,
                 title: 'Developer Options',
                 subtitle: 'Environment switcher and debug settings',
-                onTap: () => context.push('/developer-options'),
+                onTap: () => context.push(DeveloperOptionsScreen.path),
                 iconColor: Colors.orange,
               ),
 
@@ -257,7 +272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Secure Your Account',
                     subtitle:
                         'Add email & password to recover your account on any device',
-                    onTap: () => context.push('/secure-account'),
+                    onTap: () => context.push(SecureAccountScreen.path),
                     iconColor: VineTheme.vineGreen,
                   ),
                 _buildSettingsTile(
@@ -273,7 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.key,
                   title: 'Key Management',
                   subtitle: 'Export, backup, and restore your Nostr keys',
-                  onTap: () => context.push('/key-management'),
+                  onTap: () => context.push(KeyManagementScreen.path),
                 ),
                 _buildSettingsTile(
                   context,

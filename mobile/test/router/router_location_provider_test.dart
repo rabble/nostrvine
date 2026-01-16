@@ -3,10 +3,12 @@
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/router_location_provider.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 
 void main() {
   group('Router Location Provider', () {
@@ -30,7 +32,7 @@ void main() {
 
       // Get initial location
       final initial = await queue.next;
-      expect(initial, '/home/0');
+      expect(initial, HomeScreenRouter.pathForIndex(0));
     });
 
     testWidgets('emits new location when router navigates', (tester) async {
@@ -54,21 +56,21 @@ void main() {
 
       // 1) Initial location
       final initial = await queue.next;
-      expect(initial, '/home/0');
+      expect(initial, HomeScreenRouter.pathForIndex(0));
 
       // 2) Navigate to explore
-      container.read(goRouterProvider).go('/explore/0');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pump(); // Flush delegate change notification
 
       final next1 = await queue.next;
-      expect(next1, '/explore/0');
+      expect(next1, ExploreScreen.pathForIndex(0));
 
       // 3) Navigate to explore page 5
-      container.read(goRouterProvider).go('/explore/5');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(5));
       await tester.pump();
 
       final next2 = await queue.next;
-      expect(next2, '/explore/5');
+      expect(next2, ExploreScreen.pathForIndex(5));
     });
 
     testWidgets('cleans up listener on dispose', (tester) async {

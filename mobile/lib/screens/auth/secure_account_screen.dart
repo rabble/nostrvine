@@ -14,6 +14,12 @@ import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
 
 class SecureAccountScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'secure-account';
+
+  /// Path for this route.
+  static const path = '/secure-account';
+
   const SecureAccountScreen({super.key});
 
   @override

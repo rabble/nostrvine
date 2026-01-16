@@ -3,14 +3,16 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -95,14 +97,14 @@ void main() {
         );
 
         // Start at home video 0
-        locationController.add('/home/0');
+        locationController.add(HomeScreenRouter.pathForIndex(0));
         await pumpEventQueue();
 
         expect(container.read(activeVideoIdProvider), equals('home-video-0'));
         expect(activeVideoIds.last, equals('home-video-0'));
 
         // Navigate to explore grid (no index)
-        locationController.add('/explore');
+        locationController.add(ExploreScreen.path);
         await pumpEventQueue();
 
         // Active video should be null (grid mode)
@@ -156,13 +158,13 @@ void main() {
         );
 
         // Start at home video 0
-        locationController.add('/home/0');
+        locationController.add(HomeScreenRouter.pathForIndex(0));
         await pumpEventQueue();
 
         expect(container.read(activeVideoIdProvider), equals('home-video-0'));
 
         // Navigate to explore video 0
-        locationController.add('/explore/0');
+        locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
         // Active video should change to explore-video-0
@@ -220,7 +222,7 @@ void main() {
 
       // Start with app in foreground and video playing
       lifecycleController.add(true);
-      locationController.add('/home/0');
+      locationController.add(HomeScreenRouter.pathForIndex(0));
       await pumpEventQueue();
 
       expect(container.read(activeVideoIdProvider), equals('home-video-0'));
@@ -275,7 +277,7 @@ void main() {
       container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
 
       // Start at home video 0
-      locationController.add('/home/0');
+      locationController.add(HomeScreenRouter.pathForIndex(0));
       await pumpEventQueue();
 
       expect(container.read(activeVideoIdProvider), equals('home-video-0'));
@@ -283,7 +285,7 @@ void main() {
       expect(container.read(isVideoActiveProvider('home-video-1')), isFalse);
 
       // Swipe to home video 1
-      locationController.add('/home/1');
+      locationController.add(HomeScreenRouter.pathForIndex(1));
       await pumpEventQueue();
 
       // Active video should change
@@ -339,7 +341,7 @@ void main() {
         );
 
         // Navigate to video without lifecycle being ready
-        locationController.add('/home/0');
+        locationController.add(HomeScreenRouter.pathForIndex(0));
         await pumpEventQueue();
 
         // Should be null because lifecycle provider hasn't emitted (defensive default)

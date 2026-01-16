@@ -69,7 +69,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/0');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreenRouter), findsOneWidget);
@@ -78,7 +78,7 @@ void main() {
     expect(find.text('Profile 0/3'), findsOneWidget);
 
     // Navigate to index 1
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // Verify second video shown
@@ -103,7 +103,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/0');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('No posts yet'), findsOneWidget);
@@ -136,7 +136,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // Should prefetch profiles for videos at index 0 and 2 (±1 from current)
@@ -166,7 +166,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // When backgrounded, active video should be null

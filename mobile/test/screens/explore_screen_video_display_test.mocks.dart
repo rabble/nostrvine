@@ -1162,6 +1162,18 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as _i11.Future<_i10.Event?>);
 
   @override
+  _i11.Future<_i10.Event?> sendProfile({
+    required Map<String, dynamic>? profileContent,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendProfile, [], {
+              #profileContent: profileContent,
+            }),
+            returnValue: _i11.Future<_i10.Event?>.value(),
+          )
+          as _i11.Future<_i10.Event?>);
+
+  @override
   _i11.Future<_i10.Event?> sendRepost(
     String? eventId, {
     String? relayAddr,

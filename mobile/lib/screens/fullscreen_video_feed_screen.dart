@@ -71,6 +71,12 @@ class FullscreenVideoFeedArgs {
 /// The screen watches the appropriate provider based on [source] to receive
 /// reactive updates when new videos are loaded via pagination.
 class FullscreenVideoFeedScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'video-feed';
+
+  /// Path for this route.
+  static const path = '/video-feed';
+
   const FullscreenVideoFeedScreen({
     required this.source,
     required this.initialIndex,

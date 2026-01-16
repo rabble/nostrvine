@@ -360,7 +360,8 @@ ContentBlocklistService contentBlocklistService(Ref ref) {
 /// NIP-05 service for username registration and verification
 @riverpod
 Nip05Service nip05Service(Ref ref) {
-  return Nip05Service();
+  final nostrClient = ref.read(nostrServiceProvider);
+  return Nip05Service(nostrClient: nostrClient);
 }
 
 /// Username repository for availability checking and registration

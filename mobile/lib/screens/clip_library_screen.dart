@@ -9,12 +9,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:video_player/video_player.dart';
 
 class ClipLibraryScreen extends ConsumerStatefulWidget {
+  /// Route name for drafts path.
+  static const draftsRouteName = 'drafts';
+
+  /// Path for drafts route.
+  static const draftsPath = '/drafts';
+
+  /// Route name for clips path.
+  static const clipsRouteName = 'clips';
+
+  /// Path for clips route.
+  static const clipsPath = '/clips';
+
   const ClipLibraryScreen({
     super.key,
     this.selectionMode = false,
@@ -116,7 +129,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     }
 
     // Navigate to ClipManager screen (push to preserve back navigation)
-    context.push('/clip-manager');
+    context.push(ClipManagerScreen.path);
 
     // Clear selection
     _clearSelection();

@@ -1,23 +1,24 @@
 // ABOUTME: Integration test proving profile route renders videos with overlays
 // ABOUTME: Tests the full router → provider → service → UI pipeline
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
-import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/ui/overlay_policy.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/providers/active_video_provider.dart';
+import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_prewarmer.dart';
 import 'package:openvine/services/visibility_tracker.dart';
-import 'package:openvine/services/analytics_service.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Helper to wait for a condition to become true
@@ -99,7 +100,9 @@ void main() {
     );
 
     // Navigate to profile route
-    container.read(goRouterProvider).go('/profile/$testNpub/0');
+    container
+        .read(goRouterProvider)
+        .go(ProfileScreenRouter.pathForIndex(testNpub, 0));
     await tester.pump(); // Build router
     await tester.pump(const Duration(milliseconds: 1)); // Post-frames
     await tester.pump(); // Settle

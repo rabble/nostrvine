@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/explore_screen_router.dart';
 
 void main() {
@@ -62,7 +63,7 @@ void main() {
       );
 
       // Navigate to explore/0
-      container.read(goRouterProvider).go('/explore/0');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Verify ExploreScreenRouter is rendered
@@ -92,7 +93,7 @@ void main() {
       );
 
       // Navigate directly to explore/1
-      container.read(goRouterProvider).go('/explore/1');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(1));
       await tester.pumpAndSettle();
 
       // Verify ExploreScreenRouter is rendered
@@ -128,11 +129,11 @@ void main() {
       );
 
       // Start at explore/0
-      container.read(goRouterProvider).go('/explore/0');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Change URL to explore/2
-      container.read(goRouterProvider).go('/explore/2');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(2));
       await tester.pumpAndSettle();
 
       // Verify PageView shows video 3
@@ -162,7 +163,7 @@ void main() {
       );
 
       // Navigate to explore
-      container.read(goRouterProvider).go('/explore/0');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Dispose the widget tree (simulates navigation away)

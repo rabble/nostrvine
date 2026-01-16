@@ -2,10 +2,13 @@
 // ABOUTME: Verifies single route handles both grid and feed modes without GlobalKey conflicts
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   group('Consolidated Route Tests', () {
@@ -25,11 +28,11 @@ void main() {
       );
 
       // Start at /explore (grid mode)
-      container.read(goRouterProvider).go('/explore');
+      container.read(goRouterProvider).go(ExploreScreen.path);
       await tester.pumpAndSettle();
 
       // Navigate to /explore/0 (feed mode)
-      container.read(goRouterProvider).go('/explore/0');
+      container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Should complete without GlobalKey conflict
@@ -53,11 +56,13 @@ void main() {
         );
 
         // Start at /search (empty)
-        container.read(goRouterProvider).go('/search');
+        container.read(goRouterProvider).go(SearchScreenPure.path);
         await tester.pumpAndSettle();
 
         // Navigate to /search/bitcoin (grid with term)
-        container.read(goRouterProvider).go('/search/bitcoin');
+        container
+            .read(goRouterProvider)
+            .go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
         await tester.pumpAndSettle();
 
         // Should complete without GlobalKey conflict
@@ -83,11 +88,15 @@ void main() {
         );
 
         // Start at /hashtag/bitcoin (grid)
-        container.read(goRouterProvider).go('/hashtag/bitcoin');
+        container
+            .read(goRouterProvider)
+            .go(HashtagScreenRouter.pathForTag('bitcoin'));
         await tester.pumpAndSettle();
 
         // Navigate to /hashtag/bitcoin/0 (feed)
-        container.read(goRouterProvider).go('/hashtag/bitcoin/0');
+        container
+            .read(goRouterProvider)
+            .go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
         await tester.pumpAndSettle();
 
         // Should complete without GlobalKey conflict
@@ -98,39 +107,45 @@ void main() {
     );
 
     test('parseRoute handles optional index for explore', () {
-      final gridMode = parseRoute('/explore');
+      final gridMode = parseRoute(ExploreScreen.path);
       expect(gridMode.type, RouteType.explore);
       expect(gridMode.videoIndex, null);
 
-      final feedMode = parseRoute('/explore/5');
+      final feedMode = parseRoute(ExploreScreen.pathForIndex(5));
       expect(feedMode.type, RouteType.explore);
       expect(feedMode.videoIndex, 5);
     });
 
     test('parseRoute handles optional searchTerm and index for search', () {
-      final empty = parseRoute('/search');
+      final empty = parseRoute(SearchScreenPure.path);
       expect(empty.type, RouteType.search);
       expect(empty.searchTerm, null);
       expect(empty.videoIndex, null);
 
-      final withTerm = parseRoute('/search/bitcoin');
+      final withTerm = parseRoute(
+        SearchScreenPure.pathForTerm(term: 'bitcoin'),
+      );
       expect(withTerm.type, RouteType.search);
       expect(withTerm.searchTerm, 'bitcoin');
       expect(withTerm.videoIndex, null);
 
-      final withTermAndIndex = parseRoute('/search/bitcoin/3');
+      final withTermAndIndex = parseRoute(
+        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
+      );
       expect(withTermAndIndex.type, RouteType.search);
       expect(withTermAndIndex.searchTerm, 'bitcoin');
       expect(withTermAndIndex.videoIndex, 3);
     });
 
     test('parseRoute handles optional index for hashtag', () {
-      final gridMode = parseRoute('/hashtag/bitcoin');
+      final gridMode = parseRoute(HashtagScreenRouter.pathForTag('bitcoin'));
       expect(gridMode.type, RouteType.hashtag);
       expect(gridMode.hashtag, 'bitcoin');
       expect(gridMode.videoIndex, null);
 
-      final feedMode = parseRoute('/hashtag/bitcoin/2');
+      final feedMode = parseRoute(
+        HashtagScreenRouter.pathForTag('bitcoin', index: 2),
+      );
       expect(feedMode.type, RouteType.hashtag);
       expect(feedMode.hashtag, 'bitcoin');
       expect(feedMode.videoIndex, 2);

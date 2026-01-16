@@ -34,6 +34,7 @@ workspace:
   - packages/nostr_gateway
   - packages/nostr_key_manager
   - packages/permissions_service
+  - packages/profile_repository
   - packages/videos_repository
   
 # Dependencies specify other packages that your package needs in order to work.

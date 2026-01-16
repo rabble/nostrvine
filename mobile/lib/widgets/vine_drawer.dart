@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -142,7 +144,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       onTap: () {
                         // Close drawer first, then navigate to edit-profile route
                         context.pop();
-                        context.push('/edit-profile');
+                        context.push(ProfileSetupScreen.editPath);
                       },
                     ),
                     const Divider(color: Colors.grey, height: 1),
@@ -156,7 +158,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     onTap: () {
                       // Close drawer first, then navigate to settings route
                       context.pop();
-                      context.push('/settings');
+                      context.push(SettingsScreen.path);
                     },
                   ),
 
