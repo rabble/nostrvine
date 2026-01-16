@@ -63,6 +63,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         '📝 Profile published: nip05=${savedProfile.nip05}',
         name: 'ProfileEditorBloc',
       );
+      // TODO(Josh-Sanford): Move cache into ProfileRepository and remove
+      // UserProfileService dependency
       final appProfile = app_models.UserProfile.fromJson(savedProfile.toJson());
       await _userProfileService.updateCachedProfile(appProfile);
     } catch (error) {
