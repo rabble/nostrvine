@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:test/test.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class MockNostrEventsDao extends Mock implements NostrEventsDao {}
