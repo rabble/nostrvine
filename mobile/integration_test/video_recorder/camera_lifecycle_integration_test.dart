@@ -103,7 +103,8 @@ void main() {
       await cameraService.handleAppLifecycleState(.detached);
       await tester.pump(Duration(milliseconds: 100));
 
-      // Should complete without crashing
+      // Verify no exceptions occurred during the operations
+      expect(tester.takeException(), isNull);
     });
   });
 }

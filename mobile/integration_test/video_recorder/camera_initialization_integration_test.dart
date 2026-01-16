@@ -89,7 +89,8 @@ void main() {
 
       await cameraService.dispose();
 
-      // Should complete without error
+      // Verify no exceptions occurred during the operations
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('camera can be initialized multiple times', (tester) async {

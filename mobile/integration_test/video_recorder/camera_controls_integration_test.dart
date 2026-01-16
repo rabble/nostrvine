@@ -166,7 +166,8 @@ void main() {
         await cameraService.setFocusPoint(Offset(0.5, 0.5));
         await tester.pump(Duration(milliseconds: 100));
 
-        // All settings should apply without error
+        // Verify no exceptions occurred during the operations
+        expect(tester.takeException(), isNull);
       });
     });
   });
