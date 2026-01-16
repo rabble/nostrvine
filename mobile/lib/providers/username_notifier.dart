@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/state/username_state.dart';
