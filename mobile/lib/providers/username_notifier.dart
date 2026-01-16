@@ -74,10 +74,9 @@ class UsernameNotifier extends _$UsernameNotifier {
     _debounceTimer = Timer(_debounceDuration, () => checkAvailability(trimmed));
   }
 
-  /// Check username availability via UsernameRepository
+  /// Check username availability via UsernameRepository.
   ///
-  /// This is exposed for testing to bypass debounce timer.
-  @visibleForTesting
+  /// Bypasses debounce timer for immediate checks (e.g., after save failure).
   Future<void> checkAvailability(String username) async {
     final repository = ref.read(usernameRepositoryProvider);
 
