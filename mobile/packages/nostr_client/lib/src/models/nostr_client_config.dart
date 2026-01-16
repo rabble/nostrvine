@@ -17,7 +17,6 @@ class NostrClientConfig {
   /// Signer for event signing - the single source of truth for the public key.
   ///
   /// The public key is derived from the signer via [NostrSigner.getPublicKey]
-  /// during [NostrClient.initialize].
   final NostrSigner signer;
 
   /// Event filters for initial subscriptions
