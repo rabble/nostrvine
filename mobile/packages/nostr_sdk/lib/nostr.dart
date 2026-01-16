@@ -60,6 +60,19 @@ class Nostr {
     );
   }
 
+  Future<Event?> sendProfile({
+    required String content,
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    Event event = Event(_publicKey, EventKind.metadata, [], content);
+    return await sendEvent(
+      event,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+  }
+
   Future<Event?> deleteEvent(
     String eventId, {
     List<String>? tempRelays,

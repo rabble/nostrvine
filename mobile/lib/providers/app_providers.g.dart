@@ -1331,7 +1331,7 @@ final class Nip05ServiceProvider
   }
 }
 
-String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
+String _$nip05ServiceHash() => r'1d27e1b137a09246fedc50586a7a28bcf37542b0';
 
 /// Username repository for availability checking and registration
 

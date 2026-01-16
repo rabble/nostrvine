@@ -729,6 +729,23 @@ class NostrClient {
     return likeEvent;
   }
 
+  /// Sends a user profile (Kind 0 metadata event).
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
+  Future<Event?> sendProfile({
+    required Map<String, dynamic> profileContent,
+  }) async {
+    final profileEvent = await _nostr.sendProfile(
+      content: jsonEncode(profileContent),
+    );
+
+    if (profileEvent != null) {
+      _cacheEvent(profileEvent);
+    }
+
+    return profileEvent;
+  }
+
   /// Sends a repost
   ///
   /// Successfully sent events are cached locally with 1-day expiry.

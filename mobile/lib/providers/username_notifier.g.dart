@@ -8,24 +8,24 @@ part of 'username_notifier.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Notifier for managing username availability checking and registration
+/// Notifier for managing username availability checking
 ///
 /// Provides debounced availability checking to avoid excessive API calls
-/// and handles the full registration flow including reserved name detection.
+/// while the user types in the username field.
 
 @ProviderFor(UsernameNotifier)
 const usernameProvider = UsernameNotifierProvider._();
 
-/// Notifier for managing username availability checking and registration
+/// Notifier for managing username availability checking
 ///
 /// Provides debounced availability checking to avoid excessive API calls
-/// and handles the full registration flow including reserved name detection.
+/// while the user types in the username field.
 final class UsernameNotifierProvider
     extends $NotifierProvider<UsernameNotifier, UsernameState> {
-  /// Notifier for managing username availability checking and registration
+  /// Notifier for managing username availability checking
   ///
   /// Provides debounced availability checking to avoid excessive API calls
-  /// and handles the full registration flow including reserved name detection.
+  /// while the user types in the username field.
   const UsernameNotifierProvider._()
     : super(
         from: null,
@@ -53,12 +53,12 @@ final class UsernameNotifierProvider
   }
 }
 
-String _$usernameNotifierHash() => r'9c99f53c4aba6f862896fa21f259666d2c30be7a';
+String _$usernameNotifierHash() => r'76514b404ff53d88f1e6597414e2d8d7a4aafdd9';
 
-/// Notifier for managing username availability checking and registration
+/// Notifier for managing username availability checking
 ///
 /// Provides debounced availability checking to avoid excessive API calls
-/// and handles the full registration flow including reserved name detection.
+/// while the user types in the username field.
 
 abstract class _$UsernameNotifier extends $Notifier<UsernameState> {
   UsernameState build();

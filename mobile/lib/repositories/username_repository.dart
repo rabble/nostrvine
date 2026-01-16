@@ -3,8 +3,46 @@
 
 import 'package:openvine/services/nip05_service.dart';
 
-/// Result of checking username availability
-enum UsernameAvailability { available, taken, error }
+/// Result of checking username availability.
+enum UsernameAvailability {
+  /// Username is available for registration.
+  available,
+
+  /// Username is already taken by another user.
+  taken,
+
+  /// An error occurred while checking availability.
+  error,
+}
+
+/// Sealed class representing the result of a username claim attempt.
+sealed class UsernameClaimResult {
+  const UsernameClaimResult();
+}
+
+/// Username was successfully claimed.
+class UsernameClaimSuccess extends UsernameClaimResult {
+  const UsernameClaimSuccess();
+}
+
+/// Username is already taken by another user.
+class UsernameClaimTaken extends UsernameClaimResult {
+  const UsernameClaimTaken();
+}
+
+/// Username is reserved and requires contacting support to claim.
+class UsernameClaimReserved extends UsernameClaimResult {
+  const UsernameClaimReserved();
+}
+
+/// An error occurred during username registration.
+class UsernameClaimError extends UsernameClaimResult {
+  /// Creates an error result with the given [message].
+  const UsernameClaimError(this.message);
+
+  /// Description of what went wrong.
+  final String message;
+}
 
 /// Repository that handles username-related data operations
 ///
@@ -36,11 +74,19 @@ class UsernameRepository {
   /// Register a username for the given pubkey
   ///
   /// Delegates to [Nip05Service.registerUsername] and returns the result.
-  Future<UsernameRegistrationResult> register({
+  Future<UsernameClaimResult> register({
     required String username,
     required String pubkey,
-    required List<String> relays,
-  }) {
-    return _nip05Service.registerUsername(username, pubkey, relays);
+  }) async {
+    try {
+      await _nip05Service.registerUsername(username, pubkey);
+      return const UsernameClaimSuccess();
+    } on UsernameTakenException {
+      return const UsernameClaimTaken();
+    } on UsernameReservedException {
+      return const UsernameClaimReserved();
+    } on Nip05ServiceException catch (e) {
+      return UsernameClaimError(e.message ?? 'Unknown error');
+    }
   }
 }
