@@ -166,3 +166,30 @@ workflows:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: internal
+
+  android-build-only:
+    name: Android Build (No Publish)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.38.3
+      java: 17
+      groups:
+        - zendesk_credentials
+      android_signing:
+        - divine_keystore
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *setup_local_properties
+      - *build_apk
+      - *build_aab
+    artifacts:
+      - build/app/outputs/apk/release/*.apk
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/mapping/**/mapping.txt
