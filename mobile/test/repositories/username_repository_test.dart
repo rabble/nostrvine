@@ -97,7 +97,7 @@ void main() {
           // Arrange
           when(
             () => mockNip05Service.registerUsername('takenuser', validPubkey),
-          ).thenThrow(const UsernameTakenException('Username already taken'));
+          ).thenThrow(const UsernameTakenException());
 
           // Act
           final result = await repository.register(
@@ -116,7 +116,7 @@ void main() {
           // Arrange
           when(
             () => mockNip05Service.registerUsername('reserved', validPubkey),
-          ).thenThrow(const UsernameReservedException('Username is reserved'));
+          ).thenThrow(const UsernameReservedException());
 
           // Act
           final result = await repository.register(

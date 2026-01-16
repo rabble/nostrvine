@@ -26,22 +26,22 @@ class Nip05ServiceException implements Exception {
 /// Reserved usernames are held for specific users (e.g., brand names,
 /// notable accounts). Users should contact support to claim these.
 class UsernameReservedException extends Nip05ServiceException {
-  /// Creates a reserved username exception with a [message].
-  const UsernameReservedException(super.message);
+  /// Creates a reserved username exception.
+  const UsernameReservedException();
 
   @override
-  String toString() => 'UsernameReservedException: $message';
+  String toString() => 'UsernameReservedException';
 }
 
 /// Thrown when attempting to register a username that is already taken.
 ///
 /// The user should choose a different username.
 class UsernameTakenException extends Nip05ServiceException {
-  /// Creates a taken username exception with a [message].
-  const UsernameTakenException(super.message);
+  /// Creates a taken username exception.
+  const UsernameTakenException();
 
   @override
-  String toString() => 'UsernameTakenException: $message';
+  String toString() => 'UsernameTakenException';
 }
 
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -110,11 +110,9 @@ class Nip05Service {
       case (200 || 201):
         return;
       case 403:
-        throw UsernameReservedException(
-          'Username is reserved. Contact support if you are the original owner.',
-        );
+        throw const UsernameReservedException();
       case 409:
-        throw UsernameTakenException('Username already taken');
+        throw const UsernameTakenException();
       default:
         throw Nip05ServiceException(
           'Unexpected response: ${response.statusCode}',

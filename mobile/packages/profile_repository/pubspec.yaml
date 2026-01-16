@@ -1,10 +1,10 @@
 name: profile_repository
-description: A Very Good Project created by Very Good CLI.
+description: Repository for managing user profiles (Kind 0 metadata) with Nostr.
 version: 0.1.0+1
 publish_to: none
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.10.0
 
 resolution: workspace
 
