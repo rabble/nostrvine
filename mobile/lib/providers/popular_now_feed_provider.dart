@@ -2,7 +2,8 @@
 // ABOUTME: Tries Funnelcake REST API first, falls back to Nostr subscription if unavailable
 
 import 'package:openvine/helpers/video_feed_builder.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';

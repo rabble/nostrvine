@@ -9,11 +9,11 @@ import 'dart:ui' as _i12;
 import 'package:keycast_flutter/keycast_flutter.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:models/models.dart' as _i14;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
 import 'package:openvine/models/user_profile.dart' as _i10;
-import 'package:openvine/models/video_event.dart' as _i14;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/profile_cache_service.dart' as _i11;
 import 'package:openvine/services/social_service.dart' as _i13;
@@ -907,14 +907,6 @@ class MockSocialService extends _i1.Mock implements _i13.SocialService {
   }
 
   @override
-  Set<String> get likedEventIds =>
-      (super.noSuchMethod(
-            Invocation.getter(#likedEventIds),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
   List<String> get followingPubkeys =>
       (super.noSuchMethod(
             Invocation.getter(#followingPubkeys),
@@ -931,14 +923,6 @@ class MockSocialService extends _i1.Mock implements _i13.SocialService {
           as List<_i13.FollowSet>);
 
   @override
-  bool isLiked(String? eventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#isLiked, [eventId]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -949,11 +933,6 @@ class MockSocialService extends _i1.Mock implements _i13.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  int? getCachedLikeCount(String? eventId) =>
-      (super.noSuchMethod(Invocation.method(#getCachedLikeCount, [eventId]))
-          as int?);
 
   @override
   bool isFollowing(String? pubkey) =>
@@ -980,33 +959,6 @@ class MockSocialService extends _i1.Mock implements _i13.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  _i6.Future<void> toggleLike(String? eventId, String? authorPubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleLike, [eventId, authorPubkey]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> getLikeStatus(String? eventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getLikeStatus, [eventId]),
-            returnValue: _i6.Future<Map<String, dynamic>>.value(
-              <String, dynamic>{},
-            ),
-          )
-          as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<List<_i7.Event>> fetchLikedEvents(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchLikedEvents, [pubkey]),
-            returnValue: _i6.Future<List<_i7.Event>>.value(<_i7.Event>[]),
-          )
-          as _i6.Future<List<_i7.Event>>);
 
   @override
   _i6.Future<void> fetchCurrentUserFollowList() =>
@@ -1092,60 +1044,6 @@ class MockSocialService extends _i1.Mock implements _i13.SocialService {
             returnValue: _i6.Future<int>.value(0),
           )
           as _i6.Future<int>);
-
-  @override
-  _i6.Future<int> getUserTotalLikes(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getUserTotalLikes, [pubkey]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<void> postComment({
-    required String? content,
-    required String? rootEventId,
-    required String? rootEventAuthorPubkey,
-    String? replyToEventId,
-    String? replyToAuthorPubkey,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#postComment, [], {
-              #content: content,
-              #rootEventId: rootEventId,
-              #rootEventAuthorPubkey: rootEventAuthorPubkey,
-              #replyToEventId: replyToEventId,
-              #replyToAuthorPubkey: replyToAuthorPubkey,
-            }),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Stream<_i7.Event> fetchCommentsForEvent(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCommentsForEvent, [rootEventId]),
-            returnValue: _i6.Stream<_i7.Event>.empty(),
-          )
-          as _i6.Stream<_i7.Event>);
-
-  @override
-  _i6.Future<int> getCommentCount(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getCommentCount, [rootEventId]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<void> cancelCommentSubscriptions(String? rootEventId) =>
-      (super.noSuchMethod(
-            Invocation.method(#cancelCommentSubscriptions, [rootEventId]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
 
   @override
   _i6.Future<void> toggleRepost(_i14.VideoEvent? videoToRepost) =>

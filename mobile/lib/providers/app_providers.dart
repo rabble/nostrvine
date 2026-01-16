@@ -759,13 +759,13 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
 CurationService curationService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
-  final socialService = ref.watch(socialServiceProvider);
+  final likesRepository = ref.watch(likesRepositoryProvider);
   final authService = ref.watch(authServiceProvider);
 
   return CurationService(
     nostrService: nostrService,
     videoEventService: videoEventService,
-    socialService: socialService,
+    likesRepository: likesRepository,
     authService: authService,
   );
 }

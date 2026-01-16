@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_profile_service.dart';

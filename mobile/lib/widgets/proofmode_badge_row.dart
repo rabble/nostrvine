@@ -3,7 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';

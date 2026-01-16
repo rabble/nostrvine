@@ -11,7 +11,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
