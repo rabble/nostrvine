@@ -79,7 +79,7 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    Event event = Event(_publicKey, EventKind.metadata, [], content);
+    Event event = Event(_cachedPublicKey, EventKind.metadata, [], content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
