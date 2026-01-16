@@ -3,7 +3,8 @@
 
 import 'dart:async';
 
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_event_service.dart';

@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/models/text_overlay.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
@@ -120,7 +121,7 @@ class _VideoMetadataScreenPureState
             category: LogCategory.video,
           );
           if (mounted) {
-            Navigator.of(context).pop();
+            context.pop();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Draft not found'),
@@ -651,7 +652,7 @@ class _VideoMetadataScreenPureState
             leading: IconButton(
               key: const Key('back-button'),
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: context.pop,
             ),
             title: const Text(
               'Add Metadata',
@@ -1316,11 +1317,11 @@ class _VideoMetadataScreenPureState
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => context.pop(false),
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => context.pop(true),
               style: TextButton.styleFrom(
                 backgroundColor: Colors.orange.withValues(alpha: 0.2),
               ),
@@ -1751,7 +1752,7 @@ Video: ${_currentDraft?.videoFile.path ?? 'Unknown'}
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: context.pop,
                         child: const Text(
                           'Close',
                           style: TextStyle(color: Colors.white70),
@@ -1801,14 +1802,14 @@ Video: ${_currentDraft?.videoFile.path ?? 'Unknown'}
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.white70),
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: TextButton.styleFrom(backgroundColor: VineTheme.vineGreen),
             child: const Text('Retry', style: TextStyle(color: Colors.white)),
           ),

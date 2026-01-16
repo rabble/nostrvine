@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
@@ -159,11 +160,11 @@ class FeatureFlagScreen extends ConsumerWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () => context.pop(false),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => context.pop(true),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                 child: const Text('Clear Cache'),
               ),
@@ -195,7 +196,7 @@ class FeatureFlagScreen extends ConsumerWidget {
 
     // Close loading dialog
     if (!context.mounted) return;
-    Navigator.pop(context);
+    context.pop();
 
     // Show result
     if (!context.mounted) return;
@@ -208,12 +209,7 @@ class FeatureFlagScreen extends ConsumerWidget {
               ? 'Cache cleared successfully. Please restart the app.'
               : 'Failed to clear some cache items. Check logs for details.',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+        actions: [TextButton(onPressed: context.pop, child: const Text('OK'))],
       ),
     );
   }
@@ -243,12 +239,7 @@ class FeatureFlagScreen extends ConsumerWidget {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+        actions: [TextButton(onPressed: context.pop, child: const Text('OK'))],
       ),
     );
   }

@@ -65,7 +65,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               ),
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Nostr Keys', style: VineTheme.titleFont()),
@@ -306,9 +306,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isProcessing
-                      ? null
-                      : () => _exportKey(context, keyManager),
+                  onPressed: _isProcessing ? null : () => _exportKey(context),
                   icon: const Icon(Icons.copy, size: 20),
                   label: const Text(
                     'Copy My Private Key (nsec)',
@@ -402,7 +400,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => context.pop(false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: VineTheme.vineGreen),
@@ -412,7 +410,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.vineGreen,
             ),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => context.pop(true),
             child: const Text('Import'),
           ),
         ],
@@ -451,7 +449,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         );
 
         // Pop back to settings after successful import
-        Navigator.pop(context);
+        context.pop();
       }
     } catch (e) {
       if (context.mounted) {
@@ -470,12 +468,13 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     }
   }
 
-  Future<void> _exportKey(
-    BuildContext context,
-    NostrKeyManager keyManager,
-  ) async {
+  Future<void> _exportKey(BuildContext context) async {
     try {
-      final nsec = keyManager.exportAsNsec();
+      final nsec = await ref.read(authServiceProvider).exportNsec();
+
+      if (nsec == null) {
+        throw Exception('No private key available to export.');
+      }
 
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: nsec));

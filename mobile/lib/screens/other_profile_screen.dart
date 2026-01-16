@@ -76,14 +76,14 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     if (userIdHex == null) {
       return _ProfileErrorScreen(
         message: 'Invalid profile ID',
-        onBack: () => context.pop(),
+        onBack: context.pop,
       );
     }
 
     // Check if this user is blocked
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-      return BlockedUserScreen(onBack: () => context.pop());
+      return BlockedUserScreen(onBack: context.pop);
     }
 
     // Get video data from profile feed
@@ -103,7 +103,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         foregroundColor: VineTheme.whiteText,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
         ),
         title: Text(
           displayName,
@@ -204,11 +204,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Block'),
           ),

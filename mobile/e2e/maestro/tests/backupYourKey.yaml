@@ -1,0 +1,22 @@
+appId: co.openvine.app
+---
+#TC to follow a user,
+# given the user is logged in in the app,
+# by opening the settings, nostr keys menu, and copying the private key
+#Steps:
+# 1. Given an already logged in user, Menu and Settings: Settings screen is presented
+# 2. Tap on a Key management. Expected: Nostr Keys screen is presented
+# 3. Backup Your Key by tapping on the button: VIDEO_USER videos are displayed validated thru username
+
+# 1. Given an already logged in user, Menu and Settings: Settings screen is presented
+- runFlow: ../utils/openSettings.yaml
+
+# 2. Tap on a Key management. Expected: Nostr Keys screen is presented
+- scroll
+- tapOn: |-
+    Key Management
+    Export, backup, and restore your Nostr keys
+- runFlow: ../asserts/assertNostrKeys.yaml
+# 3. Backup Your Key by tapping on the button: VIDEO_USER videos are displayed validated thru username
+- tapOn: Copy My Private Key (nsec)
+- runFlow: ../asserts/assertPrivKeyCopied.yaml

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -119,7 +120,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
               ),
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: context.pop,
           tooltip: 'Back',
         ),
         title: Text('Relays', style: VineTheme.titleFont()),
@@ -709,11 +710,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => dialogContext.pop(false),
             child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => dialogContext.pop(true),
             child: const Text('Remove', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -846,14 +847,14 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(null),
+            onPressed: () => dialogContext.pop(null),
             child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
           ),
           TextButton(
             onPressed: () {
               final url = controller.text.trim();
               if (url.isNotEmpty) {
-                Navigator.of(dialogContext).pop(url);
+                dialogContext.pop(url);
               }
             },
             child: const Text(

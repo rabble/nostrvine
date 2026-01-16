@@ -29,7 +29,8 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/user_profile.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart'
+    hide LogCategory, NIP71VideoKinds, UserProfile;
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';

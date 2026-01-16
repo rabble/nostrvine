@@ -1,0 +1,9 @@
+appId: co.openvine.app
+---
+- assertVisible: ✓ Account Deleted
+- assertVisible: |-
+    Your deletion request has been sent to Nostr relays.
+
+    You've been signed out and your keys have been removed from this device.
+- assertVisible: Close
+- assertVisible: Create New Account

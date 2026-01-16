@@ -1,0 +1,35 @@
+appId: co.openvine.app
+tags:
+  - Social
+env:
+  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
+  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
+---
+#TC to repost a video,
+# given the user is logged in in the app,,
+# tap on repost for the video VIDEO_TITLE and validate is listed in the user profile, reposts tab
+#Steps:
+# 1. Open specific video VIDEO_TITLE
+# 2. Tap on Repost: Validate video reposted is selected
+# 3. Tap on the profile: Validate profile is loaded
+# 4. Tap on the Reposts tab: Validate tab is loaded and VIDEO_TITLE listed
+
+# 1. Open specific video VIDEO_TITLE
+- runFlow: ../utils/openSpecificVideo.yml
+
+# 2. Tap on Repost: Validate video reposted is selected
+- runFlow: "../asserts/assertVideoRepost.yml"
+- tapOn:
+    id: repost_button
+- runFlow: "../asserts/assertVideoReposted.yml"
+
+# 3. Tap on the profile: Validate profile is loaded
+- tapOn: |-
+    Profile
+    Tab 4 of 4
+- runFlow: ../asserts/assertProfile.yml
+# 4. Tap on the Reposts tab: Validate tab is loaded and VIDEO_TITLE listed
+- tapOn: Tab 3 of 3
+- tapOn:
+    point: 0%,62%
+#- assertVisible: ${VIDEO_TITLE}

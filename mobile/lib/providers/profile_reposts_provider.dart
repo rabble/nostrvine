@@ -1,7 +1,7 @@
 // ABOUTME: Provider for fetching videos that a user has reposted
 // ABOUTME: Gets reposts directly from videoEventService for a specific user
 
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

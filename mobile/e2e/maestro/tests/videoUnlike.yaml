@@ -1,0 +1,35 @@
+appId: co.openvine.app
+tags:
+  - Social
+env:
+  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
+  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
+---
+#TC to unlike a video,
+# given the user is logged in in the app,,
+# validate the like is on for the video VIDEO_TITLE unlike it, and empty likes tab on the profile
+#Steps:
+# 1. Open specific video VIDEO_TITLE
+# 2. Tap on the Heart: Validate video is unliked
+# 3. Tap on the profile: Validate profile is loaded
+# 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed
+
+# 1. Open specific video VIDEO_TITLE
+- runFlow: ../utils/openSpecificVideo.yaml
+
+# 2. Tap on the Heart: Validate video is unliked
+- tapOn:
+    id: like_button
+- runFlow: "../asserts/assertVideounLiked.yaml"
+
+# 3. Tap on the profile: Validate profile is loaded
+- doubleTapOn:
+    id: profile_tab
+    delay: 100
+- runFlow: ../asserts/assertProfile.yaml
+
+# 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed
+- tapOn: Tab 2 of 3
+- tapOn:
+    point: 20%,74%
+- assertNotVisible: ${VIDEO_DESCRIPTION}

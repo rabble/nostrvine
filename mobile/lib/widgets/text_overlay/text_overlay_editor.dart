@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/text_overlay.dart';
 import 'package:uuid/uuid.dart';
@@ -98,7 +99,7 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
             child: const Text('Done', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -181,7 +182,7 @@ class _TextOverlayEditorState extends State<TextOverlayEditor> {
                             : null,
                         onTap: () {
                           setState(() => _fontFamily = font);
-                          Navigator.pop(context);
+                          context.pop();
                         },
                       );
                     },

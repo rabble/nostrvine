@@ -193,14 +193,14 @@ class _BugReportDialogState extends State<BugReportDialog> {
         // Cancel button (hide after success)
         if (_isSuccess != true)
           TextButton(
-            onPressed: _isSubmitting ? null : () => context.pop(),
+            onPressed: _isSubmitting ? null : context.pop,
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
 
         // Send/Close button
         ElevatedButton(
           onPressed: _isSuccess == true
-              ? () => context.pop()
+              ? context.pop
               : (_canSubmit ? _submitReport : null),
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.vineGreen,

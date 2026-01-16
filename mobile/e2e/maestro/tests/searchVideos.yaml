@@ -1,0 +1,36 @@
+appId: co.openvine.app
+---
+#TC to search for a video,
+# given the user is logged in in the app,
+# based on its description and validate its playback
+#Steps:
+# 1. Tap on Search: Validate search screen
+# 2. Input text VIDEO_TITLE: Validate video and a user is found
+# 3. Tap on the 1st video returned: Validate playback
+# 4. Tap on the back arrow: Validate user is on the search screen
+
+# 1. Tap on Search: Validate search screen
+- tapOn: Search
+- runFlow: ../asserts/assertSearch.yaml
+
+# 2. Input text VIDEO_TITLE: Validate video and a user is found
+- tapOn: Find something cool...
+- inputText: ${VIDEO_TITLE}
+#Assert Videos and Users result
+- assertVisible: |-
+    Videos \((?!0)\d+\)
+    Tab 1 of 3
+- assertVisible: |-
+    Users \((?!0)\d+\)
+    Tab 2 of 3
+
+# 3. Tap on the 1st video returned and validate playback
+- tapOn:
+    id: play_button
+- runFlow: ../asserts/assertVideoPlayback.yaml
+
+# 4. Tap on the back arrow and validate user is on the explore screen
+- doubleTapOn:
+    point: 4%,8%
+
+- runFlow: ../asserts/assertExplore.yaml
