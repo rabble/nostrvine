@@ -11,6 +11,9 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -25,6 +28,24 @@ import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
 class ProfileScreenRouter extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'profile';
+
+  /// Base path for profile routes.
+  static const path = '/profile';
+
+  /// Path for this route (grid mode).
+  static const pathWithNpub = '/profile/:npub';
+
+  /// Path for this route (feed mode).
+  static const pathWithIndex = '/profile/:npub/:index';
+
+  /// Build path for grid mode or specific npub.
+  static String pathForNpub(String npub) => '$path/$npub';
+
+  /// Build path for feed mode with specific npub and index.
+  static String pathForIndex(String npub, int index) => '$path/$npub/$index';
+
   const ProfileScreenRouter({super.key});
 
   @override
@@ -141,7 +162,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'edit') {
       // Navigate to edit-profile route (defined outside ShellRoute)
-      await context.push('/edit-profile');
+      await context.push(ProfileSetupScreen.editPath);
     } else if (result == 'delete') {
       _handleDeleteAccount();
     }
@@ -196,7 +217,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
           await showDeleteAccountCompletionDialog(
             context: context,
             onCreateNewAccount: () {
-              context.go('/setup-profile');
+              context.go(ProfileSetupScreen.setupPath);
             },
           );
         } else {
@@ -261,7 +282,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openClips() {
     // Navigate to clips route (defined outside ShellRoute)
-    context.push('/clips');
+    context.push(ClipLibraryScreen.clipsPath);
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
@@ -406,7 +427,7 @@ class _MeProfileRedirect extends ConsumerWidget {
         authService.currentPublicKeyHex == null) {
       // Not authenticated - redirect to home
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        GoRouter.of(context).go('/home/0');
+        GoRouter.of(context).go(HomeScreenRouter.pathForIndex(0));
       });
       return const Center(child: CircularProgressIndicator());
     }

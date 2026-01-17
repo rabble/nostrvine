@@ -1,29 +1,36 @@
-// ABOUTME: Authentication service managing user login, key generation, and auth state
-// ABOUTME: Handles Nostr identity creation, import, and session management with secure storage
+// ABOUTME: Authentication service managing user login, key generation, and
+// auth state
+// ABOUTME: Handles Nostr identity creation, import, and session management
+// with secure storage
 
 import 'dart:async';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Key for persisted authentication source
 const _kAuthSourceKey = 'authentication_source';
+
+// Keys for bunker connection persistence
+const _kBunkerInfoKey = 'bunker_info';
 
 /// Source of authentication used to restore session at startup
 enum AuthenticationSource {
   none('none'),
   divineOAuth('divineOAuth'),
   importedKeys('imported_keys'),
-  automatic('automatic');
+  automatic('automatic'),
+  bunker('bunker');
 
   const AuthenticationSource(this.code);
 
@@ -106,7 +113,8 @@ class UserProfile {
 }
 
 /// Main authentication service for the divine app
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+/// REFACTORED: Removed ChangeNotifier - now uses pure state management via
+/// Riverpod
 class AuthService {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
@@ -120,7 +128,7 @@ class AuthService {
        _flutterSecureStorage = flutterSecureStorage,
        _oauthConfig =
            oauthConfig ??
-           OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
+           const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
   final SecureKeyStorage _keyStorage;
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
@@ -130,10 +138,14 @@ class AuthService {
   SecureKeyContainer? _currentKeyContainer;
   UserProfile? _currentProfile;
   String? _lastError;
-  KeycastRpc? _rpcSigner;
+  KeycastRpc? _keycastSigner;
 
-  NostrSigner? get rpcSigner => _rpcSigner;
-  OAuthConfig _oauthConfig;
+  // NIP-46 bunker signer state
+  NostrRemoteSigner? _bunkerSigner;
+
+  /// Returns the active remote signer (bunker takes priority over OAuth RPC)
+  NostrSigner? get rpcSigner => _bunkerSigner ?? _keycastSigner;
+  final OAuthConfig _oauthConfig;
 
   // Streaming controllers for reactive auth state
   final StreamController<AuthState> _authStateController =
@@ -157,7 +169,9 @@ class AuthService {
   String? get currentNpub => _currentKeyContainer?.npub;
 
   /// Current public key (hex format)
-  String? get currentPublicKeyHex => _currentKeyContainer?.publicKeyHex;
+  /// Works for both local keys (via keyContainer) and bunker auth (via profile)
+  String? get currentPublicKeyHex =>
+      _currentKeyContainer?.publicKeyHex ?? _currentProfile?.publicKeyHex;
 
   /// Current secure key container (null if not authenticated)
   ///
@@ -201,6 +215,11 @@ class AuthService {
 
       // Decide restore path based on persisted authentication source
       final authSource = await _loadAuthSource();
+      Log.info(
+        'authSource: $authSource',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
       switch (authSource) {
         case AuthenticationSource.none:
           // Explicit logout or fresh install — show welcome
@@ -237,7 +256,17 @@ class AuthService {
         case AuthenticationSource.automatic:
           // Default behavior: check for keys and auto-create if needed
           await _checkExistingAuth();
-          break;
+
+        case AuthenticationSource.bunker:
+          // Try to restore bunker connection from secure storage
+          final bunkerInfo = await _loadBunkerInfo();
+          if (bunkerInfo != null) {
+            await _reconnectBunker(bunkerInfo);
+            return;
+          }
+          // Bunker info not found — fall back to unauthenticated
+          _setAuthState(AuthState.unauthenticated);
+          return;
       }
 
       Log.info(
@@ -307,7 +336,7 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_kAuthSourceKey);
-      final authSource = await AuthenticationSource.fromCode(raw);
+      final authSource = AuthenticationSource.fromCode(raw);
       Log.info(
         'Loaded $_kAuthSourceKey as $authSource',
         name: 'AuthService',
@@ -316,6 +345,165 @@ class AuthService {
       return authSource;
     } catch (e) {
       return AuthenticationSource.automatic;
+    }
+  }
+
+  /// Save bunker connection info to secure storage
+  Future<void> _saveBunkerInfo(NostrRemoteSignerInfo info) async {
+    if (_flutterSecureStorage == null) return;
+    try {
+      // Serialize bunker info as bunker URL (includes all needed data)
+      final bunkerUrl = info.toString();
+      await _flutterSecureStorage.write(key: _kBunkerInfoKey, value: bunkerUrl);
+      Log.info(
+        'Saved bunker info to secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to save bunker info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
+  /// Load bunker connection info from secure storage
+  Future<NostrRemoteSignerInfo?> _loadBunkerInfo() async {
+    if (_flutterSecureStorage == null) return null;
+    try {
+      final bunkerUrl = await _flutterSecureStorage.read(key: _kBunkerInfoKey);
+      if (bunkerUrl == null || bunkerUrl.isEmpty) return null;
+
+      final info = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl);
+      if (info != null) {
+        Log.info(
+          'Loaded bunker info from secure storage',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+      return info;
+    } catch (e) {
+      Log.error(
+        'Failed to load bunker info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+  }
+
+  /// Clear bunker connection info from secure storage
+  Future<void> _clearBunkerInfo() async {
+    if (_flutterSecureStorage == null) return;
+    try {
+      await _flutterSecureStorage.delete(key: _kBunkerInfoKey);
+      Log.info(
+        'Cleared bunker info from secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to clear bunker info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
+  /// Sets up the auth URL callback for bunker operations that require user
+  /// approval.
+  /// This must be called after creating a NostrRemoteSigner instance.
+  void _setupBunkerAuthCallback() {
+    if (_bunkerSigner == null) return;
+
+    _bunkerSigner!.onAuthUrlReceived = (authUrl) async {
+      Log.info(
+        'Bunker requires authentication, opening: $authUrl',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      final uri = Uri.parse(authUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        Log.error(
+          'Could not launch auth URL: $authUrl',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    };
+  }
+
+  /// Reconnect to a bunker using saved connection info
+  Future<void> _reconnectBunker(NostrRemoteSignerInfo info) async {
+    Log.info(
+      'Reconnecting to bunker...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+
+    try {
+      // Create and connect the remote signer
+      // Don't send a new connect request - the bunker already authorized us
+      // during the initial connection. We just need to reconnect to the relay.
+      _bunkerSigner = NostrRemoteSigner(RelayMode.baseMode, info);
+      _setupBunkerAuthCallback();
+      await _bunkerSigner!.connect(sendConnectRequest: false);
+
+      // Use saved public key if available, otherwise request it from bunker
+      var userPubkey = info.userPubkey;
+      if (userPubkey == null || userPubkey.isEmpty) {
+        Log.info(
+          'No saved userPubkey, requesting from bunker...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        userPubkey = await _bunkerSigner!.pullPubkey();
+      } else {
+        Log.info(
+          'Using saved userPubkey: $userPubkey',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+      if (userPubkey == null || userPubkey.isEmpty) {
+        throw Exception('Failed to get public key from bunker');
+      }
+
+      _currentKeyContainer = SecureKeyContainer.fromPublicKey(userPubkey);
+
+      // Create a minimal profile for the bunker user
+      final npub = NostrKeyUtils.encodePubKey(userPubkey);
+      _currentProfile = UserProfile(
+        npub: npub,
+        publicKeyHex: userPubkey,
+        displayName: NostrKeyUtils.maskKey(npub),
+      );
+
+      _authSource = AuthenticationSource.bunker;
+      _setAuthState(AuthState.authenticated);
+      _profileController.add(_currentProfile);
+
+      Log.info(
+        'Bunker reconnection successful for user: $userPubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Bunker reconnection failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _bunkerSigner = null;
+      _setAuthState(AuthState.unauthenticated);
     }
   }
 
@@ -332,6 +520,7 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
+    await _onTermsAccepted();
 
     try {
       // Validate nsec format
@@ -386,6 +575,7 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
+    await _onTermsAccepted();
 
     try {
       // Validate hex format
@@ -421,6 +611,140 @@ class AuthService {
         category: LogCategory.auth,
       );
       _lastError = 'Failed to import from hex: $e';
+      _setAuthState(AuthState.unauthenticated);
+
+      return AuthResult.failure(_lastError!);
+    }
+  }
+
+  /// Connect using a NIP-46 bunker URL for remote signing
+  ///
+  /// The bunker URL format is:
+  /// `bunker://<remote-signer-pubkey>?relay=<wss://relay>&secret=<optional>`
+  ///
+  /// This establishes a connection with a remote signer (bunker) that holds
+  /// the user's private keys. All signing operations will be delegated to
+  /// the bunker via Nostr relay messages.
+  Future<AuthResult> connectWithBunker(String bunkerUrl) async {
+    Log.info(
+      'Connecting with bunker URL...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+    await _onTermsAccepted();
+    _lastError = null;
+
+    try {
+      // Parse the bunker URL
+      final bunkerInfo = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl);
+      if (bunkerInfo == null) {
+        throw Exception('Invalid bunker URL format');
+      }
+
+      const authTimeout = Duration(seconds: 120);
+
+      Log.debug(
+        'Creating NostrRemoteSigner for '
+        'bunker: ${bunkerInfo.remoteSignerPubkey}',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      _bunkerSigner = NostrRemoteSigner(RelayMode.baseMode, bunkerInfo);
+      _setupBunkerAuthCallback();
+
+      String? connectResult;
+      try {
+        Log.debug(
+          'Sending connect request to bunker...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        connectResult = await _bunkerSigner!.connect().timeout(
+          authTimeout,
+          onTimeout: () {
+            throw TimeoutException(
+              'Bunker connection timed out. If an approval page opened, '
+              'please approve the connection and try again.',
+            );
+          },
+        );
+      } on TimeoutException {
+        rethrow;
+      }
+
+      // Check if connect was acknowledged
+      if (connectResult == null) {
+        Log.warning(
+          'Connect returned null - bunker may not have acknowledged',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } else {
+        Log.info(
+          'Connected to bunker successfully',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+
+      // Get user's public key from the bunker
+      final String? userPubkey;
+      try {
+        Log.debug(
+          'Requesting public key from bunker...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        userPubkey = await _bunkerSigner!.pullPubkey().timeout(
+          authTimeout,
+          onTimeout: () {
+            throw TimeoutException(
+              'Timed out waiting for public key from bunker. '
+              'The remote signer may be offline or unresponsive.',
+            );
+          },
+        );
+        Log.debug(
+          'pullPubkey result: $userPubkey',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } on TimeoutException {
+        rethrow;
+      }
+
+      if (userPubkey == null || userPubkey.isEmpty) {
+        throw Exception(
+          'Failed to get public key from bunker. '
+          'The remote signer did not respond with a valid key.',
+        );
+      }
+
+      await _saveBunkerInfo(bunkerInfo);
+
+      await _setupUserSession(
+        SecureKeyContainer.fromPublicKey(userPubkey),
+        AuthenticationSource.bunker,
+      );
+
+      Log.info(
+        'Bunker connection successful for user: $userPubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      return const AuthResult(success: true);
+    } catch (e) {
+      Log.error(
+        'Bunker connection failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _bunkerSigner = null;
+      _lastError = 'Bunker connection failed: $e';
       _setAuthState(AuthState.unauthenticated);
 
       return AuthResult.failure(_lastError!);
@@ -499,10 +823,12 @@ class AuthService {
   /// transitions to authenticated state w/o first creating or importing keys
   Future<void> signInAutomatically() async {
     try {
-      // If not authenticated (e.g., after logout), re-initialize to load existing keys
+      // If not authenticated (e.g., after logout), re-initialize to load
+      // existing keys
       if (_authState != AuthState.authenticated) {
         await _checkExistingAuth();
       }
+      await _onTermsAccepted();
 
       Log.info(
         'Terms of Service accepted, user is now fully authenticated',
@@ -528,12 +854,13 @@ class AuthService {
     );
 
     _setAuthState(AuthState.authenticating);
+    await _onTermsAccepted();
     _lastError = null;
 
     try {
-      _rpcSigner = KeycastRpc.fromSession(_oauthConfig, session);
+      _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
 
-      final publicKeyHex = await _rpcSigner?.getPublicKey();
+      final publicKeyHex = await _keycastSigner?.getPublicKey();
       if (publicKeyHex == null) {
         throw Exception('Could not retrieve public key from server');
       }
@@ -582,7 +909,8 @@ class AuthService {
     );
 
     try {
-      // Clear TOS acceptance on any logout - user must re-accept when logging back in
+      // Clear TOS acceptance on any logout - user must re-accept when logging
+      // back in
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_kAuthSourceKey);
       await prefs.remove('age_verified_16_plus');
@@ -612,6 +940,13 @@ class AuthService {
       _currentKeyContainer = null;
       _currentProfile = null;
       _lastError = null;
+
+      // Clean up bunker signer if active
+      if (_bunkerSigner != null) {
+        _bunkerSigner!.close();
+        _bunkerSigner = null;
+        await _clearBunkerInfo();
+      }
 
       try {
         if (_oauthClient != null) {
@@ -710,7 +1045,8 @@ class AuthService {
       // CRITICAL: divine relays require specific tags for storage
       final eventTags = List<List<String>>.from(tags ?? []);
 
-      // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python script order)
+      // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python
+      // script order)
       if (kind == 0) {
         final expirationTimestamp =
             (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
@@ -731,9 +1067,9 @@ class AuthService {
       // 2. Branch Signing Logic (Local vs RPC)
       Event? signedEvent;
 
-      if (_rpcSigner != null) {
+      if (rpcSigner case final rpcSigner?) {
         Log.info('🚀 Signing via Remote RPC', name: 'AuthService');
-        signedEvent = await _rpcSigner!.signEvent(event);
+        signedEvent = await rpcSigner.signEvent(event);
       } else {
         Log.info('🔐 Signing via Local Secure Storage', name: 'AuthService');
         signedEvent = await _keyStorage.withPrivateKey<Event?>((privateKey) {
@@ -812,7 +1148,8 @@ class AuthService {
         final keyContainer = await _keyStorage.getKeyContainer();
         if (keyContainer != null) {
           Log.info(
-            'Loaded existing secure identity: ${NostrKeyUtils.maskKey(keyContainer.npub)}',
+            'Loaded existing secure identity: '
+            '${NostrKeyUtils.maskKey(keyContainer.npub)}',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -834,16 +1171,19 @@ class AuthService {
       );
 
       // Auto-create identity like TikTok - seamless onboarding
-      // Note: createNewIdentity() sets state to authenticating immediately, so no need to set it here
+      // Note: createNewIdentity() sets state to authenticating immediately, so
+      // no need to set it here
       final result = await createNewIdentity();
       if (result.success && result.keyContainer != null) {
         Log.info(
-          'Auto-created NEW secure Nostr identity: ${NostrKeyUtils.maskKey(result.keyContainer!.npub)}',
+          'Auto-created NEW secure Nostr identity: '
+          '${NostrKeyUtils.maskKey(result.keyContainer!.npub)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
         Log.debug(
-          '📱 This identity is now securely saved and will be reused on next launch',
+          '📱 This identity is now securely saved '
+          'and will be reused on next launch',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -867,6 +1207,15 @@ class AuthService {
     }
   }
 
+  Future<void> _onTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'terms_accepted_at',
+      DateTime.now().toIso8601String(),
+    );
+    await prefs.setBool('age_verified_16_plus', true);
+  }
+
   /// Set up user session after successful authentication
   Future<void> _setupUserSession(
     SecureKeyContainer keyContainer,
@@ -875,7 +1224,7 @@ class AuthService {
     _currentKeyContainer = keyContainer;
     _authSource = source;
 
-    // Create user profile from secure container
+    // Create user profile
     _currentProfile = UserProfile(
       npub: keyContainer.npub,
       publicKeyHex: keyContainer.publicKeyHex,
@@ -896,23 +1245,19 @@ class AuthService {
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
         );
+        // restore the TOS acceptance since we wouldn't be here otherwise
+        await _onTermsAccepted();
       }
-
       await prefs.setString(
         'current_user_pubkey_hex',
         keyContainer.publicKeyHex,
       );
-      await prefs.setString(
-        'terms_accepted_at',
-        DateTime.now().toIso8601String(),
-      );
-      await prefs.setBool('age_verified_16_plus', true);
 
       await prefs.setString(_kAuthSourceKey, source.code);
       _setAuthState(AuthState.authenticated);
     } catch (e) {
       Log.warning(
-        'Failed to check TOS status: $e',
+        'error in _setupUserSession: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -964,7 +1309,7 @@ class AuthService {
     'last_error': _lastError,
   };
 
-  void dispose() {
+  Future<void> dispose() async {
     Log.debug(
       '📱️ Disposing SecureAuthService',
       name: 'AuthService',
@@ -975,8 +1320,8 @@ class AuthService {
     _currentKeyContainer?.dispose();
     _currentKeyContainer = null;
 
-    _authStateController.close();
-    _profileController.close();
+    await _authStateController.close();
+    await _profileController.close();
     _keyStorage.dispose();
   }
 }

@@ -3,14 +3,15 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   group('Search Active Video Provider', () {
@@ -55,7 +56,9 @@ void main() {
           overrides: [
             // Mock router location to /search/sexy/0
             routerLocationStreamProvider.overrideWith(
-              (ref) => Stream.value('/search/sexy/0'),
+              (ref) => Stream.value(
+                SearchScreenPure.pathForTerm(term: 'sexy', index: 0),
+              ),
             ),
             // Mock search results
             searchScreenVideosProvider.overrideWith((ref) => mockSearchResults),
@@ -111,7 +114,9 @@ void main() {
           overrides: [
             // Mock router location to /search/test/1
             routerLocationStreamProvider.overrideWith(
-              (ref) => Stream.value('/search/test/1'),
+              (ref) => Stream.value(
+                SearchScreenPure.pathForTerm(term: 'test', index: 1),
+              ),
             ),
             // Mock search results
             searchScreenVideosProvider.overrideWith((ref) => mockSearchResults),
@@ -198,7 +203,7 @@ void main() {
         container.read(pageContextProvider);
 
         // Emit location: /search/test (no index - grid mode)
-        locationController.add('/search/test');
+        locationController.add(SearchScreenPure.pathForTerm(term: 'test'));
         await pumpEventQueue();
 
         // Active video should be null (grid mode)
@@ -219,7 +224,9 @@ void main() {
           overrides: [
             // Mock router location to /search/empty/0
             routerLocationStreamProvider.overrideWith(
-              (ref) => Stream.value('/search/empty/0'),
+              (ref) => Stream.value(
+                SearchScreenPure.pathForTerm(term: 'empty', index: 0),
+              ),
             ),
             // Mock search with empty results
             searchScreenVideosProvider.overrideWith((ref) => const []),

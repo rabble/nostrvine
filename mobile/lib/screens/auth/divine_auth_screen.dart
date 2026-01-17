@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
@@ -17,6 +18,12 @@ import 'package:openvine/widgets/error_message.dart';
 enum AuthMode { login, register }
 
 class DivineAuthScreen extends ConsumerStatefulWidget {
+  /// Route name for the auth screen
+  static const String routeName = 'auth-native';
+
+  /// Path for the auth screen
+  static const String path = '/auth-native';
+
   /// Initial mode - can be overridden by tab selection
   final AuthMode initialMode;
 
@@ -276,7 +283,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     // The polling continues in the background
     // Navigate to home
     if (mounted) {
-      context.go('/home/0');
+      context.go(HomeScreenRouter.pathForIndex(0));
     }
   }
 

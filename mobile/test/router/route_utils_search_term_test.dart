@@ -3,13 +3,14 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   group('parseRoute() - Search with terms', () {
     test(
       'parseRoute("/search/nostr") returns RouteContext with searchTerm',
       () {
-        final result = parseRoute('/search/nostr');
+        final result = parseRoute(SearchScreenPure.pathForTerm(term: 'nostr'));
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, 'nostr');
@@ -20,7 +21,9 @@ void main() {
     test(
       'parseRoute("/search/bitcoin/7") returns RouteContext with term and index',
       () {
-        final result = parseRoute('/search/bitcoin/7');
+        final result = parseRoute(
+          SearchScreenPure.pathForTerm(term: 'bitcoin', index: 7),
+        );
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, 'bitcoin');
@@ -31,7 +34,7 @@ void main() {
     test(
       'parseRoute("/search") returns RouteContext with no term or index',
       () {
-        final result = parseRoute('/search');
+        final result = parseRoute(SearchScreenPure.path);
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, null);
@@ -42,7 +45,7 @@ void main() {
     test(
       'parseRoute("/search/5") returns legacy format (index only, no term)',
       () {
-        final result = parseRoute('/search/5');
+        final result = parseRoute(SearchScreenPure.pathForTerm(index: 5));
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, null);
@@ -52,19 +55,22 @@ void main() {
   });
 
   group('buildRoute() - Search with terms', () {
-    test('buildRoute with searchTerm only returns /search/bitcoin', () {
-      final context = RouteContext(
-        type: RouteType.search,
-        searchTerm: 'bitcoin',
-      );
+    test(
+      'buildRoute with searchTerm only returns ${SearchScreenPure.pathForTerm(term: 'bitcoin')}',
+      () {
+        final context = RouteContext(
+          type: RouteType.search,
+          searchTerm: 'bitcoin',
+        );
 
-      final result = buildRoute(context);
+        final result = buildRoute(context);
 
-      expect(result, '/search/bitcoin');
-    });
+        expect(result, SearchScreenPure.pathForTerm(term: 'bitcoin'));
+      },
+    );
 
     test(
-      'buildRoute with searchTerm and videoIndex returns /search/lightning/3',
+      'buildRoute with searchTerm and videoIndex returns ${SearchScreenPure.pathForTerm(term: 'lightning', index: 3)}',
       () {
         final context = RouteContext(
           type: RouteType.search,
@@ -74,25 +80,34 @@ void main() {
 
         final result = buildRoute(context);
 
-        expect(result, '/search/lightning/3');
+        expect(
+          result,
+          SearchScreenPure.pathForTerm(term: 'lightning', index: 3),
+        );
       },
     );
 
-    test('buildRoute with no term or index returns /search', () {
-      final context = RouteContext(type: RouteType.search);
+    test(
+      'buildRoute with no term or index returns ${SearchScreenPure.path}',
+      () {
+        final context = RouteContext(type: RouteType.search);
 
-      final result = buildRoute(context);
+        final result = buildRoute(context);
 
-      expect(result, '/search');
-    });
+        expect(result, SearchScreenPure.path);
+      },
+    );
 
-    test('buildRoute with legacy format (index only) returns /search/5', () {
-      final context = RouteContext(type: RouteType.search, videoIndex: 5);
+    test(
+      'buildRoute with legacy format (index only) returns ${SearchScreenPure.pathForTerm(index: 5)}',
+      () {
+        final context = RouteContext(type: RouteType.search, videoIndex: 5);
 
-      final result = buildRoute(context);
+        final result = buildRoute(context);
 
-      expect(result, '/search/5');
-    });
+        expect(result, SearchScreenPure.pathForTerm(index: 5));
+      },
+    );
   });
 
   group('Round-trip consistency', () {
@@ -128,7 +143,9 @@ void main() {
 
   group('Phase 3: URL Encoding - parseRoute() edge cases', () {
     test('parseRoute("/search/hello%20world") decodes spaces correctly', () {
-      final result = parseRoute('/search/hello%20world');
+      final result = parseRoute(
+        SearchScreenPure.pathForTerm(term: 'hello world'),
+      );
 
       expect(result.type, RouteType.search);
       expect(result.searchTerm, 'hello world');
@@ -136,7 +153,7 @@ void main() {
     });
 
     test('parseRoute("/search/%23bitcoin") decodes hash symbol correctly', () {
-      final result = parseRoute('/search/%23bitcoin');
+      final result = parseRoute(SearchScreenPure.pathForTerm(term: '#bitcoin'));
 
       expect(result.type, RouteType.search);
       expect(result.searchTerm, '#bitcoin');
@@ -144,9 +161,11 @@ void main() {
     });
 
     test(
-      'parseRoute("/search/%2Fspecial") decodes forward slash correctly',
+      'parseRoute("${SearchScreenPure.pathForTerm(term: '/special')}") decodes forward slash correctly',
       () {
-        final result = parseRoute('/search/%2Fspecial');
+        final result = parseRoute(
+          SearchScreenPure.pathForTerm(term: '/special'),
+        );
 
         expect(result.type, RouteType.search);
         expect(result.searchTerm, '/special');
@@ -154,29 +173,42 @@ void main() {
       },
     );
 
-    test('parseRoute("/search/%F0%9F%9A%80") decodes emoji correctly', () {
-      final result = parseRoute('/search/%F0%9F%9A%80');
+    test(
+      'parseRoute("${SearchScreenPure.pathForTerm(term: '🚀')}") decodes emoji correctly',
+      () {
+        final result = parseRoute(SearchScreenPure.pathForTerm(term: '🚀'));
 
-      expect(result.type, RouteType.search);
-      expect(result.searchTerm, '🚀');
-      expect(result.videoIndex, null);
-    });
+        expect(result.type, RouteType.search);
+        expect(result.searchTerm, '🚀');
+        expect(result.videoIndex, null);
+      },
+    );
 
-    test('parseRoute("/search/hello%20world/5") decodes spaces with index', () {
-      final result = parseRoute('/search/hello%20world/5');
+    test(
+      'parseRoute("${SearchScreenPure.pathForTerm(term: 'hello world', index: 5)}") decodes spaces with index',
+      () {
+        final result = parseRoute(
+          SearchScreenPure.pathForTerm(term: 'hello world', index: 5),
+        );
 
-      expect(result.type, RouteType.search);
-      expect(result.searchTerm, 'hello world');
-      expect(result.videoIndex, 5);
-    });
+        expect(result.type, RouteType.search);
+        expect(result.searchTerm, 'hello world');
+        expect(result.videoIndex, 5);
+      },
+    );
 
-    test('parseRoute("/search/%23bitcoin/3") decodes hash with index', () {
-      final result = parseRoute('/search/%23bitcoin/3');
+    test(
+      'parseRoute("${SearchScreenPure.pathForTerm(term: '#bitcoin', index: 3)}") decodes hash with index',
+      () {
+        final result = parseRoute(
+          SearchScreenPure.pathForTerm(term: '#bitcoin', index: 3),
+        );
 
-      expect(result.type, RouteType.search);
-      expect(result.searchTerm, '#bitcoin');
-      expect(result.videoIndex, 3);
-    });
+        expect(result.type, RouteType.search);
+        expect(result.searchTerm, '#bitcoin');
+        expect(result.videoIndex, 3);
+      },
+    );
   });
 
   group('Phase 3: URL Encoding - buildRoute() edge cases', () {
@@ -188,7 +220,7 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/hello%20world');
+      expect(result, SearchScreenPure.pathForTerm(term: 'hello world'));
     });
 
     test('buildRoute encodes hash symbol in search term', () {
@@ -199,7 +231,7 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/%23bitcoin');
+      expect(result, SearchScreenPure.pathForTerm(term: '#bitcoin'));
     });
 
     test('buildRoute encodes forward slash in search term', () {
@@ -210,7 +242,7 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/%2Fspecial');
+      expect(result, SearchScreenPure.pathForTerm(term: '/special'));
     });
 
     test('buildRoute encodes emoji in search term', () {
@@ -218,7 +250,7 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/%F0%9F%9A%80');
+      expect(result, SearchScreenPure.pathForTerm(term: '🚀'));
     });
 
     test('buildRoute encodes spaces with index', () {
@@ -230,7 +262,10 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/hello%20world/5');
+      expect(
+        result,
+        SearchScreenPure.pathForTerm(term: 'hello world', index: 5),
+      );
     });
 
     test('buildRoute encodes hash symbol with index', () {
@@ -242,7 +277,7 @@ void main() {
 
       final result = buildRoute(context);
 
-      expect(result, '/search/%23bitcoin/3');
+      expect(result, SearchScreenPure.pathForTerm(term: '#bitcoin', index: 3));
     });
   });
 

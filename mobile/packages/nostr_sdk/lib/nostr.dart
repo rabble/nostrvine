@@ -20,7 +20,8 @@ class Nostr {
 
   NostrSigner nostrSigner;
 
-  final String _publicKey;
+  /// Cached public key from the signer - single source of truth
+  String _cachedPublicKey = '';
 
   Function(String, String)? onNotice;
 
@@ -28,16 +29,29 @@ class Nostr {
 
   Nostr(
     this.nostrSigner,
-    this._publicKey,
     List<EventFilter> eventFilters,
     this.tempRelayGener, {
     this.onNotice,
     WebSocketChannelFactory? channelFactory,
   }) {
+    // Public key starts empty - call refreshPublicKey() after construction
+    // to populate from the signer (single source of truth).
     _pool = RelayPool(this, eventFilters, tempRelayGener, onNotice: onNotice);
   }
 
-  String get publicKey => _publicKey;
+  /// Public key of the client.
+  ///
+  /// Returns the cached public key. The signer is the source of truth;
+  /// use [refreshPublicKey] to update the cache from the signer.
+  String get publicKey => _cachedPublicKey;
+
+  /// Refresh the cached public key from the signer.
+  ///
+  /// This is useful when the signer's key may have changed.
+  Future<void> refreshPublicKey() async {
+    final key = await nostrSigner.getPublicKey();
+    _cachedPublicKey = key ?? '';
+  }
 
   RelayPool get relayPool => _pool;
 
@@ -50,7 +64,7 @@ class Nostr {
   }) async {
     content ??= "+";
 
-    Event event = Event(_publicKey, EventKind.reaction, [
+    Event event = Event(_cachedPublicKey, EventKind.reaction, [
       ["e", id],
     ], content);
     return await sendEvent(
@@ -65,7 +79,7 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    Event event = Event(_publicKey, EventKind.metadata, [], content);
+    Event event = Event(_cachedPublicKey, EventKind.metadata, [], content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -78,7 +92,7 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    Event event = Event(_publicKey, EventKind.eventDeletion, [
+    Event event = Event(_cachedPublicKey, EventKind.eventDeletion, [
       ["e", eventId],
     ], "delete");
     return await sendEvent(
@@ -98,7 +112,12 @@ class Nostr {
       tags.add(["e", eventId]);
     }
 
-    Event event = Event(_publicKey, EventKind.eventDeletion, tags, "delete");
+    Event event = Event(
+      _cachedPublicKey,
+      EventKind.eventDeletion,
+      tags,
+      "delete",
+    );
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -117,7 +136,7 @@ class Nostr {
     if (StringUtil.isNotBlank(relayAddr)) {
       tag.add(relayAddr);
     }
-    Event event = Event(_publicKey, EventKind.repost, [tag], content);
+    Event event = Event(_cachedPublicKey, EventKind.repost, [tag], content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -132,7 +151,7 @@ class Nostr {
     List<String>? targetRelays,
   }) async {
     final tags = contacts.toJson();
-    final event = Event(_publicKey, EventKind.contactList, tags, content);
+    final event = Event(_cachedPublicKey, EventKind.contactList, tags, content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,

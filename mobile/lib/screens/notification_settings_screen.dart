@@ -9,6 +9,12 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'notification-settings';
+
+  /// Path for this route.
+  static const path = '/notification-settings';
+
   const NotificationSettingsScreen({super.key});
 
   @override

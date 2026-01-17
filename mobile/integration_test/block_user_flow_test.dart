@@ -2,12 +2,13 @@
 // ABOUTME: Tests end-to-end journey from profile screen to blocklist updates
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
@@ -57,7 +58,8 @@ void main() {
       );
 
       // Navigate to test user's profile
-      router.go('/profile/$testUserNpub/0');
+      router.go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
+
       await tester.pumpAndSettle();
 
       // STEP 1: Verify "Block User" button is visible
@@ -189,7 +191,7 @@ void main() {
       expect(blocklistService.isBlocked(testUserHex), isFalse);
 
       // Navigate to test user's profile
-      router.go('/profile/$testUserNpub/0');
+      router.go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
       await tester.pumpAndSettle();
 
       // Tap "Block User" button

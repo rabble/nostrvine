@@ -14,6 +14,12 @@ import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
+  /// Route name for navigation
+  static const String routeName = 'reset-password';
+
+  /// Path for navigation
+  static const String path = '/reset-password';
+
   const ResetPasswordScreen({super.key, required this.token});
 
   final String token;

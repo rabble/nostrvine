@@ -2,12 +2,16 @@
 // ABOUTME: Tests shell rendering, deep links, tab state preservation, back navigation
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/app_shell.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/app_shell.dart';
+import 'package:openvine/router/route_normalization_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 
 void main() {
   // Disable HomeFeed timer in tests by setting poll interval to 1 year
@@ -40,7 +44,7 @@ void main() {
       await tester.pump();
 
       // Should start at initial location
-      expect(currentLocation(c), '/home/0');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
 
       // Find AppShell widget to verify shell is rendered
       expect(find.byType(AppShell), findsOneWidget);
@@ -57,12 +61,12 @@ void main() {
         // Activate normalization provider
         c.read(routeNormalizationProvider);
 
-        c.read(goRouterProvider).go('/home/-3');
+        c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(-3));
         await tester.pump(); // Process the navigation
         await tester.pump(); // Process the post-frame callback redirect
 
         // After normalization, router location should be canonical
-        expect(currentLocation(c), '/home/0');
+        expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
 
         // Bottom nav should show Home tab (index 0) as selected
         final bottomNav = tester.widget<BottomNavigationBar>(
@@ -85,12 +89,17 @@ void main() {
 
       c.read(routeNormalizationProvider);
 
-      c.read(goRouterProvider).go('/profile/npubXYZ/2');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex('npubXYZ', 2));
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
 
       // Should be at profile route
-      expect(currentLocation(c), '/profile/npubXYZ/2');
+      expect(
+        currentLocation(c),
+        ProfileScreenRouter.pathForIndex('npubXYZ', 2),
+      );
 
       // Bottom nav should show Profile tab (index 3) as selected
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -107,12 +116,12 @@ void main() {
 
       c.read(routeNormalizationProvider);
 
-      c.read(goRouterProvider).go('/explore/5');
+      c.read(goRouterProvider).go(ExploreScreen.pathForIndex(5));
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
 
       // Should be at explore route
-      expect(currentLocation(c), '/explore/5');
+      expect(currentLocation(c), ExploreScreen.pathForIndex(5));
 
       // Bottom nav should show Explore tab (index 1) as selected
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -131,12 +140,17 @@ void main() {
 
       c.read(routeNormalizationProvider);
 
-      c.read(goRouterProvider).go('/hashtag/rust/3');
+      c
+          .read(goRouterProvider)
+          .go(HashtagScreenRouter.pathForTag('rust', index: 3));
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
 
       // Should be at hashtag route
-      expect(currentLocation(c), '/hashtag/rust/3');
+      expect(
+        currentLocation(c),
+        HashtagScreenRouter.pathForTag('rust', index: 3),
+      );
 
       // Bottom nav should show Tags tab (index 2) as selected
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -159,25 +173,25 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Start at home/2
-      c.read(goRouterProvider).go('/home/2');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(2));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/home/2');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
 
       // Navigate within home tab to home/3
-      c.read(goRouterProvider).go('/home/3');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(3));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/home/3');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(3));
 
       // Switch to Explore tab
-      c.read(goRouterProvider).go('/explore/0');
+      c.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/explore/0');
+      expect(currentLocation(c), ExploreScreen.pathForIndex(0));
 
       // Switch back to Home tab via bottom nav
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -189,7 +203,7 @@ void main() {
 
       // Should return to canonical /home/0 (basePathForTab behavior)
       // This is expected because onTap navigates to canonical paths
-      expect(currentLocation(c), '/home/0');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
     });
 
     testWidgets(
@@ -203,26 +217,26 @@ void main() {
         c.read(routeNormalizationProvider);
 
         // Navigate to /explore/7
-        c.read(goRouterProvider).go('/explore/7');
+        c.read(goRouterProvider).go(ExploreScreen.pathForIndex(7));
         await tester.pump();
         await tester.pump();
 
-        expect(currentLocation(c), '/explore/7');
+        expect(currentLocation(c), ExploreScreen.pathForIndex(7));
 
         // Switch to Profile tab
-        c.read(goRouterProvider).go('/profile/me/5');
+        c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('me', 5));
         await tester.pump();
         await tester.pump();
 
-        expect(currentLocation(c), '/profile/me/5');
+        expect(currentLocation(c), ProfileScreenRouter.pathForIndex('me', 5));
 
         // Navigate directly back to explore (not via bottom nav tap)
-        c.read(goRouterProvider).go('/explore/7');
+        c.read(goRouterProvider).go(ExploreScreen.pathForIndex(7));
         await tester.pump();
         await tester.pump();
 
         // Should be back at /explore/7
-        expect(currentLocation(c), '/explore/7');
+        expect(currentLocation(c), ExploreScreen.pathForIndex(7));
       },
     );
     // TODO(any): Fix and re-enable these tests
@@ -238,18 +252,18 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Navigate to home/2
-      c.read(goRouterProvider).go('/home/2');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(2));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/home/2');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
 
       // Navigate to home/5
-      c.read(goRouterProvider).go('/home/5');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(5));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/home/5');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(5));
 
       // Go back
       c.read(goRouterProvider).pop();
@@ -257,7 +271,7 @@ void main() {
       await tester.pump();
 
       // Should be back at home/2
-      expect(currentLocation(c), '/home/2');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
     });
 
     testWidgets('bottom nav tap navigates to canonical tab path', (
@@ -271,11 +285,11 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Start at /home/7
-      c.read(goRouterProvider).go('/home/7');
+      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(7));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), '/home/7');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(7));
 
       // Tap Explore via bottom nav
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -286,7 +300,7 @@ void main() {
       await tester.pump();
 
       // Should navigate to canonical explore path
-      expect(currentLocation(c), '/explore/0');
+      expect(currentLocation(c), ExploreScreen.pathForIndex(0));
 
       // Tap Home via bottom nav
       bottomNav.onTap!(0); // Tap Home tab
@@ -294,7 +308,7 @@ void main() {
       await tester.pump();
 
       // Should navigate to canonical home path, not back to /home/7
-      expect(currentLocation(c), '/home/0');
+      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
     });
     // TODO(any): Fix and re-enable these tests
   }, skip: true);

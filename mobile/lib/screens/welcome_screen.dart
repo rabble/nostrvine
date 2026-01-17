@@ -13,6 +13,22 @@ import 'package:openvine/widgets/error_message.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'welcome';
+
+  /// Path for this route.
+  static const path = '/welcome';
+
+  /// Path for login options route.
+  static const loginOptionsPath = '/welcome/login-options';
+
+  /// Path for auth native route.
+  static const authNativePath = '/welcome/login-options/auth-native';
+
+  /// Path for reset password route.
+  static const resetPasswordPath =
+      '/welcome/login-options/auth-native/reset-password';
+
   const WelcomeScreen({super.key});
 
   @override
@@ -130,7 +146,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 TextButton(
                                   onPressed: _canProceed
                                       ? () => context.push(
-                                          '/welcome/login-options',
+                                          WelcomeScreen.loginOptionsPath,
                                         )
                                       : null,
                                   child: Text(

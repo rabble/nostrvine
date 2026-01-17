@@ -2,17 +2,18 @@
 // ABOUTME: Verifies search screen reads search term from URL and triggers search
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 import 'search_screen_pure_url_test.mocks.dart';
 
@@ -55,7 +56,9 @@ void main() {
       );
 
       // Navigate to search with term 'nostr'
-      container.read(goRouterProvider).go('/search/nostr');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'nostr'));
       await tester.pump(); // Trigger initial navigation
       await tester.pump(); // Render the screen
       await tester.pump(
@@ -99,7 +102,9 @@ void main() {
       );
 
       // Navigate to search with term 'bitcoin'
-      container.read(goRouterProvider).go('/search/bitcoin');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pump(); // Trigger initial navigation
       await tester.pump(); // Render the screen
       await tester.pump(
@@ -137,7 +142,9 @@ void main() {
       );
 
       // Navigate to search without term
-      container.read(goRouterProvider).go('/search');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: ''));
       await tester.pumpAndSettle();
 
       // Assert: Empty state UI should be shown
@@ -174,7 +181,9 @@ void main() {
       );
 
       // Navigate to search with term 'nostr'
-      container.read(goRouterProvider).go('/search/nostr');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'nostr'));
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -194,7 +203,9 @@ void main() {
       when(mockVideoEventService.searchResults).thenReturn([]);
 
       // Act: Navigate to search with term 'bitcoin'
-      container.read(goRouterProvider).go('/search/bitcoin');
+      container
+          .read(goRouterProvider)
+          .go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));

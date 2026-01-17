@@ -641,6 +641,19 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i7.Future<_i3.AuthResult>);
 
   @override
+  _i7.Future<_i3.AuthResult> connectWithBunker(String? bunkerUrl) =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithBunker, [bunkerUrl]),
+            returnValue: _i7.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_1(
+                this,
+                Invocation.method(#connectWithBunker, [bunkerUrl]),
+              ),
+            ),
+          )
+          as _i7.Future<_i3.AuthResult>);
+
+  @override
   _i7.Future<void> refreshCurrentProfile(
     _i9.UserProfileService? userProfileService,
   ) =>
@@ -717,10 +730,13 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i7.Future<_i8.Event?>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+  _i7.Future<void> dispose() =>
+      (super.noSuchMethod(
+            Invocation.method(#dispose, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
 }
 
 /// A class which mocks [NostrKeyManager].

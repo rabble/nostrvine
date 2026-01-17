@@ -24,6 +24,18 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 /// - Use Sound button to select for recording
 /// - Grid of videos using this sound
 class SoundDetailScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'sound';
+
+  /// Base path for sound routes.
+  static const basePath = '/sound';
+
+  /// Path pattern for this route.
+  static const path = '/sound/:id';
+
+  /// Build path for a specific sound ID.
+  static String pathForId(String id) => '$basePath/$id';
+
   /// Creates a SoundDetailScreen.
   ///
   /// [sound] is the audio event to display.

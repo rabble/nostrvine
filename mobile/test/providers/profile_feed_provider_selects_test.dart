@@ -2,16 +2,19 @@
 // ABOUTME: Tests pure provider selection logic without UI
 
 import 'dart:async';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/router_location_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/providers/profile_feed_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/profile_feed_providers.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
 /// Helper to wait for pageContext to emit a value
@@ -56,7 +59,7 @@ void main() {
       overrides: [
         videoEventServiceProvider.overrideWithValue(fakeService),
         routerLocationStreamProvider.overrideWithValue(
-          Stream.value('/profile/$testNpub/0'),
+          Stream.value(ProfileScreenRouter.pathForIndex(testNpub, 0)),
         ),
       ],
     );
@@ -87,7 +90,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         routerLocationStreamProvider.overrideWithValue(
-          Stream.value('/home/0'), // Not a profile route
+          Stream.value(HomeScreenRouter.pathForIndex(0)), // Not a profile route
         ),
       ],
     );

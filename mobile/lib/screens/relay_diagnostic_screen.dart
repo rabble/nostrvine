@@ -16,6 +16,12 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Comprehensive diagnostic screen for relay connectivity debugging
 class RelayDiagnosticScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'relay-diagnostic';
+
+  /// Path for this route.
+  static const path = '/relay-diagnostic';
+
   const RelayDiagnosticScreen({super.key});
 
   @override

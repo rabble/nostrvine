@@ -63,10 +63,10 @@ class NIP17MessageService {
       // We only need it for signing/encryption, not for relay communication
       final nostr = Nostr(
         signer,
-        senderPublicKey,
         [], // Empty filters - not using for subscriptions
         _dummyRelayGenerator, // Dummy relay generator - not using relays
       );
+      await nostr.refreshPublicKey();
 
       // Create kind 14 rumor event (unsigned, will be encrypted)
       final rumorTags = <List<String>>[

@@ -10,6 +10,12 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class BlossomSettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'blossom-settings';
+
+  /// Path for this route.
+  static const path = '/blossom-settings';
+
   const BlossomSettingsScreen({super.key});
 
   @override

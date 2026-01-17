@@ -2,8 +2,8 @@
 // ABOUTME: Ensures tapping notifications navigates to correct video or profile
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/models/notification_model.dart';
@@ -11,9 +11,11 @@ import 'package:models/models.dart' hide NotificationModel, NotificationType;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/app_router.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
 import 'notifications_navigation_test.mocks.dart';
@@ -88,7 +90,7 @@ void main() {
         await tester.pumpWidget(shell(c));
 
         // Navigate to notifications
-        c.read(goRouterProvider).go('/notifications/0');
+        c.read(goRouterProvider).go(NotificationsScreen.pathForIndex(0));
         await tester.pump();
         await tester.pump();
 
@@ -129,7 +131,7 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Navigate to notifications
-      c.read(goRouterProvider).go('/notifications/0');
+      c.read(goRouterProvider).go(NotificationsScreen.pathForIndex(0));
       await tester.pump();
       await tester.pump();
 
@@ -146,7 +148,10 @@ void main() {
       await tester.pump(); // State update from _initializeProfile
 
       // Assert: Should navigate to profile screen
-      expect(currentLocation(c), contains('/profile/$user456Npub'));
+      expect(
+        currentLocation(c),
+        contains(ProfileScreenRouter.pathForNpub(user456Npub)),
+      );
 
       // Verify markAsRead was called
       verify(mockNotificationService.markAsRead('notif2')).called(1);

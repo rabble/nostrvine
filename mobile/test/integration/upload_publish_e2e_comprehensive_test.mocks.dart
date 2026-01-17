@@ -367,6 +367,19 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i6.Future<_i2.AuthResult>);
 
   @override
+  _i6.Future<_i2.AuthResult> connectWithBunker(String? bunkerUrl) =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithBunker, [bunkerUrl]),
+            returnValue: _i6.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_3(
+                this,
+                Invocation.method(#connectWithBunker, [bunkerUrl]),
+              ),
+            ),
+          )
+          as _i6.Future<_i2.AuthResult>);
+
+  @override
   _i6.Future<void> refreshCurrentProfile(
     _i8.UserProfileService? userProfileService,
   ) =>
@@ -443,10 +456,13 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i6.Future<_i10.Event?>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+  _i6.Future<void> dispose() =>
+      (super.noSuchMethod(
+            Invocation.method(#dispose, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 }
 
 /// A class which mocks [NostrClient].

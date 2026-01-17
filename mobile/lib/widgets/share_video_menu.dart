@@ -27,6 +27,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 
 // TODO(any): Move this to a reusable widget
 Widget get _buildLoadingIndicator => Padding(
@@ -3543,7 +3544,7 @@ class _UseThisSoundTile extends ConsumerWidget {
             onDismiss?.call();
 
             // Navigate to sound detail screen using GoRouter
-            context.push('/sound/${audio.id}', extra: audio);
+            context.push(SoundDetailScreen.pathForId(audio.id), extra: audio);
           },
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 8,

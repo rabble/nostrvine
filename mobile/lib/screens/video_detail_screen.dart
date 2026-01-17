@@ -12,6 +12,18 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'video';
+
+  /// Base path for video routes.
+  static const basePath = '/video';
+
+  /// Path pattern for this route.
+  static const path = '/video/:id';
+
+  /// Build path for a specific video ID.
+  static String pathForId(String id) => '$basePath/$id';
+
   const VideoDetailScreen({required this.videoId, super.key});
 
   final String videoId;

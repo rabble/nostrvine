@@ -3,8 +3,8 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
@@ -12,6 +12,7 @@ import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
 
 void main() {
   group('Explore Active Video Provider', () {
@@ -54,7 +55,7 @@ void main() {
         overrides: [
           // Mock router location to /explore/0
           routerLocationStreamProvider.overrideWith(
-            (ref) => Stream.value('/explore/0'),
+            (ref) => Stream.value(ExploreScreen.pathForIndex(0)),
           ),
           // Mock video events with our test data
           videoEventsProvider.overrideWith(() => VideoEventsMock(mockVideos)),
@@ -112,7 +113,7 @@ void main() {
         overrides: [
           // Mock router location to /explore/1
           routerLocationStreamProvider.overrideWith(
-            (ref) => Stream.value('/explore/1'),
+            (ref) => Stream.value(ExploreScreen.pathForIndex(1)),
           ),
           // Mock video events with our test data
           videoEventsProvider.overrideWith(() => VideoEventsMock(mockVideos)),
@@ -206,7 +207,7 @@ void main() {
         container.read(videoEventsProvider);
 
         // Emit initial location: /explore/0
-        locationController.add('/explore/0');
+        locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
         // Verify we start at index 0
@@ -217,7 +218,7 @@ void main() {
         expect(activeVideoIds.last, equals('explore-video-0'));
 
         // Now simulate scroll: change URL to /explore/1
-        locationController.add('/explore/1');
+        locationController.add(ExploreScreen.pathForIndex(1));
         await pumpEventQueue();
 
         // Active video should change to index 1
@@ -273,7 +274,7 @@ void main() {
         container.read(videoEventsProvider);
 
         // Emit location: /explore (no index - grid mode)
-        locationController.add('/explore');
+        locationController.add(ExploreScreen.path);
         await pumpEventQueue();
 
         // Active video should be null (grid mode)

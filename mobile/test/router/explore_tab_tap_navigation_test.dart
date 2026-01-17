@@ -2,9 +2,11 @@
 // ABOUTME: Verifies default explore navigation is /explore (grid) not /explore/0 (feed)
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 
 void main() {
   group('Explore Tab Tap Navigation Test', () {
@@ -24,7 +26,7 @@ void main() {
         );
 
         // Start at home
-        container.read(goRouterProvider).go('/home/0');
+        container.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
         await tester.pumpAndSettle();
 
         // Get current location - should be /home/0
@@ -34,7 +36,7 @@ void main() {
             .value
             .uri
             .toString();
-        expect(homeLocation, '/home/0');
+        expect(homeLocation, HomeScreenRouter.pathForIndex(0));
 
         // Simulate tapping explore tab (index 1)
         // This should navigate to /explore (grid mode), NOT /explore/0 (feed mode)
@@ -52,7 +54,7 @@ void main() {
             .toString();
         expect(
           exploreLocation,
-          '/explore',
+          ExploreScreen.path,
           reason:
               'Tapping explore tab should navigate to grid mode (/explore), not feed mode (/explore/0)',
         );
