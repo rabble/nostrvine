@@ -1,4 +1,5 @@
 // ABOUTME: Screen for importing existing Nostr private keys (nsec or hex format)
+// ABOUTME: Also supports NIP-46 bunker URLs for remote signing
 // ABOUTME: Validates keys and imports them securely for existing Nostr users
 
 import 'dart:async';
@@ -6,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -45,7 +47,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       elevation: 0,
     ),
     body: SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -53,7 +55,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Enter your private key',
+                'Enter your private key or bunker URL',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -62,7 +64,8 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Import your existing Nostr identity using your private key (nsec or hex format)',
+                'Import your existing Nostr identity using your private key '
+                '(nsec or hex format) or a NIP-46 bunker URL',
                 style: TextStyle(fontSize: 16, color: Colors.grey[300]),
               ),
               const SizedBox(height: 32),
@@ -73,9 +76,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                 obscureText: _obscureKey,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Private Key',
+                  labelText: 'Private Key or Bunker URL',
                   labelStyle: const TextStyle(color: Colors.grey),
-                  hintText: 'nsec... or hex format',
+                  hintText: 'nsec..., hex, or bunker://...',
                   hintStyle: TextStyle(color: Colors.grey[600]),
                   filled: true,
                   fillColor: Colors.grey[900],
@@ -106,14 +109,24 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your private key';
+                    return 'Please enter your private key or bunker URL';
                   }
 
                   final trimmed = value.trim();
 
+                  // Check if it's a bunker URL
+                  if (NostrRemoteSignerInfo.isBunkerUrl(trimmed)) {
+                    // Validate bunker URL format
+                    final info = NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
+                    if (info == null) {
+                      return 'Invalid bunker URL. Must include relay parameter';
+                    }
+                    return null;
+                  }
+
                   // Check if it looks like a valid key format
                   if (!trimmed.startsWith('nsec') && trimmed.length != 64) {
-                    return 'Invalid key format. Use nsec... or 64-character hex';
+                    return 'Invalid format. Use nsec..., hex, or bunker://...';
                   }
 
                   if (trimmed.startsWith('nsec') && trimmed.length != 63) {
@@ -140,7 +153,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Keep your private key secure! Never share it with anyone. This key gives full access to your Nostr identity.',
+                        'Keep your private key secure! '
+                        'Never share it with anyone. This key gives full '
+                        'access to your Nostr identity.',
                         style: TextStyle(
                           color: Colors.orange.shade200,
                           fontSize: 14,
@@ -178,11 +193,11 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                               ),
                             ),
                             SizedBox(width: 12),
-                            Text('Importing...'),
+                            Text('Connecting...'),
                           ],
                         )
                       : const Text(
-                          'Import Identity',
+                          'Connect Identity',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -190,7 +205,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 32),
 
               // Additional info
               Container(
@@ -217,7 +232,8 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Go back and create a new identity. We'll generate a secure key pair for you.",
+                      "Go back and create a new identity. We'll generate a "
+                      "secure key pair for you.",
                       style: TextStyle(color: Colors.grey[300], fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
@@ -260,7 +276,10 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       final keyText = _keyController.text.trim();
       final AuthResult result;
 
-      if (keyText.startsWith('nsec')) {
+      if (NostrRemoteSignerInfo.isBunkerUrl(keyText)) {
+        // Handle bunker URL (NIP-46 remote signing)
+        result = await authService.connectWithBunker(keyText);
+      } else if (keyText.startsWith('nsec')) {
         result = await authService.importFromNsec(keyText);
       } else {
         result = await authService.importFromHex(keyText);
@@ -286,7 +305,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result.errorMessage ?? 'Failed to import private key',
+              result.errorMessage ?? 'Failed to import key or connect bunker',
             ),
             backgroundColor: Colors.red,
           ),
@@ -295,10 +314,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error importing key: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {

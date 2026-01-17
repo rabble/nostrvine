@@ -46,7 +46,7 @@ abstract class Relay {
       var result = await doConnect();
       if (result) {
         try {
-          onConnected();
+          onConnected(source: 'connect()');
         } catch (e) {
           log("onConnected exception.");
           log('$e');
@@ -64,16 +64,32 @@ abstract class Relay {
   Future<bool> doConnect();
 
   /// The medhod called after relay connect success.
-  Future onConnected() async {
+  Future onConnected({String? source}) async {
+    log(
+      '[Relay] onConnected[${source ?? "unknown"}]: ${relayStatus.addr} - sending ${pendingMessages.length} pending messages',
+    );
+    if (pendingMessages.isEmpty) {
+      log(
+        '[Relay] onConnected[${source ?? "unknown"}]: ${relayStatus.addr} - NO pending messages to send!',
+      );
+      return;
+    }
     for (var message in pendingMessages) {
       // TODO To check result? and how to handle if send fail?
       var result = await send(message);
       if (!result) {
         log("message send fail onConnected");
+      } else {
+        log(
+          '[Relay] onConnected[${source ?? "unknown"}]: sent pending message type=${message.isNotEmpty ? message[0] : "unknown"}',
+        );
       }
     }
 
     pendingMessages.clear();
+    log(
+      '[Relay] onConnected[${source ?? "unknown"}]: ${relayStatus.addr} - cleared pending messages',
+    );
   }
 
   Future<void> getRelayInfo(String url) async {

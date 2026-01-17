@@ -78,7 +78,6 @@ class NostrClient {
     );
     return Nostr(
       config.signer,
-      config.publicKey,
       config.eventFilters,
       tempRelayGenerator,
       onNotice: config.onNotice,
@@ -189,8 +188,11 @@ class NostrClient {
   /// Initializes the client by connecting to configured relays
   ///
   /// This must be called before using the client to ensure relay connections
-  /// are established. Can be called multiple times safely.
+  /// are established. Also refreshes the public key from the signer to ensure
+  /// the client has the correct key. Can be called multiple times safely.
   Future<void> initialize() async {
+    // Refresh public key from signer - signer is the single source of truth
+    await _nostr.refreshPublicKey();
     await _relayManager.initialize();
   }
 

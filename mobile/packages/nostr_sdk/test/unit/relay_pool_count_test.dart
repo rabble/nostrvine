@@ -9,21 +9,14 @@ void main() {
     late Nostr nostr;
     late LocalNostrSigner signer;
     late String testPrivateKey;
-    late String testPublicKey;
 
-    setUp(() {
+    setUp(() async {
       testPrivateKey =
           '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
-      testPublicKey =
-          '87979b28328fa41994eb9a5d9c76cdf3a605df66fbb4c5f82c3608939b2545d5';
       signer = LocalNostrSigner(testPrivateKey);
 
-      nostr = Nostr(
-        signer,
-        testPublicKey,
-        [],
-        (url) => RelayBase(url, RelayStatus(url)),
-      );
+      nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+      await nostr.refreshPublicKey();
     });
 
     test('count method throws ArgumentError for empty filters', () async {
