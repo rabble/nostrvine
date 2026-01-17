@@ -2,17 +2,17 @@
 // ABOUTME: Publishes initial profile metadata to Nostr after setup is complete
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:openvine/models/user_profile.dart' as profile_model;
+import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -20,11 +20,23 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
+  /// Route name for editing existing profile.
+  static const editRouteName = 'edit-profile';
+
+  /// Path for editing existing profile.
+  static const editPath = '/edit-profile';
+
+  /// Route name for setting up new profile.
+  static const setupRouteName = 'setup-profile';
+
+  /// Path for setting up new profile.
+  static const setupPath = '/setup-profile';
+
   const ProfileSetupScreen({required this.isNewUser, super.key});
   final bool isNewUser;
 
@@ -40,9 +52,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  bool _isPublishing = false;
   bool _isUploadingImage = false;
-  bool _isWaitingForRelay = false; // Track relay confirmation phase
+  bool _isFormValid = false;
   File? _selectedImage;
   String? _uploadedImageUrl;
   // Store notifier reference to safely call in deactivate
@@ -97,7 +108,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           if (profile != null && mounted) {
             setState(() {
               // Use bestDisplayName which handles name/displayName fallback properly
-              _nameController.text = profile.name ?? profile.displayName ?? '';
+              _nameController.text = profile.displayName ?? profile.name ?? '';
               _bioController.text = profile.about ?? '';
               _pictureController.text = profile.picture ?? '';
 
@@ -169,413 +180,229 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch username controller state for reactive updates
     final usernameState = ref.watch(usernameProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final usernameRepository = ref.watch(usernameRepositoryProvider);
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: () {
-            // Try to pop using context.pop() which GoRouter intercepts
-            // This should work even if canPop() returns false
-            try {
-              context.pop();
-            } catch (e) {
-              // If pop fails, navigate to profile or home as fallback
-              final authService = ref.read(authServiceProvider);
-              final currentPubkey = authService.currentPublicKeyHex;
+    return RepositoryProvider<ProfileRepository>(
+      create: (_) => ProfileRepository(nostrClient: nostrClient),
+      child: BlocProvider<ProfileEditorBloc>(
+        create: (context) => ProfileEditorBloc(
+          profileRepository: context.read<ProfileRepository>(),
+          usernameRepository: usernameRepository,
+          userProfileService: userProfileService,
+        ),
+        child: BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) => prev.status != curr.status,
+          listener: (context, state) {
+            if (state.status == ProfileEditorStatus.success) {
+              // Invalidate profile providers so profile screen refetches
+              final currentPubkey = ref
+                  .read(authServiceProvider)
+                  .currentPublicKeyHex;
               if (currentPubkey != null) {
-                final npub = authService.currentNpub;
-                context.go('/profile/$npub');
+                ref.invalidate(fetchUserProfileProvider(currentPubkey));
+                ref.invalidate(userProfileReactiveProvider(currentPubkey));
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: VineTheme.vineGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Profile published successfully!',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+              );
+              if (widget.isNewUser) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
               } else {
-                context.go('/home/0');
+                if (context.canPop()) {
+                  context.pop(true);
+                } else {
+                  context.go('/');
+                }
+              }
+            } else if (state.status == ProfileEditorStatus.failure) {
+              // Invalidate profile providers after rollback so UI shows correct data
+              final currentPubkey = ref
+                  .read(authServiceProvider)
+                  .currentPublicKeyHex;
+              if (currentPubkey != null) {
+                ref.invalidate(fetchUserProfileProvider(currentPubkey));
+                ref.invalidate(userProfileReactiveProvider(currentPubkey));
+              }
+              // Re-check username so indicator shows current state (e.g., "taken")
+              final username = _nip05Controller.text.trim();
+              if (username.isNotEmpty) {
+                ref.read(usernameProvider.notifier).checkAvailability(username);
+              }
+              switch (state.error) {
+                case ProfileEditorError.usernameTaken:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Username was just taken. Please choose another.',
+                      ),
+                      backgroundColor: Colors.red[700],
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                case ProfileEditorError.usernameReserved:
+                  final username = usernameState.username;
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) => UsernameReservedDialog(username),
+                  );
+                case ProfileEditorError.publishFailed:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Failed to publish profile. Please try again.',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                case null:
+                  break;
               }
             }
           },
-          tooltip: 'Back',
-        ),
-        title: Text('Edit Profile', style: VineTheme.titleFont()),
-      ),
-      body: GestureDetector(
-        onTap: () {
-          // Dismiss keyboard when tapping outside text fields
-          FocusScope.of(context).unfocus();
-        },
-        child: SafeArea(
-          bottom:
-              false, // Don't add bottom padding - let content extend to bottom
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.isNewUser
-                              ? 'Welcome to divine!'
-                              : 'Update Your Profile',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.isNewUser
-                              ? "Let's set up your profile to get started"
-                              : 'Your profile information will be published to Nostr',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[300],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Display Name
-                        TextFormField(
-                          controller: _nameController,
-                          autofocus: true, // Automatically focus on first field
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: 'Display Name',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            hintText: 'How should people know you?',
-                            hintStyle: TextStyle(color: Colors.grey[600]),
-                            filled: true,
-                            fillColor: Colors.grey[900],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey[700]!,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: VineTheme.vineGreen,
-                                width: 2,
-                              ),
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.person,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          textInputAction: TextInputAction.next,
-                          onFieldSubmitted: (_) =>
-                              FocusScope.of(context).nextFocus(),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter a display name';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Bio
-                        TextFormField(
-                          controller: _bioController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: 'Bio (Optional)',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            hintText: 'Tell people about yourself...',
-                            hintStyle: TextStyle(color: Colors.grey[600]),
-                            filled: true,
-                            fillColor: Colors.grey[900],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey[700]!,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: VineTheme.vineGreen,
-                                width: 2,
-                              ),
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.info_outline,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          maxLines: 3,
-                          minLines: 1,
-                          maxLength: 160,
-                          textInputAction: TextInputAction.next,
-                          onFieldSubmitted: (_) =>
-                              FocusScope.of(context).nextFocus(),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // NIP-05 Username (optional)
-                        TextFormField(
-                          controller: _nip05Controller,
-                          style: const TextStyle(color: Colors.white),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: InputDecoration(
-                            labelText: 'Username (Optional)',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            hintText: 'username',
-                            hintStyle: TextStyle(color: Colors.grey[600]),
-                            filled: true,
-                            fillColor: Colors.grey[900],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey[700]!,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: VineTheme.vineGreen,
-                                width: 2,
-                              ),
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.verified_user,
-                              color: Colors.grey,
-                            ),
-                            suffixText: '@divine.video',
-                            suffixStyle: TextStyle(color: Colors.grey[500]),
-                            errorMaxLines: 2,
-                          ),
-                          textInputAction: TextInputAction.next,
-                          onFieldSubmitted: (_) =>
-                              FocusScope.of(context).nextFocus(),
-                          onChanged: (value) => ref
-                              .read(usernameProvider.notifier)
-                              .onUsernameChanged(value),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return null; // Optional field
-                            }
-
-                            final regex = RegExp(
-                              r'^[a-z0-9\-_.]+$',
-                              caseSensitive: false,
-                            );
-                            if (!regex.hasMatch(value)) {
-                              return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                            }
-                            if (value.length < kMinUsernameLength) {
-                              return 'Username must be at least $kMinUsernameLength characters';
-                            }
-                            if (value.length > kMaxUsernameLength) {
-                              return 'Username must be $kMaxUsernameLength characters or less';
-                            }
-                            // Show error from controller state if taken
-                            if (usernameState.isTaken) {
-                              return 'Username already taken';
-                            }
-                            return null;
-                          },
-                        ),
-                        // Username status indicators
-                        UsernameStatusIndicator(state: usernameState),
-                        const SizedBox(height: 16),
-
-                        // Profile Picture Section
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Profile Picture (Optional)',
-                              style: TextStyle(
-                                color: Colors.grey[300],
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: Stack(
-                                children: [
-                                  // Profile picture preview
-                                  Container(
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.grey[800],
-                                      border: Border.all(
-                                        color: VineTheme.vineGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: ClipOval(
-                                      child: _buildProfilePicturePreview(),
-                                    ),
-                                  ),
-                                  // Upload progress indicator
-                                  if (_isUploadingImage)
-                                    Positioned.fill(
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.black.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                        ),
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            color: VineTheme.vineGreen,
-                                            strokeWidth: 3,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Image source buttons
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+          builder: (context, profileEditorState) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                toolbarHeight: 72,
+                leadingWidth: 80,
+                centerTitle: false,
+                titleSpacing: 0,
+                backgroundColor: VineTheme.navGreen,
+                leading: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: VineTheme.iconButtonBackground,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/CaretLeft.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    // Try to pop using context.pop() which GoRouter intercepts
+                    // This should work even if canPop() returns false
+                    try {
+                      context.pop();
+                    } catch (e) {
+                      // If pop fails, navigate to profile or home as fallback
+                      final authService = ref.read(authServiceProvider);
+                      final currentPubkey = authService.currentPublicKeyHex;
+                      if (currentPubkey != null) {
+                        final npub = authService.currentNpub;
+                        context.go('/profile/$npub');
+                      } else {
+                        context.go('/home/0');
+                      }
+                    }
+                  },
+                  tooltip: 'Back',
+                ),
+                title: Text('Edit Profile', style: VineTheme.titleFont()),
+              ),
+              body: GestureDetector(
+                onTap: () {
+                  // Dismiss keyboard when tapping outside text fields
+                  FocusScope.of(context).unfocus();
+                },
+                child: SafeArea(
+                  bottom:
+                      false, // Don't add bottom padding - let content extend to bottom
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: Form(
+                            key: _formKey,
+                            onChanged: () {
+                              final isValid =
+                                  _formKey.currentState?.validate() ?? false;
+                              if (isValid != _isFormValid) {
+                                setState(() {
+                                  _isFormValid = isValid;
+                                });
+                              }
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Show camera button on mobile only (macOS camera support is unreliable)
-                                if (!_isDesktopPlatform()) ...[
-                                  OutlinedButton.icon(
-                                    onPressed: _isUploadingImage
-                                        ? null
-                                        : () => _pickImage(ImageSource.camera),
-                                    icon: const Icon(
-                                      Icons.camera_alt,
-                                      size: 20,
-                                    ),
-                                    label: const Text('Camera'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      side: BorderSide(
-                                        color: Colors.grey[700]!,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
-                                OutlinedButton.icon(
-                                  onPressed: _isUploadingImage
-                                      ? null
-                                      : () => _pickImage(ImageSource.gallery),
-                                  icon: const Icon(
-                                    Icons.photo_library,
-                                    size: 20,
-                                  ),
-                                  label: Text(
-                                    _isDesktopPlatform()
-                                        ? 'Browse Files'
-                                        : 'Gallery',
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: BorderSide(color: Colors.grey[700]!),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                Text(
+                                  widget.isNewUser
+                                      ? 'Welcome to divine!'
+                                      : 'Update Your Profile',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // URL input option
-                            ExpansionTile(
-                              title: Text(
-                                defaultTargetPlatform == TargetPlatform.macOS
-                                    ? 'Paste image URL (recommended)'
-                                    : 'Or paste image URL',
-                                style: TextStyle(
-                                  color:
-                                      defaultTargetPlatform ==
-                                          TargetPlatform.macOS
-                                      ? Colors.white
-                                      : Colors.grey[400],
-                                  fontSize:
-                                      defaultTargetPlatform ==
-                                          TargetPlatform.macOS
-                                      ? 16
-                                      : 14,
-                                  fontWeight:
-                                      defaultTargetPlatform ==
-                                          TargetPlatform.macOS
-                                      ? FontWeight.w500
-                                      : FontWeight.normal,
+                                const SizedBox(height: 8),
+                                Text(
+                                  widget.isNewUser
+                                      ? "Let's set up your profile to get started"
+                                      : 'Your profile information will be published to Nostr',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[300],
+                                  ),
                                 ),
-                              ),
-                              tilePadding: EdgeInsets.zero,
-                              initiallyExpanded:
-                                  defaultTargetPlatform == TargetPlatform.macOS,
-                              children: [
+                                const SizedBox(height: 32),
+
+                                // Display Name
                                 TextFormField(
-                                  controller: _pictureController,
+                                  controller: _nameController,
+                                  autofocus:
+                                      true, // Automatically focus on first field
                                   style: const TextStyle(color: Colors.white),
                                   decoration: InputDecoration(
-                                    hintText:
-                                        'https://example.com/your-avatar.jpg',
+                                    labelText: 'Display Name',
+                                    labelStyle: const TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                    hintText: 'How should people know you?',
                                     hintStyle: TextStyle(
                                       color: Colors.grey[600],
                                     ),
@@ -600,678 +427,461 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                                       ),
                                     ),
                                     prefixIcon: const Icon(
-                                      Icons.link,
+                                      Icons.person,
                                       color: Colors.grey,
                                     ),
                                   ),
-                                  textInputAction: TextInputAction.done,
-                                  onChanged: (_) =>
-                                      setState(() {}), // Update preview
-                                  onFieldSubmitted: (_) => _publishProfile(),
-                                  keyboardType: TextInputType.url,
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
                                   validator: (value) {
-                                    if (value != null &&
-                                        value.trim().isNotEmpty) {
-                                      // Basic URL validation
-                                      final uri = Uri.tryParse(value.trim());
-                                      if (uri == null || !uri.hasAbsolutePath) {
-                                        return 'Please enter a valid URL';
-                                      }
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Please enter a display name';
                                     }
                                     return null;
                                   },
                                 ),
-                                if (defaultTargetPlatform ==
-                                    TargetPlatform.macOS) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Tip: Upload your image to imgur.com, cloudinary.com, or any image hosting service to get a URL.',
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
+                                const SizedBox(height: 16),
+
+                                // Bio
+                                TextFormField(
+                                  controller: _bioController,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'Bio (Optional)',
+                                    labelStyle: const TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                    hintText: 'Tell people about yourself...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[600],
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[900],
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey[700]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: VineTheme.vineGreen,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.info_outline,
+                                      color: Colors.grey,
                                     ),
                                   ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
+                                  maxLines: 3,
+                                  minLines: 1,
+                                  maxLength: 160,
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
+                                ),
+                                const SizedBox(height: 16),
 
-                        // Action buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _isPublishing
-                                    ? null
-                                    : () {
-                                        // Wait for any ongoing transitions before popping
-                                        // This prevents navigation timing race condition
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                              if (mounted) {
-                                                Navigator.of(context).pop();
-                                              }
-                                            });
-                                      },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(color: Colors.white),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                // NIP-05 Username (optional)
+                                TextFormField(
+                                  controller: _nip05Controller,
+                                  style: const TextStyle(color: Colors.white),
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
+                                  decoration: InputDecoration(
+                                    labelText: 'Username (Optional)',
+                                    labelStyle: const TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                    hintText: 'username',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[600],
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[900],
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey[700]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: VineTheme.vineGreen,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.verified_user,
+                                      color: Colors.grey,
+                                    ),
+                                    suffixText: '@divine.video',
+                                    suffixStyle: TextStyle(
+                                      color: Colors.grey[500],
+                                    ),
+                                    errorMaxLines: 2,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
+                                  onChanged: (value) => ref
+                                      .read(usernameProvider.notifier)
+                                      .onUsernameChanged(value),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return null; // Optional field
+                                    }
+
+                                    final regex = RegExp(
+                                      r'^[a-z0-9\-_.]+$',
+                                      caseSensitive: false,
+                                    );
+                                    if (!regex.hasMatch(value)) {
+                                      return 'Username can only contain letters, numbers, dash, underscore, and dot';
+                                    }
+                                    if (value.length < kMinUsernameLength) {
+                                      return 'Username must be at least $kMinUsernameLength characters';
+                                    }
+                                    if (value.length > kMaxUsernameLength) {
+                                      return 'Username must be $kMaxUsernameLength characters or less';
+                                    }
+                                    return null;
+                                  },
                                 ),
-                                child: const Text('Cancel'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isPublishing
-                                    ? null
-                                    : _publishProfile,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: VineTheme.vineGreen,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: _isPublishing
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                // Username status indicators
+                                UsernameStatusIndicator(state: usernameState),
+                                const SizedBox(height: 16),
+
+                                // Profile Picture Section
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Profile Picture (Optional)',
+                                      style: TextStyle(
+                                        color: Colors.grey[300],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: Stack(
                                         children: [
-                                          const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
+                                          // Profile picture preview
+                                          Container(
+                                            width: 120,
+                                            height: 120,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.grey[800],
+                                              border: Border.all(
+                                                color: VineTheme.vineGreen,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: ClipOval(
+                                              child:
+                                                  _buildProfilePicturePreview(),
+                                            ),
+                                          ),
+                                          // Upload progress indicator
+                                          if (_isUploadingImage)
+                                            Positioned.fill(
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color:
+                                                            VineTheme.vineGreen,
+                                                        strokeWidth: 3,
+                                                      ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    // Image source buttons
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        // Show camera button on mobile only (macOS camera support is unreliable)
+                                        if (!_isDesktopPlatform()) ...[
+                                          OutlinedButton.icon(
+                                            onPressed: _isUploadingImage
+                                                ? null
+                                                : () => _pickImage(
+                                                    ImageSource.camera,
+                                                  ),
+                                            icon: const Icon(
+                                              Icons.camera_alt,
+                                              size: 20,
+                                            ),
+                                            label: const Text('Camera'),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Colors.white,
+                                              side: BorderSide(
+                                                color: Colors.grey[700]!,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Text(
-                                            _isWaitingForRelay
-                                                ? 'Confirming with relay...'
-                                                : 'Saving...',
-                                          ),
                                         ],
-                                      )
-                                    : const Text(
-                                        'Save',
+                                        OutlinedButton.icon(
+                                          onPressed: _isUploadingImage
+                                              ? null
+                                              : () => _pickImage(
+                                                  ImageSource.gallery,
+                                                ),
+                                          icon: const Icon(
+                                            Icons.photo_library,
+                                            size: 20,
+                                          ),
+                                          label: Text(
+                                            _isDesktopPlatform()
+                                                ? 'Browse Files'
+                                                : 'Gallery',
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.white,
+                                            side: BorderSide(
+                                              color: Colors.grey[700]!,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // URL input option
+                                    ExpansionTile(
+                                      title: Text(
+                                        defaultTargetPlatform ==
+                                                TargetPlatform.macOS
+                                            ? 'Paste image URL (recommended)'
+                                            : 'Or paste image URL',
                                         style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              defaultTargetPlatform ==
+                                                  TargetPlatform.macOS
+                                              ? Colors.white
+                                              : Colors.grey[400],
+                                          fontSize:
+                                              defaultTargetPlatform ==
+                                                  TargetPlatform.macOS
+                                              ? 16
+                                              : 14,
+                                          fontWeight:
+                                              defaultTargetPlatform ==
+                                                  TargetPlatform.macOS
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
                                         ),
                                       ),
-                              ),
+                                      tilePadding: EdgeInsets.zero,
+                                      initiallyExpanded:
+                                          defaultTargetPlatform ==
+                                          TargetPlatform.macOS,
+                                      children: [
+                                        TextFormField(
+                                          controller: _pictureController,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                'https://example.com/your-avatar.jpg',
+                                            hintStyle: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.grey[900],
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color: Colors.grey[700]!,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                color: VineTheme.vineGreen,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            prefixIcon: const Icon(
+                                              Icons.link,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          textInputAction: TextInputAction.done,
+                                          onChanged: (_) =>
+                                              setState(() {}), // Update preview
+                                          keyboardType: TextInputType.url,
+                                          validator: (value) {
+                                            if (value != null &&
+                                                value.trim().isNotEmpty) {
+                                              // Basic URL validation
+                                              final uri = Uri.tryParse(
+                                                value.trim(),
+                                              );
+                                              if (uri == null ||
+                                                  !uri.hasAbsolutePath) {
+                                                return 'Please enter a valid URL';
+                                              }
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        if (defaultTargetPlatform ==
+                                            TargetPlatform.macOS) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Tip: Upload your image to imgur.com, cloudinary.com, or any image hosting service to get a URL.',
+                                            style: TextStyle(
+                                              color: Colors.grey[500],
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 32),
+
+                                // Action buttons
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed:
+                                            profileEditorState.status ==
+                                                ProfileEditorStatus.loading
+                                            ? null
+                                            : () {
+                                                // Wait for any ongoing transitions before popping
+                                                // This prevents navigation timing race condition
+                                                WidgetsBinding.instance
+                                                    .addPostFrameCallback((_) {
+                                                      if (mounted) {
+                                                        Navigator.of(
+                                                          context,
+                                                        ).pop();
+                                                      }
+                                                    });
+                                              },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          side: const BorderSide(
+                                            color: Colors.white,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Text('Cancel'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    if (pubkey != null)
+                                      Expanded(
+                                        child: _SaveButton(
+                                          canSave:
+                                              _isFormValid &&
+                                              (_nip05Controller.text
+                                                      .trim()
+                                                      .isEmpty ||
+                                                  usernameState.isAvailable) &&
+                                              !usernameState.isChecking,
+                                          pubkey: pubkey,
+                                          displayName: _nameController.text
+                                              .trim(),
+                                          about:
+                                              _bioController.text.trim().isEmpty
+                                              ? null
+                                              : _bioController.text.trim(),
+                                          username:
+                                              _nip05Controller.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : _nip05Controller.text.trim(),
+                                          picture:
+                                              _pictureController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : _pictureController.text.trim(),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ), // closes Padding
-          ), // closes SingleChildScrollView
-        ), // closes SafeArea
-      ), // closes GestureDetector - this is the 'body:' parameter value
-    ); // closes Scaffold
-  }
-
-  Future<void> _publishProfile() async {
-    Log.info(
-      '🚀 Starting profile publish...',
-      name: 'ProfileSetupScreen',
-      category: LogCategory.ui,
+            );
+          },
+        ),
+      ),
     );
-
-    if (!_formKey.currentState!.validate()) {
-      Log.warning(
-        'Form validation failed',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      return;
-    }
-
-    setState(() {
-      _isPublishing = true;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      final nostrService = ref.read(nostrServiceProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
-
-      Log.info(
-        'Auth status: isAuthenticated=${authService.isAuthenticated}, publicKey=${authService.currentPublicKeyHex != null}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        'NostrService status: isInitialized=${nostrService.isInitialized}, connectedRelays=${nostrService.connectedRelays.length}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Log existing profile before update
-      final currentPubkey = authService.currentPublicKeyHex!;
-      final existingProfile = userProfileService.getCachedProfile(
-        currentPubkey,
-      );
-      if (existingProfile != null) {
-        Log.info(
-          '📋 Existing profile before update:',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - name: ${existingProfile.name}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - displayName: ${existingProfile.displayName}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - about: ${existingProfile.about}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - picture: ${existingProfile.picture}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - eventId: ${existingProfile.eventId}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      } else {
-        Log.info(
-          '📋 No existing profile found for ${currentPubkey}...',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
-
-      // Create profile metadata - start with existing profile data to preserve all fields
-      final profileData = <String, dynamic>{};
-
-      // Preserve all existing fields from current profile
-      if (existingProfile != null) {
-        // Start with the raw data to preserve unknown fields
-        profileData.addAll(existingProfile.rawData);
-
-        // Also explicitly preserve known fields
-        if (existingProfile.name != null) {
-          profileData['name'] = existingProfile.name;
-        }
-        if (existingProfile.displayName != null) {
-          profileData['display_name'] = existingProfile.displayName;
-        }
-        if (existingProfile.about != null) {
-          profileData['about'] = existingProfile.about;
-        }
-        if (existingProfile.picture != null) {
-          profileData['picture'] = existingProfile.picture;
-        }
-        if (existingProfile.banner != null) {
-          profileData['banner'] = existingProfile.banner;
-        }
-        if (existingProfile.website != null) {
-          profileData['website'] = existingProfile.website;
-        }
-        if (existingProfile.nip05 != null) {
-          profileData['nip05'] = existingProfile.nip05;
-        }
-        if (existingProfile.lud16 != null) {
-          profileData['lud16'] = existingProfile.lud16;
-        }
-        if (existingProfile.lud06 != null) {
-          profileData['lud06'] = existingProfile.lud06;
-        }
-
-        Log.info(
-          '📋 Preserved existing profile fields:',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '  - Preserved fields: ${profileData.keys.toList()}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
-
-      // Override with form data (only the fields we can edit)
-      profileData['name'] = _nameController.text.trim();
-
-      if (_bioController.text.trim().isNotEmpty) {
-        profileData['about'] = _bioController.text.trim();
-      } else {
-        // Remove about field if empty (user cleared it)
-        profileData.remove('about');
-      }
-
-      if (_pictureController.text.trim().isNotEmpty) {
-        profileData['picture'] = _pictureController.text.trim();
-      } else {
-        // Remove picture field if empty (user cleared it)
-        profileData.remove('picture');
-      }
-
-      Log.info(
-        '📝 Profile data to publish:',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - name: ${profileData['name']}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - about: ${profileData['about'] ?? 'not set'}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - picture: ${profileData['picture'] ?? 'not set'}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Handle NIP-05 registration if username is available
-      final usernameState = ref.read(usernameProvider);
-      if (usernameState.canRegister) {
-        try {
-          final relays = nostrService.connectedRelays.toList();
-
-          final registrationResult = await ref
-              .read(usernameProvider.notifier)
-              .registerUsername(
-                pubkey: authService.currentPublicKeyHex!,
-                relays: relays,
-              );
-
-          if (registrationResult.isSuccess) {
-            final nip05Identifier = '${usernameState.username}@divine.video';
-            profileData['nip05'] = nip05Identifier;
-            Log.info(
-              '✅ Registered NIP-05: $nip05Identifier',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-          } else if (registrationResult.isReserved) {
-            // Show reserved error - user needs to contact support
-            if (mounted) {
-              final username = usernameState.username;
-              await showDialog(
-                context: context,
-                builder: (context) => UsernameReservedDialog(username),
-              );
-            }
-            // Continue with profile creation without NIP-05
-          } else if (registrationResult.isTaken) {
-            // Username was taken between check and registration
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Username was just taken. Please choose another.',
-                  ),
-                  backgroundColor: Colors.red[700],
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-            // Don't continue - let user choose new username
-            setState(() {
-              _isPublishing = false;
-            });
-            return;
-          }
-        } catch (e) {
-          Log.error(
-            'Failed to register NIP-05: $e',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-          // Continue with profile creation even if NIP-05 fails
-        }
-      }
-
-      // Create NIP-01 kind 0 profile event
-      Log.info(
-        '🔨 Creating kind 0 event...',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      final event = await authService.createAndSignEvent(
-        kind: 0,
-        content: jsonEncode(profileData),
-      );
-
-      if (event == null) {
-        Log.error(
-          '❌ Failed to create profile event - createAndSignEvent returned null',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        throw Exception('Failed to create profile event');
-      }
-
-      // Log the created event
-      Log.info(
-        '✅ Created kind 0 event:',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Event ID: ${event.id}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Pubkey: ${event.pubkey}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Kind: ${event.kind}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Content: ${event.content}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Created at: ${event.createdAt}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Signature: ${event.sig}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.info(
-        '  - Tags: ${event.tags}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Check if event is valid
-      final isValid = event.isSigned;
-      Log.info(
-        '🔍 Event signature valid: $isValid',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      // Publish to Nostr relays
-      Log.info(
-        '📡 Publishing profile event to Nostr relays...',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      final sentEvent = await nostrService.publishEvent(event);
-      final success = sentEvent != null;
-
-      Log.info(
-        'Publish result: success=$success',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
-      if (success) {
-        // CRITICAL: Wait for relay to confirm it has the updated profile before navigating
-        // This prevents race condition where user navigates back but relay hasn't processed update yet
-        Log.info(
-          '⏳ Waiting for relay to confirm profile update...',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-
-        // Show relay confirmation UI
-        if (mounted) {
-          setState(() {
-            _isWaitingForRelay = true;
-          });
-        }
-
-        final userProfileService = ref.read(userProfileServiceProvider);
-
-        try {
-          // Retry with exponential backoff until relay returns updated profile
-          final confirmedProfile = await AsyncUtils.retryWithBackoff<profile_model.UserProfile?>(
-            operation: () async {
-              // Clear cache to force fresh fetch from relay
-              userProfileService.removeProfile(currentPubkey);
-
-              // Fetch profile from relay
-              final fetchedProfile = await userProfileService.fetchProfile(
-                currentPubkey,
-                forceRefresh: true,
-              );
-
-              Log.debug(
-                'Profile fetch attempt: eventId=${fetchedProfile?.eventId}, '
-                'timestamp=${fetchedProfile?.createdAt.millisecondsSinceEpoch}, '
-                'expected eventId=${event.id}, '
-                'expected timestamp>=${event.createdAt * 1000 - 1000}',
-                name: 'ProfileSetupScreen',
-                category: LogCategory.ui,
-              );
-
-              // Validate we got the updated profile (match by event ID or timestamp)
-              final eventIdMatches = fetchedProfile?.eventId == event.id;
-              final timestampMatches =
-                  fetchedProfile?.createdAt != null &&
-                  fetchedProfile!.createdAt.millisecondsSinceEpoch >=
-                      (event.createdAt * 1000 - 1000); // Allow 1s tolerance
-
-              if (eventIdMatches || timestampMatches) {
-                Log.info(
-                  '✅ Relay confirmed profile update (eventId match=$eventIdMatches, timestamp match=$timestampMatches)',
-                  name: 'ProfileSetupScreen',
-                  category: LogCategory.ui,
-                );
-                return fetchedProfile;
-              }
-
-              // Profile not yet updated on relay - retry
-              throw Exception(
-                'Relay returned stale profile - retrying... (eventId=${fetchedProfile?.eventId} vs ${event.id})',
-              );
-            },
-            maxRetries: 5, // Allow up to 5 retries
-            baseDelay: const Duration(milliseconds: 500), // Start with 500ms
-            maxDelay: const Duration(seconds: 8), // Cap at 8s
-            debugName: 'profile-publish-confirmation',
-          );
-
-          if (confirmedProfile == null) {
-            throw Exception('Failed to confirm profile update after retries');
-          }
-
-          // Update cache with confirmed profile
-          await userProfileService.updateCachedProfile(confirmedProfile);
-          Log.info(
-            '✅ Updated local cache with relay-confirmed profile',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Update AuthService profile cache
-          await authService.refreshCurrentProfile(userProfileService);
-          Log.info(
-            '✅ Updated AuthService profile cache',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Invalidate Riverpod provider to trigger UI refresh
-          ref.invalidate(fetchUserProfileProvider(currentPubkey));
-          Log.info(
-            '✅ Invalidated fetchUserProfileProvider for UI refresh',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-          );
-
-          // Clear waiting state
-          if (mounted) {
-            setState(() {
-              _isWaitingForRelay = false;
-            });
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: VineTheme.vineGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 17,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Profile published successfully!',
-                      style: TextStyle(color: VineTheme.vineGreen),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.white,
-              ),
-            );
-          }
-
-          // Navigate back or to main app - NOW SAFE because relay has confirmed update
-          if (widget.isNewUser) {
-            // For new users, wait a moment to show success message, then navigate to main app
-            await Future.delayed(const Duration(seconds: 1));
-            if (mounted) {
-              // Navigate to main app by popping back to the auth flow
-              // The auth service should already be in authenticated state
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            }
-          } else {
-            // Wait for SnackBar animation to complete before navigating
-            // This prevents navigation timing race condition that causes black screens
-            await Future.delayed(const Duration(milliseconds: 300));
-            if (mounted) {
-              // Use GoRouter navigation for consistency with the rest of the app
-              // Check if we can pop (have somewhere to go back to)
-              if (context.canPop()) {
-                context.pop(true); // Return true to indicate success
-              } else {
-                // If we can't pop (edit-profile became root somehow), go home
-                context.go('/');
-              }
-            }
-          }
-        } catch (e, stackTrace) {
-          // Clear waiting state
-          if (mounted) {
-            setState(() {
-              _isWaitingForRelay = false;
-            });
-          }
-
-          // Retry failed - show error to user
-          Log.error(
-            'Failed to confirm profile update from relay: $e',
-            name: 'ProfileSetupScreen',
-            category: LogCategory.ui,
-            stackTrace: stackTrace,
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Profile may not have updated correctly. Please check your profile and try again if needed.',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                backgroundColor: Colors.red.shade700,
-                duration: const Duration(seconds: 5),
-              ),
-            );
-
-            // Wait for SnackBar animation before navigating to prevent black screen
-            await Future.delayed(const Duration(milliseconds: 300));
-
-            // Still navigate back even on error, but warn user
-            if (widget.isNewUser) {
-              if (mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            } else {
-              if (mounted) {
-                // Use GoRouter navigation for consistency with the rest of the app
-                if (context.canPop()) {
-                  context.pop(
-                    false,
-                  ); // Return false to indicate partial success
-                } else {
-                  // If we can't pop, go home
-                  context.go('/');
-                }
-              }
-            }
-          }
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to publish profile. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error publishing profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isPublishing = false;
-        });
-      }
-    }
   }
 
   // Skip button removed from UI - no longer needed
@@ -1752,6 +1362,75 @@ class _UsernameErrorIndicator extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({
+    required this.canSave,
+    required this.pubkey,
+    required this.displayName,
+    this.about,
+    this.username,
+    this.picture,
+  });
+
+  final bool canSave;
+  final String pubkey;
+  final String displayName;
+  final String? about;
+  final String? username;
+  final String? picture;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = context.select<ProfileEditorBloc, bool>(
+      (bloc) => bloc.state.status == ProfileEditorStatus.loading,
+    );
+
+    return ElevatedButton(
+      onPressed: (isLoading || !canSave)
+          ? null
+          : () {
+              context.read<ProfileEditorBloc>().add(
+                ProfileSaved(
+                  pubkey: pubkey,
+                  displayName: displayName,
+                  about: about,
+                  username: username,
+                  picture: picture,
+                ),
+              );
+            },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: VineTheme.vineGreen.withValues(alpha: 0.4),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: isLoading
+          ? const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Saving...'),
+              ],
+            )
+          : const Text(
+              'Save',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
     );
   }
 }

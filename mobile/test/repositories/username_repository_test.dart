@@ -18,7 +18,7 @@ void main() {
   });
 
   group('UsernameRepository', () {
-    group('checkUsernameAvailability', () {
+    group('checkAvailability', () {
       test('returns available when service returns true', () async {
         // Arrange
         when(
@@ -68,90 +68,86 @@ void main() {
       });
     });
 
-    group('registerUsername', () {
+    group('register', () {
       const validPubkey =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      final relays = ['wss://relay1.com', 'wss://relay2.com'];
 
-      test('delegates to Nip05Service and returns success result', () async {
+      test('returns UsernameClaimSuccess on successful registration', () async {
         // Arrange
         when(
-          () =>
-              mockNip05Service.registerUsername('newuser', validPubkey, relays),
-        ).thenAnswer(
-          (_) async => const UsernameRegistrationResult(
-            status: UsernameRegistrationStatus.success,
-          ),
-        );
+          () => mockNip05Service.registerUsername('newuser', validPubkey),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.register(
           username: 'newuser',
           pubkey: validPubkey,
-          relays: relays,
         );
 
         // Assert
-        expect(result.isSuccess, true);
+        expect(result, isA<UsernameClaimSuccess>());
         verify(
-          () =>
-              mockNip05Service.registerUsername('newuser', validPubkey, relays),
+          () => mockNip05Service.registerUsername('newuser', validPubkey),
         ).called(1);
       });
 
-      test('returns taken result from service', () async {
-        // Arrange
-        when(
-          () => mockNip05Service.registerUsername(
-            'takenuser',
-            validPubkey,
-            relays,
-          ),
-        ).thenAnswer(
-          (_) async => const UsernameRegistrationResult(
-            status: UsernameRegistrationStatus.taken,
-            errorMessage: 'Username already taken',
-          ),
-        );
+      test(
+        'returns UsernameClaimTaken when service throws UsernameTakenException',
+        () async {
+          // Arrange
+          when(
+            () => mockNip05Service.registerUsername('takenuser', validPubkey),
+          ).thenThrow(const UsernameTakenException());
 
-        // Act
-        final result = await repository.register(
-          username: 'takenuser',
-          pubkey: validPubkey,
-          relays: relays,
-        );
+          // Act
+          final result = await repository.register(
+            username: 'takenuser',
+            pubkey: validPubkey,
+          );
 
-        // Assert
-        expect(result.isTaken, true);
-        expect(result.errorMessage, 'Username already taken');
-      });
+          // Assert
+          expect(result, isA<UsernameClaimTaken>());
+        },
+      );
 
-      test('returns reserved result from service', () async {
-        // Arrange
-        when(
-          () => mockNip05Service.registerUsername(
-            'reserved',
-            validPubkey,
-            relays,
-          ),
-        ).thenAnswer(
-          (_) async => const UsernameRegistrationResult(
-            status: UsernameRegistrationStatus.reserved,
-            errorMessage: 'Username is reserved',
-          ),
-        );
+      test(
+        'returns UsernameClaimReserved when service throws UsernameReservedException',
+        () async {
+          // Arrange
+          when(
+            () => mockNip05Service.registerUsername('reserved', validPubkey),
+          ).thenThrow(const UsernameReservedException());
 
-        // Act
-        final result = await repository.register(
-          username: 'reserved',
-          pubkey: validPubkey,
-          relays: relays,
-        );
+          // Act
+          final result = await repository.register(
+            username: 'reserved',
+            pubkey: validPubkey,
+          );
 
-        // Assert
-        expect(result.isReserved, true);
-        expect(result.errorMessage, 'Username is reserved');
-      });
+          // Assert
+          expect(result, isA<UsernameClaimReserved>());
+        },
+      );
+
+      test(
+        'returns UsernameClaimError when service throws Nip05ServiceException',
+        () async {
+          // Arrange
+          when(
+            () => mockNip05Service.registerUsername('erroruser', validPubkey),
+          ).thenThrow(const Nip05ServiceException('Network error'));
+
+          // Act
+          final result = await repository.register(
+            username: 'erroruser',
+            pubkey: validPubkey,
+          );
+
+          // Assert
+          expect(result, isA<UsernameClaimError>());
+          expect((result as UsernameClaimError).message, 'Network error');
+        },
+      );
     });
   });
 }

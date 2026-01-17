@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service to listen for Password Reset redirects (deeplinks)
@@ -35,7 +37,7 @@ class PasswordResetListener {
     );
 
     if (uri.host != 'login.divine.video' ||
-        !uri.path.startsWith('/reset-password')) {
+        !uri.path.startsWith(ResetPasswordScreen.path)) {
       return;
     }
 
@@ -49,7 +51,7 @@ class PasswordResetListener {
     if (params.containsKey('token')) {
       final token = params['token'];
       final router = ref.read(goRouterProvider);
-      router.go('/reset-password?token=$token');
+      router.go('${ResetPasswordScreen.path}?token=$token');
     }
   }
 

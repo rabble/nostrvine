@@ -173,6 +173,19 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<_i2.AuthResult>);
 
   @override
+  _i3.Future<_i2.AuthResult> connectWithBunker(String? bunkerUrl) =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithBunker, [bunkerUrl]),
+            returnValue: _i3.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(
+                this,
+                Invocation.method(#connectWithBunker, [bunkerUrl]),
+              ),
+            ),
+          )
+          as _i3.Future<_i2.AuthResult>);
+
+  @override
   _i3.Future<void> refreshCurrentProfile(
     _i4.UserProfileService? userProfileService,
   ) =>
@@ -249,10 +262,13 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<_i6.Event?>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+  _i3.Future<void> dispose() =>
+      (super.noSuchMethod(
+            Invocation.method(#dispose, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
 }
 
 /// A class which mocks [AudioSharingPreferenceService].

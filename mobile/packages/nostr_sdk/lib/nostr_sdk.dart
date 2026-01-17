@@ -24,6 +24,7 @@ export 'nip29/group_identifier.dart';
 export 'nip29/nip29.dart';
 export 'nip44/nip44_v2.dart';
 export 'nip46/nostr_remote_signer.dart';
+export 'nip46/nostr_remote_signer_info.dart';
 export 'nip47/nwc_info.dart';
 export 'nip51/bookmarks.dart';
 export 'nip51/follow_set.dart';
@@ -40,6 +41,7 @@ export 'nip94/file_metadata.dart';
 export 'nostr.dart';
 export 'relay/event_filter.dart';
 // Relay management
+export 'relay/relay_mode.dart';
 export 'relay/relay.dart';
 export 'relay/relay_base.dart';
 export 'relay/relay_pool.dart';

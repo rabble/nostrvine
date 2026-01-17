@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/models/user_profile.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -141,7 +141,9 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Start at profile grid view (videoIndex=0)
-      c.read(goRouterProvider).go('/profile/$testUserNpub/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
       await tester.pumpAndSettle();
 
       // Verify we're on the grid view
@@ -174,7 +176,7 @@ void main() {
       final router = c.read(goRouterProvider);
       expect(
         router.routeInformationProvider.value.uri.path,
-        '/profile/$testUserNpub/3',
+        ProfileScreenRouter.pathForIndex(testUserNpub, 3),
       );
 
       // Verify active video is now video at list index 2 (urlIndex 3 - 1 = 2)
@@ -216,7 +218,9 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Navigate to video at index 1
-      c.read(goRouterProvider).go('/profile/$testUserNpub/1');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(testUserNpub, 1));
       await tester.pumpAndSettle();
 
       // Verify profile name is shown (not "Loading...")
@@ -254,7 +258,9 @@ void main() {
         await tester.pumpWidget(shell(c));
 
         // Navigate to own video
-        c.read(goRouterProvider).go('/profile/$testUserNpub/1');
+        c
+            .read(goRouterProvider)
+            .go(ProfileScreenRouter.pathForIndex(testUserNpub, 1));
         await tester.pumpAndSettle();
 
         // Verify VideoFeedItem has forceShowOverlay=true for own profile
@@ -297,7 +303,9 @@ void main() {
       await tester.pumpWidget(shell(c));
 
       // Start at grid
-      c.read(goRouterProvider).go('/profile/$testUserNpub/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
       await tester.pumpAndSettle();
 
       // Tap grid item - find gesture detectors with play icons (grid items)

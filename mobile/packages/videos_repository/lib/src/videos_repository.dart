@@ -98,35 +98,58 @@ class VideosRepository {
   /// This is the "Popular" feed mode - shows videos ranked by their
   /// engagement metrics (loops, likes, comments, reposts).
   ///
-  /// Since Nostr relays don't support sorting by custom fields, this method:
-  /// 1. Fetches a larger batch of recent videos
-  /// 2. Sorts them client-side by engagement score
-  /// 3. Returns the top [limit] results
+  /// Strategy:
+  /// 1. First tries NIP-50 `sort:hot` server-side sorting (if relay supports)
+  /// 2. Falls back to client-side sorting by engagement score if NIP-50
+  ///    returns empty (relay doesn't support NIP-50)
   ///
   /// Parameters:
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination)
-  /// - [fetchMultiplier]: How many more videos to fetch for sorting
-  ///   (default 4x, so limit=5 fetches 20 videos to sort)
+  /// - [fetchMultiplier]: How many more videos to fetch for client-side sorting
+  ///   fallback (default 4x, so limit=5 fetches 20 videos to sort)
   ///
-  /// Returns a list of [VideoEvent] sorted by engagement score (highest first).
+  /// Returns a list of [VideoEvent] sorted by engagement/popularity
+  /// (highest first).
   /// Returns an empty list if no videos are found or on error.
   Future<List<VideoEvent>> getPopularVideos({
     int limit = _defaultLimit,
     int? until,
     int fetchMultiplier = 4,
   }) async {
+    // 1. Try NIP-50 server-side sorting first
+    final nip50Filter = Filter(
+      kinds: [_videoKind],
+      limit: limit,
+      until: until,
+      search: 'sort:hot', // NIP-50 sort by engagement
+    );
+
+    final nip50Events = await _nostrClient.queryEvents(
+      [nip50Filter],
+      useCache: false, // Relay ordering is source of truth
+    );
+
+    if (nip50Events.isNotEmpty) {
+      // NIP-50 worked - relay returned sorted results
+      // Preserve relay order (don't re-sort by createdAt)
+      return _transformAndFilter(nip50Events, sortByCreatedAt: false);
+    }
+
+    // 2. Fallback: relay doesn't support NIP-50, use client-side sorting
     // Fetch more videos than needed so we have a good pool to sort from
     final fetchLimit = limit * fetchMultiplier;
 
-    final filter = Filter(
+    final fallbackFilter = Filter(
       kinds: [_videoKind],
       limit: fetchLimit,
       until: until,
     );
 
-    final events = await _nostrClient.queryEvents([filter]);
+    final events = await _nostrClient.queryEvents(
+      [fallbackFilter],
+    );
 
     final videos = _transformAndFilter(events)
       // Sort by engagement score (uses VideoEvent's built-in comparator)
@@ -141,8 +164,13 @@ class VideosRepository {
   /// - Parses events using [VideoEvent.fromNostrEvent]
   /// - Filters out videos without a valid video URL
   /// - Filters out expired videos (NIP-40)
-  /// - Sorts by creation time (newest first) for consistent ordering
-  List<VideoEvent> _transformAndFilter(List<Event> events) {
+  /// - Sorts by creation time (newest first) by default, unless
+  ///   [sortByCreatedAt] is false (e.g., for NIP-50 results where
+  ///   relay order should be preserved)
+  List<VideoEvent> _transformAndFilter(
+    List<Event> events, {
+    bool sortByCreatedAt = true,
+  }) {
     final videos = <VideoEvent>[];
 
     for (final event in events) {
@@ -160,8 +188,10 @@ class VideosRepository {
       videos.add(video);
     }
 
-    // Sort by creation time (newest first)
-    videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Sort by creation time (newest first) unless preserving relay order
+    if (sortByCreatedAt) {
+      videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
 
     return videos;
   }

@@ -1,0 +1,15 @@
+appId: co.openvine.app
+---
+- assertVisible:
+    text: "Follow|Following" # Using regex to match either text
+- assertVisible:
+    text: "Like video|Unlike video" # Using regex to match either text
+- assertVisible: View comments
+- assertVisible:
+    text: "Repost video|Remove repost" # Using regex to match either text
+- assertVisible: Share video
+- assertVisible: Report video
+- assertVisible:
+    text: Video loop count
+    optional: true
+- assertVisible: Video description

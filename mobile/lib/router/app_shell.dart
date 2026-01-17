@@ -17,6 +17,8 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'page_context_provider.dart';
 import 'route_utils.dart';
 import 'nav_extensions.dart';
@@ -352,7 +354,7 @@ class AppShell extends ConsumerWidget {
                     case RouteType.hashtag:
                     case RouteType.search:
                       // Go back to explore
-                      context.go('/explore');
+                      context.go(ExploreScreen.path);
                       return;
 
                     default:
@@ -432,7 +434,7 @@ class AppShell extends ConsumerWidget {
                   final currentTab = _tabIndexFromRouteType(ctx.type);
                   if (currentTab != null && currentTab != 0) {
                     // Go to home first
-                    context.go('/home/0');
+                    context.go(HomeScreenRouter.pathForIndex(0));
                     return;
                   }
 

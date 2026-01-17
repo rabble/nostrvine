@@ -1,0 +1,73 @@
+appId: co.openvine.app
+---
+#PROFILE section
+- assertVisible: "Profile"
+- assertVisible: "Edit Profile
+
+    Update your display name, bio, and avatar"
+
+#PREFERENCES section
+- assertVisible: "PREFERENCES"
+- assertVisible: "Notifications
+
+    Manage notification preferences"
+- assertVisible: "Safety & Privacy
+
+    Blocked users, muted content, and report history"
+
+#Network section
+- assertVisible: "NETWORK"
+- assertVisible: "Relays
+
+    Manage Nostr relay connections"
+- assertVisible: "Relay Diagnostics
+
+    Debug relay connectivity and network issues"
+- assertVisible: "Media Servers
+
+    Configure Blossom upload servers"
+
+- repeat:
+    times: 7 # Number of times to repeat the commands
+    commands:
+      - swipe:
+          start: "50%, 90%" # Start from the middle of the screen, near the bottom
+          end: "50%, 82%" # Swipe to the middle of the screen, near the top
+          duration: 2000 # Duration of the swipe
+
+#ABOUT section
+- assertVisible: "ABOUT"
+
+#SUPPORT section
+- assertVisible: "SUPPORT"
+- assertVisible: "ProofMode Info
+
+    Learn about ProofMode verification and authenticity"
+- scroll
+- assertVisible: "Contact Support
+
+    Get help or report an issue"
+- assertVisible: "Save Logs
+
+    Export logs to file for manual sending"
+
+#ACCOUNT section
+- assertVisible: "ACCOUNT"
+- assertVisible: |-
+    Log Out
+    Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.
+- assertVisible: |-
+    Key Management
+    Export, backup, and restore your Nostr keys
+- assertVisible: |-
+    Remove Keys from Device
+    Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
+- assertVisible: |-
+    Delete Account and Data
+    PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.
+
+#Scroll back to make Edit Profile visible
+- scrollUntilVisible:
+    element:
+      text: "PROFILE"
+    direction: UP

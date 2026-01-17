@@ -29,6 +29,23 @@ class NIP71VideoKinds {
     return getAllVideoKinds().contains(kind);
   }
 
+  /// Get all NIP-71 video kinds that are acceptable for parsing
+  /// (used in permissive mode for external content like curated lists)
+  static List<int> getAllAcceptableVideoKinds() {
+    return [
+      shortVideo, // 22
+      normalVideo, // 21
+      addressableShortVideo, // 34236
+      addressableNormalVideo, // 34235
+    ];
+  }
+
+  /// Check if a kind is an acceptable video kind (permissive mode)
+  /// Accepts all NIP-71 video kinds, not just the ones OpenVine creates
+  static bool isAcceptableVideoKind(int kind) {
+    return getAllAcceptableVideoKinds().contains(kind);
+  }
+
   /// Get the preferred addressable kind for new events
   static int getPreferredAddressableKind() {
     return addressableShortVideo; // Kind 34236 for addressable short videos

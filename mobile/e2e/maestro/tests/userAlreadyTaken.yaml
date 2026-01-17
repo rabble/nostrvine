@@ -1,0 +1,14 @@
+appId: co.openvine.app
+---
+#TC to edit the user profile to an existing username,
+# given the user is logged in in the app with existing keys, on the Edit Profile screen,
+# by openning the profile and typing an existing username
+#Steps:
+# 1. Tap on username and input "EXISTING_USERNAME": Validate "Username already taken" is displayed
+
+- tapOn: |-
+    Username (Optional)
+    username
+- inputText: ${EXISTING_USERNAME}
+- waitForAnimationToEnd
+- runFlow: ../asserts/assertUserTaken.yaml

@@ -1,0 +1,14 @@
+appId: co.openvine.app
+---
+- waitForAnimationToEnd # diVine logo may take some time to load
+- assertVisible: |-
+    Create and share short videos
+    on the decentralized web
+- assertVisible: "I am 16 years or older"
+- assertVisible: "I agree to the "
+- assertVisible: "Terms of Service"
+- assertVisible: "Privacy
+    Policy"
+- assertVisible: "Safety Standards"
+- assertVisible: Already have keys? Import them here →
+- assertVisible: Accept Terms to Continue

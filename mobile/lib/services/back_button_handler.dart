@@ -2,14 +2,19 @@
 // ABOUTME: Routes back button presses from native Android to GoRouter navigation
 
 import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
-import 'package:openvine/router/last_tab_position_provider.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 
 class BackButtonHandler {
   static const MethodChannel _channel = MethodChannel(
@@ -51,7 +56,7 @@ class BackButtonHandler {
       case RouteType.hashtag:
       case RouteType.search:
         // Go back to explore
-        _router!.go('/explore');
+        _router!.go(ExploreScreen.path);
         return true; // Handled
 
       default:
@@ -107,26 +112,26 @@ class BackButtonHandler {
       // Navigate to previous tab
       switch (previousTab) {
         case 0:
-          _router!.go('/home/${lastIndex ?? 0}');
+          _router!.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
           break;
         case 1:
           if (lastIndex != null) {
-            _router!.go('/explore/$lastIndex');
+            _router!.go(ExploreScreen.pathForIndex(lastIndex));
           } else {
-            _router!.go('/explore');
+            _router!.go(ExploreScreen.path);
           }
           break;
         case 2:
-          _router!.go('/notifications/${lastIndex ?? 0}');
+          _router!.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
           break;
         case 3:
           // Get current user's npub for profile
           final authService = _ref.read(authServiceProvider);
           final currentNpub = authService.currentNpub;
           if (currentNpub != null) {
-            _router!.go('/profile/$currentNpub');
+            _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));
           } else {
-            _router!.go('/home/0');
+            _router!.go(HomeScreenRouter.pathForIndex(0));
           }
           break;
       }
@@ -138,7 +143,7 @@ class BackButtonHandler {
     final currentTab = _tabIndexFromRouteType(ctx.type);
     if (currentTab != null && currentTab != 0) {
       // Go to home first
-      _router!.go('/home/0');
+      _router!.go(HomeScreenRouter.pathForIndex(0));
       return true; // Handled
     }
 

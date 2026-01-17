@@ -4,7 +4,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';

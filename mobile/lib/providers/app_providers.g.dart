@@ -1331,7 +1331,7 @@ final class Nip05ServiceProvider
   }
 }
 
-String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
+String _$nip05ServiceHash() => r'1d27e1b137a09246fedc50586a7a28bcf37542b0';
 
 /// Username repository for availability checking and registration
 
@@ -2456,7 +2456,7 @@ final class CurationServiceProvider
   }
 }
 
-String _$curationServiceHash() => r'890fd0efd8c105c46fa828ae679b1c6ff58964a5';
+String _$curationServiceHash() => r'8eeffdbdad64deb0b10c3983346c3d3c83a1aa02';
 
 /// Content reporting service for NIP-56 compliance
 

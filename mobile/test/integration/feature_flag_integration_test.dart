@@ -2,16 +2,17 @@
 // ABOUTME: Validates flag service, providers, widgets, and screen working together
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'feature_flag_integration_test.mocks.dart';
 
@@ -395,7 +396,7 @@ class TestHomeScreen extends ConsumerWidget {
             child: const Text('Enhanced Camera UI'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            onPressed: () => Navigator.pushNamed(context, SettingsScreen.path),
             child: const Text('Settings'),
           ),
         ],

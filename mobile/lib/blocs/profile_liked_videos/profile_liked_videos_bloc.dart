@@ -9,7 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 

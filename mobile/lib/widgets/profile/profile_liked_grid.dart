@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';

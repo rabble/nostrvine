@@ -3,7 +3,8 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory, AspectRatio;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;

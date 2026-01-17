@@ -3,7 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 
 void main() {
   // Valid 64-character hex string for test pubkey
