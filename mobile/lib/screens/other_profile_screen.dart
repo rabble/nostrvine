@@ -10,14 +10,12 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -163,54 +161,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
-          onShareProfile: () => _shareProfile(userIdHex),
           onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
         ),
       },
     );
-  }
-
-  Future<void> _shareProfile(String userIdHex) async {
-    try {
-      // Get profile info for better share text
-      final profile = await ref
-          .read(userProfileServiceProvider)
-          .fetchProfile(userIdHex);
-      final displayName = profile?.bestDisplayName ?? 'User';
-
-      // Convert hex pubkey to npub format for sharing
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-
-      // Create share text with divine.video URL format
-      final shareText =
-          'Check out $displayName on divine!\n\n'
-          'https://divine.video/profile/$npub';
-
-      // Use share_plus to show native share sheet
-      final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: '$displayName on divine'),
-      );
-
-      if (result.status == ShareResultStatus.success) {
-        Log.info(
-          'Profile shared successfully',
-          name: 'OtherProfileScreen',
-          category: LogCategory.ui,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Error sharing profile: $e',
-        name: 'OtherProfileScreen',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to share profile: $e')));
-      }
-    }
   }
 
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {

@@ -27,7 +27,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
-    this.onShareProfile,
+    this.onMore,
     this.onBlockUser,
     this.scrollController,
     super.key,
@@ -54,8 +54,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Callback when "Clips" button is tapped (own profile only).
   final VoidCallback? onOpenClips;
 
-  /// Callback when "Share" button is tapped.
-  final VoidCallback? onShareProfile;
+  /// Callback when "More" button is tapped (own profile only).
+  final VoidCallback? onMore;
 
   /// Callback when block/unblock button is tapped (others' profile only).
   /// Parameter indicates whether user is currently blocked.
@@ -147,7 +147,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                   isOwnProfile: widget.isOwnProfile,
                   onEditProfile: widget.onEditProfile,
                   onOpenClips: widget.onOpenClips,
-                  onShareProfile: widget.onShareProfile,
+                  onMore: widget.onMore,
                   onBlockUser: widget.onBlockUser,
                 ),
               ),

@@ -1,8 +1,7 @@
-// ABOUTME: Profile header widget showing avatar, stats, name, bio, and npub
+// ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,7 +16,7 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
-/// Profile header widget displaying avatar, stats, name, bio, and public key.
+/// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
@@ -261,8 +260,6 @@ class _ProfileNameAndBio extends StatelessWidget {
             const SizedBox(height: 24),
             _AboutText(about: about!),
           ],
-          const SizedBox(height: 8),
-          _PublicKeyDisplay(userIdHex: userIdHex),
         ],
       ),
     );
@@ -300,82 +297,6 @@ class _AboutText extends StatelessWidget {
     return SelectableText(
       about,
       style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-    );
-  }
-}
-
-/// Public key (npub) display with copy functionality.
-class _PublicKeyDisplay extends StatelessWidget {
-  const _PublicKeyDisplay({required this.userIdHex});
-
-  final String userIdHex;
-
-  Future<void> _copyToClipboard(BuildContext context) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: VineTheme.onPrimary),
-                const SizedBox(width: 8),
-                Text(
-                  'Public key copied to clipboard',
-                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
-                ),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to copy: $e',
-              style: VineTheme.bodyMediumFont(),
-            ),
-            backgroundColor: VineTheme.likeRed,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _copyToClipboard(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: VineTheme.outlineMuted, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SelectableText(
-                NostrKeyUtils.encodePubKey(userIdHex),
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.onSurfaceMuted,
-                ).copyWith(fontFamily: 'monospace'),
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.copy, color: VineTheme.onSurfaceMuted, size: 14),
-          ],
-        ),
-      ),
     );
   }
 }

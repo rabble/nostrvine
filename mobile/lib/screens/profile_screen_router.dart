@@ -2,6 +2,7 @@
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -104,7 +105,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
-        onShareProfile: _shareProfile,
+        onMore: _more,
         onBlockUser: _blockUser,
       ),
     };
@@ -286,6 +287,86 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     context.push(ClipLibraryScreen.clipsPath);
   }
 
+  Future<void> _more(String userIdHex) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: VineTheme.surfaceBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.ios_share, color: VineTheme.whiteText),
+                title: Text('Share profile', style: VineTheme.bodyLargeFont()),
+                onTap: () => Navigator.of(modalContext).pop('share'),
+              ),
+              ListTile(
+                leading: Icon(Icons.copy, color: VineTheme.whiteText),
+                title: Text(
+                  'Copy my unique ID',
+                  style: VineTheme.bodyLargeFont(),
+                ),
+                onTap: () => Navigator.of(modalContext).pop('copy'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == 'share') {
+      await _shareProfile(userIdHex);
+    } else if (result == 'copy') {
+      await _copyUniqueId(userIdHex);
+    }
+  }
+
+  Future<void> _copyUniqueId(String userIdHex) async {
+    try {
+      final npub = NostrKeyUtils.encodePubKey(userIdHex);
+      await Clipboard.setData(ClipboardData(text: npub));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check, color: VineTheme.onPrimary),
+                const SizedBox(width: 8),
+                Text(
+                  'Unique ID copied to clipboard',
+                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
+                ),
+              ],
+            ),
+            backgroundColor: VineTheme.vineGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to copy: $e',
+              style: VineTheme.bodyMediumFont(),
+            ),
+            backgroundColor: VineTheme.likeRed,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
     if (currentlyBlocked) {
       // Unblock without confirmation
@@ -348,7 +429,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
+    required this.onMore,
     required this.onBlockUser,
   });
 
@@ -358,7 +439,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final void Function(String userIdHex) onShareProfile;
+  final void Function(String userIdHex) onMore;
   final void Function(String pubkey, bool isBlocked) onBlockUser;
 
   @override
@@ -408,7 +489,7 @@ class _ProfileContentView extends ConsumerWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onShareProfile: () => onShareProfile(userIdHex),
+      onMore: () => onMore(userIdHex),
       onBlockUser: (isBlocked) => onBlockUser(userIdHex, isBlocked),
     );
   }
@@ -464,7 +545,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
+    required this.onMore,
     required this.onBlockUser,
   });
 
@@ -476,7 +557,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onShareProfile;
+  final VoidCallback onMore;
   final void Function(bool isBlocked) onBlockUser;
 
   @override
@@ -501,7 +582,7 @@ class _ProfileDataView extends ConsumerWidget {
         onSetupProfile: onSetupProfile,
         onEditProfile: onEditProfile,
         onOpenClips: onOpenClips,
-        onShareProfile: onShareProfile,
+        onMore: onMore,
         onBlockUser: onBlockUser,
       ),
     };
@@ -521,7 +602,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
+    required this.onMore,
     required this.onBlockUser,
   });
 
@@ -535,7 +616,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onShareProfile;
+  final VoidCallback onMore;
   final void Function(bool isBlocked) onBlockUser;
 
   @override
@@ -564,7 +645,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onShareProfile: onShareProfile,
+      onMore: onMore,
       onBlockUser: onBlockUser,
     );
   }

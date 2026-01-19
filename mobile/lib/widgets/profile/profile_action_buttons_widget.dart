@@ -1,4 +1,4 @@
-// ABOUTME: Action buttons widget for profile page (edit, clips, share, follow, block)
+// ABOUTME: Action buttons widget for profile page (edit, library, more, follow, block)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ class ProfileActionButtons extends StatelessWidget {
     required this.isOwnProfile,
     this.onEditProfile,
     this.onOpenClips,
-    this.onShareProfile,
+    this.onMore,
     this.onBlockUser,
     super.key,
   });
@@ -24,7 +24,7 @@ class ProfileActionButtons extends StatelessWidget {
   final bool isOwnProfile;
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
-  final VoidCallback? onShareProfile;
+  final VoidCallback? onMore;
   final void Function(bool isCurrentlyBlocked)? onBlockUser;
 
   @override
@@ -77,26 +77,19 @@ class ProfileActionButtons extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton(
-              onPressed: onShareProfile,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: VineTheme.surfaceContainer,
-                foregroundColor: VineTheme.vineGreen,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 24,
-                ),
-                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+          OutlinedButton(
+            onPressed: onMore,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: VineTheme.surfaceContainer,
+              foregroundColor: VineTheme.vineGreen,
+              padding: const EdgeInsets.all(12),
+              side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                'Share',
-                style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
-              ),
+              minimumSize: Size.zero,
             ),
+            child: Icon(Icons.more_horiz, color: VineTheme.vineGreen, size: 24),
           ),
         ] else ...[
           Expanded(child: FollowFromProfileButton(pubkey: userIdHex)),
