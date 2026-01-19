@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -18,6 +18,21 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'list';
+
+  /// Base path for list routes.
+  static const basePath = '/list';
+
+  /// Path for this route.
+  static const path = '/list/:listId';
+
+  /// Build path for a specific list.
+  static String pathForId(String listId) {
+    final encodedId = Uri.encodeComponent(listId);
+    return '$basePath/$encodedId';
+  }
+
   const CuratedListFeedScreen({
     required this.listId,
     required this.listName,

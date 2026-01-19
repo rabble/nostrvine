@@ -8,7 +8,7 @@ void main() {}
 //import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:openvine/providers/profile_feed_provider.dart';
 //import 'package:openvine/state/video_feed_state.dart';
-//import 'package:openvine/models/video_event.dart';
+//import 'package:models/models.dart';
 //
 //void main() {
 //  // Test user ID (using a real Nostr pubkey hex for integration testing)

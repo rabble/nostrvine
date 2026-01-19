@@ -378,6 +378,18 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<_i7.Event?>);
 
   @override
+  _i6.Future<_i7.Event?> sendProfile({
+    required Map<String, dynamic>? profileContent,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendProfile, [], {
+              #profileContent: profileContent,
+            }),
+            returnValue: _i6.Future<_i7.Event?>.value(),
+          )
+          as _i6.Future<_i7.Event?>);
+
+  @override
   _i6.Future<_i7.Event?> sendRepost(
     String? eventId, {
     String? relayAddr,
@@ -626,6 +638,19 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<_i3.AuthResult>);
 
   @override
+  _i6.Future<_i3.AuthResult> connectWithBunker(String? bunkerUrl) =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithBunker, [bunkerUrl]),
+            returnValue: _i6.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_1(
+                this,
+                Invocation.method(#connectWithBunker, [bunkerUrl]),
+              ),
+            ),
+          )
+          as _i6.Future<_i3.AuthResult>);
+
+  @override
   _i6.Future<void> refreshCurrentProfile(
     _i8.UserProfileService? userProfileService,
   ) =>
@@ -702,10 +727,13 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<_i7.Event?>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+  _i6.Future<void> dispose() =>
+      (super.noSuchMethod(
+            Invocation.method(#dispose, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 }
 
 /// A class which mocks [UserProfileService].

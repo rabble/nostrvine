@@ -11,6 +11,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -52,10 +54,10 @@ void main() {
           container: container,
           child: MaterialApp.router(
             routerConfig: GoRouter(
-              initialLocation: '/home',
+              initialLocation: HomeScreenRouter.path,
               routes: [
                 GoRoute(
-                  path: '/home',
+                  path: HomeScreenRouter.path,
                   builder: (context, state) => Scaffold(
                     body: Builder(
                       builder: (context) => ElevatedButton(
@@ -68,7 +70,7 @@ void main() {
                   ),
                 ),
                 GoRoute(
-                  path: '/search/:term',
+                  path: SearchScreenPure.pathWithTerm,
                   builder: (context, state) {
                     capturedRoute = state.uri.toString();
                     return const Scaffold(body: Text('Search Screen'));
@@ -87,7 +89,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the route was called with correct path
-      expect(capturedRoute, '/search/flutter');
+      expect(capturedRoute, SearchScreenPure.pathForTerm(term: 'flutter'));
     });
 
     testWidgets('goSearch("dart", 5) navigates to /search/dart/5', (
@@ -108,10 +110,10 @@ void main() {
           container: container,
           child: MaterialApp.router(
             routerConfig: GoRouter(
-              initialLocation: '/home',
+              initialLocation: HomeScreenRouter.pathForIndex(0),
               routes: [
                 GoRoute(
-                  path: '/home',
+                  path: HomeScreenRouter.pathForIndex(0),
                   builder: (context, state) => Scaffold(
                     body: Builder(
                       builder: (context) => ElevatedButton(
@@ -124,7 +126,7 @@ void main() {
                   ),
                 ),
                 GoRoute(
-                  path: '/search/:term/:index',
+                  path: SearchScreenPure.pathWithTermAndIndex,
                   builder: (context, state) {
                     capturedRoute = state.uri.toString();
                     return const Scaffold(body: Text('Search Screen'));
@@ -143,7 +145,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the route was called with correct path
-      expect(capturedRoute, '/search/dart/5');
+      expect(
+        capturedRoute,
+        SearchScreenPure.pathForTerm(term: 'dart', index: 5),
+      );
     });
 
     testWidgets('goSearch() with no params navigates to /search', (
@@ -164,10 +169,10 @@ void main() {
           container: container,
           child: MaterialApp.router(
             routerConfig: GoRouter(
-              initialLocation: '/home',
+              initialLocation: HomeScreenRouter.pathForIndex(0),
               routes: [
                 GoRoute(
-                  path: '/home',
+                  path: HomeScreenRouter.pathForIndex(0),
                   builder: (context, state) => Scaffold(
                     body: Builder(
                       builder: (context) => ElevatedButton(
@@ -180,7 +185,7 @@ void main() {
                   ),
                 ),
                 GoRoute(
-                  path: '/search',
+                  path: SearchScreenPure.path,
                   builder: (context, state) {
                     capturedRoute = state.uri.toString();
                     return const Scaffold(body: Text('Search Screen'));
@@ -199,7 +204,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the route was called with correct path
-      expect(capturedRoute, '/search');
+      expect(capturedRoute, SearchScreenPure.path);
     });
 
     testWidgets('goSearch(null, 3) navigates to /search/3 (legacy format)', (
@@ -220,10 +225,10 @@ void main() {
           container: container,
           child: MaterialApp.router(
             routerConfig: GoRouter(
-              initialLocation: '/home',
+              initialLocation: HomeScreenRouter.pathForIndex(0),
               routes: [
                 GoRoute(
-                  path: '/home',
+                  path: HomeScreenRouter.pathForIndex(0),
                   builder: (context, state) => Scaffold(
                     body: Builder(
                       builder: (context) => ElevatedButton(
@@ -236,7 +241,7 @@ void main() {
                   ),
                 ),
                 GoRoute(
-                  path: '/search/:index',
+                  path: SearchScreenPure.pathWithIndex,
                   builder: (context, state) {
                     capturedRoute = state.uri.toString();
                     return const Scaffold(body: Text('Search Screen'));
@@ -255,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the route was called with correct path
-      expect(capturedRoute, '/search/3');
+      expect(capturedRoute, SearchScreenPure.pathForTerm(index: 3));
     });
 
     testWidgets('goSearch("ethereum", 7) navigates to /search/ethereum/7', (
@@ -276,10 +281,10 @@ void main() {
           container: container,
           child: MaterialApp.router(
             routerConfig: GoRouter(
-              initialLocation: '/home',
+              initialLocation: HomeScreenRouter.pathForIndex(0),
               routes: [
                 GoRoute(
-                  path: '/home',
+                  path: HomeScreenRouter.pathForIndex(0),
                   builder: (context, state) => Scaffold(
                     body: Builder(
                       builder: (context) => ElevatedButton(
@@ -292,7 +297,7 @@ void main() {
                   ),
                 ),
                 GoRoute(
-                  path: '/search/:term/:index',
+                  path: SearchScreenPure.pathWithTermAndIndex,
                   builder: (context, state) {
                     capturedRoute = state.uri.toString();
                     return const Scaffold(body: Text('Search Screen'));
@@ -311,7 +316,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the route was called with correct path
-      expect(capturedRoute, '/search/ethereum/7');
+      expect(
+        capturedRoute,
+        SearchScreenPure.pathForTerm(term: 'ethereum', index: 7),
+      );
     });
   });
 }

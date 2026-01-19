@@ -11,7 +11,7 @@ void main() {}
 //import 'package:mockito/annotations.dart';
 //import 'package:nostr_client/nostr_client.dart';
 //import 'package:nostr_key_manager/nostr_key_manager.dart';
-//import 'package:openvine/models/video_event.dart';
+//import 'package:models/models.dart' hide LogCategory, LogLevel;
 //import 'package:openvine/services/content_deletion_service.dart';
 //import 'package:openvine/services/content_moderation_service.dart';
 //import 'package:openvine/services/curated_list_service.dart';

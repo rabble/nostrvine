@@ -1,4 +1,4 @@
-// ABOUTME: Unit tests for NIP-05 username registration and verification service
+// ABOUTME: Unit tests for NIP-05 username registration service
 // ABOUTME: Tests username validation, availability checking, and registration flow
 
 import 'dart:convert';
@@ -7,19 +7,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/nip05_service.dart';
 
-@GenerateMocks([http.Client])
+@GenerateMocks([http.Client, NostrClient])
 import 'nip05_service_test.mocks.dart';
 
 void main() {
   group('Nip05Service', () {
     late Nip05Service service;
     late MockClient mockClient;
+    late MockNostrClient mockNostrClient;
 
     setUp(() {
       mockClient = MockClient();
-      service = Nip05Service(httpClient: mockClient);
+      mockNostrClient = MockNostrClient();
+      // Stub connectedRelays getter
+      when(
+        mockNostrClient.connectedRelays,
+      ).thenReturn(['wss://relay1.com', 'wss://relay2.com']);
+      service = Nip05Service(
+        httpClient: mockClient,
+        nostrClient: mockNostrClient,
+      );
     });
 
     group('checkUsernameAvailability', () {
@@ -35,7 +45,6 @@ void main() {
 
         // Assert
         expect(result, true);
-        expect(service.error, isNull);
       });
 
       test('returns false when username is taken', () async {
@@ -57,8 +66,8 @@ void main() {
         expect(result, false);
       });
 
-      test('validates username format', () async {
-        // Test invalid usernames
+      test('returns false for invalid username format', () async {
+        // Test invalid usernames (no network call needed)
         expect(await service.checkUsernameAvailability(''), false);
         expect(
           await service.checkUsernameAvailability('a'),
@@ -76,12 +85,9 @@ void main() {
           await service.checkUsernameAvailability('aaaaaaaaaaaaaaaaaaaaa'),
           false,
         ); // too long (21 chars)
-
-        // Check error message is set
-        expect(service.error, contains('Invalid username format'));
       });
 
-      test('handles network errors gracefully', () async {
+      test('returns false on network error', () async {
         // Arrange
         const username = 'testuser';
         when(mockClient.get(any)).thenThrow(Exception('Network error'));
@@ -91,17 +97,16 @@ void main() {
 
         // Assert
         expect(result, false);
-        expect(service.error, contains('Failed to check username'));
       });
     });
 
     group('registerUsername', () {
+      const validPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
       test('successfully registers a username', () async {
         // Arrange
         const username = 'newuser';
-        const pubkey =
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; // Valid 64-char hex
-        final relays = ['wss://relay1.com', 'wss://relay2.com'];
 
         when(
           mockClient.post(
@@ -113,22 +118,25 @@ void main() {
           (_) async => http.Response(jsonEncode({'success': true}), 201),
         );
 
-        // Act
-        final result = await service.registerUsername(username, pubkey, relays);
+        // Act & Assert - should complete without throwing
+        await expectLater(
+          service.registerUsername(username, validPubkey),
+          completes,
+        );
 
-        // Assert
-        expect(result.isSuccess, true);
-        expect(service.currentUsername, username);
-        expect(service.isVerified, true);
-        expect(service.error, isNull);
+        // Verify post was called
+        verify(
+          mockClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).called(1);
       });
 
-      test('handles username already taken', () async {
+      test('throws UsernameTakenException on 409', () async {
         // Arrange
         const username = 'taken';
-        const pubkey =
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-        final relays = ['wss://relay1.com'];
 
         when(
           mockClient.post(
@@ -143,20 +151,16 @@ void main() {
           ),
         );
 
-        // Act
-        final result = await service.registerUsername(username, pubkey, relays);
-
-        // Assert
-        expect(result.isTaken, true);
-        expect(service.error, 'Username already taken');
+        // Act & Assert
+        await expectLater(
+          () => service.registerUsername(username, validPubkey),
+          throwsA(isA<UsernameTakenException>()),
+        );
       });
 
-      test('handles reserved username', () async {
+      test('throws UsernameReservedException on 403', () async {
         // Arrange
         const username = 'reserved';
-        const pubkey =
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-        final relays = ['wss://relay1.com'];
 
         when(
           mockClient.post(
@@ -169,144 +173,78 @@ void main() {
               http.Response(jsonEncode({'error': 'Username is reserved'}), 403),
         );
 
-        // Act
-        final result = await service.registerUsername(username, pubkey, relays);
-
-        // Assert
-        expect(result.isReserved, true);
-        expect(service.error, contains('Username is reserved'));
+        // Act & Assert
+        await expectLater(
+          () => service.registerUsername(username, validPubkey),
+          throwsA(isA<UsernameReservedException>()),
+        );
       });
 
-      test('validates pubkey format', () async {
-        // Test invalid pubkeys
-        var result = await service.registerUsername('user', 'invalid', []);
-        expect(result.status, UsernameRegistrationStatus.invalidPubkey);
-
-        result = await service.registerUsername(
-          'user',
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          [],
+      test('throws ArgumentError for invalid username format', () async {
+        // Act & Assert
+        await expectLater(
+          () => service.registerUsername('ab', validPubkey), // too short
+          throwsA(isA<ArgumentError>()),
         );
-        expect(
-          result.status,
-          UsernameRegistrationStatus.invalidPubkey,
-        ); // too short (63 chars)
 
-        result = await service.registerUsername(
-          'user',
-          'gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg',
-          [],
+        await expectLater(
+          () => service.registerUsername('user@invalid', validPubkey),
+          throwsA(isA<ArgumentError>()),
         );
-        expect(
-          result.status,
-          UsernameRegistrationStatus.invalidPubkey,
-        ); // non-hex
-
-        // Check error message is set
-        expect(service.error, contains('Invalid public key format'));
       });
-    });
 
-    group('verifyNip05', () {
-      test('successfully verifies a NIP-05 identifier', () async {
-        // Arrange
-        const identifier = 'alice@openvine.co';
-
-        when(mockClient.get(any)).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({
-              'names': {'alice': 'pubkey123'},
-            }),
-            200,
+      test('throws ArgumentError for invalid pubkey format', () async {
+        // Act & Assert - too short
+        await expectLater(
+          () => service.registerUsername(
+            'validuser',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           ),
+          throwsA(isA<ArgumentError>()),
         );
 
-        // Act
-        final result = await service.verifyNip05(identifier);
-
-        // Assert
-        expect(result, true);
-        expect(service.currentUsername, 'alice');
-        expect(service.isVerified, true);
+        // Non-hex characters
+        await expectLater(
+          () => service.registerUsername(
+            'validuser',
+            'gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
       });
 
-      test('returns false for invalid identifier format', () async {
-        // Test invalid formats
-        final result1 = await service.verifyNip05('notanemail');
-        expect(result1, false);
-        expect(service.error, contains('Invalid NIP-05 identifier format'));
-
-        final result2 = await service.verifyNip05('');
-        expect(result2, false);
-
-        final result3 = await service.verifyNip05('@domain.com');
-        expect(result3, false);
-      });
-
-      test('returns false when username not found', () async {
+      test('throws Nip05ServiceException on network error', () async {
         // Arrange
-        const identifier = 'unknown@openvine.co';
+        when(
+          mockClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenThrow(Exception('Network error'));
 
-        when(mockClient.get(any)).thenAnswer(
-          (_) async => http.Response(jsonEncode({'names': {}}), 200),
+        // Act & Assert
+        await expectLater(
+          () => service.registerUsername('validuser', validPubkey),
+          throwsA(isA<Nip05ServiceException>()),
         );
-
-        // Act
-        final result = await service.verifyNip05(identifier);
-
-        // Assert
-        expect(result, false);
-        expect(service.isVerified, false);
-      });
-    });
-
-    group('loadNip05Status', () {
-      test('loads verified status for openvine.co identifier', () {
-        // Act
-        service.loadNip05Status('alice@openvine.co');
-
-        // Assert
-        expect(service.currentUsername, 'alice');
-        expect(service.isVerified, true);
       });
 
-      test('sets unverified for other domains', () {
-        // Act
-        service.loadNip05Status('alice@example.com');
+      test('throws Nip05ServiceException on unexpected status code', () async {
+        // Arrange
+        when(
+          mockClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer((_) async => http.Response('Server error', 500));
 
-        // Assert
-        expect(service.currentUsername, isNull);
-        expect(service.isVerified, false);
-      });
-
-      test('handles null or empty identifier', () {
-        // Act
-        service.loadNip05Status(null);
-
-        // Assert
-        expect(service.currentUsername, isNull);
-        expect(service.isVerified, false);
-
-        // Test empty string
-        service.loadNip05Status('');
-        expect(service.currentUsername, isNull);
-        expect(service.isVerified, false);
-      });
-    });
-
-    group('clear', () {
-      test('resets all state', () {
-        // Setup some state
-        service.loadNip05Status('alice@openvine.co');
-
-        // Act
-        service.clear();
-
-        // Assert
-        expect(service.currentUsername, isNull);
-        expect(service.isVerified, false);
-        expect(service.isChecking, false);
-        expect(service.error, isNull);
+        // Act & Assert
+        await expectLater(
+          () => service.registerUsername('validuser', validPubkey),
+          throwsA(isA<Nip05ServiceException>()),
+        );
       });
     });
   });

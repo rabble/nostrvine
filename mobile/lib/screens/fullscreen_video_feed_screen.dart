@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
@@ -76,6 +76,12 @@ class FullscreenVideoFeedArgs {
 /// The screen watches the appropriate provider based on [source] to receive
 /// reactive updates when new videos are loaded via pagination.
 class FullscreenVideoFeedScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'video-feed';
+
+  /// Path for this route.
+  static const path = '/video-feed';
+
   const FullscreenVideoFeedScreen({
     required this.source,
     required this.initialIndex,

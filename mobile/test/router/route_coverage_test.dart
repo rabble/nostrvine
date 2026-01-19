@@ -3,53 +3,85 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/clip_manager_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
+import 'package:openvine/screens/relay_diagnostic_screen.dart';
+import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/welcome_screen.dart';
 
 void main() {
   group('Route Coverage Validation', () {
     group('Settings routes parse to their own RouteTypes', () {
       // Each settings sub-route has its own RouteType to prevent
       // routeNormalizationProvider from redirecting them to /settings
-      test('/settings parses to RouteType.settings', () {
-        final context = parseRoute('/settings');
+      test('${SettingsScreen.path} parses to RouteType.settings', () {
+        final context = parseRoute(SettingsScreen.path);
         expect(context.type, RouteType.settings);
       });
 
-      test('/relay-settings parses to RouteType.relaySettings', () {
-        final context = parseRoute('/relay-settings');
+      test('${RelaySettingsScreen.path} parses to RouteType.relaySettings', () {
+        final context = parseRoute(RelaySettingsScreen.path);
         expect(context.type, RouteType.relaySettings);
       });
 
-      test('/relay-diagnostic parses to RouteType.relayDiagnostic', () {
-        final context = parseRoute('/relay-diagnostic');
-        expect(context.type, RouteType.relayDiagnostic);
-      });
-
-      test('/blossom-settings parses to RouteType.blossomSettings', () {
-        final context = parseRoute('/blossom-settings');
-        expect(context.type, RouteType.blossomSettings);
-      });
+      test(
+        '${RelayDiagnosticScreen.path} parses to RouteType.relayDiagnostic',
+        () {
+          final context = parseRoute(RelayDiagnosticScreen.path);
+          expect(context.type, RouteType.relayDiagnostic);
+        },
+      );
 
       test(
-        '/notification-settings parses to RouteType.notificationSettings',
+        '${BlossomSettingsScreen.path} parses to RouteType.blossomSettings',
         () {
-          final context = parseRoute('/notification-settings');
+          final context = parseRoute(BlossomSettingsScreen.path);
+          expect(context.type, RouteType.blossomSettings);
+        },
+      );
+
+      test(
+        '${NotificationSettingsScreen.path} parses to RouteType.notificationSettings',
+        () {
+          final context = parseRoute(NotificationSettingsScreen.path);
           expect(context.type, RouteType.notificationSettings);
         },
       );
 
-      test('/key-management parses to RouteType.keyManagement', () {
-        final context = parseRoute('/key-management');
+      test('${KeyManagementScreen.path} parses to RouteType.keyManagement', () {
+        final context = parseRoute(KeyManagementScreen.path);
         expect(context.type, RouteType.keyManagement);
       });
 
-      test('/safety-settings parses to RouteType.safetySettings', () {
-        final context = parseRoute('/safety-settings');
-        expect(context.type, RouteType.safetySettings);
-      });
+      test(
+        '${SafetySettingsScreen.path} parses to RouteType.safetySettings',
+        () {
+          final context = parseRoute(SafetySettingsScreen.path);
+          expect(context.type, RouteType.safetySettings);
+        },
+      );
     });
 
     group('Profile editing routes parse to RouteType.editProfile', () {
-      const profileEditRoutes = ['/edit-profile', '/setup-profile'];
+      const profileEditRoutes = [
+        ProfileSetupScreen.editPath,
+        ProfileSetupScreen.setupPath,
+      ];
 
       for (final route in profileEditRoutes) {
         test('$route parses to RouteType.editProfile', () {
@@ -65,8 +97,8 @@ void main() {
 
     group('Clip routes parse to RouteType.clips', () {
       const clipRoutes = [
-        '/clips',
-        '/drafts', // Legacy route should also work
+        ClipLibraryScreen.clipsPath,
+        ClipLibraryScreen.draftsPath, // Legacy route should also work
       ];
 
       for (final route in clipRoutes) {
@@ -82,125 +114,168 @@ void main() {
     });
 
     group('Tab routes parse correctly', () {
-      test('/home parses to RouteType.home with index 0', () {
-        final context = parseRoute('/home');
-        expect(context.type, RouteType.home);
-        expect(context.videoIndex, 0);
-      });
+      test(
+        '${HomeScreenRouter.path} parses to RouteType.home with index 0',
+        () {
+          final context = parseRoute(HomeScreenRouter.path);
+          expect(context.type, RouteType.home);
+          expect(context.videoIndex, 0);
+        },
+      );
 
-      test('/home/5 parses to RouteType.home with index 5', () {
-        final context = parseRoute('/home/5');
-        expect(context.type, RouteType.home);
-        expect(context.videoIndex, 5);
-      });
+      test(
+        '${HomeScreenRouter.pathForIndex(5)} parses to RouteType.home with index 5',
+        () {
+          final context = parseRoute(HomeScreenRouter.pathForIndex(5));
+          expect(context.type, RouteType.home);
+          expect(context.videoIndex, 5);
+        },
+      );
 
-      test('/explore parses to RouteType.explore', () {
-        final context = parseRoute('/explore');
+      test('${ExploreScreen.path} parses to RouteType.explore', () {
+        final context = parseRoute(ExploreScreen.path);
         expect(context.type, RouteType.explore);
         expect(context.videoIndex, isNull);
       });
 
-      test('/explore/3 parses to RouteType.explore with index 3', () {
-        final context = parseRoute('/explore/3');
-        expect(context.type, RouteType.explore);
-        expect(context.videoIndex, 3);
-      });
+      test(
+        '${ExploreScreen.pathForIndex(3)} parses to RouteType.explore with index 3',
+        () {
+          final context = parseRoute(ExploreScreen.pathForIndex(3));
+          expect(context.type, RouteType.explore);
+          expect(context.videoIndex, 3);
+        },
+      );
 
-      test('/notifications/0 parses to RouteType.notifications', () {
-        final context = parseRoute('/notifications/0');
-        expect(context.type, RouteType.notifications);
-        expect(context.videoIndex, 0);
-      });
+      test(
+        '${NotificationsScreen.pathForIndex(0)} parses to RouteType.notifications',
+        () {
+          final context = parseRoute(NotificationsScreen.pathForIndex(0));
+          expect(context.type, RouteType.notifications);
+          expect(context.videoIndex, 0);
+        },
+      );
     });
 
     group('Profile routes parse correctly', () {
-      test('/profile/npub1abc parses to RouteType.profile (grid mode)', () {
-        final context = parseRoute('/profile/npub1abc');
-        expect(context.type, RouteType.profile);
-        expect(context.npub, 'npub1abc');
-        expect(context.videoIndex, isNull); // Grid mode has no index
-      });
+      test(
+        '${ProfileScreenRouter.pathForNpub('npub1abc')} parses to RouteType.profile (grid mode)',
+        () {
+          final context = parseRoute(
+            ProfileScreenRouter.pathForNpub('npub1abc'),
+          );
+          expect(context.type, RouteType.profile);
+          expect(context.npub, 'npub1abc');
+          expect(context.videoIndex, isNull); // Grid mode has no index
+        },
+      );
 
-      test('/profile/npub1abc/2 parses to RouteType.profile (feed mode)', () {
-        final context = parseRoute('/profile/npub1abc/2');
-        expect(context.type, RouteType.profile);
-        expect(context.npub, 'npub1abc');
-        expect(context.videoIndex, 2); // Feed mode has index
-      });
+      test(
+        '${ProfileScreenRouter.pathForIndex('npub1abc', 2)} parses to RouteType.profile (feed mode)',
+        () {
+          final context = parseRoute(
+            ProfileScreenRouter.pathForIndex('npub1abc', 2),
+          );
+          expect(context.type, RouteType.profile);
+          expect(context.npub, 'npub1abc');
+          expect(context.videoIndex, 2); // Feed mode has index
+        },
+      );
 
-      test('/profile without npub redirects to home', () {
-        final context = parseRoute('/profile');
+      test('${ProfileScreenRouter.path} without npub redirects to home', () {
+        final context = parseRoute(ProfileScreenRouter.path);
         expect(context.type, RouteType.home);
       });
     });
 
     group('Search routes parse correctly', () {
-      test('/search parses to RouteType.search (grid mode)', () {
-        final context = parseRoute('/search');
-        expect(context.type, RouteType.search);
-        expect(context.searchTerm, isNull);
-        expect(context.videoIndex, isNull);
-      });
+      test(
+        '${SearchScreenPure.path} parses to RouteType.search (grid mode)',
+        () {
+          final context = parseRoute(SearchScreenPure.path);
+          expect(context.type, RouteType.search);
+          expect(context.searchTerm, isNull);
+          expect(context.videoIndex, isNull);
+        },
+      );
 
-      test('/search/flutter parses to RouteType.search with term', () {
-        final context = parseRoute('/search/flutter');
-        expect(context.type, RouteType.search);
-        expect(context.searchTerm, 'flutter');
-        expect(context.videoIndex, isNull);
-      });
+      test(
+        '${SearchScreenPure.pathForTerm(term: 'flutter')} parses to RouteType.search with term',
+        () {
+          final context = parseRoute(
+            SearchScreenPure.pathForTerm(term: 'flutter'),
+          );
+          expect(context.type, RouteType.search);
+          expect(context.searchTerm, 'flutter');
+          expect(context.videoIndex, isNull);
+        },
+      );
 
-      test('/search/flutter/5 parses to RouteType.search (feed mode)', () {
-        final context = parseRoute('/search/flutter/5');
-        expect(context.type, RouteType.search);
-        expect(context.searchTerm, 'flutter');
-        expect(context.videoIndex, 5);
-      });
+      test(
+        '${SearchScreenPure.pathForTerm(term: 'flutter', index: 5)} parses to RouteType.search (feed mode)',
+        () {
+          final context = parseRoute(
+            '${SearchScreenPure.pathForTerm(term: 'flutter', index: 5)}',
+          );
+          expect(context.type, RouteType.search);
+          expect(context.searchTerm, 'flutter');
+          expect(context.videoIndex, 5);
+        },
+      );
     });
 
     group('Hashtag routes parse correctly', () {
-      test('/hashtag/nostr parses to RouteType.hashtag', () {
-        final context = parseRoute('/hashtag/nostr');
-        expect(context.type, RouteType.hashtag);
-        expect(context.hashtag, 'nostr');
-        expect(context.videoIndex, isNull);
-      });
+      test(
+        '${HashtagScreenRouter.pathForTag('nostr')} parses to RouteType.hashtag',
+        () {
+          final context = parseRoute(HashtagScreenRouter.pathForTag('nostr'));
+          expect(context.type, RouteType.hashtag);
+          expect(context.hashtag, 'nostr');
+          expect(context.videoIndex, isNull);
+        },
+      );
 
-      test('/hashtag/nostr/3 parses to RouteType.hashtag with index', () {
-        final context = parseRoute('/hashtag/nostr/3');
-        expect(context.type, RouteType.hashtag);
-        expect(context.hashtag, 'nostr');
-        expect(context.videoIndex, 3);
-      });
+      test(
+        '${HashtagScreenRouter.pathForTag('nostr', index: 3)} parses to RouteType.hashtag with index',
+        () {
+          final context = parseRoute(
+            HashtagScreenRouter.pathForTag('nostr', index: 3),
+          );
+          expect(context.type, RouteType.hashtag);
+          expect(context.hashtag, 'nostr');
+          expect(context.videoIndex, 3);
+        },
+      );
 
-      test('/hashtag without tag redirects to home', () {
-        final context = parseRoute('/hashtag');
+      test('${HashtagScreenRouter.path} without tag redirects to home', () {
+        final context = parseRoute(HashtagScreenRouter.basePath);
         expect(context.type, RouteType.home);
       });
     });
 
     group('Standalone routes parse correctly', () {
-      test('/welcome parses to RouteType.welcome', () {
-        final context = parseRoute('/welcome');
+      test('${WelcomeScreen.path} parses to RouteType.welcome', () {
+        final context = parseRoute(WelcomeScreen.path);
         expect(context.type, RouteType.welcome);
       });
 
-      test('/import-key parses to RouteType.importKey', () {
-        final context = parseRoute('/import-key');
+      test('${KeyImportScreen.path} parses to RouteType.importKey', () {
+        final context = parseRoute(KeyImportScreen.path);
         expect(context.type, RouteType.importKey);
       });
 
-      test('/camera parses to RouteType.camera', () {
-        final context = parseRoute('/camera');
+      test('${UniversalCameraScreenPure.path} parses to RouteType.camera', () {
+        final context = parseRoute(UniversalCameraScreenPure.path);
         expect(context.type, RouteType.camera);
       });
 
-      test('/clip-manager parses to RouteType.clipManager', () {
-        final context = parseRoute('/clip-manager');
+      test('${ClipManagerScreen.path} parses to RouteType.clipManager', () {
+        final context = parseRoute(ClipManagerScreen.path);
         expect(context.type, RouteType.clipManager);
       });
 
-      test('/edit-video parses to RouteType.editVideo', () {
-        final context = parseRoute('/edit-video');
+      test('${VideoEditorScreen.path} parses to RouteType.editVideo', () {
+        final context = parseRoute(VideoEditorScreen.path);
         expect(context.type, RouteType.editVideo);
       });
     });
@@ -225,7 +300,7 @@ void main() {
       });
 
       test('Negative index is normalized to 0', () {
-        final context = parseRoute('/home/-5');
+        final context = parseRoute(HomeScreenRouter.pathForIndex(-5));
         expect(context.type, RouteType.home);
         expect(context.videoIndex, 0);
       });
@@ -234,19 +309,19 @@ void main() {
     group('URL encoding is handled', () {
       test('URL-encoded npub is decoded', () {
         final encoded = Uri.encodeComponent('npub1abc+test');
-        final context = parseRoute('/profile/$encoded');
+        final context = parseRoute(ProfileScreenRouter.pathForNpub(encoded));
         expect(context.npub, 'npub1abc+test');
       });
 
       test('URL-encoded hashtag is decoded', () {
         final encoded = Uri.encodeComponent('nostr+bitcoin');
-        final context = parseRoute('/hashtag/$encoded');
+        final context = parseRoute('${HashtagScreenRouter.basePath}/$encoded');
         expect(context.hashtag, 'nostr+bitcoin');
       });
 
       test('URL-encoded search term is decoded', () {
         final encoded = Uri.encodeComponent('flutter dart');
-        final context = parseRoute('/search/$encoded');
+        final context = parseRoute('${SearchScreenPure.path}/$encoded');
         expect(context.searchTerm, 'flutter dart');
       });
     });
@@ -258,26 +333,26 @@ void main() {
     test('All RouteTypes have corresponding parseRoute cases', () {
       // Test that each RouteType can be produced by parseRoute
       final routeTypeExamples = {
-        RouteType.home: '/home/0',
-        RouteType.explore: '/explore',
-        RouteType.notifications: '/notifications/0',
-        RouteType.profile: '/profile/npub1test',
-        RouteType.hashtag: '/hashtag/test',
-        RouteType.search: '/search',
-        RouteType.camera: '/camera',
-        RouteType.clipManager: '/clip-manager',
-        RouteType.editVideo: '/edit-video',
-        RouteType.importKey: '/import-key',
-        RouteType.settings: '/settings',
-        RouteType.relaySettings: '/relay-settings',
-        RouteType.relayDiagnostic: '/relay-diagnostic',
-        RouteType.blossomSettings: '/blossom-settings',
-        RouteType.notificationSettings: '/notification-settings',
-        RouteType.keyManagement: '/key-management',
-        RouteType.safetySettings: '/safety-settings',
-        RouteType.editProfile: '/edit-profile',
-        RouteType.clips: '/clips',
-        RouteType.welcome: '/welcome',
+        RouteType.home: HomeScreenRouter.pathForIndex(0),
+        RouteType.explore: ExploreScreen.path,
+        RouteType.notifications: NotificationsScreen.pathForIndex(0),
+        RouteType.profile: ProfileScreenRouter.pathForNpub('npub1test'),
+        RouteType.hashtag: HashtagScreenRouter.pathForTag('test'),
+        RouteType.search: SearchScreenPure.path,
+        RouteType.camera: UniversalCameraScreenPure.path,
+        RouteType.clipManager: ClipManagerScreen.path,
+        RouteType.editVideo: VideoEditorScreen.path,
+        RouteType.importKey: KeyImportScreen.path,
+        RouteType.settings: SettingsScreen.path,
+        RouteType.relaySettings: RelaySettingsScreen.path,
+        RouteType.relayDiagnostic: RelayDiagnosticScreen.path,
+        RouteType.blossomSettings: BlossomSettingsScreen.path,
+        RouteType.notificationSettings: NotificationSettingsScreen.path,
+        RouteType.keyManagement: KeyManagementScreen.path,
+        RouteType.safetySettings: SafetySettingsScreen.path,
+        RouteType.editProfile: ProfileSetupScreen.editPath,
+        RouteType.clips: ClipLibraryScreen.clipsPath,
+        RouteType.welcome: WelcomeScreen.path,
       };
 
       for (final entry in routeTypeExamples.entries) {

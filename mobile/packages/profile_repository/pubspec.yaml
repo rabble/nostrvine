@@ -1,0 +1,23 @@
+name: profile_repository
+description: Repository for managing user profiles (Kind 0 metadata) with Nostr.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+resolution: workspace
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  nostr_sdk:
+    path: '../nostr_sdk'
+  test: ^1.26.3
+  very_good_analysis: ^10.0.0
+
+dependencies:
+  equatable: ^2.0.8
+  models:
+    path: '../models'
+  nostr_client:
+    path: '../nostr_client'

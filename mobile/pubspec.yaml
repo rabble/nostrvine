@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
   - packages/keycast_flutter
@@ -34,6 +35,7 @@ workspace:
   - packages/nostr_gateway
   - packages/nostr_key_manager
   - packages/permissions_service
+  - packages/profile_repository
   - packages/videos_repository
   
 # Dependencies specify other packages that your package needs in order to work.

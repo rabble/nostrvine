@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
@@ -222,7 +223,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () => context.push('/secure-account'),
+            onPressed: () => context.push(SecureAccountScreen.path),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: VineTheme.vineGreen,

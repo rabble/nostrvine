@@ -20,16 +20,15 @@ void main() async {
 
   final privateKey = generatePrivateKey();
   final signer = LocalNostrSigner(privateKey);
-  final pubKey = await signer.getPublicKey();
 
   final nostrClient = Nostr(
     signer,
-    pubKey!,
     <EventFilter>[],
     (relayUrl) => RelayBase(relayUrl, RelayStatus(relayUrl)),
     onNotice: (relayUrl, notice) =>
         Log.info('📢 Notice: $notice', name: 'Kind0Fetcher'),
   );
+  await nostrClient.refreshPublicKey();
 
   // Connect to relay
   final relay = RelayBase(
