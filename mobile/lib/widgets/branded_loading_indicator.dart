@@ -29,9 +29,8 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Sprite sheet configuration
+  // Sprite sheet configuration (original frames are 500x500 pixels)
   static const int _frameCount = 27;
-  static const double _frameSize = 500.0;
   static const Duration _animationDuration = Duration(milliseconds: 1800);
 
   @override
