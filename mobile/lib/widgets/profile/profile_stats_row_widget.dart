@@ -104,29 +104,26 @@ class ProfileStatColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: isLoading
-              ? const Text(
-                  '—',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                )
+              ? Text('—', style: VineTheme.tabTextStyle(color: Colors.grey))
               : Text(
                   count != null ? StringUtils.formatCompactNumber(count!) : '—',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: VineTheme.tabTextStyle(),
                 ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(
+          label,
+          style: VineTheme.bodyFont(
+            fontSize: 14,
+            height: 20 / 14,
+            color: VineTheme.whiteText,
+          ),
+        ),
       ],
     );
 

@@ -236,6 +236,7 @@ flutter:
     - assets/icon/divine_icon_transparent.png
     - assets/icon/divine_wordmark.png
     - assets/icon/user-avatar.png
+    - assets/icon/acid_avatar.png
     - assets/icon/menu.svg
     - assets/icon/search.svg
     - assets/icon/camera.svg

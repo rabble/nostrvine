@@ -15,7 +15,6 @@ import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
-import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
@@ -137,19 +136,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             ),
           ),
 
-          // Stats Row
-          SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileStatsRowWidget(
-                  profileStatsAsync: widget.profileStatsAsync,
-                ),
-              ),
-            ),
-          ),
-
           // Action Buttons
           SliverToBoxAdapter(
             child: Align(
@@ -193,6 +179,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
+    // Wrap content with surfaceBackground to match app bar
+    content = ColoredBox(color: VineTheme.surfaceBackground, child: content);
+
     // Wrap with OthersFollowersBloc for other users' profiles
     // This allows the follow button to update the followers count optimistically
     if (!widget.isOwnProfile) {
@@ -225,7 +214,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => ColoredBox(color: VineTheme.backgroundColor, child: _tabBar);
+  ) => ColoredBox(color: VineTheme.surfaceBackground, child: _tabBar);
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;

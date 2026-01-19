@@ -60,7 +60,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
           // Setup profile banner for new users with default names
@@ -77,7 +77,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
           Row(
             children: [
               // Profile picture
-              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 86),
+              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 88),
 
               const SizedBox(width: 20),
 
@@ -108,7 +108,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Name and bio
           _ProfileNameAndBio(userIdHex: userIdHex, nip05: nip05, about: about),
@@ -262,20 +262,10 @@ class _ProfileNameAndBio extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserName.fromPubKey(
-            userIdHex,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          if (nip05 != null && nip05!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _Nip05Identifier(nip05: nip05!),
-          ],
+          UserName.fromPubKey(userIdHex, style: VineTheme.titleFont()),
+          _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 24),
             _AboutText(about: about!),
           ],
           const SizedBox(height: 8),
@@ -286,15 +276,30 @@ class _ProfileNameAndBio extends StatelessWidget {
   }
 }
 
-/// NIP-05 identifier display.
-class _Nip05Identifier extends StatelessWidget {
-  const _Nip05Identifier({required this.nip05});
+/// Unique identifier display (NIP-05 or truncated npub fallback).
+class _UniqueIdentifier extends StatelessWidget {
+  const _UniqueIdentifier({required this.userIdHex, required this.nip05});
 
-  final String nip05;
+  final String userIdHex;
+  final String? nip05;
 
   @override
   Widget build(BuildContext context) {
-    return Text(nip05, style: TextStyle(color: Colors.grey[400], fontSize: 13));
+    final displayText = (nip05 != null && nip05!.isNotEmpty)
+        ? nip05!
+        : NostrKeyUtils.encodePubKey(userIdHex).substring(0, 12);
+
+    return ColoredBox(
+      color: const Color(0xFFFF00FF),
+      child: Text(
+        displayText,
+        style: VineTheme.bodyFont(
+          fontSize: 14,
+          height: 20 / 14,
+          color: VineTheme.onSurfaceMuted,
+        ),
+      ),
+    );
   }
 }
 
@@ -306,9 +311,16 @@ class _AboutText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
-      about,
-      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+    return ColoredBox(
+      color: const Color(0xFFFF00FF),
+      child: SelectableText(
+        about,
+        style: VineTheme.bodyFont(
+          fontSize: 14,
+          height: 20 / 14,
+          color: VineTheme.onSurfaceMuted,
+        ),
+      ),
     );
   }
 }
