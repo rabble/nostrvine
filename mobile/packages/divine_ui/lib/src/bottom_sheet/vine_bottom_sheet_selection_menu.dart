@@ -39,24 +39,7 @@ class VineBottomSheetSelectionOptionData {
 ///   ],
 /// );
 /// ```
-class VineBottomSheetSelectionMenu extends StatelessWidget {
-  /// Creates a [VineBottomSheetSelectionMenu].
-  const VineBottomSheetSelectionMenu({
-    required this.options,
-    this.title,
-    this.selectedValue,
-    super.key,
-  });
-
-  /// Optional title widget displayed in the header.
-  final Widget? title;
-
-  /// List of selectable options.
-  final List<VineBottomSheetSelectionOptionData> options;
-
-  /// Currently selected option value (shows checkmark).
-  final String? selectedValue;
-
+class VineBottomSheetSelectionMenu {
   /// Shows the selection menu as a modal bottom sheet.
   ///
   /// Returns the selected option's value when tapped, or null if dismissed.
@@ -68,25 +51,6 @@ class VineBottomSheetSelectionMenu extends StatelessWidget {
   }) {
     return VineBottomSheet.show<String>(
       context: context,
-      title: title,
-      expanded: false,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final option in options)
-            _VineBottomSheetSelectionOption(
-              label: option.label,
-              isSelected: option.value == selectedValue,
-              onTap: () => Navigator.of(context).pop(option.value),
-            ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return VineBottomSheet(
       title: title,
       expanded: false,
       body: Column(
