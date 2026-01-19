@@ -146,104 +146,27 @@ class _FeedModeSwitch extends StatelessWidget {
     );
   }
 
-  void _showFeedModeBottomSheet(BuildContext context, FeedMode currentMode) {
-    VineBottomSheet.show<FeedMode>(
+  Future<void> _showFeedModeBottomSheet(
+    BuildContext context,
+    FeedMode currentMode,
+  ) async {
+    final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
       initialChildSize: 0.35,
       minChildSize: 0.25,
       maxChildSize: 0.5,
-      title: Text(
-        'Feed Mode',
-        style: VineTheme.titleFont(fontSize: 18, color: VineTheme.onSurface),
-      ),
-      children: FeedMode.values.map((mode) {
-        final isSelected = mode == currentMode;
-        return _FeedModeOption(
-          mode: mode,
-          isSelected: isSelected,
-          onTap: () {
-            Navigator.of(context).pop(mode);
-            context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
-          },
-        );
-      }).toList(),
+      selectedValue: currentMode.name,
+      options: const [
+        VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
+        VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
+        VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
+      ],
     );
-  }
-}
 
-class _FeedModeOption extends StatelessWidget {
-  const _FeedModeOption({
-    required this.mode,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final FeedMode mode;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Row(
-          children: [
-            Icon(
-              _getIconForMode(mode),
-              color: isSelected ? VineTheme.vineGreen : Colors.white70,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mode.name.toUpperCase(),
-                    style: VineTheme.bodyFont(
-                      color: isSelected ? VineTheme.vineGreen : Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _getDescriptionForMode(mode),
-                    style: VineTheme.bodyFont(
-                      fontSize: 12,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(
-                Icons.check_circle,
-                color: VineTheme.vineGreen,
-                size: 24,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getIconForMode(FeedMode mode) {
-    return switch (mode) {
-      FeedMode.home => Icons.home_outlined,
-      FeedMode.latest => Icons.schedule,
-      FeedMode.popular => Icons.trending_up,
-    };
-  }
-
-  String _getDescriptionForMode(FeedMode mode) {
-    return switch (mode) {
-      FeedMode.home => 'Videos from users you follow',
-      FeedMode.latest => 'Newest videos first',
-      FeedMode.popular => 'Most engaging videos',
-    };
+    if (selected != null && context.mounted) {
+      final mode = FeedMode.values.firstWhere((m) => m.name == selected);
+      context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
+    }
   }
 }
 
