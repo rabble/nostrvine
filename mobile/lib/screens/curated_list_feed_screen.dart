@@ -11,7 +11,7 @@ import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';

@@ -2,7 +2,7 @@
 // ABOUTME: Uses skeletonizer package for Material 3-style loading placeholder
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Skeleton loader for comments loading state

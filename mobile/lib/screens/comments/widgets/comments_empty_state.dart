@@ -2,7 +2,7 @@
 // ABOUTME: Shows message when no comments exist, with special notice for classic vines
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Empty state widget displayed when there are no comments.
 ///

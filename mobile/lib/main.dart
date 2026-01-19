@@ -50,7 +50,7 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';

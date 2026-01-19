@@ -1,12 +1,18 @@
-// ABOUTME: Vine-inspired theme with characteristic green colors and clean design
-// ABOUTME: Matches the classic Vine app aesthetic with proper color scheme and typography
+// ABOUTME: Vine-inspired theme with green colors and clean design
+// ABOUTME: Matches the classic Vine app aesthetic with proper styling
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Vine-inspired theme with characteristic green colors and clean design.
+///
+/// This is a dark-mode only design system matching the classic Vine app
+/// aesthetic with proper color scheme and typography.
 class VineTheme {
   // Typography - Google Fonts
-  // Bricolage Grotesque for titles (bold 800, default 22px with 28px line height)
+  // Bricolage Grotesque for titles (bold 800, 22px with 28px line height)
+
+  /// Title font style using Bricolage Grotesque.
   static TextStyle titleFont({
     double fontSize = 22,
     double? height,
@@ -18,7 +24,7 @@ class VineTheme {
     color: color,
   );
 
-  // Inter for body and small text
+  /// Body font style using Inter.
   static TextStyle bodyFont({
     double fontSize = 16,
     FontWeight fontWeight = FontWeight.w400,
@@ -32,32 +38,60 @@ class VineTheme {
   );
 
   // Classic Vine green color palette
+
+  /// Primary brand green color.
   static const Color vineGreen = Color(0xFF00B488);
+
+  /// Darker variant of the brand green.
   static const Color vineGreenDark = Color(0xFF009A72);
+
+  /// Lighter variant of the brand green.
   static const Color vineGreenLight = Color(0xFF33C49F);
 
   // Navigation colors
+
+  /// Navigation bar green background.
   static const Color navGreen = Color(0xFF00150D);
+
+  /// Icon button background color.
   static const Color iconButtonBackground = Color(0xFF032017);
+
+  /// Inactive tab icon color.
   static const Color tabIconInactive = Color(0xFF40504A);
+
+  /// Tab indicator green color.
   static const Color tabIndicatorGreen = Color(0xFF27C58B);
+
+  /// Camera button green color.
   static const Color cameraButtonGreen = Color(0xFF00B386);
 
   // Surface colors (from Figma design system)
+
+  /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
-  static const Color onSurface = Color(0xF2FFFFFF); // rgba(255,255,255,0.95)
-  static const Color onSurfaceMuted = Color(
-    0x80FFFFFF,
-  ); // rgba(255,255,255,0.5)
+
+  /// Primary content color on surfaces (95% white).
+  static const Color onSurface = Color(0xF2FFFFFF);
+
+  /// Muted content color on surfaces (50% white).
+  static const Color onSurfaceMuted = Color(0x80FFFFFF);
+
+  /// Light alpha overlay (25% white).
   static const Color alphaLight25 = Color(0x40FFFFFF);
+
+  /// Outline variant for borders and dividers.
   static const Color outlineVariant = Color(0xFF254136);
-  static const Color borderWhite25 = Color(
-    0x40FFFFFF,
-  ); // rgba(255,255,255,0.25)
+
+  /// Border color (25% white).
+  static const Color borderWhite25 = Color(0x40FFFFFF);
+
+  /// Disabled outline color.
   static const Color outlinedDisabled = Color(0xFF032017);
+
+  /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);
 
-  // Tab text style - Bricolage bold (800), 18px, 24px line height
+  /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 18,
@@ -67,26 +101,39 @@ class VineTheme {
       );
 
   // Background colors
+
+  /// Primary background color (black).
   static const Color backgroundColor = Color(0xFF000000);
+
+  /// Card and elevated surface background.
   static const Color cardBackground = Color(0xFF1A1A1A);
+
+  /// Dark overlay color.
   static const Color darkOverlay = Color(0x88000000);
 
   // Text colors (dark theme optimized)
-  static const Color primaryText = Color(
-    0xFFFFFFFF,
-  ); // White for dark backgrounds
-  static const Color secondaryText = Color(
-    0xFFBBBBBB,
-  ); // Light gray for secondary text
-  static const Color lightText = Color(
-    0xFF888888,
-  ); // Medium gray for tertiary text
+
+  /// Primary text color (white for dark backgrounds).
+  static const Color primaryText = Color(0xFFFFFFFF);
+
+  /// Secondary text color (light gray).
+  static const Color secondaryText = Color(0xFFBBBBBB);
+
+  /// Tertiary/light text color (medium gray).
+  static const Color lightText = Color(0xFF888888);
+
+  /// White text color alias.
   static const Color whiteText = Colors.white;
 
   // Accent colors
+
+  /// Like/heart red color.
   static const Color likeRed = Color(0xFFE53E3E);
+
+  /// Comment blue color.
   static const Color commentBlue = Color(0xFF3182CE);
 
+  /// The complete theme data for the app.
   static ThemeData get theme => ThemeData(
     brightness: Brightness.dark,
     primarySwatch: _createMaterialColor(vineGreen),
@@ -156,7 +203,7 @@ class VineTheme {
   );
 
   static MaterialColor _createMaterialColor(Color color) {
-    final List strengths = <double>[.05];
+    final strengths = <double>[.05];
     final swatch = <int, Color>{};
     final r = (color.r * 255.0).round() & 0xff;
     final g = (color.g * 255.0).round() & 0xff;

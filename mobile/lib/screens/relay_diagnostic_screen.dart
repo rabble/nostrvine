@@ -11,7 +11,7 @@ import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Comprehensive diagnostic screen for relay connectivity debugging

@@ -13,7 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:video_player/video_player.dart';
 
 class ClipLibraryScreen extends ConsumerStatefulWidget {

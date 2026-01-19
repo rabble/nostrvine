@@ -4,7 +4,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// A visual waveform widget that displays audio playback progress.
 ///

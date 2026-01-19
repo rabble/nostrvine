@@ -126,6 +126,10 @@ dependencies:
   videos_repository:
     path: packages/videos_repository
 
+  # Divine UI - Shared UI components
+  divine_ui:
+    path: packages/divine_ui
+
   # Logging
   logging: ^1.2.0
 

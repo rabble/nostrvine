@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class VineBottomNav extends StatelessWidget {
   final int currentIndex;
