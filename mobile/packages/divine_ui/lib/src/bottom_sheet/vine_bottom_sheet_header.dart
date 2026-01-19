@@ -27,7 +27,7 @@ class VineBottomSheetHeader extends StatelessWidget {
         left: 24,
         right: 24,
         top: 8,
-        bottom: title != null ? 16 : 8,
+        bottom: title != null ? 16 : 24,
       ),
       child: Column(
         children: [
