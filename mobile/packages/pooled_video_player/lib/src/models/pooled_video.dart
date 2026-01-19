@@ -3,7 +3,7 @@ abstract interface class PooledVideo {
   /// Unique identifier for pool key management.
   String get id;
 
-  /// Playable video URL (MP4, HLS, etc.)
+  /// Playable video URL.
   String get videoUrl;
 
   /// Optional thumbnail URL for loading states.
