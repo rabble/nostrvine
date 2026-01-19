@@ -46,31 +46,27 @@ class VineBottomSheet extends StatelessWidget {
   /// Set to false for simple content that should wrap.
   final bool expanded;
 
-  /// Shows the bottom sheet as a modal with proper configuration
+  /// Shows the bottom sheet as a modal with proper configuration.
+  ///
+  /// Set [expanded] to false for content that should wrap (not fill space).
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget body,
     Widget? title,
     Widget? trailing,
     Widget? bottomInput,
-    double initialChildSize = 0.6,
-    double minChildSize = 0.3,
-    double maxChildSize = 0.9,
+    bool expanded = true,
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: expanded,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: initialChildSize,
-        minChildSize: minChildSize,
-        maxChildSize: maxChildSize,
-        builder: (context, scrollController) => VineBottomSheet(
-          title: title,
-          trailing: trailing,
-          bottomInput: bottomInput,
-          body: body,
-        ),
+      builder: (_) => VineBottomSheet(
+        title: title,
+        trailing: trailing,
+        bottomInput: bottomInput,
+        expanded: expanded,
+        body: body,
       ),
     );
   }

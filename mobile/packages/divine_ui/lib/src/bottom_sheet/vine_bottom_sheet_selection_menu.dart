@@ -66,13 +66,20 @@ class VineBottomSheetSelectionMenu extends StatelessWidget {
     Widget? title,
     String? selectedValue,
   }) {
-    return showModalBottomSheet<String>(
+    return VineBottomSheet.show<String>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => VineBottomSheetSelectionMenu(
-        title: title,
-        options: options,
-        selectedValue: selectedValue,
+      title: title,
+      expanded: false,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in options)
+            _VineBottomSheetSelectionOption(
+              label: option.label,
+              isSelected: option.value == selectedValue,
+              onTap: () => Navigator.of(context).pop(option.value),
+            ),
+        ],
       ),
     );
   }
