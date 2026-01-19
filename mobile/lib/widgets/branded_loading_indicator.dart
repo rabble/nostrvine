@@ -37,10 +37,8 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: _animationDuration,
-      vsync: this,
-    )..repeat();
+    _controller = AnimationController(duration: _animationDuration, vsync: this)
+      ..repeat();
   }
 
   @override
