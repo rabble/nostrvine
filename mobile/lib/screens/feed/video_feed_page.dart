@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/feed/video_page_view.dart';
+import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:video_player/video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
   static const String path = '/new-video-feed';
@@ -24,6 +29,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+      child: const _VideoFeedView(),
     );
   }
 }
@@ -79,19 +85,36 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
             return FeedEmptyWidget(state: state);
           }
 
+          // Filter out videos without URLs and wrap for pool compatibility
+          final pooledVideos = state.videos
+              .where((v) => v.videoUrl != null)
+              .map(_PooledVideoEventAdapter.new)
+              .toList();
+
           // Note: RefreshIndicator removed - it conflicts with PageView
           // scrolling and adds memory overhead. Use the refresh button instead.
           return Stack(
             children: [
-              VideoPageView(
-                videos: state.videos,
-                contextTitle: 'BLoC Test (${state.mode.name})',
-                hasBottomNavigation: false,
-                onLoadMore: state.hasMore
-                    ? () => context.read<VideoFeedBloc>().add(
-                        const VideoFeedLoadMoreRequested(),
-                      )
-                    : null,
+              PooledVideoFeed(
+                videos: pooledVideos,
+                // getCachedFile: openVineVideoCache.getCachedVideoSync,
+                itemBuilder: (context, video, index, isActive) {
+                  final adapter = video as _PooledVideoEventAdapter;
+                  return _PooledVideoFeedItem(
+                    video: adapter.event,
+                    index: index,
+                    isActive: isActive,
+                    contextTitle: 'BLoC Test (${state.mode.name})',
+                  );
+                },
+                onActiveVideoChanged: (video, index) {
+                  // Trigger pagination when near end
+                  if (state.hasMore && index >= pooledVideos.length - 2) {
+                    context.read<VideoFeedBloc>().add(
+                      const VideoFeedLoadMoreRequested(),
+                    );
+                  }
+                },
               ),
               // Loading more indicator
               if (state.isLoadingMore)
@@ -117,7 +140,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Videos: ${state.videos.length} | '
+                    'Videos: ${pooledVideos.length} | '
                     'HasMore: ${state.hasMore}',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
@@ -244,5 +267,178 @@ class FeedEmptyWidget extends StatelessWidget {
       return 'No followed users.\nFollow someone to see their videos here.';
     }
     return 'No videos found for ${state.mode.name} feed.';
+  }
+}
+
+/// Adapter that wraps [VideoEvent] to implement [PooledVideo] interface.
+///
+/// This allows VideoEvent to be used with the pooled_video_player package
+/// without modifying the models package or adding dependencies to it.
+class _PooledVideoEventAdapter implements PooledVideo {
+  const _PooledVideoEventAdapter(this.event);
+
+  /// The wrapped video event.
+  final VideoEvent event;
+
+  @override
+  String get id => event.id;
+
+  @override
+  String get videoUrl => event.videoUrl!; // Safe: filtered before wrapping
+
+  @override
+  String? get thumbnailUrl => event.thumbnailUrl;
+}
+
+/// A video feed item that uses [PooledVideoPlayer] for playback.
+///
+/// This widget renders video content with automatic controller management
+/// from the pool, plus the full overlay UI with author info, actions, etc.
+class _PooledVideoFeedItem extends ConsumerStatefulWidget {
+  const _PooledVideoFeedItem({
+    required this.video,
+    required this.index,
+    required this.isActive,
+    this.contextTitle,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+  final String? contextTitle;
+
+  @override
+  ConsumerState<_PooledVideoFeedItem> createState() =>
+      _PooledVideoFeedItemState();
+}
+
+class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
+  late final VideoInteractionsBloc _interactionsBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _createInteractionsBloc();
+  }
+
+  void _createInteractionsBloc() {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+
+    _interactionsBloc = VideoInteractionsBloc(
+      eventId: widget.video.id,
+      authorPubkey: widget.video.pubkey,
+      likesRepository: likesRepository,
+      commentsRepository: commentsRepository,
+    );
+    _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
+    _interactionsBloc.add(const VideoInteractionsFetchRequested());
+  }
+
+  @override
+  void dispose() {
+    _interactionsBloc.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      child: PooledVideoPlayer(
+        video: _PooledVideoEventAdapter(widget.video),
+        autoPlay: widget.isActive,
+        builder: (context, controller, child) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Video layer
+              if (controller != null && controller.value.isInitialized)
+                _buildVideoWidget(controller)
+              else
+                _buildLoadingPlaceholder(),
+
+              // Play/pause indicator when paused
+              if (widget.isActive &&
+                  controller != null &&
+                  controller.value.isInitialized &&
+                  !controller.value.isPlaying)
+                Center(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      size: 56,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              // Overlay with author info, actions, etc.
+              BlocProvider<VideoInteractionsBloc>.value(
+                value: _interactionsBloc,
+                child: VideoOverlayActions(
+                  video: widget.video,
+                  isVisible: widget.isActive,
+                  isActive: widget.isActive,
+                  hasBottomNavigation: false,
+                  contextTitle: widget.contextTitle,
+                ),
+              ),
+            ],
+          );
+        },
+        onVideoError: (error) {
+          debugPrint('Video error for ${widget.video.id}: $error');
+        },
+      ),
+    );
+  }
+
+  Widget _buildVideoWidget(VideoPlayerController controller) {
+    final videoWidth = controller.value.size.width > 0
+        ? controller.value.size.width
+        : 1.0;
+    final videoHeight = controller.value.size.height > 0
+        ? controller.value.size.height
+        : 1.0;
+
+    return FittedBox(
+      fit: BoxFit.contain,
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: videoWidth,
+        height: videoHeight,
+        child: VideoPlayer(controller),
+      ),
+    );
+  }
+
+  Widget _buildLoadingPlaceholder() {
+    return Center(
+      child: widget.video.thumbnailUrl != null
+          ? Image.network(
+              widget.video.thumbnailUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const _LoadingIndicator(),
+            )
+          : const _LoadingIndicator(),
+    );
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    );
   }
 }

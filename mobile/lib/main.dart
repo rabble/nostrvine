@@ -54,6 +54,7 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 
@@ -541,6 +542,21 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   await container.read(uploadManagerProvider).initialize();
   Log.info(
     '[INIT] ✅ UploadManager initialized',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
+  // Initialize video controller pool manager
+  final memoryTier = await DeviceMemoryUtil.getMemoryTier();
+
+  final poolSize = switch (memoryTier) {
+    MemoryTier.low => 6,
+    MemoryTier.medium => 8,
+    MemoryTier.high => 10,
+  };
+  await VideoControllerPoolManager.initialize(poolSize: poolSize);
+  Log.info(
+    '[INIT] ✅ VideoControllerPoolManager initialized (poolSize: $poolSize)',
     name: 'Main',
     category: LogCategory.system,
   );

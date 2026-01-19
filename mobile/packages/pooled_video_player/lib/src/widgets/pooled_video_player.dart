@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:pooled_video_player/src/models/pooled_video.dart';
@@ -20,6 +21,7 @@ class PooledVideoPlayer extends StatefulWidget {
     this.onVideoReady,
     this.onVideoLoading,
     this.onVideoError,
+    this.getCachedFile,
     super.key,
   });
 
@@ -39,6 +41,11 @@ class PooledVideoPlayer extends StatefulWidget {
   final OnVideoLoading? onVideoLoading;
 
   final OnVideoError? onVideoError;
+
+  /// Optional cache lookup function for instant playback of cached videos.
+  /// When provided, the pool manager will use local file controllers for
+  /// cached videos instead of re-fetching from network.
+  final File? Function(String videoId)? getCachedFile;
 
   @override
   State<PooledVideoPlayer> createState() => _PooledVideoPlayerState();
@@ -68,7 +75,26 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
 
     _pool = VideoControllerPoolManager.instance;
     _unsubscribe = _pool!.addPoolChangeListener(_onPoolStateChanged);
-    _requestController();
+
+    // Synchronously check if controller already exists in pool (prewarmed).
+    // This avoids the black frame that occurs when waiting for async callback.
+    final existingController = _pool!.getController(widget.video.id);
+    if (existingController != null && existingController.value.isInitialized) {
+      // Controller already ready - set it directly before first build
+      _controller = existingController;
+      // Schedule callbacks for after first build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _controller != null) {
+          widget.onVideoReady?.call(_controller!);
+          if (widget.autoPlay) {
+            unawaited(_controller!.play());
+          }
+        }
+      });
+    } else {
+      // Not in pool or not initialized - request async
+      _requestController();
+    }
   }
 
   void _requestController() {
@@ -79,6 +105,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
           .acquireController(
             videoId: widget.video.id,
             videoUrl: widget.video.videoUrl,
+            getCachedFile: widget.getCachedFile,
           )
           .then((PooledController? pooled) {
             if (pooled == null) {
@@ -138,8 +165,19 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     }
 
     if (widget.video.id != oldWidget.video.id) {
-      _controller = null;
-      _requestController();
+      // Check synchronously if new video's controller is already in pool
+      final existingController = _pool?.getController(widget.video.id);
+      if (existingController != null &&
+          existingController.value.isInitialized) {
+        setState(() => _controller = existingController);
+        widget.onVideoReady?.call(existingController);
+        if (widget.autoPlay) {
+          unawaited(existingController.play());
+        }
+      } else {
+        setState(() => _controller = null);
+        _requestController();
+      }
     }
   }
 
