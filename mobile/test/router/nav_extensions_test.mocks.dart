@@ -10,10 +10,10 @@ import 'package:keycast_flutter/keycast_flutter.dart' as _i6;
 import 'package:likes_repository/likes_repository.dart' as _i15;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:models/models.dart' as _i11;
 import 'package:nostr_client/nostr_client.dart' as _i8;
 import 'package:nostr_client/src/models/models.dart' as _i3;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
-import 'package:openvine/models/video_event.dart' as _i11;
 import 'package:openvine/services/age_verification_service.dart' as _i14;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/content_blocklist_service.dart' as _i13;
@@ -187,6 +187,19 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i4.Future<_i2.AuthResult>);
 
   @override
+  _i4.Future<_i2.AuthResult> connectWithBunker(String? bunkerUrl) =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithBunker, [bunkerUrl]),
+            returnValue: _i4.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(
+                this,
+                Invocation.method(#connectWithBunker, [bunkerUrl]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.AuthResult>);
+
+  @override
   _i4.Future<void> refreshCurrentProfile(
     _i5.UserProfileService? userProfileService,
   ) =>
@@ -263,10 +276,13 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i4.Future<_i7.Event?>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+  _i4.Future<void> dispose() =>
+      (super.noSuchMethod(
+            Invocation.method(#dispose, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }
 
 /// A class which mocks [NostrClient].
@@ -600,6 +616,18 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
                 #targetRelays: targetRelays,
               },
             ),
+            returnValue: _i4.Future<_i7.Event?>.value(),
+          )
+          as _i4.Future<_i7.Event?>);
+
+  @override
+  _i4.Future<_i7.Event?> sendProfile({
+    required Map<String, dynamic>? profileContent,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendProfile, [], {
+              #profileContent: profileContent,
+            }),
             returnValue: _i4.Future<_i7.Event?>.value(),
           )
           as _i4.Future<_i7.Event?>);

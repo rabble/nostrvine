@@ -4,11 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/go_router.dart';
 
 void main() {
   group('ClipLibraryScreen', () {
@@ -108,7 +111,22 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(buildTestWidget());
+      // Create mock GoRouter for context.pop() calls
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.canPop()).thenReturn(true);
+      when(() => mockGoRouter.pop<void>()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clipLibraryServiceProvider.overrideWith((ref) => clipService),
+          ],
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: const MaterialApp(home: ClipLibraryScreen()),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Initially has 1 clip
@@ -120,14 +138,16 @@ void main() {
 
       // Tap delete icon in preview sheet
       await tester.tap(find.byIcon(Icons.delete));
-      await tester.pumpAndSettle();
+      // Use pump() with duration instead of pumpAndSettle() to avoid timeout
+      // from ongoing animations in bottom sheet/dialog transitions
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Confirmation dialog should appear
       expect(find.text('Delete Clip?'), findsOneWidget);
 
       // Confirm deletion
       await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Clip should be deleted
       expect((await clipService.getAllClips()).length, 0);

@@ -32,6 +32,13 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
@@ -735,7 +742,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           switch (deepLink.type) {
             case DeepLinkType.video:
               if (deepLink.videoId != null) {
-                final targetPath = '/video/${deepLink.videoId}';
+                final targetPath = VideoDetailScreen.pathForId(
+                  deepLink.videoId!,
+                );
                 Log.info(
                   '📱 Navigating to video: $targetPath',
                   name: 'DeepLinkHandler',
@@ -766,7 +775,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             case DeepLinkType.profile:
               if (deepLink.npub != null) {
                 final index = deepLink.index ?? 0;
-                final targetPath = '/profile/${deepLink.npub}/$index';
+                final targetPath =
+                    '${ProfileScreenRouter.pathForNpub(deepLink.npub!)}/$index';
                 Log.info(
                   '📱 Navigating to profile: $targetPath',
                   name: 'DeepLinkHandler',
@@ -797,9 +807,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             case DeepLinkType.hashtag:
               if (deepLink.hashtag != null) {
                 // Include index if present, otherwise use grid view
-                final targetPath = deepLink.index != null
-                    ? '/hashtag/${deepLink.hashtag}/${deepLink.index}'
-                    : '/hashtag/${deepLink.hashtag}';
+                final targetPath = HashtagScreenRouter.pathForTag(
+                  deepLink.hashtag!,
+                  index: deepLink.index,
+                );
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',
                   name: 'DeepLinkHandler',
@@ -830,9 +841,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
                 // Include index if present, otherwise use grid view
-                final targetPath = deepLink.index != null
-                    ? '/search/${deepLink.searchTerm}/${deepLink.index}'
-                    : '/search/${deepLink.searchTerm}';
+                final targetPath = SearchScreenPure.pathForTerm(
+                  term: deepLink.searchTerm,
+                  index: deepLink.index,
+                );
                 Log.info(
                   '📱 Navigating to search: $targetPath',
                   name: 'DeepLinkHandler',
@@ -945,7 +957,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         case RouteType.hashtag:
         case RouteType.search:
           // Go back to explore
-          router.go('/explore');
+          router.go(ExploreScreen.path);
           return true; // Handled
 
         default:
@@ -1003,26 +1015,26 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         // So we'll use router.go directly
         switch (previousTab) {
           case 0:
-            router.go('/home/${lastIndex ?? 0}');
+            router.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
             break;
           case 1:
             if (lastIndex != null) {
-              router.go('/explore/$lastIndex');
+              router.go(ExploreScreen.pathForIndex(lastIndex));
             } else {
-              router.go('/explore');
+              router.go(ExploreScreen.path);
             }
             break;
           case 2:
-            router.go('/notifications/${lastIndex ?? 0}');
+            router.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
             break;
           case 3:
             // Get current user's npub for profile
             final authService = ref.read(authServiceProvider);
             final currentNpub = authService.currentNpub;
             if (currentNpub != null) {
-              router.go('/profile/$currentNpub');
+              router.go(ProfileScreenRouter.pathForNpub(currentNpub));
             } else {
-              router.go('/home/0');
+              router.go(HomeScreenRouter.pathForIndex(0));
             }
             break;
         }
@@ -1034,7 +1046,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       final currentTab = _tabIndexFromRouteType(ctx.type);
       if (currentTab != null && currentTab != 0) {
         // Go to home first
-        router.go('/home/0');
+        router.go(HomeScreenRouter.pathForIndex(0));
         return true; // Handled
       }
 

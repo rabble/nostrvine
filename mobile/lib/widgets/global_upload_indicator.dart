@@ -166,7 +166,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                       Icons.close,
                       color: VineTheme.secondaryText,
                     ),
-                    onPressed: () => context.pop(),
+                    onPressed: context.pop,
                   ),
                 ],
               ),

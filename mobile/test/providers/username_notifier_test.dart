@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for UsernameNotifier Riverpod notifier
-// ABOUTME: Tests availability checking and registration flow
+// ABOUTME: Tests debounced username availability checking
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +7,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/repositories/username_repository.dart';
-import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/state/username_state.dart';
 
 class MockUsernameRepository extends Mock implements UsernameRepository {}
@@ -258,151 +257,6 @@ void main() {
         final state = container.read(usernameProvider);
         expect(state.username, 'newuser');
         expect(state.status, UsernameCheckStatus.checking);
-      });
-    });
-
-    group('registerUsername', () {
-      const validPubkey =
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      final relays = ['wss://relay1.com', 'wss://relay2.com'];
-
-      test('returns error when username is not available', () async {
-        final container = createContainer();
-
-        // State is idle (not available)
-        final result = await container
-            .read(usernameProvider.notifier)
-            .registerUsername(pubkey: validPubkey, relays: relays);
-
-        expect(result.status, UsernameRegistrationStatus.error);
-        expect(result.errorMessage, 'Username not available for registration');
-      });
-
-      test('registers successfully when username is available', () async {
-        final container = createContainer();
-
-        // Arrange - set up available state
-        when(
-          () => usernameRepository.checkAvailability('newuser'),
-        ).thenAnswer((_) async => UsernameAvailability.available);
-        when(
-          () => usernameRepository.register(
-            username: 'newuser',
-            pubkey: validPubkey,
-            relays: relays,
-          ),
-        ).thenAnswer(
-          (_) async => const UsernameRegistrationResult(
-            status: UsernameRegistrationStatus.success,
-          ),
-        );
-
-        // Get to available state
-        container.read(usernameProvider.notifier).onUsernameChanged('newuser');
-        await container
-            .read(usernameProvider.notifier)
-            .checkAvailability('newuser');
-
-        // Verify available state
-        expect(container.read(usernameProvider).isAvailable, true);
-
-        // Act
-        final result = await container
-            .read(usernameProvider.notifier)
-            .registerUsername(pubkey: validPubkey, relays: relays);
-
-        // Assert
-        expect(result.isSuccess, true);
-        verify(
-          () => usernameRepository.register(
-            username: 'newuser',
-            pubkey: validPubkey,
-            relays: relays,
-          ),
-        ).called(1);
-      });
-
-      test(
-        'updates state to reserved when registration returns reserved',
-        () async {
-          final container = createContainer();
-
-          // Arrange
-          when(
-            () => usernameRepository.checkAvailability('reserved'),
-          ).thenAnswer((_) async => UsernameAvailability.available);
-          when(
-            () => usernameRepository.register(
-              username: 'reserved',
-              pubkey: validPubkey,
-              relays: relays,
-            ),
-          ).thenAnswer(
-            (_) async => const UsernameRegistrationResult(
-              status: UsernameRegistrationStatus.reserved,
-              errorMessage: 'Username is reserved',
-            ),
-          );
-
-          // Get to available state
-          container
-              .read(usernameProvider.notifier)
-              .onUsernameChanged('reserved');
-          await container
-              .read(usernameProvider.notifier)
-              .checkAvailability('reserved');
-
-          // Act
-          final result = await container
-              .read(usernameProvider.notifier)
-              .registerUsername(pubkey: validPubkey, relays: relays);
-
-          // Assert
-          expect(result.isReserved, true);
-          final state = container.read(usernameProvider);
-          expect(state.isReserved, true);
-          expect(state.status, UsernameCheckStatus.reserved);
-        },
-      );
-
-      test('updates state to taken when registration returns taken', () async {
-        final container = createContainer();
-
-        // Arrange
-        when(
-          () => usernameRepository.checkAvailability('justtaken'),
-        ).thenAnswer((_) async => UsernameAvailability.available);
-        when(
-          () => usernameRepository.register(
-            username: 'justtaken',
-            pubkey: validPubkey,
-            relays: relays,
-          ),
-        ).thenAnswer(
-          (_) async => const UsernameRegistrationResult(
-            status: UsernameRegistrationStatus.taken,
-            errorMessage: 'Username already taken',
-          ),
-        );
-
-        // Get to available state
-        container
-            .read(usernameProvider.notifier)
-            .onUsernameChanged('justtaken');
-        await container
-            .read(usernameProvider.notifier)
-            .checkAvailability('justtaken');
-
-        // Act
-        final result = await container
-            .read(usernameProvider.notifier)
-            .registerUsername(pubkey: validPubkey, relays: relays);
-
-        // Assert
-        expect(result.isTaken, true);
-        final state = container.read(usernameProvider);
-        expect(state.isTaken, true);
-        expect(state.status, UsernameCheckStatus.taken);
       });
     });
 

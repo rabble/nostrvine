@@ -24,7 +24,8 @@ void main() {
         );
 
         expect(client, isA<NostrClient>());
-        expect(client.publicKey, equals(testPublicKey));
+        // Public key is empty before initialize() - signer is source of truth
+        expect(client.publicKey, isEmpty);
       });
 
       test('creates client with null key container (read-only mode)', () {

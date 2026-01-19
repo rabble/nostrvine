@@ -1,0 +1,27 @@
+appId: co.openvine.app
+---
+#TC to check that the user can login with a fresh app
+#Steps:
+# 1. Open the app in clear state: Login screen is displayed
+# 2. Tap on I am 16 and I agree, tap on Continue: User is directed to the Explore screen
+# 3. Tap on Home: Empty home feed should be displayed
+
+# 1. Open the app in clear state: Login screen is displayed
+- launchApp:
+    clearState: true
+- runFlow: "../asserts/assertSplash.yaml"
+- runFlow: "../asserts/assertLogin.yaml"
+
+# 2. Tap on I am 16 and I agree, tap on Continue: User is directed to the Explore screen
+- tapOn: I am 16 years or older
+- tapOn: "I agree to the "
+- assertVisible: Continue
+- tapOn: Continue
+- waitForAnimationToEnd
+- runFlow: "../asserts/assertExplore.yaml"
+
+# 3. Tap on Home: Empty home feed should be displayed
+- doubleTapOn:
+    id: home_tab
+    delay: 100
+- runFlow: ../asserts/assertFreshHome.yaml

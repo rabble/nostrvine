@@ -1,13 +1,15 @@
 // ABOUTME: Navigation drawer providing access to settings, relays, bug reports and other app options
 // ABOUTME: Reusable sidebar menu that appears from the top right on all main screens
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-// import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
+// import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
@@ -142,16 +144,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       icon: Icons.person,
                       title: 'Edit Profile',
                       onTap: () {
-                        // Close drawer first
+                        // Close drawer first, then navigate to edit-profile route
                         context.pop();
-                        // Navigate using root navigator to escape shell route
-                        // This prevents redirect issues when navigating from inside shell
-                        Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ProfileSetupScreen(isNewUser: false),
-                          ),
-                        );
+                        context.push(ProfileSetupScreen.editPath);
                       },
                     ),
                     const Divider(color: Colors.grey, height: 1),
@@ -163,13 +158,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      // Close drawer first, then navigate
-                      Navigator.of(context).pop(); // Close drawer
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      );
+                      // Close drawer first, then navigate to settings route
+                      context.pop();
+                      context.push(SettingsScreen.path);
                     },
                   ),
 
@@ -269,6 +260,22 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 ],
               ),
             ),
+            // Developer section (debug mode only)
+            if (kDebugMode) ...[
+              const Divider(color: Colors.grey, height: 1),
+              _buildSectionHeader('Developer'),
+              _buildDrawerItem(
+                icon: Icons.science,
+                title: 'BLoC Test Screen',
+                subtitle: 'Test VideoFeedBloc architecture',
+                onTap: () {
+                  // Capture router before closing drawer
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop(); // Close drawer
+                  router.push(VideoFeedPage.path);
+                },
+              ),
+            ],
 
             // Footer
             Container(

@@ -9,11 +9,11 @@ import 'dart:ui' as _i10;
 import 'package:likes_repository/likes_repository.dart' as _i15;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i4;
+import 'package:models/models.dart' as _i12;
 import 'package:nostr_client/nostr_client.dart' as _i3;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i6;
 import 'package:openvine/models/user_profile.dart' as _i8;
-import 'package:openvine/models/video_event.dart' as _i12;
 import 'package:openvine/services/age_verification_service.dart' as _i14;
 import 'package:openvine/services/content_blocklist_service.dart' as _i13;
 import 'package:openvine/services/profile_cache_service.dart' as _i9;
@@ -372,6 +372,18 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
                 #targetRelays: targetRelays,
               },
             ),
+            returnValue: _i5.Future<_i6.Event?>.value(),
+          )
+          as _i5.Future<_i6.Event?>);
+
+  @override
+  _i5.Future<_i6.Event?> sendProfile({
+    required Map<String, dynamic>? profileContent,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendProfile, [], {
+              #profileContent: profileContent,
+            }),
             returnValue: _i5.Future<_i6.Event?>.value(),
           )
           as _i5.Future<_i6.Event?>);

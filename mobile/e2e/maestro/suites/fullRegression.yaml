@@ -1,0 +1,57 @@
+appId: co.openvine.app
+name: Divine regression test
+env:
+  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
+  VIDEO_DATA: "Play video Loading... When you jammin to JB too hard and you grab a hot mic. #funny #fail #failvine #EpicFail Video by Kay 14.5k 46M"
+  VIDEO_USER: "FunnyVines"
+  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
+  SEARCH_TAG: "comedy"
+  SEARCH_USER: "lele"
+  SEARCH_USER_DESCRIPTION: "Lele Lele 17, 🌴🌾Kik: lei_lannnni, IG: 813lele"
+  SEARCH_USER_ID: user_profile_tile_7cbbf8d383e0bb7453848b4334841a61dbae768a272ea647a60d21a16e046712
+  SEARCH_USER_BIO: "17, 🌴🌾Kik: lei_lannnni, IG: 813lele"
+  COMMENT: "Boring automated comment"
+  DISPLAY_NAME: "AutomationUser"
+  USER_BIO: "AutomationUser bio"
+  USER_NAME: "Automation User"
+  USER_KEYS: "nsec16fvy70pyfw7cjegt4wry24z4nwaleqanrkwputmy5na0wrdyak4sdkn8l2" #A test user
+  USER_wKEYS_NAME: "AleB wKeys"
+  USER_wKEYS_BIO: "user profile from Uy for testing login with keys"
+  #VIDEO_DATA: "Play video IG: @SamuelGrubbs Yaga 😂💀 162.6k 84.8M"
+  #VIDEO_USER: "IG: @SamuelGrubbs"
+  #VIDEO_DESCRIPTION: "Yaga 😂💀"
+  VIDEO_USER_BIO: "IG: @SamuelGrubbs IG: @SamuelGrubbs ✞He>i✞ 📧Biz Email👉SamuelGrubbsBiz@gmail.com📧 👻Snapchat/IFunny👉@SamuelGrubbs👻 📷Instagram🐥Twitter👉@SamuelGrubbs1📷🐥 #TheNerd and #Money🏀"
+  PRIV_KEY_TO_DELETE: ""
+  EXISTING_USERNAME: "jaysonpotter"
+---
+#Social interaction tests
+- runFlow: ../flows/followFlow.yaml
+- runFlow: ../flows/likeFlow.yaml
+- runFlow: ../flows/commentFlow.yaml
+
+#Search tests
+- runFlow: ../flows/searchVideoFlow.yaml
+- runFlow: ../flows/searchUserFlow.yaml
+- runFlow: ../flows/searchTagFlow.yaml
+
+#Navigation tests
+- runFlow: ../flows/profileNavigationFlow.yaml
+- runFlow: ../tests/logout.yaml
+
+#Account data management tests
+- runFlow: ../tests/loginFreshInstall.yaml
+- runFlow: ../tests/removeKeys.yaml
+- runFlow: ../tests/loginFreshInstall.yaml
+- runFlow: ../tests/backupYourKey.yaml
+- evalScript: ${PRIV_KEY_TO_DELETE = navigator.clipboard.readText()}
+- runFlow: ../tests/deleteAccountData.yaml
+- runFlow:
+    file: ../tests/loginExistingKeys.yaml
+    env:
+      USER_NAME: ${USER_wKEYS_NAME}
+      USER_BIO: ${USER_wKEYS_BIO}
+- runFlow: ../tests/editProfile.yaml
+- runFlow: ../tests/userAlreadyTaken.yaml
+
+#Tear down
+- killApp

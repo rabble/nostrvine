@@ -18,6 +18,19 @@ import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 
 /// Router-aware liked videos screen that shows grid or feed based on route
 class LikedVideosScreenRouter extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'liked-videos';
+
+  /// Path for this route.
+  static const path = '/liked-videos';
+
+  /// Path for this route with index.
+  static const pathWithIndex = '/liked-videos/:index';
+
+  /// Build path for grid mode or specific index.
+  static String pathForIndex(int? index) =>
+      index == null ? path : '/liked-videos/$index';
+
   const LikedVideosScreenRouter({super.key});
 
   @override

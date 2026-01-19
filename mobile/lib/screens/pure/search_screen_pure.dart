@@ -2,10 +2,12 @@
 // ABOUTME: Searches for videos, users, and hashtags using composition architecture
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -13,12 +15,38 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
-import 'package:openvine/utils/unified_logger.dart';
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
 class SearchScreenPure extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'search';
+
+  /// Path for this route.
+  static const path = '/search';
+
+  /// Path for this route with term.
+  static const pathWithTerm = '/search/:searchTerm';
+
+  /// Path for this route with index.
+  static const pathWithIndex = '/search/:index';
+
+  /// Path for this route with term and index.
+  static const pathWithTermAndIndex = '/search/:searchTerm/:index';
+
+  /// Build path for grid mode or specific index.
+  static String pathForTerm({String? term, int? index}) {
+    if (term == null) {
+      if (index == null) return path;
+      return '$path/$index';
+    }
+    final encodedTerm = Uri.encodeComponent(term);
+    if (index == null) return '$path/$encodedTerm';
+    return '$path/$encodedTerm/$index';
+  }
+
   const SearchScreenPure({super.key, this.embedded = false});
 
   final bool
@@ -445,7 +473,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           button: true,
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
           ),
         ),
         title: searchBar,

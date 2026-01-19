@@ -7,7 +7,6 @@ class NostrClientConfig {
   /// {@macro nostr_client_config}
   const NostrClientConfig({
     required this.signer,
-    required this.publicKey,
     this.eventFilters = const [],
     this.onNotice,
     this.gatewayUrl,
@@ -15,11 +14,10 @@ class NostrClientConfig {
     this.webSocketChannelFactory,
   });
 
-  /// Signer for event signing
+  /// Signer for event signing - the single source of truth for the public key.
+  ///
+  /// The public key is derived from the signer via [NostrSigner.getPublicKey]
   final NostrSigner signer;
-
-  /// Public key of the client
-  final String publicKey;
 
   /// Event filters for initial subscriptions
   final List<EventFilter> eventFilters;

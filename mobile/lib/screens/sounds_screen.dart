@@ -8,6 +8,7 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -99,7 +100,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     } else {
       // Use the provider and navigate back
       ref.read(selectedSoundProvider.notifier).select(sound);
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 
@@ -204,7 +205,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
 
     if (!mounted) return;
 
-    context.push('/sound/${sound.id}', extra: sound);
+    context.push(SoundDetailScreen.pathForId(sound.id), extra: sound);
   }
 
   List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
@@ -229,7 +230,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           backgroundColor: VineTheme.cardBackground,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
           ),
           title: const Text(
             'Sounds',

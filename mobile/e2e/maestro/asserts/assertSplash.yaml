@@ -1,0 +1,4 @@
+appId: co.openvine.app
+---
+- waitForAnimationToEnd # diVine logo may take some time to load
+- assertVisible: "diVine"

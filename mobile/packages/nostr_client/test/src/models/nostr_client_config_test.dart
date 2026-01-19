@@ -8,22 +8,18 @@ class MockNostrSigner extends Mock implements NostrSigner {}
 void main() {
   group('NostrClientConfig', () {
     late NostrSigner mockSigner;
-    const testPublicKey =
-        '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2';
 
     setUp(() {
       mockSigner = MockNostrSigner();
     });
 
     group('constructor', () {
-      test('creates config with required fields', () {
+      test('creates config with only signer', () {
         final config = NostrClientConfig(
           signer: mockSigner,
-          publicKey: testPublicKey,
         );
 
         expect(config.signer, equals(mockSigner));
-        expect(config.publicKey, equals(testPublicKey));
         expect(config.eventFilters, isEmpty);
         expect(config.onNotice, isNull);
         expect(config.gatewayUrl, isNull);
@@ -36,7 +32,6 @@ void main() {
 
         final config = NostrClientConfig(
           signer: mockSigner,
-          publicKey: testPublicKey,
           // easier to verify that the values are set correctly
           // ignore: avoid_redundant_argument_values
           eventFilters: eventFilters,
@@ -46,7 +41,6 @@ void main() {
         );
 
         expect(config.signer, equals(mockSigner));
-        expect(config.publicKey, equals(testPublicKey));
         expect(config.eventFilters, equals(eventFilters));
         expect(config.onNotice, equals(noticeCallback));
         expect(config.gatewayUrl, equals('https://gateway.example.com'));
@@ -56,7 +50,6 @@ void main() {
       test('uses default values for optional fields', () {
         final config = NostrClientConfig(
           signer: mockSigner,
-          publicKey: testPublicKey,
         );
 
         expect(config.eventFilters, isEmpty);

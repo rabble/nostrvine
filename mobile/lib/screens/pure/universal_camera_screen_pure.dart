@@ -9,14 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' as vine show AspectRatio;
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:models/models.dart' as vine show AspectRatio;
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
@@ -37,6 +39,12 @@ import 'package:openvine/widgets/macos_camera_preview.dart'
 /// Note: This screen assumes camera/microphone permissions are already granted.
 /// Wrap with [CameraPermissionGate] to handle permission flow.
 class UniversalCameraScreenPure extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'camera';
+
+  /// Path for this route.
+  static const path = '/camera';
+
   const UniversalCameraScreenPure({super.key});
 
   @override
@@ -513,7 +521,7 @@ class _UniversalCameraScreenPureState
         backgroundColor: VineTheme.vineGreen,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: context.pop,
         ),
         title: const Text(
           'Camera Error',
@@ -582,13 +590,13 @@ class _UniversalCameraScreenPureState
               );
               // Try to pop if possible, otherwise go home
               // Camera can be reached via push (from FAB) or go (from ClipManager)
-              final router = GoRouter.of(context);
-              if (router.canPop()) {
-                router.pop();
-              } else {
-                // No screen to pop to (navigated via go), go home instead
-                context.goHome();
+
+              if (context.canPop()) {
+                return context.pop();
               }
+
+              // No screen to pop to (navigated via go), go home instead
+              context.goHome();
             },
             child: Container(
               width: 44,
@@ -648,7 +656,7 @@ class _UniversalCameraScreenPureState
                       _finishRecording();
                     } else {
                       // Only existing clips - go directly to ClipManager
-                      context.push('/clip-manager');
+                      context.push(ClipManagerScreen.path);
                     }
                   }
                 : null,
@@ -866,7 +874,7 @@ class _UniversalCameraScreenPureState
       child: IconButton(
         icon: const Icon(Icons.video_library, color: Colors.white, size: 28),
         tooltip: 'View clips library',
-        onPressed: () => context.push('/clips'),
+        onPressed: () => context.push(ClipLibraryScreen.clipsPath),
       ),
     );
   }
@@ -1032,7 +1040,7 @@ class _UniversalCameraScreenPureState
         builder: (context) => SoundsScreen(
           onSoundSelected: (sound) {
             selectedSound = sound;
-            Navigator.of(context).pop();
+            context.pop();
           },
         ),
       ),
@@ -1681,7 +1689,7 @@ class _UniversalCameraScreenPureState
         });
 
         // Navigate to ClipManager screen
-        context.push('/clip-manager');
+        context.push(ClipManagerScreen.path);
 
         Log.info('📹 Navigated to clip-manager', category: LogCategory.video);
       }
@@ -1772,12 +1780,12 @@ class _UniversalCameraScreenPureState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: context.pop,
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              context.pop();
               _clearAllRecordings();
             },
             child: const Text('Clear', style: TextStyle(color: Colors.red)),

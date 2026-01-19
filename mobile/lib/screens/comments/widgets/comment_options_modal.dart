@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
@@ -16,9 +17,9 @@ class CommentOptionsModal {
   /// Shows the options modal and returns the result.
   ///
   /// Returns `true` if delete was selected, `null` if cancelled.
-  static Future<bool?> show(BuildContext context) {
+  static Future<bool?> show(BuildContext modalContext) {
     return VineBottomSheet.show<bool>(
-      context: context,
+      context: modalContext,
       initialChildSize: 0.2,
       minChildSize: 0.2,
       title: Text(
@@ -54,7 +55,7 @@ class CommentOptionsModal {
                 ],
               ),
             ),
-            onTap: () => Navigator.of(context).pop(true),
+            onTap: () => modalContext.pop(true),
           ),
         ),
       ],

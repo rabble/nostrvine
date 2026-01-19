@@ -25,6 +25,9 @@ class RelayBase extends Relay {
     WebSocketChannelFactory? channelFactory,
   }) : _channelFactory = channelFactory;
 
+  /// Tracks whether doConnect is in progress to avoid duplicate onConnected calls
+  bool _isConnecting = false;
+
   @override
   Future<bool> doConnect() async {
     // If already connected, return true
@@ -34,6 +37,7 @@ class RelayBase extends Relay {
     }
 
     try {
+      _isConnecting = true;
       getRelayInfo(url);
       log("Connect begin: $url");
 
@@ -53,10 +57,15 @@ class RelayBase extends Relay {
 
       if (result) {
         log("Connect complete: $url");
+        // Explicitly set connected status here since the stream listener
+        // may not have processed the state change yet when we return
+        relayStatus.connected = ClientConnected.connected;
       }
 
+      _isConnecting = false;
       return result;
     } catch (e) {
+      _isConnecting = false;
       log("Connect error: $e");
       onError(e.toString(), reconnect: true);
       return false;
@@ -77,9 +86,10 @@ class RelayBase extends Relay {
       switch (state) {
         case ConnectionState.connected:
           relayStatus.connected = ClientConnected.connected;
-          // Flush pending messages on reconnection
-          if (wasDisconnected) {
-            onConnected();
+          // Flush pending messages on reconnection, but NOT during initial connect
+          // (relay.connect() will call onConnected after doConnect returns)
+          if (wasDisconnected && !_isConnecting) {
+            onConnected(source: 'stateStream-reconnect');
           }
         case ConnectionState.connecting:
           relayStatus.connected = ClientConnected.connecting;

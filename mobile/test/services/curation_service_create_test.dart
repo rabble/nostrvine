@@ -9,15 +9,15 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:likes_repository/likes_repository.dart';
 
 import 'curation_service_create_test.mocks.dart';
 
 @GenerateMocks([
   NostrClient,
   VideoEventService,
-  SocialService,
+  LikesRepository,
   NostrKeyManager,
   AuthService,
 ])
@@ -25,7 +25,7 @@ void main() {
   group('CurationService.createCurationSet()', () {
     late MockNostrClient mockNostrService;
     late MockVideoEventService mockVideoEventService;
-    late MockSocialService mockSocialService;
+    late MockLikesRepository mockLikesRepository;
     late MockNostrKeyManager mockKeyManager;
     late MockAuthService mockAuthService;
     late CurationService curationService;
@@ -34,14 +34,16 @@ void main() {
     setUp(() {
       mockNostrService = MockNostrClient();
       mockVideoEventService = MockVideoEventService();
-      mockSocialService = MockSocialService();
+      mockLikesRepository = MockLikesRepository();
       mockKeyManager = MockNostrKeyManager();
       mockAuthService = MockAuthService();
 
       // Setup default mock behaviors
       when(mockVideoEventService.videoEvents).thenReturn([]);
       when(mockVideoEventService.discoveryVideos).thenReturn([]);
-      when(mockSocialService.getCachedLikeCount(any)).thenReturn(0);
+
+      // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
+      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
 
       // Stub subscribe for CurationService initialization (fetches Divine Team videos)
       when(
@@ -64,7 +66,7 @@ void main() {
       curationService = CurationService(
         nostrService: mockNostrService,
         videoEventService: mockVideoEventService,
-        socialService: mockSocialService,
+        likesRepository: mockLikesRepository,
         authService: mockAuthService,
       );
     });

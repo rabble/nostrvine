@@ -17,9 +17,6 @@ enum FeedMode {
 
 /// Status of the video feed.
 enum VideoFeedStatus {
-  /// Initial state, no data loaded yet.
-  initial,
-
   /// Currently loading videos.
   loading,
 
@@ -50,7 +47,7 @@ enum VideoFeedError {
 /// - [error]: Any error that occurred
 final class VideoFeedState extends Equatable {
   const VideoFeedState({
-    this.status = VideoFeedStatus.initial,
+    this.status = VideoFeedStatus.loading,
     this.videos = const [],
     this.mode = FeedMode.home,
     this.hasMore = true,

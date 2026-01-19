@@ -1,0 +1,14 @@
+appId: co.openvine.app
+---
+- runFlow:
+    when:
+      visible: "done" # Replace with the actual input field identifier
+    commands:
+      - tapOn: done
+      - hideKeyboard
+- runFlow:
+    when:
+      visible: "return" # Replace with the actual input field identifier
+    commands:
+      - tapOn: return
+      - hideKeyboard

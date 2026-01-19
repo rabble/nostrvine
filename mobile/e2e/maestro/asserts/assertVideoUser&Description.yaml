@@ -1,0 +1,10 @@
+appId: co.openvine.app
+---
+- assertVisible:
+    text: "${VIDEO_USER}"
+    optional: true
+- assertVisible: "${VIDEO_DESCRIPTION}"
+#Unknown should not be displayed on the user name
+- assertNotVisible:
+    text: Unknown
+    optional: true

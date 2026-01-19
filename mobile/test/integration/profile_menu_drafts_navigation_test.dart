@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -32,7 +33,9 @@ void main() {
 
       await tester.pumpWidget(shell(c));
 
-      c.read(goRouterProvider).go('/profile/$currentUserNpub/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
       await tester.pump();
       await tester.pump();
 
@@ -65,7 +68,9 @@ void main() {
 
         await tester.pumpWidget(shell(c));
 
-        c.read(goRouterProvider).go('/profile/$currentUserNpub/0');
+        c
+            .read(goRouterProvider)
+            .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
         await tester.pump();
         await tester.pump();
 
@@ -99,7 +104,9 @@ void main() {
 
       await tester.pumpWidget(shell(c));
 
-      c.read(goRouterProvider).go('/profile/$currentUserNpub/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
       await tester.pump();
       await tester.pump();
 
@@ -133,7 +140,9 @@ void main() {
 
       await tester.pumpWidget(shell(c));
 
-      c.read(goRouterProvider).go('/profile/$currentUserNpub/0');
+      c
+          .read(goRouterProvider)
+          .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
       await tester.pump();
       await tester.pump();
 

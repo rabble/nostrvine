@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/models/user_profile.dart' as models;
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart'
+    hide LogCategory, NotificationModel, NotificationType, UserProfile;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';

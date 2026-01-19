@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Modal dialog explaining the origin and authenticity of video content
@@ -26,7 +26,7 @@ class BadgeExplanationModal extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: context.pop,
           child: const Text('Close', style: TextStyle(color: Colors.blue)),
         ),
       ],

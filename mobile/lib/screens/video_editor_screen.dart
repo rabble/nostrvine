@@ -24,6 +24,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoEditorScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'edit-video';
+
+  /// Path for this route.
+  static const path = '/edit-video';
+
   const VideoEditorScreen({
     super.key,
     required this.videoPath,
@@ -273,9 +279,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           ref
               .read(videoEditorProvider(widget.videoPath).notifier)
               .addTextOverlay(overlay);
-          Navigator.of(context).pop();
+          context.pop();
         },
-        onCancel: () => Navigator.of(context).pop(),
+        onCancel: context.pop,
       ),
     );
 
@@ -313,7 +319,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 .selectSound(soundId);
             // Store selected sound ID to load after navigation completes
             selectedSoundId = soundId;
-            Navigator.of(context).pop();
+            context.pop();
           },
         ),
       ),

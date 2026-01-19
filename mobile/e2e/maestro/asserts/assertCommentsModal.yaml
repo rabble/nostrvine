@@ -1,0 +1,4 @@
+appId: co.openvine.app
+---
+- assertVisible: Comments
+- assertVisible: Add comment...

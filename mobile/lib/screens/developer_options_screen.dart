@@ -11,6 +11,12 @@ import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class DeveloperOptionsScreen extends ConsumerWidget {
+  /// Route name for this screen.
+  static const routeName = 'developer-options';
+
+  /// Path for this route.
+  static const path = '/developer-options';
+
   const DeveloperOptionsScreen({super.key});
 
   @override
@@ -103,14 +109,14 @@ class DeveloperOptionsScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.white70),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.vineGreen,
             ),
