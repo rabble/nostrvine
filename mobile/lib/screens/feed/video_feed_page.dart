@@ -152,9 +152,6 @@ class _FeedModeSwitch extends StatelessWidget {
   ) async {
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
-      initialChildSize: 0.35,
-      minChildSize: 0.25,
-      maxChildSize: 0.5,
       selectedValue: currentMode.name,
       options: const [
         VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),

@@ -8,15 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('VineBottomSheet', () {
     testWidgets('renders with required props', (tester) async {
-      final scrollController = ScrollController();
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
               title: const Text('Test Sheet'),
-              scrollController: scrollController,
-              children: const [Text('Content 1'), Text('Content 2')],
+              body: const Column(
+                children: [Text('Content 1'), Text('Content 2')],
+              ),
             ),
           ),
         ),
@@ -32,7 +31,6 @@ void main() {
     });
 
     testWidgets('renders with trailing widget', (tester) async {
-      final scrollController = ScrollController();
       const trailingWidget = Icon(Icons.settings, key: Key('trailing'));
 
       await tester.pumpWidget(
@@ -40,9 +38,8 @@ void main() {
           home: Scaffold(
             body: VineBottomSheet(
               title: const Text('Test Sheet'),
-              scrollController: scrollController,
               trailing: trailingWidget,
-              children: const [Text('Content')],
+              body: const Text('Content'),
             ),
           ),
         ),
@@ -52,7 +49,6 @@ void main() {
     });
 
     testWidgets('renders with bottom input', (tester) async {
-      final scrollController = ScrollController();
       const inputWidget = TextField(
         key: Key('input'),
         decoration: InputDecoration(hintText: 'Add comment...'),
@@ -63,9 +59,8 @@ void main() {
           home: Scaffold(
             body: VineBottomSheet(
               title: const Text('Test Sheet'),
-              scrollController: scrollController,
               bottomInput: inputWidget,
-              children: const [Text('Content')],
+              body: const Text('Content'),
             ),
           ),
         ),
@@ -74,20 +69,19 @@ void main() {
       expect(find.byKey(const Key('input')), findsOneWidget);
     });
 
-    testWidgets('content is scrollable', (tester) async {
-      final scrollController = ScrollController();
-
+    testWidgets('content is scrollable when expanded', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
               title: const Text('Test Sheet'),
-              scrollController: scrollController,
-              children: List.generate(
-                50,
-                (index) => Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text('Item $index'),
+              body: ListView(
+                children: List.generate(
+                  50,
+                  (index) => Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text('Item $index'),
+                  ),
                 ),
               ),
             ),
@@ -109,6 +103,26 @@ void main() {
       expect(find.text('Item 49'), findsOneWidget);
     });
 
+    testWidgets('wraps content when expanded is false', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              title: const Text('Test Sheet'),
+              expanded: false,
+              body: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [Text('Item 1'), Text('Item 2')],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Item 1'), findsOneWidget);
+      expect(find.text('Item 2'), findsOneWidget);
+    });
+
     group('VineBottomSheet.show', () {
       testWidgets('shows modal bottom sheet', (tester) async {
         await tester.pumpWidget(
@@ -120,7 +134,7 @@ void main() {
                     await VineBottomSheet.show<void>(
                       context: context,
                       title: const Text('Modal Sheet'),
-                      children: const [Text('Modal Content')],
+                      body: const Text('Modal Content'),
                     );
                   },
                   child: const Text('Show Sheet'),

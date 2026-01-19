@@ -65,23 +65,14 @@ class VineBottomSheetSelectionMenu extends StatelessWidget {
     required List<VineBottomSheetSelectionOptionData> options,
     Widget? title,
     String? selectedValue,
-    double initialChildSize = 0.4,
-    double minChildSize = 0.25,
-    double maxChildSize = 0.6,
   }) {
     return showModalBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: initialChildSize,
-        minChildSize: minChildSize,
-        maxChildSize: maxChildSize,
-        builder: (context, scrollController) => VineBottomSheetSelectionMenu(
-          title: title,
-          options: options,
-          selectedValue: selectedValue,
-        ),
+      builder: (_) => VineBottomSheetSelectionMenu(
+        title: title,
+        options: options,
+        selectedValue: selectedValue,
       ),
     );
   }
@@ -90,17 +81,17 @@ class VineBottomSheetSelectionMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return VineBottomSheet(
       title: title,
-      body: ListView.builder(
-        padding: EdgeInsets.zero,
-        itemCount: options.length,
-        itemBuilder: (context, index) {
-          final option = options[index];
-          return _VineBottomSheetSelectionOption(
-            label: option.label,
-            isSelected: option.value == selectedValue,
-            onTap: () => Navigator.of(context).pop(option.value),
-          );
-        },
+      expanded: false,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in options)
+            _VineBottomSheetSelectionOption(
+              label: option.label,
+              isSelected: option.value == selectedValue,
+              onTap: () => Navigator.of(context).pop(option.value),
+            ),
+        ],
       ),
     );
   }

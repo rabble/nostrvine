@@ -17,16 +17,16 @@ class CommentOptionsModal {
   ///
   /// Returns `true` if delete was selected, `null` if cancelled.
   static Future<bool?> show(BuildContext modalContext) {
-    return VineBottomSheet.show<bool>(
+    return showModalBottomSheet<bool>(
       context: modalContext,
-      initialChildSize: 0.2,
-      minChildSize: 0.2,
-      title: Text(
-        'Options',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
-      ),
-      children: [
-        Semantics(
+      backgroundColor: Colors.transparent,
+      builder: (_) => VineBottomSheet(
+        expanded: false,
+        title: Text(
+          'Options',
+          style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        ),
+        body: Semantics(
           identifier: 'delete_comment_option',
           button: true,
           label: 'Delete comment',
@@ -57,7 +57,7 @@ class CommentOptionsModal {
             onTap: () => modalContext.pop(true),
           ),
         ),
-      ],
+      ),
     );
   }
 }
