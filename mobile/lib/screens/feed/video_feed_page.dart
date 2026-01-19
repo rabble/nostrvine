@@ -42,10 +42,7 @@ class _VideoFeedPageState extends ConsumerState<VideoFeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _bloc,
-      child: const _VideoFeedView(),
-    );
+    return BlocProvider.value(value: _bloc, child: const _VideoFeedView());
   }
 }
 
