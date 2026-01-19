@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
@@ -36,45 +37,65 @@ class ProfileActionButtons extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onEditProfile,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 24,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text('Edit Profile'),
+              child: Text(
+                'Edit',
+                style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: ElevatedButton(
-              key: const Key('clips-button'),
+            child: OutlinedButton(
+              key: const Key('library-button'),
               onPressed: onOpenClips,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: VineTheme.surfaceContainer,
+                foregroundColor: VineTheme.vineGreen,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 24,
+                ),
+                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text('Clips'),
+              child: Text(
+                'Library',
+                style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: ElevatedButton(
+            child: OutlinedButton(
               onPressed: onShareProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: VineTheme.surfaceContainer,
+                foregroundColor: VineTheme.vineGreen,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 24,
+                ),
+                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text('Share Profile'),
+              child: Text(
+                'Share',
+                style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+              ),
             ),
           ),
         ] else ...[
@@ -86,20 +107,26 @@ class ProfileActionButtons extends StatelessWidget {
                 contentBlocklistServiceProvider,
               );
               final isBlocked = blocklistService.isBlocked(userIdHex);
+              final buttonColor = isBlocked
+                  ? VineTheme.onSurfaceMuted
+                  : VineTheme.likeRed;
               return OutlinedButton(
                 onPressed: () => onBlockUser?.call(isBlocked),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isBlocked ? Colors.grey : Colors.red,
-                  side: BorderSide(color: isBlocked ? Colors.grey : Colors.red),
+                  foregroundColor: buttonColor,
+                  side: BorderSide(color: buttonColor),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: Text(isBlocked ? 'Unblock' : 'Block User'),
+                child: Text(
+                  isBlocked ? 'Unblock' : 'Block',
+                  style: VineTheme.titleMediumFont(color: buttonColor),
+                ),
               );
             },
           ),

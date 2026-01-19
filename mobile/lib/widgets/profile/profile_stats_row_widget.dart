@@ -64,24 +64,21 @@ class _ProfileStatValue extends StatelessWidget {
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: isLoading
-            ? const Text(
+            ? Text(
                 '—',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                style: VineTheme.titleSmallFont(
+                  color: VineTheme.onSurfaceMuted,
                 ),
               )
             : Text(
                 StringUtils.formatCompactNumber(count),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: VineTheme.titleSmallFont(),
               ),
       ),
-      Text(label, style: TextStyle(color: Colors.grey.shade300, fontSize: 12)),
+      Text(
+        label,
+        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+      ),
     ],
   );
 }
@@ -109,21 +106,19 @@ class ProfileStatColumn extends StatelessWidget {
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: isLoading
-              ? Text('—', style: VineTheme.tabTextStyle(color: Colors.grey))
+              ? Text(
+                  '—',
+                  style: VineTheme.titleMediumFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
+                )
               : Text(
                   count != null ? StringUtils.formatCompactNumber(count!) : '—',
-                  style: VineTheme.tabTextStyle(),
+                  style: VineTheme.titleMediumFont(),
                 ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: VineTheme.bodyFont(
-            fontSize: 14,
-            height: 20 / 14,
-            color: VineTheme.whiteText,
-          ),
-        ),
+        Text(label, style: VineTheme.bodyMediumFont()),
       ],
     );
 

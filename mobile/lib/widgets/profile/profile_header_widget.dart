@@ -139,24 +139,22 @@ class _SetupProfileBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.person_add, color: Colors.white, size: 24),
+          Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Complete Your Profile',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: VineTheme.titleSmallFont(),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Add your name, bio, and picture to get started',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ],
             ),
@@ -164,16 +162,16 @@ class _SetupProfileBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: onSetup,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: VineTheme.whiteText,
               foregroundColor: Colors.purple,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Set Up',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: VineTheme.labelMediumFont(color: Colors.purple),
             ),
           ),
         ],
@@ -200,24 +198,19 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.security, color: Colors.white, size: 24),
+          Icon(Icons.security, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Secure Your Account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
+                Text('Secure Your Account', style: VineTheme.titleSmallFont()),
+                const SizedBox(height: 4),
                 Text(
                   'Add email & password to recover your account on any device',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ],
             ),
@@ -225,16 +218,16 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: () => context.push(SecureAccountScreen.path),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: VineTheme.whiteText,
               foregroundColor: VineTheme.vineGreen,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Register',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -262,7 +255,7 @@ class _ProfileNameAndBio extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserName.fromPubKey(userIdHex, style: VineTheme.titleFont()),
+          UserName.fromPubKey(userIdHex, style: VineTheme.titleLargeFont()),
           _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -289,16 +282,9 @@ class _UniqueIdentifier extends StatelessWidget {
         ? nip05!
         : NostrKeyUtils.encodePubKey(userIdHex).substring(0, 12);
 
-    return ColoredBox(
-      color: const Color(0xFFFF00FF),
-      child: Text(
-        displayText,
-        style: VineTheme.bodyFont(
-          fontSize: 14,
-          height: 20 / 14,
-          color: VineTheme.onSurfaceMuted,
-        ),
-      ),
+    return Text(
+      displayText,
+      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
     );
   }
 }
@@ -311,16 +297,9 @@ class _AboutText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFFFF00FF),
-      child: SelectableText(
-        about,
-        style: VineTheme.bodyFont(
-          fontSize: 14,
-          height: 20 / 14,
-          color: VineTheme.onSurfaceMuted,
-        ),
-      ),
+    return SelectableText(
+      about,
+      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
     );
   }
 }
@@ -338,16 +317,19 @@ class _PublicKeyDisplay extends StatelessWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Public key copied to clipboard'),
+                Icon(Icons.check, color: VineTheme.onPrimary),
+                const SizedBox(width: 8),
+                Text(
+                  'Public key copied to clipboard',
+                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
+                ),
               ],
             ),
             backgroundColor: VineTheme.vineGreen,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -355,8 +337,11 @@ class _PublicKeyDisplay extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to copy: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Failed to copy: $e',
+              style: VineTheme.bodyMediumFont(),
+            ),
+            backgroundColor: VineTheme.likeRed,
           ),
         );
       }
@@ -370,9 +355,9 @@ class _PublicKeyDisplay extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey[800],
+          color: VineTheme.surfaceContainer,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.grey[600]!, width: 1),
+          border: Border.all(color: VineTheme.outlineMuted, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -380,16 +365,14 @@ class _PublicKeyDisplay extends StatelessWidget {
             Flexible(
               child: SelectableText(
                 NostrKeyUtils.encodePubKey(userIdHex),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                ),
+                style: VineTheme.bodySmallFont(
+                  color: VineTheme.onSurfaceMuted,
+                ).copyWith(fontFamily: 'monospace'),
                 maxLines: 1,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.copy, color: Colors.grey, size: 14),
+            Icon(Icons.copy, color: VineTheme.onSurfaceMuted, size: 14),
           ],
         ),
       ),
