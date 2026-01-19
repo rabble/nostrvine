@@ -24,6 +24,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+      child: const _VideoFeedView(),
     );
   }
 }
