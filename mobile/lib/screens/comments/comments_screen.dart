@@ -1,19 +1,18 @@
 // ABOUTME: Screen for displaying and posting comments on videos with threaded reply support
 // ABOUTME: Uses BLoC pattern with Nostr Kind 1111 (NIP-22) events for comments
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Maps [CommentsError] to user-facing strings.
 /// TODO(l10n): Replace with context.l10n when localization is added.

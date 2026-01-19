@@ -1,9 +1,10 @@
 // ABOUTME: Reusable bottom sheet component with Vine design system
-// ABOUTME: Matches Figma design with drag handle, header, content area, and optional input
+// ABOUTME: Matches Figma design with drag handle, header, content area,
+// ABOUTME: and optional input
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet_header.dart';
+import 'package:divine_ui/src/bottom_sheet/vine_bottom_sheet_header.dart';
+import 'package:flutter/material.dart';
 
 /// A reusable bottom sheet component following Vine's design system.
 ///
@@ -34,7 +35,8 @@ class VineBottomSheet extends StatelessWidget {
   /// Title widget displayed in the header
   final Widget title;
 
-  /// Scroll controller from DraggableScrollableSheet (required if using children)
+  /// Scroll controller from DraggableScrollableSheet (required if using
+  /// children)
   final ScrollController? scrollController;
 
   /// Content widgets to display in a scrollable ListView

@@ -1,8 +1,8 @@
 // ABOUTME: Drag handle indicator for bottom sheets
 // ABOUTME: Shows a horizontal bar at the top to indicate draggable behavior
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Drag handle indicator shown at the top of bottom sheets.
 ///

@@ -1,8 +1,8 @@
 // ABOUTME: Header component for VineBottomSheet
 // ABOUTME: Displays title with optional trailing actions (badges, buttons)
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Header component for [VineBottomSheet].
 ///
