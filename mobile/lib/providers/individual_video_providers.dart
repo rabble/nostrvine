@@ -205,19 +205,20 @@ VideoPlayerController individualVideoController(
   Ref ref,
   VideoControllerParams params,
 ) {
-  // Riverpod-native lifecycle: keep controller alive with 5-minute cache timeout
+  // Riverpod-native lifecycle: keep controller alive with short cache timeout
   // This prevents excessive codec churn during scrolling (creating/disposing controllers rapidly)
-  // 5 minutes allows smooth scrolling back and forth without re-initializing codecs
+  // 15 seconds balances smooth scroll-back with memory safety for 4K videos
   final link = ref.keepAlive();
   Timer? cacheTimer;
   Timer? loopEnforcementTimer;
 
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
-    // Last listener removed - start 5-minute cache timeout
-    // Longer timeout reduces jittery scrolling caused by rapid codec initialization/disposal
-    cacheTimer = Timer(const Duration(minutes: 5), () {
-      link.close(); // Allow autoDispose after 5 minutes of no listeners
+    // Last listener removed - start 15-second cache timeout
+    // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
+    // 15 seconds is enough for quick scroll-back; re-init from cache is fast
+    cacheTimer = Timer(const Duration(seconds: 15), () {
+      link.close(); // Allow autoDispose after timeout
     });
   });
 
@@ -956,5 +957,5 @@ VideoLoadingState videoLoadingState(Ref ref, VideoControllerParams params) {
   );
 }
 
-// NOTE: PrewarmManager removed - using Riverpod-native lifecycle (onCancel/onResume + 30s timeout)
+// NOTE: PrewarmManager removed - using Riverpod-native lifecycle (onCancel/onResume + 15s timeout)
 // NOTE: Active video state moved to active_video_provider.dart (route-reactive derived providers)

@@ -24,6 +24,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/followers/my_followers_screen.dart';
 import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/screens/following/my_following_screen.dart';
@@ -151,6 +152,7 @@ int tabIndexFromLocation(String loc) {
     case 'video-feed':
     case 'profile-view':
     case 'sound':
+    case 'new-video-feed':
       return -1; // Non-tab routes - no bottom nav
     case 'list':
       return 1; // List keeps explore tab active (like hashtag)
@@ -766,6 +768,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
+      // Debug route for testing VideoFeedBloc as a pushed screen
+      GoRoute(
+        path: VideoFeedPage.path,
+        name: VideoFeedPage.routeName,
+        builder: (_, __) => const VideoFeedPage(),
+      ),
+
       GoRoute(
         path: ProfileSetupScreen.editPath,
         name: ProfileSetupScreen.editRouteName,

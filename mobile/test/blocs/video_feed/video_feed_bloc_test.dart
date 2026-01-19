@@ -71,7 +71,7 @@ void main() {
 
     test('initial state is correct', () {
       final bloc = createBloc();
-      expect(bloc.state.status, VideoFeedStatus.initial);
+      expect(bloc.state.status, VideoFeedStatus.loading);
       expect(bloc.state.videos, isEmpty);
       expect(bloc.state.mode, FeedMode.home);
       expect(bloc.state.hasMore, isTrue);

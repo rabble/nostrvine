@@ -12,6 +12,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
@@ -67,6 +68,7 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   sound, // Sound detail screen for audio reuse
   secureAccount,
+  newVideoFeed,
 }
 
 /// Structured representation of a route
@@ -316,6 +318,9 @@ RouteContext parseRoute(String path) {
     case 'secure-account':
       return const RouteContext(type: RouteType.secureAccount);
 
+    case 'new-video-feed':
+      return const RouteContext(type: RouteType.newVideoFeed);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -463,5 +468,7 @@ String buildRoute(RouteContext context) {
       return SoundDetailScreen.pathForId(context.soundId ?? '');
     case RouteType.secureAccount:
       return SecureAccountScreen.path;
+    case RouteType.newVideoFeed:
+      return VideoFeedPage.path;
   }
 }
