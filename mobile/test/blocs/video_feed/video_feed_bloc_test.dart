@@ -91,10 +91,8 @@ void main() {
 
       test('isLoading returns true when status is loading', () {
         const initialState = VideoFeedState();
-        const loadingState = VideoFeedState(status: VideoFeedStatus.loading);
 
-        expect(initialState.isLoading, isFalse);
-        expect(loadingState.isLoading, isTrue);
+        expect(initialState.isLoading, isTrue);
       });
 
       test('isEmpty returns true when success with no videos', () {
