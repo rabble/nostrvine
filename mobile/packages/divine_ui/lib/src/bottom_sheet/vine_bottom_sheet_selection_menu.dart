@@ -1,0 +1,154 @@
+// ABOUTME: Selection menu bottom sheet with multiple selectable options
+// ABOUTME: Returns selected value when option is tapped
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+
+/// Data class representing a selectable option in the menu.
+class VineBottomSheetSelectionOptionData {
+  /// Creates a [VineBottomSheetSelectionOptionData].
+  const VineBottomSheetSelectionOptionData({
+    required this.label,
+    required this.value,
+  });
+
+  /// The display text for this option.
+  final String label;
+
+  /// The unique value identifier for this option.
+  final String value;
+}
+
+/// A bottom sheet menu displaying selectable options with checkmark indicator.
+///
+/// Use [VineBottomSheetSelectionMenu.show] to display as a modal that returns
+/// the selected value when an option is tapped.
+///
+/// Example:
+/// ```dart
+/// final selected = await VineBottomSheetSelectionMenu.show(
+///   context: context,
+///   selectedValue: 'new',
+///   options: [
+///     VineBottomSheetSelectionOptionData(label: 'New', value: 'new'),
+///     VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
+///     VineBottomSheetSelectionOptionData(
+///       label: 'Following',
+///       value: 'following',
+///     ),
+///   ],
+/// );
+/// ```
+class VineBottomSheetSelectionMenu extends StatelessWidget {
+  /// Creates a [VineBottomSheetSelectionMenu].
+  const VineBottomSheetSelectionMenu({
+    required this.options,
+    this.title,
+    this.selectedValue,
+    super.key,
+  });
+
+  /// Optional title widget displayed in the header.
+  final Widget? title;
+
+  /// List of selectable options.
+  final List<VineBottomSheetSelectionOptionData> options;
+
+  /// Currently selected option value (shows checkmark).
+  final String? selectedValue;
+
+  /// Shows the selection menu as a modal bottom sheet.
+  ///
+  /// Returns the selected option's value when tapped, or null if dismissed.
+  static Future<String?> show({
+    required BuildContext context,
+    required List<VineBottomSheetSelectionOptionData> options,
+    Widget? title,
+    String? selectedValue,
+    double initialChildSize = 0.4,
+    double minChildSize = 0.25,
+    double maxChildSize = 0.6,
+  }) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: initialChildSize,
+        minChildSize: minChildSize,
+        maxChildSize: maxChildSize,
+        builder: (context, scrollController) => VineBottomSheetSelectionMenu(
+          title: title,
+          options: options,
+          selectedValue: selectedValue,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return VineBottomSheet(
+      title: title,
+      body: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: options.length,
+        itemBuilder: (context, index) {
+          final option = options[index];
+          return _VineBottomSheetSelectionOption(
+            label: option.label,
+            isSelected: option.value == selectedValue,
+            onTap: () => Navigator.of(context).pop(option.value),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Private selectable option item for use in bottom sheet selection menus.
+class _VineBottomSheetSelectionOption extends StatelessWidget {
+  const _VineBottomSheetSelectionOption({
+    required this.label,
+    required this.onTap,
+    this.isSelected = false,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isSelected ? VineTheme.surfaceContainer : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: VineTheme.titleFont(
+                    fontSize: 18,
+                    height: 24 / 18,
+                    color: VineTheme.onSurface,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                const Icon(
+                  Icons.check,
+                  color: VineTheme.vineGreen,
+                  size: 24,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

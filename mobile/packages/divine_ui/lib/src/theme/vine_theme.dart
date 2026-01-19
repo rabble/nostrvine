@@ -91,6 +91,9 @@ class VineTheme {
   /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);
 
+  /// Surface container background (for selected items, cards on surfaces).
+  static const Color surfaceContainer = Color(0xFF032017);
+
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
