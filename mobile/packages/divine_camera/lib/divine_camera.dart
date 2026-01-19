@@ -62,10 +62,13 @@ class DivineCamera {
   ///
   /// [lens] specifies which camera to use (front or back).
   /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
+  /// [enableScreenFlash] enables using screen brightness as flash for
+  /// front camera (default: true).
   /// Returns the initialized camera state.
   Future<CameraState> initialize({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
@@ -73,6 +76,7 @@ class DivineCamera {
     _state = await _platform.initializeCamera(
       lens: lens,
       videoQuality: videoQuality,
+      enableScreenFlash: enableScreenFlash,
     );
     _notifyStateChanged();
     return _state;
@@ -202,11 +206,17 @@ class DivineCamera {
   /// Maximum zoom level supported by the camera.
   double get maxZoomLevel => _state.maxZoomLevel;
 
+  /// The current zoom level.
+  double get zoomLevel => _state.zoomLevel;
+
   /// Whether the camera is initialized and ready to use.
   bool get isInitialized => _state.isInitialized;
 
   /// Whether the camera supports manual focus point selection.
   bool get isFocusPointSupported => _state.isFocusPointSupported;
+
+  /// Whether the camera supports manual exposure point selection.
+  bool get isExposurePointSupported => _state.isExposurePointSupported;
 
   /// Whether the camera is ready to record (initialized and not recording).
   bool get canRecord => _state.canRecord;
@@ -220,8 +230,20 @@ class DivineCamera {
   /// Whether the camera is currently recording.
   bool get isRecording => _state.isRecording;
 
+  /// Whether the device has a front-facing camera.
+  bool get hasFrontCamera => _state.hasFrontCamera;
+
+  /// Whether the device has a back-facing camera.
+  bool get hasBackCamera => _state.hasBackCamera;
+
+  /// Whether the camera is currently switching between lenses.
+  bool get isSwitchingCamera => _state.isSwitchingCamera;
+
   /// The texture ID for the camera preview.
   int? get textureId => _state.textureId;
+
+  /// The currently active camera lens (front or back).
+  DivineCameraLens get lens => _state.lens;
 
   /// Notifies listeners of state changes.
   void _notifyStateChanged() {

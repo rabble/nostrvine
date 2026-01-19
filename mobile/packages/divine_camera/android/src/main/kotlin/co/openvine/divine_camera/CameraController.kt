@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
+import android.view.WindowManager
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -58,6 +59,10 @@ class CameraController(
     private var isRecording: Boolean = false
     private var isPaused: Boolean = false
 
+    // Screen brightness for front camera "torch" mode
+    private var isScreenFlashEnabled: Boolean = false
+    private var screenFlashFeatureEnabled: Boolean = true
+
     private var minZoom: Float = 1.0f
     private var maxZoom: Float = 1.0f
     private var currentZoom: Float = 1.0f
@@ -86,9 +91,12 @@ class CameraController(
     fun initialize(
         lens: String,
         quality: String,
+        enableScreenFlash: Boolean = true,
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality")
+        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash")
+
+        screenFlashFeatureEnabled = enableScreenFlash
 
         currentLens = if (lens == "front") {
             CameraSelector.LENS_FACING_FRONT
@@ -353,7 +361,9 @@ class CameraController(
                 minZoom = zoomState?.minZoomRatio ?: 1.0f
                 maxZoom = zoomState?.maxZoomRatio ?: 1.0f
                 currentZoom = zoomState?.zoomRatio ?: 1.0f
-                hasFlash = cameraInfo.hasFlashUnit()
+                // Front camera has "flash" via screen brightness when feature is enabled
+                hasFlash = cameraInfo.hasFlashUnit() || 
+                    (screenFlashFeatureEnabled && currentLens == CameraSelector.LENS_FACING_FRONT)
                 isFocusPointSupported = true
                 isExposurePointSupported = true
                 Log.d(TAG, "Camera info: zoom=$minZoom-$maxZoom, flash=$hasFlash")
@@ -376,6 +386,10 @@ class CameraController(
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
         Log.d(TAG, "Switching camera to: $lens")
+        
+        // Disable screen flash when switching cameras
+        disableScreenFlash()
+        
         currentLens = if (lens == "front") {
             CameraSelector.LENS_FACING_FRONT
         } else {
@@ -484,7 +498,9 @@ class CameraController(
                 minZoom = zoomState?.minZoomRatio ?: 1.0f
                 maxZoom = zoomState?.maxZoomRatio ?: 1.0f
                 currentZoom = 1.0f
-                hasFlash = cameraInfo.hasFlashUnit()
+                // Front camera has "flash" via screen brightness when feature is enabled
+                hasFlash = cameraInfo.hasFlashUnit() || 
+                    (screenFlashFeatureEnabled && currentLens == CameraSelector.LENS_FACING_FRONT)
                 isFocusPointSupported = true
                 isExposurePointSupported = true
             }
@@ -505,13 +521,25 @@ class CameraController(
 
     /**
      * Sets the flash mode.
+     * For front camera with torch mode, maximizes screen brightness instead.
      */
     fun setFlashMode(mode: String): Boolean {
         val cam = camera ?: return false
 
-        Log.d(TAG, "Setting flash mode: $mode")
+        Log.d(TAG, "Setting flash mode: $mode (currentLens: ${if (currentLens == CameraSelector.LENS_FACING_FRONT) "front" else "back"})")
 
         return try {
+            // Handle screen brightness for front camera "torch" mode
+            if (currentLens == CameraSelector.LENS_FACING_FRONT) {
+                if (mode == "torch") {
+                    enableScreenFlash()
+                    isTorchEnabled = true
+                    return true
+                } else {
+                    disableScreenFlash()
+                }
+            }
+
             when (mode) {
                 "off" -> {
                     cam.cameraControl.enableTorch(false)
@@ -540,6 +568,59 @@ class CameraController(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set flash mode", e)
             false
+        }
+    }
+
+    /**
+     * Enables screen flash by setting brightness to maximum (for front camera).
+     */
+    private fun enableScreenFlash() {
+        if (!screenFlashFeatureEnabled) return
+        
+        mainHandler.post {
+            try {
+                val window = activity.window
+                val layoutParams = window.attributes
+                
+                // Set brightness to maximum (1.0 = 100%)
+                layoutParams.screenBrightness = 1.0f
+                window.attributes = layoutParams
+                isScreenFlashEnabled = true
+                
+                Log.d(TAG, "Screen flash enabled (brightness set to 100%)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to enable screen flash", e)
+            }
+        }
+    }
+
+    /**
+     * Disables screen flash by restoring system brightness control.
+     */
+    private fun disableScreenFlash() {
+        if (!isScreenFlashEnabled) return
+        forceDisableScreenFlash()
+    }
+    
+    /**
+     * Forces screen brightness to be restored to system control.
+     * Used when pausing/releasing to ensure brightness is always restored.
+     */
+    private fun forceDisableScreenFlash() {
+        mainHandler.post {
+            try {
+                val window = activity.window
+                val layoutParams = window.attributes
+                
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                window.attributes = layoutParams
+                
+                isScreenFlashEnabled = false
+                
+                Log.d(TAG, "Screen flash disabled (brightness restored to system control)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to disable screen flash", e)
+            }
         }
     }
 
@@ -804,6 +885,7 @@ class CameraController(
      */
     fun pausePreview() {
         Log.d(TAG, "Pausing preview")
+        forceDisableScreenFlash()
         isPaused = true
     }
 
@@ -813,6 +895,12 @@ class CameraController(
     fun resumePreview(callback: (Map<String, Any>?, String?) -> Unit) {
         Log.d(TAG, "Resuming preview")
         isPaused = false
+        
+        // Re-enable screen flash if front camera torch mode was active
+        if (currentLens == CameraSelector.LENS_FACING_FRONT && isTorchEnabled) {
+            enableScreenFlash()
+        }
+        
         if (cameraProvider != null && camera != null) {
             callback(getCameraState(), null)
         } else {
@@ -861,6 +949,10 @@ class CameraController(
      */
     fun release() {
         Log.d(TAG, "Releasing camera resources")
+        
+        // Always restore screen brightness
+        forceDisableScreenFlash()
+        
         try {
             recording?.stop()
             recording = null

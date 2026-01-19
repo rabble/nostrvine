@@ -45,7 +45,8 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let args = call.arguments as? [String: Any] ?? [:]
             let lens = args["lens"] as? String ?? "back"
             let videoQuality = args["videoQuality"] as? String ?? "fhd"
-            initializeCamera(lens: lens, videoQuality: videoQuality, result: result)
+            let enableScreenFlash = args["enableScreenFlash"] as? Bool ?? true
+            initializeCamera(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, result: result)
             
         case "disposeCamera":
             disposeCamera(result: result)
@@ -99,7 +100,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private func initializeCamera(lens: String, videoQuality: String, result: @escaping FlutterResult) {
+    private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, result: @escaping FlutterResult) {
         guard let registry = textureRegistry else {
             result(FlutterError(code: "NO_REGISTRY", message: "Texture registry not available", details: nil))
             return
@@ -108,7 +109,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         cameraController?.release()
         cameraController = CameraController(textureRegistry: registry)
         
-        cameraController?.initialize(lens: lens, videoQuality: videoQuality) { [weak self] state, error in
+        cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash) { [weak self] state, error in
             DispatchQueue.main.async {
                 if let error = error {
                     result(FlutterError(code: "INIT_ERROR", message: error, details: nil))

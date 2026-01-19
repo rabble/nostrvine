@@ -30,6 +30,7 @@ class MockDivineCameraPlatform
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -152,6 +153,20 @@ void main() {
       test('initializes with video quality', () async {
         final state = await DivineCamera.instance.initialize(
           videoQuality: DivineVideoQuality.uhd,
+        );
+
+        expect(state.isInitialized, isTrue);
+      });
+
+      test('initializes with enableScreenFlash true (default)', () async {
+        final state = await DivineCamera.instance.initialize();
+
+        expect(state.isInitialized, isTrue);
+      });
+
+      test('initializes with enableScreenFlash false', () async {
+        final state = await DivineCamera.instance.initialize(
+          enableScreenFlash: false,
         );
 
         expect(state.isInitialized, isTrue);

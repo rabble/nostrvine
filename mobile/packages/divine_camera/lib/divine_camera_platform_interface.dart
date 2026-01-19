@@ -39,6 +39,7 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) {
     throw UnimplementedError('initializeCamera() has not been implemented.');
   }

@@ -62,12 +62,14 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     final result = await methodChannel.invokeMapMethod<dynamic, dynamic>(
       'initializeCamera',
       {
         'lens': lens.toNativeString(),
         'videoQuality': videoQuality.value,
+        'enableScreenFlash': enableScreenFlash,
       },
     );
     if (result == null) {

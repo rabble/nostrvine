@@ -34,6 +34,10 @@ class CameraController: NSObject {
     private var isRecording: Bool = false
     private var isPaused: Bool = false
     
+    // Screen brightness for front camera "torch" mode
+    private var originalBrightness: CGFloat?
+    private var screenFlashFeatureEnabled: Bool = true
+    
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
@@ -85,8 +89,9 @@ class CameraController: NSObject {
     private var videoQualityPreset: AVCaptureSession.Preset = .high
     
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, completion: @escaping ([String: Any]?, String?) -> Void) {
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
         currentLens = lens == "front" ? .front : .back
+        screenFlashFeatureEnabled = enableScreenFlash
         
         // Map video quality string to AVCaptureSession.Preset
         switch videoQuality {
@@ -292,7 +297,8 @@ class CameraController: NSObject {
         minZoom = 1.0
         maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
         currentZoom = device.videoZoomFactor
-        hasFlash = device.hasFlash
+        // Front camera has "flash" via screen brightness when feature is enabled
+        hasFlash = device.hasFlash || (screenFlashFeatureEnabled && currentLens == .front)
         isFocusPointSupported = device.isFocusPointOfInterestSupported
         isExposurePointSupported = device.isExposurePointOfInterestSupported
         
@@ -307,6 +313,9 @@ class CameraController: NSObject {
     
     /// Switches to a different camera lens.
     func switchCamera(lens: String, completion: @escaping ([String: Any]?, String?) -> Void) {
+        // Disable screen flash when switching cameras
+        disableScreenFlash()
+        
         sessionQueue.async { [weak self] in
             guard let self = self, let session = self.captureSession else {
                 completion(nil, "Session not available")
@@ -367,8 +376,20 @@ class CameraController: NSObject {
     }
     
     /// Sets the flash mode.
+    /// For front camera with torch mode, maximizes screen brightness instead.
     func setFlashMode(mode: String) -> Bool {
         guard let device = videoDevice else { return false }
+        
+        // Handle screen brightness for front camera "torch" mode
+        if currentLens == .front {
+            if mode == "torch" {
+                enableScreenFlash()
+                currentTorchMode = .on
+                return true
+            } else {
+                disableScreenFlash()
+            }
+        }
         
         do {
             try device.lockForConfiguration()
@@ -405,6 +426,32 @@ class CameraController: NSObject {
             return true
         } catch {
             return false
+        }
+    }
+    
+    /// Enables screen flash by setting brightness to maximum (for front camera).
+    private func enableScreenFlash() {
+        guard screenFlashFeatureEnabled else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            // Save original brightness if not already saved
+            if self.originalBrightness == nil {
+                self.originalBrightness = UIScreen.main.brightness
+            }
+            // Set brightness to maximum (1.0 = 100%)
+            UIScreen.main.brightness = 1.0
+        }
+    }
+    
+    /// Disables screen flash by restoring original brightness.
+    private func disableScreenFlash() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if let brightness = self.originalBrightness {
+                UIScreen.main.brightness = brightness
+                self.originalBrightness = nil
+            }
         }
     }
     
@@ -681,6 +728,7 @@ class CameraController: NSObject {
     
     /// Pauses the camera preview.
     func pausePreview() {
+        disableScreenFlash()
         isPaused = true
         sessionQueue.async { [weak self] in
             self?.captureSession?.stopRunning()
@@ -690,6 +738,12 @@ class CameraController: NSObject {
     /// Resumes the camera preview.
     func resumePreview(completion: @escaping ([String: Any]?, String?) -> Void) {
         isPaused = false
+        
+        // Re-enable screen flash if front camera torch mode was active
+        if currentLens == .front && currentTorchMode == .on {
+            enableScreenFlash()
+        }
+        
         sessionQueue.async { [weak self] in
             self?.captureSession?.startRunning()
             
@@ -739,6 +793,9 @@ class CameraController: NSObject {
     
     /// Releases all camera resources.
     func release() {
+        // Restore screen brightness if screen flash was enabled
+        disableScreenFlash()
+        
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
