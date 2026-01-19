@@ -10,7 +10,7 @@ import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 @GenerateMocks([AuthService])
 import 'settings_screen_scaffold_test.mocks.dart';

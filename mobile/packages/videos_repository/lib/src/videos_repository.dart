@@ -66,6 +66,36 @@ class VideosRepository {
     return _transformAndFilter(events);
   }
 
+  /// Fetches videos published by a specific author.
+  ///
+  /// This is for profile pages - shows all videos from a single user
+  /// sorted by creation time (newest first).
+  ///
+  /// Parameters:
+  /// - [authorPubkey]: The pubkey of the user whose videos to fetch
+  /// - [limit]: Maximum number of videos to return (default 5)
+  /// - [until]: Only return videos created before this Unix timestamp
+  ///   (for pagination - pass `previousVideo.createdAt`)
+  ///
+  /// Returns a list of [VideoEvent] sorted by creation time (newest first).
+  /// Returns an empty list if no videos are found or on error.
+  Future<List<VideoEvent>> getProfileVideos({
+    required String authorPubkey,
+    int limit = _defaultLimit,
+    int? until,
+  }) async {
+    final filter = Filter(
+      kinds: [_videoKind],
+      authors: [authorPubkey],
+      limit: limit,
+      until: until,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    return _transformAndFilter(events);
+  }
+
   /// Fetches the latest videos in chronological order (newest first).
   ///
   /// This is the "New" feed mode - shows all public videos sorted by

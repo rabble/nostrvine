@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
 
 /// Modal bottom sheet displaying options for a comment.

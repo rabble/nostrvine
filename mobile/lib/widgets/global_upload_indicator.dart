@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/upload_progress_indicator.dart';
 
 /// Global upload indicator that shows active uploads

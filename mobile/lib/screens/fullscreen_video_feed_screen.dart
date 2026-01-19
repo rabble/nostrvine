@@ -4,12 +4,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/mixins/video_prefetch_mixin.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_reposts_provider.dart';
+import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:video_player/video_player.dart';
 
@@ -218,6 +223,63 @@ class _FullscreenVideoFeedScreenState
     );
   }
 
+  /// Build the Edit button for the AppBar (only shown for owned videos)
+  Widget? _buildEditButton(List<VideoEvent> videos) {
+    // Check feature flag
+    final featureFlagService = ref.watch(featureFlagServiceProvider);
+    final isEditorEnabled = featureFlagService.isEnabled(
+      FeatureFlag.enableVideoEditorV1,
+    );
+
+    if (!isEditorEnabled) {
+      return null;
+    }
+
+    // Get current video
+    if (_currentIndex < 0 || _currentIndex >= videos.length) {
+      return null;
+    }
+    final currentVideo = videos[_currentIndex];
+
+    // Check ownership
+    final authService = ref.watch(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    final isOwnVideo =
+        currentUserPubkey != null && currentUserPubkey == currentVideo.pubkey;
+
+    if (!isOwnVideo) {
+      return null;
+    }
+
+    // Return edit button with same styling as back button
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: SvgPicture.asset(
+            'assets/icon/content-controls/pencil.svg',
+            width: 32,
+            height: 32,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          ),
+        ),
+        onPressed: () {
+          showEditDialogForVideo(context, currentVideo);
+        },
+        tooltip: 'Edit video',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final videos = _getVideos();
@@ -247,8 +309,30 @@ class _FullscreenVideoFeedScreenState
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
+          leadingWidth: 80,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SvgPicture.asset(
+                'assets/icon/CaretLeft.svg',
+                width: 32,
+                height: 32,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
             onPressed: context.pop,
           ),
         ),
@@ -258,6 +342,9 @@ class _FullscreenVideoFeedScreenState
       );
     }
 
+    // Build edit button (may be null if not owned or feature disabled)
+    final editButton = _buildEditButton(videos);
+
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
@@ -266,12 +353,34 @@ class _FullscreenVideoFeedScreenState
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
         forceMaterialTransparency: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
           onPressed: context.pop,
         ),
+        actions: editButton != null ? [editButton] : null,
       ),
       body: PageView.builder(
         controller: _pageController,

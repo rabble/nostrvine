@@ -18,7 +18,7 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_name.dart';

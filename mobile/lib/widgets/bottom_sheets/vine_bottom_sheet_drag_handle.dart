@@ -2,7 +2,7 @@
 // ABOUTME: Shows a horizontal bar at the top to indicate draggable behavior
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Drag handle indicator shown at the top of bottom sheets.
 ///

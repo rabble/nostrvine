@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/services/vine_recording_controller.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Overlay widget that provides camera controls for zoom, flash, etc.
 class CameraControlsOverlay extends StatefulWidget {

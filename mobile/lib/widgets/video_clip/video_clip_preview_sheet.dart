@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:openvine/models/saved_clip.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:video_player/video_player.dart';
 
 /// Preview sheet for playing a video clip in a modal bottom sheet.

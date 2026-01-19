@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/state/username_state.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 

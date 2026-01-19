@@ -2,7 +2,7 @@
 // ABOUTME: Displays title with optional trailing actions (badges, buttons)
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Header component for [VineBottomSheet].
 ///

@@ -2,7 +2,7 @@
 // ABOUTME: Matches Figma design with drag handle, header, content area, and optional input
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet_header.dart';
 
 /// A reusable bottom sheet component following Vine's design system.

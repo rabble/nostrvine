@@ -21,7 +21,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';

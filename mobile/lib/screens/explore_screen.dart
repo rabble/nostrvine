@@ -20,7 +20,7 @@ import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -234,10 +234,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   Widget build(BuildContext context) {
     ref.watch(exploreTabVideoUpdateListenerProvider);
 
-    // Always show Column with TabBar + content
+    // Derive feed mode from URL
+    final pageContext = ref.watch(pageContextProvider);
+    final isInFeedMode =
+        pageContext.whenOrNull(
+          data: (ctx) =>
+              ctx.type == RouteType.explore && ctx.videoIndex != null,
+        ) ??
+        false;
+
+    // Hide tabs when in feed mode (watching a video)
+    if (isInFeedMode) {
+      return _buildContent();
+    }
+
+    // Show Column with TabBar + content in grid mode
     return Column(
       children: [
-        // Tabs always visible
+        // Tabs only visible in grid mode
         Container(
           color: VineTheme.navGreen,
           child: TabBar(
@@ -662,7 +676,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          Navigator.of(context).push(
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) =>
                                   UserListPeopleScreen(userList: userList),

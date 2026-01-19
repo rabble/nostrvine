@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class VideoPublishStatusIcon extends StatelessWidget {
   const VideoPublishStatusIcon({super.key, required this.publishState});
