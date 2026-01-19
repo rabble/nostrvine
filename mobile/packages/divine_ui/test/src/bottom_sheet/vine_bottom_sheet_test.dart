@@ -9,11 +9,11 @@ void main() {
   group('VineBottomSheet', () {
     testWidgets('renders with required props', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: const Text('Test Sheet'),
-              body: const Column(
+              title: Text('Test Sheet'),
+              body: Column(
                 children: [Text('Content 1'), Text('Content 2')],
               ),
             ),
@@ -34,12 +34,12 @@ void main() {
       const trailingWidget = Icon(Icons.settings, key: Key('trailing'));
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: const Text('Test Sheet'),
+              title: Text('Test Sheet'),
               trailing: trailingWidget,
-              body: const Text('Content'),
+              body: Text('Content'),
             ),
           ),
         ),
@@ -55,12 +55,12 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: const Text('Test Sheet'),
+              title: Text('Test Sheet'),
               bottomInput: inputWidget,
-              body: const Text('Content'),
+              body: Text('Content'),
             ),
           ),
         ),
@@ -105,12 +105,12 @@ void main() {
 
     testWidgets('wraps content when expanded is false', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: VineBottomSheet(
-              title: const Text('Test Sheet'),
+              title: Text('Test Sheet'),
               expanded: false,
-              body: const Column(
+              body: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [Text('Item 1'), Text('Item 2')],
               ),
