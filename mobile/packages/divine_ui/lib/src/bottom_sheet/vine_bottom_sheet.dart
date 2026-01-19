@@ -3,7 +3,6 @@
 // ABOUTME: and optional input
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:divine_ui/src/bottom_sheet/vine_bottom_sheet_header.dart';
 import 'package:flutter/material.dart';
 
 /// A reusable bottom sheet component following Vine's design system.
@@ -18,6 +17,7 @@ import 'package:flutter/material.dart';
 /// This component is designed to be used with [showModalBottomSheet] and
 /// [DraggableScrollableSheet] for consistent modal behavior across the app.
 class VineBottomSheet extends StatelessWidget {
+  /// Creates a [VineBottomSheet] with the given parameters.
   const VineBottomSheet({
     required this.title,
     this.scrollController,
@@ -78,8 +78,8 @@ class VineBottomSheet extends StatelessWidget {
           scrollController: scrollController,
           trailing: trailing,
           bottomInput: bottomInput,
-          children: children,
           body: body,
+          children: children,
         ),
       ),
     );
@@ -99,23 +99,23 @@ class VineBottomSheet extends StatelessWidget {
         children: [
           // Header with drag handle, title, and trailing actions
           VineBottomSheetHeader(title: title, trailing: trailing),
-          Divider(height: 2, color: VineTheme.outlinedDisabled),
+          const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Content area (either managed ListView or custom body)
           Expanded(
             child:
                 body ??
                 ListView(
-                  controller: scrollController!,
+                  controller: scrollController,
                   padding: EdgeInsets.zero,
                   children: children!,
                 ),
           ),
           if (bottomInput != null)
-            Divider(height: 2, color: VineTheme.outlinedDisabled),
+            const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Optional bottom input
-          if (bottomInput != null) bottomInput!,
+          ?bottomInput,
         ],
       ),
     );

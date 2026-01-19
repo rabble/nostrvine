@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 /// This provides a visual affordance that the sheet can be dragged up or down.
 /// Design matches Figma specifications: 48px wide, 5px height, rounded.
 class VineBottomSheetDragHandle extends StatelessWidget {
+  /// Creates a [VineBottomSheetDragHandle].
   const VineBottomSheetDragHandle({super.key});
 
   @override
