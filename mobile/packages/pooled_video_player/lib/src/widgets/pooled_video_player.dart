@@ -105,8 +105,10 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
               widget.onVideoError?.call(
                 Exception('Failed to acquire video controller from pool'),
               );
+              return;
             }
-            // Controller will be set via _onPoolStateChanged listener
+            // Set controller directly in case listener doesn't fire
+            _setController(pooled.controller);
           })
           .catchError((Object error) {
             widget.onVideoError?.call(error);
@@ -114,17 +116,56 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     );
   }
 
+  void _setController(VideoPlayerController controller) {
+    if (!mounted) return;
+    if (controller == _controller) return;
+
+    // Safety check - don't use disposed controllers
+    try {
+      // Accessing value will throw if controller is disposed
+      final _ = controller.value;
+    } on Exception {
+      // Controller was disposed, request a new one
+      widget.onVideoError?.call(
+        StateError('Controller was disposed, requesting new one'),
+      );
+      return;
+    }
+
+    setState(() => _controller = controller);
+
+    if (_controller!.value.isInitialized) {
+      widget.onVideoReady?.call(_controller!);
+      if (widget.autoPlay) {
+        unawaited(_controller!.play());
+      }
+    }
+  }
+
   void _onPoolStateChanged() {
     final controller = _pool?.getController(widget.video.id);
-    if (controller != null && controller != _controller) {
-      setState(() => _controller = controller);
+    if (controller != null) {
+      _setController(controller);
+    }
+  }
 
-      if (_controller!.value.isInitialized) {
-        widget.onVideoReady?.call(_controller!);
-        if (widget.autoPlay) {
-          unawaited(_controller!.play());
-        }
+  @override
+  void didUpdateWidget(PooledVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Handle autoPlay changes (e.g., scrolling back to this video)
+    if (widget.autoPlay != oldWidget.autoPlay && _controller != null) {
+      if (widget.autoPlay && _controller!.value.isInitialized) {
+        unawaited(_controller!.play());
+      } else if (!widget.autoPlay && _controller!.value.isPlaying) {
+        unawaited(_controller!.pause());
       }
+    }
+
+    // Handle video change
+    if (widget.video.id != oldWidget.video.id) {
+      _controller = null;
+      _requestController();
     }
   }
 

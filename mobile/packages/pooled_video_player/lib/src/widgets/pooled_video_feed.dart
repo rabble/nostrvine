@@ -10,6 +10,8 @@ typedef VideoFeedItemBuilder =
       BuildContext context,
       PooledVideo video,
       int index,
+      // Its much easier to maintain readability with a positional boolean here
+      // ignore: avoid_positional_boolean_parameters
       bool isActive,
     );
 
@@ -63,6 +65,10 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
   VideoControllerPoolManager? _pool;
+  Timer? _debounceTimer;
+
+  /// Debounce duration for prewarm calls during rapid scrolling
+  static const _prewarmDebounce = Duration(milliseconds: 150);
 
   @override
   void initState() {
@@ -82,7 +88,15 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
 
   void _onPageChanged(int index) {
     setState(() => _currentIndex = index);
-    _updatePoolState(index);
+
+    // Immediately set active video (no debounce - this is critical for playback)
+    _setActiveVideoImmediate(index);
+
+    // Debounce prewarm to prevent queue buildup during rapid scrolling
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_prewarmDebounce, () {
+      _prewarmAdjacentVideos(index);
+    });
 
     // Notify consumers
     if (index < widget.videos.length) {
@@ -90,15 +104,17 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     }
   }
 
-  void _updatePoolState(int index) {
+  /// Set active video immediately (no debounce)
+  void _setActiveVideoImmediate(int index) {
+    if (_pool == null || index >= widget.videos.length) return;
+    _pool!.setActiveVideo(widget.videos[index].id);
+  }
+
+  /// Prewarm adjacent videos (debounced to prevent queue buildup)
+  void _prewarmAdjacentVideos(int index) {
     if (_pool == null || index >= widget.videos.length) return;
 
     final videos = widget.videos;
-
-    // Set active video
-    _pool!.setActiveVideo(videos[index].id);
-
-    // Prewarm next/previous videos
     final prewarmIds = <String>[];
 
     // Next video (higher priority) - actively request controller
@@ -128,6 +144,11 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     _pool!.setPrewarmVideos(prewarmIds);
   }
 
+  void _updatePoolState(int index) {
+    _setActiveVideoImmediate(index);
+    _prewarmAdjacentVideos(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return PageView.builder(
@@ -148,6 +169,7 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }

@@ -109,6 +109,12 @@ class VideoControllerPoolManager {
   /// Video IDs to keep prewarmed (next/previous)
   final Set<String> _prewarmVideoIds = {};
 
+  /// Cache of video URLs that failed to load (prevents retry storms)
+  final Map<String, DateTime> _failedUrls = {};
+
+  /// How long to cache failed URLs before allowing retry
+  static const _failedUrlCacheDuration = Duration(minutes: 5);
+
   /// Free controllers available for reuse
   final Queue<VideoPlayerController> _freeControllers = Queue();
 
@@ -120,6 +126,12 @@ class VideoControllerPoolManager {
 
   /// Listeners for pool state changes
   final Set<VoidCallback> _listeners = {};
+
+  /// Queue-based lock for serializing controller acquisitions
+  final Queue<Completer<void>> _waitQueue = Queue();
+
+  /// Whether an acquisition is currently in progress
+  bool _isAcquiring = false;
 
   /// Add a listener for pool state changes. Returns unsubscribe function.
   VoidCallback addPoolChangeListener(VoidCallback listener) {
@@ -164,6 +176,31 @@ class VideoControllerPoolManager {
     _isInitialized = true;
   }
 
+  /// Check if a URL is in the failed cache (and not expired)
+  bool _isUrlFailed(String videoUrl) {
+    final failedAt = _failedUrls[videoUrl];
+    if (failedAt == null) return false;
+
+    final age = DateTime.now().difference(failedAt);
+    if (age > _failedUrlCacheDuration) {
+      _failedUrls.remove(videoUrl);
+      return false;
+    }
+    return true;
+  }
+
+  /// Mark a URL as failed
+  void _markUrlFailed(String videoUrl) {
+    _failedUrls[videoUrl] = DateTime.now();
+    // Clean up old entries (keep cache bounded)
+    if (_failedUrls.length > 100) {
+      final now = DateTime.now();
+      _failedUrls.removeWhere(
+        (_, failedAt) => now.difference(failedAt) > _failedUrlCacheDuration,
+      );
+    }
+  }
+
   /// Acquire a controller for [videoId]. Uses LRU eviction when pool is full.
   Future<PooledController?> acquireController({
     required String videoId,
@@ -174,7 +211,16 @@ class VideoControllerPoolManager {
       return null;
     }
 
-    // Check if already in pool (reuse existing)
+    // Check if URL previously failed (skip immediately to prevent retry storms)
+    if (_isUrlFailed(videoUrl)) {
+      developer.log(
+        'Skipping $videoId - URL in failed cache',
+        name: 'VideoControllerPoolManager',
+      );
+      return null;
+    }
+
+    // Check if already in pool (reuse existing) - no lock needed for reads
     if (_pool.containsKey(videoId)) {
       _updateLRU(videoId);
       final pooled = _pool[videoId]!;
@@ -182,41 +228,87 @@ class VideoControllerPoolManager {
         'Reusing existing controller for $videoId',
         name: 'VideoControllerPoolManager',
       );
+      // Notify listeners so widgets know controller is available
+      _notifyListeners();
       return pooled;
     }
 
-    // Pool is full - evict LRU
-    if (_pool.length >= poolSize) {
-      await _evictLRU();
+    // Acquire lock using queue-based serialization (prevents thundering herd)
+    if (_isAcquiring) {
+      final waiter = Completer<void>();
+      _waitQueue.add(waiter);
+      await waiter.future;
     }
+    _isAcquiring = true;
 
-    // Create or reuse controller
-    final controller = await _getOrCreateController(videoUrl);
-    if (controller == null) {
+    try {
+      // Double-check after acquiring lock (another call might have created it)
+      if (_pool.containsKey(videoId)) {
+        _updateLRU(videoId);
+        final pooled = _pool[videoId]!;
+        developer.log(
+          'Reusing controller (after lock) for $videoId',
+          name: 'VideoControllerPoolManager',
+        );
+        _notifyListeners();
+        return pooled;
+      }
+
+      // Pool is full - evict LRU with bounded attempts to prevent infinite loop
+      var evictionAttempts = 0;
+      const maxEvictionAttempts = 3;
+      while (_pool.length >= poolSize) {
+        final evicted = await _evictLRU();
+        if (!evicted) {
+          evictionAttempts++;
+          if (evictionAttempts >= maxEvictionAttempts) {
+            developer.log(
+              'Pool full and cannot evict after $evictionAttempts attempts '
+              '(pool: ${_pool.length}/$poolSize, active: $_activeVideoId, '
+              'prewarm: $_prewarmVideoIds). Returning null for $videoId.',
+              name: 'VideoControllerPoolManager',
+            );
+            return null;
+          }
+          // Brief yield before retry to allow state changes
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      }
+
+      // Create or reuse controller
+      final controller = await _getOrCreateController(videoUrl);
+      if (controller == null) {
+        developer.log(
+          'Failed to create controller for $videoId',
+          name: 'VideoControllerPoolManager',
+        );
+        return null;
+      }
+
+      final pooled = PooledController(
+        controller: controller,
+        videoId: videoId,
+        videoUrl: videoUrl,
+        assignedAt: DateTime.now(),
+      );
+
+      _pool[videoId] = pooled;
+      _updateLRU(videoId);
+
       developer.log(
-        'Failed to create controller for $videoId',
+        'Assigned controller to $videoId (pool: ${_pool.length}/$poolSize)',
         name: 'VideoControllerPoolManager',
       );
-      return null;
+
+      _notifyListeners();
+      return pooled;
+    } finally {
+      // Release lock and wake next waiter (FIFO order)
+      _isAcquiring = false;
+      if (_waitQueue.isNotEmpty) {
+        _waitQueue.removeFirst().complete();
+      }
     }
-
-    final pooled = PooledController(
-      controller: controller,
-      videoId: videoId,
-      videoUrl: videoUrl,
-      assignedAt: DateTime.now(),
-    );
-
-    _pool[videoId] = pooled;
-    _updateLRU(videoId);
-
-    developer.log(
-      'Assigned controller to $videoId (pool: ${_pool.length}/$poolSize)',
-      name: 'VideoControllerPoolManager',
-    );
-
-    _notifyListeners();
-    return pooled;
   }
 
   /// Release controller back to pool (pauses but keeps for reuse).
@@ -255,14 +347,29 @@ class VideoControllerPoolManager {
     _notifyListeners();
   }
 
-  /// Set videos to prewarm. Prewarmed videos have higher eviction priority.
+  /// Set videos to prewarm. Prewarmed videos have eviction priority over active.
+  ///
+  /// The number of prewarm videos is limited to `poolSize - 2` to ensure:
+  /// - 1 slot for the active video
+  /// - 1 slot buffer for new acquisitions
   void setPrewarmVideos(List<String> videoIds) {
+    // Limit prewarm to (poolSize - 2) to leave room for active + buffer
+    final maxPrewarm = (poolSize - 2).clamp(0, poolSize);
+    final limitedVideoIds = videoIds.take(maxPrewarm).toList();
+
     _prewarmVideoIds
       ..clear()
-      ..addAll(videoIds);
+      ..addAll(limitedVideoIds);
+
+    if (videoIds.length > maxPrewarm) {
+      developer.log(
+        'Prewarm limited from ${videoIds.length} to $maxPrewarm videos',
+        name: 'VideoControllerPoolManager',
+      );
+    }
 
     developer.log(
-      'Set prewarm videos: $videoIds',
+      'Set prewarm videos: $limitedVideoIds',
       name: 'VideoControllerPoolManager',
     );
 
@@ -421,7 +528,16 @@ class VideoControllerPoolManager {
     try {
       final controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
 
-      await controller.initialize();
+      // Add timeout to prevent hanging on slow/unresponsive servers
+      await controller.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException(
+            'Video initialization timed out after 15s',
+            const Duration(seconds: 15),
+          );
+        },
+      );
 
       // Set looping for short videos
       await controller.setLooping(true);
@@ -432,13 +548,18 @@ class VideoControllerPoolManager {
         'Failed to create controller for $videoUrl: $e',
         name: 'VideoControllerPoolManager',
       );
+      // Cache this URL as failed to prevent retry storms
+      _markUrlFailed(videoUrl);
       return null;
     }
   }
 
-  /// Evict the least recently used controller
-  Future<void> _evictLRU() async {
-    if (_lruMap.isEmpty) return;
+  /// Evict the least recently used controller.
+  ///
+  /// Returns `true` if a controller was evicted, `false` if no evictable
+  /// controller was found (e.g., all controllers are protected).
+  Future<bool> _evictLRU() async {
+    if (_lruMap.isEmpty) return false;
 
     // Find LRU that is not active or prewarmed
     String? victimId;
@@ -461,10 +582,18 @@ class VideoControllerPoolManager {
       }
     }
 
-    // Last resort: evict LRU even if active (shouldn't happen)
-    victimId ??= _lruMap.keys.first;
+    // If no victim found (only active remains), we cannot evict
+    if (victimId == null) {
+      developer.log(
+        'Cannot evict: all controllers are protected '
+        '(active: $_activeVideoId, prewarm: $_prewarmVideoIds)',
+        name: 'VideoControllerPoolManager',
+      );
+      return false;
+    }
 
     await _evictController(victimId);
+    return true;
   }
 
   /// Evict a specific controller from the pool
