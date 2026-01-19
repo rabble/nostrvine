@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 class VineBottomSheet extends StatelessWidget {
   /// Creates a [VineBottomSheet] with the given parameters.
   const VineBottomSheet({
-    required this.title,
+    this.title,
     this.scrollController,
     this.children,
     this.body,
@@ -32,8 +32,9 @@ class VineBottomSheet extends StatelessWidget {
          'Provide either children or body, not both',
        );
 
-  /// Title widget displayed in the header
-  final Widget title;
+  /// Optional title widget displayed in the header.
+  /// When null, only the drag handle is shown.
+  final Widget? title;
 
   /// Scroll controller from DraggableScrollableSheet (required if using
   /// children)
@@ -56,7 +57,7 @@ class VineBottomSheet extends StatelessWidget {
   /// Shows the bottom sheet as a modal with proper configuration
   static Future<T?> show<T>({
     required BuildContext context,
-    required Widget title,
+    Widget? title,
     List<Widget>? children,
     Widget? body,
     Widget? trailing,
@@ -99,7 +100,8 @@ class VineBottomSheet extends StatelessWidget {
         children: [
           // Header with drag handle, title, and trailing actions
           VineBottomSheetHeader(title: title, trailing: trailing),
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+          if (title != null)
+            const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Content area (either managed ListView or custom body)
           Expanded(
