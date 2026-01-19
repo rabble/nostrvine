@@ -2,7 +2,7 @@
 // ABOUTME: Shows animated loading indicator with helpful message
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Loading view displayed while profile data is being fetched.
 class ProfileLoadingView extends StatelessWidget {

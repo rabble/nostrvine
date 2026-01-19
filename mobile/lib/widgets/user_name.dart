@@ -2,7 +2,7 @@ import 'package:openvine/models/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class UserName extends ConsumerWidget {
   const UserName._({

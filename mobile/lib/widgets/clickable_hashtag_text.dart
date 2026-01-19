@@ -36,13 +36,17 @@ class ClickableHashtagText extends StatelessWidget {
 
     // If no hashtags, return simple text
     if (hashtags.isEmpty) {
-      return SelectableText(text, style: style, maxLines: maxLines);
+      return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
     // Build text spans with clickable hashtags
     final spans = _buildTextSpans(context);
 
-    return SelectableText.rich(TextSpan(children: spans), maxLines: maxLines);
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: maxLines,
+      overflow: overflow,
+    );
   }
 
   List<TextSpan> _buildTextSpans(BuildContext context) {

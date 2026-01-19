@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.

@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 

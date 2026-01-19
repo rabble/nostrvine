@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 enum AgeVerificationType {
   creation, // 16+ for creating content

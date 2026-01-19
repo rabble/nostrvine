@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Show warning dialog for removing keys from device only
 Future<void> showRemoveKeysWarningDialog({

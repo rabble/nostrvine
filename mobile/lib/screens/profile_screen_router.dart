@@ -14,7 +14,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';

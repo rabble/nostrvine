@@ -8,7 +8,7 @@ import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.da
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's liked videos

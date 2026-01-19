@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Badge showing environment name for non-production environments
 /// Returns SizedBox.shrink for production, small badge for dev/staging

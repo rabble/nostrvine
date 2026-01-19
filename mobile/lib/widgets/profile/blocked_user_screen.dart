@@ -2,7 +2,7 @@
 // ABOUTME: Shows a simple message with back navigation
 
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Screen shown when viewing a blocked or unavailable user's profile.
 class BlockedUserScreen extends StatelessWidget {

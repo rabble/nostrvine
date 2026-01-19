@@ -25,7 +25,7 @@ import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/vine_recording_controller.dart'
     show ExtractedSegment;
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/audio_waveform.dart';

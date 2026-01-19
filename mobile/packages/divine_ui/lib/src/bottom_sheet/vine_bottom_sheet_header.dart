@@ -1,14 +1,16 @@
 // ABOUTME: Header component for VineBottomSheet
 // ABOUTME: Displays title with optional trailing actions (badges, buttons)
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
 
 /// Header component for [VineBottomSheet].
 ///
 /// Combines drag handle and title section as per Figma design.
 /// Uses Bricolage Grotesque bold font at 24px for title.
 class VineBottomSheetHeader extends StatelessWidget {
+  /// Creates a [VineBottomSheetHeader] with the given title and optional
+  /// trailing widget.
   const VineBottomSheetHeader({required this.title, this.trailing, super.key});
 
   /// Title widget displayed on the left

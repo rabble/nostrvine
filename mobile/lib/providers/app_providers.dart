@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -1032,6 +1033,23 @@ BugReportService bugReportService(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   return CommentsRepository(nostrClient: nostrClient);
+}
+
+// =============================================================================
+// VIDEOS REPOSITORY
+// =============================================================================
+
+/// Provider for VideosRepository instance
+///
+/// Creates a VideosRepository for loading video feeds with pagination.
+/// Works without authentication for public feeds.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+@Riverpod(keepAlive: true)
+VideosRepository videosRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+  return VideosRepository(nostrClient: nostrClient);
 }
 
 // =============================================================================

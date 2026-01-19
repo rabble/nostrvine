@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class BlossomSettingsScreen extends ConsumerStatefulWidget {
@@ -218,24 +218,38 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
         ),
         title: Text('Media Servers', style: VineTheme.titleFont()),
         actions: [
-          TextButton(
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             onPressed: _isSaving ? null : _saveSettings,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+            tooltip: 'Save',
+            icon: Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: VineTheme.iconButtonBackground,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : SvgPicture.asset(
+                      'assets/icon/Check.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
-                  )
-                : const Text(
-                    'Save',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            ),
           ),
           const SizedBox(width: 16),
         ],

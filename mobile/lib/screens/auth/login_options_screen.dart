@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class LoginOptionsScreen extends StatelessWidget {
   /// Route name for this screen.

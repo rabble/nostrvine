@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Dynamic zoom selector that builds UI based on detected physical cameras
 class DynamicZoomSelector extends StatefulWidget {
