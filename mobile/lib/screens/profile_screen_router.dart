@@ -123,6 +123,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // has known issues with ModalBottomSheetRoute (see flutter/flutter#100933)
     final result = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: VineTheme.cardBackground,
       builder: (modalContext) => SafeArea(
         child: Column(
