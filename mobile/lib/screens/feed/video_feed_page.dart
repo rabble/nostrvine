@@ -7,7 +7,7 @@ import 'package:openvine/screens/feed/video_page_view.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
-class VideoFeedPage extends ConsumerStatefulWidget {
+class VideoFeedPage extends ConsumerWidget {
   static const String path = '/new-video-feed';
 
   static const String routeName = 'new-video-feed';
@@ -15,34 +15,16 @@ class VideoFeedPage extends ConsumerStatefulWidget {
   const VideoFeedPage({super.key});
 
   @override
-  ConsumerState<VideoFeedPage> createState() => _VideoFeedPageState();
-}
-
-class _VideoFeedPageState extends ConsumerState<VideoFeedPage> {
-  late final VideoFeedBloc _bloc;
-
-  @override
-  void initState() {
-    super.initState();
-    // Create bloc once in initState - use ref.read since we don't need reactivity
+  Widget build(BuildContext context, WidgetRef ref) {
     final videosRepository = ref.read(videosRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
 
-    _bloc = VideoFeedBloc(
-      videosRepository: videosRepository,
-      followRepository: followRepository,
-    )..add(const VideoFeedStarted(mode: FeedMode.latest));
-  }
-
-  @override
-  void dispose() {
-    _bloc.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider.value(value: _bloc, child: const _VideoFeedView());
+    return BlocProvider(
+      create: (_) => VideoFeedBloc(
+        videosRepository: videosRepository,
+        followRepository: followRepository,
+      )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+    );
   }
 }
 
@@ -68,7 +50,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
           ),
         ),
         actions: [
-          FeedModeSwitch(),
+          _FeedModeSwitch(),
           // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -89,7 +71,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
 
           // Error state
           if (state.status == VideoFeedStatus.failure) {
-            return FeedErrorWidget(error: state.error);
+            return _FeedErrorWidget(error: state.error);
           }
 
           // Empty state
@@ -149,8 +131,8 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
   }
 }
 
-class FeedModeSwitch extends StatelessWidget {
-  const FeedModeSwitch({super.key});
+class _FeedModeSwitch extends StatelessWidget {
+  const _FeedModeSwitch();
 
   @override
   Widget build(BuildContext context) {
@@ -195,8 +177,8 @@ class FeedModeSwitch extends StatelessWidget {
   }
 }
 
-class FeedErrorWidget extends StatelessWidget {
-  const FeedErrorWidget({this.error, super.key});
+class _FeedErrorWidget extends StatelessWidget {
+  const _FeedErrorWidget({this.error});
 
   final VideoFeedError? error;
 
