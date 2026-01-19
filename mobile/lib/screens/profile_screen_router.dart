@@ -19,7 +19,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
@@ -119,124 +118,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _editProfile() async {
-    // Show menu with Edit Profile and Delete Account options
-    // Note: Using showModalBottomSheet with Navigator.pop because GoRouter
-    // has known issues with ModalBottomSheetRoute (see flutter/flutter#100933)
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: VineTheme.cardBackground,
-      builder: (modalContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit, color: VineTheme.vineGreen),
-              title: const Text(
-                'Edit Profile',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              subtitle: const Text(
-                'Update your display name, bio, and avatar',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
-              ),
-              onTap: () => Navigator.of(modalContext).pop('edit'),
-            ),
-            const Divider(color: VineTheme.secondaryText, height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text(
-                'Delete Account and Data',
-                style: TextStyle(color: Colors.red),
-              ),
-              subtitle: const Text(
-                'PERMANENTLY delete your account and all content',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
-              ),
-              onTap: () => Navigator.of(modalContext).pop('delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result == 'edit') {
-      // Navigate to edit-profile route (defined outside ShellRoute)
-      await context.push(ProfileSetupScreen.editPath);
-    } else if (result == 'delete') {
-      _handleDeleteAccount();
-    }
-  }
-
-  Future<void> _handleDeleteAccount() async {
-    final deletionService = ref.read(accountDeletionServiceProvider);
-    final authService = ref.read(authServiceProvider);
-
-    // Get current user's public key for nsec verification
-    final currentPublicKeyHex = authService.currentPublicKeyHex;
-    if (currentPublicKeyHex == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to verify identity. Please log in again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Show nsec verification dialog first, then standard delete dialog
-    await showDeleteAllContentWarningDialog(
-      context: context,
-      currentPublicKeyHex: currentPublicKeyHex,
-      onConfirm: () async {
-        // Show loading indicator
-        if (!context.mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-        );
-
-        // Execute NIP-62 deletion request
-        final result = await deletionService.deleteAccount();
-
-        // Close loading indicator
-        if (!context.mounted) return;
-        context.pop();
-
-        if (result.success) {
-          // Sign out and delete keys
-          await authService.signOut(deleteKeys: true);
-
-          // Show completion dialog
-          if (!context.mounted) return;
-          await showDeleteAccountCompletionDialog(
-            context: context,
-            onCreateNewAccount: () {
-              context.go(ProfileSetupScreen.setupPath);
-            },
-          );
-        } else {
-          // Show error
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.error ?? 'Failed to delete content from relays',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
-    );
+    // Navigate directly to edit-profile route (defined outside ShellRoute)
+    await context.push(ProfileSetupScreen.editPath);
   }
 
   Future<void> _shareProfile(String userIdHex) async {
