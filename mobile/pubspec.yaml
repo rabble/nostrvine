@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
   - packages/keycast_flutter
