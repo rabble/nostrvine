@@ -65,7 +65,10 @@ class MockDivineCameraPlatform
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {}
+  Future<void> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {}
 
   @override
   Future<VideoRecordingResult?> stopRecording() async => null;
