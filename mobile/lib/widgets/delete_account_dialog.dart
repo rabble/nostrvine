@@ -1,10 +1,13 @@
 // ABOUTME: Dialog widgets for account deletion flow
-// ABOUTME: Warning dialog with confirmation and completion dialog with next steps
+// ABOUTME: Warning dialogs for key removal and content deletion with confirmation
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nostr_sdk/client_utils/keys.dart';
-import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 /// Show warning dialog for removing keys from device only
@@ -61,152 +64,25 @@ Future<void> showRemoveKeysWarningDialog({
   );
 }
 
-/// Show FIRST dialog asking for nsec verification before deleting account
+/// Show confirmation dialog before deleting all content (requires typing
+/// DELETE)
+///
+/// This dialog ensures they understand the dangerous/irreversible nature of
+/// account deletion.
 Future<void> showDeleteAllContentWarningDialog({
-  required BuildContext context,
-  required String currentPublicKeyHex,
-  required VoidCallback onConfirm,
-}) {
-  final nsecController = TextEditingController();
-  String? errorMessage;
-
-  return showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          '🔐 Verify Your Private Key',
-          style: TextStyle(
-            color: Colors.red,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'To delete your account, please enter your private key (nsec) to confirm your identity:',
-              style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nsecController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Enter your nsec...',
-                hintStyle: const TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade700),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red),
-                ),
-                errorText: errorMessage,
-                errorStyle: const TextStyle(color: Colors.red),
-              ),
-              onChanged: (_) {
-                if (errorMessage != null) {
-                  setState(() {
-                    errorMessage = null;
-                  });
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: context.pop,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final nsec = nsecController.text.trim();
-              if (nsec.isEmpty) {
-                setState(() {
-                  errorMessage = 'Please enter your nsec';
-                });
-                return;
-              }
-
-              // Verify nsec matches current user's public key
-              final isValid = _verifyNsec(nsec, currentPublicKeyHex);
-              if (!isValid) {
-                setState(() {
-                  errorMessage =
-                      'Invalid nsec. Please enter the correct private key.';
-                });
-                return;
-              }
-
-              // Nsec is valid, proceed to standard delete dialog
-              context.pop();
-              _showDeleteAllContentFinalConfirmation(
-                context: context,
-                onConfirm: onConfirm,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text(
-              'Verify',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/// Verify that the provided nsec matches the current user's public key
-bool _verifyNsec(String nsec, String currentPublicKeyHex) {
-  try {
-    // Decode nsec to get private key hex
-    if (!nsec.startsWith('nsec1')) {
-      return false;
-    }
-
-    final privateKeyHex = Nip19.decode(nsec);
-    if (privateKeyHex.isEmpty || privateKeyHex.length != 64) {
-      return false;
-    }
-
-    // Derive public key from private key
-    final derivedPublicKey = getPublicKey(privateKeyHex);
-
-    // Compare with current user's public key
-    return derivedPublicKey.toLowerCase() == currentPublicKeyHex.toLowerCase();
-  } catch (_) {
-    return false;
-  }
-}
-
-/// Show SECOND confirmation dialog before deleting all content (requires typing)
-Future<void> _showDeleteAllContentFinalConfirmation({
   required BuildContext context,
   required VoidCallback onConfirm,
 }) {
   final confirmationController = TextEditingController();
   const requiredText = 'DELETE';
 
-  return showDialog(
+  return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
+        scrollable: true,
         title: const Text(
           '⚠️ Final Confirmation',
           style: TextStyle(
@@ -237,8 +113,10 @@ Future<void> _showDeleteAllContentFinalConfirmation({
             TextField(
               controller: confirmationController,
               style: const TextStyle(color: Colors.white),
+              autocorrect: false,
+              textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                hintText: 'Type here',
+                hintText: 'Type DELETE',
                 hintStyle: const TextStyle(color: Colors.grey),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey.shade700),
@@ -251,6 +129,7 @@ Future<void> _showDeleteAllContentFinalConfirmation({
             ),
           ],
         ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
         actions: [
           TextButton(
             onPressed: context.pop,
@@ -259,22 +138,24 @@ Future<void> _showDeleteAllContentFinalConfirmation({
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
           ),
-          ElevatedButton(
-            onPressed: confirmationController.text == requiredText
-                ? () {
-                    context.pop();
-                    onConfirm();
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade800,
-              disabledForegroundColor: Colors.grey,
-            ),
-            child: const Text(
-              'DELETE ALL MY CONTENT',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          Flexible(
+            child: ElevatedButton(
+              onPressed: confirmationController.text == requiredText
+                  ? () {
+                      context.pop();
+                      onConfirm();
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade800,
+                disabledForegroundColor: Colors.grey,
+              ),
+              child: const Text(
+                'Delete All Content',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
             ),
           ),
         ],
@@ -283,52 +164,81 @@ Future<void> _showDeleteAllContentFinalConfirmation({
   );
 }
 
-/// Show completion dialog after account deletion
-Future<void> showDeleteAccountCompletionDialog({
+/// Execute the full account deletion flow:
+/// 1. Show loading indicator
+/// 2. Send NIP-62 deletion request (requires working signer)
+/// 3. Delete Keycast account if exists (invalidates signer)
+/// 4. Sign out and delete local keys
+/// 5. Show success snackbar (router auto-redirects to /welcome)
+///
+/// [context] - BuildContext for showing dialogs
+/// [deletionService] - Service to execute NIP-62 deletion
+/// [authService] - Service for Keycast deletion and sign out
+/// [screenName] - Name of the calling screen for logging
+Future<void> executeAccountDeletion({
   required BuildContext context,
-  required VoidCallback onCreateNewAccount,
-}) {
-  return showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        '✓ Account Deleted',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+  required AccountDeletionService deletionService,
+  required AuthService authService,
+  String screenName = 'AccountDeletion',
+}) async {
+  // Show loading indicator
+  if (!context.mounted) return;
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
       ),
-      content: const Text(
-        'Your deletion request has been sent to Nostr relays.\n\n'
-        'You\'ve been signed out and your keys have been removed from this device.',
-        style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-      ),
-      actions: [
-        TextButton(
-          onPressed: context.pop,
-          child: const Text(
-            'Close',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            context.pop();
-            onCreateNewAccount();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.vineGreen,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text(
-            'Create New Account',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
     ),
   );
+
+  // Step 1: Execute NIP-62 deletion request (requires working signer)
+  final result = await deletionService.deleteAccount();
+
+  if (result.success) {
+    // Step 2: Delete Keycast account if one exists (invalidates signer)
+    // We log but don't block on failure since NIP-62 already succeeded
+    final (keycastSuccess, keycastError) = await authService
+        .deleteKeycastAccount();
+    if (!keycastSuccess) {
+      Log.warning(
+        'Keycast account deletion failed (continuing anyway): $keycastError',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+    }
+
+    // Step 3: Sign out and delete local keys
+    // Router will automatically redirect to /welcome when auth state
+    // becomes unauthenticated
+    await authService.signOut(deleteKeys: true);
+
+    // Close loading indicator and show success snackbar
+    // Router will automatically redirect to /welcome after sign out
+    if (!context.mounted) return;
+    context.pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Your account has been deleted',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+  } else {
+    // Close loading indicator and show error
+    if (!context.mounted) return;
+    context.pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.error ?? 'Failed to delete content from relays',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 }

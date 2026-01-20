@@ -779,6 +779,18 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<void>);
 
   @override
+  _i6.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i6.Future<(bool, String?)>.value((false, null)),
+            returnValueForMissingStub: _i6.Future<(bool, String?)>.value((
+              false,
+              null,
+            )),
+          )
+          as _i6.Future<(bool, String?)>);
+
+  @override
   _i6.Future<void> signOut({bool? deleteKeys = false}) =>
       (super.noSuchMethod(
             Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
