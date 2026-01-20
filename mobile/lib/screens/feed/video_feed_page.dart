@@ -25,19 +25,20 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
-      child: const _VideoFeedView(),
+      child: const VideoFeedView(),
     );
   }
 }
 
-class _VideoFeedView extends ConsumerStatefulWidget {
-  const _VideoFeedView();
+@visibleForTesting
+class VideoFeedView extends StatefulWidget {
+  const VideoFeedView({super.key});
 
   @override
-  ConsumerState<_VideoFeedView> createState() => _VideoFeedViewState();
+  State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
