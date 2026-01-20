@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/platform_io.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
 /// Thumbnail card for a single clip in the grid.
@@ -243,7 +243,7 @@ class _SelectionOverlay extends StatelessWidget {
               color: VineTheme.tabIndicatorGreen,
             ),
             child: SvgPicture.asset(
-              'assets/icon/check.svg',
+              'assets/icon/Check.svg',
               colorFilter: const ColorFilter.mode(Color(0xFF002C1C), .srcIn),
             ),
           ),

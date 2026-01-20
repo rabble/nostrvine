@@ -246,6 +246,151 @@ void main() {
       });
     });
 
+    group('getProfileVideos', () {
+      test('returns empty list when no events found', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        final result = await repository.getProfileVideos(
+          authorPubkey: 'test-pubkey',
+        );
+
+        expect(result, isEmpty);
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+      });
+
+      test('queries with correct filter for single author', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        const authorPubkey = 'user-pubkey-123';
+        await repository.getProfileVideos(
+          authorPubkey: authorPubkey,
+          limit: 10,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+
+        expect(filters, hasLength(1));
+        expect(filters.first.kinds, contains(EventKind.videoVertical));
+        expect(filters.first.authors, equals([authorPubkey]));
+        expect(filters.first.limit, equals(10));
+      });
+
+      test('passes until parameter for pagination', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        const until = 1704067200;
+        await repository.getProfileVideos(
+          authorPubkey: 'test-pubkey',
+          until: until,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+
+        expect(filters.first.until, equals(until));
+      });
+
+      test('transforms and filters events correctly', () async {
+        final event = _createVideoEvent(
+          id: 'profile-video-123',
+          pubkey: 'user-pubkey',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getProfileVideos(
+          authorPubkey: 'user-pubkey',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('profile-video-123'));
+        expect(result.first.pubkey, equals('user-pubkey'));
+      });
+
+      test('filters out videos without valid URL', () async {
+        final validEvent = _createVideoEvent(
+          id: 'valid-id',
+          pubkey: 'user-pubkey',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+        final invalidEvent = _createVideoEvent(
+          id: 'invalid-id',
+          pubkey: 'user-pubkey',
+          videoUrl: null,
+          createdAt: 1704067201,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [validEvent, invalidEvent],
+        );
+
+        final result = await repository.getProfileVideos(
+          authorPubkey: 'user-pubkey',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('valid-id'));
+      });
+
+      test('sorts videos by creation time (newest first)', () async {
+        final olderEvent = _createVideoEvent(
+          id: 'older',
+          pubkey: 'user-pubkey',
+          videoUrl: 'https://example.com/old.mp4',
+          createdAt: 1704067200,
+        );
+        final newerEvent = _createVideoEvent(
+          id: 'newer',
+          pubkey: 'user-pubkey',
+          videoUrl: 'https://example.com/new.mp4',
+          createdAt: 1704153600,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [olderEvent, newerEvent],
+        );
+
+        final result = await repository.getProfileVideos(
+          authorPubkey: 'user-pubkey',
+        );
+
+        expect(result, hasLength(2));
+        expect(result.first.id, equals('newer'));
+        expect(result.last.id, equals('older'));
+      });
+
+      test('uses default limit of 5 when not specified', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        await repository.getProfileVideos(authorPubkey: 'test-pubkey');
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+
+        expect(filters.first.limit, equals(5));
+      });
+    });
+
     group('getPopularVideos', () {
       group('NIP-50 server-side sorting', () {
         test('tries NIP-50 query first with sort:hot', () async {

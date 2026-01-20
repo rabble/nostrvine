@@ -1,8 +1,8 @@
 // ABOUTME: Processing overlay with mascot and progress indicator.
 // ABOUTME: Displays during video export operations.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
 
 /// Overlay widget displayed during video processing operations.
 ///

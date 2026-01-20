@@ -5,6 +5,7 @@ import 'dart:io'
 
 import 'package:audio_session/audio_session.dart';
 import 'package:db_client/db_client.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,6 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoRecorderScreen - main video recording UI
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
+import 'dart:core';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

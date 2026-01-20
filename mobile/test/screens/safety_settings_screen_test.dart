@@ -9,7 +9,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}

@@ -8,7 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/profile_reposts_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos

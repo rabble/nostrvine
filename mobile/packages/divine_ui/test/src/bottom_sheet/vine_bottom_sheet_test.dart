@@ -1,17 +1,11 @@
 // ABOUTME: Tests for VineBottomSheet component
 // ABOUTME: Verifies structure and behavior of the bottom sheet
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet_header.dart';
 
 void main() {
-  setUpAll(() async {
-    await loadAppFonts();
-  });
-
   group('VineBottomSheet', () {
     testWidgets('renders with required props', (tester) async {
       final scrollController = ScrollController();
@@ -122,8 +116,8 @@ void main() {
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
-                  onPressed: () {
-                    VineBottomSheet.show(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
                       context: context,
                       title: const Text('Modal Sheet'),
                       children: const [Text('Modal Content')],

@@ -3,10 +3,10 @@
 
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/saved_clip.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:video_player/video_player.dart';
 
 /// Preview sheet for playing a video clip in a modal bottom sheet.

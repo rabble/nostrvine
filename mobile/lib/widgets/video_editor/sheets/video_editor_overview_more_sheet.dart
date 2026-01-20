@@ -1,6 +1,7 @@
 // ABOUTME: Bottom sheet for video editor options.
 // ABOUTME: Provides actions to add clips from library, save to drafts, or delete all clips.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,10 +11,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bottom_sheet_list_tile.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet_drag_handle.dart';
 
 /// Bottom sheet for video editor more options.
 ///

@@ -23,6 +23,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/followers/my_followers_screen.dart';
 import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/screens/following/my_following_screen.dart';
@@ -152,11 +153,10 @@ int tabIndexFromLocation(String loc) {
     case 'video-feed':
     case 'profile-view':
     case 'sound':
-      return -1; // Non-tab routes - no bottom nav
+    case 'new-video-feed':
     case 'list':
-      return 1; // List keeps explore tab active (like hashtag)
     case 'discover-lists':
-      return 1; // Discover lists keeps explore tab active
+      return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home
   }
@@ -611,40 +611,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // CURATED LIST route (NIP-51 kind 30005 video lists)
-          GoRoute(
-            path: CuratedListFeedScreen.path,
-            name: CuratedListFeedScreen.routeName,
-            builder: (ctx, st) {
-              final listId = st.pathParameters['listId'];
-              if (listId == null || listId.isEmpty) {
-                return Scaffold(
-                  appBar: AppBar(title: const Text('Error')),
-                  body: const Center(child: Text('Invalid list ID')),
-                );
-              }
-              // Extra data contains listName, videoIds, authorPubkey
-              final extra = st.extra as CuratedListRouteExtra?;
-              return CuratedListFeedScreen(
-                listId: listId,
-                listName: extra?.listName ?? 'List',
-                videoIds: extra?.videoIds,
-                authorPubkey: extra?.authorPubkey,
-              );
-            },
-          ),
-
-          // DISCOVER LISTS route (browse public NIP-51 kind 30005 lists)
-          GoRoute(
-            path: DiscoverListsScreen.path,
-            name: DiscoverListsScreen.routeName,
-            builder: (ctx, st) => const DiscoverListsScreen(),
-          ),
         ],
       ),
 
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
+
+      // CURATED LIST route (NIP-51 kind 30005 video lists)
+      // Outside shell so the screen's own AppBar is shown without the shell AppBar
+      GoRoute(
+        path: '/list/:listId',
+        name: 'list',
+        builder: (ctx, st) {
+          final listId = st.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid list ID')),
+            );
+          }
+          // Extra data contains listName, videoIds, authorPubkey
+          final extra = st.extra as CuratedListRouteExtra?;
+          return CuratedListFeedScreen(
+            listId: listId,
+            listName: extra?.listName ?? 'List',
+            videoIds: extra?.videoIds,
+            authorPubkey: extra?.authorPubkey,
+          );
+        },
+      ),
+
+      // DISCOVER LISTS route (browse public NIP-51 kind 30005 lists)
+      // Outside shell so the screen's own AppBar is shown without the shell AppBar
+      GoRoute(
+        path: DiscoverListsScreen.path,
+        name: DiscoverListsScreen.routeName,
+        builder: (ctx, st) => const DiscoverListsScreen(),
+      ),
       GoRoute(
         path: WelcomeScreen.path,
         name: WelcomeScreen.routeName,
@@ -755,6 +757,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
+      // Debug route for testing VideoFeedBloc as a pushed screen
+      GoRoute(
+        path: VideoFeedPage.path,
+        name: VideoFeedPage.routeName,
+        builder: (_, __) => const VideoFeedPage(),
+      ),
+
       GoRoute(
         path: ProfileSetupScreen.editPath,
         name: ProfileSetupScreen.editRouteName,

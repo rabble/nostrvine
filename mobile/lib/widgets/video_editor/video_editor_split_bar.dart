@@ -3,11 +3,11 @@
 
 import 'dart:math';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/theme/vine_theme.dart';
 
 /// A video editor split bar using Material Slider with custom styling.
 /// The left section is highlighted in primary color, the right section is

@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
   - packages/keycast_flutter
@@ -122,6 +123,10 @@ dependencies:
   # Videos Repository - Video feed data layer
   videos_repository:
     path: packages/videos_repository
+
+  # Divine UI - Shared UI components
+  divine_ui:
+    path: packages/divine_ui
 
   # Logging
   logging: ^1.2.0
@@ -229,12 +234,11 @@ flutter:
     - assets/icon/arrow_forward.svg
     - assets/icon/bell.svg
     - assets/icon/camera.svg
+    - assets/icon/retro-camera.svg
     - assets/icon/caret_right.svg
     - assets/icon/CaretLeft.svg
-    - assets/icon/check.svg
     - assets/icon/close.svg
     - assets/icon/delete.svg
-    - assets/icon/house.svg
     - assets/icon/compass.svg
     - assets/icon/crop_portrait.svg
     - assets/icon/crop_square.svg
@@ -262,8 +266,15 @@ flutter:
     - assets/icon/volume_off.svg
     - assets/icon/volume_on.svg
     - assets/icon/warning_512.png
+    - assets/icon/content-controls/
+    - assets/icon/Icon-Follow.svg
+    - assets/icon/Icon-Following.svg
+    - assets/icon/ArrowClockwise.svg
+    - assets/icon/Check.svg
+    - assets/icon/plus.svg
     - assets/icon/arrow_bend_down_right.svg
     - assets/loading-brand.gif
+    - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql
     - assets/seed_media/manifest.json
     - assets/seed_media/videos/

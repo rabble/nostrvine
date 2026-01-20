@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -5,8 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/theme/vine_theme.dart';
-import 'package:openvine/widgets/bottom_sheets/vine_bottom_sheet_drag_handle.dart';
 
 /// Widget for selecting video expiration time.
 ///
