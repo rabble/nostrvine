@@ -30,12 +30,12 @@ class ProfileRepostsGrid extends ConsumerWidget {
         return CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.all(2),
+              padding: const EdgeInsets.all(4),
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
-                  crossAxisSpacing: 2,
-                  mainAxisSpacing: 2,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
                   childAspectRatio: 1,
                 ),
                 delegate: SliverChildBuilderDelegate((context, index) {
@@ -133,44 +133,11 @@ class _RepostGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-          // Repost indicator badge
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(
-                Icons.repeat,
-                color: VineTheme.vineGreen,
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );

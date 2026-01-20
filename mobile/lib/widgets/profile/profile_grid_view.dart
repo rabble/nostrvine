@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:models/models.dart';
@@ -76,10 +77,17 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    // Trigger rebuild to update SVG icon colors
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -160,16 +168,50 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             delegate: _SliverAppBarDelegate(
               TabBar(
                 controller: _tabController,
-                indicatorColor: Colors.white,
-                indicatorWeight: 2,
+                indicatorColor: VineTheme.tabIndicatorGreen,
+                indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey,
-                tabs: const [
-                  Tab(icon: Icon(Icons.grid_on, size: 20)),
-                  Tab(icon: Icon(Icons.favorite_border, size: 20)),
-                  Tab(icon: Icon(Icons.repeat, size: 20)),
+                tabs: [
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/play.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 0
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/heart.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 1
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/repost.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 2
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

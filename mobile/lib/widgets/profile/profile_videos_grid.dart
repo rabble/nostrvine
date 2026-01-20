@@ -38,12 +38,12 @@ class ProfileVideosGrid extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(4),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
@@ -171,27 +171,11 @@ class _VideoGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
