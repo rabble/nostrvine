@@ -1,11 +1,9 @@
-// ABOUTME: Action buttons widget for profile page (edit, library, more, follow, block)
+// ABOUTME: Action buttons widget for profile page (edit, library, more, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 /// Action buttons shown on profile page
@@ -17,7 +15,6 @@ class ProfileActionButtons extends StatelessWidget {
     this.onEditProfile,
     this.onOpenClips,
     this.onMore,
-    this.onBlockUser,
     super.key,
   });
 
@@ -26,7 +23,6 @@ class ProfileActionButtons extends StatelessWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
   final VoidCallback? onMore;
-  final void Function(bool isCurrentlyBlocked)? onBlockUser;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -76,7 +72,7 @@ class ProfileActionButtons extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           Expanded(
             child: OutlinedButton(
               key: const Key('library-button'),
@@ -121,7 +117,7 @@ class ProfileActionButtons extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           OutlinedButton(
             onPressed: onMore,
             style: OutlinedButton.styleFrom(
@@ -146,36 +142,6 @@ class ProfileActionButtons extends StatelessWidget {
           ),
         ] else ...[
           Expanded(child: FollowFromProfileButton(pubkey: userIdHex)),
-          const SizedBox(width: 12),
-          Consumer(
-            builder: (context, ref, _) {
-              final blocklistService = ref.watch(
-                contentBlocklistServiceProvider,
-              );
-              final isBlocked = blocklistService.isBlocked(userIdHex);
-              final buttonColor = isBlocked
-                  ? VineTheme.onSurfaceMuted
-                  : VineTheme.likeRed;
-              return OutlinedButton(
-                onPressed: () => onBlockUser?.call(isBlocked),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: buttonColor,
-                  side: BorderSide(color: buttonColor),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Text(
-                  isBlocked ? 'Unblock' : 'Block',
-                  style: VineTheme.titleMediumFont(color: buttonColor),
-                ),
-              );
-            },
-          ),
         ],
       ],
     ),

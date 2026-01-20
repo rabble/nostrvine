@@ -59,26 +59,46 @@ class FollowFromProfileButtonView extends StatelessWidget {
             ? OutlinedButton(
                 onPressed: () => _toggleFollow(context, isFollowing),
                 style: OutlinedButton.styleFrom(
+                  backgroundColor: VineTheme.surfaceContainer,
                   foregroundColor: VineTheme.vineGreen,
-                  side: const BorderSide(color: VineTheme.vineGreen),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(
+                    color: VineTheme.outlineMuted,
+                    width: 2,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 24,
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text('Following'),
+                child: Text(
+                  'Following',
+                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               )
             : ElevatedButton(
                 onPressed: () => _toggleFollow(context, isFollowing),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  foregroundColor: VineTheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 24,
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text('Follow'),
+                child: Text(
+                  'Follow',
+                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               );
       },
     );

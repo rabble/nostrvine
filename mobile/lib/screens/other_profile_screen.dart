@@ -2,9 +2,11 @@
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
@@ -72,6 +74,94 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       category: LogCategory.ui,
     );
     userProfileService.fetchProfile(userIdHex);
+  }
+
+  Future<void> _more(String userIdHex) async {
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final isBlocked = blocklistService.isBlocked(userIdHex);
+
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: VineTheme.surfaceBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.copy, color: VineTheme.whiteText),
+                title: Text('Copy unique ID', style: VineTheme.bodyLargeFont()),
+                onTap: () => Navigator.of(modalContext).pop('copy'),
+              ),
+              ListTile(
+                leading: Icon(
+                  isBlocked ? Icons.check_circle_outline : Icons.block,
+                  color: isBlocked ? VineTheme.vineGreen : Colors.red,
+                ),
+                title: Text(
+                  isBlocked ? 'Unblock this user' : 'Block this user',
+                  style: VineTheme.bodyLargeFont(
+                    color: isBlocked ? VineTheme.vineGreen : Colors.red,
+                  ),
+                ),
+                onTap: () => Navigator.of(modalContext).pop('block'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == 'copy') {
+      await _copyUniqueId(userIdHex);
+    } else if (result == 'block') {
+      await _blockUser(userIdHex, isBlocked);
+    }
+  }
+
+  Future<void> _copyUniqueId(String userIdHex) async {
+    try {
+      final npub = NostrKeyUtils.encodePubKey(userIdHex);
+      await Clipboard.setData(ClipboardData(text: npub));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check, color: VineTheme.onPrimary),
+                const SizedBox(width: 8),
+                Text(
+                  'Unique ID copied to clipboard',
+                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
+                ),
+              ],
+            ),
+            backgroundColor: VineTheme.vineGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to copy: $e',
+              style: VineTheme.bodyMediumFont(),
+            ),
+            backgroundColor: VineTheme.likeRed,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -146,6 +236,34 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/DotsThree.svg',
+                  width: 28,
+                  height: 28,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              onPressed: () => _more(userIdHex),
+            ),
+          ),
+        ],
       ),
       body: switch (videosAsync) {
         AsyncLoading() => const ProfileLoadingView(),
@@ -161,7 +279,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
-          onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
         ),
       },
     );

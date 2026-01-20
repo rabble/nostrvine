@@ -20,7 +20,6 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
-import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
@@ -105,7 +104,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
         onMore: _more,
-        onBlockUser: _blockUser,
       ),
     };
   }
@@ -249,58 +247,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       }
     }
   }
-
-  Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
-    if (currentlyBlocked) {
-      // Unblock without confirmation
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(pubkey);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
-      }
-      return;
-    }
-
-    // Show confirmation dialog for blocking
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text('Block @', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'You won\'t see their content in feeds. They won\'t be notified. You can still visit their profile.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Block'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.blockUser(pubkey);
-
-      if (mounted) {
-        // Show success confirmation using root navigator
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          builder: (context) => const ProfileBlockConfirmationDialog(),
-        );
-      }
-    }
-  }
 }
 
 /// Private widget that handles profile content based on route context.
@@ -313,7 +259,6 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
-    required this.onBlockUser,
   });
 
   final RouteContext routeContext;
@@ -323,7 +268,6 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
-  final void Function(String pubkey, bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -373,7 +317,6 @@ class _ProfileContentView extends ConsumerWidget {
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
       onMore: () => onMore(userIdHex),
-      onBlockUser: (isBlocked) => onBlockUser(userIdHex, isBlocked),
     );
   }
 }
@@ -429,7 +372,6 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
-    required this.onBlockUser,
   });
 
   final String npub;
@@ -441,7 +383,6 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final VoidCallback onMore;
-  final void Function(bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -466,7 +407,6 @@ class _ProfileDataView extends ConsumerWidget {
         onEditProfile: onEditProfile,
         onOpenClips: onOpenClips,
         onMore: onMore,
-        onBlockUser: onBlockUser,
       ),
     };
   }
@@ -486,7 +426,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
-    required this.onBlockUser,
   });
 
   final String npub;
@@ -500,7 +439,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final VoidCallback onMore;
-  final void Function(bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context) {
@@ -529,7 +467,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
       onMore: onMore,
-      onBlockUser: onBlockUser,
     );
   }
 }
