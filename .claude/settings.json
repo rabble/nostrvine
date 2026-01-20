@@ -2,9 +2,7 @@
   "permissions": {
     "allow": [
       "mcp__dart__*",
-      "mcp__nostr__*",
-      "Bash(git diff:*)"
-    ],
+      "mcp__nostr__*"    ],
     "deny": [],
     "ask": []
   }
