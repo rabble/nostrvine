@@ -81,7 +81,8 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         case "startRecording":
             let args = call.arguments as? [String: Any] ?? [:]
             let maxDurationMs = args["maxDurationMs"] as? Int
-            startRecording(maxDurationMs: maxDurationMs, result: result)
+            let useCache = args["useCache"] as? Bool ?? true
+            startRecording(maxDurationMs: maxDurationMs, useCache: useCache, result: result)
             
         case "stopRecording":
             stopRecording(result: result)
@@ -179,13 +180,13 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private func startRecording(maxDurationMs: Int?, result: @escaping FlutterResult) {
+    private func startRecording(maxDurationMs: Int?, useCache: Bool, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
             result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
             return
         }
         
-        controller.startRecording(maxDurationMs: maxDurationMs) { error in
+        controller.startRecording(maxDurationMs: maxDurationMs, useCache: useCache) { error in
             DispatchQueue.main.async {
                 if let error = error {
                     result(FlutterError(code: "RECORD_START_ERROR", message: error, details: nil))

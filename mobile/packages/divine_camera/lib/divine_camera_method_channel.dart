@@ -143,9 +143,13 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
+  Future<void> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {
     await methodChannel.invokeMethod<void>('startRecording', {
       if (maxDuration != null) 'maxDurationMs': maxDuration.inMilliseconds,
+      'useCache': useCache,
     });
   }
 

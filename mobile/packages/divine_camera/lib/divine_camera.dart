@@ -162,9 +162,17 @@ class DivineCamera {
   ///
   /// [maxDuration] optionally limits the recording duration.
   /// When the duration is reached, recording stops automatically.
-  Future<void> startRecording({Duration? maxDuration}) async {
+  /// [useCache] if true, saves video to cache directory (temporary),
+  /// otherwise saves to documents directory (permanent). Defaults to true.
+  Future<void> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {
     if (!_state.canRecord) return;
-    await _platform.startRecording(maxDuration: maxDuration);
+    await _platform.startRecording(
+      maxDuration: maxDuration,
+      useCache: useCache,
+    );
     _state = _state.copyWith(isRecording: true);
     _notifyStateChanged();
   }

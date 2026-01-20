@@ -511,7 +511,11 @@ class CameraController: NSObject {
     }
     
     /// Starts video recording using AVAssetWriter.
-    func startRecording(maxDurationMs: Int?, completion: @escaping (String?) -> Void) {
+    /// - Parameters:
+    ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
+    ///   - useCache: If true, saves video to temporary directory. If false, saves to documents directory (permanent).
+    ///   - completion: Callback with error message if failed, nil if successful.
+    func startRecording(maxDurationMs: Int?, useCache: Bool = true, completion: @escaping (String?) -> Void) {
         if isRecording {
             completion("Already recording")
             return
@@ -522,11 +526,17 @@ class CameraController: NSObject {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Create output file
-            let tempDir = FileManager.default.temporaryDirectory
+            // Create output file - use temporary or documents directory based on useCache parameter
+            let outputDir: URL
+            if useCache {
+                outputDir = FileManager.default.temporaryDirectory
+            } else {
+                let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+                outputDir = paths[0]
+            }
             let timestamp = ISO8601DateFormatter().string(from: Date())
                 .replacingOccurrences(of: ":", with: "-")
-            let outputURL = tempDir.appendingPathComponent("VID_\(timestamp).mp4")
+            let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
             self.currentRecordingURL = outputURL
             
             // Remove existing file if any

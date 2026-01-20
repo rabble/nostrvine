@@ -687,9 +687,10 @@ class CameraController(
     /**
      * Starts video recording.
      * @param maxDurationMs Optional maximum duration in milliseconds. Recording stops automatically when reached.
+     * @param useCache If true, saves video to cache directory (temporary). If false, saves to external files directory (permanent).
      */
     @SuppressLint("MissingPermission")
-    fun startRecording(maxDurationMs: Int?, callback: (String?) -> Unit) {
+    fun startRecording(maxDurationMs: Int?, useCache: Boolean = true, callback: (String?) -> Unit) {
         val videoCap = videoCapture ?: run {
             callback("Video capture not initialized")
             return
@@ -711,14 +712,19 @@ class CameraController(
         }
 
         try {
-            // Create output file
-            val outputDir = context.cacheDir
+            // Create output file - use cache or documents directory based on useCache parameter
+            val outputDir = if (useCache) {
+                context.cacheDir
+            } else {
+                context.filesDir  // Application Documents directory
+            }
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
             val outputFile = File(outputDir, "VID_$timestamp.mp4")
             currentRecordingFile = outputFile
 
             Log.d(
                 TAG, "Starting recording to: ${outputFile.absolutePath}" +
+                        " (useCache: $useCache)" +
                         if (maxDurationMs != null) " (max duration: ${maxDurationMs}ms)" else ""
             )
 
