@@ -583,7 +583,7 @@ class _ScrollStackState extends ConsumerState<_ScrollStack> {
           // Center clip overlay which rendered on top,
           // which imitate a higher z-index.
           AnimatedScale(
-            scale: state.isReordering ? 0.9 : 1,
+            scale: state.isReordering ? 0.7 : 1,
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeInOut,
             child: VideoEditorCenterClipOverlay(
@@ -638,7 +638,7 @@ class _ReorderingView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       controller: scrollController,
-      scrollDirection: Axis.horizontal,
+      scrollDirection: .horizontal,
       physics: const NeverScrollableScrollPhysics(),
       child: Padding(
         padding: .symmetric(horizontal: constraints.maxWidth * 0.1),
@@ -656,12 +656,12 @@ class _ReorderingView extends ConsumerWidget {
                 scale: scale,
                 xOffset: xOffset,
                 onTap: () {
-                  if (index != currentClipIndex) {
-                    ref
-                        .read(videoEditorProvider.notifier)
-                        .selectClipByIndex(index);
+                  final notifier = ref.read(videoEditorProvider.notifier);
+
+                  if (index == currentClipIndex) {
+                    notifier.toggleClipEditing();
                   } else {
-                    ref.read(videoEditorProvider.notifier).toggleClipEditing();
+                    notifier.selectClipByIndex(index);
                   }
                 },
                 onLongPress: index == currentClipIndex && !isEditing
