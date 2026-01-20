@@ -1,8 +1,8 @@
 // ABOUTME: Styled submit button widget for auth forms
 // ABOUTME: Provides consistent button styling with loading state across auth screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
 
 /// Styled submit button for authentication forms.
 ///

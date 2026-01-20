@@ -1,8 +1,8 @@
 // ABOUTME: Consistent gradient background widget for auth screens
 // ABOUTME: Provides the green gradient styling used across login/register screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/theme/vine_theme.dart';
 
 /// Gradient background container for authentication screens.
 ///
