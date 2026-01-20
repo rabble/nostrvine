@@ -4,7 +4,7 @@
 part of 'video_feed_bloc.dart';
 
 /// Base class for all video feed events.
-sealed class VideoFeedEvent {
+sealed class VideoFeedEvent extends Equatable {
   const VideoFeedEvent();
 }
 
@@ -17,6 +17,9 @@ final class VideoFeedStarted extends VideoFeedEvent {
 
   /// The feed mode to start with.
   final FeedMode mode;
+
+  @override
+  List<Object?> get props => [mode];
 }
 
 /// Switch to a different feed mode.
@@ -28,6 +31,9 @@ final class VideoFeedModeChanged extends VideoFeedEvent {
 
   /// The new feed mode to switch to.
   final FeedMode mode;
+
+  @override
+  List<Object?> get props => [mode];
 }
 
 /// Request to load more videos (pagination).
@@ -37,6 +43,9 @@ final class VideoFeedModeChanged extends VideoFeedEvent {
 /// oldest video's createdAt timestamp.
 final class VideoFeedLoadMoreRequested extends VideoFeedEvent {
   const VideoFeedLoadMoreRequested();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Request to refresh the current feed.
@@ -45,4 +54,7 @@ final class VideoFeedLoadMoreRequested extends VideoFeedEvent {
 /// Used for pull-to-refresh functionality.
 final class VideoFeedRefreshRequested extends VideoFeedEvent {
   const VideoFeedRefreshRequested();
+
+  @override
+  List<Object?> get props => [];
 }
