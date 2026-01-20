@@ -6,41 +6,139 @@ import 'package:pooled_video_player/src/models/pooled_video.dart';
 import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
 import 'package:video_player/video_player.dart';
 
+/// Callback invoked when the video controller is ready.
 typedef OnVideoReady = void Function(VideoPlayerController controller);
 
+/// Callback invoked when the video starts loading.
 typedef OnVideoLoading = void Function();
 
+/// Callback invoked when a video error occurs.
 typedef OnVideoError = void Function(Object error);
 
-/// Headless video player that acquires controllers from [VideoControllerPoolManager].
+/// Callback invoked when play/pause state changes.
+typedef OnPlayPauseChanged = void Function(bool isPlaying);
+
+/// Builder for the video layer. Called once the controller is initialized.
+///
+/// The controller is guaranteed to be initialized (`isInitialized == true`).
+///
+/// Common usage pattern:
+/// ```dart
+/// videoBuilder: (context, controller) => AspectRatio(
+///   aspectRatio: 9 / 16,
+///   child: VideoPlayer(controller),
+/// )
+/// ```
+typedef VideoBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoPlayerController controller,
+    );
+
+/// Builder for the overlay layer. Called when the controller is initialized.
+///
+/// Rendered on top of the video layer. Use this for UI elements like:
+/// - Play/pause controls
+/// - Progress indicators
+/// - Author information
+/// - Action buttons (like, share, comment)
+///
+/// Example:
+/// ```dart
+/// overlayBuilder: (context, controller) => Positioned(
+///   bottom: 20,
+///   right: 20,
+///   child: IconButton(
+///     icon: Icon(
+///       controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+///     ),
+///     onPressed: () => controller.value.isPlaying
+///         ? controller.pause()
+///         : controller.play(),
+///   ),
+/// )
+/// ```
+typedef OverlayBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoPlayerController controller,
+    );
+
+/// Headless video player that acquires controllers from
+/// [VideoControllerPoolManager].
+///
+/// Uses specialized builders for clean UI composition:
+/// - [videoBuilder]: Required builder for the video layer (e.g., VideoPlayer widget)
+/// - [loadingBuilder]: Optional builder for loading state (defaults to black container)
+/// - [overlayBuilder]: Optional builder for UI overlay (e.g., controls, author info)
+///
+/// Example:
+/// ```dart
+/// PooledVideoPlayer(
+///   video: video,
+///   videoBuilder: (context, controller) => AspectRatio(
+///     aspectRatio: 9 / 16,
+///     child: VideoPlayer(controller),
+///   ),
+///   loadingBuilder: (context) => ThumbnailPlaceholder(),
+///   overlayBuilder: (context, controller) => VideoOverlayUI(),
+/// )
+/// ```
 class PooledVideoPlayer extends StatefulWidget {
   const PooledVideoPlayer({
     required this.video,
-    required this.builder,
+    required this.videoBuilder,
+    this.loadingBuilder,
+    this.overlayBuilder,
     this.autoPlay = false,
+    this.enableTapToPause = false,
     this.onVideoReady,
     this.onVideoLoading,
     this.onVideoError,
+    this.onPlayPauseChanged,
     this.getCachedFile,
     super.key,
   });
 
+  /// The video to play.
   final PooledVideo video;
 
-  final Widget Function(
-    BuildContext context,
-    VideoPlayerController? controller,
-    Widget? child,
-  )
-  builder;
+  /// Builder for the video layer. Required.
+  ///
+  /// Called when the controller is initialized and ready to display video.
+  final VideoBuilder videoBuilder;
 
+  /// Builder for the loading state. Optional.
+  ///
+  /// Called when the controller is not yet initialized. If not provided,
+  /// a default black container is shown.
+  final WidgetBuilder? loadingBuilder;
+
+  /// Builder for the overlay layer. Optional.
+  ///
+  /// Called when the controller is initialized. Rendered on top of the video.
+  /// Use this for UI elements like controls, author info, action buttons, etc.
+  final OverlayBuilder? overlayBuilder;
+
+  /// Whether to automatically play when the controller is ready.
   final bool autoPlay;
 
+  /// Enable tap-to-pause/play functionality.
+  ///
+  /// When enabled, tapping the video will toggle play/pause state.
+  final bool enableTapToPause;
+
+  /// Called when the video controller is ready.
   final OnVideoReady? onVideoReady;
 
+  /// Called when the video starts loading.
   final OnVideoLoading? onVideoLoading;
 
+  /// Called when an error occurs.
   final OnVideoError? onVideoError;
+
+  /// Called when play/pause state changes.
+  final OnPlayPauseChanged? onPlayPauseChanged;
 
   /// Optional cache lookup function for instant playback of cached videos.
   /// When provided, the pool manager will use local file controllers for
@@ -127,7 +225,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     if (controller == _controller) return;
 
     try {
-      final _ = controller.value;
+      controller.value;
     } on Exception {
       widget.onVideoError?.call(
         StateError('Controller was disposed, requesting new one'),
@@ -181,9 +279,54 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     }
   }
 
+  void _togglePlayPause() {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (controller.value.isPlaying) {
+      unawaited(controller.pause());
+      widget.onPlayPauseChanged?.call(false);
+    } else {
+      unawaited(controller.play());
+      widget.onPlayPauseChanged?.call(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context, _controller, null);
+    final controller = _controller;
+    final isInitialized = controller?.value.isInitialized ?? false;
+
+    Widget content;
+
+    if (isInitialized) {
+      // Controller is ready - compose video layer + optional overlay
+      content = Stack(
+        fit: StackFit.expand,
+        children: [
+          // Layer 0: Video
+          widget.videoBuilder(context, controller!),
+          // Layer 1: Overlay (if provided)
+          if (widget.overlayBuilder != null)
+            widget.overlayBuilder!(context, controller),
+        ],
+      );
+    } else {
+      // Controller not ready - show loading state
+      content =
+          widget.loadingBuilder?.call(context) ?? const _DefaultLoadingState();
+    }
+
+    // Wrap with gesture detector if tap-to-pause is enabled
+    if (widget.enableTapToPause && isInitialized) {
+      content = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _togglePlayPause,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   @override
@@ -191,5 +334,29 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     _unsubscribe?.call();
     _pool?.releaseController(widget.video.id);
     super.dispose();
+  }
+}
+
+/// Default loading state shown when video controller is not ready.
+///
+/// Displays a centered white circular progress indicator on a black background.
+/// This follows VGE's "Prefer Widgets to Methods" standard by providing a
+/// dedicated widget instead of a builder method, which enables:
+/// - Better widget tree inspection in DevTools
+/// - Independent testing of the loading state
+/// - Cleaner separation of concerns
+class _DefaultLoadingState extends StatelessWidget {
+  const _DefaultLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 }

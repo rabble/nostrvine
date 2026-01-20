@@ -1,86 +1,16 @@
-import 'dart:ui' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 void main() {
   group('DeviceMemoryUtil', () {
-    tearDown(DeviceMemoryUtil.resetCache);
+    late DeviceMemoryUtil classifier;
 
-    group('_scaleToMax', () {
-      test('returns original size when within bounds', () {
-        // Test via getMaxOverlayResolution with a small size
-        const size = Size(640, 480);
-        // Even low tier allows 720p, so 640x480 should pass through
-        // We can't directly test _scaleToMax, but we can verify the behavior
-        expect(size.width, 640);
-        expect(size.height, 480);
-      });
+    setUp(() {
+      classifier = DeviceMemoryUtil();
+    });
 
-      test('scales down landscape video correctly', () {
-        // 4K landscape: 3840x2160
-        // Low tier max: 1280x720
-        // Scale factor: min(1280/3840, 720/2160) = min(0.333, 0.333) = 0.333
-        // Result: 1280x720
-        const input = Size(3840, 2160);
-        const expected = Size(1280, 720);
-
-        // Manually calculate what _scaleToMax would return
-        const maxWidth = 1280.0;
-        const maxHeight = 720.0;
-        final scaleX = maxWidth / input.width;
-        final scaleY = maxHeight / input.height;
-        final scale = scaleX < scaleY ? scaleX : scaleY;
-        final result = Size(
-          (input.width * scale).roundToDouble(),
-          (input.height * scale).roundToDouble(),
-        );
-
-        expect(result.width, expected.width);
-        expect(result.height, expected.height);
-      });
-
-      test('scales down portrait video correctly', () {
-        // 4K portrait: 2160x3840
-        // Low tier max for portrait: 720x1280 (swapped)
-        // Scale factor: min(720/2160, 1280/3840) = min(0.333, 0.333) = 0.333
-        // Result: 720x1280
-        const input = Size(2160, 3840);
-
-        // For portrait, max dimensions are swapped
-        const maxWidth = 720.0;
-        const maxHeight = 1280.0;
-        final scaleX = maxWidth / input.width;
-        final scaleY = maxHeight / input.height;
-        final scale = scaleX < scaleY ? scaleX : scaleY;
-        final result = Size(
-          (input.width * scale).roundToDouble(),
-          (input.height * scale).roundToDouble(),
-        );
-
-        expect(result.width, 720);
-        expect(result.height, 1280);
-      });
-
-      test('preserves aspect ratio when scaling', () {
-        const input = Size(1920, 1080);
-        const maxWidth = 1280.0;
-        const maxHeight = 720.0;
-
-        final scaleX = maxWidth / input.width;
-        final scaleY = maxHeight / input.height;
-        final scale = scaleX < scaleY ? scaleX : scaleY;
-        final result = Size(
-          (input.width * scale).roundToDouble(),
-          (input.height * scale).roundToDouble(),
-        );
-
-        // Original aspect ratio: 1920/1080 = 1.778
-        // Result aspect ratio should be the same
-        final originalRatio = input.width / input.height;
-        final resultRatio = result.width / result.height;
-
-        expect(resultRatio, closeTo(originalRatio, 0.01));
-      });
+    tearDown(() {
+      classifier.resetCache();
     });
 
     group('MemoryTier', () {
@@ -92,32 +22,330 @@ void main() {
       });
     });
 
-    group('resolution limits by tier', () {
-      test('low tier caps at 720p', () {
-        // Low tier: max 1280x720 landscape, 720x1280 portrait
-        const landscapeMax = Size(1280, 720);
-        const portraitMax = Size(720, 1280);
+    group('iOS Device Classification', () {
+      group('iPhone 14 and above returns high memory tier', () {
+        test('iPhone14,1 (iPhone 14)', () {
+          final tier = classifier.classifyIOSDevice('iPhone14,1');
+          expect(tier, MemoryTier.high);
+        });
 
-        expect(landscapeMax.width * landscapeMax.height, 921600); // 720p
-        expect(portraitMax.width * portraitMax.height, 921600); // 720p
+        test('iPhone15,2 (iPhone 15)', () {
+          final tier = classifier.classifyIOSDevice('iPhone15,2');
+          expect(tier, MemoryTier.high);
+        });
+
+        test('iPhone16,1 (iPhone 16)', () {
+          final tier = classifier.classifyIOSDevice('iPhone16,1');
+          expect(tier, MemoryTier.high);
+        });
+
+        test('iPhone20,5 (future iPhone)', () {
+          final tier = classifier.classifyIOSDevice('iPhone20,5');
+          expect(tier, MemoryTier.high);
+        });
       });
 
-      test('medium tier caps at 1080p', () {
-        // Medium tier: max 1920x1080 landscape, 1080x1920 portrait
-        const landscapeMax = Size(1920, 1080);
-        const portraitMax = Size(1080, 1920);
+      group('iPhone 11-13 returns medium memory tier', () {
+        test('iPhone11,8 (iPhone 11)', () {
+          final tier = classifier.classifyIOSDevice('iPhone11,8');
+          expect(tier, MemoryTier.medium);
+        });
 
-        expect(landscapeMax.width * landscapeMax.height, 2073600); // 1080p
-        expect(portraitMax.width * portraitMax.height, 2073600); // 1080p
+        test('iPhone12,1 (iPhone 12 mini)', () {
+          final tier = classifier.classifyIOSDevice('iPhone12,1');
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('iPhone13,2 (iPhone 13)', () {
+          final tier = classifier.classifyIOSDevice('iPhone13,2');
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('iPhone13,4 (iPhone 13 Pro Max)', () {
+          final tier = classifier.classifyIOSDevice('iPhone13,4');
+          expect(tier, MemoryTier.medium);
+        });
       });
 
-      test('high tier caps at 4K', () {
-        // High tier: max 3840x2160 landscape, 2160x3840 portrait
-        const landscapeMax = Size(3840, 2160);
-        const portraitMax = Size(2160, 3840);
+      group('iPhone below 11 returns low memory tier', () {
+        test('iPhone10,4 (iPhone 8)', () {
+          final tier = classifier.classifyIOSDevice('iPhone10,4');
+          expect(tier, MemoryTier.low);
+        });
 
-        expect(landscapeMax.width * landscapeMax.height, 8294400); // 4K
-        expect(portraitMax.width * portraitMax.height, 8294400); // 4K
+        test('iPhone9,1 (iPhone 7)', () {
+          final tier = classifier.classifyIOSDevice('iPhone9,1');
+          expect(tier, MemoryTier.low);
+        });
+
+        test('iPhone8,1 (iPhone 6s)', () {
+          final tier = classifier.classifyIOSDevice('iPhone8,1');
+          expect(tier, MemoryTier.low);
+        });
+
+        test('iPhone1,1 (original iPhone)', () {
+          final tier = classifier.classifyIOSDevice('iPhone1,1');
+          expect(tier, MemoryTier.low);
+        });
+      });
+
+      group('iPad returns high memory tier', () {
+        test('iPad8,1 (iPad Pro 11" 3rd gen)', () {
+          final tier = classifier.classifyIOSDevice('iPad8,1');
+          expect(tier, MemoryTier.high);
+        });
+
+        test('iPad14,1 (iPad Pro 11" 4th gen)', () {
+          final tier = classifier.classifyIOSDevice('iPad14,1');
+          expect(tier, MemoryTier.high);
+        });
+
+        test('iPad6,11 (iPad 5th gen)', () {
+          final tier = classifier.classifyIOSDevice('iPad6,11');
+          expect(tier, MemoryTier.high);
+        });
+
+        test('iPad1,1 (original iPad)', () {
+          final tier = classifier.classifyIOSDevice('iPad1,1');
+          expect(tier, MemoryTier.high);
+        });
+      });
+
+      group('Edge cases return medium as fallback', () {
+        test('malformed iPhone model without comma gets parsed as version', () {
+          // "iPhone14" -> version part "14" -> parsed as major version 14
+          final tier = classifier.classifyIOSDevice('iPhone14');
+          expect(tier, MemoryTier.high); // 14 >= 14
+        });
+
+        test('iPhone model with empty version part defaults to 0', () {
+          // "iPhone,1" -> version part ",1" -> parts = ["", "1"]
+          // int.tryParse("") = null, defaults to 0
+          final tier = classifier.classifyIOSDevice('iPhone,1');
+          expect(tier, MemoryTier.low); // 0 < 11
+        });
+
+        test('iPhone model with non-numeric major version defaults to 0', () {
+          // "iPhoneX,1" -> version part "X,1" -> parts = ["X", "1"]
+          // int.tryParse("X") = null, defaults to 0
+          final tier = classifier.classifyIOSDevice('iPhoneX,1');
+          expect(tier, MemoryTier.low); // 0 < 11
+        });
+
+        test('empty model string', () {
+          final tier = classifier.classifyIOSDevice('');
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('unknown iOS device (iPod)', () {
+          final tier = classifier.classifyIOSDevice('iPod9,1');
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('unknown iOS device (Apple TV)', () {
+          final tier = classifier.classifyIOSDevice('AppleTV11,1');
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('unknown iOS device (HomePod)', () {
+          final tier = classifier.classifyIOSDevice('AudioAccessory5,1');
+          expect(tier, MemoryTier.medium);
+        });
+      });
+    });
+
+    group('Android Device Classification', () {
+      group('SDK 29+ with 64-bit support returns high memory tier', () {
+        test('Android 10 (SDK 29) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            29,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+
+        test('Android 11 (SDK 30) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            30,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+
+        test('Android 13 (SDK 33) with multiple 64-bit ABIs', () {
+          final tier = classifier.classifyAndroidDevice(
+            33,
+            ['arm64-v8a', 'x86_64'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+
+        test('Android 14 (SDK 34) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            34,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+      });
+
+      group('SDK 26-28 with 64-bit support returns medium memory tier', () {
+        test('Android 8.0 (SDK 26) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            26,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('Android 8.1 (SDK 27) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            27,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('Android 9.0 (SDK 28) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            28,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('Android 8.0 (SDK 26) with multiple 64-bit ABIs', () {
+          final tier = classifier.classifyAndroidDevice(
+            26,
+            ['arm64-v8a', 'x86_64'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+      });
+
+      group('Low-end devices return low memory tier', () {
+        test('SDK below 26 returns low', () {
+          final tier = classifier.classifyAndroidDevice(
+            25,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('Android 7.1 (SDK 25) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            25,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('Android 6.0 (SDK 23) with arm64-v8a', () {
+          final tier = classifier.classifyAndroidDevice(
+            23,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('SDK 29+ without 64-bit support (edge case)', () {
+          final tier = classifier.classifyAndroidDevice(
+            29,
+            [], // No 64-bit ABIs
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('SDK 26-28 without 64-bit support', () {
+          final tier = classifier.classifyAndroidDevice(
+            26,
+            [], // No 64-bit ABIs
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('SDK 29+ with only 32-bit ABIs (no 64-bit support)', () {
+          // Note: supported64BitAbis from AndroidDeviceInfo is already filtered
+          // to only contain 64-bit ABIs. If device only has 32-bit,
+          // supported64BitAbis will be empty.
+          final tier = classifier.classifyAndroidDevice(
+            29,
+            [], // No 64-bit ABIs (32-bit only device)
+          );
+          expect(tier, MemoryTier.low);
+        });
+      });
+
+      group('Edge cases', () {
+        test('very high SDK version (SDK 50)', () {
+          final tier = classifier.classifyAndroidDevice(
+            50,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+
+        test('very low SDK version (SDK 10)', () {
+          final tier = classifier.classifyAndroidDevice(
+            10,
+            ['armeabi'],
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('empty ABI list', () {
+          final tier = classifier.classifyAndroidDevice(
+            30,
+            [],
+          );
+          expect(tier, MemoryTier.low);
+        });
+
+        test('SDK exactly 29 with 64-bit (boundary)', () {
+          final tier = classifier.classifyAndroidDevice(
+            29,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.high);
+        });
+
+        test('SDK exactly 26 with 64-bit (boundary)', () {
+          final tier = classifier.classifyAndroidDevice(
+            26,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+
+        test('SDK 28 at upper boundary of medium tier', () {
+          final tier = classifier.classifyAndroidDevice(
+            28,
+            ['arm64-v8a'],
+          );
+          expect(tier, MemoryTier.medium);
+        });
+      });
+    });
+
+    group('Integration - Memory Tier to Pool Size Mapping', () {
+      test('documents expected pool sizes', () {
+        // This documents the relationship between MemoryTier
+        // and pool size for future reference
+        expect(MemoryTier.low.name, 'low'); // Expected pool size: 2
+        expect(MemoryTier.medium.name, 'medium'); // Expected pool size: 3
+        expect(MemoryTier.high.name, 'high'); // Expected pool size: 4
+      });
+
+      test('all memory tiers are distinct', () {
+        final tiers = MemoryTier.values.toSet();
+        expect(tiers.length, MemoryTier.values.length);
+      });
+
+      test('memory tiers are ordered by capacity', () {
+        const tiers = MemoryTier.values;
+        expect(tiers[0], MemoryTier.low);
+        expect(tiers[1], MemoryTier.medium);
+        expect(tiers[2], MemoryTier.high);
       });
     });
   });

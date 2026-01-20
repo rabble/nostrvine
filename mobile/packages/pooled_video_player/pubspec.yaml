@@ -12,6 +12,7 @@ dependencies:
   device_info_plus: ^10.1.2
   flutter:
     sdk: flutter
+  meta: ^1.17.0
   video_player: ^2.9.1
 
 dev_dependencies:

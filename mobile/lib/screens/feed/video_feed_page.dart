@@ -96,6 +96,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
             children: [
               PooledVideoFeed(
                 videos: pooledVideos,
+                feedContext: 'video_feed_${state.mode.name}',
                 // getCachedFile: openVineVideoCache.getCachedVideoSync,
                 itemBuilder: (context, video, index, isActive) {
                   final adapter = video as _PooledVideoEventAdapter;
@@ -336,51 +337,20 @@ class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
       child: PooledVideoPlayer(
         video: _PooledVideoEventAdapter(widget.video),
         autoPlay: widget.isActive,
-        builder: (context, controller, child) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // Video layer
-              if (controller != null && controller.value.isInitialized)
-                _buildVideoWidget(controller)
-              else
-                _buildLoadingPlaceholder(),
-
-              // Play/pause indicator when paused
-              if (widget.isActive &&
-                  controller != null &&
-                  controller.value.isInitialized &&
-                  !controller.value.isPlaying)
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      size: 56,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-
-              // Overlay with author info, actions, etc.
-              BlocProvider<VideoInteractionsBloc>.value(
-                value: _interactionsBloc,
-                child: VideoOverlayActions(
-                  video: widget.video,
-                  isVisible: widget.isActive,
-                  isActive: widget.isActive,
-                  hasBottomNavigation: false,
-                  contextTitle: widget.contextTitle,
-                ),
-              ),
-            ],
-          );
-        },
+        enableTapToPause: widget.isActive,
+        videoBuilder: (context, controller) => _buildVideoWidget(controller),
+        loadingBuilder: (context) => _buildLoadingPlaceholder(),
+        overlayBuilder: (context, controller) =>
+            BlocProvider<VideoInteractionsBloc>.value(
+          value: _interactionsBloc,
+          child: VideoOverlayActions(
+            video: widget.video,
+            isVisible: widget.isActive,
+            isActive: widget.isActive,
+            hasBottomNavigation: false,
+            contextTitle: widget.contextTitle,
+          ),
+        ),
         onVideoError: (error) {
           debugPrint('Video error for ${widget.video.id}: $error');
         },

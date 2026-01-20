@@ -1,9 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:io';
-import 'dart:ui' show Size;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pooled_video_player/src/constants/pool_constants.dart';
 
 /// Device memory tier for determining pool size.
 enum MemoryTier {
@@ -17,14 +16,29 @@ enum MemoryTier {
   high,
 }
 
-/// Utility for detecting device memory tier.
+/// Implementation of device memory classification.
+///
+/// This class determines the memory tier of the current device to optimize
+/// video controller pool sizing. Uses dependency injection for testability.
+///
+/// Example usage:
+/// ```dart
+/// final classifier = DeviceMemoryUtil();
+/// final tier = await classifier.getMemoryTier();
+/// final tier = await classifier.getMemoryTier();
+/// ```
 class DeviceMemoryUtil {
-  DeviceMemoryUtil._();
+  /// Creates a device memory classifier with the given device info plugin.
+  ///
+  /// If [deviceInfo] is not provided, uses the default [DeviceInfoPlugin].
+  DeviceMemoryUtil({
+    DeviceInfoPlugin? deviceInfo,
+  }) : _deviceInfo = deviceInfo ?? DeviceInfoPlugin();
 
-  static MemoryTier? _cachedTier;
-  static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  final DeviceInfoPlugin _deviceInfo;
+  MemoryTier? _cachedTier;
 
-  static Future<MemoryTier> getMemoryTier() async {
+  Future<MemoryTier> getMemoryTier() async {
     if (_cachedTier != null) {
       return _cachedTier!;
     }
@@ -37,41 +51,30 @@ class DeviceMemoryUtil {
       } else {
         _cachedTier = MemoryTier.medium;
       }
-    } on Exception catch (e) {
-      developer.log(
-        'Failed to detect memory tier, defaulting to medium: $e',
-        name: 'DeviceMemoryUtil',
-      );
+    } on Exception {
       _cachedTier = MemoryTier.medium;
     }
-
-    developer.log(
-      'Device memory tier: ${_cachedTier!.name}',
-      name: 'DeviceMemoryUtil',
-    );
 
     return _cachedTier!;
   }
 
-  static Future<MemoryTier> _getIOSMemoryTier() async {
+  Future<MemoryTier> _getIOSMemoryTier() async {
     final iosInfo = await _deviceInfo.iosInfo;
     final model = iosInfo.utsname.machine;
+    return classifyIOSDevice(model);
+  }
 
-    developer.log(
-      'iOS device model: $model',
-      name: 'DeviceMemoryUtil',
-    );
-
+  MemoryTier classifyIOSDevice(String model) {
     if (model.startsWith('iPhone')) {
       final versionPart = model.replaceFirst('iPhone', '');
       final parts = versionPart.split(',');
       if (parts.isNotEmpty) {
         final major = int.tryParse(parts[0]) ?? 0;
 
-        if (major >= 14) {
+        if (major >= MemoryTierConfig.iPhoneHighMemoryGeneration) {
           return MemoryTier.high;
         }
-        if (major >= 11) {
+        if (major >= MemoryTierConfig.iPhoneMediumMemoryGeneration) {
           return MemoryTier.medium;
         }
         return MemoryTier.low;
@@ -85,71 +88,34 @@ class DeviceMemoryUtil {
     return MemoryTier.medium;
   }
 
-  static Future<MemoryTier> _getAndroidMemoryTier() async {
+  Future<MemoryTier> _getAndroidMemoryTier() async {
     final androidInfo = await _deviceInfo.androidInfo;
-
-    developer.log(
-      'Android device: ${androidInfo.model}, '
-      'SDK: ${androidInfo.version.sdkInt}, '
-      '64-bit: ${androidInfo.supported64BitAbis.isNotEmpty}',
-      name: 'DeviceMemoryUtil',
+    return classifyAndroidDevice(
+      androidInfo.version.sdkInt,
+      androidInfo.supported64BitAbis,
     );
+  }
 
-    if (androidInfo.version.sdkInt >= 29 &&
-        androidInfo.supported64BitAbis.isNotEmpty) {
+  MemoryTier classifyAndroidDevice(
+    int sdkInt,
+    List<String> supported64BitAbis,
+  ) {
+    if (sdkInt >= MemoryTierConfig.androidHighMemorySdk &&
+        supported64BitAbis.isNotEmpty) {
       return MemoryTier.high;
     }
 
-    if (androidInfo.version.sdkInt >= 26 &&
-        androidInfo.supported64BitAbis.isNotEmpty) {
+    if (sdkInt >= MemoryTierConfig.androidMediumMemorySdk &&
+        supported64BitAbis.isNotEmpty) {
       return MemoryTier.medium;
     }
 
     return MemoryTier.low;
   }
 
-  static Future<Size> getMaxOverlayResolution(Size videoSize) async {
-    final tier = await getMemoryTier();
-
-    switch (tier) {
-      case MemoryTier.low:
-        return _scaleToMax(videoSize, 1280, 720);
-
-      case MemoryTier.medium:
-        return _scaleToMax(videoSize, 1920, 1080);
-
-      case MemoryTier.high:
-        return _scaleToMax(videoSize, 3840, 2160);
-    }
-  }
-
-  static Size _scaleToMax(Size size, double maxWidth, double maxHeight) {
-    final isPortrait = size.height > size.width;
-
-    final effectiveMaxWidth = isPortrait ? maxHeight : maxWidth;
-    final effectiveMaxHeight = isPortrait ? maxWidth : maxHeight;
-
-    if (size.width <= effectiveMaxWidth && size.height <= effectiveMaxHeight) {
-      return size;
-    }
-
-    final scaleX = effectiveMaxWidth / size.width;
-    final scaleY = effectiveMaxHeight / size.height;
-    final scale = scaleX < scaleY ? scaleX : scaleY;
-
-    return Size(
-      (size.width * scale).roundToDouble(),
-      (size.height * scale).roundToDouble(),
-    );
-  }
-
-  static Future<bool> isLowMemoryDevice() async {
-    final tier = await getMemoryTier();
-    return tier == MemoryTier.low;
-  }
-
+  /// Resets the cached memory tier. Used for testing.
   @visibleForTesting
-  static void resetCache() {
+  void resetCache() {
     _cachedTier = null;
   }
 }

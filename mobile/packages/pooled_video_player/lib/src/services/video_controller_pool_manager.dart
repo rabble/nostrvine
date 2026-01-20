@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:collection';
-
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:ui' show VoidCallback;
 
+import 'package:pooled_video_player/src/constants/pool_constants.dart';
+import 'package:pooled_video_player/src/utils/device_memory_util.dart';
 import 'package:video_player/video_player.dart';
 
-/// Function type for synchronous cache file lookup.
-/// Returns [File] if video is cached, null otherwise.
-typedef CacheFileLookup = File? Function(String videoId);
+/// Factory for creating video controllers. Allows injection for testing.
+typedef VideoControllerFactory =
+    Future<VideoPlayerController?> Function(
+      String videoUrl, {
+      File? cachedFile,
+    });
 
 /// Wraps a [VideoPlayerController] with pool metadata.
 class PooledController {
@@ -25,16 +28,16 @@ class PooledController {
   final String videoUrl;
   final DateTime assignedAt;
 
-  Duration get age => DateTime.now().difference(assignedAt);
-
   @override
-  String toString() =>
-      'PooledController(videoId: $videoId, age: ${age.inSeconds}s)';
+  String toString() => 'PooledController(videoId: $videoId)';
 }
 
 /// Manages a fixed pool of [VideoPlayerController] instances with LRU eviction.
 class VideoControllerPoolManager {
-  VideoControllerPoolManager._({required this.poolSize});
+  VideoControllerPoolManager._({
+    required this.poolSize,
+    required VideoControllerFactory controllerFactory,
+  }) : _controllerFactory = controllerFactory;
 
   static VideoControllerPoolManager? _instance;
 
@@ -52,16 +55,45 @@ class VideoControllerPoolManager {
   static bool get isInitialized => _instance != null;
 
   /// Initialize the singleton. Call early in app lifecycle (e.g., main()).
-  static Future<void> initialize({required int poolSize}) async {
+  ///
+  /// If [poolSize] is not provided, automatically detects optimal size based
+  /// on device memory tier using [memoryClassifier].
+  ///
+  /// [controllerFactory] is required and creates video player controllers.
+  /// For testing, inject a mock factory that returns test controllers.
+  ///
+  /// [memoryClassifier] can be provided for testing. If not provided, uses
+  /// [DeviceMemoryUtil] for automatic device tier detection.
+  static Future<VideoControllerPoolManager> initialize({
+    required VideoControllerFactory controllerFactory,
+    int? poolSize,
+    DeviceMemoryUtil? memoryClassifier,
+  }) async {
     if (_instance != null) {
-      developer.log(
-        'Pool already initialized, disposing and recreating',
-        name: 'VideoControllerPoolManager',
-      );
       await _instance!.dispose();
     }
-    _instance = VideoControllerPoolManager._(poolSize: poolSize);
+
+    final classifier = memoryClassifier ?? DeviceMemoryUtil();
+    final effectivePoolSize = poolSize ?? await _getDefaultPoolSize(classifier);
+
+    _instance = VideoControllerPoolManager._(
+      poolSize: effectivePoolSize,
+      controllerFactory: controllerFactory,
+    );
     await _instance!._initialize();
+    return _instance!;
+  }
+
+  /// Get default pool size based on device memory tier.
+  static Future<int> _getDefaultPoolSize(
+    DeviceMemoryUtil classifier,
+  ) async {
+    final tier = await classifier.getMemoryTier();
+    return switch (tier) {
+      MemoryTier.low => MemoryTierConfig.lowMemoryPoolSize,
+      MemoryTier.medium => MemoryTierConfig.mediumMemoryPoolSize,
+      MemoryTier.high => MemoryTierConfig.highMemoryPoolSize,
+    };
   }
 
   /// Reset the singleton (useful for testing).
@@ -71,6 +103,9 @@ class VideoControllerPoolManager {
   }
 
   final int poolSize;
+
+  /// Custom controller factory for testing.
+  final VideoControllerFactory _controllerFactory;
 
   final Map<String, PooledController> _pool = {};
 
@@ -88,15 +123,16 @@ class VideoControllerPoolManager {
 
   final Map<String, DateTime> _failedUrls = {};
 
-  static const _failedUrlCacheDuration = Duration(minutes: 5);
+  static const Duration _failedUrlCacheDuration =
+      PoolConstants.failedUrlCacheDuration;
 
   bool _isInitialized = false;
 
   bool _isDisposed = false;
 
-  final Set<VoidCallback> _listeners = {};
+  final Set<VoidCallback> _listeners = <VoidCallback>{};
 
-  final Queue<Completer<void>> _waitQueue = Queue();
+  final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
 
   /// Number of concurrent video initializations currently in progress.
   int _activeInitializations = 0;
@@ -104,7 +140,29 @@ class VideoControllerPoolManager {
   /// Maximum concurrent initializations allowed.
   /// Allows active video + 3 prewarms to init simultaneously.
   /// Higher value helps with short videos where users scroll quickly.
-  static const _maxConcurrentInitializations = 4;
+  static const int _maxConcurrentInitializations =
+      PoolConstants.maxConcurrentInitializations;
+
+  /// Video IDs whose acquisition has been cancelled.
+  /// Used to abort in-flight controller initializations during fast scroll.
+  final Set<String> _cancelledVideoIds = <String>{};
+
+  /// Video IDs currently being initialized (in-flight requests).
+  final Set<String> _inFlightVideoIds = <String>{};
+
+  /// Distance threshold for cancelling distant in-flight requests during scroll.
+  static const int _cancelDistanceThreshold =
+      PoolConstants.distanceCancellationThreshold;
+
+  /// Feed context tracking for multi-feed isolation.
+  /// Active feed context - controllers for this context are prioritized.
+  String? _activeFeedContext;
+
+  /// Maps feed context IDs to sets of video IDs belonging to that context.
+  final Map<String, Set<String>> _feedContextVideos = <String, Set<String>>{};
+
+  /// Paused feed contexts - controllers in paused contexts are protected.
+  final Set<String> _pausedContexts = <String>{};
 
   /// Add a listener for pool state changes. Returns unsubscribe function.
   VoidCallback addPoolChangeListener(VoidCallback listener) {
@@ -122,9 +180,58 @@ class VideoControllerPoolManager {
 
   Set<String> get prewarmVideoIds => Set.unmodifiable(_prewarmVideoIds);
 
+  /// Returns the currently active feed context, if any.
+  ///
+  /// Useful for debugging multi-feed scenarios to understand which feed
+  /// currently has priority for controller retention.
+  String? get activeFeedContext => _activeFeedContext;
+
   /// Register a video's position in the feed for distance-aware eviction.
   void registerVideoIndex(String videoId, int index) {
     _videoIndexMap[videoId] = index;
+  }
+
+  /// Set the active feed context. Controllers for this context are prioritized
+  /// for retention during eviction.
+  ///
+  /// Pass null to clear the active context.
+  void setActiveFeedContext(String? contextId) {
+    _activeFeedContext = contextId;
+    _notifyListeners();
+  }
+
+  /// Register a video as belonging to a specific feed context.
+  ///
+  /// This allows the pool to understand which videos belong to which feed
+  /// and make smarter eviction decisions when switching between feeds.
+  void registerVideoForContext(String videoId, String contextId) {
+    _feedContextVideos.putIfAbsent(contextId, () => {}).add(videoId);
+  }
+
+  /// Pause a feed context. Controllers for videos in paused contexts are
+  /// protected from eviction until the context is resumed or cleared.
+  ///
+  /// Use this when navigating away from a feed to preserve its controllers.
+  void pauseFeedContext(String contextId) {
+    _pausedContexts.add(contextId);
+    _notifyListeners();
+  }
+
+  /// Resume a feed context, allowing normal eviction of its videos.
+  void resumeFeedContext(String contextId) {
+    _pausedContexts.remove(contextId);
+    _notifyListeners();
+  }
+
+  /// Clear all videos for a feed context. Call when a feed is permanently
+  /// destroyed (not just navigated away).
+  ///
+  /// Does not immediately evict controllers - they will be evicted naturally
+  /// via LRU when needed.
+  void clearFeedContext(String contextId) {
+    _feedContextVideos.remove(contextId);
+    _pausedContexts.remove(contextId);
+    _notifyListeners();
   }
 
   VideoPlayerController? getController(String videoId) {
@@ -136,14 +243,43 @@ class VideoControllerPoolManager {
 
   Future<void> _initialize() async {
     if (_isInitialized) return;
-
-    developer.log(
-      'Initializing video controller pool (size: $poolSize)',
-      name: 'VideoControllerPoolManager',
-    );
-
     _isInitialized = true;
   }
+
+  /// Cancel a pending acquisition for [videoId].
+  ///
+  /// If the video is currently being initialized, the acquisition will be
+  /// aborted and the controller will not be added to the pool.
+  void cancelAcquisition(String videoId) {
+    if (_inFlightVideoIds.contains(videoId)) {
+      _cancelledVideoIds.add(videoId);
+    }
+  }
+
+  /// Cancel all in-flight acquisitions for videos far from [currentIndex].
+  ///
+  /// This is useful during fast scrolling to abort requests for videos
+  /// that are no longer relevant.
+  void cancelDistantInFlightRequests(int currentIndex) {
+    final videosToCancel = <String>[];
+
+    for (final videoId in _inFlightVideoIds) {
+      if (videoId == _activeVideoId) continue;
+
+      final index = _videoIndexMap[videoId];
+      if (index != null) {
+        final distance = (index - currentIndex).abs();
+        if (distance > _cancelDistanceThreshold) {
+          videosToCancel.add(videoId);
+        }
+      }
+    }
+
+    videosToCancel.forEach(cancelAcquisition);
+  }
+
+  /// Returns the set of video IDs currently being initialized.
+  Set<String> get inFlightVideoIds => Set.unmodifiable(_inFlightVideoIds);
 
   bool _isUrlFailed(String videoUrl) {
     final failedAt = _failedUrls[videoUrl];
@@ -157,16 +293,6 @@ class VideoControllerPoolManager {
     return true;
   }
 
-  void _markUrlFailed(String videoUrl) {
-    _failedUrls[videoUrl] = DateTime.now();
-    if (_failedUrls.length > 100) {
-      final now = DateTime.now();
-      _failedUrls.removeWhere(
-        (_, failedAt) => now.difference(failedAt) > _failedUrlCacheDuration,
-      );
-    }
-  }
-
   /// Acquire a controller for [videoId]. Uses LRU eviction when pool is full.
   ///
   /// If [getCachedFile] is provided, it will be used to check if the video
@@ -175,31 +301,25 @@ class VideoControllerPoolManager {
   Future<PooledController?> acquireController({
     required String videoId,
     required String videoUrl,
-    CacheFileLookup? getCachedFile,
+    File? Function(String videoId)? getCachedFile,
   }) async {
     if (_isDisposed) {
-      developer.log('Attempted to acquire controller from disposed pool');
       return null;
     }
 
     if (_isUrlFailed(videoUrl)) {
-      developer.log(
-        'Skipping $videoId - URL in failed cache',
-        name: 'VideoControllerPoolManager',
-      );
       return null;
     }
 
     if (_pool.containsKey(videoId)) {
       _updateLRU(videoId);
       final pooled = _pool[videoId]!;
-      developer.log(
-        'Reusing existing controller for $videoId',
-        name: 'VideoControllerPoolManager',
-      );
       _notifyListeners();
       return pooled;
     }
+
+    // Track this video as in-flight
+    _inFlightVideoIds.add(videoId);
 
     // Wait if at max concurrent initializations
     if (_activeInitializations >= _maxConcurrentInitializations) {
@@ -210,13 +330,14 @@ class VideoControllerPoolManager {
     _activeInitializations++;
 
     try {
+      // Check if acquisition was cancelled while waiting
+      if (_cancelledVideoIds.remove(videoId)) {
+        return null;
+      }
+
       if (_pool.containsKey(videoId)) {
         _updateLRU(videoId);
         final pooled = _pool[videoId]!;
-        developer.log(
-          'Reusing controller (after lock) for $videoId',
-          name: 'VideoControllerPoolManager',
-        );
         _notifyListeners();
         return pooled;
       }
@@ -228,12 +349,6 @@ class VideoControllerPoolManager {
         if (!evicted) {
           evictionAttempts++;
           if (evictionAttempts >= maxEvictionAttempts) {
-            developer.log(
-              'Pool full and cannot evict after $evictionAttempts attempts '
-              '(pool: ${_pool.length}/$poolSize, active: $_activeVideoId, '
-              'prewarm: $_prewarmVideoIds). Returning null for $videoId.',
-              name: 'VideoControllerPoolManager',
-            );
             return null;
           }
           await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -242,27 +357,25 @@ class VideoControllerPoolManager {
 
       // Check cache first for instant playback
       final cachedFile = getCachedFile?.call(videoId);
-      final VideoPlayerController? controller;
 
-      if (cachedFile != null) {
-        developer.log(
-          '⚡ Cache hit for $videoId - using local file',
-          name: 'VideoControllerPoolManager',
-        );
-        controller = await _createFileController(cachedFile);
-      } else {
-        developer.log(
-          '🌐 Cache miss for $videoId - fetching from network',
-          name: 'VideoControllerPoolManager',
-        );
-        controller = await _createNetworkController(videoUrl);
-      }
+      // Use the injected controller factory
+      final controller = await _controllerFactory(
+        videoUrl,
+        cachedFile: cachedFile,
+      );
 
       if (controller == null) {
-        developer.log(
-          'Failed to create controller for $videoId',
-          name: 'VideoControllerPoolManager',
-        );
+        return null;
+      }
+
+      // Check if acquisition was cancelled during controller creation
+      if (_cancelledVideoIds.remove(videoId)) {
+        // Dispose the controller we just created since we don't need it
+        try {
+          await controller.dispose();
+        } on Exception {
+          // Ignore disposal errors
+        }
         return null;
       }
 
@@ -276,14 +389,13 @@ class VideoControllerPoolManager {
       _pool[videoId] = pooled;
       _updateLRU(videoId);
 
-      developer.log(
-        'Assigned controller to $videoId (pool: ${_pool.length}/$poolSize)',
-        name: 'VideoControllerPoolManager',
-      );
-
       _notifyListeners();
       return pooled;
     } finally {
+      // Clean up in-flight tracking
+      _inFlightVideoIds.remove(videoId);
+      _cancelledVideoIds.remove(videoId);
+
       _activeInitializations--;
       // Wake up next waiter if any
       if (_waitQueue.isNotEmpty) {
@@ -303,32 +415,35 @@ class VideoControllerPoolManager {
     }
 
     _prewarmVideoIds.remove(videoId);
-
-    developer.log(
-      'Released controller for $videoId (keeping in pool)',
-      name: 'VideoControllerPoolManager',
-    );
-
     _notifyListeners();
   }
 
   /// Set currently active video. Active videos are never evicted.
-  /// Optionally pass [index] for distance-aware eviction.
-  void setActiveVideo(String videoId, {int? index}) {
+  ///
+  /// Optionally pass [index] for distance-aware eviction. If [cancelDistant]
+  /// is true (default), in-flight requests for videos far from the current
+  /// position will be cancelled.
+  void setActiveVideo(
+    String videoId, {
+    int? index,
+    bool cancelDistant = true,
+  }) {
     if (_activeVideoId == videoId && _currentScrollIndex == index) return;
 
+    final previousIndex = _currentScrollIndex;
     _activeVideoId = videoId;
     if (index != null) {
       _currentScrollIndex = index;
       _videoIndexMap[videoId] = index;
+
+      // Cancel distant in-flight requests during fast scroll
+      if (cancelDistant &&
+          previousIndex != null &&
+          (index - previousIndex).abs() > 2) {
+        cancelDistantInFlightRequests(index);
+      }
     }
     _updateLRU(videoId);
-
-    developer.log(
-      'Set active video: $videoId (index: $index)',
-      name: 'VideoControllerPoolManager',
-    );
-
     _notifyListeners();
   }
 
@@ -348,37 +463,15 @@ class VideoControllerPoolManager {
       ..clear()
       ..addAll(limitedVideoIds);
 
-    if (videoIds.length > maxPrewarm) {
-      developer.log(
-        'Prewarm limited from ${videoIds.length} to $maxPrewarm videos',
-        name: 'VideoControllerPoolManager',
-      );
-    }
-
-    developer.log(
-      'Set prewarm videos: $limitedVideoIds (currentIndex: $currentIndex)',
-      name: 'VideoControllerPoolManager',
-    );
-
     _notifyListeners();
   }
 
   /// Release up to 50% of controllers under memory pressure.
   Future<void> handleMemoryPressure() async {
-    developer.log(
-      'Memory pressure detected - releasing controllers',
-      name: 'VideoControllerPoolManager',
-    );
-
     if (_pool.isEmpty) return;
 
     final targetSize = (_pool.length / 2).ceil().clamp(1, _pool.length);
     final releaseCount = _pool.length - targetSize;
-
-    developer.log(
-      'Releasing $releaseCount controllers (from ${_pool.length} to $targetSize)',
-      name: 'VideoControllerPoolManager',
-    );
 
     final sortedIds = _getSortedByPriority();
 
@@ -390,147 +483,64 @@ class VideoControllerPoolManager {
       released++;
     }
 
-    developer.log(
-      'Released $released controllers, pool size now: ${_pool.length}',
-      name: 'VideoControllerPoolManager',
-    );
-
     _notifyListeners();
   }
 
   /// Dispose all controllers and reset pool state.
   Future<void> clearPool() async {
-    developer.log(
-      'Clearing pool - disposing ${_pool.length} controllers',
-      name: 'VideoControllerPoolManager',
-    );
-
-    for (final pooled in _pool.values) {
-      try {
-        await pooled.controller.dispose();
-      } on Exception catch (e) {
-        developer.log(
-          'Error disposing controller ${pooled.videoId}: $e',
-          name: 'VideoControllerPoolManager',
-        );
-      }
-    }
-
-    _pool.clear();
-    _lruMap.clear();
-    _activeVideoId = null;
-    _prewarmVideoIds.clear();
-    _currentScrollIndex = null;
-    _videoIndexMap.clear();
-
-    developer.log(
-      'Pool cleared successfully',
-      name: 'VideoControllerPoolManager',
-    );
-
+    await _disposeAllControllers();
+    _resetState();
     _notifyListeners();
   }
 
   Future<void> dispose() async {
     if (_isDisposed) return;
 
-    developer.log(
-      'Disposing video controller pool',
-      name: 'VideoControllerPoolManager',
-    );
-
-    for (final pooled in _pool.values) {
-      try {
-        await pooled.controller.dispose();
-      } on Exception catch (e) {
-        developer.log(
-          'Error disposing controller ${pooled.videoId}: $e',
-          name: 'VideoControllerPoolManager',
-        );
-      }
-    }
-
-    _pool.clear();
-    _lruMap.clear();
-    _prewarmVideoIds.clear();
-    _activeVideoId = null;
-    _currentScrollIndex = null;
-    _videoIndexMap.clear();
+    await _disposeAllControllers();
+    _resetState();
     _isDisposed = true;
     _listeners.clear();
   }
 
-  /// Create a controller from a local cached file.
-  /// Uses shorter timeout (5s) since local file access is faster.
-  Future<VideoPlayerController?> _createFileController(File file) async {
-    try {
-      final controller = VideoPlayerController.file(file);
-
-      await controller.initialize().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          throw TimeoutException(
-            'File video initialization timed out after 5s',
-            const Duration(seconds: 5),
-          );
-        },
-      );
-
-      await controller.setLooping(true);
-
-      return controller;
-    } on Exception catch (e) {
-      developer.log(
-        'Failed to create file controller for ${file.path}: $e',
-        name: 'VideoControllerPoolManager',
-      );
-      return null;
-    }
-  }
-
-  /// Create a controller from a network URL.
-  /// Uses longer timeout (15s) for network fetching.
-  Future<VideoPlayerController?> _createNetworkController(
-    String videoUrl,
-  ) async {
-    try {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-
-      await controller.initialize().timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw TimeoutException(
-            'Video initialization timed out after 15s',
-            const Duration(seconds: 15),
-          );
-        },
-      );
-
-      await controller.setLooping(true);
-
-      return controller;
-    } on Exception catch (e) {
-      developer.log(
-        'Failed to create network controller for $videoUrl: $e',
-        name: 'VideoControllerPoolManager',
-      );
-      _markUrlFailed(videoUrl);
-      return null;
-    }
-  }
-
   /// Distance-aware eviction: prefer evicting videos furthest from current
   /// scroll position to keep nearby videos ready for smooth playback.
+  ///
+  /// With feed context tracking, prioritizes evicting videos from:
+  /// 1. Inactive/unpaused contexts (furthest first)
+  /// 2. Active context (furthest first)
+  /// 3. Prewarmed videos in inactive contexts (furthest first)
+  /// 4. Prewarmed videos in active context (last resort, furthest first)
+  /// 5. Never evicts videos in paused contexts
   Future<bool> _evictLRU() async {
     if (_lruMap.isEmpty) return false;
 
     String? victimId;
     var maxDistance = -1;
 
-    // First pass: Find cached (non-protected) video furthest from current pos
+    // Helper: Check if video is in a paused context
+    bool isInPausedContext(String videoId) {
+      for (final pausedContext in _pausedContexts) {
+        final videos = _feedContextVideos[pausedContext];
+        if (videos != null && videos.contains(videoId)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Helper: Check if video is in active context
+    bool isInActiveContext(String videoId) {
+      if (_activeFeedContext == null) return false;
+      final videos = _feedContextVideos[_activeFeedContext];
+      return videos != null && videos.contains(videoId);
+    }
+
+    // First pass: Non-protected videos NOT in active/paused contexts
     for (final id in _lruMap.keys) {
       if (id == _activeVideoId) continue;
       if (_prewarmVideoIds.contains(id)) continue;
+      if (isInPausedContext(id)) continue;
+      if (isInActiveContext(id)) continue;
 
       final distance = _getDistanceFromCurrent(id);
       if (distance > maxDistance) {
@@ -539,12 +549,48 @@ class VideoControllerPoolManager {
       }
     }
 
-    // Second pass: If no cached videos, evict prewarmed video furthest away
+    // Second pass: Non-protected videos in active context (but not paused)
+    if (victimId == null) {
+      maxDistance = -1;
+      for (final id in _lruMap.keys) {
+        if (id == _activeVideoId) continue;
+        if (_prewarmVideoIds.contains(id)) continue;
+        if (isInPausedContext(id)) continue;
+        if (!isInActiveContext(id)) continue; // Only active context now
+
+        final distance = _getDistanceFromCurrent(id);
+        if (distance > maxDistance) {
+          maxDistance = distance;
+          victimId = id;
+        }
+      }
+    }
+
+    // Third pass: Prewarmed videos NOT in active/paused contexts
     if (victimId == null && _prewarmVideoIds.isNotEmpty) {
       maxDistance = -1;
       for (final id in _prewarmVideoIds) {
         if (id == _activeVideoId) continue;
         if (!_pool.containsKey(id)) continue;
+        if (isInPausedContext(id)) continue;
+        if (isInActiveContext(id)) continue;
+
+        final distance = _getDistanceFromCurrent(id);
+        if (distance > maxDistance) {
+          maxDistance = distance;
+          victimId = id;
+        }
+      }
+    }
+
+    // Fourth pass: Prewarmed videos in active context (last resort)
+    if (victimId == null && _prewarmVideoIds.isNotEmpty) {
+      maxDistance = -1;
+      for (final id in _prewarmVideoIds) {
+        if (id == _activeVideoId) continue;
+        if (!_pool.containsKey(id)) continue;
+        if (isInPausedContext(id)) continue;
+        if (!isInActiveContext(id)) continue; // Only active context now
 
         final distance = _getDistanceFromCurrent(id);
         if (distance > maxDistance) {
@@ -555,20 +601,8 @@ class VideoControllerPoolManager {
     }
 
     if (victimId == null) {
-      developer.log(
-        'Cannot evict: all controllers are protected '
-        '(active: $_activeVideoId, prewarm: $_prewarmVideoIds)',
-        name: 'VideoControllerPoolManager',
-      );
       return false;
     }
-
-    final victimIndex = _videoIndexMap[victimId];
-    developer.log(
-      'Evicting $victimId (index: $victimIndex, '
-      'distance: $maxDistance from current: $_currentScrollIndex)',
-      name: 'VideoControllerPoolManager',
-    );
 
     await _evictController(victimId);
     return true;
@@ -598,22 +632,40 @@ class VideoControllerPoolManager {
         await pooled.controller.pause();
       }
       await pooled.controller.dispose();
-    } on Exception catch (e) {
-      developer.log(
-        'Error evicting controller $videoId: $e',
-        name: 'VideoControllerPoolManager',
-      );
+    } on Exception {
+      // Ignore disposal errors
     }
-
-    developer.log(
-      'Evicted controller for $videoId',
-      name: 'VideoControllerPoolManager',
-    );
   }
 
   void _updateLRU(String videoId) {
     _lruMap.remove(videoId);
     _lruMap[videoId] = DateTime.now();
+  }
+
+  /// Dispose all controllers in the pool.
+  Future<void> _disposeAllControllers() async {
+    for (final pooled in _pool.values) {
+      try {
+        await pooled.controller.dispose();
+      } on Exception {
+        // Ignore disposal errors
+      }
+    }
+  }
+
+  /// Reset all pool state.
+  void _resetState() {
+    _pool.clear();
+    _lruMap.clear();
+    _activeVideoId = null;
+    _prewarmVideoIds.clear();
+    _currentScrollIndex = null;
+    _videoIndexMap.clear();
+    _cancelledVideoIds.clear();
+    _inFlightVideoIds.clear();
+    _activeFeedContext = null;
+    _feedContextVideos.clear();
+    _pausedContexts.clear();
   }
 
   List<String> _getSortedByPriority() {

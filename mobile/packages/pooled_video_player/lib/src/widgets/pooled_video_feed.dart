@@ -22,10 +22,15 @@ typedef OnActiveVideoChanged =
     );
 
 /// Vertical scrolling video feed with automatic controller preloading.
+///
+/// Supports feed context tracking for multi-feed apps. When [feedContext] is
+/// provided, the pool manager will prioritize retaining controllers for this
+/// feed's videos when switching between different feeds.
 class PooledVideoFeed extends StatefulWidget {
   const PooledVideoFeed({
     required this.videos,
     required this.itemBuilder,
+    this.feedContext,
     this.initialIndex = 0,
     this.onActiveVideoChanged,
     this.scrollDirection = Axis.vertical,
@@ -36,6 +41,15 @@ class PooledVideoFeed extends StatefulWidget {
   final List<PooledVideo> videos;
 
   final VideoFeedItemBuilder itemBuilder;
+
+  /// Optional feed context identifier for multi-feed isolation.
+  ///
+  /// When provided, videos in this feed will be tracked under this context,
+  /// and the pool manager will prioritize keeping controllers for this feed
+  /// when navigating between different feeds.
+  ///
+  /// Example: 'home_feed', 'explore_feed', 'profile_feed'
+  final String? feedContext;
 
   final int initialIndex;
 
@@ -69,6 +83,11 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     if (VideoControllerPoolManager.isInitialized) {
       _pool = VideoControllerPoolManager.instance;
 
+      // Set feed context if provided
+      if (widget.feedContext != null) {
+        _pool!.setActiveFeedContext(widget.feedContext);
+      }
+
       // Immediately start prewarming current + adjacent (no debounce).
       // With parallel initialization, both can init simultaneously.
       _immediatePrewarm(_currentIndex);
@@ -92,6 +111,12 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     for (var i = index; i <= index + 3 && i < videos.length; i++) {
       // Register index for distance-aware eviction
       _pool!.registerVideoIndex(videos[i].id, i);
+
+      // Register video for feed context if provided
+      if (widget.feedContext != null) {
+        _pool!.registerVideoForContext(videos[i].id, widget.feedContext!);
+      }
+
       unawaited(
         _pool!.acquireController(
           videoId: videos[i].id,
@@ -135,6 +160,12 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
         final nextVideo = videos[nextIndex];
         // Register index for distance-aware eviction
         _pool!.registerVideoIndex(nextVideo.id, nextIndex);
+
+        // Register video for feed context if provided
+        if (widget.feedContext != null) {
+          _pool!.registerVideoForContext(nextVideo.id, widget.feedContext!);
+        }
+
         prewarmIds.add(nextVideo.id);
         unawaited(
           _pool!.acquireController(
@@ -152,6 +183,12 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
       final prevVideo = videos[prevIndex];
       // Register index for distance-aware eviction
       _pool!.registerVideoIndex(prevVideo.id, prevIndex);
+
+      // Register video for feed context if provided
+      if (widget.feedContext != null) {
+        _pool!.registerVideoForContext(prevVideo.id, widget.feedContext!);
+      }
+
       prewarmIds.add(prevVideo.id);
       unawaited(
         _pool!.acquireController(
@@ -207,6 +244,12 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   void dispose() {
     _debounceTimer?.cancel();
     _pageController.dispose();
+
+    // Pause feed context to preserve controllers when navigating away
+    if (widget.feedContext != null && _pool != null) {
+      _pool!.pauseFeedContext(widget.feedContext!);
+    }
+
     super.dispose();
   }
 }
