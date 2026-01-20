@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_page_view.dart';
@@ -41,28 +42,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-          buildWhen: (prev, curr) => prev.mode != curr.mode,
-          builder: (context, state) => Text(
-            state.mode.name.toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        actions: [
-          _FeedModeSwitch(),
-          // Refresh button
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<VideoFeedBloc>().add(
-                const VideoFeedRefreshRequested(),
-              );
-            },
-          ),
-        ],
-      ),
+      extendBodyBehindAppBar: true,
       body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
         builder: (context, state) {
           // Loading state (including initial state before first load)
@@ -94,6 +74,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                       )
                     : null,
               ),
+              const _FeedModeSwitch(),
               // Loading more indicator
               if (state.isLoadingMore)
                 const Positioned(
@@ -107,23 +88,6 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                     ),
                   ),
                 ),
-              // Debug info overlay
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Videos: ${state.videos.length} | '
-                    'HasMore: ${state.hasMore}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
-              ),
             ],
           );
         },
@@ -135,13 +99,79 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
 class _FeedModeSwitch extends StatelessWidget {
   const _FeedModeSwitch();
 
+  static const _feedModeLabels = {
+    FeedMode.latest: 'New',
+    FeedMode.popular: 'Popular',
+    FeedMode.home: 'Following',
+  };
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<VideoFeedBloc, VideoFeedState>(
-      buildWhen: (prev, curr) => prev.mode != curr.mode,
-      builder: (context, state) => IconButton(
-        icon: const Icon(Icons.filter_list, color: Colors.white),
-        onPressed: () => _showFeedModeBottomSheet(context, state.mode),
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0x3D000000), // rgba(0,0,0,0.24)
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 16),
+            child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+              buildWhen: (prev, curr) => prev.mode != curr.mode,
+              builder: (context, state) {
+                return Center(
+                  child: GestureDetector(
+                    onTap: () => _showFeedModeBottomSheet(context, state.mode),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _feedModeLabels[state.mode] ?? state.mode.name,
+                          style: VineTheme.titleFont(fontSize: 28).copyWith(
+                            shadows: [
+                              const Shadow(
+                                color: Color(0x1A000000),
+                                offset: Offset(1, 1),
+                                blurRadius: 1,
+                              ),
+                              const Shadow(
+                                color: Color(0x1A000000),
+                                offset: Offset(0.4, 0.4),
+                                blurRadius: 0.6,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: SvgPicture.asset(
+                            'assets/icon/CaretDown.svg',
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
