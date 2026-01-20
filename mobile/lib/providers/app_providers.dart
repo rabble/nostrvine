@@ -25,6 +25,7 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
+import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -1048,14 +1049,17 @@ CommentsRepository commentsRepository(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
     contentFilter: createBlocklistFilter(blocklistService),
+    videoEventFilter: createNsfwFilter(ageVerificationService),
   );
 }
 
