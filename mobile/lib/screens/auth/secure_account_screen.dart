@@ -67,37 +67,37 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-      final keyManager = ref.watch(nostrKeyManagerProvider);
-      final nsec = keyManager.exportAsNsec();
 
-      final (result, verifier) = await oauth.headlessRegister(
-        email: email,
-        nsec: nsec,
-        password: password,
-        scope: 'policy:full',
-      );
-
-      if (!result.success) {
-        setErrorMessage(result.error ?? 'Registration failed');
-        return;
-      }
-
-      if (result.verificationRequired && result.deviceCode != null) {
-        // Store for polling and show verification UI
-        setPendingVerification(
-          deviceCode: result.deviceCode!,
-          verifier: verifier,
+      ref.read(authServiceProvider).currentKeyContainer?.withNsec((nsec) async {
+        final (result, verifier) = await oauth.headlessRegister(
           email: email,
+          nsec: nsec,
+          password: password,
+          scope: 'policy:full',
         );
 
-        startVerificationPolling(oauth);
-
-        if (mounted) {
-          showVerificationDialog();
+        if (!result.success) {
+          setErrorMessage(result.error ?? 'Registration failed');
+          return;
         }
-      } else {
-        setErrorMessage('Registration complete. Please check your email.');
-      }
+
+        if (result.verificationRequired && result.deviceCode != null) {
+          // Store for polling and show verification UI
+          setPendingVerification(
+            deviceCode: result.deviceCode!,
+            verifier: verifier,
+            email: email,
+          );
+
+          startVerificationPolling(oauth);
+
+          if (mounted) {
+            showVerificationDialog();
+          }
+        } else {
+          setErrorMessage('Registration complete. Please check your email.');
+        }
+      });
     } catch (e) {
       Log.error(
         'Auth error: $e',

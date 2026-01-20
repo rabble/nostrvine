@@ -1,6 +1,8 @@
 // ABOUTME: Unified settings hub providing access to all app configuration
 // ABOUTME: Central entry point for profile, relay, media server, and notification settings
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -560,11 +562,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       onConfirm: () async {
         // Show loading indicator
         if (!context.mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+
+        // show busy dialog, but don't await it as the code needs to continue
+        // to signOut the user and deleteKeys. Changing the authentication state
+        // will redirect the user away and cause this to close.
+        unawaited(
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            ),
           ),
         );
 
