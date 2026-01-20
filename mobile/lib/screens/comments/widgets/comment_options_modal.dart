@@ -19,45 +19,42 @@ class CommentOptionsModal {
   static Future<bool?> show(BuildContext modalContext) {
     return VineBottomSheet.show<bool>(
       context: modalContext,
-      initialChildSize: 0.2,
-      minChildSize: 0.2,
+      expanded: false,
       title: Text(
         'Options',
         style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
       ),
-      children: [
-        Semantics(
-          identifier: 'delete_comment_option',
-          button: true,
-          label: 'Delete comment',
-          child: GestureDetector(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    'assets/icon/delete.svg',
-                    height: 18,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.red,
-                      BlendMode.srcIn,
-                    ),
+      body: Semantics(
+        identifier: 'delete_comment_option',
+        button: true,
+        label: 'Delete comment',
+        child: GestureDetector(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/delete.svg',
+                  height: 18,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.red,
+                    BlendMode.srcIn,
                   ),
-                  SizedBox(width: 16),
-                  Text(
-                    'Delete ',
-                    style: VineTheme.bodyFont(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w800,
-                    ),
+                ),
+                SizedBox(width: 16),
+                Text(
+                  'Delete ',
+                  style: VineTheme.bodyFont(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            onTap: () => modalContext.pop(true),
           ),
+          onTap: () => modalContext.pop(true),
         ),
-      ],
+      ),
     );
   }
 }

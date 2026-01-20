@@ -6,15 +6,16 @@ import 'package:flutter/material.dart';
 
 /// Header component for [VineBottomSheet].
 ///
-/// Combines drag handle and title section as per Figma design.
+/// Combines drag handle and optional title section as per Figma design.
 /// Uses Bricolage Grotesque bold font at 24px for title.
+/// When title is null, only the drag handle is displayed.
 class VineBottomSheetHeader extends StatelessWidget {
-  /// Creates a [VineBottomSheetHeader] with the given title and optional
-  /// trailing widget.
-  const VineBottomSheetHeader({required this.title, this.trailing, super.key});
+  /// Creates a [VineBottomSheetHeader] with an optional title and trailing
+  /// widget.
+  const VineBottomSheetHeader({this.title, this.trailing, super.key});
 
-  /// Title widget displayed on the left
-  final Widget title;
+  /// Optional title widget displayed centered below the drag handle.
+  final Widget? title;
 
   /// Optional trailing widget on the right (e.g., badge, button)
   final Widget? trailing;
@@ -22,7 +23,12 @@ class VineBottomSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 16),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 8,
+        bottom: title != null ? 16 : 24,
+      ),
       child: Column(
         children: [
           // Drag handle
@@ -35,23 +41,26 @@ class VineBottomSheetHeader extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20),
+          // Title section (only shown when title is provided)
+          if (title != null) ...[
+            const SizedBox(height: 20),
 
-          // Title (centered) + optional trailing actions
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Centered title
-              Center(child: title),
+            // Title (centered) + optional trailing actions
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Centered title
+                Center(child: title),
 
-              // Trailing widget positioned on the right
-              if (trailing != null)
-                Positioned(
-                  right: 0,
-                  child: SizedBox(width: 62, child: trailing),
-                ),
-            ],
-          ),
+                // Trailing widget positioned on the right
+                if (trailing != null)
+                  Positioned(
+                    right: 0,
+                    child: SizedBox(width: 62, child: trailing),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

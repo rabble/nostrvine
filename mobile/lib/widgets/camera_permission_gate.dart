@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 
 /// A declarative gate widget that handles camera/microphone permissions.
 ///
@@ -175,7 +177,7 @@ class _CameraPlaceholderScaffold extends StatelessWidget {
   }
 }
 
-/// Camera placeholder with top progress bar
+/// Camera placeholder
 class _CameraPlaceholder extends StatelessWidget {
   const _CameraPlaceholder({required this.onClose});
 
@@ -183,53 +185,14 @@ class _CameraPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
+      fit: .expand,
       children: [
-        // Top progress bar - matches camera screen style
-        Container(
-          height: 44,
-          margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-          color: VineTheme.vineGreen,
-          child: Row(
-            children: [
-              // X button
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onClose,
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.close, color: Colors.white, size: 28),
-                ),
-              ),
-              // Empty progress bar
-              Expanded(
-                child: Container(
-                  height: 24,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              // Disabled > button
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.chevron_right,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  size: 32,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Black camera preview placeholder
-        const Expanded(child: SizedBox.expand()),
+        // Top bar with close-button, clip-duration, and confirm-button
+        const VideoRecorderTopBar(),
+
+        // Bottom controls
+        const VideoRecorderBottomBar(),
       ],
     );
   }

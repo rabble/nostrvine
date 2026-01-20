@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/video_page_view.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -24,44 +25,25 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+      child: const VideoFeedView(),
     );
   }
 }
 
-class _VideoFeedView extends ConsumerStatefulWidget {
-  const _VideoFeedView();
+@visibleForTesting
+class VideoFeedView extends StatefulWidget {
+  const VideoFeedView({super.key});
 
   @override
-  ConsumerState<_VideoFeedView> createState() => _VideoFeedViewState();
+  State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-          buildWhen: (prev, curr) => prev.mode != curr.mode,
-          builder: (context, state) => Text(
-            state.mode.name.toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        actions: [
-          _FeedModeSwitch(),
-          // Refresh button
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<VideoFeedBloc>().add(
-                const VideoFeedRefreshRequested(),
-              );
-            },
-          ),
-        ],
-      ),
+      extendBodyBehindAppBar: true,
       body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
         builder: (context, state) {
           // Loading state (including initial state before first load)
@@ -93,6 +75,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                       )
                     : null,
               ),
+              const FeedModeSwitch(),
               // Loading more indicator
               if (state.isLoadingMore)
                 const Positioned(
@@ -106,72 +89,9 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                     ),
                   ),
                 ),
-              // Debug info overlay
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Videos: ${state.videos.length} | '
-                    'HasMore: ${state.hasMore}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
-              ),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _FeedModeSwitch extends StatelessWidget {
-  const _FeedModeSwitch();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<VideoFeedBloc, VideoFeedState>(
-      buildWhen: (prev, curr) => prev.mode != curr.mode,
-      builder: (context, state) => PopupMenuButton<FeedMode>(
-        icon: const Icon(Icons.filter_list, color: Colors.white),
-        color: VineTheme.cardBackground,
-        onSelected: (mode) {
-          context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
-        },
-        itemBuilder: (_) => FeedMode.values
-            .map(
-              (mode) => PopupMenuItem(
-                value: mode,
-                child: Row(
-                  children: [
-                    if (mode == state.mode)
-                      const Icon(
-                        Icons.check,
-                        color: VineTheme.vineGreen,
-                        size: 18,
-                      )
-                    else
-                      const SizedBox(width: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      mode.name.toUpperCase(),
-                      style: TextStyle(
-                        color: mode == state.mode
-                            ? VineTheme.vineGreen
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
       ),
     );
   }

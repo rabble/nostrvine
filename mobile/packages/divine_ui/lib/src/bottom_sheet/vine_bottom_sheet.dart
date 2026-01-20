@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 /// Features:
 /// - Drag handle for gesture indication
 /// - Customizable header with title and trailing actions
-/// - Scrollable content area (or custom body)
+/// - Content area (expanded or wrapped)
 /// - Optional bottom input section
 /// - Dark mode optimized with proper theming
 ///
@@ -18,34 +18,23 @@ import 'package:flutter/material.dart';
 /// [DraggableScrollableSheet] for consistent modal behavior across the app.
 class VineBottomSheet extends StatelessWidget {
   /// Creates a [VineBottomSheet] with the given parameters.
+  ///
+  /// Set [expanded] to false for content that should wrap (not fill space).
   const VineBottomSheet({
-    required this.title,
-    this.scrollController,
-    this.children,
-    this.body,
+    required this.body,
+    this.title,
     this.trailing,
     this.bottomInput,
+    this.expanded = true,
     super.key,
-  }) : assert(
-         (children != null && body == null) ||
-             (children == null && body != null),
-         'Provide either children or body, not both',
-       );
+  });
 
-  /// Title widget displayed in the header
-  final Widget title;
+  /// Optional title widget displayed in the header.
+  /// When null, only the drag handle is shown.
+  final Widget? title;
 
-  /// Scroll controller from DraggableScrollableSheet (required if using
-  /// children)
-  final ScrollController? scrollController;
-
-  /// Content widgets to display in a scrollable ListView
-  /// Use this for simple lists of widgets
-  final List<Widget>? children;
-
-  /// Custom body widget that manages its own scrolling
-  /// Use this when you need custom scroll behavior (e.g., ListView.builder)
-  final Widget? body;
+  /// The content widget to display in the bottom sheet.
+  final Widget body;
 
   /// Optional trailing widget in header (e.g., badge, button)
   final Widget? trailing;
@@ -53,34 +42,31 @@ class VineBottomSheet extends StatelessWidget {
   /// Optional bottom input section (e.g., comment input)
   final Widget? bottomInput;
 
-  /// Shows the bottom sheet as a modal with proper configuration
+  /// Whether the body should expand to fill available space.
+  /// Set to false for simple content that should wrap.
+  final bool expanded;
+
+  /// Shows the bottom sheet as a modal with proper configuration.
+  ///
+  /// Set [expanded] to false for content that should wrap (not fill space).
   static Future<T?> show<T>({
     required BuildContext context,
-    required Widget title,
-    List<Widget>? children,
-    Widget? body,
+    required Widget body,
+    Widget? title,
     Widget? trailing,
     Widget? bottomInput,
-    double initialChildSize = 0.6,
-    double minChildSize = 0.3,
-    double maxChildSize = 0.9,
+    bool expanded = true,
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: expanded,
       backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: initialChildSize,
-        minChildSize: minChildSize,
-        maxChildSize: maxChildSize,
-        builder: (context, scrollController) => VineBottomSheet(
-          title: title,
-          scrollController: scrollController,
-          trailing: trailing,
-          bottomInput: bottomInput,
-          body: body,
-          children: children,
-        ),
+      builder: (_) => VineBottomSheet(
+        title: title,
+        trailing: trailing,
+        bottomInput: bottomInput,
+        expanded: expanded,
+        body: body,
       ),
     );
   }
@@ -95,28 +81,26 @@ class VineBottomSheet extends StatelessWidget {
           topRight: Radius.circular(32),
         ),
       ),
-      child: Column(
-        children: [
-          // Header with drag handle, title, and trailing actions
-          VineBottomSheetHeader(title: title, trailing: trailing),
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            // Header with drag handle, title, and trailing actions
+            VineBottomSheetHeader(title: title, trailing: trailing),
+            if (title != null)
+              const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
-          // Content area (either managed ListView or custom body)
-          Expanded(
-            child:
-                body ??
-                ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: children!,
-                ),
-          ),
-          if (bottomInput != null)
-            const Divider(height: 2, color: VineTheme.outlinedDisabled),
+            // Content area
+            if (expanded) Expanded(child: body) else body,
 
-          // Optional bottom input
-          ?bottomInput,
-        ],
+            if (bottomInput != null)
+              const Divider(height: 2, color: VineTheme.outlinedDisabled),
+
+            // Optional bottom input
+            ?bottomInput,
+          ],
+        ),
       ),
     );
   }
