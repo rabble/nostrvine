@@ -179,23 +179,27 @@ void main() {
 
     testWidgets('floating label changes color when focused', (tester) async {
       final focusNode = FocusNode();
-      await tester.pumpWidget(buildTestWidget(
-        labelText: 'Test Label',
-        focusNode: focusNode,
-      ));
+      await tester.pumpWidget(
+        buildTestWidget(
+          labelText: 'Test Label',
+          focusNode: focusNode,
+        ),
+      );
 
       // Get the floating label style and resolve it for unfocused state
       final textField = tester.widget<TextField>(find.byType(TextField));
       final floatingStyle = textField.decoration!.floatingLabelStyle;
       expect(floatingStyle, isA<WidgetStateTextStyle>());
 
-      final unfocusedStyle = (floatingStyle! as WidgetStateTextStyle)
-          .resolve(<WidgetState>{});
+      final unfocusedStyle = (floatingStyle! as WidgetStateTextStyle).resolve(
+        <WidgetState>{},
+      );
       expect(unfocusedStyle.color, VineTheme.onSurfaceVariant);
 
       // Resolve for focused state
-      final focusedStyle = (floatingStyle as WidgetStateTextStyle)
-          .resolve(<WidgetState>{WidgetState.focused});
+      final focusedStyle = (floatingStyle as WidgetStateTextStyle).resolve(
+        <WidgetState>{WidgetState.focused},
+      );
       expect(focusedStyle.color, VineTheme.primary);
 
       focusNode.dispose();
