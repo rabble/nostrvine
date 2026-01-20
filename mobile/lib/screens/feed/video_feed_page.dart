@@ -342,15 +342,15 @@ class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
         loadingBuilder: (context) => _buildLoadingPlaceholder(),
         overlayBuilder: (context, controller) =>
             BlocProvider<VideoInteractionsBloc>.value(
-          value: _interactionsBloc,
-          child: VideoOverlayActions(
-            video: widget.video,
-            isVisible: widget.isActive,
-            isActive: widget.isActive,
-            hasBottomNavigation: false,
-            contextTitle: widget.contextTitle,
-          ),
-        ),
+              value: _interactionsBloc,
+              child: VideoOverlayActions(
+                video: widget.video,
+                isVisible: widget.isActive,
+                isActive: widget.isActive,
+                hasBottomNavigation: false,
+                contextTitle: widget.contextTitle,
+              ),
+            ),
         onVideoError: (error) {
           debugPrint('Video error for ${widget.video.id}: $error');
         },
