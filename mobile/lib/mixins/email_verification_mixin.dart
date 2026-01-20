@@ -152,11 +152,10 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
     );
   }
 
-  /// Navigate to app after verification (polling continues in background)
+  /// Skip registration and sign in automatically to trigger being
+  /// authenticated but not registered.
   void continueToApp() {
-    if (mounted) {
-      context.go('/home/0');
-    }
+    ref.read(authServiceProvider).signInAutomatically();
   }
 
   /// Exchange authorization code for tokens and complete login
