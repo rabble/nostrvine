@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:videos_repository/videos_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -25,6 +24,7 @@ import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -71,6 +71,7 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
 
@@ -1046,10 +1047,16 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  return VideosRepository(nostrClient: nostrClient);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
+  return VideosRepository(
+    nostrClient: nostrClient,
+    contentFilter: createBlocklistFilter(blocklistService),
+  );
 }
 
 // =============================================================================
