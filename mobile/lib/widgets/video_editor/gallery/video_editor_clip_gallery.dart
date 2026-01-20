@@ -177,8 +177,8 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
         if (_scrollController.hasClients) {
           await _scrollController.animateTo(
             newTargetIndex * constraints.maxWidth * 0.8,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
           );
         }
       }
