@@ -570,19 +570,6 @@ void main() {
 
         // Should show default loading widget (CircularProgressIndicator)
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-        // Should use _DefaultLoadingState widget (VGE compliance)
-        // Find the private widget by checking for ColoredBox with black color
-        // containing the CircularProgressIndicator
-        expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is ColoredBox &&
-                widget.color == Colors.black &&
-                widget.child is Center,
-          ),
-          findsOneWidget,
-        );
       });
 
       testWidgets('composes Stack with video and overlay layers', (

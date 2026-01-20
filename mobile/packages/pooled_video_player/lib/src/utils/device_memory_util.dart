@@ -25,7 +25,6 @@ enum MemoryTier {
 /// ```dart
 /// final classifier = DeviceMemoryUtil();
 /// final tier = await classifier.getMemoryTier();
-/// final tier = await classifier.getMemoryTier();
 /// ```
 class DeviceMemoryUtil {
   /// Creates a device memory classifier with the given device info plugin.
@@ -38,6 +37,9 @@ class DeviceMemoryUtil {
   final DeviceInfoPlugin _deviceInfo;
   MemoryTier? _cachedTier;
 
+  /// Returns the memory tier of the current device.
+  ///
+  /// The result is cached after the first call.
   Future<MemoryTier> getMemoryTier() async {
     if (_cachedTier != null) {
       return _cachedTier!;
@@ -51,7 +53,8 @@ class DeviceMemoryUtil {
       } else {
         _cachedTier = MemoryTier.medium;
       }
-    } on Exception {
+    } on Exception catch (e) {
+      debugPrint('DeviceMemoryUtil: Failed to detect memory tier: $e');
       _cachedTier = MemoryTier.medium;
     }
 
@@ -64,6 +67,10 @@ class DeviceMemoryUtil {
     return classifyIOSDevice(model);
   }
 
+  /// Classifies an iOS device based on its model identifier.
+  ///
+  /// Exposed for testing purposes.
+  @visibleForTesting
   MemoryTier classifyIOSDevice(String model) {
     if (model.startsWith('iPhone')) {
       final versionPart = model.replaceFirst('iPhone', '');
@@ -96,6 +103,10 @@ class DeviceMemoryUtil {
     );
   }
 
+  /// Classifies an Android device based on SDK version and architecture.
+  ///
+  /// Exposed for testing purposes.
+  @visibleForTesting
   MemoryTier classifyAndroidDevice(
     int sdkInt,
     List<String> supported64BitAbis,

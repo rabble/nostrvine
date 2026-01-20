@@ -77,7 +77,6 @@ class _VideoFeedViewState extends State<VideoFeedView> {
             children: [
               PooledVideoFeed(
                 videos: pooledVideos,
-                feedContext: 'video_feed_${state.mode.name}',
                 // getCachedFile: openVineVideoCache.getCachedVideoSync,
                 itemBuilder: (context, video, index, isActive) {
                   final adapter = video as _PooledVideoEventAdapter;

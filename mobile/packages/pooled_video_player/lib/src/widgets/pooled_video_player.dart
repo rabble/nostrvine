@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pooled_video_player/src/models/pooled_video.dart';
 import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
+import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
 import 'package:video_player/video_player.dart';
 
 /// Callback invoked when the video controller is ready.
@@ -157,21 +158,41 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    _initializePool();
+    // Defer pool initialization to didChangeDependencies to access context
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializePool();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize pool if not yet done (first call after initState)
+    if (_pool == null) {
+      _initializePool();
+    }
   }
 
   void _initializePool() {
-    if (!VideoControllerPoolManager.isInitialized) {
+    // Already initialized
+    if (_pool != null) return;
+
+    // Try to get pool from widget tree first (testable), fall back to singleton
+    _pool = VideoPoolProvider.maybeOf(context);
+
+    if (_pool == null) {
       widget.onVideoError?.call(
         StateError(
           'VideoControllerPoolManager not initialized. '
-          'Call VideoControllerPoolManager.initialize() first.',
+          'Call VideoControllerPoolManager.initialize() first or wrap '
+          'with VideoPoolProvider.',
         ),
       );
       return;
     }
 
-    _pool = VideoControllerPoolManager.instance;
     _unsubscribe = _pool!.addPoolChangeListener(_onPoolStateChanged);
 
     // Synchronously check if controller already exists in pool (prewarmed).
@@ -340,11 +361,6 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
 /// Default loading state shown when video controller is not ready.
 ///
 /// Displays a centered white circular progress indicator on a black background.
-/// This follows VGE's "Prefer Widgets to Methods" standard by providing a
-/// dedicated widget instead of a builder method, which enables:
-/// - Better widget tree inspection in DevTools
-/// - Independent testing of the loading state
-/// - Cleaner separation of concerns
 class _DefaultLoadingState extends StatelessWidget {
   const _DefaultLoadingState();
 

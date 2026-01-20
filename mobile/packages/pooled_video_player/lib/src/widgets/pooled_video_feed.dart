@@ -4,33 +4,29 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pooled_video_player/src/models/pooled_video.dart';
 import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
+import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
 
+/// Builder for video feed items.
 typedef VideoFeedItemBuilder =
     Widget Function(
       BuildContext context,
       PooledVideo video,
       int index,
-      // Positional boolean for readability with 4 parameters.
+      // Positional boolean is acceptable here for readability with 4 parameters.
       // ignore: avoid_positional_boolean_parameters
       bool isActive,
     );
 
-typedef OnActiveVideoChanged =
-    void Function(
-      PooledVideo video,
-      int index,
-    );
+/// Callback when active video changes.
+typedef OnActiveVideoChanged = void Function(PooledVideo video, int index);
 
 /// Vertical scrolling video feed with automatic controller preloading.
 ///
-/// Supports feed context tracking for multi-feed apps. When [feedContext] is
-/// provided, the pool manager will prioritize retaining controllers for this
-/// feed's videos when switching between different feeds.
+/// Prewarms 3 videos ahead and 1 behind for smooth scrolling.
 class PooledVideoFeed extends StatefulWidget {
   const PooledVideoFeed({
     required this.videos,
     required this.itemBuilder,
-    this.feedContext,
     this.initialIndex = 0,
     this.onActiveVideoChanged,
     this.scrollDirection = Axis.vertical,
@@ -38,28 +34,22 @@ class PooledVideoFeed extends StatefulWidget {
     super.key,
   });
 
+  /// The list of videos to display in the feed.
   final List<PooledVideo> videos;
 
+  /// Builder for each video item in the feed.
   final VideoFeedItemBuilder itemBuilder;
 
-  /// Optional feed context identifier for multi-feed isolation.
-  ///
-  /// When provided, videos in this feed will be tracked under this context,
-  /// and the pool manager will prioritize keeping controllers for this feed
-  /// when navigating between different feeds.
-  ///
-  /// Example: 'home_feed', 'explore_feed', 'profile_feed'
-  final String? feedContext;
-
+  /// The initial video index to display. Defaults to 0.
   final int initialIndex;
 
+  /// Called when the active video changes due to scrolling.
   final OnActiveVideoChanged? onActiveVideoChanged;
 
+  /// The scroll direction of the feed. Defaults to [Axis.vertical].
   final Axis scrollDirection;
 
   /// Optional cache lookup function for instant playback of cached videos.
-  /// When provided, the pool manager will use local file controllers for
-  /// cached videos instead of re-fetching from network.
   final File? Function(String videoId)? getCachedFile;
 
   @override
@@ -79,44 +69,37 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
+  }
 
-    if (VideoControllerPoolManager.isInitialized) {
-      _pool = VideoControllerPoolManager.instance;
-
-      // Set feed context if provided
-      if (widget.feedContext != null) {
-        _pool!.setActiveFeedContext(widget.feedContext);
-      }
-
-      // Immediately start prewarming current + adjacent (no debounce).
-      // With parallel initialization, both can init simultaneously.
-      _immediatePrewarm(_currentIndex);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_pool == null) {
+      _initializePool();
     }
+  }
+
+  void _initializePool() {
+    _pool = VideoPoolProvider.maybeOf(context);
+    if (_pool == null) return;
+
+    _immediatePrewarm(_currentIndex);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updatePoolState(_currentIndex);
+      if (mounted) {
+        _updatePoolState(_currentIndex);
+      }
     });
   }
 
-  /// Immediately prewarm current and next videos without debounce.
-  /// Called on mount to ensure first videos are ready ASAP.
-  /// With parallel initialization, multiple can init simultaneously.
+  /// Prewarm current + next 3 videos on mount.
   void _immediatePrewarm(int index) {
     if (_pool == null || widget.videos.isEmpty) return;
 
     final videos = widget.videos;
 
-    // Start current + next 3 videos initialization in parallel
-    // This ensures smooth scrolling for short (7s) videos
     for (var i = index; i <= index + 3 && i < videos.length; i++) {
-      // Register index for distance-aware eviction
       _pool!.registerVideoIndex(videos[i].id, i);
-
-      // Register video for feed context if provided
-      if (widget.feedContext != null) {
-        _pool!.registerVideoForContext(videos[i].id, widget.feedContext!);
-      }
-
       unawaited(
         _pool!.acquireController(
           videoId: videos[i].id,
@@ -153,19 +136,12 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     final videos = widget.videos;
     final prewarmIds = <String>[];
 
-    // Prewarm next 3 videos ahead (for short 7s videos, users scroll quickly)
+    // Prewarm next 3 videos
     for (var i = 1; i <= 3; i++) {
       final nextIndex = index + i;
       if (nextIndex < videos.length) {
         final nextVideo = videos[nextIndex];
-        // Register index for distance-aware eviction
         _pool!.registerVideoIndex(nextVideo.id, nextIndex);
-
-        // Register video for feed context if provided
-        if (widget.feedContext != null) {
-          _pool!.registerVideoForContext(nextVideo.id, widget.feedContext!);
-        }
-
         prewarmIds.add(nextVideo.id);
         unawaited(
           _pool!.acquireController(
@@ -177,18 +153,11 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
       }
     }
 
-    // Prewarm 1 previous video (for scrolling back)
+    // Prewarm 1 previous video
     if (index - 1 >= 0) {
       final prevIndex = index - 1;
       final prevVideo = videos[prevIndex];
-      // Register index for distance-aware eviction
       _pool!.registerVideoIndex(prevVideo.id, prevIndex);
-
-      // Register video for feed context if provided
-      if (widget.feedContext != null) {
-        _pool!.registerVideoForContext(prevVideo.id, widget.feedContext!);
-      }
-
       prewarmIds.add(prevVideo.id);
       unawaited(
         _pool!.acquireController(
@@ -211,10 +180,7 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   void didUpdateWidget(PooledVideoFeed oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // When videos list changes (e.g., pagination loads more), re-prewarm
-    // adjacent videos from current position to ensure smooth playback
     if (widget.videos.length != oldWidget.videos.length) {
-      // Debounce to avoid excessive prewarming during rapid updates
       _debounceTimer?.cancel();
       _debounceTimer = Timer(_prewarmDebounce, () {
         _prewarmAdjacentVideos(_currentIndex);
@@ -244,12 +210,6 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   void dispose() {
     _debounceTimer?.cancel();
     _pageController.dispose();
-
-    // Pause feed context to preserve controllers when navigating away
-    if (widget.feedContext != null && _pool != null) {
-      _pool!.pauseFeedContext(widget.feedContext!);
-    }
-
     super.dispose();
   }
 }

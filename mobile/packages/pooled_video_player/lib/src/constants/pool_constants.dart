@@ -6,6 +6,9 @@ class PoolConstants {
   ///
   /// Prevents overwhelming the system by limiting parallel video
   /// initializations. Subsequent requests are queued.
+  ///
+  /// Value of 4 balances network bandwidth utilization with memory pressure
+  /// from simultaneous decode operations.
   static const int maxConcurrentInitializations = 4;
 
   /// Distance threshold for canceling in-flight controller requests.
@@ -13,36 +16,11 @@ class PoolConstants {
   /// When a video is more than this many positions away from the current
   /// video, any pending controller request for that video is canceled
   /// to conserve resources.
+  ///
+  /// Value of 5 accommodates typical fast-scroll behavior (~5 positions
+  /// per swipe gesture) while avoiding wasted network requests for videos
+  /// the user has scrolled past.
   static const int distanceCancellationThreshold = 5;
-
-  /// Duration to cache failed URL information.
-  ///
-  /// After a video URL fails to load, it's cached as failed for this duration
-  /// to avoid repeated failed attempts. After this time, the URL will be
-  /// retried.
-  static const Duration failedUrlCacheDuration = Duration(minutes: 5);
-}
-
-/// Constants for video feed prewarming and scrolling behavior.
-class FeedConstants {
-  FeedConstants._();
-
-  /// Number of videos to prewarm ahead of current position.
-  ///
-  /// Higher values improve perceived performance by loading more videos
-  /// in advance, but use more memory.
-  static const int prewarmAheadCount = 3;
-
-  /// Number of videos to prewarm behind current position.
-  ///
-  /// Keeps recently viewed videos ready for quick backward navigation.
-  static const int prewarmBehindCount = 1;
-
-  /// Debounce duration for prewarm requests during rapid scrolling.
-  ///
-  /// Prevents excessive prewarming when user rapidly scrolls through feed.
-  /// Prewarming only occurs after scrolling has settled for this duration.
-  static const Duration prewarmDebounce = Duration(milliseconds: 150);
 }
 
 /// Memory tier thresholds for iOS and Android device classification.

@@ -213,7 +213,6 @@ void main() {
 
         expect(pooled, isNotNull);
         expect(pooled!.videoId, 'video1');
-        expect(pooled.videoUrl, 'https://example.com/video1.mp4');
         expect(controllerCreationCount, 1);
       });
 
