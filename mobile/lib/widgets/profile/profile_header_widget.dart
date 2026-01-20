@@ -282,6 +282,8 @@ class _UniqueIdentifier extends StatelessWidget {
     return Text(
       displayText,
       style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

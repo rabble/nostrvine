@@ -254,6 +254,7 @@ flutter:
     - assets/icon/Check.svg
     - assets/icon/plus.svg
     - assets/icon/arrow_bend_down_right.svg
+    - assets/icon/DotsThree.svg
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql

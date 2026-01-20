@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
@@ -50,6 +51,8 @@ class ProfileActionButtons extends StatelessWidget {
               child: Text(
                 'Edit',
                 style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -73,6 +76,8 @@ class ProfileActionButtons extends StatelessWidget {
               child: Text(
                 'Library',
                 style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -82,14 +87,22 @@ class ProfileActionButtons extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               backgroundColor: VineTheme.surfaceContainer,
               foregroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
               minimumSize: Size.zero,
             ),
-            child: Icon(Icons.more_horiz, color: VineTheme.vineGreen, size: 24),
+            child: SvgPicture.asset(
+              'assets/icon/DotsThree.svg',
+              width: 28,
+              height: 28,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.vineGreen,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
         ] else ...[
           Expanded(child: FollowFromProfileButton(pubkey: userIdHex)),
