@@ -10,8 +10,7 @@ class MockVideoPlayerController extends Mock implements VideoPlayerController {}
 
 class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
 
-class MockDeviceMemoryClassifier extends Mock
-    implements DeviceMemoryClassifier {}
+class MockDeviceMemoryUtil extends Mock implements DeviceMemoryUtil {}
 
 void main() {
   late int controllerCreationCount;
@@ -28,9 +27,9 @@ void main() {
     when(() => value.isInitialized).thenReturn(true);
     when(() => value.isPlaying).thenReturn(false);
     when(() => controller.value).thenReturn(value);
-    when(() => controller.dispose()).thenAnswer((_) async {});
-    when(() => controller.pause()).thenAnswer((_) async {});
-    when(() => controller.play()).thenAnswer((_) async {});
+    when(controller.dispose).thenAnswer((_) async {});
+    when(controller.pause).thenAnswer((_) async {});
+    when(controller.play).thenAnswer((_) async {});
     when(() => controller.setLooping(any())).thenAnswer((_) async {});
 
     mockControllers[videoUrl] = controller;
@@ -89,9 +88,9 @@ void main() {
 
       group('dependency injection', () {
         test('uses injected memory classifier for auto-detection', () async {
-          final mockClassifier = MockDeviceMemoryClassifier();
+          final mockClassifier = MockDeviceMemoryUtil();
           when(
-            () => mockClassifier.getMemoryTier(),
+            mockClassifier.getMemoryTier,
           ).thenAnswer((_) async => MemoryTier.high);
 
           await VideoControllerPoolManager.initialize(
@@ -103,13 +102,13 @@ void main() {
             VideoControllerPoolManager.instance.poolSize,
             MemoryTierConfig.highMemoryPoolSize,
           );
-          verify(() => mockClassifier.getMemoryTier()).called(1);
+          verify(mockClassifier.getMemoryTier).called(1);
         });
 
         test('auto-detects high memory tier', () async {
-          final mockClassifier = MockDeviceMemoryClassifier();
+          final mockClassifier = MockDeviceMemoryUtil();
           when(
-            () => mockClassifier.getMemoryTier(),
+            mockClassifier.getMemoryTier,
           ).thenAnswer((_) async => MemoryTier.high);
 
           await VideoControllerPoolManager.initialize(
@@ -124,9 +123,9 @@ void main() {
         });
 
         test('auto-detects medium memory tier', () async {
-          final mockClassifier = MockDeviceMemoryClassifier();
+          final mockClassifier = MockDeviceMemoryUtil();
           when(
-            () => mockClassifier.getMemoryTier(),
+            mockClassifier.getMemoryTier,
           ).thenAnswer((_) async => MemoryTier.medium);
 
           await VideoControllerPoolManager.initialize(
@@ -141,9 +140,9 @@ void main() {
         });
 
         test('auto-detects low memory tier', () async {
-          final mockClassifier = MockDeviceMemoryClassifier();
+          final mockClassifier = MockDeviceMemoryUtil();
           when(
-            () => mockClassifier.getMemoryTier(),
+            mockClassifier.getMemoryTier,
           ).thenAnswer((_) async => MemoryTier.low);
 
           await VideoControllerPoolManager.initialize(
@@ -158,10 +157,10 @@ void main() {
         });
 
         test('explicit poolSize overrides auto-detection', () async {
-          final mockClassifier = MockDeviceMemoryClassifier();
+          final mockClassifier = MockDeviceMemoryUtil();
           // Classifier would suggest high tier (pool size 4)
           when(
-            () => mockClassifier.getMemoryTier(),
+            mockClassifier.getMemoryTier,
           ).thenAnswer((_) async => MemoryTier.high);
 
           await VideoControllerPoolManager.initialize(
@@ -172,7 +171,7 @@ void main() {
 
           expect(VideoControllerPoolManager.instance.poolSize, 2);
           // Classifier should not be called when poolSize is explicit
-          verifyNever(() => mockClassifier.getMemoryTier());
+          verifyNever(mockClassifier.getMemoryTier);
         });
 
         test('uses default classifier when none provided', () async {
@@ -336,10 +335,10 @@ void main() {
             videoId: 'video2',
             videoUrl: 'https://example.com/video2.mp4',
           );
-          manager.registerVideoIndex('video2', 1);
-
-          manager.setActiveVideo('video1', index: 0);
-          manager.setPrewarmVideos(['video2'], currentIndex: 0);
+          manager
+            ..registerVideoIndex('video2', 1)
+            ..setActiveVideo('video1', index: 0)
+            ..setPrewarmVideos(['video2'], currentIndex: 0);
 
           final result = await manager.acquireController(
             videoId: 'video3',
@@ -382,10 +381,10 @@ void main() {
           videoId: 'video2',
           videoUrl: 'https://example.com/video2.mp4',
         );
-        manager.registerVideoIndex('video2', 2);
-
-        // Set active video at index 2
-        manager.setActiveVideo('video2', index: 2);
+        manager
+          ..registerVideoIndex('video2', 2)
+          // Set active video at index 2
+          ..setActiveVideo('video2', index: 2);
 
         // Add video3 - should evict video5 (distance 3) not video0 (distance 2)
         await manager.acquireController(
@@ -461,9 +460,9 @@ void main() {
         final manager = VideoControllerPoolManager.instance;
         var notificationCount = 0;
 
-        manager.addPoolChangeListener(() => notificationCount++);
-
-        manager.setActiveVideo('video1', index: 0);
+        manager
+          ..addPoolChangeListener(() => notificationCount++)
+          ..setActiveVideo('video1', index: 0);
         expect(notificationCount, 1);
 
         manager.setActiveVideo('video1', index: 0);
@@ -483,9 +482,8 @@ void main() {
       });
 
       test('limits prewarm videos to poolSize - 1', () async {
-        final manager = VideoControllerPoolManager.instance;
-
-        manager.setPrewarmVideos(['v1', 'v2', 'v3', 'v4', 'v5']);
+        final manager = VideoControllerPoolManager.instance
+          ..setPrewarmVideos(['v1', 'v2', 'v3', 'v4', 'v5']);
 
         expect(manager.prewarmVideoIds.length, 2);
         expect(manager.prewarmVideoIds.contains('v1'), isTrue);
@@ -494,9 +492,8 @@ void main() {
       });
 
       test('clears previous prewarm videos', () async {
-        final manager = VideoControllerPoolManager.instance;
-
-        manager.setPrewarmVideos(['v1', 'v2']);
+        final manager = VideoControllerPoolManager.instance
+          ..setPrewarmVideos(['v1', 'v2']);
         expect(manager.prewarmVideoIds.length, 2);
 
         manager.setPrewarmVideos(['v3']);
@@ -581,8 +578,9 @@ void main() {
           videoUrl: 'https://example.com/video2.mp4',
         );
 
-        manager.setActiveVideo('video1', index: 0);
-        manager.setPrewarmVideos(['video2'], currentIndex: 0);
+        manager
+          ..setActiveVideo('video1', index: 0)
+          ..setPrewarmVideos(['video2'], currentIndex: 0);
 
         await manager.clearPool();
 
@@ -639,10 +637,9 @@ void main() {
       });
 
       test('registers video indices for distance calculation', () async {
-        final manager = VideoControllerPoolManager.instance;
-
-        manager.registerVideoIndex('video1', 0);
-        manager.registerVideoIndex('video2', 5);
+        final manager = VideoControllerPoolManager.instance
+          ..registerVideoIndex('video1', 0)
+          ..registerVideoIndex('video2', 5);
 
         await manager.acquireController(
           videoId: 'video1',
@@ -757,12 +754,10 @@ void main() {
           },
         );
 
-        final manager = VideoControllerPoolManager.instance;
-
-        // Register video indices
-        manager.registerVideoIndex('video0', 0);
-        manager.registerVideoIndex('video10', 10);
-        manager.registerVideoIndex('video2', 2);
+        final manager = VideoControllerPoolManager.instance
+          ..registerVideoIndex('video0', 0)
+          ..registerVideoIndex('video10', 10)
+          ..registerVideoIndex('video2', 2);
 
         // Start acquisitions
         final futures = [
@@ -804,16 +799,11 @@ void main() {
           },
         );
 
-        final manager = VideoControllerPoolManager.instance;
+        final manager = VideoControllerPoolManager.instance
+          ..registerVideoIndex('video0', 0)
+          ..registerVideoIndex('video15', 15)
+          ..setActiveVideo('video0', index: 0);
 
-        // Register indices
-        manager.registerVideoIndex('video0', 0);
-        manager.registerVideoIndex('video15', 15);
-
-        // Set initial active video
-        manager.setActiveVideo('video0', index: 0);
-
-        // Start acquisition for distant video
         final future = manager.acquireController(
           videoId: 'video15',
           videoUrl: 'https://example.com/video15.mp4',

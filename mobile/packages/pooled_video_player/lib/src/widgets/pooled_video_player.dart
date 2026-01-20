@@ -16,7 +16,7 @@ typedef OnVideoLoading = void Function();
 typedef OnVideoError = void Function(Object error);
 
 /// Callback invoked when play/pause state changes.
-typedef OnPlayPauseChanged = void Function(bool isPlaying);
+typedef OnPlayPauseChanged = void Function({required bool isPlaying});
 
 /// Builder for the video layer. Called once the controller is initialized.
 ///
@@ -285,10 +285,10 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
 
     if (controller.value.isPlaying) {
       unawaited(controller.pause());
-      widget.onPlayPauseChanged?.call(false);
+      widget.onPlayPauseChanged?.call(isPlaying: false);
     } else {
       unawaited(controller.play());
-      widget.onPlayPauseChanged?.call(true);
+      widget.onPlayPauseChanged?.call(isPlaying: true);
     }
   }
 

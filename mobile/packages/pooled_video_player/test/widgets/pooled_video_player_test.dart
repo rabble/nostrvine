@@ -276,7 +276,6 @@ void main() {
             home: PooledVideoPlayer(
               video: mockVideo,
               videoBuilder: (context, ctrl) => Container(),
-              autoPlay: false,
               onVideoReady: (ctrl) => controller = ctrl,
             ),
           ),
