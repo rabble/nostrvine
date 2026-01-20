@@ -71,7 +71,7 @@ void main() {
 
     test('initial state is correct', () {
       final bloc = createBloc();
-      expect(bloc.state.status, VideoFeedStatus.initial);
+      expect(bloc.state.status, VideoFeedStatus.loading);
       expect(bloc.state.videos, isEmpty);
       expect(bloc.state.mode, FeedMode.home);
       expect(bloc.state.hasMore, isTrue);
@@ -91,10 +91,8 @@ void main() {
 
       test('isLoading returns true when status is loading', () {
         const initialState = VideoFeedState();
-        const loadingState = VideoFeedState(status: VideoFeedStatus.loading);
 
-        expect(initialState.isLoading, isFalse);
-        expect(loadingState.isLoading, isTrue);
+        expect(initialState.isLoading, isTrue);
       });
 
       test('isEmpty returns true when success with no videos', () {

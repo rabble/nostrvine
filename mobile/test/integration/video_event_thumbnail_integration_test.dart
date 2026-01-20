@@ -3,7 +3,8 @@ import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Tests the complete workflow from video events to automatic thumbnail generation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory, LogLevel;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 
 void main() {

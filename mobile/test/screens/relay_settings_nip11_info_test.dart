@@ -13,7 +13,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockNostrService extends Mock implements NostrClient {}

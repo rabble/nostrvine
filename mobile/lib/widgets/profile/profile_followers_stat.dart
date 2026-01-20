@@ -9,6 +9,7 @@ import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
 /// Page widget that creates the appropriate followers BLoC based on pubkey.
@@ -65,7 +66,10 @@ class _MyFollowersStatView extends StatelessWidget {
           count: isLoading ? null : state.followersPubkeys.length,
           label: 'Followers',
           isLoading: isLoading,
-          onTap: () => context.push('/followers/$pubkey', extra: displayName),
+          onTap: () => context.push(
+            FollowersRoutes.pathForPubkey(pubkey),
+            extra: displayName,
+          ),
         );
       },
     );
@@ -94,7 +98,10 @@ class _OthersFollowersStatView extends StatelessWidget {
           count: isLoading ? null : state.followersPubkeys.length,
           label: 'Followers',
           isLoading: isLoading,
-          onTap: () => context.push('/followers/$pubkey', extra: displayName),
+          onTap: () => context.push(
+            FollowersRoutes.pathForPubkey(pubkey),
+            extra: displayName,
+          ),
         );
       },
     );

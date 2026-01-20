@@ -42,13 +42,11 @@ class NostrServiceFactory {
 
     // Prefer RPC signer when available (KeycastRpc implements NostrSigner),
     // otherwise fall back to local signer that uses the secure key container.
+    // The signer is the single source of truth for the public key.
     final signer = rpcSigner ?? AuthServiceSigner(keyContainer);
 
-    // Create NostrClient config
-    final config = NostrClientConfig(
-      signer: signer,
-      publicKey: keyContainer?.publicKeyHex ?? '',
-    );
+    // Create NostrClient config - signer is the source of truth for publicKey
+    final config = NostrClientConfig(signer: signer);
 
     // Create relay manager config with persistent storage
     // Use relay URL from environment config if provided, otherwise fall back to default

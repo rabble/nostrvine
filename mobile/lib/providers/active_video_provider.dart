@@ -2,7 +2,7 @@
 // ABOUTME: Derives active video ID from URL context, feed state, and app foreground state
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
@@ -118,6 +118,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.discoverLists:
     case RouteType.sound:
     case RouteType.secureAccount:
+    case RouteType.newVideoFeed:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

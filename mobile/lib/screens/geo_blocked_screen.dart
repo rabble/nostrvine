@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 class GeoBlockedScreen extends StatelessWidget {
   final GeoBlockResponse geoInfo;

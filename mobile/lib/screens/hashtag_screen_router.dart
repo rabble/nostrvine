@@ -10,11 +10,30 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Router-aware hashtag screen that shows grid or feed based on route
 class HashtagScreenRouter extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'hashtag';
+
+  /// Base path for hashtag routes.
+  static const basePath = '/hashtag';
+
+  /// Path for this route (grid mode).
+  static const path = '/hashtag/:tag';
+
+  /// Path for this route with video index (feed mode).
+  static const pathWithIndex = '/hashtag/:tag/:index';
+
+  /// Build path for a specific hashtag with optional video index.
+  static String pathForTag(String tag, {int? index}) {
+    final encodedTag = Uri.encodeComponent(tag);
+    if (index == null) return '$basePath/$encodedTag';
+    return '$basePath/$encodedTag/$index';
+  }
+
   const HashtagScreenRouter({super.key});
 
   @override

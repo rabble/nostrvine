@@ -2,9 +2,18 @@
 // ABOUTME: Verifies every route pattern and navigation flow works
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
 
 void main() {
   group('Real Navigation Scenarios', () {
@@ -23,13 +32,19 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/home/0');
+      router.go(HomeScreenRouter.pathForIndex(0));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/0');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HomeScreenRouter.pathForIndex(0),
+      );
 
-      router.go('/home/5');
+      router.go(HomeScreenRouter.pathForIndex(5));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/5');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HomeScreenRouter.pathForIndex(5),
+      );
     });
 
     testWidgets('Explore tab tap - grid mode', (tester) async {
@@ -47,11 +62,11 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/explore');
+      router.go(ExploreScreen.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore',
+        ExploreScreen.path,
         reason: 'Explore tab tap should navigate to grid mode',
       );
     });
@@ -71,18 +86,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/explore/0');
+      router.go(ExploreScreen.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore/0',
+        ExploreScreen.pathForIndex(0),
       );
 
-      router.go('/explore/3');
+      router.go(ExploreScreen.pathForIndex(3));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore/3',
+        ExploreScreen.pathForIndex(3),
       );
     });
 
@@ -101,11 +116,11 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/hashtag/bitcoin');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin',
+        HashtagScreenRouter.pathForTag('bitcoin'),
       );
     });
 
@@ -124,18 +139,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/hashtag/bitcoin/0');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin/0',
+        HashtagScreenRouter.pathForTag('bitcoin', index: 0),
       );
 
-      router.go('/hashtag/nostr/5');
+      router.go(HashtagScreenRouter.pathForTag('nostr', index: 5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/nostr/5',
+        HashtagScreenRouter.pathForTag('nostr', index: 5),
       );
     });
 
@@ -154,18 +169,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/profile/npub1xyz/0');
+      router.go(ProfileScreenRouter.pathForIndex('npub1xyz', 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/profile/npub1xyz/0',
+        ProfileScreenRouter.pathForIndex('npub1xyz', 0),
       );
 
-      router.go('/profile/npub1xyz/5');
+      router.go(ProfileScreenRouter.pathForIndex('npub1xyz', 5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/profile/npub1xyz/5',
+        ProfileScreenRouter.pathForIndex('npub1xyz', 5),
       );
     });
 
@@ -184,9 +199,12 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/search');
+      router.go(SearchScreenPure.path);
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/search');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        SearchScreenPure.path,
+      );
     });
 
     testWidgets('Search with term - grid mode', (tester) async {
@@ -204,11 +222,11 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/search/bitcoin');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin',
+        SearchScreenPure.pathForTerm(term: 'bitcoin'),
       );
     });
 
@@ -227,18 +245,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/search/bitcoin/0');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin/0',
+        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0),
       );
 
-      router.go('/search/bitcoin/3');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin/3',
+        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
       );
     });
 
@@ -257,9 +275,12 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/camera');
+      router.go(UniversalCameraScreenPure.path);
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/camera');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        UniversalCameraScreenPure.path,
+      );
     });
 
     testWidgets('Settings route', (tester) async {
@@ -277,9 +298,12 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/settings');
+      router.go(SettingsScreen.path);
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/settings');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        SettingsScreen.path,
+      );
     });
 
     testWidgets('Notifications navigation', (tester) async {
@@ -297,18 +321,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go('/notifications/0');
+      router.go(NotificationsScreen.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/notifications/0',
+        NotificationsScreen.pathForIndex(0),
       );
 
-      router.go('/notifications/2');
+      router.go(NotificationsScreen.pathForIndex(2));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/notifications/2',
+        NotificationsScreen.pathForIndex(2),
       );
     });
 
@@ -328,11 +352,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // /profile/me/0 should be handled (used in camera after upload)
-      router.go('/profile/me/0');
+      router.go(ProfileScreenRouter.pathForIndex('me', 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/profile/me/0',
+        ProfileScreenRouter.pathForIndex('me', 0),
         reason: 'Profile me route should work for current user navigation',
       );
     });
@@ -353,11 +377,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Edit video route exists (accessed via context.push with video extra)
-      router.go('/edit-video');
+      router.go(VideoEditorScreen.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/edit-video',
+        VideoEditorScreen.path,
         reason: 'Edit video route should exist',
       );
     });
@@ -378,17 +402,26 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Swiping through home feed updates index in URL
-      router.go('/home/0');
+      router.go(HomeScreenRouter.pathForIndex(0));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/0');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HomeScreenRouter.pathForIndex(0),
+      );
 
-      router.go('/home/1');
+      router.go(HomeScreenRouter.pathForIndex(1));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/1');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HomeScreenRouter.pathForIndex(1),
+      );
 
-      router.go('/home/10');
+      router.go(HomeScreenRouter.pathForIndex(10));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.toString(), '/home/10');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        HomeScreenRouter.pathForIndex(10),
+      );
     });
 
     testWidgets('Explore back to grid from feed', (tester) async {
@@ -407,19 +440,19 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to feed mode
-      router.go('/explore/5');
+      router.go(ExploreScreen.pathForIndex(5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore/5',
+        ExploreScreen.pathForIndex(5),
       );
 
       // Back button should go to grid mode
-      router.go('/explore');
+      router.go(ExploreScreen.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore',
+        ExploreScreen.path,
         reason: 'Back from explore feed should return to grid mode',
       );
     });
@@ -440,19 +473,19 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to hashtag feed mode
-      router.go('/hashtag/bitcoin/5');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin/5',
+        HashtagScreenRouter.pathForTag('bitcoin', index: 5),
       );
 
       // Back button should go to hashtag grid mode
-      router.go('/hashtag/bitcoin');
+      router.go(HashtagScreenRouter.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin',
+        HashtagScreenRouter.path,
         reason: 'Back from hashtag feed should return to grid mode',
       );
     });
@@ -473,19 +506,19 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to search feed mode
-      router.go('/search/bitcoin/3');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin/3',
+        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
       );
 
       // Back button should go to search grid mode
-      router.go('/search/bitcoin');
+      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/bitcoin',
+        SearchScreenPure.pathForTerm(term: 'bitcoin'),
         reason: 'Back from search feed should return to grid mode',
       );
     });
@@ -506,11 +539,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Hashtags with spaces or special chars should be URL-encoded
-      router.go('/hashtag/my%20tag/0');
+      router.go(HashtagScreenRouter.pathForTag('my%20tag', index: 0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/my%20tag/0',
+        HashtagScreenRouter.pathForTag('my%20tag', index: 0),
         reason: 'URL-encoded hashtags should work',
       );
     });
@@ -531,11 +564,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Search terms with spaces should be URL-encoded
-      router.go('/search/hello%20world');
+      router.go(SearchScreenPure.pathForTerm(term: 'hello world'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/hello%20world',
+        SearchScreenPure.pathForTerm(term: 'hello%20world'),
         reason: 'URL-encoded search terms should work',
       );
     });
@@ -558,11 +591,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to hashtag feed mode
-      router.go('/hashtag/bitcoin/5');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin/5',
+        HashtagScreenRouter.pathForTag('bitcoin', index: 5),
       );
 
       // Find and tap the back button in AppBar
@@ -579,7 +612,7 @@ void main() {
       // Should navigate to hashtag grid mode
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin',
+        HashtagScreenRouter.pathForTag('bitcoin'),
         reason: 'Tapping back button should navigate from feed to grid mode',
       );
     });
@@ -602,11 +635,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to search feed mode
-      router.go('/search/nostr/3');
+      router.go(SearchScreenPure.pathForTerm(term: 'nostr', index: 3));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/nostr/3',
+        SearchScreenPure.pathForTerm(term: 'nostr', index: 3),
       );
 
       // Find and tap the back button
@@ -619,7 +652,7 @@ void main() {
       // Should navigate to search grid mode
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/search/nostr',
+        SearchScreenPure.pathForTerm(term: 'nostr'),
         reason: 'Tapping back button should navigate from search feed to grid',
       );
     });
@@ -642,11 +675,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Navigate to hashtag grid mode
-      router.go('/hashtag/bitcoin');
+      router.go(HashtagScreenRouter.pathForTag('bitcoin'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/hashtag/bitcoin',
+        HashtagScreenRouter.pathForTag('bitcoin'),
       );
 
       // Find and tap the back button
@@ -663,7 +696,7 @@ void main() {
       // Should navigate back to explore
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        '/explore',
+        ExploreScreen.path,
         reason: 'Tapping back from hashtag grid should go to explore',
       );
     });

@@ -2,8 +2,8 @@
 // ABOUTME: Shows video title/content with clickable hashtags and loop count.
 
 import 'package:flutter/material.dart';
-import 'package:openvine/models/video_event.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:models/models.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 

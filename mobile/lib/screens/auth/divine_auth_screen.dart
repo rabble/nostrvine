@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/mixins/email_verification_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_gradient_background.dart';
@@ -19,6 +19,12 @@ import 'package:openvine/widgets/error_message.dart';
 enum AuthMode { login, register }
 
 class DivineAuthScreen extends ConsumerStatefulWidget {
+  /// Route name for the auth screen
+  static const String routeName = 'auth-native';
+
+  /// Path for the auth screen
+  static const String path = '/auth-native';
+
   /// Initial mode - can be overridden by tab selection
   final AuthMode initialMode;
 

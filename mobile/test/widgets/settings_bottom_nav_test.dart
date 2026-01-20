@@ -8,7 +8,7 @@ import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 void main() {
   group('Settings Screens Scaffold Consistency', () {

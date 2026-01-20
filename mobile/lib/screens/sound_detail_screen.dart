@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/audio_playback_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -24,6 +24,18 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 /// - Use Sound button to select for recording
 /// - Grid of videos using this sound
 class SoundDetailScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'sound';
+
+  /// Base path for sound routes.
+  static const basePath = '/sound';
+
+  /// Path pattern for this route.
+  static const path = '/sound/:id';
+
+  /// Build path for a specific sound ID.
+  static String pathForId(String id) => '$basePath/$id';
+
   /// Creates a SoundDetailScreen.
   ///
   /// [sound] is the audio event to display.

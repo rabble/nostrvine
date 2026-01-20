@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/user_list_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// Card for displaying a user list (kind 30000 - people list)
 class UserListCard extends StatelessWidget {

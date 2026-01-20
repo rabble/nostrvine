@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
@@ -69,7 +69,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/0');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreenRouter), findsOneWidget);
@@ -78,7 +78,7 @@ void main() {
     expect(find.text('Profile 0/3'), findsOneWidget);
 
     // Navigate to index 1
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // Verify second video shown
@@ -103,7 +103,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/0');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('No posts yet'), findsOneWidget);
@@ -136,7 +136,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // Should prefetch profiles for videos at index 0 and 2 (±1 from current)
@@ -166,7 +166,7 @@ void main() {
     addTearDown(c.dispose);
 
     await tester.pumpWidget(_shell(c));
-    c.read(goRouterProvider).go('/profile/npubXYZ/1');
+    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
     // When backgrounded, active video should be null

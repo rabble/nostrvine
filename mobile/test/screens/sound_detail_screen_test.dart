@@ -11,13 +11,13 @@ import 'package:mockito/mockito.dart';
 import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 import '../helpers/go_router.dart';

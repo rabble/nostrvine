@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -193,6 +193,8 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
               .read(fetchUserProfileProvider(widget.userIdHex))
               .value
               ?.betterDisplayName('Profile'),
+          hideFollowButtonIfFollowing:
+              true, // Hide if already following this profile's user
         );
       },
     );

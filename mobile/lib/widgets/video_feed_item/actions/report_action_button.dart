@@ -2,7 +2,7 @@
 // ABOUTME: Displays flag icon with label, shows report dialog.
 
 import 'package:flutter/material.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -43,19 +43,6 @@ class ReportActionButton extends StatelessWidget {
               color: Colors.white,
               size: 32,
             ),
-          ),
-        ),
-        const SizedBox(height: 0),
-        const Text(
-          'Report',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(offset: Offset(0, 0), blurRadius: 6, color: Colors.black),
-              Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black),
-            ],
           ),
         ),
       ],

@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
@@ -146,7 +147,7 @@ class _AudioAttributionContent extends ConsumerWidget {
       category: LogCategory.ui,
     );
 
-    context.push('/sound/${audio.id}', extra: audio);
+    context.push(SoundDetailScreen.pathForId(audio.id), extra: audio);
   }
 
   /// Format pubkey for display (short version with ellipsis in middle).

@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/video_event.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -44,19 +44,6 @@ class ShareActionButton extends ConsumerWidget {
               color: Colors.white,
               size: 32,
             ),
-          ),
-        ),
-        const SizedBox(height: 0),
-        const Text(
-          'Share',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(offset: Offset(0, 0), blurRadius: 6, color: Colors.black),
-              Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black),
-            ],
           ),
         ),
       ],

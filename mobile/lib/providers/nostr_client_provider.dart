@@ -18,7 +18,7 @@ part 'nostr_client_provider.g.dart';
 @Riverpod(keepAlive: true)
 class NostrService extends _$NostrService {
   StreamSubscription<AuthState>? _authSubscription;
-  String? _lastKeyContainerPubkey;
+  String? _lastPubkey;
 
   @override
   NostrClient build() {
@@ -28,7 +28,7 @@ class NostrService extends _$NostrService {
     final environmentConfig = ref.watch(currentEnvironmentProvider);
     final dbClient = ref.watch(appDbClientProvider);
 
-    _lastKeyContainerPubkey = authService.currentKeyContainer?.publicKeyHex;
+    _lastPubkey = authService.currentPublicKeyHex;
 
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
@@ -73,18 +73,19 @@ class NostrService extends _$NostrService {
 
   Future<void> _onAuthStateChanged(AuthState newState) async {
     final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentKeyContainer?.publicKeyHex;
+    final currentPubkey = authService.currentPublicKeyHex;
 
-    if (currentPubkey != _lastKeyContainerPubkey) {
+    if (currentPubkey != _lastPubkey) {
       Log.info(
-        '[NostrService] KeyContainer changed from $_lastKeyContainerPubkey to $currentPubkey, recreating NostrClient',
+        '[NostrService] Public key changed from $_lastPubkey to $currentPubkey, '
+        'recreating NostrClient',
         name: 'NostrService',
         category: LogCategory.system,
       );
 
       state.dispose();
 
-      // Create new client with updated keyContainer
+      // Create new client with updated signer and public key
       final statisticsService = ref.read(relayStatisticsServiceProvider);
       final gatewaySettings = ref.read(relayGatewaySettingsProvider);
       final environmentConfig = ref.read(currentEnvironmentProvider);
@@ -99,7 +100,7 @@ class NostrService extends _$NostrService {
         rpcSigner: authService.rpcSigner,
       );
 
-      _lastKeyContainerPubkey = currentPubkey;
+      _lastPubkey = currentPubkey;
 
       // Initialize the new client
       await newClient.initialize();

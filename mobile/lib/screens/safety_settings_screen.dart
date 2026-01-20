@@ -7,10 +7,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SafetySettingsScreen extends ConsumerStatefulWidget {
+  /// Route name for this screen.
+  static const routeName = 'safety-settings';
+
+  /// Path for this route.
+  static const path = '/safety-settings';
+
   const SafetySettingsScreen({super.key});
 
   @override
