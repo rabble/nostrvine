@@ -116,6 +116,7 @@ class _BackToCameraButton extends StatelessWidget {
       // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Go back to camera',
       child: GestureDetector(
+        behavior: .opaque,
         onTap: onTap,
         child: Row(
           spacing: 6,
