@@ -2,6 +2,7 @@
 // ABOUTME: Used for content-based filtering (NSFW, etc.) after event parsing.
 
 import 'package:models/models.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 /// Filter callback for parsed video events.
 ///
