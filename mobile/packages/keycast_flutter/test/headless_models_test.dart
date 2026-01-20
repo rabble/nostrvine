@@ -299,10 +299,7 @@ void main() {
       });
 
       test('parses error field', () {
-        final json = {
-          'success': false,
-          'error': 'user_not_found',
-        };
+        final json = {'success': false, 'error': 'user_not_found'};
 
         final result = ForgotPasswordResult.fromJson(json);
 
@@ -344,10 +341,7 @@ void main() {
 
     group('fromJson', () {
       test('parses complete JSON response', () {
-        final json = {
-          'success': true,
-          'message': 'Password has been reset',
-        };
+        final json = {'success': true, 'message': 'Password has been reset'};
 
         final result = ResetPasswordResult.fromJson(json);
 
@@ -423,10 +417,7 @@ void main() {
       });
 
       test('parses error field', () {
-        final json = {
-          'success': false,
-          'error': 'unauthorized',
-        };
+        final json = {'success': false, 'error': 'unauthorized'};
 
         final result = DeleteAccountResult.fromJson(json);
 

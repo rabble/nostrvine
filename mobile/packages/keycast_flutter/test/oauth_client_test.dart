@@ -286,7 +286,10 @@ void main() {
         final (url, _) = await oauth.getAuthorizationUrl();
 
         final uri = Uri.parse(url);
-        expect(uri.queryParameters['authorization_handle'], 'stored_handle_123');
+        expect(
+          uri.queryParameters['authorization_handle'],
+          'stored_handle_123',
+        );
       });
 
       test('includes prompt parameter when provided', () async {
@@ -378,7 +381,8 @@ void main() {
         await oauth.headlessRegister(
           email: 'test@example.com',
           password: 'password123',
-          nsec: 'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
+          nsec:
+              'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
         );
       });
 
@@ -651,10 +655,7 @@ void main() {
         final mockClient = MockClient((request) async {
           expect(request.url.path, '/api/oauth/poll');
           expect(request.url.queryParameters['device_code'], 'device123');
-          return http.Response(
-            jsonEncode({'code': 'auth_code_456'}),
-            200,
-          );
+          return http.Response(jsonEncode({'code': 'auth_code_456'}), 200);
         });
 
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
@@ -750,10 +751,7 @@ void main() {
 
       test('returns success on 201 response', () async {
         final mockClient = MockClient((request) async {
-          return http.Response(
-            jsonEncode({'success': true}),
-            201,
-          );
+          return http.Response(jsonEncode({'success': true}), 201);
         });
 
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
@@ -818,10 +816,7 @@ void main() {
 
       test('returns success on 201 response', () async {
         final mockClient = MockClient((request) async {
-          return http.Response(
-            jsonEncode({'success': true}),
-            201,
-          );
+          return http.Response(jsonEncode({'success': true}), 201);
         });
 
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
@@ -835,10 +830,7 @@ void main() {
 
       test('returns error with message from response', () async {
         final mockClient = MockClient((request) async {
-          return http.Response(
-            jsonEncode({'message': 'Token expired'}),
-            400,
-          );
+          return http.Response(jsonEncode({'message': 'Token expired'}), 400);
         });
 
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
