@@ -77,6 +77,11 @@ dependencies:
 
   # Camera and media
   camera: ^0.11.2
+  camerawesome:
+    git:
+      url: https://github.com/hm21/CamerAwesome.git
+      ref: master
+  camera_macos_plus: ^0.0.3
   divine_camera:
     path: packages/divine_camera
   camera_macos: ^0.0.9 # macOS camera support
@@ -115,7 +120,7 @@ dependencies:
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
     path: packages/nostr_sdk
-  
+
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
     path: packages/nostr_key_manager
@@ -126,6 +131,10 @@ dependencies:
   # Videos Repository - Video feed data layer
   videos_repository:
     path: packages/videos_repository
+
+  # Divine UI - Shared UI components
+  divine_ui:
+    path: packages/divine_ui
 
   # Logging
   logging: ^1.2.0
@@ -151,14 +160,12 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.40
   video_player_web_hls: ^1.3.0
   firebase_performance: ^0.11.1+1
-  camerawesome:
-    git:
-      url: https://github.com/VGVentures/CamerAwesome.git
-      ref: master
   convert: ^3.1.2
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  pro_video_editor: ^0.4.0
+  pro_video_editor: ^1.2.1
+  pro_image_editor: ^11.15.5
+  linked_scroll_controller: ^0.2.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
@@ -233,17 +240,49 @@ flutter:
     - assets/icon/divine_icon_transparent.png
     - assets/icon/divine_wordmark.png
     - assets/icon/user-avatar.png
-    - assets/icon/menu.svg
-    - assets/icon/search.svg
-    - assets/icon/camera.svg
-    - assets/icon/CaretLeft.svg
-    - assets/icon/delete.svg
-    - assets/icon/house.svg
-    - assets/icon/compass.svg
+    - assets/icon/add.svg
+    - assets/icon/arrow_forward.svg
     - assets/icon/bell.svg
+    - assets/icon/camera.svg
+    - assets/icon/retro-camera.svg
+    - assets/icon/CaretLeft.svg
+    - assets/icon/close.svg
+    - assets/icon/compass.svg
+    - assets/icon/crop_portrait.svg
+    - assets/icon/crop_square.svg
+    - assets/icon/delete.svg
+    - assets/icon/flash_off.svg
+    - assets/icon/flash_on.svg
+    - assets/icon/flash_auto.svg
+    - assets/icon/folder_open.svg
+    - assets/icon/house.svg
+    - assets/icon/menu.svg
+    - assets/icon/more_horiz.svg
+    - assets/icon/pause.svg
+    - assets/icon/play.svg
+    - assets/icon/refresh.svg
+    - assets/icon/save.svg
+    - assets/icon/search.svg
+    - assets/icon/send.svg
+    - assets/icon/timer.svg
+    - assets/icon/timer_3.svg
+    - assets/icon/timer_10.svg
+    - assets/icon/trash.svg
+    - assets/icon/trim.svg
+    - assets/icon/undo.svg
     - assets/icon/userCircle.svg
+    - assets/icon/video_camera.svg
+    - assets/icon/volume_off.svg
+    - assets/icon/volume_on.svg
+    - assets/icon/content-controls/
+    - assets/icon/Icon-Follow.svg
+    - assets/icon/Icon-Following.svg
+    - assets/icon/ArrowClockwise.svg
+    - assets/icon/Check.svg
+    - assets/icon/plus.svg
     - assets/icon/arrow_bend_down_right.svg
     - assets/loading-brand.gif
+    - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql
     - assets/seed_media/manifest.json
     - assets/seed_media/videos/

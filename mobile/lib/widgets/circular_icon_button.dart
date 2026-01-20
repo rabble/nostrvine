@@ -26,6 +26,8 @@ class CircularIconButton extends StatelessWidget {
     super.key,
     this.backgroundOpacity = 0.3,
     this.backgroundColor = Colors.black,
+    this.size,
+    this.padding,
   });
 
   /// Called when the button is tapped.
@@ -47,18 +49,36 @@ class CircularIconButton extends StatelessWidget {
   /// Defaults to [Colors.black].
   final Color backgroundColor;
 
+  /// The overall size of the button (width and height).
+  ///
+  /// When specified, the button will be constrained to this size.
+  /// The icon should be sized appropriately to fit with padding.
+  final double? size;
+
+  /// The padding around the icon inside the button.
+  ///
+  /// Defaults to [EdgeInsets.zero] for legacy behavior.
+  final EdgeInsetsGeometry? padding;
+
   @override
   Widget build(BuildContext context) {
+    final button = IconButton(
+      onPressed: onPressed,
+      icon: icon,
+      padding: padding ?? EdgeInsets.zero,
+      constraints: size != null
+          ? BoxConstraints.tightFor(width: size, height: size)
+          : null,
+    );
+
     return Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: backgroundColor.withValues(alpha: backgroundOpacity),
         shape: BoxShape.circle,
       ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: icon,
-        padding: EdgeInsets.zero,
-      ),
+      child: button,
     );
   }
 }

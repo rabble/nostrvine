@@ -5,8 +5,7 @@ import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/video_cache_manager.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -161,42 +160,31 @@ class _FeedModeSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<VideoFeedBloc, VideoFeedState>(
       buildWhen: (prev, curr) => prev.mode != curr.mode,
-      builder: (context, state) => PopupMenuButton<FeedMode>(
+      builder: (context, state) => IconButton(
         icon: const Icon(Icons.filter_list, color: Colors.white),
-        color: VineTheme.cardBackground,
-        onSelected: (mode) {
-          context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
-        },
-        itemBuilder: (_) => FeedMode.values
-            .map(
-              (mode) => PopupMenuItem(
-                value: mode,
-                child: Row(
-                  children: [
-                    if (mode == state.mode)
-                      const Icon(
-                        Icons.check,
-                        color: VineTheme.vineGreen,
-                        size: 18,
-                      )
-                    else
-                      const SizedBox(width: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      mode.name.toUpperCase(),
-                      style: TextStyle(
-                        color: mode == state.mode
-                            ? VineTheme.vineGreen
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
+        onPressed: () => _showFeedModeBottomSheet(context, state.mode),
       ),
     );
+  }
+
+  Future<void> _showFeedModeBottomSheet(
+    BuildContext context,
+    FeedMode currentMode,
+  ) async {
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: currentMode.name,
+      options: const [
+        VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
+        VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
+        VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
+      ],
+    );
+
+    if (selected != null && context.mounted) {
+      final mode = FeedMode.values.firstWhere((m) => m.name == selected);
+      context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
+    }
   }
 }
 
