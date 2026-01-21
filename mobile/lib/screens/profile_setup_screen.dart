@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -42,13 +42,11 @@ class ProfileSetupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
-    final usernameRepository = ref.watch(usernameRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
 
     return BlocProvider<ProfileEditorBloc>(
       create: (context) => ProfileEditorBloc(
         profileRepository: profileRepository,
-        usernameRepository: usernameRepository,
         userProfileService: userProfileService,
       ),
       child: ProfileSetupScreenView(isNewUser: isNewUser),
