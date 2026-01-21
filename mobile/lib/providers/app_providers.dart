@@ -26,7 +26,6 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
-import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -1060,8 +1059,8 @@ VideosRepository videosRepository(Ref ref) {
 
   return VideosRepository(
     nostrClient: nostrClient,
-    contentFilter: createBlocklistFilter(blocklistService),
-    videoEventFilter: createNsfwFilter(ageVerificationService),
+    blockFilter: createBlocklistFilter(blocklistService),
+    contentFilter: createNsfwFilter(ageVerificationService),
   );
 }
 

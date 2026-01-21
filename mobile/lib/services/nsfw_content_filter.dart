@@ -5,7 +5,7 @@ import 'package:models/models.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// Creates a [VideoEventFilter] that filters NSFW content based on user
+/// Creates a [VideoContentFilter] that filters NSFW content based on user
 /// preferences from [ageVerificationService].
 ///
 /// Returns `true` (filter out) if:
@@ -14,7 +14,7 @@ import 'package:videos_repository/videos_repository.dart';
 ///
 /// This allows the [VideosRepository] to filter NSFW content without
 /// depending directly on app-level services.
-VideoEventFilter createNsfwFilter(
+VideoContentFilter createNsfwFilter(
   AgeVerificationService ageVerificationService,
 ) {
   return (VideoEvent video) {

@@ -764,7 +764,7 @@ void main() {
         );
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: filter.call,
+          blockFilter: filter.call,
         );
 
         final blockedEvent = _createVideoEvent(
@@ -804,7 +804,7 @@ void main() {
         );
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: filter.call,
+          blockFilter: filter.call,
         );
 
         final blockedEvent = _createVideoEvent(
@@ -841,7 +841,7 @@ void main() {
         );
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: filter.call,
+          blockFilter: filter.call,
         );
 
         final blockedEvent = _createVideoEvent(
@@ -897,7 +897,7 @@ void main() {
         );
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: filter.call,
+          blockFilter: filter.call,
         );
 
         final events = [
@@ -934,7 +934,7 @@ void main() {
         );
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: filter.call,
+          blockFilter: filter.call,
         );
 
         final blockedEvent = _createVideoEvent(
@@ -961,7 +961,7 @@ void main() {
         final nsfwFilter = TestNsfwFilter();
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          videoEventFilter: nsfwFilter.call,
+          contentFilter: nsfwFilter.call,
         );
 
         final nsfwEvent = _createVideoEvent(
@@ -994,7 +994,7 @@ void main() {
         final nsfwFilter = TestNsfwFilter();
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          videoEventFilter: nsfwFilter.call,
+          contentFilter: nsfwFilter.call,
         );
 
         final adultEvent = _createVideoEvent(
@@ -1018,7 +1018,7 @@ void main() {
         final nsfwFilter = TestNsfwFilter();
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          videoEventFilter: nsfwFilter.call,
+          contentFilter: nsfwFilter.call,
         );
 
         final cwEvent = _createVideoEvent(
@@ -1062,7 +1062,7 @@ void main() {
         final nsfwFilter = TestNsfwFilter(filterNsfw: false);
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          videoEventFilter: nsfwFilter.call,
+          contentFilter: nsfwFilter.call,
         );
 
         final nsfwEvent = _createVideoEvent(
@@ -1092,8 +1092,8 @@ void main() {
 
         final repositoryWithBothFilters = VideosRepository(
           nostrClient: mockNostrClient,
-          contentFilter: contentFilter.call,
-          videoEventFilter: nsfwFilter.call,
+          blockFilter: contentFilter.call,
+          contentFilter: nsfwFilter.call,
         );
 
         final blockedEvent = _createVideoEvent(
@@ -1137,7 +1137,7 @@ void main() {
         final filter = TestVideoEventFilter();
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
-          videoEventFilter: filter.call,
+          contentFilter: filter.call,
         );
 
         final event = _createVideoEvent(

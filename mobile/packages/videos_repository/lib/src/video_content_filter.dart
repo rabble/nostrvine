@@ -8,4 +8,4 @@
 ///
 /// Implementations can check blocklists, mute lists, age verification, etc.
 /// This keeps the repository decoupled from app-level services.
-typedef VideoContentFilter = bool Function(String pubkey);
+typedef BlockedVideoFilter = bool Function(String pubkey);

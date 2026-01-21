@@ -31,15 +31,15 @@ class VideosRepository {
   /// {@macro videos_repository}
   const VideosRepository({
     required NostrClient nostrClient,
+    BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
-    VideoEventFilter? videoEventFilter,
   }) : _nostrClient = nostrClient,
-       _contentFilter = contentFilter,
-       _videoEventFilter = videoEventFilter;
+       _blockFilter = blockFilter,
+       _contentFilter = contentFilter;
 
   final NostrClient _nostrClient;
+  final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
-  final VideoEventFilter? _videoEventFilter;
 
   /// Fetches videos from followed users for the home feed.
   ///
@@ -200,9 +200,9 @@ class VideosRepository {
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
   /// Applies two-stage filtering:
-  /// 1. [_contentFilter] - pubkey-based filtering (blocklist/mutes) BEFORE
+  /// 1. [_blockFilter] - pubkey-based filtering (blocklist/mutes) BEFORE
   ///    parsing for efficiency
-  /// 2. [_videoEventFilter] - content-based filtering (NSFW, etc.) AFTER
+  /// 2. [_contentFilter] - content-based filtering (NSFW, etc.) AFTER
   ///    parsing when video metadata is available
   ///
   /// Also:
@@ -225,7 +225,7 @@ class VideosRepository {
 
       // Stage 1: Content filter - check pubkey before parsing for efficiency
       // Content filter - check early before parsing for efficiency
-      if (_contentFilter?.call(event.pubkey) ?? false) continue;
+      if (_blockFilter?.call(event.pubkey) ?? false) continue;
 
       final video = VideoEvent.fromNostrEvent(event);
 
@@ -236,7 +236,7 @@ class VideosRepository {
       if (video.isExpired) continue;
 
       // Stage 2: Video event filter - check parsed video (NSFW, etc.)
-      if (_videoEventFilter?.call(video) ?? false) continue;
+      if (_contentFilter?.call(video) ?? false) continue;
 
       videos.add(video);
     }

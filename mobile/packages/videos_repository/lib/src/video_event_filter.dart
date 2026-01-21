@@ -12,6 +12,6 @@ import 'package:videos_repository/videos_repository.dart';
 /// inspection of video metadata like hashtags and tags. Use this for
 /// content-based filtering (NSFW, content warnings, etc.).
 ///
-/// For pubkey-based filtering (blocklists), use [VideoContentFilter] instead
+/// For pubkey-based filtering (blocklists), use [BlockedVideoFilter] instead
 /// which runs before parsing for efficiency.
-typedef VideoEventFilter = bool Function(VideoEvent video);
+typedef VideoContentFilter = bool Function(VideoEvent video);
