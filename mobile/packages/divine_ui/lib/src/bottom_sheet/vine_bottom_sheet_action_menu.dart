@@ -66,13 +66,10 @@ class VineBottomSheetActionData {
 /// ```
 class VineBottomSheetActionMenu {
   /// Shows the action menu as a modal bottom sheet.
-  ///
-  /// Returns the selected option's value when tapped, or null if dismissed.
   static Future<void> show({
     required BuildContext context,
     required List<VineBottomSheetActionData> options,
     Widget? title,
-    String? selectedValue,
   }) {
     return VineBottomSheet.show(
       context: context,
