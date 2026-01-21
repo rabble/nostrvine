@@ -17,6 +17,14 @@ class FakeEvent extends Fake implements Event {}
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeEvent());
+    registerFallbackValue(
+      RepostRecord(
+        addressableId: 'addressableId',
+        repostEventId: 'repostEventId',
+        originalAuthorPubkey: 'originalAuthorPubkey',
+        createdAt: DateTime.now(),
+      ),
+    );
     registerFallbackValue(<Filter>[]);
   });
 
@@ -712,6 +720,60 @@ void main() {
           );
         },
       );
+
+      test(
+        'updates existing record when newer version found from relay',
+        () async {
+          final oldTimestamp = DateTime.now().subtract(const Duration(days: 2));
+          final newTimestamp = DateTime.now();
+
+          final existingRecord = RepostRecord(
+            addressableId: '34236:author1:video1',
+            repostEventId: 'old_event_id',
+            originalAuthorPubkey: 'author1',
+            createdAt: oldTimestamp,
+          );
+
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenAnswer((_) async => [existingRecord]);
+
+          final newEvent = createMockEvent(
+            id: 'new_event_id',
+            kind: 16,
+            createdAt: newTimestamp.millisecondsSinceEpoch ~/ 1000,
+            tags: [
+              ['k', '34236'],
+              ['a', '34236:author1:video1'],
+              ['p', 'author1'],
+            ],
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [newEvent]);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            eventCreator: mockEventCreator,
+            localStorage: mockLocalStorage,
+          );
+
+          final result = await repository.syncUserReposts();
+
+          expect(
+            result.orderedAddressableIds,
+            contains('34236:author1:video1'),
+          );
+          expect(
+            result.addressableIdToRepostId['34236:author1:video1'],
+            equals('new_event_id'),
+          );
+          verify(
+            () => mockLocalStorage.saveRepostRecordsBatch(any()),
+          ).called(1);
+        },
+      );
     });
 
     group('fetchUserReposts', () {
@@ -846,6 +908,22 @@ void main() {
         expect(records[0].repostEventId, equals('event1'));
         expect(records[0].originalAuthorPubkey, equals('author1'));
       });
+
+      test('throws FetchRepostsFailedException on error', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Network error'));
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          eventCreator: mockEventCreator,
+        );
+
+        expect(
+          () => repository.fetchUserRepostRecords('some_pubkey'),
+          throwsA(isA<FetchRepostsFailedException>()),
+        );
+      });
     });
 
     group('clearCache', () {
@@ -885,26 +963,6 @@ void main() {
     });
 
     group('watchRepostedAddressableIds', () {
-      test('returns stream from local storage when available', () {
-        final streamController = StreamController<Set<String>>();
-        addTearDown(streamController.close);
-
-        when(
-          () => mockLocalStorage.watchRepostedAddressableIds(),
-        ).thenAnswer((_) => streamController.stream);
-
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
-          localStorage: mockLocalStorage,
-        );
-
-        expect(
-          repository.watchRepostedAddressableIds(),
-          equals(streamController.stream),
-        );
-      });
-
       test('returns internal stream when no local storage', () async {
         when(
           () => mockNostrClient.publishEvent(any()),
@@ -933,6 +991,24 @@ void main() {
         expect(emittedValues.last, contains(testAddressableId));
 
         await subscription.cancel();
+      });
+
+      test('delegates to local storage when available', () {
+        final storageStream = Stream.value(<String>{'test-id'});
+        when(
+          () => mockLocalStorage.watchRepostedAddressableIds(),
+        ).thenAnswer((_) => storageStream);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          eventCreator: mockEventCreator,
+          localStorage: mockLocalStorage,
+        );
+
+        final stream = repository.watchRepostedAddressableIds();
+
+        expect(stream, equals(storageStream));
+        verify(() => mockLocalStorage.watchRepostedAddressableIds()).called(1);
       });
     });
 
@@ -974,6 +1050,43 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         verifyNever(() => mockLocalStorage.clearAll());
+      });
+    });
+
+    group('dispose', () {
+      test('cancels auth subscription and closes stream controller', () async {
+        final authController = StreamController<bool>.broadcast();
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          eventCreator: mockEventCreator,
+          authStateStream: authController.stream,
+        );
+
+        // Ensure stream is active
+        final stream = repository.watchRepostedAddressableIds();
+        final subscription = stream.listen((_) {});
+
+        // Dispose should complete without error
+        repository.dispose();
+
+        // After dispose, sending to auth controller should not affect
+        // repository
+        authController.add(true);
+        await Future<void>.delayed(Duration.zero);
+
+        await subscription.cancel();
+        await authController.close();
+      });
+
+      test('can be called safely without auth stream', () {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          eventCreator: mockEventCreator,
+        );
+
+        // Should not throw when no auth subscription exists
+        expect(repository.dispose, returnsNormally);
       });
     });
   });

@@ -33,6 +33,7 @@ void main() {
       expect(updated.repostEventId, equals('new_event_id'));
       expect(updated.originalAuthorPubkey, equals('author'));
       expect(updated.createdAt, equals(now));
+      expect(record.copyWith(), equals(record));
     });
 
     test('equality works correctly', () {

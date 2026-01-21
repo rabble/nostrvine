@@ -40,12 +40,20 @@ void main() {
       const exception = AlreadyRepostedException('34236:author:dtag');
       expect(exception.message, contains('34236:author:dtag'));
       expect(exception.message, contains('already reposted'));
+      expect(
+        exception.toString(),
+        equals('AlreadyRepostedException: ${exception.message}'),
+      );
     });
 
     test('NotRepostedException includes addressable ID', () {
       const exception = NotRepostedException('34236:author:dtag');
       expect(exception.message, contains('34236:author:dtag'));
       expect(exception.message, contains('not reposted'));
+      expect(
+        exception.toString(),
+        equals('NotRepostedException: ${exception.message}'),
+      );
     });
 
     test('SyncFailedException has correct format', () {
