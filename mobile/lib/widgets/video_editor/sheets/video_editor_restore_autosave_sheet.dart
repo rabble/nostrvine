@@ -19,52 +19,27 @@ class VideoEditorRestoreAutosaveSheet extends StatelessWidget {
   /// Optional timestamp of when the autosave was created.
   final DateTime? lastSavedAt;
 
-  /// Shows the sheet and returns `true` if user wants to restore,
-  /// `false` if they want to discard.
-  static Future<bool?> show(BuildContext context, {DateTime? lastSavedAt}) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: VineTheme.surfaceBackground,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (_) => VideoEditorRestoreAutosaveSheet(lastSavedAt: lastSavedAt),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SingleChildScrollView(
+      padding: const .fromLTRB(24, 0, 24, 24),
       child: Column(
+        crossAxisAlignment: .stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
-            padding: .only(top: 8),
-            child: VineBottomSheetDragHandle(),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const .all(24),
-              child: Column(
-                crossAxisAlignment: .stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _WarningIcon(),
-                  const SizedBox(height: 12),
-                  const _Title(),
-                  const SizedBox(height: 14),
-                  const _Description(),
-                  if (lastSavedAt != null) ...[
-                    const SizedBox(height: 14),
-                    _Timestamp(lastSavedAt: lastSavedAt!),
-                  ],
-                  const SizedBox(height: 28),
-                  const _RestoreButton(),
-                  const SizedBox(height: 12),
-                  const _DiscardButton(),
-                ],
-              ),
-            ),
-          ),
+          const _WarningIcon(),
+          const SizedBox(height: 12),
+          const _Title(),
+          const SizedBox(height: 14),
+          const _Description(),
+          if (lastSavedAt != null) ...[
+            const SizedBox(height: 14),
+            _Timestamp(lastSavedAt: lastSavedAt!),
+          ],
+          const SizedBox(height: 28),
+          const _RestoreButton(),
+          const SizedBox(height: 12),
+          const _DiscardButton(),
         ],
       ),
     );

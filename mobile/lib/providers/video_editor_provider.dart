@@ -38,9 +38,6 @@ final videoEditorProvider =
 /// - Video rendering and export
 /// - Metadata management
 class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
-  static String autoSaveId = 'draft_autosave';
-  static int tagLimit = 10;
-
   /// Debounce duration for metadata autosave to prevent excessive saves.
   static const Duration _autosaveDebounce = Duration(milliseconds: 800);
 
@@ -387,6 +384,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Trim for storage (but after hashtag extraction)
     final cleanedTitle = rawTitle.trim();
     final cleanedDescription = rawDescription.trim();
+    final tagLimit = VideoEditorConstants.enableTagLimit
+        ? VideoEditorConstants.tagLimit
+        : 1 << 30; // Effectively unlimited (~1 billion)
 
     // Only extract hashtags when text changes, not when tags are manually edited
     final Set<String> allTags;
@@ -472,7 +472,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Create a VineDraft from the rendered clip with metadata.
   VineDraft getActiveDraft({bool isAutosave = false}) {
     return VineDraft.create(
-      id: isAutosave ? autoSaveId : draftId,
+      id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
       clips: state.finalRenderedClip == null || isAutosave
           ? _clips
           : [state.finalRenderedClip!],
@@ -608,7 +608,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Loads clips and metadata from the specified draft. If [draftId] is null,
   /// restores from [autoSaveId] to recover an autosaved session.
   Future<void> restoreDraft([String? draftId]) async {
-    draftId ??= autoSaveId;
+    draftId ??= VideoEditorConstants.autoSaveId;
     Log.info(
       '🎬 Initializing video editor with draft ID: $draftId',
       name: 'VideoEditorNotifier',
@@ -653,7 +653,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final draftService = DraftStorageService(prefs);
-      await draftService.deleteDraft(autoSaveId);
+      await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
       Log.debug(
         '🗑️ Deleted autosaved draft',
         name: 'VideoEditorNotifier',

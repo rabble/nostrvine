@@ -3,11 +3,12 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -81,7 +82,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     final prefs = await SharedPreferences.getInstance();
     final draftService = DraftStorageService(prefs);
     final draft = await draftService.getDraftById(
-      VideoEditorNotifier.autoSaveId,
+      VideoEditorConstants.autoSaveId,
     );
     if (draft != null && draft.clips.isNotEmpty) {
       Log.info(
@@ -89,9 +90,11 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         name: 'VideoRecorderScreen',
         category: .video,
       );
-      VideoEditorRestoreAutosaveSheet.show(
-        context,
-        lastSavedAt: draft.lastModified,
+      await VineBottomSheet.show(
+        context: context,
+        expanded: false,
+        isScrollControlled: true,
+        body: const VideoEditorRestoreAutosaveSheet(),
       );
     } else {
       Log.debug(

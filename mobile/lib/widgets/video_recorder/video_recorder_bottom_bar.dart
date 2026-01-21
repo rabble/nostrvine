@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_more_sheet.dart';
 
 /// Bottom bar with record button and camera controls.
 class VideoRecorderBottomBar extends ConsumerWidget {
@@ -15,11 +14,40 @@ class VideoRecorderBottomBar extends ConsumerWidget {
   const VideoRecorderBottomBar({super.key});
 
   /// Show more options menu
-  Future<void> _showMoreOptions(BuildContext context) async {
-    await showModalBottomSheet<void>(
+  Future<void> _showMoreOptions(BuildContext context, WidgetRef ref) async {
+    final clipManager = ref.read(
+      clipManagerProvider.select(
+        (p) => (hasClips: p.hasClips, clipCount: p.clipCount),
+      ),
+    );
+    final clipsNotifier = ref.read(clipManagerProvider.notifier);
+
+    VineBottomSheetActionMenu.show(
       context: context,
-      backgroundColor: VineTheme.surfaceBackground,
-      builder: (_) => const VideoRecorderMoreSheet(),
+      options: [
+        VineBottomSheetActionData(
+          iconPath: 'assets/icon/save.svg',
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: clipManager.clipCount > 1
+              ? 'Save clips to Library'
+              : 'Save clip to Library',
+          onTap: clipManager.hasClips ? clipsNotifier.saveClipsToLibrary : null,
+        ),
+        VineBottomSheetActionData(
+          iconPath: 'assets/icon/undo.svg',
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: 'Remove last clip',
+          onTap: clipManager.hasClips ? clipsNotifier.removeLastClip : null,
+          isDestructive: true,
+        ),
+        VineBottomSheetActionData(
+          iconPath: 'assets/icon/trash.svg',
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: 'Clear all clips',
+          onTap: clipManager.hasClips ? clipsNotifier.clearAll : null,
+          isDestructive: true,
+        ),
+      ],
     );
   }
 
@@ -95,7 +123,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   iconPath: 'assets/icon/more_horiz.svg',
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'More options',
-                  onPressed: () => _showMoreOptions(context),
+                  onPressed: () => _showMoreOptions(context, ref),
                 ),
               ],
             ),

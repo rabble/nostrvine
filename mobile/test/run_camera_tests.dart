@@ -19,8 +19,6 @@ import 'widgets/video_recorder/video_recorder_focus_point_test.dart'
     as focus_point_test;
 import 'widgets/video_recorder/video_recorder_segment_bar_test.dart'
     as segment_bar_test;
-import 'widgets/video_recorder/video_recorder_more_sheet_test.dart'
-    as more_sheet_test;
 
 // Import screen tests
 import 'screens/video_recorder_screen_test.dart' as screen_test;
@@ -118,10 +116,6 @@ void main() async {
 
       group('Segment Bar Widget', () {
         segment_bar_test.main();
-      });
-
-      group('More Sheet Widget', () {
-        more_sheet_test.main();
       });
     });
 

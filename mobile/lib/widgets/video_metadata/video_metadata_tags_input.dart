@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:divine_ui/divine_ui.dart';
 
@@ -100,7 +101,8 @@ class _VideoMetadataTagsInputState
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: updatedTags);
     _controller.clear();
     // Keep focus to prevent keyboard from closing (after rebuild)
-    if (updatedTags.length < VideoEditorNotifier.tagLimit) {
+    if (!VideoEditorConstants.enableTagLimit ||
+        updatedTags.length < VideoEditorConstants.tagLimit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });
@@ -140,10 +142,13 @@ class _VideoMetadataTagsInputState
                 children: [
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   Flexible(child: Text('Tags', style: labelStyle)),
-                  Text(
-                    '${tags.length}/${VideoEditorNotifier.tagLimit}',
-                    style: labelStyle.copyWith(color: const Color(0x80FFFFFF)),
-                  ),
+                  if (VideoEditorConstants.enableTagLimit)
+                    Text(
+                      '${tags.length}/${VideoEditorConstants.tagLimit}',
+                      style: labelStyle.copyWith(
+                        color: const Color(0x80FFFFFF),
+                      ),
+                    ),
                 ],
               ),
             // Custom flow layout for tags and input field
@@ -156,7 +161,8 @@ class _VideoMetadataTagsInputState
                 // Render all existing tags as chips
                 ...tags.map((tag) => _TagChip(tag: tag)),
                 // Show input field if under limit
-                if (tags.length < VideoEditorNotifier.tagLimit)
+                if (!VideoEditorConstants.enableTagLimit ||
+                    tags.length < VideoEditorConstants.tagLimit)
                   DivineTextField(
                     controller: _controller,
                     focusNode: _focusNode,

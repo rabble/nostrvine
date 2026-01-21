@@ -7,11 +7,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/divine_icon_button.dart';
-import 'package:openvine/widgets/video_editor/sheets/video_editor_clip_edit_more_sheet.dart';
-import 'package:openvine/widgets/video_editor/sheets/video_editor_overview_more_sheet.dart';
+import 'package:openvine/widgets/video_editor/video_editor_more_button.dart';
 import 'package:openvine/widgets/video_editor/video_time_display.dart';
 
 /// Bottom bar with playback controls and time display.
@@ -69,25 +66,6 @@ class VideoEditorBottomBar extends ConsumerWidget {
     await ref.read(videoEditorProvider.notifier).splitSelectedClip();
   }
 
-  /// Show the more options bottom sheet.
-  ///
-  /// Displays additional editor options like save to drafts, clip library, etc.
-  Future<void> _showMoreOptions(BuildContext context, WidgetRef ref) async {
-    Log.debug(
-      '⚙️ Showing more options sheet',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    final isEditing = ref.read(videoEditorProvider).isEditing;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: VineTheme.surfaceBackground,
-      builder: (context) => isEditing
-          ? const VideoEditorClipEditMoreSheet()
-          : const VideoEditorOverviewMoreSheet(),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
@@ -135,13 +113,7 @@ class VideoEditorBottomBar extends ConsumerWidget {
                           // TODO(l10n): Replace with context.l10n when localization is added.
                           semanticLabel: 'Crop',
                         ),
-                      DivineIconButton(
-                        backgroundColor: const Color(0x00000000),
-                        iconPath: 'assets/icon/more_horiz.svg',
-                        onTap: () => _showMoreOptions(context, ref),
-                        // TODO(l10n): Replace with context.l10n when localization is added.
-                        semanticLabel: 'More options',
-                      ),
+                      const VideoEditorMoreButton(),
                     ],
                   ),
 

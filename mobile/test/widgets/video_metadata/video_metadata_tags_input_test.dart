@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
@@ -18,7 +19,7 @@ void main() {
       expect(find.text('Tags'), findsOneWidget);
       // Should not show tag count when empty
       expect(
-        find.textContaining('/${VideoEditorNotifier.tagLimit}'),
+        find.textContaining('/${VideoEditorConstants.tagLimit}'),
         findsNothing,
       );
     });
@@ -48,7 +49,7 @@ void main() {
       expect(find.text('mobile'), findsOneWidget);
 
       // Should show tag count
-      expect(find.text('3/${VideoEditorNotifier.tagLimit}'), findsOneWidget);
+      expect(find.text('3/${VideoEditorConstants.tagLimit}'), findsOneWidget);
     });
 
     testWidgets('adds tag when space is entered', (tester) async {
@@ -175,7 +176,7 @@ void main() {
 
     testWidgets('hides input field when tag limit is reached', (tester) async {
       final state = VideoEditorProviderState(
-        tags: {for (var i = 0; i < VideoEditorNotifier.tagLimit; i++) 'tag$i'},
+        tags: {for (var i = 0; i < VideoEditorConstants.tagLimit; i++) 'tag$i'},
       );
 
       await tester.pumpWidget(
@@ -195,7 +196,7 @@ void main() {
       expect(find.text('#'), findsNWidgets(10));
       expect(
         find.text(
-          '${VideoEditorNotifier.tagLimit}/${VideoEditorNotifier.tagLimit}',
+          '${VideoEditorConstants.tagLimit}/${VideoEditorConstants.tagLimit}',
         ),
         findsOneWidget,
       );
