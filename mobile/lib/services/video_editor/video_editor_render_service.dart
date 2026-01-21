@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/utils/unified_logger.dart';
@@ -66,7 +67,7 @@ class VideoEditorRenderService {
       final task = VideoRenderData(
         id: clips.first.id,
         videoSegments: videoSegments,
-        endTime: const Duration(milliseconds: 6_300),
+        endTime: VideoEditorConstants.maxDuration,
         enableAudio: enableAudio,
         transform: ExportTransform(
           x: cropParams.x,

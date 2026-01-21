@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -170,7 +171,7 @@ void main() {
 
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
-        duration: const Duration(milliseconds: 6300),
+        duration: VideoEditorConstants.maxDuration,
         aspectRatio: .vertical,
       );
 

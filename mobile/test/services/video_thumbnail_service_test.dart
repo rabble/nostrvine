@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 @GenerateMocks([])
@@ -258,7 +259,7 @@ void main() {
 
       test('handles vine-length video (6.3 seconds)', () {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
-          const Duration(milliseconds: 6300),
+          VideoEditorConstants.maxDuration,
         );
         expect(timestamp.inMilliseconds, equals(630)); // 10% of 6300ms
       });

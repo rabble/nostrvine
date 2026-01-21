@@ -2,6 +2,7 @@
 // ABOUTME: Validates duration calculations and clip operations
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -50,7 +51,7 @@ void main() {
       final fullClip = RecordingClip(
         id: 'clip_full',
         video: EditorVideo.file('/path/to/video.mp4'),
-        duration: const Duration(milliseconds: 6300),
+        duration: VideoEditorConstants.maxDuration,
         recordedAt: DateTime.now(),
         aspectRatio: .vertical,
       );

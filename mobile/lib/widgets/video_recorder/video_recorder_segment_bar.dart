@@ -4,7 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 
 /// Displays a horizontal bar showing recording segments.
@@ -36,7 +36,7 @@ class _Segments extends ConsumerWidget {
   const _Segments({required this.constraints});
 
   /// Maximum allowed recording duration.
-  static const Duration _maxDuration = ClipManagerState.maxDuration;
+  static const Duration _maxDuration = VideoEditorConstants.maxDuration;
 
   final BoxConstraints constraints;
 

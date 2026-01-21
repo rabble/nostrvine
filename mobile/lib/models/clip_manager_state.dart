@@ -1,6 +1,7 @@
 // ABOUTME: UI state model for the Clip Manager screen
 // ABOUTME: Tracks clips, selection state, and duration calculations
 
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 
 /// State model for the Clip Manager.
@@ -47,9 +48,6 @@ class ClipManagerState {
   /// Current duration of the active recording in progress.
   final Duration activeRecordingDuration;
 
-  /// Maximum allowed total duration for all clips combined (6.3 seconds).
-  static const Duration maxDuration = Duration(milliseconds: 6_300);
-
   /// Total combined duration of all clips.
   Duration get totalDuration {
     return clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
@@ -59,7 +57,7 @@ class ClipManagerState {
   ///
   /// Returns zero if max duration has been reached or exceeded.
   Duration get remainingDuration {
-    final remaining = maxDuration - totalDuration;
+    final remaining = VideoEditorConstants.maxDuration - totalDuration;
     return remaining.isNegative ? Duration.zero : remaining;
   }
 

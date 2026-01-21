@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
@@ -343,7 +344,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     state = state.copyWith(
       currentPosition: Duration(
-        milliseconds: (offset + position).inMilliseconds.clamp(0, 6300),
+        milliseconds: (offset + position).inMilliseconds.clamp(
+          0,
+          VideoEditorConstants.maxDuration.inMilliseconds,
+        ),
       ),
     );
   }

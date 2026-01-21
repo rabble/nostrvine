@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -350,7 +351,7 @@ void main() {
             .updatePosition(const Duration(seconds: 10));
         final state = container.read(videoEditorProvider);
 
-        expect(state.currentPosition, const Duration(milliseconds: 6300));
+        expect(state.currentPosition, VideoEditorConstants.maxDuration);
       });
 
       test('should clamp position to min 0', () {

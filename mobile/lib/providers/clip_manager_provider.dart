@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
@@ -27,9 +28,6 @@ final clipManagerProvider =
 /// - Thumbnail and metadata updates
 /// - Draft and library persistence
 class ClipManagerNotifier extends Notifier<ClipManagerState> {
-  /// Maximum allowed duration for a video composition (6.3 seconds).
-  static const Duration maxDuration = Duration(milliseconds: 6_300);
-
   int _clipCounter = 0;
   Timer? _recordingDurationTimer;
   final _recordStopwatch = Stopwatch();
@@ -47,7 +45,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       Duration.zero,
       (sum, clip) => sum + clip.duration,
     );
-    return maxDuration - totalDuration;
+    return VideoEditorConstants.maxDuration - totalDuration;
   }
 
   @override
