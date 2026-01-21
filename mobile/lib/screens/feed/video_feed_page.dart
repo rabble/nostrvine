@@ -297,10 +297,12 @@ class _FittedVideoPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final videoWidth =
-        controller.value.size.width > 0 ? controller.value.size.width : 1.0;
-    final videoHeight =
-        controller.value.size.height > 0 ? controller.value.size.height : 1.0;
+    final videoWidth = controller.value.size.width > 0
+        ? controller.value.size.width
+        : 1.0;
+    final videoHeight = controller.value.size.height > 0
+        ? controller.value.size.height
+        : 1.0;
 
     return FittedBox(
       fit: BoxFit.contain,
