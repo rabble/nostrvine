@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pooled_video_player/src/models/pooled_video.dart';
 import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
@@ -181,12 +182,23 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   void didUpdateWidget(PooledVideoFeed oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.videos.length != oldWidget.videos.length) {
+    if (_hasVideoListChanged(oldWidget.videos, widget.videos)) {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(_prewarmDebounce, () {
         _prewarmAdjacentVideos(_currentIndex);
       });
     }
+  }
+
+  /// Check if the video list has changed (different length, content, or order).
+  bool _hasVideoListChanged(
+    List<PooledVideo> oldVideos,
+    List<PooledVideo> newVideos,
+  ) {
+    return !listEquals(
+      oldVideos.map((v) => v.id).toList(),
+      newVideos.map((v) => v.id).toList(),
+    );
   }
 
   @override
