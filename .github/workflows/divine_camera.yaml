@@ -24,4 +24,3 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/divine_camera"
-      min_coverage: 67
