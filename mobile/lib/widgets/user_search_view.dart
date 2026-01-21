@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/widgets/user_profile_tile.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 /// Displays user search results from UserSearchBloc.
 ///
@@ -82,12 +82,74 @@ class _UserSearchResultsList extends StatelessWidget {
       itemCount: results.length,
       itemBuilder: (context, index) {
         final profile = results[index];
-        return UserProfileTile(
-          pubkey: profile.pubkey,
-          showFollowButton: false,
+        return _SearchUserTile(
+          profile: profile,
           onTap: () => context.pushProfileGrid(profile.pubkey),
         );
       },
+    );
+  }
+}
+
+/// Tile widget for displaying a user from search results.
+/// Uses UserProfile from package:models directly.
+class _SearchUserTile extends StatelessWidget {
+  const _SearchUserTile({
+    required this.profile,
+    this.onTap,
+  });
+
+  final UserProfile profile;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'search_user_tile_${profile.pubkey}',
+      label: profile.bestDisplayName,
+      container: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: VineTheme.cardBackground,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              UserAvatar(imageUrl: profile.picture, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.bestDisplayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (profile.about != null && profile.about!.isNotEmpty)
+                      Text(
+                        profile.about!,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
