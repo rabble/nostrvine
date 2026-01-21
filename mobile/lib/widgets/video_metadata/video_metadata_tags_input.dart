@@ -101,8 +101,7 @@ class _VideoMetadataTagsInputState
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: updatedTags);
     _controller.clear();
     // Keep focus to prevent keyboard from closing (after rebuild)
-    if (!VideoEditorConstants.enableTagLimit ||
-        updatedTags.length < VideoEditorConstants.tagLimit) {
+    if (updatedTags.length < VideoEditorConstants.tagLimit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });
@@ -161,8 +160,7 @@ class _VideoMetadataTagsInputState
                 // Render all existing tags as chips
                 ...tags.map((tag) => _TagChip(tag: tag)),
                 // Show input field if under limit
-                if (!VideoEditorConstants.enableTagLimit ||
-                    tags.length < VideoEditorConstants.tagLimit)
+                if (tags.length < VideoEditorConstants.tagLimit)
                   DivineTextField(
                     controller: _controller,
                     focusNode: _focusNode,

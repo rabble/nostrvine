@@ -384,9 +384,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Trim for storage (but after hashtag extraction)
     final cleanedTitle = rawTitle.trim();
     final cleanedDescription = rawDescription.trim();
-    final tagLimit = VideoEditorConstants.enableTagLimit
-        ? VideoEditorConstants.tagLimit
-        : 1 << 30; // Effectively unlimited (~1 billion)
+    final tagLimit = VideoEditorConstants.tagLimit;
 
     // Only extract hashtags when text changes, not when tags are manually edited
     final Set<String> allTags;

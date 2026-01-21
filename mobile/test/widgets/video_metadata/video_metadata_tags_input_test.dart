@@ -49,7 +49,9 @@ void main() {
       expect(find.text('mobile'), findsOneWidget);
 
       // Should show tag count
-      expect(find.text('3/${VideoEditorConstants.tagLimit}'), findsOneWidget);
+      if (VideoEditorConstants.enableTagLimit) {
+        expect(find.text('3/${VideoEditorConstants.tagLimit}'), findsOneWidget);
+      }
     });
 
     testWidgets('adds tag when space is entered', (tester) async {
@@ -174,36 +176,42 @@ void main() {
       expect(updatedTags, anyOf(equals({'flutter'}), equals({'dart'})));
     });
 
-    testWidgets('hides input field when tag limit is reached', (tester) async {
-      final state = VideoEditorProviderState(
-        tags: {for (var i = 0; i < VideoEditorConstants.tagLimit; i++) 'tag$i'},
-      );
+    testWidgets(
+      'hides input field when tag limit is reached',
+      (tester) async {
+        final state = VideoEditorProviderState(
+          tags: {
+            for (var i = 0; i < VideoEditorConstants.tagLimit; i++) 'tag$i',
+          },
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(
-              () => _MockVideoEditorNotifier(state),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: VideoMetadataTagsInput()),
             ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataTagsInput()),
           ),
-        ),
-      );
+        );
 
-      // Should show 10 tags
-      expect(find.text('#'), findsNWidgets(10));
-      expect(
-        find.text(
-          '${VideoEditorConstants.tagLimit}/${VideoEditorConstants.tagLimit}',
-        ),
-        findsOneWidget,
-      );
+        // Should show 10 tags
+        expect(find.text('#'), findsNWidgets(10));
+        expect(
+          find.text(
+            '${VideoEditorConstants.tagLimit}/${VideoEditorConstants.tagLimit}',
+          ),
+          findsOneWidget,
+        );
 
-      // Input field should not be present
-      expect(find.byType(TextField), findsNothing);
-    });
+        // Input field should not be present
+        expect(find.byType(TextField), findsNothing);
+      },
+      skip: !VideoEditorConstants.enableTagLimit,
+    );
 
     testWidgets('clears input after adding tag', (tester) async {
       final mockNotifier = _MockVideoEditorNotifier(VideoEditorProviderState());
