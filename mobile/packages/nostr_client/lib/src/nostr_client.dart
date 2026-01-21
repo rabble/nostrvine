@@ -875,6 +875,11 @@ class NostrClient {
     return subscribe([filter]);
   }
 
+  /// Creates a NIP-98 HTTP authentication header.
+  ///
+  /// Generates a signed kind 27235 event containing the [url] and [method],
+  /// plus an optional SHA256 hash of the [payload]. Returns the header value
+  /// in the format `Nostr <base64-encoded-event>`.
   Future<String?> createNip98AuthHeader({
     required String url,
     required String method,

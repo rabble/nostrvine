@@ -363,14 +363,13 @@ ContentBlocklistService contentBlocklistService(Ref ref) {
   return ContentBlocklistService();
 }
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 @riverpod
 Nip05Service nip05Service(Ref ref) {
-  final nostrClient = ref.read(nostrServiceProvider);
-  return Nip05Service(nostrClient: nostrClient);
+  return Nip05Service();
 }
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 @riverpod
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);

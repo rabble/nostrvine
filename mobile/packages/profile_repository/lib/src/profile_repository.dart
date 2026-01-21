@@ -61,9 +61,12 @@ class ProfileRepository {
     return UserProfile.fromNostrEvent(profileEvent);
   }
 
-  /// Register a username for the given pubkey
+  /// Claims a username for the given pubkey via NIP-98 authenticated request.
   ///
-  /// Delegates to [NostrClient.] and returns the result.
+  /// Makes a POST request to `divine.video/api/username/claim` with the
+  /// username and pubkey, authenticated using a NIP-98 HTTP auth header.
+  ///
+  /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({
     required String username,
     required String pubkey,
