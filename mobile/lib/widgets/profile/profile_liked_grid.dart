@@ -15,7 +15,10 @@ import 'package:openvine/utils/unified_logger.dart';
 ///
 /// Requires [ProfileLikedVideosBloc] to be provided in the widget tree.
 class ProfileLikedGrid extends StatefulWidget {
-  const ProfileLikedGrid({super.key});
+  const ProfileLikedGrid({required this.isOwnProfile, super.key});
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   State<ProfileLikedGrid> createState() => _ProfileLikedGridState();
@@ -46,7 +49,7 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
         final likedVideos = state.videos;
 
         if (likedVideos.isEmpty) {
-          return const _LikedEmptyState();
+          return _LikedEmptyState(isOwnProfile: widget.isOwnProfile);
         }
 
         return NotificationListener<ScrollNotification>(
@@ -113,7 +116,10 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
 
 /// Empty state shown when user has no liked videos
 class _LikedEmptyState extends StatelessWidget {
-  const _LikedEmptyState();
+  const _LikedEmptyState({required this.isOwnProfile});
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   Widget build(BuildContext context) => CustomScrollView(
@@ -124,10 +130,10 @@ class _LikedEmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.favorite_border, color: Colors.grey, size: 64),
-              SizedBox(height: 16),
-              Text(
+            children: [
+              const Icon(Icons.favorite_border, color: Colors.grey, size: 64),
+              const SizedBox(height: 16),
+              const Text(
                 'No Liked Videos Yet',
                 style: TextStyle(
                   color: Colors.white,
@@ -135,10 +141,12 @@ class _LikedEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Videos you like will appear here',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                isOwnProfile
+                    ? 'Videos you like will appear here'
+                    : 'Videos they like will appear here',
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),

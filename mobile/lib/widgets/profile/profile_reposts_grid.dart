@@ -13,9 +13,16 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
 class ProfileRepostsGrid extends ConsumerWidget {
-  const ProfileRepostsGrid({required this.userIdHex, super.key});
+  const ProfileRepostsGrid({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    super.key,
+  });
 
   final String userIdHex;
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +31,7 @@ class ProfileRepostsGrid extends ConsumerWidget {
     return repostsAsync.when(
       data: (reposts) {
         if (reposts.isEmpty) {
-          return const _RepostsEmptyState();
+          return _RepostsEmptyState(isOwnProfile: isOwnProfile);
         }
 
         return CustomScrollView(
@@ -66,7 +73,10 @@ class ProfileRepostsGrid extends ConsumerWidget {
 
 /// Empty state shown when user has no reposts
 class _RepostsEmptyState extends StatelessWidget {
-  const _RepostsEmptyState();
+  const _RepostsEmptyState({required this.isOwnProfile});
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   Widget build(BuildContext context) => CustomScrollView(
@@ -77,10 +87,10 @@ class _RepostsEmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.repeat, color: Colors.grey, size: 64),
-              SizedBox(height: 16),
-              Text(
+            children: [
+              const Icon(Icons.repeat, color: Colors.grey, size: 64),
+              const SizedBox(height: 16),
+              const Text(
                 'No Reposts Yet',
                 style: TextStyle(
                   color: Colors.white,
@@ -88,10 +98,12 @@ class _RepostsEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Videos you repost will appear here',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                isOwnProfile
+                    ? 'Videos you repost will appear here'
+                    : 'Videos they repost will appear here',
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),

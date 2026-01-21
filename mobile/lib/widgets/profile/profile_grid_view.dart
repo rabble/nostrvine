@@ -109,8 +109,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         controller: _tabController,
         children: [
           ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
-          const ProfileLikedGrid(),
-          ProfileRepostsGrid(userIdHex: widget.userIdHex),
+          ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
+          ProfileRepostsGrid(
+            userIdHex: widget.userIdHex,
+            isOwnProfile: widget.isOwnProfile,
+          ),
         ],
       ),
     );

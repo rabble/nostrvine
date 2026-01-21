@@ -1,0 +1,139 @@
+// ABOUTME: Action menu bottom sheet with icon-labeled action items
+// ABOUTME: Supports destructive actions and disabled states
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+
+/// Data class representing an action item in the bottom sheet menu.
+class VineBottomSheetActionData {
+  /// Creates a [VineBottomSheetActionData].
+  const VineBottomSheetActionData({
+    required this.iconPath,
+    required this.label,
+    this.isDestructive = false,
+    this.closeOnTap = true,
+    this.onTap,
+  });
+
+  /// The path to the SVG icon asset to display.
+  final String iconPath;
+
+  /// The display text for this action.
+  final String label;
+
+  /// Whether this action is destructive (e.g., delete, remove).
+  ///
+  /// Destructive actions are displayed in red.
+  final bool isDestructive;
+
+  /// Whether to automatically close the bottom sheet when tapped.
+  ///
+  /// Defaults to `true`.
+  final bool closeOnTap;
+
+  /// Callback when the action is tapped.
+  ///
+  /// If null, the action is displayed as disabled.
+  final VoidCallback? onTap;
+}
+
+/// A bottom sheet menu displaying action items with icons.
+///
+/// Each action displays an SVG icon and label. Supports destructive actions
+/// (shown in red) and disabled states (when [VineBottomSheetActionData.onTap]
+/// is null).
+///
+/// Example:
+/// ```dart
+/// await VineBottomSheetActionMenu.show(
+///   context: context,
+///   options: [
+///     VineBottomSheetActionData(
+///       iconPath: 'assets/icons/edit.svg',
+///       label: 'Edit',
+///       isDestructive: false,
+///       onTap: () => handleEdit(),
+///     ),
+///     VineBottomSheetActionData(
+///       iconPath: 'assets/icons/delete.svg',
+///       label: 'Delete',
+///       isDestructive: true,
+///       onTap: () => handleDelete(),
+///     ),
+///   ],
+/// );
+/// ```
+class VineBottomSheetActionMenu {
+  /// Shows the action menu as a modal bottom sheet.
+  static Future<void> show({
+    required BuildContext context,
+    required List<VineBottomSheetActionData> options,
+    Widget? title,
+  }) {
+    return VineBottomSheet.show(
+      context: context,
+      title: title,
+      expanded: false,
+      isScrollControlled: true,
+      body: Flexible(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: .min,
+            children: [
+              for (final option in options)
+                _VineBottomSheetListTile(data: option),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VineBottomSheetListTile extends StatelessWidget {
+  const _VineBottomSheetListTile({required this.data});
+
+  final VineBottomSheetActionData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = data.onTap != null;
+
+    final color = isEnabled
+        ? data.isDestructive
+              ? const Color(0xFFF44336)
+              : Colors.white
+        : const Color(0x40FFFFFF);
+
+    return ListTile(
+      enabled: isEnabled,
+      minTileHeight: 56,
+      leading: SizedBox(
+        height: 24,
+        width: 24,
+        child: SvgPicture.asset(
+          data.iconPath,
+          colorFilter: .mode(color, .srcIn),
+        ),
+      ),
+      title: Text(
+        data.label,
+        style: VineTheme.titleFont(
+          fontSize: 18,
+          height: 1.33,
+          letterSpacing: 0.15,
+          color: color,
+        ),
+        maxLines: 1,
+        overflow: .ellipsis,
+      ),
+      onTap: isEnabled
+          ? () {
+              if (data.closeOnTap) Navigator.pop(context);
+              data.onTap!();
+            }
+          : null,
+    );
+  }
+}

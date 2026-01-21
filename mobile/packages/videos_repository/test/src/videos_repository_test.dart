@@ -1,10 +1,65 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
+
+/// Test helper that tracks content filter calls.
+class TestContentFilter {
+  TestContentFilter({this.blockedPubkeys = const {}});
+
+  final Set<String> blockedPubkeys;
+  final List<String> calls = [];
+
+  bool call(String pubkey) {
+    calls.add(pubkey);
+    return blockedPubkeys.contains(pubkey);
+  }
+}
+
+/// Test helper that tracks video event filter calls.
+class TestVideoEventFilter {
+  TestVideoEventFilter({this.shouldFilter = false});
+
+  final bool shouldFilter;
+  final List<VideoEvent> calls = [];
+
+  bool call(VideoEvent video) {
+    calls.add(video);
+    return shouldFilter;
+  }
+}
+
+/// Test helper that filters videos with specific hashtags.
+class TestNsfwFilter {
+  TestNsfwFilter({this.filterNsfw = true});
+
+  final bool filterNsfw;
+  final List<VideoEvent> calls = [];
+
+  bool call(VideoEvent video) {
+    calls.add(video);
+    if (!filterNsfw) return false;
+
+    // Check for NSFW hashtags
+    for (final hashtag in video.hashtags) {
+      final lowerHashtag = hashtag.toLowerCase();
+      if (lowerHashtag == 'nsfw' || lowerHashtag == 'adult') {
+        return true;
+      }
+    }
+
+    // Check for content-warning tag
+    if (video.rawTags.containsKey('content-warning')) {
+      return true;
+    }
+
+    return false;
+  }
+}
 
 void main() {
   group('VideosRepository', () {
@@ -698,6 +753,412 @@ void main() {
         },
       );
     });
+
+    group('content filtering', () {
+      test('filters out videos from blocked pubkeys', () async {
+        const blockedPubkey = 'blocked-user-pubkey';
+        const allowedPubkey = 'allowed-user-pubkey';
+
+        final filter = TestContentFilter(
+          blockedPubkeys: {blockedPubkey},
+        );
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: filter.call,
+        );
+
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: blockedPubkey,
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067200,
+        );
+        final allowedEvent = _createVideoEvent(
+          id: 'allowed-video',
+          pubkey: allowedPubkey,
+          videoUrl: 'https://example.com/allowed.mp4',
+          createdAt: 1704067201,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [blockedEvent, allowedEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('allowed-video'));
+        expect(result.first.pubkey, equals(allowedPubkey));
+
+        // Verify filter was called for both pubkeys
+        expect(filter.calls, contains(blockedPubkey));
+        expect(filter.calls, contains(allowedPubkey));
+      });
+
+      test('filters blocked pubkeys in home feed', () async {
+        const blockedPubkey = 'blocked-followed-user';
+        const allowedPubkey = 'allowed-followed-user';
+
+        final filter = TestContentFilter(
+          blockedPubkeys: {blockedPubkey},
+        );
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: filter.call,
+        );
+
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: blockedPubkey,
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067200,
+        );
+        final allowedEvent = _createVideoEvent(
+          id: 'allowed-video',
+          pubkey: allowedPubkey,
+          videoUrl: 'https://example.com/allowed.mp4',
+          createdAt: 1704067201,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [blockedEvent, allowedEvent],
+        );
+
+        final result = await repositoryWithFilter.getHomeFeedVideos(
+          authors: [blockedPubkey, allowedPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.pubkey, equals(allowedPubkey));
+      });
+
+      test('filters blocked pubkeys in popular feed', () async {
+        const blockedPubkey = 'blocked-popular-user';
+        const allowedPubkey = 'allowed-popular-user';
+
+        final filter = TestContentFilter(
+          blockedPubkeys: {blockedPubkey},
+        );
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: filter.call,
+        );
+
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: blockedPubkey,
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067200,
+          loops: 1000,
+        );
+        final allowedEvent = _createVideoEvent(
+          id: 'allowed-video',
+          pubkey: allowedPubkey,
+          videoUrl: 'https://example.com/allowed.mp4',
+          createdAt: 1704067201,
+          loops: 500,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
+
+        final result = await repositoryWithFilter.getPopularVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.pubkey, equals(allowedPubkey));
+      });
+
+      test('works correctly without content filter (null)', () async {
+        // Use the default repository without filter
+        final event = _createVideoEvent(
+          id: 'video-1',
+          pubkey: 'any-pubkey',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('video-1'));
+      });
+
+      test('filters all videos if all pubkeys are blocked', () async {
+        final filter = TestContentFilter(
+          blockedPubkeys: {'user-1', 'user-2'},
+        );
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: filter.call,
+        );
+
+        final events = [
+          _createVideoEvent(
+            id: 'video-1',
+            pubkey: 'user-1',
+            videoUrl: 'https://example.com/video1.mp4',
+            createdAt: 1704067200,
+          ),
+          _createVideoEvent(
+            id: 'video-2',
+            pubkey: 'user-2',
+            videoUrl: 'https://example.com/video2.mp4',
+            createdAt: 1704067201,
+          ),
+        ];
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => events,
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, isEmpty);
+      });
+
+      test('checks filter before parsing event to VideoEvent', () async {
+        // This test verifies that filtering happens before the potentially
+        // expensive VideoEvent.fromNostrEvent() call
+        const blockedPubkey = 'blocked-user';
+
+        final filter = TestContentFilter(
+          blockedPubkeys: {blockedPubkey},
+        );
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: filter.call,
+        );
+
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: blockedPubkey,
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [blockedEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, isEmpty);
+        // Filter was called with the raw event pubkey
+        expect(filter.calls, contains(blockedPubkey));
+      });
+    });
+
+    group('video event filtering (stage 2)', () {
+      test('filters videos with NSFW hashtag when filter is active', () async {
+        final nsfwFilter = TestNsfwFilter();
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: nsfwFilter.call,
+        );
+
+        final nsfwEvent = _createVideoEvent(
+          id: 'nsfw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/nsfw.mp4',
+          createdAt: 1704067200,
+          hashtags: ['nsfw', 'other'],
+        );
+        final safeEvent = _createVideoEvent(
+          id: 'safe-video',
+          pubkey: 'user-2',
+          videoUrl: 'https://example.com/safe.mp4',
+          createdAt: 1704067201,
+          hashtags: ['funny', 'cat'],
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [nsfwEvent, safeEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('safe-video'));
+        expect(nsfwFilter.calls, hasLength(2));
+      });
+
+      test('filters videos with adult hashtag', () async {
+        final nsfwFilter = TestNsfwFilter();
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: nsfwFilter.call,
+        );
+
+        final adultEvent = _createVideoEvent(
+          id: 'adult-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/adult.mp4',
+          createdAt: 1704067200,
+          hashtags: ['adult'],
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [adultEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, isEmpty);
+      });
+
+      test('filters videos with content-warning tag', () async {
+        final nsfwFilter = TestNsfwFilter();
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: nsfwFilter.call,
+        );
+
+        final cwEvent = _createVideoEvent(
+          id: 'cw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/cw.mp4',
+          createdAt: 1704067200,
+          hasContentWarning: true,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [cwEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, isEmpty);
+      });
+
+      test('does not filter when videoEventFilter is null', () async {
+        // Use default repository without filter
+        final nsfwEvent = _createVideoEvent(
+          id: 'nsfw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/nsfw.mp4',
+          createdAt: 1704067200,
+          hashtags: ['nsfw'],
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [nsfwEvent],
+        );
+
+        final result = await repository.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('nsfw-video'));
+      });
+
+      test('does not filter NSFW when filter returns false', () async {
+        final nsfwFilter = TestNsfwFilter(filterNsfw: false);
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: nsfwFilter.call,
+        );
+
+        final nsfwEvent = _createVideoEvent(
+          id: 'nsfw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/nsfw.mp4',
+          createdAt: 1704067200,
+          hashtags: ['nsfw'],
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [nsfwEvent],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(nsfwFilter.calls, hasLength(1));
+      });
+
+      test('applies both content filter and video event filter', () async {
+        const blockedPubkey = 'blocked-user';
+        final contentFilter = TestContentFilter(
+          blockedPubkeys: {blockedPubkey},
+        );
+        final nsfwFilter = TestNsfwFilter();
+
+        final repositoryWithBothFilters = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: contentFilter.call,
+          contentFilter: nsfwFilter.call,
+        );
+
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: blockedPubkey,
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067200,
+        );
+        final nsfwEvent = _createVideoEvent(
+          id: 'nsfw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/nsfw.mp4',
+          createdAt: 1704067201,
+          hashtags: ['nsfw'],
+        );
+        final safeEvent = _createVideoEvent(
+          id: 'safe-video',
+          pubkey: 'user-2',
+          videoUrl: 'https://example.com/safe.mp4',
+          createdAt: 1704067202,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [blockedEvent, nsfwEvent, safeEvent],
+        );
+
+        final result = await repositoryWithBothFilters.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('safe-video'));
+
+        // Content filter was called for all events
+        expect(contentFilter.calls, hasLength(3));
+
+        // Video event filter was only called for non-blocked events
+        // (blocked event filtered in stage 1, so stage 2 only sees 2 events)
+        expect(nsfwFilter.calls, hasLength(2));
+      });
+
+      test('video event filter is called after parsing', () async {
+        final filter = TestVideoEventFilter();
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: filter.call,
+        );
+
+        final event = _createVideoEvent(
+          id: 'video-1',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        await repositoryWithFilter.getNewVideos();
+
+        // Filter received a parsed VideoEvent, not raw Event
+        expect(filter.calls, hasLength(1));
+        expect(filter.calls.first.id, equals('video-1'));
+        expect(filter.calls.first.pubkey, equals('user-1'));
+      });
+    });
   });
 }
 
@@ -708,11 +1169,16 @@ Event _createVideoEvent({
   required String? videoUrl,
   required int createdAt,
   int? loops,
+  List<String>? hashtags,
+  bool hasContentWarning = false,
 }) {
   final tags = <List<String>>[
     if (videoUrl != null) ['url', videoUrl],
     if (loops != null) ['loops', loops.toString()],
     ['d', id], // Required for addressable events
+    if (hashtags != null)
+      for (final tag in hashtags) ['t', tag],
+    if (hasContentWarning) ['content-warning', 'adult content'],
   ];
 
   return Event.fromJson({
