@@ -72,10 +72,13 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
           // Keep polling
           break;
         case PollStatus.error:
-          timer.cancel();
-          if (mounted) {
-            setErrorMessage(result.error ?? 'Verification failed');
-          }
+          Log.error(
+            'error polling for authorization: ${result.error}',
+            name: 'EmailVerificationMixin',
+            category: LogCategory.auth,
+          );
+
+          break;
       }
     });
   }
@@ -112,8 +115,7 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
             ),
             const SizedBox(height: 16),
             Text(
-              'Click the link in your email to complete registration. '
-              'You can continue using the app in the meantime.',
+              'Click the link in your email to complete registration. ',
               style: TextStyle(color: Colors.grey[400], fontSize: 14),
             ),
             const SizedBox(height: 16),
@@ -140,10 +142,9 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
           TextButton(
             onPressed: () {
               context.pop();
-              continueToApp();
             },
             child: const Text(
-              'Continue to App',
+              'Cancel',
               style: TextStyle(color: VineTheme.vineGreen),
             ),
           ),
