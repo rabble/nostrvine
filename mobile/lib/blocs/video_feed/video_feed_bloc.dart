@@ -94,7 +94,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
       // Filter out videos without valid URLs
-      final validNewVideos = newVideos.where((v) => v.videoUrl != null).toList();
+      final validNewVideos = newVideos
+          .where((v) => v.videoUrl != null)
+          .toList();
 
       emit(
         state.copyWith(
