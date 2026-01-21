@@ -267,8 +267,10 @@ class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
         video: _PooledVideoEventAdapter(widget.video),
         autoPlay: widget.isActive,
         enableTapToPause: widget.isActive,
-        videoBuilder: (context, controller) => _buildVideoWidget(controller),
-        loadingBuilder: (context) => _buildLoadingPlaceholder(),
+        videoBuilder: (context, controller) =>
+            _FittedVideoPlayer(controller: controller),
+        loadingBuilder: (context) =>
+            _VideoLoadingPlaceholder(thumbnailUrl: widget.video.thumbnailUrl),
         overlayBuilder: (context, controller) =>
             BlocProvider<VideoInteractionsBloc>.value(
               value: _interactionsBloc,
@@ -286,14 +288,19 @@ class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
       ),
     );
   }
+}
 
-  Widget _buildVideoWidget(VideoPlayerController controller) {
-    final videoWidth = controller.value.size.width > 0
-        ? controller.value.size.width
-        : 1.0;
-    final videoHeight = controller.value.size.height > 0
-        ? controller.value.size.height
-        : 1.0;
+class _FittedVideoPlayer extends StatelessWidget {
+  const _FittedVideoPlayer({required this.controller});
+
+  final VideoPlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final videoWidth =
+        controller.value.size.width > 0 ? controller.value.size.width : 1.0;
+    final videoHeight =
+        controller.value.size.height > 0 ? controller.value.size.height : 1.0;
 
     return FittedBox(
       fit: BoxFit.contain,
@@ -305,12 +312,19 @@ class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
       ),
     );
   }
+}
 
-  Widget _buildLoadingPlaceholder() {
+class _VideoLoadingPlaceholder extends StatelessWidget {
+  const _VideoLoadingPlaceholder({this.thumbnailUrl});
+
+  final String? thumbnailUrl;
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
-      child: widget.video.thumbnailUrl != null
+      child: thumbnailUrl != null
           ? Image.network(
-              widget.video.thumbnailUrl!,
+              thumbnailUrl!,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const _LoadingIndicator(),
             )
