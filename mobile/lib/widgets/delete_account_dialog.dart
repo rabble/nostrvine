@@ -164,8 +164,89 @@ Future<void> showDeleteAllContentWarningDialog({
   );
 }
 
+/// Progress dialog that shows deletion progress
+class _DeletionProgressDialog extends StatefulWidget {
+  const _DeletionProgressDialog({required this.progressNotifier});
+
+  final ValueNotifier<(int, int)> progressNotifier;
+
+  @override
+  State<_DeletionProgressDialog> createState() =>
+      _DeletionProgressDialogState();
+}
+
+class _DeletionProgressDialogState extends State<_DeletionProgressDialog> {
+  @override
+  void initState() {
+    super.initState();
+    widget.progressNotifier.addListener(_onProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.progressNotifier.removeListener(_onProgressChanged);
+    super.dispose();
+  }
+
+  void _onProgressChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (current, total) = widget.progressNotifier.value;
+    final hasProgress = total > 0;
+
+    return Center(
+      child: Card(
+        color: VineTheme.cardBackground,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasProgress) ...[
+                CircularProgressIndicator(
+                  value: current / total,
+                  color: VineTheme.vineGreen,
+                  backgroundColor: Colors.grey.shade800,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Deleting content...',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$current / $total events',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                ),
+              ] else ...[
+                const CircularProgressIndicator(color: VineTheme.vineGreen),
+                const SizedBox(height: 16),
+                const Text(
+                  'Preparing deletion...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Execute the full account deletion flow:
-/// 1. Show loading indicator
+/// 1. Show loading indicator with progress
 /// 2. Send NIP-62 deletion request (requires working signer)
 /// 3. Delete Keycast account if exists (invalidates signer)
 /// 4. Sign out and delete local keys
@@ -181,20 +262,29 @@ Future<void> executeAccountDeletion({
   required AuthService authService,
   String screenName = 'AccountDeletion',
 }) async {
-  // Show loading indicator
+  // Create progress notifier for the dialog
+  final progressNotifier = ValueNotifier<(int, int)>((0, 0));
+
+  // Show progress dialog
   if (!context.mounted) return;
   unawaited(
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      ),
+      builder: (context) =>
+          _DeletionProgressDialog(progressNotifier: progressNotifier),
     ),
   );
 
   // Step 1: Execute NIP-62 deletion request (requires working signer)
-  final result = await deletionService.deleteAccount();
+  final result = await deletionService.deleteAccount(
+    onProgress: (current, total) {
+      progressNotifier.value = (current, total);
+    },
+  );
+
+  // Clean up the notifier
+  progressNotifier.dispose();
 
   if (result.success) {
     // Step 2: Delete Keycast account if one exists (invalidates signer)
