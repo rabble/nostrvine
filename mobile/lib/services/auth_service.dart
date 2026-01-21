@@ -900,6 +900,86 @@ class AuthService {
     }
   }
 
+  /// Delete the user's Keycast account if one exists.
+  ///
+  /// This permanently deletes the account from the Keycast server.
+  /// Should be called AFTER sending NIP-62 deletion request (which requires
+  /// the signer to still be functional) but BEFORE [signOut].
+  ///
+  /// Returns a tuple of (success, errorMessage).
+  /// Returns (true, null) if:
+  /// - Account was successfully deleted
+  /// - No Keycast session exists (nothing to delete)
+  /// - OAuth client is not configured (local-only auth)
+  ///
+  /// Returns (false, errorMessage) if deletion failed.
+  Future<(bool success, String? error)> deleteKeycastAccount() async {
+    Log.debug(
+      '🗑️ Attempting to delete Keycast account',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    // No OAuth client configured - using local auth only
+    if (_oauthClient == null) {
+      Log.debug(
+        'No OAuth client configured - skipping Keycast deletion',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return (true, null);
+    }
+
+    try {
+      // Check for existing session with valid access token
+      final session = await _oauthClient.getSession();
+      if (session == null) {
+        Log.debug(
+          'No Keycast session found - nothing to delete',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return (true, null);
+      }
+
+      final accessToken = session.accessToken;
+      if (accessToken == null) {
+        Log.debug(
+          'Keycast session has no access token - nothing to delete',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return (true, null);
+      }
+
+      // Delete the account using the session's access token
+      final result = await _oauthClient.deleteAccount(accessToken);
+
+      if (result.success) {
+        Log.info(
+          '✅ Keycast account deleted successfully',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return (true, null);
+      } else {
+        Log.warning(
+          '⚠️ Keycast account deletion failed: ${result.error}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return (false, result.error);
+      }
+    } catch (e) {
+      Log.error(
+        '❌ Error deleting Keycast account: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return (false, 'Failed to delete Keycast account: $e');
+    }
+  }
+
   /// Sign out the current user
   Future<void> signOut({bool deleteKeys = false}) async {
     Log.debug(

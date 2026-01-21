@@ -172,68 +172,16 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
 
-    // Get current user's public key for nsec verification
-    final currentPublicKeyHex = authService.currentPublicKeyHex;
-    if (currentPublicKeyHex == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to verify identity. Please log in again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Show nsec verification dialog first, then standard delete dialog
+    // Show confirmation dialog, then execute deletion
+    // Identity is proven by having an active session
     await showDeleteAllContentWarningDialog(
       context: context,
-      currentPublicKeyHex: currentPublicKeyHex,
-      onConfirm: () async {
-        // Show loading indicator
-        if (!context.mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-        );
-
-        // Execute NIP-62 deletion request
-        final result = await deletionService.deleteAccount();
-
-        // Close loading indicator
-        if (!context.mounted) return;
-        context.pop();
-
-        if (result.success) {
-          // Sign out and delete keys
-          await authService.signOut(deleteKeys: true);
-
-          // Show completion dialog
-          if (!context.mounted) return;
-          await showDeleteAccountCompletionDialog(
-            context: context,
-            onCreateNewAccount: () {
-              context.go(ProfileSetupScreen.setupPath);
-            },
-          );
-        } else {
-          // Show error
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.error ?? 'Failed to delete content from relays',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
+      onConfirm: () => executeAccountDeletion(
+        context: context,
+        deletionService: deletionService,
+        authService: authService,
+        screenName: 'ProfileScreenRouter',
+      ),
     );
   }
 

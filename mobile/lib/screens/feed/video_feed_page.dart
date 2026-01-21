@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/video_page_view.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
@@ -24,45 +25,25 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
-      child: const _VideoFeedView(),
+      child: const VideoFeedView(),
     );
   }
 }
 
-class _VideoFeedView extends ConsumerStatefulWidget {
-  const _VideoFeedView();
+@visibleForTesting
+class VideoFeedView extends StatefulWidget {
+  const VideoFeedView({super.key});
 
   @override
-  ConsumerState<_VideoFeedView> createState() => _VideoFeedViewState();
+  State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-          buildWhen: (prev, curr) => prev.mode != curr.mode,
-          builder: (context, state) => Text(
-            state.mode.name.toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        actions: [
-          _FeedModeSwitch(),
-          // Refresh button
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<VideoFeedBloc>().add(
-                const VideoFeedRefreshRequested(),
-              );
-            },
-          ),
-        ],
-      ),
+      extendBodyBehindAppBar: true,
       body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
         builder: (context, state) {
           // Loading state (including initial state before first load)
@@ -94,6 +75,7 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                       )
                     : null,
               ),
+              const FeedModeSwitch(),
               // Loading more indicator
               if (state.isLoadingMore)
                 const Positioned(
@@ -107,63 +89,11 @@ class _VideoFeedViewState extends ConsumerState<_VideoFeedView> {
                     ),
                   ),
                 ),
-              // Debug info overlay
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Videos: ${state.videos.length} | '
-                    'HasMore: ${state.hasMore}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
-              ),
             ],
           );
         },
       ),
     );
-  }
-}
-
-class _FeedModeSwitch extends StatelessWidget {
-  const _FeedModeSwitch();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<VideoFeedBloc, VideoFeedState>(
-      buildWhen: (prev, curr) => prev.mode != curr.mode,
-      builder: (context, state) => IconButton(
-        icon: const Icon(Icons.filter_list, color: Colors.white),
-        onPressed: () => _showFeedModeBottomSheet(context, state.mode),
-      ),
-    );
-  }
-
-  Future<void> _showFeedModeBottomSheet(
-    BuildContext context,
-    FeedMode currentMode,
-  ) async {
-    final selected = await VineBottomSheetSelectionMenu.show(
-      context: context,
-      selectedValue: currentMode.name,
-      options: const [
-        VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
-        VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
-        VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
-      ],
-    );
-
-    if (selected != null && context.mounted) {
-      final mode = FeedMode.values.firstWhere((m) => m.name == selected);
-      context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
-    }
   }
 }
 

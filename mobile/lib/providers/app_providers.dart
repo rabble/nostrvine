@@ -2,6 +2,7 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -25,7 +26,7 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
-import 'package:openvine/services/nsfw_content_filter.dart';
+import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -49,6 +50,7 @@ import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';

@@ -206,6 +206,7 @@ class VideosRepository {
   ///    parsing when video metadata is available
   ///
   /// Also:
+  /// - Applies content filter (blocklist/mutes) if configured
   /// - Parses events using [VideoEvent.fromNostrEvent]
   /// - Filters out videos without a valid video URL
   /// - Filters out expired videos (NIP-40)
@@ -223,6 +224,7 @@ class VideosRepository {
       if (!NIP71VideoKinds.isVideoKind(event.kind)) continue;
 
       // Stage 1: Content filter - check pubkey before parsing for efficiency
+      // Content filter - check early before parsing for efficiency
       if (_contentFilter?.call(event.pubkey) ?? false) continue;
 
       final video = VideoEvent.fromNostrEvent(event);
