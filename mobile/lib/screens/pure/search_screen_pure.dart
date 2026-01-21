@@ -4,10 +4,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -17,7 +19,7 @@ import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/user_profile_tile.dart';
+import 'package:openvine/widgets/user_search_view.dart';
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
 class SearchScreenPure extends ConsumerStatefulWidget {
@@ -61,9 +63,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
+  late UserSearchBloc _userSearchBloc;
 
   List<VideoEvent> _videoResults = [];
-  List<String> _userResults = [];
   List<String> _hashtagResults = [];
 
   bool _isSearching = false;
@@ -75,6 +77,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _userSearchBloc = UserSearchBloc(
+      profileRepository: ref.read(profileRepositoryProvider),
+    );
     _searchController.addListener(_onSearchChanged);
 
     // Initialize search term from URL if present
@@ -111,6 +116,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _searchFocusNode.dispose();
     _tabController.dispose();
     _debounceTimer?.cancel();
+    _userSearchBloc.close();
     super.dispose();
 
     Log.info('🔍 SearchScreenPure: Disposed', category: LogCategory.video);
@@ -120,6 +126,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     final query = _searchController.text.trim();
 
     if (query == _currentQuery) return;
+
+    _userSearchBloc.add(UserSearchQueryChanged(query));
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
@@ -133,11 +141,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     if (query.isEmpty) {
       setState(() {
         _videoResults = [];
-        _userResults = [];
         _hashtagResults = [];
         _isSearching = false;
         _currentQuery = '';
       });
+      _userSearchBloc.add(const UserSearchCleared());
       return;
     }
 
@@ -163,21 +171,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         category: LogCategory.video,
       );
 
-      final users = <String>{};
-
-      // Find user profiles for matching the query
-      final matchingProfilesKeys = profileService.allProfiles.values
-          .where((profile) {
-            final displayNameMatch = profile.bestDisplayName
-                .toLowerCase()
-                .contains(query.toLowerCase());
-            return displayNameMatch;
-          })
-          .map((profile) => profile.pubkey)
-          .toList();
-
-      _userResults.addAll(matchingProfilesKeys.toList());
-
       // Filter local videos based on search query
       final filteredVideos = videos.where((video) {
         final titleMatch =
@@ -194,7 +187,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         return titleMatch || contentMatch || hashtagMatch || userMatch;
       }).toList();
 
-      // Extract unique hashtags and users from local results
+      // Extract unique hashtags from local results
       final hashtags = <String>{};
 
       for (final video in filteredVideos) {
@@ -203,7 +196,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             hashtags.add(tag);
           }
         }
-        users.add(video.pubkey);
       }
 
       // Sort local results before showing
@@ -214,7 +206,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         setState(() {
           _videoResults = filteredVideos;
           _hashtagResults = hashtags.take(20).toList();
-          _userResults = users.take(20).toList();
           _isSearching = false;
         });
         // Update provider so active video system can access search results
@@ -264,20 +255,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       // Get remote results
       final remoteResults = videoEventService.searchResults;
 
-      final profileService = ref.read(userProfileServiceProvider);
-      await profileService.searchUsers(_currentQuery, limit: 100);
-
-      // Find user profiles for matching the query
-      final matchingRemoteUsers = profileService.allProfiles.values
-          .where((profile) {
-            final displayNameMatch = profile.bestDisplayName
-                .toLowerCase()
-                .contains(_currentQuery.toLowerCase());
-            return displayNameMatch;
-          })
-          .map((profile) => profile.pubkey)
-          .toList();
-
       // Combine local + remote results
       final allVideos = [..._videoResults, ...remoteResults];
 
@@ -292,9 +269,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       // Sort: new vines (no loops) chronologically, then original vines by loop count
       uniqueVideos.sort(VideoEvent.compareByLoopsThenTime);
 
-      // Extract all unique hashtags and users from combined results
+      // Extract all unique hashtags from combined results
       final allHashtags = <String>{};
-      final allUsers = <String>{..._userResults, ...matchingRemoteUsers};
 
       for (final video in uniqueVideos) {
         for (final tag in video.hashtags) {
@@ -302,14 +278,12 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             allHashtags.add(tag);
           }
         }
-        allUsers.add(video.pubkey);
       }
 
       if (mounted) {
         setState(() {
           _videoResults = uniqueVideos;
           _hashtagResults = allHashtags.take(20).toList();
-          _userResults = allUsers.take(20).toList();
           _isSearchingExternal = false;
         });
         // Update provider so active video system can access merged search results
@@ -417,72 +391,88 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       ),
     );
 
-    final tabBar = TabBar(
-      controller: _tabController,
-      isScrollable: true,
-      tabAlignment: TabAlignment.start,
-      padding: const EdgeInsets.only(left: 16),
-      indicatorColor: VineTheme.tabIndicatorGreen,
-      indicatorWeight: 4,
-      indicatorSize: TabBarIndicatorSize.tab,
-      dividerColor: Colors.transparent,
-      labelColor: VineTheme.whiteText,
-      unselectedLabelColor: VineTheme.tabIconInactive,
-      labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-      labelStyle: VineTheme.tabTextStyle(),
-      unselectedLabelStyle: VineTheme.tabTextStyle(
-        color: VineTheme.tabIconInactive,
-      ),
-      tabs: [
-        Tab(text: 'Videos (${_videoResults.length})'),
-        Tab(text: 'Users (${_userResults.length})'),
-        Tab(text: 'Hashtags (${_hashtagResults.length})'),
-      ],
+    final tabBar = BlocBuilder<UserSearchBloc, UserSearchState>(
+      bloc: _userSearchBloc,
+      builder: (context, userSearchState) {
+        final userCount = userSearchState.results.length;
+        return TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          padding: const EdgeInsets.only(left: 16),
+          indicatorColor: VineTheme.tabIndicatorGreen,
+          indicatorWeight: 4,
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: VineTheme.whiteText,
+          unselectedLabelColor: VineTheme.tabIconInactive,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+          labelStyle: VineTheme.tabTextStyle(),
+          unselectedLabelStyle: VineTheme.tabTextStyle(
+            color: VineTheme.tabIconInactive,
+          ),
+          tabs: [
+            Tab(text: 'Videos (${_videoResults.length})'),
+            Tab(text: 'Users${userCount > 0 ? ' ($userCount)' : ''}'),
+            Tab(text: 'Hashtags (${_hashtagResults.length})'),
+          ],
+        );
+      },
     );
 
     final tabContent = TabBarView(
       controller: _tabController,
-      children: [_buildVideosTab(), _buildUsersTab(), _buildHashtagsTab()],
+      children: [
+        _buildVideosTab(),
+        const UserSearchView(),
+        _buildHashtagsTab(),
+      ],
     );
 
     // Embedded mode: return content without scaffold
     if (widget.embedded) {
-      return Container(
-        color: VineTheme.backgroundColor, // Ensure visible background
-        child: Column(
-          children: [
-            Container(
-              color: VineTheme.navGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: searchBar,
-            ),
-            Container(color: VineTheme.navGreen, child: tabBar),
-            Expanded(child: tabContent),
-          ],
+      return BlocProvider.value(
+        value: _userSearchBloc,
+        child: Container(
+          color: VineTheme.backgroundColor, // Ensure visible background
+          child: Column(
+            children: [
+              Container(
+                color: VineTheme.navGreen,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: searchBar,
+              ),
+              Container(color: VineTheme.navGreen, child: tabBar),
+              Expanded(child: tabContent),
+            ],
+          ),
         ),
       );
     }
 
     // Standalone mode: return full scaffold with app bar
-    return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: VineTheme.cardBackground,
-        leading: Semantics(
-          identifier: 'search_back_button',
-          button: true,
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-            onPressed: context.pop,
+    return BlocProvider.value(
+      value: _userSearchBloc,
+      child: Scaffold(
+        backgroundColor: VineTheme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: VineTheme.cardBackground,
+          leading: Semantics(
+            identifier: 'search_back_button',
+            button: true,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+              onPressed: context.pop,
+            ),
+          ),
+          title: searchBar,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: tabBar,
           ),
         ),
-        title: searchBar,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: tabBar,
-        ),
+        body: tabContent,
       ),
-      body: tabContent,
     );
   }
 
@@ -585,93 +575,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildUsersTab() {
-    if (_isSearching) {
-      return Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
-    if (_currentQuery.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
-            Text(
-              'Search for users',
-              style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
-            ),
-            Text(
-              'Find content creators and friends',
-              style: TextStyle(color: VineTheme.secondaryText),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_userResults.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_off, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
-            Text(
-              'No users found for "$_currentQuery"',
-              style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Sort users: those with display names first, unnamed users last
-    final sortedUsers = List<String>.from(_userResults);
-    final profileService = ref.watch(userProfileServiceProvider);
-
-    sortedUsers.sort((a, b) {
-      final profileA = profileService.getCachedProfile(a);
-      final profileB = profileService.getCachedProfile(b);
-
-      final hasNameA =
-          profileA?.bestDisplayName != null &&
-          !profileA!.bestDisplayName.startsWith('npub') &&
-          !profileA.bestDisplayName.startsWith('@');
-      final hasNameB =
-          profileB?.bestDisplayName != null &&
-          !profileB!.bestDisplayName.startsWith('npub') &&
-          !profileB.bestDisplayName.startsWith('@');
-
-      // Users with names come first
-      if (hasNameA && !hasNameB) return -1;
-      if (!hasNameA && hasNameB) return 1;
-      return 0;
-    });
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sortedUsers.length,
-      itemBuilder: (context, index) {
-        final userPubkey = sortedUsers[index];
-
-        return UserProfileTile(
-          pubkey: userPubkey,
-          showFollowButton: false, // Hide follow button in search results
-          onTap: () {
-            Log.info(
-              '🔍 SearchScreenPure: Tapped user: $userPubkey',
-              category: LogCategory.video,
-            );
-            context.pushProfileGrid(userPubkey);
-          },
-        );
-      },
     );
   }
 
