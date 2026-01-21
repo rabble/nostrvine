@@ -91,7 +91,7 @@ class _LikedVideosScreenRouterState
             videoEventService: videoEventService,
             nostrClient: nostrClient,
           )..add(const ProfileLikedVideosSyncRequested()),
-          child: const ProfileLikedGrid(),
+          child: const ProfileLikedGrid(isOwnProfile: true),
         ),
       );
     }
