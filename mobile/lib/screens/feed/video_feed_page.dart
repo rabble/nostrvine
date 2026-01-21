@@ -65,9 +65,8 @@ class _VideoFeedViewState extends State<VideoFeedView> {
             return FeedEmptyWidget(state: state);
           }
 
-          // Filter out videos without URLs and wrap for pool compatibility
+          // Wrap videos for pool compatibility
           final pooledVideos = state.videos
-              .where((v) => v.videoUrl != null)
               .map(_PooledVideoEventAdapter.new)
               .toList();
 
@@ -77,7 +76,6 @@ class _VideoFeedViewState extends State<VideoFeedView> {
             children: [
               PooledVideoFeed(
                 videos: pooledVideos,
-                // getCachedFile: openVineVideoCache.getCachedVideoSync,
                 itemBuilder: (context, video, index, isActive) {
                   final adapter = video as _PooledVideoEventAdapter;
                   return _PooledVideoFeedItem(
@@ -231,14 +229,15 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final commentsRepository = ref.read(commentsRepositoryProvider);
 
     return BlocProvider<VideoInteractionsBloc>(
-      create: (_) => VideoInteractionsBloc(
-        eventId: video.id,
-        authorPubkey: video.pubkey,
-        likesRepository: likesRepository,
-        commentsRepository: commentsRepository,
-      )
-        ..add(const VideoInteractionsSubscriptionRequested())
-        ..add(const VideoInteractionsFetchRequested()),
+      create: (_) =>
+          VideoInteractionsBloc(
+              eventId: video.id,
+              authorPubkey: video.pubkey,
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+            )
+            ..add(const VideoInteractionsSubscriptionRequested())
+            ..add(const VideoInteractionsFetchRequested()),
       child: _PooledVideoFeedItemContent(
         video: video,
         isActive: isActive,
