@@ -56,10 +56,11 @@ class VineBottomSheet extends StatelessWidget {
     Widget? trailing,
     Widget? bottomInput,
     bool expanded = true,
+    bool? isScrollControlled,
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      isScrollControlled: expanded,
+      isScrollControlled: isScrollControlled ?? expanded,
       backgroundColor: Colors.transparent,
       builder: (_) => VineBottomSheet(
         title: title,
