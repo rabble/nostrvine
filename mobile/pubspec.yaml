@@ -169,6 +169,8 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
+  bloc_concurrency: ^0.3.0
+  stream_transform: ^2.1.1
 
 dependency_overrides:
   device_info_plus: ^10.1.2

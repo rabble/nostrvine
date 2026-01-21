@@ -1,13 +1,25 @@
 // ABOUTME: BLoC for searching user profiles via NIP-50
 // ABOUTME: Handles search query changes and manages search state
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 part 'user_search_event.dart';
 part 'user_search_state.dart';
+
+/// Debounce duration for search queries
+const _debounceDuration = Duration(milliseconds: 300);
+
+/// Event transformer that debounces and restarts on new events
+EventTransformer<E> _debounceRestartable<E>() {
+  return (events, mapper) {
+    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+  };
+}
 
 /// BLoC for searching user profiles.
 ///
@@ -15,12 +27,16 @@ part 'user_search_state.dart';
 /// - Searching users via NIP-50 full-text search
 /// - Managing loading and error states
 /// - Clearing search results
+/// - Debouncing search queries (300ms)
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
   }) : _profileRepository = profileRepository,
        super(const UserSearchState()) {
-    on<UserSearchQueryChanged>(_onQueryChanged);
+    on<UserSearchQueryChanged>(
+      _onQueryChanged,
+      transformer: _debounceRestartable(),
+    );
     on<UserSearchCleared>(_onCleared);
   }
 

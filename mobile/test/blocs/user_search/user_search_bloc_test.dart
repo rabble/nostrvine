@@ -42,6 +42,9 @@ void main() {
     });
 
     group('UserSearchQueryChanged', () {
+      // Debounce duration used in the BLoC
+      const debounceDuration = Duration(milliseconds: 300);
+
       blocTest<UserSearchBloc, UserSearchState>(
         'emits [loading, success] when search succeeds',
         setUp: () {
@@ -52,6 +55,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
         expect: () => [
           const UserSearchState(
             status: UserSearchStatus.loading,
@@ -81,6 +85,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),
+        wait: debounceDuration,
         expect: () => [
           const UserSearchState(
             status: UserSearchStatus.loading,
@@ -96,6 +101,7 @@ void main() {
         'emits initial state when query is empty',
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('')),
+        wait: debounceDuration,
         expect: () => [const UserSearchState()],
         verify: (_) {
           verifyNever(
@@ -108,6 +114,7 @@ void main() {
         'emits initial state when query is whitespace only',
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('   ')),
+        wait: debounceDuration,
         expect: () => [const UserSearchState()],
         verify: (_) {
           verifyNever(
@@ -124,6 +131,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
+        wait: debounceDuration,
         expect: () => [
           const UserSearchState(
             status: UserSearchStatus.loading,
@@ -148,6 +156,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
+        wait: debounceDuration,
         expect: () => [
           const UserSearchState(
             status: UserSearchStatus.loading,
@@ -158,6 +167,43 @@ void main() {
             query: 'xyz',
           ),
         ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'debounces rapid query changes and only processes final query',
+        setUp: () {
+          when(() => mockProfileRepository.searchUsers(query: 'final'))
+              .thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) {
+          bloc
+            ..add(const UserSearchQueryChanged('f'))
+            ..add(const UserSearchQueryChanged('fi'))
+            ..add(const UserSearchQueryChanged('fin'))
+            ..add(const UserSearchQueryChanged('fina'))
+            ..add(const UserSearchQueryChanged('final'));
+        },
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'final',
+          ),
+          const UserSearchState(
+            status: UserSearchStatus.success,
+            query: 'final',
+          ),
+        ],
+        verify: (_) {
+          // Only the final query should be processed due to debounce
+          verify(() => mockProfileRepository.searchUsers(query: 'final'))
+              .called(1);
+          verifyNever(() => mockProfileRepository.searchUsers(query: 'f'));
+          verifyNever(() => mockProfileRepository.searchUsers(query: 'fi'));
+          verifyNever(() => mockProfileRepository.searchUsers(query: 'fin'));
+          verifyNever(() => mockProfileRepository.searchUsers(query: 'fina'));
+        },
       );
     });
 
