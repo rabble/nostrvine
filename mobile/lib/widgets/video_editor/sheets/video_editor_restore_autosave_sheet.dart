@@ -22,23 +22,26 @@ class VideoEditorRestoreAutosaveSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const .fromLTRB(24, 0, 24, 24),
+      padding: const .fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: .stretch,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: .min,
         children: [
+          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+          const SizedBox(height: 12),
+
           const _WarningIcon(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
           const _Title(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+
           const _Description(),
-          if (lastSavedAt != null) ...[
-            const SizedBox(height: 14),
-            _Timestamp(lastSavedAt: lastSavedAt!),
-          ],
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
+
           const _RestoreButton(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
           const _DiscardButton(),
         ],
       ),
@@ -52,10 +55,9 @@ class _WarningIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/icon/warning_512.png',
-      semanticLabel: 'Warning',
-      width: 124,
-      height: 124,
+      'assets/icon/video_clap_board.png',
+      width: 132,
+      height: 132,
     );
   }
 }
@@ -67,7 +69,7 @@ class _Title extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       // TODO(l10n): Replace with context.l10n when localization is added.
-      'Unsaved changes found',
+      'We found work in progress',
       style: GoogleFonts.bricolageGrotesque(
         color: VineTheme.onSurface,
         fontWeight: .w700,
@@ -86,49 +88,10 @@ class _Description extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       // TODO(l10n): Replace with context.l10n when localization is added.
-      'An autosaved editing session was found. '
       'Would you like to continue where you left off?',
       style: VineTheme.bodyFont(
         color: VineTheme.onSurface,
         fontSize: 16,
-        height: 1.5,
-        letterSpacing: 0.15,
-        fontWeight: .w400,
-      ),
-      textAlign: .center,
-    );
-  }
-}
-
-class _Timestamp extends StatelessWidget {
-  const _Timestamp({required this.lastSavedAt});
-
-  final DateTime lastSavedAt;
-
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    // TODO(l10n): Replace with context.l10n when localization is added.
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} minutes ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
-    } else {
-      return '${difference.inDays} days ago';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      'Last saved: ${_formatTimestamp(lastSavedAt)}',
-      style: VineTheme.bodyFont(
-        color: VineTheme.onSurfaceMuted,
-        fontSize: 14,
         height: 1.5,
         letterSpacing: 0.15,
         fontWeight: .w400,
@@ -151,12 +114,12 @@ class _RestoreButton extends ConsumerWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: VineTheme.vineGreen,
         foregroundColor: Colors.white,
-        padding: const .symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: .circular(24)),
+        padding: const .symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),
       child: Text(
         // TODO(l10n): Replace with context.l10n when localization is added.
-        'Restore session',
+        'Yes, continue',
         textAlign: .center,
         style: VineTheme.titleFont(
           color: const Color(0xFF00150D),
@@ -182,12 +145,12 @@ class _DiscardButton extends ConsumerWidget {
       style: OutlinedButton.styleFrom(
         backgroundColor: Color(0xFF032017),
         side: BorderSide(width: 2, color: const Color(0xFF0E2B21)),
-        padding: const .symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: .circular(24)),
+        padding: const .symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),
       child: Text(
         // TODO(l10n): Replace with context.l10n when localization is added.
-        'Discard and start fresh',
+        'No, start a new video',
         textAlign: .center,
         style: VineTheme.titleFont(
           color: const Color(0xFF27C58B),
