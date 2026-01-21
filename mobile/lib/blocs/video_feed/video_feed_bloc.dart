@@ -93,15 +93,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       final cursor = state.videos.last.createdAt;
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
-      // Deduplicate: filter out videos already in the list
-      final existingIds = state.videos.map((v) => v.id).toSet();
-      final uniqueNewVideos = newVideos
-          .where((v) => !existingIds.contains(v.id))
-          .toList();
-
       emit(
         state.copyWith(
-          videos: [...state.videos, ...uniqueNewVideos],
+          videos: [...state.videos, ...newVideos],
           hasMore: newVideos.length == _pageSize,
           isLoadingMore: false,
         ),
