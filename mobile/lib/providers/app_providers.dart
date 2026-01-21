@@ -7,6 +7,7 @@ import 'dart:core';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
@@ -17,7 +18,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -73,6 +73,7 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -633,7 +634,7 @@ ProfileRepository profileRepository(Ref ref) {
     'ProfileRepository accessed without authentication',
   );
 
-  return ProfileRepository(nostrClient: nostrClient);
+  return ProfileRepository(nostrClient: nostrClient, httpClient: Client());
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod

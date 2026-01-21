@@ -2,17 +2,24 @@
 // ABOUTME: Delegates to NostrClient for relay operations.
 // ABOUTME: Throws ProfilePublishFailedException on publish failure.
 
+import 'dart:convert';
+
+import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:profile_repository/src/exceptions.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
-  const ProfileRepository({required NostrClient nostrClient})
-    : _nostrClient = nostrClient;
+  const ProfileRepository({
+    required NostrClient nostrClient,
+    required Client httpClient,
+  }) : _nostrClient = nostrClient,
+       _httpClient = httpClient;
 
   final NostrClient _nostrClient;
+  final Client _httpClient;
 
   /// Fetches a user profile by pubkey.
   ///
@@ -52,5 +59,48 @@ class ProfileRepository {
     }
 
     return UserProfile.fromNostrEvent(profileEvent);
+  }
+
+  /// Register a username for the given pubkey
+  ///
+  /// Delegates to [NostrClient.] and returns the result.
+  Future<UsernameClaimResult> claimUsername({
+    required String username,
+    required String pubkey,
+  }) async {
+    final payload = jsonEncode({
+      'username': username,
+      'pubkey': pubkey,
+    });
+    final authHeader = await _nostrClient.createNip98AuthHeader(
+      url: 'https://divine.video/api/username/claim',
+      method: 'POST',
+      payload: payload,
+    );
+
+    if (authHeader == null) {
+      return const UsernameClaimError('Nip98 authorization failed');
+    }
+
+    final Response response;
+    try {
+      response = await _httpClient.post(
+        Uri.parse('https://divine.video/api/username/claim'),
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: payload,
+      );
+
+      return switch (response.statusCode) {
+        200 || 201 => const UsernameClaimSuccess(),
+        403 => const UsernameClaimReserved(),
+        409 => const UsernameClaimTaken(),
+        _ => UsernameClaimError('Unexpected response: ${response.statusCode}'),
+      };
+    } on Exception catch (e) {
+      return UsernameClaimError('Network error: $e');
+    }
   }
 }

@@ -8,6 +8,7 @@ import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/relay_manager.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/utils/hash_util.dart';
 
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
@@ -872,6 +873,24 @@ class NostrClient {
     );
 
     return subscribe([filter]);
+  }
+
+  Future<String?> createNip98AuthHeader({
+    required String url,
+    required String method,
+    String? payload,
+  }) async {
+    final tags = [
+      ['u', url],
+      ['method', method],
+      if (payload != null)
+        ['payload', HashUtil.sha256Bytes(utf8.encode(payload))],
+    ];
+    final nip98Event = Event(_nostr.publicKey, EventKind.httpAuth, tags, '');
+    await _nostr.signEvent(nip98Event);
+    final eventJson = jsonEncode(nip98Event.toJson());
+    final base64Event = base64Encode(utf8.encode(eventJson));
+    return 'Nostr $base64Event';
   }
 
   /// Disposes the client and cleans up resources
