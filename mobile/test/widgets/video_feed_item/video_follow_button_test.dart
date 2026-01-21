@@ -4,6 +4,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
@@ -44,7 +45,7 @@ void main() {
     }
 
     group('button state', () {
-      testWidgets('shows "Follow" when not following', (tester) async {
+      testWidgets('shows follow icon when not following', (tester) async {
         when(() => mockMyFollowingBloc.state).thenReturn(
           const MyFollowingState(
             status: MyFollowingStatus.success,
@@ -55,11 +56,12 @@ void main() {
         await tester.pumpWidget(createTestWidget(pubkey: validPubkey('other')));
         await tester.pump();
 
-        expect(find.text('Follow'), findsOneWidget);
-        expect(find.text('Following'), findsNothing);
+        // Button uses SVG icons now - find by SvgPicture widget
+        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(GestureDetector), findsOneWidget);
       });
 
-      testWidgets('shows "Following" when following', (tester) async {
+      testWidgets('shows following icon when following', (tester) async {
         final otherPubkey = validPubkey('other');
         when(() => mockMyFollowingBloc.state).thenReturn(
           MyFollowingState(
@@ -71,42 +73,44 @@ void main() {
         await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
         await tester.pump();
 
-        expect(find.text('Following'), findsOneWidget);
-        expect(find.text('Follow'), findsNothing);
+        // Button uses SVG icons now - find by SvgPicture widget
+        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(GestureDetector), findsOneWidget);
       });
     });
 
     group('interactions', () {
-      testWidgets('dispatches MyFollowingToggleRequested on tap', (
-        tester,
-      ) async {
-        final otherPubkey = validPubkey('other');
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          const MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [],
-          ),
-        );
+      testWidgets(
+        'dispatches MyFollowingToggleRequested on tap when not following',
+        (tester) async {
+          final otherPubkey = validPubkey('other');
+          when(() => mockMyFollowingBloc.state).thenReturn(
+            const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [],
+            ),
+          );
 
-        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
-        await tester.pump();
+          await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+          await tester.pump();
 
-        await tester.tap(find.text('Follow'));
-        await tester.pump();
+          await tester.tap(find.byType(GestureDetector));
+          await tester.pump();
 
-        final captured = verify(
-          () => mockMyFollowingBloc.add(captureAny()),
-        ).captured;
-        expect(captured.length, 1);
-        expect(captured.first, isA<MyFollowingToggleRequested>());
-        expect(
-          (captured.first as MyFollowingToggleRequested).pubkey,
-          otherPubkey,
-        );
-      });
+          final captured = verify(
+            () => mockMyFollowingBloc.add(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+          expect(captured.first, isA<MyFollowingToggleRequested>());
+          expect(
+            (captured.first as MyFollowingToggleRequested).pubkey,
+            otherPubkey,
+          );
+        },
+      );
 
       testWidgets(
-        'dispatches MyFollowingToggleRequested when tapping "Following"',
+        'dispatches MyFollowingToggleRequested on tap when following',
         (tester) async {
           final otherPubkey = validPubkey('other');
           when(() => mockMyFollowingBloc.state).thenReturn(
@@ -119,7 +123,7 @@ void main() {
           await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
           await tester.pump();
 
-          await tester.tap(find.text('Following'));
+          await tester.tap(find.byType(GestureDetector));
           await tester.pump();
 
           final captured = verify(

@@ -24,3 +24,5 @@ library;
 export 'src/models/models.dart';
 export 'src/permission_handler_permissions_service.dart';
 export 'src/permissions_service.dart';
+
+// TODO(macOS): Add permission handling for video recorder on macOS.

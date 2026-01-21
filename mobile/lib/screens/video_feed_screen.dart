@@ -18,7 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -619,6 +619,8 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
           index: index,
           hasBottomNavigation: false,
           contextTitle: '', // Home feed has no context title
+          hideFollowButtonIfFollowing:
+              true, // Home feed only shows followed users
           showListAttribution: isListOnly,
           listSources: listSources,
           isActiveOverride: isActive,

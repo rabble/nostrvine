@@ -11,7 +11,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([AuthService, AudioSharingPreferenceService])

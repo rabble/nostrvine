@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/theme/app_theme.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class NotificationListItem extends StatelessWidget {

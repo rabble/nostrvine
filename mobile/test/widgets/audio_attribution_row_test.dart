@@ -10,7 +10,7 @@ import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {

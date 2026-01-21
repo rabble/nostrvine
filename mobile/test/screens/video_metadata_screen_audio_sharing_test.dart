@@ -16,7 +16,7 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'video_metadata_screen_audio_sharing_test.mocks.dart';

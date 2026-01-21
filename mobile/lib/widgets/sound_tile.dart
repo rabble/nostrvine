@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 
 /// A tile widget for displaying a sound (AudioEvent) in various list contexts.
 ///

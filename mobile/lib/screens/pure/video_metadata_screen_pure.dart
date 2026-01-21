@@ -26,7 +26,7 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:models/models.dart' as vine show AspectRatio;
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/upload_progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/utils/video_duration_extractor.dart';

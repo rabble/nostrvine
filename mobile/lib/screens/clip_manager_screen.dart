@@ -19,7 +19,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/services/video_export_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
