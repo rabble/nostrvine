@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -16,16 +15,34 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
   const VideoMetadataExpirationSelector({super.key});
 
   /// Opens the bottom sheet for selecting expiration time.
-  Future<void> _selectExpiration(BuildContext context) async {
+  Future<void> _selectExpiration(BuildContext context, WidgetRef ref) async {
     // Dismiss keyboard before showing bottom sheet
     FocusManager.instance.primaryFocus?.unfocus();
 
-    await showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: VineTheme.surfaceBackground,
-      builder: (context) => const _ExpirationOptionsBottomSheet(),
+    final currentOption = ref.read(
+      videoEditorProvider.select((s) => s.expiration),
     );
+
+    final result = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: currentOption.name,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      title: Text('Expiration'),
+      options: VideoMetadataExpiration.values.map((option) {
+        return VineBottomSheetSelectionOptionData(
+          label: option.description,
+          value: option.name,
+        );
+      }).toList(),
+    );
+
+    if (result != null && context.mounted) {
+      final option = VideoMetadataExpiration.values.firstWhere(
+        (el) => el.name == result,
+        orElse: () => .notExpire,
+      );
+      ref.read(videoEditorProvider.notifier).setExpiration(option);
+    }
   }
 
   @override
@@ -40,7 +57,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
       // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Select expiration time',
       child: InkWell(
-        onTap: () => _selectExpiration(context),
+        onTap: () => _selectExpiration(context, ref),
         child: Padding(
           padding: const .all(16),
           child: Column(
@@ -88,87 +105,6 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Bottom sheet displaying all available expiration options.
-class _ExpirationOptionsBottomSheet extends ConsumerWidget {
-  /// Creates an expiration options bottom sheet.
-  const _ExpirationOptionsBottomSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Get currently selected expiration option for checkmark
-    final currentOption = ref.watch(
-      videoEditorProvider.select((s) => s.expiration),
-    );
-
-    return SafeArea(
-      child: Column(
-        mainAxisSize: .min,
-        spacing: 16,
-        children: [
-          // Drag handle at top (fixed)
-          const Padding(
-            padding: .only(top: 8),
-            child: VineBottomSheetDragHandle(),
-          ),
-          // Title (fixed)
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          Text(
-            'Expiration',
-            style: GoogleFonts.bricolageGrotesque(
-              fontSize: 18,
-              fontWeight: .w800,
-              color: Colors.white,
-              height: 1.33,
-              letterSpacing: 0.15,
-            ),
-          ),
-          // Scrollable list of expiration options
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: .min,
-                children: VideoMetadataExpiration.values.map((option) {
-                  final isSelected = option == currentOption;
-
-                  return ListTile(
-                    selected: isSelected,
-                    selectedTileColor: const Color(0xFF032017),
-                    title: Text(
-                      option.description,
-                      style: GoogleFonts.bricolageGrotesque(
-                        color: VineTheme.onSurface,
-                        fontSize: 18,
-                        fontWeight: .w800,
-                        height: 1.33,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
-                    // Show checkmark for selected option
-                    trailing: isSelected
-                        ? const Icon(
-                            Icons.check,
-                            size: 24,
-                            color: Color(0xFF27C58B),
-                          )
-                        : null,
-                    onTap: () {
-                      // Update selection and close bottom sheet
-                      ref
-                          .read(videoEditorProvider.notifier)
-                          .setExpiration(option);
-                      context.pop();
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
