@@ -28,6 +28,7 @@ class MockDivineCameraPlatform
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     return _state = CameraState(
       isInitialized: true,
