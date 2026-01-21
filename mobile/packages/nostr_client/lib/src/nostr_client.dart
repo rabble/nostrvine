@@ -874,6 +874,26 @@ class NostrClient {
     return subscribe([filter]);
   }
 
+  /// Queries for user profiles using NIP-50 search
+  ///
+  /// Returns a list of profile events (kind 0) matching the search query.
+  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  ///
+  /// Unlike [searchUsers], this returns a Future that completes once,
+  /// making it suitable for one-time search operations.
+  Future<List<Event>> queryUsers(
+    String query, {
+    int? limit,
+  }) {
+    final filter = Filter(
+      kinds: const [EventKind.metadata],
+      limit: limit ?? 100,
+      search: query,
+    );
+
+    return queryEvents([filter]);
+  }
+
   /// Disposes the client and cleans up resources
   ///
   /// Closes all subscriptions, disconnects from relays, and cleans up

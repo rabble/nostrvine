@@ -235,6 +235,109 @@ void main() {
       });
     });
 
+    group('searchUsers', () {
+      test('returns empty list for empty query', () async {
+        // Act
+        final result = await repository.searchUsers(query: '');
+
+        // Assert
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+        );
+      });
+
+      test('returns empty list for whitespace-only query', () async {
+        // Act
+        final result = await repository.searchUsers(query: '   ');
+
+        // Assert
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+        );
+      });
+
+      test('returns profiles from NostrClient', () async {
+        // Arrange
+        when(() => mockNostrClient.queryUsers('alice', limit: 50))
+            .thenAnswer((_) async => [mockProfileEvent]);
+
+        // Act
+        final result = await repository.searchUsers(query: 'alice');
+
+        // Assert
+        expect(result, hasLength(1));
+        expect(result.first.pubkey, equals(testPubkey));
+        expect(result.first.displayName, equals('Test User'));
+        verify(() => mockNostrClient.queryUsers('alice', limit: 50)).called(1);
+      });
+
+      test('uses custom limit when provided', () async {
+        // Arrange
+        when(() => mockNostrClient.queryUsers('bob', limit: 10))
+            .thenAnswer((_) async => [mockProfileEvent]);
+
+        // Act
+        final result = await repository.searchUsers(query: 'bob', limit: 10);
+
+        // Assert
+        expect(result, hasLength(1));
+        verify(() => mockNostrClient.queryUsers('bob', limit: 10)).called(1);
+      });
+
+      test(
+        'returns empty list when NostrClient returns empty list',
+        () async {
+          // Arrange
+          when(() => mockNostrClient.queryUsers('unknown', limit: 50))
+              .thenAnswer((_) async => []);
+
+          // Act
+          final result = await repository.searchUsers(query: 'unknown');
+
+          // Assert
+          expect(result, isEmpty);
+        },
+      );
+
+      test(
+        'returns multiple profiles when NostrClient returns multiple events',
+        () async {
+          // Arrange
+          final mockProfileEvent2 = MockEvent();
+          const testPubkey2 = 'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2c3';
+          const testEventId2 = 'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2d3';
+
+          when(() => mockProfileEvent2.kind).thenReturn(0);
+          when(() => mockProfileEvent2.pubkey).thenReturn(testPubkey2);
+          when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
+          when(() => mockProfileEvent2.id).thenReturn(testEventId2);
+          when(() => mockProfileEvent2.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Alice Smith',
+              'about': 'Another user',
+            }),
+          );
+
+          when(() => mockNostrClient.queryUsers('alice', limit: 50))
+              .thenAnswer(
+            (_) async => [mockProfileEvent, mockProfileEvent2],
+          );
+
+          // Act
+          final result = await repository.searchUsers(query: 'alice');
+
+          // Assert
+          expect(result, hasLength(2));
+          expect(result[0].displayName, equals('Test User'));
+          expect(result[1].displayName, equals('Alice Smith'));
+        },
+      );
+    });
+
     group('exceptions', () {
       test('ProfilePublishFailedException has message and toString', () {
         const e = ProfilePublishFailedException('test');
