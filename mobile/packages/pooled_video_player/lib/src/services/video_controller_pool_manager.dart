@@ -103,6 +103,7 @@ class VideoControllerPoolManager {
     return _instance!;
   }
 
+  /// Whether the pool manager has been initialized.
   static bool get isInitialized => _instance != null;
 
   /// Initialize the singleton. Call early in app lifecycle (e.g., main()).
@@ -146,6 +147,7 @@ class VideoControllerPoolManager {
     _instance = null;
   }
 
+  /// Maximum number of controllers maintained in the pool.
   final int poolSize;
 
   /// Optional factory for creating controllers. Used for testing only.
@@ -179,15 +181,20 @@ class VideoControllerPoolManager {
 
   // Public API
 
+  /// The ID of the currently active video, if any.
   String? get activeVideoId => _activeVideoId;
 
+  /// IDs of videos marked for prewarming (protected from eviction).
   Set<String> get prewarmVideoIds => Set.unmodifiable(_prewarmVideoIds);
 
+  /// IDs of videos currently being initialized (in-flight requests).
   Set<String> get inFlightVideoIds => Set.unmodifiable(_inFlightVideoIds);
 
+  /// Read-only map of video IDs to their assigned pooled controllers.
   Map<String, PooledController> get assignedControllers =>
       Map.unmodifiable(_pool);
 
+  /// Returns the controller for [videoId], or null if not in pool.
   VideoPlayerController? getController(String videoId) {
     return _pool[videoId]?.controller;
   }
@@ -298,14 +305,17 @@ class VideoControllerPoolManager {
         if (factoryController == null) return null;
         controller = factoryController;
       } else {
-        // Default implementation
+        // coverage:ignore-start
+        // Default implementation - requires real video files/network
         controller = cachedFile != null
             ? VideoPlayerController.file(cachedFile)
             : VideoPlayerController.networkUrl(Uri.parse(videoUrl));
         await controller.initialize();
+        // coverage:ignore-end
       }
 
       // Check if cancelled during creation
+      // coverage:ignore-start
       if (_cancelledVideoIds.remove(videoId)) {
         try {
           await controller.dispose();
@@ -314,6 +324,7 @@ class VideoControllerPoolManager {
         }
         return null;
       }
+      // coverage:ignore-end
 
       final pooled = PooledController(
         controller: controller,
@@ -420,6 +431,7 @@ class VideoControllerPoolManager {
     _notifyListeners();
   }
 
+  /// Disposes all controllers and marks the pool manager as disposed.
   Future<void> dispose() async {
     if (_isDisposed) return;
 
@@ -435,9 +447,11 @@ class VideoControllerPoolManager {
     try {
       controller.value;
       return true;
+      // coverage:ignore-start
     } on Exception {
       return false;
     }
+    // coverage:ignore-end
   }
 
   /// Distance-aware eviction: evict videos furthest from current position.
@@ -500,9 +514,11 @@ class VideoControllerPoolManager {
         }
         await pooled.controller.dispose();
       }
+      // coverage:ignore-start
     } on Exception catch (e) {
       debugPrint('Controller disposal error for $videoId: $e');
     }
+    // coverage:ignore-end
   }
 
   void _updateLRU(String videoId) {
@@ -514,9 +530,11 @@ class VideoControllerPoolManager {
     for (final pooled in _pool.values) {
       try {
         await pooled.controller.dispose();
+        // coverage:ignore-start
       } on Exception {
         // Ignore disposal errors
       }
+      // coverage:ignore-end
     }
   }
 

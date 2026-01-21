@@ -270,6 +270,33 @@ void main() {
         );
       });
 
+      test('returns null when eviction fails after max attempts', () async {
+        // Use pool of size 1 to make it easier to test
+        await VideoControllerPoolManager.reset();
+        await VideoControllerPoolManager.initialize(
+          poolSize: 1,
+          controllerFactory: createMockController,
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        // Fill the pool with an active video (cannot be evicted)
+        await manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+        manager.setActiveVideo('video1', index: 0);
+
+        // Pool is full (1 slot) with active video that cannot be evicted
+        final result = await manager.acquireController(
+          videoId: 'video2',
+          videoUrl: 'https://example.com/video2.mp4',
+        );
+
+        // Should return null because eviction fails (active video protected)
+        expect(result, isNull);
+      });
+
       test('evicts LRU controller when pool is full', () async {
         final manager = VideoControllerPoolManager.instance;
 
@@ -819,6 +846,167 @@ void main() {
         // video15 should be cancelled because it's far from index 5
         expect(result, isNull);
       });
+    });
+  });
+
+  group('PooledController', () {
+    test('toString returns formatted string', () async {
+      await VideoControllerPoolManager.initialize(
+        poolSize: 2,
+        controllerFactory: createMockController,
+      );
+
+      final pooled = await VideoControllerPoolManager.instance
+          .acquireController(
+            videoId: 'test-video',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+
+      expect(pooled, isNotNull);
+      expect(pooled!.toString(), 'PooledController(videoId: test-video)');
+    });
+  });
+
+  group('edge cases', () {
+    test('eviction disposes playing controller', () async {
+      await VideoControllerPoolManager.initialize(
+        poolSize: 2,
+        controllerFactory: (videoUrl, {cachedFile}) async {
+          final controller = MockVideoPlayerController();
+          final value = MockVideoPlayerValue();
+
+          when(() => value.isInitialized).thenReturn(true);
+          // Mark as playing so pause() is called during eviction
+          when(() => value.isPlaying).thenReturn(true);
+          when(() => controller.value).thenReturn(value);
+          when(controller.dispose).thenAnswer((_) async {});
+          when(controller.pause).thenAnswer((_) async {});
+          when(controller.play).thenAnswer((_) async {});
+          when(() => controller.setLooping(any())).thenAnswer((_) async {});
+
+          return controller;
+        },
+      );
+
+      final manager = VideoControllerPoolManager.instance;
+
+      // Fill pool
+      final pooled1 = await manager.acquireController(
+        videoId: 'video1',
+        videoUrl: 'https://example.com/video1.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video2',
+        videoUrl: 'https://example.com/video2.mp4',
+      );
+
+      // Evict video1 by adding video3
+      await manager.acquireController(
+        videoId: 'video3',
+        videoUrl: 'https://example.com/video3.mp4',
+      );
+
+      // Verify pause was called during eviction (because isPlaying was true)
+      verify(pooled1!.controller.pause).called(1);
+    });
+
+    test('_getSortedByPriority skips active video', () async {
+      await VideoControllerPoolManager.initialize(
+        poolSize: 4,
+        controllerFactory: createMockController,
+      );
+
+      final manager = VideoControllerPoolManager.instance;
+
+      // Add videos
+      await manager.acquireController(
+        videoId: 'video1',
+        videoUrl: 'https://example.com/video1.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video2',
+        videoUrl: 'https://example.com/video2.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video3',
+        videoUrl: 'https://example.com/video3.mp4',
+      );
+
+      // Set video2 as active
+      manager.setActiveVideo('video2', index: 1);
+
+      // Trigger memory pressure which uses _getSortedByPriority
+      await manager.handleMemoryPressure();
+
+      // Active video should still be in pool
+      expect(manager.assignedControllers.containsKey('video2'), isTrue);
+    });
+
+    test('_getSortedByPriority puts prewarmed videos last', () async {
+      await VideoControllerPoolManager.initialize(
+        poolSize: 4,
+        controllerFactory: createMockController,
+      );
+
+      final manager = VideoControllerPoolManager.instance;
+
+      // Add 4 videos
+      await manager.acquireController(
+        videoId: 'video1',
+        videoUrl: 'https://example.com/video1.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video2',
+        videoUrl: 'https://example.com/video2.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video3',
+        videoUrl: 'https://example.com/video3.mp4',
+      );
+      await manager.acquireController(
+        videoId: 'video4',
+        videoUrl: 'https://example.com/video4.mp4',
+      );
+
+      // Set video1 as active, video2 and video3 as prewarmed
+      manager
+        ..setActiveVideo('video1', index: 0)
+        ..setPrewarmVideos(['video2', 'video3']);
+
+      // Now trigger memory pressure - it should release video4 first (cached),
+      // then prewarmed videos (video2, video3) last
+      await manager.handleMemoryPressure();
+
+      // Active video should still be in pool
+      expect(manager.assignedControllers.containsKey('video1'), isTrue);
+
+      // At least one prewarmed should remain since memory pressure
+      // releases up to 50% of the pool
+      expect(
+        manager.assignedControllers.containsKey('video2') ||
+            manager.assignedControllers.containsKey('video3'),
+        isTrue,
+      );
+    });
+
+    test('handles getCachedFile callback', () async {
+      await VideoControllerPoolManager.initialize(
+        poolSize: 2,
+        controllerFactory: createMockController,
+      );
+
+      var getCachedFileCalled = false;
+
+      await VideoControllerPoolManager.instance.acquireController(
+        videoId: 'video1',
+        videoUrl: 'https://example.com/video1.mp4',
+        getCachedFile: (videoId) {
+          getCachedFileCalled = true;
+          return null; // Return null (no cached file)
+        },
+      );
+
+      expect(getCachedFileCalled, isTrue);
     });
   });
 }

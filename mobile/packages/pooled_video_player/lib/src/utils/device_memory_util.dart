@@ -16,6 +16,34 @@ enum MemoryTier {
   high,
 }
 
+/// Platform type for device classification.
+enum PlatformType {
+  /// iOS platform
+  ios,
+
+  /// Android platform
+  android,
+
+  /// Other/unknown platform
+  other,
+}
+
+/// Abstraction for platform detection. Enables testing.
+abstract class PlatformChecker {
+  /// Returns the current platform type.
+  PlatformType get currentPlatform;
+}
+
+/// Default platform checker using dart:io Platform.
+class DefaultPlatformChecker implements PlatformChecker {
+  @override
+  PlatformType get currentPlatform {
+    if (Platform.isIOS) return PlatformType.ios;
+    if (Platform.isAndroid) return PlatformType.android;
+    return PlatformType.other;
+  }
+}
+
 /// Implementation of device memory classification.
 ///
 /// This class determines the memory tier of the current device to optimize
@@ -30,11 +58,15 @@ class DeviceMemoryUtil {
   /// Creates a device memory classifier with the given device info plugin.
   ///
   /// If [deviceInfo] is not provided, uses the default [DeviceInfoPlugin].
+  /// If [platformChecker] is not provided, uses [DefaultPlatformChecker].
   DeviceMemoryUtil({
     DeviceInfoPlugin? deviceInfo,
-  }) : _deviceInfo = deviceInfo ?? DeviceInfoPlugin();
+    PlatformChecker? platformChecker,
+  }) : _deviceInfo = deviceInfo ?? DeviceInfoPlugin(),
+       _platformChecker = platformChecker ?? DefaultPlatformChecker();
 
   final DeviceInfoPlugin _deviceInfo;
+  final PlatformChecker _platformChecker;
   MemoryTier? _cachedTier;
 
   /// Returns the memory tier of the current device.
@@ -46,12 +78,13 @@ class DeviceMemoryUtil {
     }
 
     try {
-      if (Platform.isIOS) {
-        _cachedTier = await _getIOSMemoryTier();
-      } else if (Platform.isAndroid) {
-        _cachedTier = await _getAndroidMemoryTier();
-      } else {
-        _cachedTier = MemoryTier.medium;
+      switch (_platformChecker.currentPlatform) {
+        case PlatformType.ios:
+          _cachedTier = await _getIOSMemoryTier();
+        case PlatformType.android:
+          _cachedTier = await _getAndroidMemoryTier();
+        case PlatformType.other:
+          _cachedTier = MemoryTier.medium;
       }
     } on Exception catch (e) {
       debugPrint('DeviceMemoryUtil: Failed to detect memory tier: $e');
@@ -64,14 +97,10 @@ class DeviceMemoryUtil {
   Future<MemoryTier> _getIOSMemoryTier() async {
     final iosInfo = await _deviceInfo.iosInfo;
     final model = iosInfo.utsname.machine;
-    return classifyIOSDevice(model);
+    return _classifyIOSDevice(model);
   }
 
-  /// Classifies an iOS device based on its model identifier.
-  ///
-  /// Exposed for testing purposes.
-  @visibleForTesting
-  MemoryTier classifyIOSDevice(String model) {
+  MemoryTier _classifyIOSDevice(String model) {
     if (model.startsWith('iPhone')) {
       final versionPart = model.replaceFirst('iPhone', '');
       final parts = versionPart.split(',');
@@ -97,17 +126,13 @@ class DeviceMemoryUtil {
 
   Future<MemoryTier> _getAndroidMemoryTier() async {
     final androidInfo = await _deviceInfo.androidInfo;
-    return classifyAndroidDevice(
+    return _classifyAndroidDevice(
       androidInfo.version.sdkInt,
       androidInfo.supported64BitAbis,
     );
   }
 
-  /// Classifies an Android device based on SDK version and architecture.
-  ///
-  /// Exposed for testing purposes.
-  @visibleForTesting
-  MemoryTier classifyAndroidDevice(
+  MemoryTier _classifyAndroidDevice(
     int sdkInt,
     List<String> supported64BitAbis,
   ) {
@@ -125,7 +150,6 @@ class DeviceMemoryUtil {
   }
 
   /// Resets the cached memory tier. Used for testing.
-  @visibleForTesting
   void resetCache() {
     _cachedTier = null;
   }

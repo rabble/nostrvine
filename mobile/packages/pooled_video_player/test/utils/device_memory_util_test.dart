@@ -1,16 +1,28 @@
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+
+class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
+
+class MockIosDeviceInfo extends Mock implements IosDeviceInfo {}
+
+class MockIosUtsname extends Mock implements IosUtsname {}
+
+class MockAndroidDeviceInfo extends Mock implements AndroidDeviceInfo {}
+
+class MockAndroidBuildVersion extends Mock implements AndroidBuildVersion {}
+
+class MockPlatformChecker extends Mock implements PlatformChecker {}
 
 void main() {
   group('DeviceMemoryUtil', () {
-    late DeviceMemoryUtil classifier;
+    late MockDeviceInfoPlugin mockDeviceInfo;
+    late MockPlatformChecker mockPlatformChecker;
 
     setUp(() {
-      classifier = DeviceMemoryUtil();
-    });
-
-    tearDown(() {
-      classifier.resetCache();
+      mockDeviceInfo = MockDeviceInfoPlugin();
+      mockPlatformChecker = MockPlatformChecker();
     });
 
     group('MemoryTier', () {
@@ -22,315 +34,399 @@ void main() {
       });
     });
 
-    group('iOS Device Classification', () {
-      group('iPhone 14 and above returns high memory tier', () {
-        test('iPhone14,1 (iPhone 14)', () {
-          final tier = classifier.classifyIOSDevice('iPhone14,1');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPhone15,2 (iPhone 15)', () {
-          final tier = classifier.classifyIOSDevice('iPhone15,2');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPhone16,1 (iPhone 16)', () {
-          final tier = classifier.classifyIOSDevice('iPhone16,1');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPhone20,5 (future iPhone)', () {
-          final tier = classifier.classifyIOSDevice('iPhone20,5');
-          expect(tier, MemoryTier.high);
-        });
-      });
-
-      group('iPhone 11-13 returns medium memory tier', () {
-        test('iPhone11,8 (iPhone 11)', () {
-          final tier = classifier.classifyIOSDevice('iPhone11,8');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('iPhone12,1 (iPhone 12 mini)', () {
-          final tier = classifier.classifyIOSDevice('iPhone12,1');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('iPhone13,2 (iPhone 13)', () {
-          final tier = classifier.classifyIOSDevice('iPhone13,2');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('iPhone13,4 (iPhone 13 Pro Max)', () {
-          final tier = classifier.classifyIOSDevice('iPhone13,4');
-          expect(tier, MemoryTier.medium);
-        });
-      });
-
-      group('iPhone below 11 returns low memory tier', () {
-        test('iPhone10,4 (iPhone 8)', () {
-          final tier = classifier.classifyIOSDevice('iPhone10,4');
-          expect(tier, MemoryTier.low);
-        });
-
-        test('iPhone9,1 (iPhone 7)', () {
-          final tier = classifier.classifyIOSDevice('iPhone9,1');
-          expect(tier, MemoryTier.low);
-        });
-
-        test('iPhone8,1 (iPhone 6s)', () {
-          final tier = classifier.classifyIOSDevice('iPhone8,1');
-          expect(tier, MemoryTier.low);
-        });
-
-        test('iPhone1,1 (original iPhone)', () {
-          final tier = classifier.classifyIOSDevice('iPhone1,1');
-          expect(tier, MemoryTier.low);
-        });
-      });
-
-      group('iPad returns high memory tier', () {
-        test('iPad8,1 (iPad Pro 11" 3rd gen)', () {
-          final tier = classifier.classifyIOSDevice('iPad8,1');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPad14,1 (iPad Pro 11" 4th gen)', () {
-          final tier = classifier.classifyIOSDevice('iPad14,1');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPad6,11 (iPad 5th gen)', () {
-          final tier = classifier.classifyIOSDevice('iPad6,11');
-          expect(tier, MemoryTier.high);
-        });
-
-        test('iPad1,1 (original iPad)', () {
-          final tier = classifier.classifyIOSDevice('iPad1,1');
-          expect(tier, MemoryTier.high);
-        });
-      });
-
-      group('Edge cases return medium as fallback', () {
-        test('malformed iPhone model without comma gets parsed as version', () {
-          // "iPhone14" -> version part "14" -> parsed as major version 14
-          final tier = classifier.classifyIOSDevice('iPhone14');
-          expect(tier, MemoryTier.high); // 14 >= 14
-        });
-
-        test('iPhone model with empty version part defaults to 0', () {
-          // "iPhone,1" -> version part ",1" -> parts = ["", "1"]
-          // int.tryParse("") = null, defaults to 0
-          final tier = classifier.classifyIOSDevice('iPhone,1');
-          expect(tier, MemoryTier.low); // 0 < 11
-        });
-
-        test('iPhone model with non-numeric major version defaults to 0', () {
-          // "iPhoneX,1" -> version part "X,1" -> parts = ["X", "1"]
-          // int.tryParse("X") = null, defaults to 0
-          final tier = classifier.classifyIOSDevice('iPhoneX,1');
-          expect(tier, MemoryTier.low); // 0 < 11
-        });
-
-        test('empty model string', () {
-          final tier = classifier.classifyIOSDevice('');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('unknown iOS device (iPod)', () {
-          final tier = classifier.classifyIOSDevice('iPod9,1');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('unknown iOS device (Apple TV)', () {
-          final tier = classifier.classifyIOSDevice('AppleTV11,1');
-          expect(tier, MemoryTier.medium);
-        });
-
-        test('unknown iOS device (HomePod)', () {
-          final tier = classifier.classifyIOSDevice('AudioAccessory5,1');
-          expect(tier, MemoryTier.medium);
-        });
+    group('PlatformType', () {
+      test('has correct enum values', () {
+        expect(PlatformType.values.length, 3);
+        expect(PlatformType.ios.name, 'ios');
+        expect(PlatformType.android.name, 'android');
+        expect(PlatformType.other.name, 'other');
       });
     });
 
-    group('Android Device Classification', () {
-      group('SDK 29+ with 64-bit support returns high memory tier', () {
-        test('Android 10 (SDK 29) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            29,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.high);
+    group('getMemoryTier', () {
+      group('iOS platform', () {
+        late MockIosDeviceInfo mockIosInfo;
+        late MockIosUtsname mockUtsname;
+
+        setUp(() {
+          mockIosInfo = MockIosDeviceInfo();
+          mockUtsname = MockIosUtsname();
+          when(() => mockIosInfo.utsname).thenReturn(mockUtsname);
+          when(
+            () => mockDeviceInfo.iosInfo,
+          ).thenAnswer((_) async => mockIosInfo);
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.ios);
         });
 
-        test('Android 11 (SDK 30) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            30,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.high);
+        group('iPhone 14+ returns high memory tier', () {
+          test('iPhone14,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone14,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
+
+          test('iPhone15,2', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone15,2');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
+
+          test('iPhone16,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone16,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
         });
 
-        test('Android 13 (SDK 33) with multiple 64-bit ABIs', () {
-          final tier = classifier.classifyAndroidDevice(
-            33,
-            ['arm64-v8a', 'x86_64'],
-          );
-          expect(tier, MemoryTier.high);
+        group('iPhone 11-13 returns medium memory tier', () {
+          test('iPhone11,8', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone11,8');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
+
+          test('iPhone12,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone12,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
+
+          test('iPhone13,4', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone13,4');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
         });
 
-        test('Android 14 (SDK 34) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            34,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.high);
+        group('iPhone below 11 returns low memory tier', () {
+          test('iPhone10,4', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone10,4');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+
+          test('iPhone9,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone9,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+
+          test('iPhone1,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone1,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+        });
+
+        group('iPad returns high memory tier', () {
+          test('iPad8,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPad8,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
+
+          test('iPad14,1', () async {
+            when(() => mockUtsname.machine).thenReturn('iPad14,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
+        });
+
+        group('Edge cases return medium as fallback', () {
+          test('empty model string', () async {
+            when(() => mockUtsname.machine).thenReturn('');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
+
+          test('unknown iOS device (iPod)', () async {
+            when(() => mockUtsname.machine).thenReturn('iPod9,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
+
+          test('iPhone model with non-numeric version', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhoneX,1');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+
+          test('iPhone model without comma', () async {
+            when(() => mockUtsname.machine).thenReturn('iPhone14');
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
         });
       });
 
-      group('SDK 26-28 with 64-bit support returns medium memory tier', () {
-        test('Android 8.0 (SDK 26) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            26,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.medium);
+      group('Android platform', () {
+        late MockAndroidDeviceInfo mockAndroidInfo;
+        late MockAndroidBuildVersion mockBuildVersion;
+
+        setUp(() {
+          mockAndroidInfo = MockAndroidDeviceInfo();
+          mockBuildVersion = MockAndroidBuildVersion();
+          when(() => mockAndroidInfo.version).thenReturn(mockBuildVersion);
+          when(
+            () => mockDeviceInfo.androidInfo,
+          ).thenAnswer((_) async => mockAndroidInfo);
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.android);
         });
 
-        test('Android 8.1 (SDK 27) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            27,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.medium);
+        group('SDK 29+ with 64-bit support returns high memory tier', () {
+          test('SDK 29 with arm64-v8a', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(29);
+            when(
+              () => mockAndroidInfo.supported64BitAbis,
+            ).thenReturn(['arm64-v8a']);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
+
+          test('SDK 33 with multiple 64-bit ABIs', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(33);
+            when(
+              () => mockAndroidInfo.supported64BitAbis,
+            ).thenReturn(['arm64-v8a', 'x86_64']);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.high);
+          });
         });
 
-        test('Android 9.0 (SDK 28) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            28,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.medium);
+        group('SDK 26-28 with 64-bit support returns medium memory tier', () {
+          test('SDK 26 with arm64-v8a', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(26);
+            when(
+              () => mockAndroidInfo.supported64BitAbis,
+            ).thenReturn(['arm64-v8a']);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
+
+          test('SDK 28 with arm64-v8a', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(28);
+            when(
+              () => mockAndroidInfo.supported64BitAbis,
+            ).thenReturn(['arm64-v8a']);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.medium);
+          });
         });
 
-        test('Android 8.0 (SDK 26) with multiple 64-bit ABIs', () {
-          final tier = classifier.classifyAndroidDevice(
-            26,
-            ['arm64-v8a', 'x86_64'],
-          );
-          expect(tier, MemoryTier.medium);
+        group('Low-end devices return low memory tier', () {
+          test('SDK below 26', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(25);
+            when(
+              () => mockAndroidInfo.supported64BitAbis,
+            ).thenReturn(['arm64-v8a']);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+
+          test('SDK 29+ without 64-bit support', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(29);
+            when(() => mockAndroidInfo.supported64BitAbis).thenReturn([]);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
+
+          test('SDK 26-28 without 64-bit support', () async {
+            when(() => mockBuildVersion.sdkInt).thenReturn(26);
+            when(() => mockAndroidInfo.supported64BitAbis).thenReturn([]);
+
+            final classifier = DeviceMemoryUtil(
+              deviceInfo: mockDeviceInfo,
+              platformChecker: mockPlatformChecker,
+            );
+
+            expect(await classifier.getMemoryTier(), MemoryTier.low);
+          });
         });
       });
 
-      group('Low-end devices return low memory tier', () {
-        test('SDK below 26 returns low', () {
-          final tier = classifier.classifyAndroidDevice(
-            25,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.low);
-        });
+      group('Other platform', () {
+        test('returns medium memory tier', () async {
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.other);
 
-        test('Android 7.1 (SDK 25) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            25,
-            ['arm64-v8a'],
+          final classifier = DeviceMemoryUtil(
+            deviceInfo: mockDeviceInfo,
+            platformChecker: mockPlatformChecker,
           );
-          expect(tier, MemoryTier.low);
-        });
 
-        test('Android 6.0 (SDK 23) with arm64-v8a', () {
-          final tier = classifier.classifyAndroidDevice(
-            23,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.low);
-        });
-
-        test('SDK 29+ without 64-bit support (edge case)', () {
-          final tier = classifier.classifyAndroidDevice(
-            29,
-            [], // No 64-bit ABIs
-          );
-          expect(tier, MemoryTier.low);
-        });
-
-        test('SDK 26-28 without 64-bit support', () {
-          final tier = classifier.classifyAndroidDevice(
-            26,
-            [], // No 64-bit ABIs
-          );
-          expect(tier, MemoryTier.low);
-        });
-
-        test('SDK 29+ with only 32-bit ABIs (no 64-bit support)', () {
-          // Note: supported64BitAbis from AndroidDeviceInfo is already filtered
-          // to only contain 64-bit ABIs. If device only has 32-bit,
-          // supported64BitAbis will be empty.
-          final tier = classifier.classifyAndroidDevice(
-            29,
-            [], // No 64-bit ABIs (32-bit only device)
-          );
-          expect(tier, MemoryTier.low);
+          expect(await classifier.getMemoryTier(), MemoryTier.medium);
         });
       });
 
-      group('Edge cases', () {
-        test('very high SDK version (SDK 50)', () {
-          final tier = classifier.classifyAndroidDevice(
-            50,
-            ['arm64-v8a'],
+      group('Caching', () {
+        test('caches result after first call', () async {
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.other);
+
+          final classifier = DeviceMemoryUtil(
+            deviceInfo: mockDeviceInfo,
+            platformChecker: mockPlatformChecker,
           );
-          expect(tier, MemoryTier.high);
+
+          final tier1 = await classifier.getMemoryTier();
+          final tier2 = await classifier.getMemoryTier();
+
+          expect(tier1, tier2);
+          // Platform should only be checked once
+          verify(() => mockPlatformChecker.currentPlatform).called(1);
         });
 
-        test('very low SDK version (SDK 10)', () {
-          final tier = classifier.classifyAndroidDevice(
-            10,
-            ['armeabi'],
-          );
-          expect(tier, MemoryTier.low);
-        });
+        test('resetCache allows fresh detection', () async {
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.other);
 
-        test('empty ABI list', () {
-          final tier = classifier.classifyAndroidDevice(
-            30,
-            [],
+          final classifier = DeviceMemoryUtil(
+            deviceInfo: mockDeviceInfo,
+            platformChecker: mockPlatformChecker,
           );
-          expect(tier, MemoryTier.low);
-        });
 
-        test('SDK exactly 29 with 64-bit (boundary)', () {
-          final tier = classifier.classifyAndroidDevice(
-            29,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.high);
-        });
+          await classifier.getMemoryTier();
+          classifier.resetCache();
+          await classifier.getMemoryTier();
 
-        test('SDK exactly 26 with 64-bit (boundary)', () {
-          final tier = classifier.classifyAndroidDevice(
-            26,
-            ['arm64-v8a'],
-          );
-          expect(tier, MemoryTier.medium);
+          // Platform should be checked twice after reset
+          verify(() => mockPlatformChecker.currentPlatform).called(2);
         });
+      });
 
-        test('SDK 28 at upper boundary of medium tier', () {
-          final tier = classifier.classifyAndroidDevice(
-            28,
-            ['arm64-v8a'],
+      group('Error handling', () {
+        test('returns medium tier on exception', () async {
+          when(
+            () => mockPlatformChecker.currentPlatform,
+          ).thenReturn(PlatformType.ios);
+          when(
+            () => mockDeviceInfo.iosInfo,
+          ).thenThrow(Exception('Device info error'));
+
+          final classifier = DeviceMemoryUtil(
+            deviceInfo: mockDeviceInfo,
+            platformChecker: mockPlatformChecker,
           );
-          expect(tier, MemoryTier.medium);
+
+          expect(await classifier.getMemoryTier(), MemoryTier.medium);
         });
       });
     });
 
     group('Integration - Memory Tier to Pool Size Mapping', () {
       test('documents expected pool sizes', () {
-        // This documents the relationship between MemoryTier
-        // and pool size for future reference
         expect(MemoryTier.low.name, 'low'); // Expected pool size: 2
         expect(MemoryTier.medium.name, 'medium'); // Expected pool size: 3
         expect(MemoryTier.high.name, 'high'); // Expected pool size: 4

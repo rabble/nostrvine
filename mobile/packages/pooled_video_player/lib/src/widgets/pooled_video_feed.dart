@@ -12,7 +12,7 @@ typedef VideoFeedItemBuilder =
       BuildContext context,
       PooledVideo video,
       int index,
-      // Positional boolean is acceptable here for readability with 4 parameters.
+      // Positional boolean is acceptable here for readability.
       // ignore: avoid_positional_boolean_parameters
       bool isActive,
     );
@@ -24,6 +24,7 @@ typedef OnActiveVideoChanged = void Function(PooledVideo video, int index);
 ///
 /// Prewarms 3 videos ahead and 1 behind for smooth scrolling.
 class PooledVideoFeed extends StatefulWidget {
+  /// Creates a pooled video feed widget.
   const PooledVideoFeed({
     required this.videos,
     required this.itemBuilder,

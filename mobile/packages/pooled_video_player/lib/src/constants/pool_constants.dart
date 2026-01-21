@@ -1,7 +1,5 @@
 /// Constants for video controller pool configuration.
 class PoolConstants {
-  PoolConstants._();
-
   /// Maximum number of controllers that can be initialized concurrently.
   ///
   /// Prevents overwhelming the system by limiting parallel video
@@ -25,8 +23,6 @@ class PoolConstants {
 
 /// Memory tier thresholds for iOS and Android device classification.
 class MemoryTierConfig {
-  MemoryTierConfig._();
-
   // iOS Device Thresholds (based on iPhone generation number)
 
   /// iPhone generation threshold for high memory tier (iPhone 14+).

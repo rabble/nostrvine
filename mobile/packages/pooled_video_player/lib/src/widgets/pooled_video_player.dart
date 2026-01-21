@@ -69,9 +69,12 @@ typedef OverlayBuilder =
 /// [VideoControllerPoolManager].
 ///
 /// Uses specialized builders for clean UI composition:
-/// - [videoBuilder]: Required builder for the video layer (e.g., VideoPlayer widget)
-/// - [loadingBuilder]: Optional builder for loading state (defaults to black container)
-/// - [overlayBuilder]: Optional builder for UI overlay (e.g., controls, author info)
+/// - [videoBuilder]: Required builder for the video layer
+///   (e.g., VideoPlayer widget)
+/// - [loadingBuilder]: Optional builder for loading state
+///   (defaults to black container)
+/// - [overlayBuilder]: Optional builder for UI overlay
+///   (e.g., controls, author info)
 ///
 /// Example:
 /// ```dart
@@ -86,6 +89,7 @@ typedef OverlayBuilder =
 /// )
 /// ```
 class PooledVideoPlayer extends StatefulWidget {
+  /// Creates a pooled video player widget.
   const PooledVideoPlayer({
     required this.video,
     required this.videoBuilder,
@@ -252,12 +256,14 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
 
     try {
       controller.value;
+      // coverage:ignore-start
     } on Exception {
       widget.onVideoError?.call(
         StateError('Controller was disposed, requesting new one'),
       );
       return;
     }
+    // coverage:ignore-end
 
     setState(() => _controller = controller);
 
