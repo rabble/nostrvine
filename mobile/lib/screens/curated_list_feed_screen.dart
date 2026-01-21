@@ -8,9 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -291,7 +292,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
     if (widget.authorPubkey != null) {
       return GestureDetector(
-        onTap: () => context.pushProfileGrid(widget.authorPubkey!),
+        onTap: () {
+          final npub = normalizeToNpub(widget.authorPubkey!);
+          if (npub != null) {
+            context.push(ProfileScreenRouter.pathForNpub(npub));
+          }
+        },
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -2,7 +2,7 @@
 // ABOUTME: Verifies /search route is correctly parsed and returns RouteType.search
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
@@ -21,7 +21,7 @@ void main() {
       () {
         const context = RouteContext(type: RouteType.search);
 
-        final result = buildRoute(context);
+        final result = buildCanonicalPath(context);
 
         expect(result, SearchScreenPure.path);
       },

@@ -2,7 +2,8 @@
 // ABOUTME: Extracted from ExploreScreen for reusability and testability
 
 import 'package:flutter/material.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 /// A section displaying trending hashtags in a horizontal scrollable list.
@@ -98,7 +99,7 @@ class _HashtagChipList extends StatelessWidget {
             if (onHashtagTap != null) {
               onHashtagTap!(hashtag);
             } else {
-              context.goHashtag(hashtag);
+              context.go(HashtagScreenRouter.pathForTag(hashtag));
             }
           },
         );

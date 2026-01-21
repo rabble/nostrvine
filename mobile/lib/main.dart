@@ -30,7 +30,6 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -970,27 +969,27 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        RouteContext gridCtx;
+        String newRoute;
         if (ctx.type == RouteType.notifications) {
           // Notifications always has an index, go to index 0
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: 0,
-          );
+          newRoute = NotificationsScreen.pathForIndex(0);
         } else {
-          // For explore and other routes, go to grid mode (null index)
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: null,
-          );
+          // For explore, profile, and other routes, go to grid mode (null index)
+          switch (ctx.type) {
+            case RouteType.explore:
+              newRoute = ExploreScreen.path;
+            case RouteType.profile:
+              newRoute = ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me');
+            case RouteType.hashtag:
+              newRoute = HashtagScreenRouter.pathForTag(ctx.hashtag ?? '');
+            case RouteType.search:
+              newRoute = SearchScreenPure.path;
+            case RouteType.home:
+              newRoute = HomeScreenRouter.pathForIndex(0);
+            default:
+              newRoute = ExploreScreen.path;
+          }
         }
-        final newRoute = buildRoute(gridCtx);
         router.go(newRoute);
         return true; // Handled
       }

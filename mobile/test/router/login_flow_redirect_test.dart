@@ -2,7 +2,7 @@
 // ABOUTME: Tests redirect function behavior without full router instantiation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -300,7 +300,7 @@ void main() {
       '${LoginOptionsScreen.path} should parse and rebuild to ${LoginOptionsScreen.path} (not /home/0)',
       () {
         final parsed = parseRoute(LoginOptionsScreen.path);
-        final rebuilt = buildRoute(parsed);
+        final rebuilt = buildCanonicalPath(parsed);
 
         expect(
           parsed.type,
@@ -321,7 +321,7 @@ void main() {
       '${DivineAuthScreen.path} should parse and rebuild to ${DivineAuthScreen.path} (not /home/0)',
       () {
         final parsed = parseRoute(DivineAuthScreen.path);
-        final rebuilt = buildRoute(parsed);
+        final rebuilt = buildCanonicalPath(parsed);
 
         expect(
           parsed.type,
@@ -342,7 +342,7 @@ void main() {
       '${WelcomeScreen.path} should parse and rebuild to ${WelcomeScreen.path}',
       () {
         final parsed = parseRoute(WelcomeScreen.path);
-        final rebuilt = buildRoute(parsed);
+        final rebuilt = buildCanonicalPath(parsed);
 
         expect(parsed.type, equals(RouteType.welcome));
         expect(rebuilt, equals(WelcomeScreen.path));
@@ -353,7 +353,7 @@ void main() {
       '${KeyImportScreen.path} should parse and rebuild to ${KeyImportScreen.path}',
       () {
         final parsed = parseRoute(KeyImportScreen.path);
-        final rebuilt = buildRoute(parsed);
+        final rebuilt = buildCanonicalPath(parsed);
 
         expect(parsed.type, equals(RouteType.importKey));
         expect(rebuilt, equals(KeyImportScreen.path));

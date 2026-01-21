@@ -10,8 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/models/text_overlay.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/text_overlay_renderer.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/services/video_export_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1570,7 +1571,12 @@ class _VideoMetadataScreenPureState
           });
 
           // Go to the profile screen to see the new video
-          context.goMyProfile();
+          final authService = ref.read(authServiceProvider);
+          final currentUserHex = authService.currentPublicKeyHex;
+          if (currentUserHex != null && mounted) {
+            final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+            context.go(ProfileScreenRouter.pathForNpub(npub));
+          }
 
           Log.info(
             '📝 Published successfully, returned to main screen',

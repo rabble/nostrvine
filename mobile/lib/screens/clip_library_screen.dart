@@ -12,7 +12,7 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:video_player/video_player.dart';
 
@@ -256,7 +256,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         const SizedBox(height: 32),
         ElevatedButton.icon(
           onPressed: () {
-            context.pushCamera();
+            context.push(UniversalCameraScreenPure.path);
           },
           icon: const Icon(Icons.videocam),
           label: const Text('Record a Video'),

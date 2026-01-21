@@ -2,8 +2,9 @@
 // ABOUTME: Provides standard 4-tab navigation with Vine green styling
 
 import 'package:flutter/material.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 
 class VineBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -15,7 +16,7 @@ class VineBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: currentIndex,
-      onTap: onTap ?? (index) => context.goHome(0),
+      onTap: onTap ?? (index) => context.go(HomeScreenRouter.pathForIndex(0)),
       backgroundColor: VineTheme.vineGreen,
       selectedItemColor: VineTheme.whiteText,
       unselectedItemColor: VineTheme.whiteText.withValues(alpha: 0.7),

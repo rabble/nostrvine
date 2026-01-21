@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/profile_reposts_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -123,9 +123,12 @@ class _RepostGridTile extends StatelessWidget {
       );
       // Use ProfileRepostsFeedSource for reactive updates when loadMore fetches
       // new reposts
-      context.pushVideoFeed(
-        source: ProfileRepostsFeedSource(userIdHex),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: ProfileRepostsFeedSource(userIdHex),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileRepostsGrid: Called pushVideoFeed with '

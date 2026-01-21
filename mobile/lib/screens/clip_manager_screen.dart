@@ -15,7 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/services/video_export_service.dart';

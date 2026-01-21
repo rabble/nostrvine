@@ -16,9 +16,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/vine_recording_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/clip_manager_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/camera/camerawesome_mobile_camera_interface.dart';
 import 'package:openvine/services/camera/enhanced_mobile_camera_interface.dart';
@@ -596,7 +596,7 @@ class _UniversalCameraScreenPureState
               }
 
               // No screen to pop to (navigated via go), go home instead
-              context.goHome();
+              context.go(HomeScreenRouter.path);
             },
             child: Container(
               width: 44,

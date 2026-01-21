@@ -4,7 +4,8 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/page_context_provider.dart'
+    show buildCanonicalPath, parseRoute;
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -28,7 +29,7 @@ final routeNormalizationProvider = Provider<void>((ref) {
 
     // Parse and rebuild to get canonical form
     final parsed = parseRoute(loc);
-    final canonical = buildRoute(parsed);
+    final canonical = buildCanonicalPath(parsed);
 
     // If not canonical, schedule post-frame redirect
     if (canonical != loc) {

@@ -8,9 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -387,11 +385,11 @@ class _MeProfileRedirect extends ConsumerWidget {
 
     // Redirect to actual user profile using GoRouter explicitly
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Use context extension to properly handle null videoIndex (grid mode)
+      // Use direct GoRouter calls to properly handle null videoIndex (grid mode)
       if (videoIndex != null) {
-        context.goProfile(currentUserNpub, videoIndex!);
+        context.go(ProfileScreenRouter.pathForIndex(currentUserNpub, videoIndex!));
       } else {
-        context.goProfileGrid(currentUserNpub);
+        context.go(ProfileScreenRouter.pathForNpub(currentUserNpub));
       }
     });
 
@@ -497,7 +495,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
         isOwnProfile: isOwnProfile,
         videos: videos,
         videoIndex: videoIndex!,
-        onPageChanged: (newIndex) => context.goProfile(npub, newIndex),
+        onPageChanged: (newIndex) => context.go(ProfileScreenRouter.pathForIndex(npub, newIndex)),
       );
     }
 

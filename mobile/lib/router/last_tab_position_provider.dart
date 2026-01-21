@@ -3,7 +3,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 
 /// Tracks the last video index for each route type
 /// This preserves scroll position when switching between tabs

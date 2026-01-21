@@ -19,9 +19,12 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
-import 'page_context_provider.dart';
-import 'route_utils.dart';
-import 'nav_extensions.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'last_tab_position_provider.dart';
 import 'tab_history_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -142,22 +145,24 @@ class AppShell extends ConsumerWidget {
     // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
-        context.goHome(lastIndex ?? 0); // Home always has an index
+        context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
         break;
       case 1:
         // Always reset to grid mode (null) when tapping Explore tab
         // This prevents the "No videos available" bug when returning from another tab
-        context.goExplore(null);
+        context.go(ExploreScreen.path);
         break;
       case 2:
-        context.goNotifications(
-          lastIndex ?? 0,
-        ); // Notifications always has an index
+        context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
         break;
       case 3:
         // Always navigate to current user's profile when tapping Profile tab
-        // Navigation system will resolve 'me' to actual npub
-        context.goProfileGrid('me');
+        final authService = ref.read(authServiceProvider);
+        final currentUserHex = authService.currentPublicKeyHex;
+        if (currentUserHex != null) {
+          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+          context.go(ProfileScreenRouter.pathForNpub(npub));
+        }
         break;
     }
   }
@@ -220,7 +225,7 @@ class AppShell extends ConsumerWidget {
           navigator.popUntil((route) => route.isFirst);
         }
         // Navigate to main explore view
-        context.goExplore(null);
+        context.go(ExploreScreen.path);
       },
       child: titleWidget,
     );
@@ -381,32 +386,22 @@ class AppShell extends ConsumerWidget {
                   // For explore/profile: any videoIndex (including 0) should go to grid (null)
                   // For notifications: videoIndex > 0 should go to index 0
                   if (ctx.videoIndex != null) {
-                    // For Explore and Profile, grid mode is null
-                    if (ctx.type == RouteType.explore ||
-                        ctx.type == RouteType.profile) {
-                      final gridCtx = RouteContext(
-                        type: ctx.type,
-                        hashtag: ctx.hashtag,
-                        searchTerm: ctx.searchTerm,
-                        npub: ctx.npub,
-                        videoIndex: null,
+                    // For Explore, grid mode is null
+                    if (ctx.type == RouteType.explore) {
+                      context.go(ExploreScreen.path);
+                      return;
+                    }
+                    // For Profile, grid mode is null
+                    if (ctx.type == RouteType.profile) {
+                      context.go(
+                        ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
                       );
-                      final newRoute = buildRoute(gridCtx);
-                      context.go(newRoute);
                       return;
                     }
                     // For Notifications, index 0 is the base state
                     if (ctx.type == RouteType.notifications &&
                         ctx.videoIndex != 0) {
-                      final gridCtx = RouteContext(
-                        type: ctx.type,
-                        hashtag: ctx.hashtag,
-                        searchTerm: ctx.searchTerm,
-                        npub: ctx.npub,
-                        videoIndex: 0,
-                      );
-                      final newRoute = buildRoute(gridCtx);
-                      context.go(newRoute);
+                      context.go(NotificationsScreen.pathForIndex(0));
                       return;
                     }
                   }
@@ -429,16 +424,31 @@ class AppShell extends ConsumerWidget {
                     // Navigate to previous tab
                     switch (previousTab) {
                       case 0:
-                        context.goHome(lastIndex ?? 0);
+                        context.go(
+                          HomeScreenRouter.pathForIndex(lastIndex ?? 0),
+                        );
                         break;
                       case 1:
-                        context.goExplore(lastIndex);
+                        if (lastIndex != null) {
+                          context.go(ExploreScreen.pathForIndex(lastIndex));
+                        } else {
+                          context.go(ExploreScreen.path);
+                        }
                         break;
                       case 2:
-                        context.goNotifications(lastIndex ?? 0);
+                        context.go(
+                          NotificationsScreen.pathForIndex(lastIndex ?? 0),
+                        );
                         break;
                       case 3:
-                        context.goProfileGrid('me');
+                        final authService = ref.read(authServiceProvider);
+                        final currentUserHex = authService.currentPublicKeyHex;
+                        if (currentUserHex != null) {
+                          final npub = NostrKeyUtils.encodePubKey(
+                            currentUserHex,
+                          );
+                          context.go(ProfileScreenRouter.pathForNpub(npub));
+                        }
                         break;
                     }
                     return;
@@ -531,7 +541,7 @@ class AppShell extends ConsumerWidget {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-                    context.goSearch();
+                    context.go(SearchScreenPure.path);
                   },
                 ),
                 const SizedBox(width: 16),
@@ -577,7 +587,7 @@ class AppShell extends ConsumerWidget {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-                    context.pushCamera();
+                    context.push(UniversalCameraScreenPure.path);
                   },
                   child: Container(
                     width: 72,

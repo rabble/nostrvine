@@ -8,7 +8,6 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
