@@ -16,6 +16,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -610,6 +611,25 @@ FollowRepository followRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+@Riverpod(keepAlive: true)
+ProfileRepository profileRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  assert(
+    nostrClient.hasKeys,
+    'ProfileRepository accessed without authentication',
+  );
+
+  return ProfileRepository(nostrClient: nostrClient);
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod

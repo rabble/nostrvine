@@ -2002,6 +2002,76 @@ final class FollowRepositoryProvider
 
 String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
 
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+@ProviderFor(profileRepository)
+const profileRepositoryProvider = ProfileRepositoryProvider._();
+
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+final class ProfileRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ProfileRepository,
+          ProfileRepository,
+          ProfileRepository
+        >
+    with $Provider<ProfileRepository> {
+  /// Provider for ProfileRepository instance
+  ///
+  /// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+  /// Requires authentication.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  const ProfileRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'profileRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$profileRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProfileRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProfileRepository create(Ref ref) {
+    return profileRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProfileRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProfileRepository>(value),
+    );
+  }
+}
+
+String _$profileRepositoryHash() => r'3f492aba74b38fc183ffc4efeb35d2185b5996dd';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)

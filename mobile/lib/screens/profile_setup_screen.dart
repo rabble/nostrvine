@@ -14,14 +14,12 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerWidget {
@@ -43,20 +41,17 @@ class ProfileSetupScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
     final usernameRepository = ref.watch(usernameRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
 
-    return RepositoryProvider<ProfileRepository>(
-      create: (_) => ProfileRepository(nostrClient: nostrClient),
-      child: BlocProvider<ProfileEditorBloc>(
-        create: (context) => ProfileEditorBloc(
-          profileRepository: context.read<ProfileRepository>(),
-          usernameRepository: usernameRepository,
-          userProfileService: userProfileService,
-        ),
-        child: ProfileSetupScreenView(isNewUser: isNewUser),
+    return BlocProvider<ProfileEditorBloc>(
+      create: (context) => ProfileEditorBloc(
+        profileRepository: profileRepository,
+        usernameRepository: usernameRepository,
+        userProfileService: userProfileService,
       ),
+      child: ProfileSetupScreenView(isNewUser: isNewUser),
     );
   }
 }
@@ -120,24 +115,6 @@ class _ProfileSetupScreenViewState
     _nip05Controller.dispose();
 
     super.dispose();
-  }
-
-  void _submit(String pubkey) {
-    context.read<ProfileEditorBloc>().add(
-      ProfileSaved(
-        pubkey: pubkey,
-        displayName: _nameController.text.trim(),
-        about: _bioController.text.trim().isEmpty
-            ? null
-            : _bioController.text.trim(),
-        username: _nip05Controller.text.trim().isEmpty
-            ? null
-            : _nip05Controller.text.trim(),
-        picture: _pictureController.text.trim().isEmpty
-            ? null
-            : _pictureController.text.trim(),
-      ),
-    );
   }
 
   Future<void> _loadExistingProfile() async {
@@ -863,7 +840,16 @@ class _ProfileSetupScreenViewState
                                               _nip05Controller.text.trim() ==
                                                   _initialUsername) &&
                                           !usernameState.isChecking,
-                                      onSave: () => _submit(pubkey),
+                                      onSave: () =>
+                                          context.read<ProfileEditorBloc>().add(
+                                            ProfileSaved(
+                                              pubkey: pubkey,
+                                              displayName: _nameController.text,
+                                              about: _bioController.text,
+                                              username: _nip05Controller.text,
+                                              picture: _pictureController.text,
+                                            ),
+                                          ),
                                     ),
                                   ),
                               ],
