@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:test/test.dart';
 
