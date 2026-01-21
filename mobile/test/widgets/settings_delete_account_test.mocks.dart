@@ -48,16 +48,21 @@ class MockAccountDeletionService extends _i1.Mock
   }
 
   @override
-  _i4.Future<_i2.DeleteAccountResult> deleteAccount({String? customReason}) =>
+  _i4.Future<_i2.DeleteAccountResult> deleteAccount({
+    String? customReason,
+    void Function(int, int)? onProgress,
+  }) =>
       (super.noSuchMethod(
             Invocation.method(#deleteAccount, [], {
               #customReason: customReason,
+              #onProgress: onProgress,
             }),
             returnValue: _i4.Future<_i2.DeleteAccountResult>.value(
               _FakeDeleteAccountResult_0(
                 this,
                 Invocation.method(#deleteAccount, [], {
                   #customReason: customReason,
+                  #onProgress: onProgress,
                 }),
               ),
             ),

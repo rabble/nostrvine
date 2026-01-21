@@ -1,0 +1,22 @@
+name: pooled_video_player
+description: Headless video controller pool for short-form video feeds with smart preloading and memory management
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+  flutter: ^3.38.3
+
+dependencies:
+  device_info_plus: ^10.1.2
+  flutter:
+    sdk: flutter
+  meta: ^1.17.0
+  video_player: ^2.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

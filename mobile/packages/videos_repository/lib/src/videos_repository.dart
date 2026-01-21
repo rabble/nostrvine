@@ -7,6 +7,8 @@
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:videos_repository/src/video_content_filter.dart';
+import 'package:videos_repository/src/video_event_filter.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -29,9 +31,15 @@ class VideosRepository {
   /// {@macro videos_repository}
   const VideosRepository({
     required NostrClient nostrClient,
-  }) : _nostrClient = nostrClient;
+    BlockedVideoFilter? blockFilter,
+    VideoContentFilter? contentFilter,
+  }) : _nostrClient = nostrClient,
+       _blockFilter = blockFilter,
+       _contentFilter = contentFilter;
 
   final NostrClient _nostrClient;
+  final BlockedVideoFilter? _blockFilter;
+  final VideoContentFilter? _contentFilter;
 
   /// Fetches videos from followed users for the home feed.
   ///
@@ -191,6 +199,14 @@ class VideosRepository {
 
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
+  /// Applies two-stage filtering:
+  /// 1. [_blockFilter] - pubkey-based filtering (blocklist/mutes) BEFORE
+  ///    parsing for efficiency
+  /// 2. [_contentFilter] - content-based filtering (NSFW, etc.) AFTER
+  ///    parsing when video metadata is available
+  ///
+  /// Also:
+  /// - Applies content filter (blocklist/mutes) if configured
   /// - Parses events using [VideoEvent.fromNostrEvent]
   /// - Filters out videos without a valid video URL
   /// - Filters out expired videos (NIP-40)
@@ -207,6 +223,10 @@ class VideosRepository {
       // Skip events that aren't valid video kinds
       if (!NIP71VideoKinds.isVideoKind(event.kind)) continue;
 
+      // Stage 1: Content filter - check pubkey before parsing for efficiency
+      // Content filter - check early before parsing for efficiency
+      if (_blockFilter?.call(event.pubkey) ?? false) continue;
+
       final video = VideoEvent.fromNostrEvent(event);
 
       // Skip videos without a playable URL
@@ -214,6 +234,9 @@ class VideosRepository {
 
       // Skip expired videos (NIP-40)
       if (video.isExpired) continue;
+
+      // Stage 2: Video event filter - check parsed video (NSFW, etc.)
+      if (_contentFilter?.call(video) ?? false) continue;
 
       videos.add(video);
     }
