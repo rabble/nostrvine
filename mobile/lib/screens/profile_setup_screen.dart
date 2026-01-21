@@ -202,6 +202,8 @@ class _ProfileSetupScreenViewState
 
   @override
   Widget build(BuildContext context) {
+    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
+    // debounced username validation
     final usernameState = ref.watch(usernameProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
