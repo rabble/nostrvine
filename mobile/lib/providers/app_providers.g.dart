@@ -3142,6 +3142,7 @@ String _$commentsRepositoryHash() =>
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
@@ -3153,6 +3154,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
 
 final class VideosRepositoryProvider
     extends
@@ -3169,6 +3171,7 @@ final class VideosRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - ContentBlocklistService for filtering blocked/muted users
   const VideosRepositoryProvider._()
     : super(
         from: null,
@@ -3202,7 +3205,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b79158c61e075cc29bc9205dda3c03576244e47a';
+String _$videosRepositoryHash() => r'fcf307d56d1834d49147b179ef3b79b586908916';
 
 /// Provider for LikesRepository instance
 ///

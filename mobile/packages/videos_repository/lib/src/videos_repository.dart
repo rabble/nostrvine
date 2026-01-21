@@ -7,6 +7,7 @@
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:videos_repository/src/video_content_filter.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -29,9 +30,12 @@ class VideosRepository {
   /// {@macro videos_repository}
   const VideosRepository({
     required NostrClient nostrClient,
-  }) : _nostrClient = nostrClient;
+    VideoContentFilter? contentFilter,
+  }) : _nostrClient = nostrClient,
+       _contentFilter = contentFilter;
 
   final NostrClient _nostrClient;
+  final VideoContentFilter? _contentFilter;
 
   /// Fetches videos from followed users for the home feed.
   ///
@@ -191,6 +195,7 @@ class VideosRepository {
 
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
+  /// - Applies content filter (blocklist/mutes) if configured
   /// - Parses events using [VideoEvent.fromNostrEvent]
   /// - Filters out videos without a valid video URL
   /// - Filters out expired videos (NIP-40)
@@ -206,6 +211,9 @@ class VideosRepository {
     for (final event in events) {
       // Skip events that aren't valid video kinds
       if (!NIP71VideoKinds.isVideoKind(event.kind)) continue;
+
+      // Content filter - check early before parsing for efficiency
+      if (_contentFilter?.call(event.pubkey) ?? false) continue;
 
       final video = VideoEvent.fromNostrEvent(event);
 
