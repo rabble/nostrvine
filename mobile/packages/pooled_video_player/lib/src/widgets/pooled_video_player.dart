@@ -92,6 +92,7 @@ class PooledVideoPlayer extends StatefulWidget {
     this.loadingBuilder,
     this.overlayBuilder,
     this.autoPlay = false,
+    this.looping = true,
     this.enableTapToPause = false,
     this.onVideoReady,
     this.onVideoLoading,
@@ -123,6 +124,9 @@ class PooledVideoPlayer extends StatefulWidget {
 
   /// Whether to automatically play when the controller is ready.
   final bool autoPlay;
+
+  /// Whether the video should loop. Defaults to true.
+  final bool looping;
 
   /// Enable tap-to-pause/play functionality.
   ///
@@ -204,6 +208,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
       // Schedule callbacks for after first build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _controller != null) {
+          unawaited(_controller!.setLooping(widget.looping));
           widget.onVideoReady?.call(_controller!);
           if (widget.autoPlay) {
             unawaited(_controller!.play());
@@ -257,6 +262,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     setState(() => _controller = controller);
 
     if (_controller!.value.isInitialized) {
+      unawaited(_controller!.setLooping(widget.looping));
       widget.onVideoReady?.call(_controller!);
       if (widget.autoPlay) {
         unawaited(_controller!.play());
@@ -275,6 +281,10 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
   void didUpdateWidget(PooledVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (widget.looping != oldWidget.looping && _controller != null) {
+      unawaited(_controller!.setLooping(widget.looping));
+    }
+
     if (widget.autoPlay != oldWidget.autoPlay && _controller != null) {
       if (widget.autoPlay && _controller!.value.isInitialized) {
         unawaited(_controller!.play());
@@ -289,6 +299,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
       if (existingController != null &&
           existingController.value.isInitialized) {
         setState(() => _controller = existingController);
+        unawaited(existingController.setLooping(widget.looping));
         widget.onVideoReady?.call(existingController);
         if (widget.autoPlay) {
           unawaited(existingController.play());

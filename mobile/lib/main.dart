@@ -55,7 +55,6 @@ import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 
@@ -547,18 +546,7 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
-  final poolManager = await VideoControllerPoolManager.initialize(
-    controllerFactory: (videoUrl, {cachedFile}) async {
-      final controller = cachedFile != null
-          ? VideoPlayerController.file(cachedFile)
-          : VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-
-      await controller.initialize();
-      await controller.setLooping(true);
-
-      return controller;
-    },
-  );
+  final poolManager = await VideoControllerPoolManager.initialize();
   Log.info(
     '[INIT] ✅ VideoControllerPoolManager initialized '
     '(poolSize: ${poolManager.poolSize})',

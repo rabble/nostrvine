@@ -7,7 +7,8 @@ import 'package:pooled_video_player/src/constants/pool_constants.dart';
 import 'package:pooled_video_player/src/utils/device_memory_util.dart';
 import 'package:video_player/video_player.dart';
 
-/// Factory for creating video controllers. Allows injection for testing.
+/// Factory for creating video controllers. Used for testing only.
+@visibleForTesting
 typedef VideoControllerFactory =
     Future<VideoPlayerController?> Function(
       String videoUrl, {
@@ -44,15 +45,7 @@ class PooledController {
 /// Call [initialize] early in the app lifecycle (e.g., in `main()`):
 ///
 /// ```dart
-/// await VideoControllerPoolManager.initialize(
-///   controllerFactory: (url, {cachedFile}) async {
-///     final controller = cachedFile != null
-///         ? VideoPlayerController.file(cachedFile)
-///         : VideoPlayerController.networkUrl(Uri.parse(url));
-///     await controller.initialize();
-///     return controller;
-///   },
-/// );
+/// await VideoControllerPoolManager.initialize();
 /// ```
 ///
 /// ## Pool Size
@@ -79,7 +72,7 @@ class PooledController {
 ///
 /// ## Usage with Feed Widgets
 ///
-/// Typically used with [PooledVideoFeed] and [PooledVideoPlayer]:
+/// Typically used with `PooledVideoFeed` and `PooledVideoPlayer`:
 ///
 /// ```dart
 /// PooledVideoFeed(
@@ -94,7 +87,7 @@ class PooledController {
 class VideoControllerPoolManager {
   VideoControllerPoolManager._({
     required this.poolSize,
-    required VideoControllerFactory controllerFactory,
+    VideoControllerFactory? controllerFactory,
   }) : _controllerFactory = controllerFactory;
 
   static VideoControllerPoolManager? _instance;
@@ -116,10 +109,13 @@ class VideoControllerPoolManager {
   ///
   /// If [poolSize] is not provided, automatically detects optimal size based
   /// on device memory tier.
+  ///
+  /// The [controllerFactory] parameter is for testing only. In production,
+  /// controllers are created using the default implementation.
   static Future<VideoControllerPoolManager> initialize({
-    required VideoControllerFactory controllerFactory,
     int? poolSize,
     DeviceMemoryUtil? memoryClassifier,
+    @visibleForTesting VideoControllerFactory? controllerFactory,
   }) async {
     if (_instance != null) {
       await _instance!.dispose();
@@ -151,7 +147,10 @@ class VideoControllerPoolManager {
   }
 
   final int poolSize;
-  final VideoControllerFactory _controllerFactory;
+
+  /// Optional factory for creating controllers. Used for testing only.
+  /// When null, controllers are created using the default implementation.
+  final VideoControllerFactory? _controllerFactory;
 
   final Map<String, PooledController> _pool = {};
   final LinkedHashMap<String, DateTime> _lruMap = LinkedHashMap();
@@ -288,12 +287,23 @@ class VideoControllerPoolManager {
 
       // Create controller
       final cachedFile = getCachedFile?.call(videoId);
-      final controller = await _controllerFactory(
-        videoUrl,
-        cachedFile: cachedFile,
-      );
+      final VideoPlayerController controller;
 
-      if (controller == null) return null;
+      if (_controllerFactory != null) {
+        // Use injected factory (for testing)
+        final factoryController = await _controllerFactory(
+          videoUrl,
+          cachedFile: cachedFile,
+        );
+        if (factoryController == null) return null;
+        controller = factoryController;
+      } else {
+        // Default implementation
+        controller = cachedFile != null
+            ? VideoPlayerController.file(cachedFile)
+            : VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+        await controller.initialize();
+      }
 
       // Check if cancelled during creation
       if (_cancelledVideoIds.remove(videoId)) {
