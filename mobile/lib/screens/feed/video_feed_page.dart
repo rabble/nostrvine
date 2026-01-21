@@ -212,7 +212,7 @@ class _PooledVideoEventAdapter implements PooledVideo {
 ///
 /// This widget renders video content with automatic controller management
 /// from the pool, plus the full overlay UI with author info, actions, etc.
-class _PooledVideoFeedItem extends ConsumerStatefulWidget {
+class _PooledVideoFeedItem extends ConsumerWidget {
   const _PooledVideoFeedItem({
     required this.video,
     required this.index,
@@ -226,64 +226,60 @@ class _PooledVideoFeedItem extends ConsumerStatefulWidget {
   final String? contextTitle;
 
   @override
-  ConsumerState<_PooledVideoFeedItem> createState() =>
-      _PooledVideoFeedItemState();
-}
-
-class _PooledVideoFeedItemState extends ConsumerState<_PooledVideoFeedItem> {
-  late final VideoInteractionsBloc _interactionsBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    _createInteractionsBloc();
-  }
-
-  void _createInteractionsBloc() {
+  Widget build(BuildContext context, WidgetRef ref) {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
 
-    _interactionsBloc = VideoInteractionsBloc(
-      eventId: widget.video.id,
-      authorPubkey: widget.video.pubkey,
-      likesRepository: likesRepository,
-      commentsRepository: commentsRepository,
+    return BlocProvider<VideoInteractionsBloc>(
+      create: (_) => VideoInteractionsBloc(
+        eventId: video.id,
+        authorPubkey: video.pubkey,
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+      )
+        ..add(const VideoInteractionsSubscriptionRequested())
+        ..add(const VideoInteractionsFetchRequested()),
+      child: _PooledVideoFeedItemContent(
+        video: video,
+        isActive: isActive,
+        contextTitle: contextTitle,
+      ),
     );
-    _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
-    _interactionsBloc.add(const VideoInteractionsFetchRequested());
   }
+}
 
-  @override
-  void dispose() {
-    _interactionsBloc.close();
-    super.dispose();
-  }
+class _PooledVideoFeedItemContent extends StatelessWidget {
+  const _PooledVideoFeedItemContent({
+    required this.video,
+    required this.isActive,
+    this.contextTitle,
+  });
+
+  final VideoEvent video;
+  final bool isActive;
+  final String? contextTitle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.black,
       child: PooledVideoPlayer(
-        video: _PooledVideoEventAdapter(widget.video),
-        autoPlay: widget.isActive,
-        enableTapToPause: widget.isActive,
+        video: _PooledVideoEventAdapter(video),
+        autoPlay: isActive,
+        enableTapToPause: isActive,
         videoBuilder: (context, controller) =>
             _FittedVideoPlayer(controller: controller),
         loadingBuilder: (context) =>
-            _VideoLoadingPlaceholder(thumbnailUrl: widget.video.thumbnailUrl),
-        overlayBuilder: (context, controller) =>
-            BlocProvider<VideoInteractionsBloc>.value(
-              value: _interactionsBloc,
-              child: VideoOverlayActions(
-                video: widget.video,
-                isVisible: widget.isActive,
-                isActive: widget.isActive,
-                hasBottomNavigation: false,
-                contextTitle: widget.contextTitle,
-              ),
-            ),
+            _VideoLoadingPlaceholder(thumbnailUrl: video.thumbnailUrl),
+        overlayBuilder: (context, controller) => VideoOverlayActions(
+          video: video,
+          isVisible: isActive,
+          isActive: isActive,
+          hasBottomNavigation: false,
+          contextTitle: contextTitle,
+        ),
         onVideoError: (error) {
-          debugPrint('Video error for ${widget.video.id}: $error');
+          debugPrint('Video error for ${video.id}: $error');
         },
       ),
     );
