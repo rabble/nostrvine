@@ -1,6 +1,5 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:test/test.dart';
 
