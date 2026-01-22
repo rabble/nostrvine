@@ -286,7 +286,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath)) {
+              location == WelcomeScreen.resetPasswordPath ||
+              location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
         return HomeScreenRouter.pathForIndex(0);
       }

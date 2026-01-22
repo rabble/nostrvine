@@ -119,8 +119,8 @@ class _EmailVerificationScreenState
 
   void _handleSuccess(EmailVerificationMode mode) {
     if (mode == EmailVerificationMode.polling) {
-      // Polling mode: user is now logged in, go to home
-      context.go('/home');
+      // app_router should detect that we are authenticated
+      // and route us to /home
     } else {
       // Token mode: redirect to login screen
       context.go(WelcomeScreen.authNativePath);

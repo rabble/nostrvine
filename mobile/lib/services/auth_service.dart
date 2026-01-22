@@ -520,7 +520,6 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    //await _onTermsAccepted();
 
     try {
       // Validate nsec format
@@ -575,7 +574,6 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    //await _onTermsAccepted();
 
     try {
       // Validate hex format
@@ -633,7 +631,6 @@ class AuthService {
     );
 
     _setAuthState(AuthState.authenticating);
-    //await _onTermsAccepted();
     _lastError = null;
 
     try {
