@@ -3,9 +3,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/widgets/environment_indicator.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -22,6 +26,8 @@ import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
+import 'package:openvine/widgets/vine_bottom_nav.dart';
+import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -92,7 +98,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // Read derived context from router
     final pageContext = ref.watch(pageContextProvider);
 
-    return switch (pageContext) {
+    // Check if this is own profile grid view (needs own scaffold)
+    final isOwnProfileGrid = pageContext.maybeWhen(
+      data: (ctx) {
+        if (ctx.type != RouteType.profile) return false;
+        if (ctx.videoIndex != null) return false; // Video mode uses shell
+        final currentNpub = ref.read(authServiceProvider).currentNpub;
+        return ctx.npub == 'me' || ctx.npub == currentNpub;
+      },
+      orElse: () => false,
+    );
+
+    final content = switch (pageContext) {
       AsyncLoading() => const ProfileLoadingView(),
       AsyncError(:final error) => Center(child: Text('Error: $error')),
       AsyncData(:final value) => _ProfileContentView(
@@ -102,9 +119,104 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
-        onMore: _more,
       ),
     };
+
+    // Own profile grid gets its own scaffold with custom app bar
+    if (isOwnProfileGrid) {
+      final environment = ref.watch(currentEnvironmentProvider);
+      final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
+
+      return Scaffold(
+        backgroundColor: Colors.black,
+        onDrawerChanged: (isOpen) {
+          ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
+        },
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
+          leadingWidth: 80,
+          centerTitle: false,
+          titleSpacing: 0,
+          backgroundColor: getEnvironmentAppBarColor(environment),
+          leading: Builder(
+            builder: (context) => IconButton(
+              key: const Key('menu-icon-button'),
+              tooltip: 'Menu',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/menu.svg',
+                  width: 32,
+                  height: 32,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              onPressed: () {
+                Log.info(
+                  '👆 User tapped menu button',
+                  name: 'Navigation',
+                  category: LogCategory.ui,
+                );
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+          ),
+          title: Text(
+            'My Profile',
+            style: VineTheme.titleFont(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: IconButton(
+                tooltip: 'More',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/DotsThree.svg',
+                    width: 28,
+                    height: 28,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+                onPressed: userIdHex != null ? () => _more(userIdHex) : null,
+              ),
+            ),
+          ],
+        ),
+        drawer: const VineDrawer(),
+        body: content,
+        bottomNavigationBar: const VineBottomNav(currentIndex: 3),
+      );
+    }
+
+    return content;
   }
 
   // Action methods
@@ -209,7 +321,6 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onMore,
   });
 
   final RouteContext routeContext;
@@ -218,7 +329,6 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final void Function(String userIdHex) onMore;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -267,7 +377,6 @@ class _ProfileContentView extends ConsumerWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onMore: () => onMore(userIdHex),
     );
   }
 }
@@ -322,7 +431,6 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onMore,
   });
 
   final String npub;
@@ -333,7 +441,6 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -357,7 +464,6 @@ class _ProfileDataView extends ConsumerWidget {
         onSetupProfile: onSetupProfile,
         onEditProfile: onEditProfile,
         onOpenClips: onOpenClips,
-        onMore: onMore,
       ),
     };
   }
@@ -376,7 +482,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onMore,
   });
 
   final String npub;
@@ -389,7 +494,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +521,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onMore: onMore,
     );
   }
 }

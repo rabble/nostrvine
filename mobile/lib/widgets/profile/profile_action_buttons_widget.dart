@@ -1,4 +1,4 @@
-// ABOUTME: Action buttons widget for profile page (edit, library, more, follow)
+// ABOUTME: Action buttons widget for profile page (edit, library, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,6 @@ class ProfileActionButtons extends StatelessWidget {
     required this.isOwnProfile,
     this.onEditProfile,
     this.onOpenClips,
-    this.onMore,
     super.key,
   });
 
@@ -22,7 +21,6 @@ class ProfileActionButtons extends StatelessWidget {
   final bool isOwnProfile;
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
-  final VoidCallback? onMore;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -114,29 +112,6 @@ class ProfileActionButtons extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          OutlinedButton(
-            onPressed: onMore,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: VineTheme.surfaceContainer,
-              foregroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.all(10),
-              side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              minimumSize: Size.zero,
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/DotsThree.svg',
-              width: 28,
-              height: 28,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.vineGreen,
-                BlendMode.srcIn,
               ),
             ),
           ),
