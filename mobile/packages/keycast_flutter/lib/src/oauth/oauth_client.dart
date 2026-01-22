@@ -502,8 +502,7 @@ class KeycastOAuth {
       }
 
       // Handle server-side errors
-      final message =
-          json['message']?.toString() ?? 'Failed to verify email';
+      final message = json['message']?.toString() ?? 'Failed to verify email';
       return VerifyEmailResult.error(message);
     } catch (e) {
       return VerifyEmailResult.error('Network error: $e');
