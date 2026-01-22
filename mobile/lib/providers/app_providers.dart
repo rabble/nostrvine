@@ -628,13 +628,17 @@ FollowRepository followRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 ProfileRepository profileRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
 
   assert(
     nostrClient.hasKeys,
     'ProfileRepository accessed without authentication',
   );
 
-  return ProfileRepository(nostrClient: nostrClient);
+  return ProfileRepository(
+    nostrClient: nostrClient,
+    userProfilesDao: userProfilesDao,
+  );
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod
