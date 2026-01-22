@@ -1431,6 +1431,146 @@ void main() {
       });
     });
 
+    group('sendGenericRepost', () {
+      const addressableId =
+          '34236:82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2:unique-identifier';
+      const targetKind = 34236;
+      const authorPubkey =
+          '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2';
+
+      test('sends generic repost successfully', () async {
+        final repostEvent = _createTestEvent(kind: EventKind.genericRepost);
+
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => repostEvent);
+
+        final result = await client.sendGenericRepost(
+          addressableId: addressableId,
+          targetKind: targetKind,
+          authorPubkey: authorPubkey,
+        );
+
+        expect(result, equals(repostEvent));
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+
+        expect(captured.kind, equals(EventKind.genericRepost));
+        expect(captured.content, isEmpty);
+        expect(
+          captured.tags,
+          containsAll([
+            ['k', '$targetKind'],
+            ['a', addressableId],
+            ['p', authorPubkey],
+          ]),
+        );
+      });
+
+      test('sends generic repost with all parameters', () async {
+        const content = 'Test repost content';
+        final tempRelays = ['wss://temp.example.com'];
+        final targetRelays = ['wss://target.example.com'];
+        final repostEvent = _createTestEvent(kind: EventKind.genericRepost);
+
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => repostEvent);
+
+        final result = await client.sendGenericRepost(
+          addressableId: addressableId,
+          targetKind: targetKind,
+          authorPubkey: authorPubkey,
+          content: content,
+          tempRelays: tempRelays,
+          targetRelays: targetRelays,
+        );
+
+        expect(result, equals(repostEvent));
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: tempRelays,
+                    targetRelays: targetRelays,
+                  ),
+                ).captured.single
+                as Event;
+
+        expect(captured.content, equals(content));
+      });
+
+      test('returns null when sendEvent fails', () async {
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await client.sendGenericRepost(
+          addressableId: addressableId,
+          targetKind: targetKind,
+          authorPubkey: authorPubkey,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('creates event with correct tag structure', () async {
+        final repostEvent = _createTestEvent(kind: EventKind.genericRepost);
+
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => repostEvent);
+
+        await client.sendGenericRepost(
+          addressableId: addressableId,
+          targetKind: targetKind,
+          authorPubkey: authorPubkey,
+        );
+
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+
+        // Verify tags are in correct order: k, a, p
+        expect(captured.tags.length, equals(3));
+        expect(captured.tags[0][0], equals('k'));
+        expect(captured.tags[0][1], equals('$targetKind'));
+        expect(captured.tags[1][0], equals('a'));
+        expect(captured.tags[1][1], equals(addressableId));
+        expect(captured.tags[2][0], equals('p'));
+        expect(captured.tags[2][1], equals(authorPubkey));
+      });
+    });
+
     group('deleteEvent', () {
       test('deletes event successfully', () async {
         const eventId = 'event-to-delete';

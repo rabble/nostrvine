@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:reposts_repository/reposts_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -18,7 +17,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -74,6 +72,8 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -1144,16 +1144,6 @@ RepostsRepository repostsRepository(Ref ref) {
 
   final repository = RepostsRepository(
     nostrClient: nostrClient,
-    eventCreator:
-        ({
-          required int kind,
-          required String content,
-          required List<List<String>> tags,
-        }) => authService.createAndSignEvent(
-          kind: kind,
-          content: content,
-          tags: tags,
-        ),
     isAuthenticated: isAuthenticated,
   );
 
