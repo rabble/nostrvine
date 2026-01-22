@@ -15,6 +15,7 @@ import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -294,7 +295,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
-          location.startsWith(WelcomeScreen.resetPasswordPath);
+          location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(EmailVerificationScreen.path);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -702,6 +704,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) {
           final token = state.uri.queryParameters['token'];
           return '${WelcomeScreen.resetPasswordPath}?token=$token';
+        },
+      ),
+      // deep link route for email verification
+      GoRoute(
+        path: EmailVerificationScreen.path,
+        name: EmailVerificationScreen.routeName,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return EmailVerificationScreen(token: token ?? '');
         },
       ),
 

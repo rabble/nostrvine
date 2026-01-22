@@ -520,7 +520,7 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
+    //await _onTermsAccepted();
 
     try {
       // Validate nsec format
@@ -575,7 +575,7 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
+    //await _onTermsAccepted();
 
     try {
       // Validate hex format
@@ -633,7 +633,7 @@ class AuthService {
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
+    //await _onTermsAccepted();
     _lastError = null;
 
     try {
@@ -828,7 +828,7 @@ class AuthService {
       if (_authState != AuthState.authenticated) {
         await _checkExistingAuth();
       }
-      await _onTermsAccepted();
+      await acceptTerms();
 
       Log.info(
         'Terms of Service accepted, user is now fully authenticated',
@@ -848,13 +848,12 @@ class AuthService {
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(KeycastSession session) async {
     Log.debug(
-      'Integrating OAuth session into AuthService',
+      'Signing in with Divine OAuth session',
       name: 'AuthService',
       category: LogCategory.auth,
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
     _lastError = null;
 
     try {
@@ -1287,7 +1286,7 @@ class AuthService {
     }
   }
 
-  Future<void> _onTermsAccepted() async {
+  Future<void> acceptTerms() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       'terms_accepted_at',
@@ -1326,7 +1325,7 @@ class AuthService {
           reason: 'identity_change',
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
-        await _onTermsAccepted();
+        await acceptTerms();
       }
       await prefs.setString(
         'current_user_pubkey_hex',

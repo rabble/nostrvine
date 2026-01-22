@@ -51,6 +51,7 @@ import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
+import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -284,6 +285,13 @@ KeycastOAuth oauthClient(Ref ref) {
 @Riverpod(keepAlive: true)
 PasswordResetListener passwordResetListener(Ref ref) {
   final listener = PasswordResetListener(ref);
+  ref.onDispose(() => listener.dispose());
+  return listener;
+}
+
+@Riverpod(keepAlive: true)
+EmailVerificationListener emailVerificationListener(Ref ref) {
+  final listener = EmailVerificationListener(ref);
   ref.onDispose(() => listener.dispose());
   return listener;
 }

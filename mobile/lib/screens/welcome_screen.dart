@@ -145,9 +145,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 // Login option for existing users
                                 TextButton(
                                   onPressed: _canProceed
-                                      ? () => context.push(
-                                          WelcomeScreen.loginOptionsPath,
-                                        )
+                                      ? () {
+                                          authService.acceptTerms();
+                                          context.push(
+                                            WelcomeScreen.loginOptionsPath,
+                                          );
+                                        }
                                       : null,
                                   child: Text(
                                     'Have an account? Log In',

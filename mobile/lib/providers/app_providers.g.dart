@@ -930,6 +930,54 @@ final class PasswordResetListenerProvider
 String _$passwordResetListenerHash() =>
     r'e9469a2977559d922c965f6441a71b6cc3626ec2';
 
+@ProviderFor(emailVerificationListener)
+const emailVerificationListenerProvider = EmailVerificationListenerProvider._();
+
+final class EmailVerificationListenerProvider
+    extends
+        $FunctionalProvider<
+          EmailVerificationListener,
+          EmailVerificationListener,
+          EmailVerificationListener
+        >
+    with $Provider<EmailVerificationListener> {
+  const EmailVerificationListenerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'emailVerificationListenerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$emailVerificationListenerHash();
+
+  @$internal
+  @override
+  $ProviderElement<EmailVerificationListener> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EmailVerificationListener create(Ref ref) {
+    return emailVerificationListener(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EmailVerificationListener value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EmailVerificationListener>(value),
+    );
+  }
+}
+
+String _$emailVerificationListenerHash() =>
+    r'50a030c1a6ad7737b95af287baccb5eccddf05d0';
+
 /// Web authentication service (for web platform only)
 
 @ProviderFor(webAuthService)

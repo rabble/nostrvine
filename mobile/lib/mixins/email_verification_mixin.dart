@@ -153,12 +153,6 @@ mixin EmailVerificationMixin<T extends ConsumerStatefulWidget>
     );
   }
 
-  /// Skip registration and sign in automatically to trigger being
-  /// authenticated but not registered.
-  void continueToApp() {
-    ref.read(authServiceProvider).signInAutomatically();
-  }
-
   /// Exchange authorization code for tokens and complete login
   Future<void> exchangeCodeAndLogin(
     KeycastOAuth oauth,

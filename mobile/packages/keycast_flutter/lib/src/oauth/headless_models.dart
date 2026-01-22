@@ -160,3 +160,24 @@ class DeleteAccountResult {
     return DeleteAccountResult(success: false, error: message);
   }
 }
+
+/// Result from POST /api/auth/verify-email
+class VerifyEmailResult {
+  final bool success;
+  final String? message;
+  final String? error;
+
+  VerifyEmailResult({required this.success, this.message, this.error});
+
+  factory VerifyEmailResult.fromJson(Map<String, dynamic> json) {
+    return VerifyEmailResult(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String?,
+      error: json['error'] as String?,
+    );
+  }
+
+  factory VerifyEmailResult.error(String message) {
+    return VerifyEmailResult(success: false, error: message);
+  }
+}
