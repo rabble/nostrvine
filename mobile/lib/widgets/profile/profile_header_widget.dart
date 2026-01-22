@@ -2,6 +2,8 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -266,7 +268,7 @@ class _ProfileNameAndBio extends StatelessWidget {
   }
 }
 
-/// Unique identifier display (NIP-05 or truncated npub fallback).
+/// Unique identifier display (NIP-05 or full npub with ellipsis).
 class _UniqueIdentifier extends StatelessWidget {
   const _UniqueIdentifier({required this.userIdHex, required this.nip05});
 
@@ -277,14 +279,59 @@ class _UniqueIdentifier extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayText = (nip05 != null && nip05!.isNotEmpty)
         ? nip05!
-        : NostrKeyUtils.encodePubKey(userIdHex).substring(0, 12);
+        : NostrKeyUtils.encodePubKey(userIdHex);
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
 
-    return Text(
-      displayText,
-      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            displayText,
+            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: GestureDetector(
+            onTap: () => _copyToClipboard(context, npub),
+            child: SvgPicture.asset(
+              'assets/icon/copy.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.vineGreen,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _copyToClipboard(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check, color: VineTheme.onPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'Unique ID copied to clipboard',
+                style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
+              ),
+            ],
+          ),
+          backgroundColor: VineTheme.vineGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }
 

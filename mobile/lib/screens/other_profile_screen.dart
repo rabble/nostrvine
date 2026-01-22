@@ -2,11 +2,9 @@
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
@@ -94,11 +92,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.copy, color: VineTheme.whiteText),
-                title: Text('Copy unique ID', style: VineTheme.bodyLargeFont()),
-                onTap: () => Navigator.of(modalContext).pop('copy'),
-              ),
-              ListTile(
                 leading: Icon(
                   isBlocked ? Icons.check_circle_outline : Icons.block,
                   color: isBlocked ? VineTheme.vineGreen : Colors.red,
@@ -119,48 +112,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     if (!mounted) return;
 
-    if (result == 'copy') {
-      await _copyUniqueId(userIdHex);
-    } else if (result == 'block') {
+    if (result == 'block') {
       await _blockUser(userIdHex, isBlocked);
-    }
-  }
-
-  Future<void> _copyUniqueId(String userIdHex) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: VineTheme.onPrimary),
-                const SizedBox(width: 8),
-                Text(
-                  'Unique ID copied to clipboard',
-                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
-                ),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to copy: $e',
-              style: VineTheme.bodyMediumFont(),
-            ),
-            backgroundColor: VineTheme.likeRed,
-          ),
-        );
-      }
     }
   }
 

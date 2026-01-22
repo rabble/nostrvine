@@ -2,7 +2,6 @@
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -187,14 +186,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 title: Text('Share profile', style: VineTheme.bodyLargeFont()),
                 onTap: () => Navigator.of(modalContext).pop('share'),
               ),
-              ListTile(
-                leading: Icon(Icons.copy, color: VineTheme.whiteText),
-                title: Text(
-                  'Copy my unique ID',
-                  style: VineTheme.bodyLargeFont(),
-                ),
-                onTap: () => Navigator.of(modalContext).pop('copy'),
-              ),
             ],
           ),
         ),
@@ -205,46 +196,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'share') {
       await _shareProfile(userIdHex);
-    } else if (result == 'copy') {
-      await _copyUniqueId(userIdHex);
-    }
-  }
-
-  Future<void> _copyUniqueId(String userIdHex) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: VineTheme.onPrimary),
-                const SizedBox(width: 8),
-                Text(
-                  'Unique ID copied to clipboard',
-                  style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
-                ),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to copy: $e',
-              style: VineTheme.bodyMediumFont(),
-            ),
-            backgroundColor: VineTheme.likeRed,
-          ),
-        );
-      }
     }
   }
 }
