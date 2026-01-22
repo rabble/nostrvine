@@ -93,50 +93,67 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (modalContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isFollowing)
-                ListTile(
-                  leading: SvgPicture.asset(
-                    'assets/icon/userMinus.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isFollowing)
+              InkWell(
+                onTap: () => Navigator.of(modalContext).pop('unfollow'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
                   ),
-                  horizontalTitleGap: 16,
-                  title: Text(
-                    'Unfollow $displayName',
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                  onTap: () => Navigator.of(modalContext).pop('unfollow'),
-                ),
-              ListTile(
-                leading: SvgPicture.asset(
-                  'assets/icon/prohibit.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    isBlocked ? VineTheme.vineGreen : Colors.red,
-                    BlendMode.srcIn,
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icon/userMinus.svg',
+                        width: 24,
+                        height: 24,
+                        colorFilter: const ColorFilter.mode(
+                          VineTheme.whiteText,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        'Unfollow $displayName',
+                        style: VineTheme.titleMediumFont(),
+                      ),
+                    ],
                   ),
                 ),
-                horizontalTitleGap: 16,
-                title: Text(
-                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
-                  style: VineTheme.titleMediumFont(
-                    color: isBlocked ? VineTheme.vineGreen : Colors.red,
-                  ),
-                ),
-                onTap: () => Navigator.of(modalContext).pop('block'),
               ),
-            ],
-          ),
+            InkWell(
+              onTap: () => Navigator.of(modalContext).pop('block'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                child: Row(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icon/prohibit.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        isBlocked ? VineTheme.vineGreen : Colors.red,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+                      style: VineTheme.titleMediumFont(
+                        color: isBlocked ? VineTheme.vineGreen : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

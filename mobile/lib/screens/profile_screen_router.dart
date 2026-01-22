@@ -288,26 +288,33 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (modalContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.ios_share,
-                  color: VineTheme.whiteText,
-                  size: 24,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => Navigator.of(modalContext).pop('share'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
                 ),
-                horizontalTitleGap: 16,
-                title: Text(
-                  'Share profile',
-                  style: VineTheme.titleMediumFont(),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.ios_share,
+                      color: VineTheme.whiteText,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Share profile',
+                      style: VineTheme.titleMediumFont(),
+                    ),
+                  ],
                 ),
-                onTap: () => Navigator.of(modalContext).pop('share'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
