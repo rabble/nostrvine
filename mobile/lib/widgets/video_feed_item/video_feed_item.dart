@@ -10,13 +10,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
@@ -33,6 +31,7 @@ import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
@@ -258,11 +257,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final commentsRepository = ref.read(commentsRepositoryProvider);
     final repostsRepository = ref.read(repostsRepositoryProvider);
 
-    // Build addressable ID for reposts if video has a d-tag
-    final addressableId = widget.video.dTag != null
+    // Build addressable ID for reposts if video has a d-tag (vineId)
+    final addressableId = widget.video.vineId != null
         ? buildAddressableId(
             authorPubkey: widget.video.pubkey,
-            dTag: widget.video.dTag!,
+            dTag: widget.video.vineId!,
           )
         : null;
 
@@ -1397,122 +1396,8 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   const SizedBox(height: 4),
 
-                  // Repost/Revine button - wrapped in Consumer to isolate rebuilds
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final socialState = ref.watch(socialProvider);
-                      // Construct addressable ID for repost state check
-                      final dTag = video.rawTags['d'];
-                      final addressableId = dTag != null
-                          ? '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag'
-                          : video.id;
-                      final isReposted = socialState.hasReposted(addressableId);
-                      final isRepostInProgress = socialState.isRepostInProgress(
-                        video.id,
-                      );
-
-                      return Column(
-                        children: [
-                          Semantics(
-                            identifier: 'repost_button',
-                            container: true,
-                            explicitChildNodes: true,
-                            button: true,
-                            label: isReposted
-                                ? 'Remove repost'
-                                : 'Repost video',
-                            child: IconButton(
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints.tightFor(
-                                width: 48,
-                                height: 48,
-                              ),
-                              style: IconButton.styleFrom(
-                                highlightColor: Colors.transparent,
-                                splashFactory: NoSplash.splashFactory,
-                              ),
-                              onPressed: isRepostInProgress
-                                  ? null
-                                  : () async {
-                                      Log.info(
-                                        '🔁 Repost button tapped for ${video.id}',
-                                        name: 'VideoFeedItem',
-                                        category: LogCategory.ui,
-                                      );
-                                      await ref
-                                          .read(socialProvider.notifier)
-                                          .toggleRepost(video);
-                                    },
-                              icon: isRepostInProgress
-                                  ? const SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.15,
-                                            ),
-                                            blurRadius: 15,
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
-                                      ),
-                                      child: SvgPicture.asset(
-                                        'assets/icon/content-controls/repost.svg',
-                                        width: 32,
-                                        height: 32,
-                                        colorFilter: ColorFilter.mode(
-                                          isReposted
-                                              ? VineTheme.vineGreen
-                                              : Colors.white,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          // Show repost count: Nostr reposts + original reposts (if any)
-                          Builder(
-                            builder: (context) {
-                              final nostrReposts =
-                                  video.reposterPubkeys?.length ?? 0;
-                              final originalReposts =
-                                  video.originalReposts ?? 0;
-                              final totalReposts =
-                                  nostrReposts + originalReposts;
-
-                              if (totalReposts > 0) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Text(
-                                    StringUtils.formatCompactNumber(
-                                      totalReposts,
-                                    ),
-                                    style: const TextStyle(
-                                      fontFamily: 'Bricolage Grotesque',
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  // Repost button
+                  RepostActionButton(video: video),
 
                   const SizedBox(height: 4),
 
@@ -1522,7 +1407,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   // Like button
-                  _LikeActionButtonThemed(video: video),
+                  LikeActionButton(video: video),
                 ],
               ),
             ),
@@ -1960,135 +1845,6 @@ class _CommentActionButton extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               StringUtils.formatCompactNumber(totalComments),
-              style: const TextStyle(
-                fontFamily: 'Bricolage Grotesque',
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// Like button with theming-d0.1 SVG icon style.
-///
-/// Displays a heart icon that changes color when liked.
-/// Shows like count below if > 0.
-///
-/// Uses [VideoInteractionsBloc] for like state when available.
-class _LikeActionButtonThemed extends StatelessWidget {
-  const _LikeActionButtonThemed({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) {
-    final interactionsBloc = context.read<VideoInteractionsBloc?>();
-
-    if (interactionsBloc == null) {
-      // No bloc available - show disabled state with original likes only
-      return _buildButton(
-        context: context,
-        isLiked: false,
-        isLikeInProgress: false,
-        totalLikes: video.originalLikes ?? 0,
-        onPressed: null,
-      );
-    }
-
-    return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
-      builder: (context, state) {
-        final isLiked = state.isLiked;
-        final isLikeInProgress = state.isLikeInProgress;
-        final likeCount = state.likeCount ?? 0;
-        final totalLikes = likeCount + (video.originalLikes ?? 0);
-
-        return _buildButton(
-          context: context,
-          isLiked: isLiked,
-          isLikeInProgress: isLikeInProgress,
-          totalLikes: totalLikes,
-          onPressed: () {
-            Log.info(
-              '❤️ Like button tapped for ${video.id}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-            context.read<VideoInteractionsBloc>().add(
-              const VideoInteractionsLikeToggled(),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildButton({
-    required BuildContext context,
-    required bool isLiked,
-    required bool isLikeInProgress,
-    required int totalLikes,
-    required VoidCallback? onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'like_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: isLiked ? 'Unlike video' : 'Like video',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: isLikeInProgress || onPressed == null ? null : onPressed,
-            icon: isLikeInProgress
-                ? const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : DecoratedBox(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 15,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/content-controls/like.svg',
-                      width: 32,
-                      height: 32,
-                      colorFilter: ColorFilter.mode(
-                        isLiked ? Colors.red : Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-        if (totalLikes > 0) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              StringUtils.formatCompactNumber(totalLikes),
               style: const TextStyle(
                 fontFamily: 'Bricolage Grotesque',
                 color: Colors.white,

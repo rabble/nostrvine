@@ -230,9 +230,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final commentsRepository = ref.read(commentsRepositoryProvider);
     final repostsRepository = ref.read(repostsRepositoryProvider);
 
-    // Build addressable ID for reposts if video has a d-tag
-    final addressableId = video.dTag != null
-        ? buildAddressableId(authorPubkey: video.pubkey, dTag: video.dTag!)
+    // Build addressable ID for reposts if video has a d-tag (vineId)
+    final addressableId = video.vineId != null
+        ? buildAddressableId(authorPubkey: video.pubkey, dTag: video.vineId!)
         : null;
 
     return BlocProvider<VideoInteractionsBloc>(
