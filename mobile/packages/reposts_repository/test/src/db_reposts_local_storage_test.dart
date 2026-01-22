@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for DbRepostsLocalStorage implementation.
 // ABOUTME: Tests the db_client-backed local storage for repost records.
 
+// Not needed rules for test code.
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:async';
