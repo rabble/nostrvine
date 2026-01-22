@@ -57,7 +57,6 @@ class BackButtonHandler {
         // Go back to explore
         _router!.go(ExploreScreen.path);
         return true; // Handled
-
       default:
         break;
     }
@@ -68,23 +67,15 @@ class BackButtonHandler {
     // For notifications: go to index 0 (notifications always has an index)
     // For other routes: go to grid mode (null index)
     if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-      String newRoute;
-      if (ctx.type == RouteType.notifications) {
-        // Notifications always has an index, go to index 0
-        newRoute = NotificationsScreen.pathForIndex(0);
-      } else {
-        // For explore, profile, and other routes, go to grid mode (null index)
-        switch (ctx.type) {
-          case RouteType.explore:
-            newRoute = ExploreScreen.path;
-          case RouteType.profile:
-            newRoute = ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me');
-          case RouteType.home:
-            newRoute = HomeScreenRouter.pathForIndex(0);
-          default:
-            newRoute = ExploreScreen.path;
-        }
-      }
+      // For explore, profile, and other routes, go to grid mode (null index)
+      final newRoute = switch (ctx.type) {
+        RouteType.notifications => NotificationsScreen.pathForIndex(0),
+        RouteType.explore => ExploreScreen.path,
+        RouteType.profile => ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
+        RouteType.home => HomeScreenRouter.pathForIndex(0),
+        _ => ExploreScreen.path,
+      };
+
       _router!.go(newRoute);
       return true; // Handled
     }
@@ -148,35 +139,26 @@ class BackButtonHandler {
 
   /// Maps tab index to RouteType
   static RouteType _routeTypeForTab(int index) {
-    switch (index) {
-      case 0:
-        return RouteType.home;
-      case 1:
-        return RouteType.explore;
-      case 2:
-        return RouteType.notifications;
-      case 3:
-        return RouteType.profile;
-      default:
-        return RouteType.home;
-    }
+    return switch (index) {
+      0 => RouteType.home,
+      1 => RouteType.explore,
+      2 => RouteType.notifications,
+      3 => RouteType.profile,
+      _ => RouteType.home,
+    };
   }
 
   /// Maps RouteType to tab index
   /// Returns null if not a main tab route
   static int? _tabIndexFromRouteType(RouteType type) {
-    switch (type) {
-      case RouteType.home:
-        return 0;
-      case RouteType.explore:
-      case RouteType.hashtag: // Hashtag is part of explore tab
-        return 1;
-      case RouteType.notifications:
-        return 2;
-      case RouteType.profile:
-        return 3;
-      default:
-        return null; // Not a main tab route
-    }
+    return switch (type) {
+      RouteType.home => 0,
+      // Hashtag is part of explore tab
+      RouteType.explore || RouteType.hashtag => 1,
+      RouteType.notifications => 2,
+      RouteType.profile => 3,
+      // Not a main tab route
+      _ => null,
+    };
   }
 }

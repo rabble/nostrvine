@@ -355,9 +355,7 @@ class AppShell extends ConsumerWidget {
                     case RouteType.hashtag:
                     case RouteType.search:
                       // Go back to explore
-                      context.go(ExploreScreen.path);
-                      return;
-
+                      return context.go(ExploreScreen.path);
                     default:
                       break;
                   }
@@ -366,21 +364,22 @@ class AppShell extends ConsumerWidget {
                   // This handles page-internal navigation before tab switching
                   // For explore/profile: any videoIndex (including 0) should go to grid (null)
                   // For notifications: videoIndex > 0 should go to index 0
+
                   if (ctx.videoIndex != null) {
-                    // For Explore, grid mode is null
-                    if (ctx.type == RouteType.explore) {
-                      return context.go(ExploreScreen.path);
-                    }
-                    // For Profile, grid mode is null
-                    if (ctx.type == RouteType.profile) {
-                      return context.go(
-                        ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
-                      );
-                    }
-                    // For Notifications, index 0 is the base state
-                    if (ctx.type == RouteType.notifications &&
-                        ctx.videoIndex != 0) {
-                      return context.go(NotificationsScreen.pathForIndex(0));
+                    switch (ctx.type) {
+                      case RouteType.explore:
+                        // For Explore, grid mode is null
+                        return context.go(ExploreScreen.path);
+                      // For Profile, grid mode is null
+                      case RouteType.profile:
+                        return context.go(
+                          ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
+                        );
+                      // For Notifications, index 0 is the base state
+                      case RouteType.notifications when ctx.videoIndex != 0:
+                        return context.go(NotificationsScreen.pathForIndex(0));
+                      default:
+                        break;
                     }
                   }
 
@@ -414,7 +413,6 @@ class AppShell extends ConsumerWidget {
                         } else {
                           return context.go(ExploreScreen.path);
                         }
-
                       case 2:
                         return context.go(
                           NotificationsScreen.pathForIndex(lastIndex ?? 0),

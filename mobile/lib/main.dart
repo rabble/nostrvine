@@ -978,7 +978,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        final String newRoute = switch (ctx.type) {
+        final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
           RouteType.notifications => NotificationsScreen.pathForIndex(0),
           RouteType.explore => ExploreScreen.path,
