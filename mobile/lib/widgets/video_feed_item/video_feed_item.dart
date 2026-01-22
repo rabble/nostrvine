@@ -2,16 +2,17 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
@@ -22,7 +23,6 @@ import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -38,6 +38,7 @@ import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -255,14 +256,25 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   void _createInteractionsBloc() {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    // Build addressable ID for reposts if video has a d-tag
+    final addressableId = widget.video.dTag != null
+        ? buildAddressableId(
+            authorPubkey: widget.video.pubkey,
+            dTag: widget.video.dTag!,
+          )
+        : null;
 
     _interactionsBloc = VideoInteractionsBloc(
       eventId: widget.video.id,
       authorPubkey: widget.video.pubkey,
       likesRepository: likesRepository,
       commentsRepository: commentsRepository,
+      repostsRepository: repostsRepository,
+      addressableId: addressableId,
     );
-    // Start listening for liked IDs changes
+    // Start listening for liked/reposted IDs changes
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
     // Trigger initial fetch
     _interactionsBloc.add(const VideoInteractionsFetchRequested());

@@ -17,7 +17,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -73,6 +72,8 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -1119,6 +1120,41 @@ LikesRepository likesRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     isAuthenticated: authenticated,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
+}
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+/// Uses AuthService.createAndSignEvent for event creation.
+@Riverpod(keepAlive: true)
+RepostsRepository repostsRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // Watch auth state stream to react to auth changes (login/logout)
+  ref.watch(authStateStreamProvider);
+
+  final isAuthenticated = authService.isAuthenticated;
+
+  final repository = RepostsRepository(
+    nostrClient: nostrClient,
+    eventCreator:
+        ({
+          required int kind,
+          required String content,
+          required List<List<String>> tags,
+        }) => authService.createAndSignEvent(
+          kind: kind,
+          content: content,
+          tags: tags,
+        ),
+    isAuthenticated: isAuthenticated,
   );
 
   ref.onDispose(repository.dispose);
