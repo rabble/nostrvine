@@ -301,7 +301,7 @@ class _FittedVideoPlayer extends StatelessWidget {
 
     return FittedBox(
       fit: BoxFit.contain,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.center,
       child: SizedBox(
         width: videoWidth,
         height: videoHeight,
@@ -322,7 +322,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
       child: thumbnailUrl != null
           ? Image.network(
               thumbnailUrl!,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const _LoadingIndicator(),
             )
           : const _LoadingIndicator(),
