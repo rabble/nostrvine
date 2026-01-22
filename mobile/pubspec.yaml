@@ -260,6 +260,8 @@ flutter:
     - assets/icon/heart.svg
     - assets/icon/repost.svg
     - assets/icon/copy.svg
+    - assets/icon/userMinus.svg
+    - assets/icon/prohibit.svg
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql

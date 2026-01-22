@@ -78,6 +78,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     final isBlocked = blocklistService.isBlocked(userIdHex);
 
+    final followRepository = ref.read(followRepositoryProvider);
+    final isFollowing = followRepository.isFollowing(userIdHex);
+
+    // Get display name for unfollow action
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
     final result = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
@@ -91,14 +98,38 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: Icon(
-                  isBlocked ? Icons.check_circle_outline : Icons.block,
-                  color: isBlocked ? VineTheme.vineGreen : Colors.red,
+              if (isFollowing)
+                ListTile(
+                  leading: SvgPicture.asset(
+                    'assets/icon/userMinus.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.whiteText,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  horizontalTitleGap: 16,
+                  title: Text(
+                    'Unfollow $displayName',
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                  onTap: () => Navigator.of(modalContext).pop('unfollow'),
                 ),
+              ListTile(
+                leading: SvgPicture.asset(
+                  'assets/icon/prohibit.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    isBlocked ? VineTheme.vineGreen : Colors.red,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                horizontalTitleGap: 16,
                 title: Text(
-                  isBlocked ? 'Unblock this user' : 'Block this user',
-                  style: VineTheme.bodyLargeFont(
+                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+                  style: VineTheme.titleMediumFont(
                     color: isBlocked ? VineTheme.vineGreen : Colors.red,
                   ),
                 ),
@@ -112,8 +143,21 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     if (!mounted) return;
 
-    if (result == 'block') {
+    if (result == 'unfollow') {
+      await _unfollowUser(userIdHex, displayName);
+    } else if (result == 'block') {
       await _blockUser(userIdHex, isBlocked);
+    }
+  }
+
+  Future<void> _unfollowUser(String userIdHex, String displayName) async {
+    final followRepository = ref.read(followRepositoryProvider);
+    await followRepository.toggleFollow(userIdHex);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unfollowed $displayName')),
+      );
     }
   }
 

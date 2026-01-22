@@ -216,12 +216,5 @@ class _ThumbnailPlaceholder extends StatelessWidget {
         ],
       ),
     ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
-    ),
   );
 }

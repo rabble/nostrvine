@@ -294,8 +294,16 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.ios_share, color: VineTheme.whiteText),
-                title: Text('Share profile', style: VineTheme.bodyLargeFont()),
+                leading: const Icon(
+                  Icons.ios_share,
+                  color: VineTheme.whiteText,
+                  size: 24,
+                ),
+                horizontalTitleGap: 16,
+                title: Text(
+                  'Share profile',
+                  style: VineTheme.titleMediumFont(),
+                ),
                 onTap: () => Navigator.of(modalContext).pop('share'),
               ),
             ],
