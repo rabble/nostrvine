@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -1119,6 +1120,41 @@ LikesRepository likesRepository(Ref ref) {
     nostrClient: nostrClient,
     localStorage: localStorage,
     isAuthenticated: authenticated,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
+}
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+/// Uses AuthService.createAndSignEvent for event creation.
+@Riverpod(keepAlive: true)
+RepostsRepository repostsRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // Watch auth state stream to react to auth changes (login/logout)
+  ref.watch(authStateStreamProvider);
+
+  final isAuthenticated = authService.isAuthenticated;
+
+  final repository = RepostsRepository(
+    nostrClient: nostrClient,
+    eventCreator:
+        ({
+          required int kind,
+          required String content,
+          required List<List<String>> tags,
+        }) => authService.createAndSignEvent(
+          kind: kind,
+          content: content,
+          tags: tags,
+        ),
+    isAuthenticated: isAuthenticated,
   );
 
   ref.onDispose(repository.dispose);
