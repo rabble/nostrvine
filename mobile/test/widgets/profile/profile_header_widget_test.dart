@@ -12,6 +12,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +52,25 @@ class MockNostrClient extends Mock implements NostrClient {
   int get connectedRelayCount => 1;
 }
 
+class MockAuthService extends Mock implements AuthService {
+  MockAuthService({this.isAnonymousValue = false});
+
+  final bool isAnonymousValue;
+
+  @override
+  bool get isAnonymous => isAnonymousValue;
+
+  @override
+  bool get isAuthenticated => true;
+
+  @override
+  String? get currentPublicKeyHex => testUserHex;
+
+  @override
+  Stream<AuthState> get authStateStream =>
+      Stream.value(AuthState.authenticated);
+}
+
 const testUserHex =
     '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
 
@@ -58,6 +78,7 @@ void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
     late MockNostrClient mockNostrClient;
+    late MockAuthService mockAuthService;
 
     UserProfile createTestProfile({
       String? displayName,
@@ -99,6 +120,7 @@ void main() {
     setUp(() {
       mockFollowRepository = MockFollowRepository();
       mockNostrClient = MockNostrClient();
+      mockAuthService = MockAuthService();
     });
 
     setUpAll(() async {
@@ -111,7 +133,9 @@ void main() {
       required AsyncValue<ProfileStats> profileStatsAsync,
       UserProfile? profile,
       VoidCallback? onSetupProfile,
+      bool isAnonymous = false,
     }) {
+      final authService = MockAuthService(isAnonymousValue: isAnonymous);
       return ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
@@ -120,6 +144,10 @@ void main() {
           ).overrideWith((ref) async => profile),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          authServiceProvider.overrideWithValue(authService),
+          authStateStreamProvider.overrideWith(
+            (ref) => Stream.value(AuthState.authenticated),
+          ),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -292,6 +320,103 @@ void main() {
       // Should render SizedBox.shrink() - no UserAvatar visible
       expect(find.byType(ProfileHeaderWidget), findsOneWidget);
       expect(find.byType(UserAvatar), findsNothing);
+    });
+
+    group('Secure Account Banner', () {
+      testWidgets(
+        'shows secure account banner for own profile when anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsOneWidget);
+          expect(find.text('Register'), findsOneWidget);
+          expect(
+            find.text(
+              'Add email & password to recover your account on any device',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'hides secure account banner for own profile when not anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: false,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides secure account banner for other profiles even when anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: false,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'secure account banner Register button is tappable',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsOneWidget);
+
+          // Verify Register button exists and is an ElevatedButton
+          final registerButton = find.widgetWithText(ElevatedButton, 'Register');
+          expect(registerButton, findsOneWidget);
+
+          // Verify the button has correct styling
+          final button = tester.widget<ElevatedButton>(registerButton);
+          expect(button.onPressed, isNotNull);
+        },
+      );
     });
   });
 }
