@@ -1,12 +1,12 @@
 // ABOUTME: Native email/password authentication screen for diVine
 // ABOUTME: Handles both login and registration with email verification flow
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -39,12 +39,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
-  // For email verification polling
-  String? _pendingDeviceCode;
-  String? _pendingVerifier;
-  String? _pendingEmail;
-  Timer? _pollTimer;
-
   @override
   void initState() {
     super.initState();
@@ -55,7 +49,8 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _pollTimer?.cancel();
+    // Note: Polling is managed by emailVerificationNotifierProvider
+    // which survives navigation, so we don't cancel it here
     super.dispose();
   }
 
@@ -71,8 +66,18 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-      final keyManager = ref.watch(nostrKeyManagerProvider);
-      final nsec = keyManager.exportAsNsec();
+
+      // Use authService.exportNsec() which accesses keys from secure storage
+      // This works for both auto-generated and imported keys
+      final authService = ref.read(authServiceProvider);
+      final nsec = await authService.exportNsec();
+
+      if (nsec == null) {
+        setState(() {
+          _errorMessage = 'Unable to access your keys. Please try again.';
+        });
+        return;
+      }
 
       await _handleRegister(
         oauth: oauth,
@@ -117,18 +122,16 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
-      // Store for polling and show verification UI
-      setState(() {
-        _pendingDeviceCode = result.deviceCode;
-        _pendingVerifier = verifier;
-        _pendingEmail = email;
-      });
-
-      _startPolling(oauth);
-
-      // Show verification dialog but let user continue
+      // Start polling
       if (mounted) {
-        _showVerificationDialog();
+        context.read<EmailVerificationCubit>().startPolling(
+          deviceCode: result.deviceCode!,
+          verifier: verifier,
+          email: email,
+        );
+
+        // Show verification dialog but let user continue
+        _showVerificationDialog(email);
       }
     } else {
       setState(() {
@@ -137,106 +140,28 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     }
   }
 
-  void _startPolling(KeycastOAuth oauth) {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      if (_pendingDeviceCode == null || !mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final result = await oauth.pollForCode(_pendingDeviceCode!);
-
-      switch (result.status) {
-        case PollStatus.complete:
-          timer.cancel();
-          if (result.code != null && _pendingVerifier != null) {
-            await _exchangeCodeAndLogin(oauth, result.code!, _pendingVerifier!);
-          }
-          break;
-        case PollStatus.pending:
-          // Keep polling
-          break;
-        case PollStatus.error:
-          timer.cancel();
-          if (mounted) {
-            setState(() {
-              _errorMessage = result.error ?? 'Verification failed';
-            });
-          }
-          break;
-      }
-    });
-  }
-
-  void _showVerificationDialog() {
+  void _showVerificationDialog(String email) {
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Row(
-          children: [
-            Icon(Icons.email_outlined, color: VineTheme.vineGreen),
-            SizedBox(width: 12),
-            Text('Verify Your Email', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'We sent a verification link to:',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _pendingEmail ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Click the link in your email to complete registration. '
-              'You can continue using the app in the meantime.',
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.vineGreen,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Waiting for verification...',
-                  style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Let user continue to the app
-              _continueToApp();
-            },
-            child: const Text(
-              'Continue to App',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-        ],
+      builder: (dialogContext) => _VerificationDialog(
+        email: email,
+        onContinue: () {
+          Navigator.of(dialogContext).pop();
+          _continueToApp();
+        },
+        onSuccess: () {
+          // Navigate to profile - this closes dialog and replaces screen
+          if (mounted) {
+            final authService = ref.read(authServiceProvider);
+            final npub = authService.currentNpub;
+            if (npub != null) {
+              context.go('/profile/$npub');
+            } else {
+              context.go('/home/0');
+            }
+          }
+        },
       ),
     );
   }
@@ -247,37 +172,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     // Navigate to home
     if (mounted) {
       context.go('/home/0');
-    }
-  }
-
-  Future<void> _exchangeCodeAndLogin(
-    KeycastOAuth oauth,
-    String code,
-    String verifier,
-  ) async {
-    try {
-      final tokenResponse = await oauth.exchangeCode(
-        code: code,
-        verifier: verifier,
-      );
-
-      // Get the session and sign in
-      final session = KeycastSession.fromTokenResponse(tokenResponse);
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithDivineOAuth(session);
-
-      // Clear pending state
-      setState(() {
-        _pendingDeviceCode = null;
-        _pendingVerifier = null;
-        _pendingEmail = null;
-      });
-
-      // Navigation will be handled by auth state listener
-    } on OAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
     }
   }
 
@@ -454,6 +348,149 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
       labelText: label,
       prefixIcon: Icon(icon),
       suffixIcon: suffixIcon,
+    );
+  }
+}
+
+/// Reactive dialog that watches verification state and auto-closes on success
+class _VerificationDialog extends ConsumerWidget {
+  const _VerificationDialog({
+    required this.email,
+    required this.onContinue,
+    required this.onSuccess,
+  });
+
+  final String email;
+  final VoidCallback onContinue;
+  final VoidCallback onSuccess;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+
+    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+      builder: (context, verificationState) {
+        // Auto-close when verification completes (user is no longer anonymous)
+        if (!verificationState.isPolling &&
+            verificationState.error == null &&
+            !authService.isAnonymous) {
+          // Use post-frame callback to avoid calling Navigator during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onSuccess();
+          });
+        }
+
+        // Show error state if verification failed
+        if (verificationState.error != null) {
+          return AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                SizedBox(width: 12),
+                Text(
+                  'Verification Failed',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            content: Text(
+              verificationState.error!,
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: VineTheme.vineGreen),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Show success state briefly before auto-closing
+        if (!authService.isAnonymous) {
+          return AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: VineTheme.vineGreen),
+                SizedBox(width: 12),
+                Text('Account Secured!', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+            content: const Text(
+              'Your account is now linked to your email.',
+              style: TextStyle(color: Colors.white70),
+            ),
+          );
+        }
+
+        // Show waiting state
+        return AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Row(
+            children: [
+              Icon(Icons.email_outlined, color: VineTheme.vineGreen),
+              SizedBox(width: 12),
+              Text('Verify Your Email', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'We sent a verification link to:',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                email,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Click the link in your email to complete registration. '
+                'You can continue using the app in the meantime.',
+                style: TextStyle(color: Colors.grey[400], fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: VineTheme.vineGreen,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Waiting for verification...',
+                    style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: onContinue,
+              child: const Text(
+                'Continue to App',
+                style: TextStyle(color: VineTheme.vineGreen),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

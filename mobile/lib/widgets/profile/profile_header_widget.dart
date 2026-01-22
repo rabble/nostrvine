@@ -59,6 +59,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
 
+    // Watch auth state stream to rebuild when auth state changes
+    // (e.g., after email verification completes)
+    ref.watch(authStateStreamProvider);
+    final isAnonymous = authService.isAnonymous;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -70,8 +75,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
           // Secure account banner for anonymous users (only on own profile)
           // Only shown when headless auth feature is enabled
-          if (isOwnProfile && authService.isAnonymous)
-            _IdentityNotRecoverableBanner(),
+          if (isOwnProfile && isAnonymous) _IdentityNotRecoverableBanner(),
 
           // Profile picture and stats row
           Row(
